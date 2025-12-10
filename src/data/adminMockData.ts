@@ -12,6 +12,8 @@ import {
   AdminLogEntry,
   DashboardStats,
   NotificationTemplate,
+  Wallet,
+  WalletOperation,
 } from '@/types/admin';
 
 // Current Admin User (logged in)
@@ -427,6 +429,203 @@ export const adminLogs: AdminLogEntry[] = [
     createdAt: new Date('2024-12-06T11:00:00'),
   },
 ];
+
+// ============================================
+// WALLETS TABLE
+// ============================================
+export const wallets: Wallet[] = [
+  {
+    id: 'wallet-001',
+    clientId: 'client-001',
+    currentBalanceXAF: 2500000,
+    updatedAt: new Date('2024-12-10T09:00:00'),
+  },
+  {
+    id: 'wallet-002',
+    clientId: 'client-002',
+    currentBalanceXAF: 300000,
+    updatedAt: new Date('2024-12-09T14:30:00'),
+  },
+  {
+    id: 'wallet-003',
+    clientId: 'client-003',
+    currentBalanceXAF: 0,
+    updatedAt: new Date('2024-12-05T10:00:00'),
+  },
+  {
+    id: 'wallet-004',
+    clientId: 'client-004',
+    currentBalanceXAF: 3000000,
+    updatedAt: new Date('2024-12-09T08:00:00'),
+  },
+  {
+    id: 'wallet-005',
+    clientId: 'client-005',
+    currentBalanceXAF: 0,
+    updatedAt: new Date('2024-12-06T11:00:00'),
+  },
+];
+
+// ============================================
+// WALLET_OPERATIONS TABLE
+// ============================================
+export const walletOperations: WalletOperation[] = [
+  // Client 001 - John Doe operations
+  {
+    id: 'wop-001',
+    walletId: 'wallet-001',
+    type: 'CREDIT',
+    sourceType: 'DEPOSIT',
+    sourceId: 'dep-admin-004',
+    amountXAF: 300000,
+    description: 'Dépôt Wave validé',
+    createdAt: new Date('2024-12-07T16:00:00'),
+  },
+  {
+    id: 'wop-002',
+    walletId: 'wallet-001',
+    type: 'DEBIT',
+    sourceType: 'PAYMENT',
+    sourceId: 'pay-admin-004',
+    amountXAF: 500000,
+    description: 'Paiement Alipay - Wang Wei',
+    createdAt: new Date('2024-12-07T12:00:00'),
+  },
+  {
+    id: 'wop-003',
+    walletId: 'wallet-001',
+    type: 'CREDIT',
+    sourceType: 'DEPOSIT',
+    sourceId: 'dep-001',
+    amountXAF: 1500000,
+    description: 'Dépôt virement bancaire',
+    createdAt: new Date('2024-12-05T10:00:00'),
+  },
+  {
+    id: 'wop-004',
+    walletId: 'wallet-001',
+    type: 'ADJUSTMENT',
+    sourceType: 'MANUAL',
+    amountXAF: 50000,
+    description: 'Correction erreur de conversion',
+    createdAt: new Date('2024-12-04T14:30:00'),
+    createdByAdminUserId: 'admin-001',
+  },
+  // Client 002 - Marie Chen operations
+  {
+    id: 'wop-005',
+    walletId: 'wallet-002',
+    type: 'CREDIT',
+    sourceType: 'DEPOSIT',
+    sourceId: 'dep-002',
+    amountXAF: 500000,
+    description: 'Dépôt Orange Money',
+    createdAt: new Date('2024-12-08T11:00:00'),
+  },
+  {
+    id: 'wop-006',
+    walletId: 'wallet-002',
+    type: 'DEBIT',
+    sourceType: 'PAYMENT',
+    sourceId: 'pay-admin-003',
+    amountXAF: 200000,
+    description: 'Paiement WeChat - Zhang Xiaoming',
+    createdAt: new Date('2024-12-08T15:00:00'),
+  },
+  // Client 004 - Alice Mbeki operations
+  {
+    id: 'wop-007',
+    walletId: 'wallet-004',
+    type: 'CREDIT',
+    sourceType: 'DEPOSIT',
+    sourceId: 'dep-003',
+    amountXAF: 2000000,
+    description: 'Dépôt cash en agence',
+    createdAt: new Date('2024-12-08T11:00:00'),
+  },
+  {
+    id: 'wop-008',
+    walletId: 'wallet-004',
+    type: 'DEBIT',
+    sourceType: 'PAYMENT',
+    sourceId: 'pay-admin-002',
+    amountXAF: 1500000,
+    description: 'Paiement virement bancaire - Li Ming',
+    createdAt: new Date('2024-12-09T08:00:00'),
+  },
+  {
+    id: 'wop-009',
+    walletId: 'wallet-004',
+    type: 'ADJUSTMENT',
+    sourceType: 'MANUAL',
+    amountXAF: -25000,
+    description: 'Frais de service exceptionnels',
+    createdAt: new Date('2024-12-03T09:00:00'),
+    createdByAdminUserId: 'admin-002',
+  },
+  // Client 005 - Bob Fang operations (suspended)
+  {
+    id: 'wop-010',
+    walletId: 'wallet-005',
+    type: 'CREDIT',
+    sourceType: 'DEPOSIT',
+    sourceId: 'dep-005',
+    amountXAF: 500000,
+    description: 'Dépôt MTN Money',
+    createdAt: new Date('2024-05-01T10:00:00'),
+  },
+  {
+    id: 'wop-011',
+    walletId: 'wallet-005',
+    type: 'DEBIT',
+    sourceType: 'PAYMENT',
+    sourceId: 'pay-005',
+    amountXAF: 500000,
+    description: 'Paiement Alipay',
+    createdAt: new Date('2024-05-15T14:00:00'),
+  },
+];
+
+// Helper to get wallet by client ID
+export const getWalletByClientId = (clientId: string): Wallet | undefined => {
+  return wallets.find(w => w.clientId === clientId);
+};
+
+// Helper to get wallet operations by wallet ID
+export const getWalletOperations = (walletId: string): WalletOperation[] => {
+  return walletOperations
+    .filter(op => op.walletId === walletId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+};
+
+// Helper to get wallet operations by client ID
+export const getWalletOperationsByClientId = (clientId: string): WalletOperation[] => {
+  const wallet = getWalletByClientId(clientId);
+  if (!wallet) return [];
+  return getWalletOperations(wallet.id);
+};
+
+// Calculate today's credits and debits
+export const getTodayWalletStats = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const todayOps = walletOperations.filter(op => {
+    const opDate = new Date(op.createdAt);
+    opDate.setHours(0, 0, 0, 0);
+    return opDate.getTime() === today.getTime();
+  });
+  
+  const credits = todayOps
+    .filter(op => op.type === 'CREDIT' || (op.type === 'ADJUSTMENT' && op.amountXAF > 0))
+    .reduce((sum, op) => sum + Math.abs(op.amountXAF), 0);
+    
+  const debits = todayOps
+    .filter(op => op.type === 'DEBIT' || (op.type === 'ADJUSTMENT' && op.amountXAF < 0))
+    .reduce((sum, op) => sum + Math.abs(op.amountXAF), 0);
+  
+  return { credits, debits };
+};
 
 // Exchange Rates History
 export const exchangeRatesHistory = [

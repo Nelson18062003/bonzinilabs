@@ -7,36 +7,75 @@ import {
   ArrowUpFromLine,
   TrendingUp,
   TrendingDown,
+  Filter,
+  Plus,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { clients, dashboardStats } from '@/data/adminMockData';
-import { formatCurrency, mockWalletOperations } from '@/data/mockData';
+import { 
+  clients, 
+  wallets,
+  getWalletByClientId,
+  getTodayWalletStats,
+} from '@/data/adminMockData';
+import { formatCurrency } from '@/data/mockData';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export function AdminWalletsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'balance' | 'name' | 'updated'>('balance');
 
-  const filteredClients = clients.filter((client) => {
-    return (
-      client.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      client.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      client.email.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  // Get clients with their wallets
+  const clientsWithWallets = clients.map(client => ({
+    ...client,
+    wallet: getWalletByClientId(client.id),
+  }));
 
-  const totalBalance = clients.reduce((sum, c) => sum + c.walletBalance, 0);
+  const filteredClients = clientsWithWallets
+    .filter((client) => {
+      const searchLower = search.toLowerCase();
+      return (
+        client.firstName.toLowerCase().includes(searchLower) ||
+        client.lastName.toLowerCase().includes(searchLower) ||
+        (client.email?.toLowerCase().includes(searchLower) ?? false) ||
+        client.whatsappNumber.includes(search)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'balance':
+          return (b.wallet?.currentBalanceXAF ?? 0) - (a.wallet?.currentBalanceXAF ?? 0);
+        case 'name':
+          return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+        case 'updated':
+          return (b.wallet?.updatedAt.getTime() ?? 0) - (a.wallet?.updatedAt.getTime() ?? 0);
+        default:
+          return 0;
+      }
+    });
+
+  const totalBalance = wallets.reduce((sum, w) => sum + w.currentBalanceXAF, 0);
+  const { credits, debits } = getTodayWalletStats();
 
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Wallets Clients</h1>
-          <p className="text-muted-foreground">Gestion des soldes et mouvements</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Wallets Clients</h1>
+            <p className="text-muted-foreground">Gestion des soldes et mouvements</p>
+          </div>
         </div>
 
         {/* Stats */}
@@ -52,6 +91,9 @@ export function AdminWalletsPage() {
                   <p className="text-xl font-bold text-foreground">
                     {formatCurrency(totalBalance)}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {Math.round(totalBalance / 87).toLocaleString()} RMB
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -66,7 +108,7 @@ export function AdminWalletsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Crédits aujourd'hui</p>
                   <p className="text-xl font-bold text-emerald-600">
-                    +{formatCurrency(850000)}
+                    +{formatCurrency(credits || 850000)}
                   </p>
                 </div>
               </div>
@@ -82,7 +124,7 @@ export function AdminWalletsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Débits aujourd'hui</p>
                   <p className="text-xl font-bold text-red-600">
-                    -{formatCurrency(750000)}
+                    -{formatCurrency(debits || 750000)}
                   </p>
                 </div>
               </div>
@@ -90,17 +132,30 @@ export function AdminWalletsPage() {
           </Card>
         </div>
 
-        {/* Search */}
+        {/* Search & Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher un client..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par nom, email ou téléphone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="balance">Solde (décroissant)</SelectItem>
+                  <SelectItem value="name">Nom (A-Z)</SelectItem>
+                  <SelectItem value="updated">Dernière mise à jour</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -111,7 +166,7 @@ export function AdminWalletsPage() {
             <Card 
               key={client.id} 
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/admin/clients/${client.id}`)}
+              onClick={() => navigate(`/admin/wallets/${client.id}`)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -125,16 +180,18 @@ export function AdminWalletsPage() {
                       <h3 className="font-semibold text-foreground">
                         {client.firstName} {client.lastName}
                       </h3>
-                      <p className="text-sm text-muted-foreground">{client.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {client.email || client.whatsappNumber}
+                      </p>
                     </div>
                   </div>
 
                   <div className="text-right">
                     <p className="text-lg font-bold text-foreground">
-                      {formatCurrency(client.walletBalance)}
+                      {formatCurrency(client.wallet?.currentBalanceXAF ?? client.walletBalance)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      ≈ {Math.round(client.walletBalance / 87).toLocaleString()} RMB
+                      ≈ {Math.round((client.wallet?.currentBalanceXAF ?? client.walletBalance) / 87).toLocaleString()} RMB
                     </p>
                   </div>
                 </div>
