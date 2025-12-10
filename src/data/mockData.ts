@@ -425,6 +425,24 @@ export const paymentMethodsInfo: PaymentMethodInfo[] = [
 ];
 
 // Helper functions
+export const formatCurrency = (amount: number, currency: string = 'XAF'): string => {
+  if (currency === 'RMB' || currency === 'CNY') {
+    return `¥${new Intl.NumberFormat('zh-CN').format(amount)}`;
+  }
+  return `${new Intl.NumberFormat('fr-FR').format(amount)} ${currency}`;
+};
+
+export const formatDate = (date: Date | string, format: 'short' | 'long' | 'datetime' = 'short'): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (format === 'datetime') {
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  if (format === 'long') {
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 export const formatXAF = (amount: number): string => {
   return new Intl.NumberFormat('fr-FR').format(amount);
 };
