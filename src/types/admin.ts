@@ -101,6 +101,25 @@ export interface AdminLogEntry {
   createdAt: Date;
 }
 
+// ============================================
+// DEPOSIT MODULE
+// ============================================
+
+export type DepositMethod = 
+  | 'BANK_TRANSFER' 
+  | 'CASH_BANK' 
+  | 'ORANGE_MONEY' 
+  | 'MTN_MONEY' 
+  | 'WAVE' 
+  | 'AGENCY';
+
+export type DepositStatus = 
+  | 'SUBMITTED' 
+  | 'PROOF_UPLOADED' 
+  | 'UNDER_VERIFICATION' 
+  | 'VALIDATED' 
+  | 'REJECTED';
+
 // Enhanced Deposit for Admin
 export interface AdminDeposit {
   id: string;
@@ -110,16 +129,51 @@ export interface AdminDeposit {
   walletId: string;
   method: string;
   amountXAF: number;
-  status: string;
+  status: DepositStatus;
   reference?: string;
   notes?: string;
+  adminComment?: string;
   proofUrl?: string;
   proofFileName?: string;
   assignedTo?: string;
   validatedBy?: string;
   validatedAt?: Date;
+  rejectedBy?: string;
+  rejectedAt?: Date;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Deposit Proofs Table
+export interface DepositProof {
+  id: string;
+  depositId: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: 'image' | 'pdf';
+  fileSize?: number;
+  uploadedAt: Date;
+}
+
+// Deposit Timeline Table
+export type DepositTimelineStep = 
+  | 'SUBMITTED'
+  | 'PROOF_UPLOADED'
+  | 'UNDER_VERIFICATION'
+  | 'VALIDATED'
+  | 'REJECTED'
+  | 'WALLET_CREDITED';
+
+export interface DepositTimelineEvent {
+  id: string;
+  depositId: string;
+  step: DepositTimelineStep;
+  description: string;
+  performedBy: 'CLIENT' | 'ADMIN' | 'SYSTEM';
+  performedByName?: string;
+  performedByAdminId?: string;
+  timestamp: Date;
 }
 
 // Enhanced Payment for Admin
