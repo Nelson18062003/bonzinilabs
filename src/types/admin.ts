@@ -176,6 +176,21 @@ export interface DepositTimelineEvent {
   timestamp: Date;
 }
 
+// ============================================
+// PAYMENT MODULE
+// ============================================
+
+export type PaymentMethod = 'ALIPAY' | 'WECHAT' | 'BANK_TRANSFER' | 'CASH_COUNTER';
+
+export type PaymentStatus = 
+  | 'SUBMITTED' 
+  | 'INFO_RECEIVED' 
+  | 'READY_TO_PAY'
+  | 'PROCESSING' 
+  | 'COMPLETED' 
+  | 'PROOF_AVAILABLE'
+  | 'CANCELLED';
+
 // Enhanced Payment for Admin
 export interface AdminPayment {
   id: string;
@@ -185,19 +200,84 @@ export interface AdminPayment {
   walletId: string;
   beneficiaryId: string;
   beneficiaryName: string;
-  method: string;
+  method: PaymentMethod | string;
   amountXAF: number;
   amountRMB: number;
   exchangeRate: number;
   fees: number;
-  status: string;
+  status: PaymentStatus | string;
   notes?: string;
+  adminComment?: string;
   proofUrl?: string;
   proofFileName?: string;
   processedBy?: string;
+  paidBy?: string;
+  paidAt?: Date;
+  cancelledBy?: string;
+  cancelledAt?: Date;
+  cancellationReason?: string;
   completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Payment Beneficiary Details Table (stores beneficiary info at time of payment)
+export interface PaymentBeneficiary {
+  id: string;
+  paymentId: string;
+  method: PaymentMethod | string;
+  // Alipay / WeChat
+  alipayId?: string;
+  wechatId?: string;
+  qrCodeUrl?: string;
+  // Bank Transfer
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  // Cash Counter
+  cashCounterLocation?: string;
+  receiverName?: string;
+  receiverIdNumber?: string;
+  // Common
+  recipientName: string;
+  recipientPhone?: string;
+  createdAt: Date;
+}
+
+// Payment Proofs Table
+export interface PaymentProof {
+  id: string;
+  paymentId: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: 'image' | 'pdf';
+  fileSize?: number;
+  uploadedAt: Date;
+  uploadedByAdminId?: string;
+}
+
+// Payment Timeline Table
+export type PaymentTimelineStep = 
+  | 'SUBMITTED'
+  | 'INFO_RECEIVED'
+  | 'READY_TO_PAY'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'PROOF_UPLOADED'
+  | 'PROOF_AVAILABLE'
+  | 'CANCELLED'
+  | 'WALLET_DEBITED';
+
+export interface PaymentTimelineEvent {
+  id: string;
+  paymentId: string;
+  step: PaymentTimelineStep;
+  description: string;
+  performedBy: 'CLIENT' | 'ADMIN' | 'SYSTEM';
+  performedByName?: string;
+  performedByAdminId?: string;
+  timestamp: Date;
 }
 
 // ============================================
