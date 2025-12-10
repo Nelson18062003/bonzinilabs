@@ -21,18 +21,33 @@ export interface AdminUser {
 
 // Client (Contact) for Admin view
 export type ClientStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_KYC';
-export type ClientTag = 'VIP' | 'REGULAR' | 'NEW' | 'HIGH_VOLUME' | 'ENTERPRISE';
 export type ClientGender = 'MALE' | 'FEMALE' | 'OTHER';
+
+// Tags table (many-to-many with clients)
+export interface Tag {
+  id: string;
+  name: string;
+  color: string; // Tailwind color class
+  description?: string;
+  createdAt: Date;
+}
+
+export interface ClientTag {
+  clientId: string;
+  tagId: string;
+}
 
 export interface Client {
   id: string;
-  email: string;
-  phone: string;
   firstName: string;
   lastName: string;
-  gender?: ClientGender;
   company?: string;
-  tags: ClientTag[];
+  gender: ClientGender;
+  whatsappNumber: string;
+  email?: string;
+  country: string;
+  city?: string;
+  tagIds: string[]; // References to Tag table
   status: ClientStatus;
   kycVerified: boolean;
   avatar?: string;
@@ -40,8 +55,15 @@ export interface Client {
   totalDeposits: number;
   totalPayments: number;
   walletBalance: number;
+  lastDepositAt?: Date;
+  lastPaymentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Client with resolved tags
+export interface ClientWithTags extends Omit<Client, 'tagIds'> {
+  tags: Tag[];
 }
 
 // Admin Log Entry

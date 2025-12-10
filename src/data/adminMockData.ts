@@ -5,6 +5,8 @@
 import {
   AdminUser,
   Client,
+  ClientWithTags,
+  Tag,
   AdminDeposit,
   AdminPayment,
   AdminLogEntry,
@@ -62,50 +64,98 @@ export const adminUsers: AdminUser[] = [
   },
 ];
 
+// Tags Table
+export const tags: Tag[] = [
+  {
+    id: 'tag-001',
+    name: 'VIP',
+    color: 'bg-primary/10 text-primary',
+    description: 'Client premium',
+    createdAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'tag-002',
+    name: 'High Volume',
+    color: 'bg-blue-500/10 text-blue-600',
+    description: 'Gros volumes',
+    createdAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'tag-003',
+    name: 'Enterprise',
+    color: 'bg-purple-500/10 text-purple-600',
+    description: 'Entreprise',
+    createdAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'tag-004',
+    name: 'Nouveau',
+    color: 'bg-emerald-500/10 text-emerald-600',
+    description: 'Nouveau client',
+    createdAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'tag-005',
+    name: 'Régulier',
+    color: 'bg-gray-500/10 text-gray-600',
+    description: 'Client régulier',
+    createdAt: new Date('2024-01-01'),
+  },
+];
+
 // Clients
 export const clients: Client[] = [
   {
     id: 'client-001',
-    email: 'john.doe@example.com',
-    phone: '+237 6 90 12 34 56',
     firstName: 'John',
     lastName: 'Doe',
     gender: 'MALE',
+    whatsappNumber: '+237 6 90 12 34 56',
+    email: 'john.doe@example.com',
     company: 'Import Express SARL',
-    tags: ['VIP', 'HIGH_VOLUME'],
+    country: 'Cameroun',
+    city: 'Douala',
+    tagIds: ['tag-001', 'tag-002'],
     status: 'ACTIVE',
     kycVerified: true,
     totalDeposits: 15000000,
     totalPayments: 12500000,
     walletBalance: 2500000,
+    lastDepositAt: new Date('2024-12-07'),
+    lastPaymentAt: new Date('2024-12-06'),
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date(),
   },
   {
     id: 'client-002',
-    email: 'marie.chen@example.com',
-    phone: '+237 6 77 88 99 00',
     firstName: 'Marie',
     lastName: 'Chen',
     gender: 'FEMALE',
-    tags: ['REGULAR'],
+    whatsappNumber: '+237 6 77 88 99 00',
+    email: 'marie.chen@example.com',
+    country: 'Cameroun',
+    city: 'Yaoundé',
+    tagIds: ['tag-005'],
     status: 'ACTIVE',
     kycVerified: true,
     totalDeposits: 3500000,
     totalPayments: 3200000,
     walletBalance: 300000,
+    lastDepositAt: new Date('2024-12-09'),
+    lastPaymentAt: new Date('2024-12-08'),
     createdAt: new Date('2024-03-22'),
     updatedAt: new Date(),
   },
   {
     id: 'client-003',
-    email: 'pierre.nkeng@example.com',
-    phone: '+237 6 55 44 33 22',
     firstName: 'Pierre',
     lastName: 'Nkeng',
     gender: 'MALE',
+    whatsappNumber: '+237 6 55 44 33 22',
+    email: 'pierre.nkeng@example.com',
     company: 'Tech Solutions',
-    tags: ['NEW'],
+    country: 'Cameroun',
+    tagIds: ['tag-004'],
     status: 'PENDING_KYC',
     kycVerified: false,
     totalDeposits: 0,
@@ -116,29 +166,34 @@ export const clients: Client[] = [
   },
   {
     id: 'client-004',
-    email: 'alice.mbeki@example.com',
-    phone: '+237 6 11 22 33 44',
     firstName: 'Alice',
     lastName: 'Mbeki',
     gender: 'FEMALE',
-    tags: ['ENTERPRISE', 'VIP'],
+    whatsappNumber: '+237 6 11 22 33 44',
+    email: 'alice.mbeki@example.com',
+    company: 'Global Trading Co.',
+    country: 'Cameroun',
+    city: 'Douala',
+    tagIds: ['tag-001', 'tag-003'],
     status: 'ACTIVE',
     kycVerified: true,
-    company: 'Global Trading Co.',
     totalDeposits: 45000000,
     totalPayments: 42000000,
     walletBalance: 3000000,
+    lastDepositAt: new Date('2024-12-08'),
+    lastPaymentAt: new Date('2024-12-09'),
     createdAt: new Date('2023-11-10'),
     updatedAt: new Date(),
   },
   {
     id: 'client-005',
-    email: 'bob.fang@example.com',
-    phone: '+237 6 99 88 77 66',
     firstName: 'Bob',
     lastName: 'Fang',
     gender: 'MALE',
-    tags: ['REGULAR'],
+    whatsappNumber: '+237 6 99 88 77 66',
+    country: 'Cameroun',
+    city: 'Bafoussam',
+    tagIds: ['tag-005'],
     status: 'SUSPENDED',
     kycVerified: true,
     notes: 'Compte suspendu pour vérification',
@@ -149,6 +204,20 @@ export const clients: Client[] = [
     updatedAt: new Date(),
   },
 ];
+
+// Helper to get client with resolved tags
+export const getClientWithTags = (client: Client): ClientWithTags => {
+  const clientTags = client.tagIds
+    .map(tagId => tags.find(t => t.id === tagId))
+    .filter((t): t is Tag => t !== undefined);
+  
+  const { tagIds, ...rest } = client;
+  return { ...rest, tags: clientTags };
+};
+
+export const getTagById = (tagId: string): Tag | undefined => {
+  return tags.find(t => t.id === tagId);
+};
 
 // Admin Deposits
 export const adminDeposits: AdminDeposit[] = [
