@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClientsPage } from "./pages/admin/AdminClientsPage";
+import { AdminClientDetailPage } from "./pages/admin/AdminClientDetailPage";
 import { AdminWalletsPage } from "./pages/admin/AdminWalletsPage";
 import { AdminDepositsPage } from "./pages/admin/AdminDepositsPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
@@ -65,6 +66,11 @@ const App = () => (
           <Route path="/admin/clients" element={
             <AdminAuthProvider>
               <ProtectedAdminRoute><AdminClientsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/clients/:clientId" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminClientDetailPage /></ProtectedAdminRoute>
             </AdminAuthProvider>
           } />
           <Route path="/admin/wallets" element={
