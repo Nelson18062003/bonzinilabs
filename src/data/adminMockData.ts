@@ -14,6 +14,9 @@ import {
   NotificationTemplate,
   Wallet,
   WalletOperation,
+  DepositProof,
+  DepositTimelineEvent,
+  DepositStatus,
 } from '@/types/admin';
 
 // Current Admin User (logged in)
@@ -242,7 +245,7 @@ export const adminDeposits: AdminDeposit[] = [
     clientName: 'Marie Chen',
     clientEmail: 'marie.chen@example.com',
     walletId: 'wallet-002',
-    method: 'ORANGE_MONEY_TRANSFER',
+    method: 'ORANGE_MONEY',
     amountXAF: 150000,
     status: 'PROOF_UPLOADED',
     proofUrl: '/proofs/dep-002.jpg',
@@ -256,7 +259,7 @@ export const adminDeposits: AdminDeposit[] = [
     clientName: 'Alice Mbeki',
     clientEmail: 'alice.mbeki@example.com',
     walletId: 'wallet-004',
-    method: 'CASH_DEPOSIT',
+    method: 'CASH_BANK',
     amountXAF: 2000000,
     status: 'UNDER_VERIFICATION',
     proofUrl: '/proofs/dep-003.pdf',
@@ -275,8 +278,10 @@ export const adminDeposits: AdminDeposit[] = [
     amountXAF: 300000,
     status: 'VALIDATED',
     proofUrl: '/proofs/dep-004.jpg',
+    proofFileName: 'wave_receipt.jpg',
     validatedBy: 'admin-001',
     validatedAt: new Date('2024-12-07T16:00:00'),
+    adminComment: 'Preuve valide, montant confirmé',
     createdAt: new Date('2024-12-07T10:00:00'),
     updatedAt: new Date(),
   },
@@ -286,14 +291,227 @@ export const adminDeposits: AdminDeposit[] = [
     clientName: 'Bob Fang',
     clientEmail: 'bob.fang@example.com',
     walletId: 'wallet-005',
-    method: 'MTN_MONEY_TRANSFER',
+    method: 'MTN_MONEY',
     amountXAF: 100000,
     status: 'REJECTED',
-    notes: 'Preuve illisible',
+    proofUrl: '/proofs/dep-005.jpg',
+    proofFileName: 'mtn_screenshot.jpg',
+    rejectedBy: 'admin-002',
+    rejectedAt: new Date('2024-12-06T14:00:00'),
+    rejectionReason: 'Preuve illisible - veuillez soumettre une capture plus claire',
     createdAt: new Date('2024-12-06T09:00:00'),
     updatedAt: new Date(),
   },
 ];
+
+// ============================================
+// DEPOSIT_PROOFS TABLE
+// ============================================
+export const depositProofs: DepositProof[] = [
+  {
+    id: 'proof-001',
+    depositId: 'dep-admin-002',
+    fileUrl: '/proofs/dep-002.jpg',
+    fileName: 'screenshot_om.jpg',
+    fileType: 'image',
+    fileSize: 245000,
+    uploadedAt: new Date('2024-12-09T14:35:00'),
+  },
+  {
+    id: 'proof-002',
+    depositId: 'dep-admin-003',
+    fileUrl: '/proofs/dep-003.pdf',
+    fileName: 'bordereau_bank.pdf',
+    fileType: 'pdf',
+    fileSize: 1250000,
+    uploadedAt: new Date('2024-12-08T11:15:00'),
+  },
+  {
+    id: 'proof-003',
+    depositId: 'dep-admin-004',
+    fileUrl: '/proofs/dep-004.jpg',
+    fileName: 'wave_receipt.jpg',
+    fileType: 'image',
+    fileSize: 320000,
+    uploadedAt: new Date('2024-12-07T10:30:00'),
+  },
+  {
+    id: 'proof-004',
+    depositId: 'dep-admin-005',
+    fileUrl: '/proofs/dep-005.jpg',
+    fileName: 'mtn_screenshot.jpg',
+    fileType: 'image',
+    fileSize: 180000,
+    uploadedAt: new Date('2024-12-06T09:30:00'),
+  },
+];
+
+// ============================================
+// DEPOSIT_TIMELINE TABLE
+// ============================================
+export const depositTimelines: DepositTimelineEvent[] = [
+  // dep-admin-001 timeline (SUBMITTED)
+  {
+    id: 'timeline-001',
+    depositId: 'dep-admin-001',
+    step: 'SUBMITTED',
+    description: 'Demande de dépôt soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'John Doe',
+    timestamp: new Date('2024-12-10T09:00:00'),
+  },
+  // dep-admin-002 timeline (PROOF_UPLOADED)
+  {
+    id: 'timeline-002',
+    depositId: 'dep-admin-002',
+    step: 'SUBMITTED',
+    description: 'Demande de dépôt soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'Marie Chen',
+    timestamp: new Date('2024-12-09T14:30:00'),
+  },
+  {
+    id: 'timeline-003',
+    depositId: 'dep-admin-002',
+    step: 'PROOF_UPLOADED',
+    description: 'Preuve de paiement uploadée',
+    performedBy: 'CLIENT',
+    performedByName: 'Marie Chen',
+    timestamp: new Date('2024-12-09T14:35:00'),
+  },
+  // dep-admin-003 timeline (UNDER_VERIFICATION)
+  {
+    id: 'timeline-004',
+    depositId: 'dep-admin-003',
+    step: 'SUBMITTED',
+    description: 'Demande de dépôt soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'Alice Mbeki',
+    timestamp: new Date('2024-12-08T11:00:00'),
+  },
+  {
+    id: 'timeline-005',
+    depositId: 'dep-admin-003',
+    step: 'PROOF_UPLOADED',
+    description: 'Bordereau bancaire uploadé',
+    performedBy: 'CLIENT',
+    performedByName: 'Alice Mbeki',
+    timestamp: new Date('2024-12-08T11:15:00'),
+  },
+  {
+    id: 'timeline-006',
+    depositId: 'dep-admin-003',
+    step: 'UNDER_VERIFICATION',
+    description: 'Dépôt assigné pour vérification',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-08T14:00:00'),
+  },
+  // dep-admin-004 timeline (VALIDATED)
+  {
+    id: 'timeline-007',
+    depositId: 'dep-admin-004',
+    step: 'SUBMITTED',
+    description: 'Demande de dépôt soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'John Doe',
+    timestamp: new Date('2024-12-07T10:00:00'),
+  },
+  {
+    id: 'timeline-008',
+    depositId: 'dep-admin-004',
+    step: 'PROOF_UPLOADED',
+    description: 'Reçu Wave uploadé',
+    performedBy: 'CLIENT',
+    performedByName: 'John Doe',
+    timestamp: new Date('2024-12-07T10:30:00'),
+  },
+  {
+    id: 'timeline-009',
+    depositId: 'dep-admin-004',
+    step: 'UNDER_VERIFICATION',
+    description: 'Dépôt pris en charge',
+    performedBy: 'ADMIN',
+    performedByName: 'Jean Dupont',
+    performedByAdminId: 'admin-001',
+    timestamp: new Date('2024-12-07T15:00:00'),
+  },
+  {
+    id: 'timeline-010',
+    depositId: 'dep-admin-004',
+    step: 'VALIDATED',
+    description: 'Dépôt validé - preuve conforme',
+    performedBy: 'ADMIN',
+    performedByName: 'Jean Dupont',
+    performedByAdminId: 'admin-001',
+    timestamp: new Date('2024-12-07T16:00:00'),
+  },
+  {
+    id: 'timeline-011',
+    depositId: 'dep-admin-004',
+    step: 'WALLET_CREDITED',
+    description: 'Wallet crédité de 300,000 XAF',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-07T16:00:01'),
+  },
+  // dep-admin-005 timeline (REJECTED)
+  {
+    id: 'timeline-012',
+    depositId: 'dep-admin-005',
+    step: 'SUBMITTED',
+    description: 'Demande de dépôt soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'Bob Fang',
+    timestamp: new Date('2024-12-06T09:00:00'),
+  },
+  {
+    id: 'timeline-013',
+    depositId: 'dep-admin-005',
+    step: 'PROOF_UPLOADED',
+    description: 'Capture MTN Money uploadée',
+    performedBy: 'CLIENT',
+    performedByName: 'Bob Fang',
+    timestamp: new Date('2024-12-06T09:30:00'),
+  },
+  {
+    id: 'timeline-014',
+    depositId: 'dep-admin-005',
+    step: 'UNDER_VERIFICATION',
+    description: 'Dépôt assigné pour vérification',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-06T12:00:00'),
+  },
+  {
+    id: 'timeline-015',
+    depositId: 'dep-admin-005',
+    step: 'REJECTED',
+    description: 'Dépôt rejeté - preuve illisible',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-06T14:00:00'),
+  },
+];
+
+// Helper to get deposit proofs
+export const getDepositProofs = (depositId: string): DepositProof[] => {
+  return depositProofs.filter(p => p.depositId === depositId);
+};
+
+// Helper to get deposit timeline
+export const getDepositTimeline = (depositId: string): DepositTimelineEvent[] => {
+  return depositTimelines
+    .filter(t => t.depositId === depositId)
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+};
+
+// Helper to get deposit by ID
+export const getDepositById = (depositId: string): AdminDeposit | undefined => {
+  return adminDeposits.find(d => d.id === depositId);
+};
 
 // Admin Payments
 export const adminPayments: AdminPayment[] = [
@@ -726,10 +944,14 @@ export const getClientStatusLabel = (status: string): string => {
 export const getMethodLabel = (method: string): string => {
   const labels: Record<string, string> = {
     BANK_TRANSFER: 'Virement bancaire',
+    CASH_BANK: 'Dépôt cash banque',
     CASH_DEPOSIT: 'Dépôt cash',
+    AGENCY: 'Dépôt agence',
     AGENCY_DEPOSIT: 'Dépôt agence',
+    ORANGE_MONEY: 'Orange Money',
     ORANGE_MONEY_WITHDRAWAL: 'OM Retrait',
     ORANGE_MONEY_TRANSFER: 'OM Transfert',
+    MTN_MONEY: 'MTN Money',
     MTN_MONEY_WITHDRAWAL: 'MTN Retrait',
     MTN_MONEY_TRANSFER: 'MTN Transfert',
     WAVE: 'Wave',
