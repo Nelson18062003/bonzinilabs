@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useState, ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,8 +28,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { currentAdminUser } from '@/data/adminMockData';
-import { ADMIN_ROLE_LABELS } from '@/types/admin';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { ADMIN_ROLE_LABELS, ROLE_PERMISSIONS } from '@/types/admin';
+
+interface AdminLayoutProps {
+  children: ReactNode;
+}
 
 const navItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
@@ -40,12 +45,27 @@ const navItems = [
   { title: 'Justificatifs', url: '/admin/proofs', icon: FileText },
   { title: 'Historique', url: '/admin/history', icon: History },
   { title: 'Notifications', url: '/admin/notifications', icon: Bell },
+  { title: 'Utilisateurs', url: '/admin/users', icon: UserCog, requiresPermission: 'canManageUsers' },
 ];
 
-export function AdminLayout() {
+export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, logout, hasPermission } = useAdminAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
+
+  const filteredNavItems = navItems.filter(item => {
+    if (item.requiresPermission) {
+      return hasPermission(item.requiresPermission as keyof typeof ROLE_PERMISSIONS.SUPER_ADMIN);
+    }
+    return true;
+  });
 
   const isActive = (path: string) => {
     if (path === '/admin') {
@@ -53,6 +73,8 @@ export function AdminLayout() {
     }
     return location.pathname.startsWith(path);
   };
+
+  if (!currentUser) return null;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -85,7 +107,7 @@ export function AdminLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <NavLink
               key={item.url}
               to={item.url}
@@ -115,17 +137,17 @@ export function AdminLayout() {
               >
                 <Avatar className="h-9 w-9">
                   <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {currentAdminUser.firstName[0]}{currentAdminUser.lastName[0]}
+                    {currentUser.firstName[0]}{currentUser.lastName[0]}
                   </AvatarFallback>
                 </Avatar>
                 {sidebarOpen && (
                   <>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-medium text-foreground">
-                        {currentAdminUser.firstName} {currentAdminUser.lastName}
+                        {currentUser.firstName} {currentUser.lastName}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {ADMIN_ROLE_LABELS[currentAdminUser.role]}
+                        {ADMIN_ROLE_LABELS[currentUser.role]}
                       </p>
                     </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -139,7 +161,7 @@ export function AdminLayout() {
                 Paramètres
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Déconnexion
               </DropdownMenuItem>
@@ -169,7 +191,7 @@ export function AdminLayout() {
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 top-16 bg-background z-40">
           <nav className="p-4 space-y-1">
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <NavLink
                 key={item.url}
                 to={item.url}
@@ -183,13 +205,19 @@ export function AdminLayout() {
               </NavLink>
             ))}
           </nav>
+          <div className="p-4 border-t border-border">
+            <Button variant="outline" className="w-full" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Déconnexion
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Main Content */}
       <main className="flex-1 lg:overflow-auto">
         <div className="lg:hidden h-16" /> {/* Spacer for mobile header */}
-        <Outlet />
+        {children}
       </main>
     </div>
   );
