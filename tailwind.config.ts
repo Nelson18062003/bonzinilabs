@@ -61,6 +61,19 @@ export default {
           "purple-dark": "hsl(var(--bonzini-purple-dark))",
           "purple-glow": "hsl(var(--bonzini-purple-glow))",
         },
+        admin: {
+          sidebar: "hsl(var(--admin-sidebar))",
+          "sidebar-foreground": "hsl(var(--admin-sidebar-foreground))",
+          "sidebar-accent": "hsl(var(--admin-sidebar-accent))",
+          "sidebar-muted": "hsl(var(--admin-sidebar-muted))",
+        },
+        chart: {
+          emerald: "hsl(var(--chart-emerald))",
+          blue: "hsl(var(--chart-blue))",
+          amber: "hsl(var(--chart-amber))",
+          red: "hsl(var(--chart-red))",
+          purple: "hsl(var(--chart-purple))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -87,6 +100,7 @@ export default {
         "balance-sm": ["2rem", { lineHeight: "1", fontWeight: "700" }],
       },
       boxShadow: {
+        "xs": "var(--shadow-xs)",
         "card": "var(--shadow-card)",
         "purple": "var(--shadow-purple)",
         "elevated": "var(--shadow-lg)",
@@ -116,6 +130,10 @@ export default {
           from: { opacity: "0", transform: "scale(0.95)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -124,6 +142,7 @@ export default {
         "slide-down": "slide-down 0.3s ease-out",
         "fade-in": "fade-in 0.4s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
+        "shimmer": "shimmer 2s infinite linear",
       },
     },
   },
