@@ -3,7 +3,7 @@
 // ============================================
 
 // Admin Roles
-export type AdminRole = 'SUPER_ADMIN' | 'OPS' | 'SUPPORT' | 'ACCOUNT_MANAGER';
+export type AdminRole = 'SUPER_ADMIN' | 'OPS' | 'SUPPORT' | 'ACCOUNT_MANAGER' | 'VIEW_ONLY';
 
 export interface AdminUser {
   id: string;
@@ -13,6 +13,7 @@ export interface AdminUser {
   role: AdminRole;
   avatar?: string;
   isActive: boolean;
+  passwordHash?: string; // For mock auth
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -57,6 +58,10 @@ export type AdminActionType =
   | 'CLIENT_SUSPENDED'
   | 'WALLET_CREDITED'
   | 'WALLET_DEBITED'
+  | 'USER_CREATED'
+  | 'USER_UPDATED'
+  | 'USER_DEACTIVATED'
+  | 'USER_ACTIVATED'
   | 'LOGIN'
   | 'LOGOUT';
 
@@ -65,7 +70,7 @@ export interface AdminLogEntry {
   adminUserId: string;
   adminUserName: string;
   actionType: AdminActionType;
-  targetType: 'DEPOSIT' | 'PAYMENT' | 'CLIENT' | 'RATE' | 'WALLET' | 'AUTH';
+  targetType: 'DEPOSIT' | 'PAYMENT' | 'CLIENT' | 'RATE' | 'WALLET' | 'AUTH' | 'USER';
   targetId?: string;
   description: string;
   metadata?: Record<string, any>;
@@ -156,6 +161,7 @@ export interface RolePermission {
   canManageRates: boolean;
   canViewLogs: boolean;
   canManageUsers: boolean;
+  canViewOnly: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AdminRole, RolePermission> = {
@@ -170,6 +176,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, RolePermission> = {
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: true,
+    canViewOnly: false,
   },
   OPS: {
     role: 'OPS',
@@ -182,6 +189,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, RolePermission> = {
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: false,
+    canViewOnly: false,
   },
   SUPPORT: {
     role: 'SUPPORT',
@@ -194,6 +202,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: true,
     canManageUsers: false,
+    canViewOnly: false,
   },
   ACCOUNT_MANAGER: {
     role: 'ACCOUNT_MANAGER',
@@ -206,6 +215,20 @@ export const ROLE_PERMISSIONS: Record<AdminRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
+    canViewOnly: false,
+  },
+  VIEW_ONLY: {
+    role: 'VIEW_ONLY',
+    canViewClients: true,
+    canEditClients: false,
+    canViewDeposits: true,
+    canProcessDeposits: false,
+    canViewPayments: true,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: true,
+    canManageUsers: false,
+    canViewOnly: true,
   },
 };
 
@@ -215,4 +238,5 @@ export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
   OPS: 'Opérations',
   SUPPORT: 'Support',
   ACCOUNT_MANAGER: 'Chargé de clientèle',
+  VIEW_ONLY: 'Lecture seule',
 };

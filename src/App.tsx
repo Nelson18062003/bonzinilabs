@@ -16,6 +16,7 @@ import BeneficiariesPage from "./pages/BeneficiariesPage";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
+import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClientsPage } from "./pages/admin/AdminClientsPage";
 import { AdminWalletsPage } from "./pages/admin/AdminWalletsPage";
@@ -25,6 +26,11 @@ import { AdminRatesPage } from "./pages/admin/AdminRatesPage";
 import { AdminProofsPage } from "./pages/admin/AdminProofsPage";
 import { AdminHistoryPage } from "./pages/admin/AdminHistoryPage";
 import { AdminNotificationsPage } from "./pages/admin/AdminNotificationsPage";
+import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
+
+// Admin Auth
+import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import { ProtectedAdminRoute } from "./components/admin/ProtectedAdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -46,15 +52,61 @@ const App = () => (
           <Route path="/beneficiaries" element={<BeneficiariesPage />} />
           
           {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/clients" element={<AdminClientsPage />} />
-          <Route path="/admin/wallets" element={<AdminWalletsPage />} />
-          <Route path="/admin/deposits" element={<AdminDepositsPage />} />
-          <Route path="/admin/payments" element={<AdminPaymentsPage />} />
-          <Route path="/admin/rates" element={<AdminRatesPage />} />
-          <Route path="/admin/proofs" element={<AdminProofsPage />} />
-          <Route path="/admin/history" element={<AdminHistoryPage />} />
-          <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+          <Route path="/admin/login" element={
+            <AdminAuthProvider>
+              <AdminLoginPage />
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/clients" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminClientsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/wallets" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminWalletsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/deposits" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminDepositsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/payments" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminPaymentsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/rates" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminRatesPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/proofs" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminProofsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/history" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminHistoryPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/notifications" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminNotificationsPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
+          <Route path="/admin/users" element={
+            <AdminAuthProvider>
+              <ProtectedAdminRoute><AdminUsersPage /></ProtectedAdminRoute>
+            </AdminAuthProvider>
+          } />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
