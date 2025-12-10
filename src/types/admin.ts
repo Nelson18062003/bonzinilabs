@@ -80,6 +80,7 @@ export type AdminActionType =
   | 'CLIENT_SUSPENDED'
   | 'WALLET_CREDITED'
   | 'WALLET_DEBITED'
+  | 'WALLET_ADJUSTED'
   | 'USER_CREATED'
   | 'USER_UPDATED'
   | 'USER_DEACTIVATED'
@@ -143,6 +144,32 @@ export interface AdminPayment {
   completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ============================================
+// WALLET MODULE
+// ============================================
+
+export interface Wallet {
+  id: string;
+  clientId: string;
+  currentBalanceXAF: number;
+  updatedAt: Date;
+}
+
+export type WalletOperationType = 'CREDIT' | 'DEBIT' | 'ADJUSTMENT';
+export type WalletOperationSource = 'DEPOSIT' | 'PAYMENT' | 'MANUAL';
+
+export interface WalletOperation {
+  id: string;
+  walletId: string;
+  type: WalletOperationType;
+  sourceType: WalletOperationSource;
+  sourceId?: string; // id_deposit or id_payment
+  amountXAF: number;
+  description: string;
+  createdAt: Date;
+  createdByAdminUserId?: string; // For manual adjustments
 }
 
 // Dashboard Stats

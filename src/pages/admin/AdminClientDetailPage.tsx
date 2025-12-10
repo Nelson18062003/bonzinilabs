@@ -35,6 +35,8 @@ import {
   getPaymentStatusLabel,
   getMethodLabel,
   getClientWithTags,
+  getWalletByClientId,
+  getWalletOperationsByClientId,
 } from '@/data/adminMockData';
 import { formatCurrency, formatDate } from '@/data/mockData';
 import { ClientStatus, Tag } from '@/types/admin';
@@ -191,7 +193,10 @@ export function AdminClientDetailPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate(`/admin/wallets/${client.id}`)}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
@@ -200,6 +205,7 @@ export function AdminClientDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Solde Wallet</p>
                   <p className="text-xl font-bold text-foreground">{formatCurrency(client.walletBalance)}</p>
+                  <p className="text-xs text-primary">Voir les mouvements →</p>
                 </div>
               </div>
             </CardContent>
