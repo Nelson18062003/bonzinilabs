@@ -17,6 +17,8 @@ import {
   X,
   ChevronDown,
   UserCog,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { ADMIN_ROLE_LABELS, ROLE_PERMISSIONS } from '@/types/admin';
 
@@ -49,7 +57,7 @@ const navItems = [
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -77,119 +85,176 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   if (!currentUser) return null;
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
-      <aside
-        className={cn(
-          'hidden lg:flex flex-col border-r border-border bg-card transition-all duration-300',
-          sidebarOpen ? 'w-64' : 'w-20'
-        )}
-      >
-        {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">B</span>
-              </div>
-              <span className="font-semibold text-foreground">Bonzini Admin</span>
-            </div>
+    <TooltipProvider delayDuration={0}>
+      <div className="min-h-screen bg-background flex w-full">
+        {/* Desktop Sidebar */}
+        <aside
+          className={cn(
+            'hidden lg:flex flex-col border-r border-border bg-card transition-all duration-300 relative',
+            sidebarCollapsed ? 'w-[72px]' : 'w-64'
           )}
+        >
+          {/* Logo */}
+          <div className={cn(
+            'h-16 flex items-center border-b border-border px-4',
+            sidebarCollapsed ? 'justify-center' : 'justify-between'
+          )}>
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-purple">
+                  <span className="text-primary-foreground font-bold text-base">B</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-foreground text-sm">Bonzini</span>
+                  <span className="text-xs text-muted-foreground block">Admin</span>
+                </div>
+              </div>
+            )}
+            {sidebarCollapsed && (
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-purple">
+                <span className="text-primary-foreground font-bold text-base">B</span>
+              </div>
+            )}
+          </div>
+
+          {/* Collapse Toggle */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center shadow-sm hover:bg-muted transition-colors z-10"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </button>
+
+          {/* Navigation */}
+          <nav className={cn(
+            'flex-1 py-4 overflow-y-auto',
+            sidebarCollapsed ? 'px-2' : 'px-3'
+          )}>
+            <div className="space-y-1">
+              {filteredNavItems.map((item) => {
+                const NavItem = (
+                  <NavLink
+                    key={item.url}
+                    to={item.url}
+                    end={item.url === '/admin'}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                      'text-muted-foreground hover:text-foreground hover:bg-muted',
+                      sidebarCollapsed && 'justify-center px-2'
+                    )}
+                    activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>{item.title}</span>}
+                  </NavLink>
+                );
+
+                if (sidebarCollapsed) {
+                  return (
+                    <Tooltip key={item.url}>
+                      <TooltipTrigger asChild>
+                        {NavItem}
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="font-medium">
+                        {item.title}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return NavItem;
+              })}
+            </div>
+          </nav>
+
+          {/* User Menu */}
+          <div className={cn(
+            'border-t border-border',
+            sidebarCollapsed ? 'p-2' : 'p-3'
+          )}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    'w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-colors',
+                    sidebarCollapsed && 'justify-center p-2'
+                  )}
+                >
+                  <Avatar className="h-9 w-9 flex-shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                      {currentUser.firstName[0]}{currentUser.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!sidebarCollapsed && (
+                    <>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {currentUser.firstName} {currentUser.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {ADMIN_ROLE_LABELS[currentUser.role]}
+                        </p>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={sidebarCollapsed ? "center" : "end"} side={sidebarCollapsed ? "right" : "top"} className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">{currentUser.firstName} {currentUser.lastName}</p>
+                  <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Paramètres
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </aside>
+
+        {/* Mobile Header */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-50 flex items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-purple">
+              <span className="text-primary-foreground font-bold text-base">B</span>
+            </div>
+            <span className="font-semibold text-foreground">Admin</span>
+          </div>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-muted-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="h-10 w-10"
           >
-            <Menu className="h-5 w-5" />
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {filteredNavItems.map((item) => (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              end={item.url === '/admin'}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                'text-muted-foreground hover:text-foreground hover:bg-muted',
-                !sidebarOpen && 'justify-center'
-              )}
-              activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
-            >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
-              {sidebarOpen && <span>{item.title}</span>}
-            </NavLink>
-          ))}
-        </nav>
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
 
-        {/* User Menu */}
-        <div className="p-4 border-t border-border">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  'w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors',
-                  !sidebarOpen && 'justify-center'
-                )}
-              >
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {currentUser.firstName[0]}{currentUser.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                {sidebarOpen && (
-                  <>
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-medium text-foreground">
-                        {currentUser.firstName} {currentUser.lastName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {ADMIN_ROLE_LABELS[currentUser.role]}
-                      </p>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Paramètres
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Déconnexion
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </aside>
-
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-50 flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">B</span>
-          </div>
-          <span className="font-semibold text-foreground">Admin</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-16 bg-background z-40">
+        {/* Mobile Menu */}
+        <div className={cn(
+          'lg:hidden fixed top-16 left-0 bottom-0 w-72 bg-card border-r border-border z-40 transition-transform duration-300',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        )}>
           <nav className="p-4 space-y-1">
             {filteredNavItems.map((item) => (
               <NavLink
@@ -197,7 +262,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 to={item.url}
                 end={item.url === '/admin'}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 activeClassName="bg-primary/10 text-primary"
               >
                 <item.icon className="h-5 w-5" />
@@ -205,20 +270,37 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               </NavLink>
             ))}
           </nav>
-          <div className="p-4 border-t border-border">
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
+            <div className="flex items-center gap-3 mb-4">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {currentUser.firstName[0]}{currentUser.lastName[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {currentUser.firstName} {currentUser.lastName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {ADMIN_ROLE_LABELS[currentUser.role]}
+                </p>
+              </div>
+            </div>
             <Button variant="outline" className="w-full" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
             </Button>
           </div>
         </div>
-      )}
 
-      {/* Main Content */}
-      <main className="flex-1 lg:overflow-auto">
-        <div className="lg:hidden h-16" /> {/* Spacer for mobile header */}
-        {children}
-      </main>
-    </div>
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto min-w-0">
+          <div className="lg:hidden h-16" />
+          <div className="p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </TooltipProvider>
   );
 }

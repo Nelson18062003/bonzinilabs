@@ -14,22 +14,22 @@
     
     /* Semantic Colors */
     --background: 0 0% 98%;
-    --foreground: 240 10% 10%;
+    --foreground: 222 47% 11%;
     
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card-foreground: 222 47% 11%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover-foreground: 222 47% 11%;
     
     --primary: 258 100% 60%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 10%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
     
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 5% 45%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
     
     --accent: 258 100% 97%;
     --accent-foreground: 258 100% 45%;
@@ -43,54 +43,69 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 258 100% 60%;
     
-    --radius: 1rem;
+    --radius: 0.75rem;
+    
+    /* Admin specific colors */
+    --admin-sidebar: 222 47% 11%;
+    --admin-sidebar-foreground: 210 40% 98%;
+    --admin-sidebar-accent: 258 100% 60%;
+    --admin-sidebar-muted: 215 20% 20%;
+    
+    /* Chart colors */
+    --chart-emerald: 142 76% 36%;
+    --chart-blue: 217 91% 60%;
+    --chart-amber: 38 92% 50%;
+    --chart-red: 0 84% 60%;
+    --chart-purple: 258 100% 60%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(258 100% 60%), hsl(280 100% 55%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(240 5% 99%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 99%));
     --gradient-hero: linear-gradient(135deg, hsl(258 100% 60%), hsl(258 100% 45%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 96%) 100%);
     
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(240 10% 10% / 0.03);
-    --shadow-md: 0 4px 6px -1px hsl(240 10% 10% / 0.05), 0 2px 4px -2px hsl(240 10% 10% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(240 10% 10% / 0.08), 0 4px 6px -4px hsl(240 10% 10% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(240 10% 10% / 0.1), 0 8px 10px -6px hsl(240 10% 10% / 0.08);
+    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.02);
+    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.04), 0 1px 2px -1px hsl(222 47% 11% / 0.04);
+    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.05), 0 2px 4px -2px hsl(222 47% 11% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.06), 0 4px 6px -4px hsl(222 47% 11% / 0.06);
+    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.08), 0 8px 10px -6px hsl(222 47% 11% / 0.08);
     --shadow-purple: 0 10px 40px -10px hsl(258 100% 60% / 0.35);
-    --shadow-card: 0 2px 8px 0 hsl(240 10% 10% / 0.04);
+    --shadow-card: 0 1px 3px 0 hsl(222 47% 11% / 0.04), 0 1px 2px -1px hsl(222 47% 11% / 0.04);
     
     /* Sidebar */
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 220 9% 46%;
     --sidebar-primary: 258 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 258 100% 97%;
     --sidebar-accent-foreground: 258 100% 45%;
-    --sidebar-border: 240 6% 90%;
+    --sidebar-border: 220 13% 91%;
     --sidebar-ring: 258 100% 60%;
   }
 
   .dark {
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
     
-    --card: 240 10% 8%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
     
-    --popover: 240 10% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
     
     --primary: 258 100% 65%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
     
-    --muted: 240 5% 15%;
-    --muted-foreground: 240 5% 60%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
     
     --accent: 258 50% 15%;
     --accent-foreground: 258 100% 75%;
@@ -104,23 +119,28 @@
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
     
-    --border: 240 5% 18%;
-    --input: 240 5% 18%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
     --ring: 258 100% 65%;
     
     --gradient-primary: linear-gradient(135deg, hsl(258 100% 65%), hsl(280 100% 60%));
-    --gradient-card: linear-gradient(180deg, hsl(240 10% 10%), hsl(240 10% 8%));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
     --gradient-hero: linear-gradient(135deg, hsl(258 100% 55%), hsl(258 100% 40%));
     
     --shadow-purple: 0 10px 40px -10px hsl(258 100% 65% / 0.4);
     
-    --sidebar-background: 240 10% 6%;
-    --sidebar-foreground: 0 0% 85%;
+    --admin-sidebar: 222 47% 6%;
+    --admin-sidebar-foreground: 210 40% 98%;
+    --admin-sidebar-accent: 258 100% 65%;
+    --admin-sidebar-muted: 217 33% 17%;
+    
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 215 20% 65%;
     --sidebar-primary: 258 100% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 258 50% 15%;
     --sidebar-accent-foreground: 258 100% 75%;
-    --sidebar-border: 240 5% 18%;
+    --sidebar-border: 217 33% 17%;
     --sidebar-ring: 258 100% 65%;
   }
 }
@@ -142,6 +162,310 @@
 }
 
 @layer components {
+  /* =====================================================
+     ADMIN DESIGN SYSTEM - Premium Fintech Aesthetic
+     Inspired by: Stripe, Revolut Business, Mercury, Brex
+     ===================================================== */
+
+  /* Admin Layout */
+  .admin-sidebar {
+    @apply flex flex-col bg-[hsl(var(--admin-sidebar))] text-[hsl(var(--admin-sidebar-foreground))];
+    min-width: 260px;
+  }
+
+  .admin-sidebar-nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+    @apply text-[hsl(var(--admin-sidebar-foreground))]/70 hover:text-[hsl(var(--admin-sidebar-foreground))] hover:bg-[hsl(var(--admin-sidebar-muted))];
+  }
+
+  .admin-sidebar-nav-item.active {
+    @apply bg-[hsl(var(--admin-sidebar-accent))]/10 text-[hsl(var(--admin-sidebar-accent))];
+  }
+
+  /* Admin Page Header */
+  .admin-page-header {
+    @apply mb-8;
+  }
+
+  .admin-page-title {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+
+  .admin-page-subtitle {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  /* Admin Cards */
+  .admin-card {
+    @apply bg-card rounded-xl border border-border/50 transition-all duration-200;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .admin-card-clickable {
+    @apply cursor-pointer;
+  }
+
+  .admin-card-clickable:hover {
+    @apply border-primary/20;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Stat Cards */
+  .admin-stat-card {
+    @apply bg-card rounded-xl border border-border/50 p-5 transition-all duration-200;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-stat-value {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+
+  .admin-stat-label {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  .admin-stat-icon {
+    @apply h-10 w-10 rounded-lg flex items-center justify-center;
+  }
+
+  /* Premium Stat Card with Gradient */
+  .admin-stat-card-premium {
+    @apply rounded-xl p-5 transition-all duration-200;
+    background: var(--gradient-hero);
+    box-shadow: var(--shadow-purple);
+  }
+
+  .admin-stat-card-premium .admin-stat-value,
+  .admin-stat-card-premium .admin-stat-label {
+    @apply text-primary-foreground;
+  }
+
+  /* Admin Tables */
+  .admin-table-wrapper {
+    @apply bg-card rounded-xl border border-border/50 overflow-hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .admin-table {
+    @apply w-full;
+  }
+
+  .admin-table thead {
+    @apply bg-muted/30;
+  }
+
+  .admin-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  .admin-table tbody tr {
+    @apply border-b border-border/50 transition-colors;
+  }
+
+  .admin-table tbody tr:last-child {
+    @apply border-b-0;
+  }
+
+  .admin-table tbody tr:nth-child(even) {
+    @apply bg-muted/20;
+  }
+
+  .admin-table tbody tr:hover {
+    @apply bg-muted/40;
+  }
+
+  .admin-table td {
+    @apply px-4 py-3.5 text-sm text-foreground;
+  }
+
+  .admin-table-clickable tbody tr {
+    @apply cursor-pointer;
+  }
+
+  /* Admin Status Badges */
+  .admin-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors;
+  }
+
+  .admin-badge-success {
+    @apply bg-emerald-500/10 text-emerald-600;
+  }
+
+  .admin-badge-warning {
+    @apply bg-amber-500/10 text-amber-600;
+  }
+
+  .admin-badge-error {
+    @apply bg-red-500/10 text-red-600;
+  }
+
+  .admin-badge-info {
+    @apply bg-blue-500/10 text-blue-600;
+  }
+
+  .admin-badge-neutral {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .admin-badge-primary {
+    @apply bg-primary/10 text-primary;
+  }
+
+  /* Admin Timeline */
+  .admin-timeline {
+    @apply relative;
+  }
+
+  .admin-timeline-item {
+    @apply relative flex gap-4 pb-6;
+  }
+
+  .admin-timeline-item:last-child {
+    @apply pb-0;
+  }
+
+  .admin-timeline-indicator {
+    @apply relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-card border-2 border-border flex-shrink-0;
+  }
+
+  .admin-timeline-indicator.completed {
+    @apply bg-emerald-500 border-emerald-500 text-primary-foreground;
+  }
+
+  .admin-timeline-indicator.current {
+    @apply bg-primary border-primary text-primary-foreground;
+  }
+
+  .admin-timeline-indicator.pending {
+    @apply bg-muted border-border text-muted-foreground;
+  }
+
+  .admin-timeline-line {
+    @apply absolute left-4 top-8 w-0.5 h-full -translate-x-1/2;
+    background: linear-gradient(to bottom, hsl(var(--border)), transparent);
+  }
+
+  .admin-timeline-item:last-child .admin-timeline-line {
+    @apply hidden;
+  }
+
+  .admin-timeline-content {
+    @apply flex-1 pt-0.5;
+  }
+
+  .admin-timeline-title {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .admin-timeline-description {
+    @apply text-xs text-muted-foreground mt-0.5;
+  }
+
+  .admin-timeline-timestamp {
+    @apply text-xs text-muted-foreground mt-1;
+  }
+
+  /* Admin Modal */
+  .admin-modal-overlay {
+    @apply fixed inset-0 bg-foreground/40 backdrop-blur-sm z-50;
+  }
+
+  .admin-modal {
+    @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-lg;
+    @apply bg-card rounded-2xl border border-border/50 p-6;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .admin-modal-header {
+    @apply mb-4;
+  }
+
+  .admin-modal-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .admin-modal-description {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  .admin-modal-footer {
+    @apply flex justify-end gap-3 mt-6;
+  }
+
+  /* Admin Filters */
+  .admin-filters {
+    @apply flex flex-col sm:flex-row gap-3 p-4 bg-muted/30 rounded-xl border border-border/50;
+  }
+
+  .admin-search-input {
+    @apply pl-10 bg-card border-border/50 focus:border-primary/50;
+  }
+
+  /* Admin Action Buttons */
+  .admin-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200;
+    box-shadow: 0 1px 2px 0 hsl(var(--primary) / 0.1);
+  }
+
+  .admin-btn-primary:hover {
+    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.3);
+    transform: translateY(-1px);
+  }
+
+  .admin-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200;
+  }
+
+  .admin-btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium;
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all duration-200;
+  }
+
+  .admin-btn-success {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium;
+    @apply bg-emerald-600 text-white hover:bg-emerald-700 transition-all duration-200;
+  }
+
+  /* Admin Empty State */
+  .admin-empty-state {
+    @apply flex flex-col items-center justify-center py-12 px-4 text-center;
+  }
+
+  .admin-empty-state-icon {
+    @apply h-12 w-12 text-muted-foreground/40 mb-4;
+  }
+
+  .admin-empty-state-title {
+    @apply text-base font-medium text-foreground mb-1;
+  }
+
+  .admin-empty-state-description {
+    @apply text-sm text-muted-foreground max-w-sm;
+  }
+
+  /* Admin Avatar */
+  .admin-avatar {
+    @apply h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm;
+  }
+
+  .admin-avatar-sm {
+    @apply h-8 w-8 text-xs;
+  }
+
+  .admin-avatar-lg {
+    @apply h-12 w-12 text-base;
+  }
+
+  /* =====================================================
+     CLIENT APP STYLES (Mobile-first)
+     ===================================================== */
+
   .balance-display {
     @apply text-5xl font-bold tracking-tight;
     font-variant-numeric: tabular-nums;
@@ -312,12 +636,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.2);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.4);
 }
 
 /* Safe area for mobile */
