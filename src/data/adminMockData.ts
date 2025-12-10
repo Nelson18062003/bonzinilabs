@@ -17,6 +17,9 @@ import {
   DepositProof,
   DepositTimelineEvent,
   DepositStatus,
+  PaymentBeneficiary,
+  PaymentProof,
+  PaymentTimelineEvent,
 } from '@/types/admin';
 
 // Current Admin User (logged in)
@@ -567,6 +570,8 @@ export const adminPayments: AdminPayment[] = [
     proofUrl: '/proofs/pay-003.jpg',
     proofFileName: 'wechat_receipt.jpg',
     processedBy: 'admin-001',
+    paidBy: 'admin-001',
+    paidAt: new Date('2024-12-08T15:00:00'),
     completedAt: new Date('2024-12-08T15:00:00'),
     createdAt: new Date('2024-12-08T09:00:00'),
     updatedAt: new Date(),
@@ -588,11 +593,349 @@ export const adminPayments: AdminPayment[] = [
     proofUrl: '/proofs/pay-004.pdf',
     proofFileName: 'alipay_proof.pdf',
     processedBy: 'admin-002',
+    paidBy: 'admin-002',
+    paidAt: new Date('2024-12-07T12:00:00'),
     completedAt: new Date('2024-12-07T12:00:00'),
     createdAt: new Date('2024-12-06T14:00:00'),
     updatedAt: new Date(),
   },
+  {
+    id: 'pay-admin-005',
+    clientId: 'client-004',
+    clientName: 'Alice Mbeki',
+    clientEmail: 'alice.mbeki@example.com',
+    walletId: 'wallet-004',
+    beneficiaryId: 'ben-004',
+    beneficiaryName: 'Chen Fei',
+    method: 'CASH_COUNTER',
+    amountXAF: 800000,
+    amountRMB: 9200,
+    exchangeRate: 87,
+    fees: 8000,
+    status: 'CANCELLED',
+    cancelledBy: 'admin-001',
+    cancelledAt: new Date('2024-12-05T16:00:00'),
+    cancellationReason: 'Client request - incorrect beneficiary details',
+    createdAt: new Date('2024-12-05T10:00:00'),
+    updatedAt: new Date(),
+  },
 ];
+
+// ============================================
+// PAYMENT_BENEFICIARIES TABLE
+// ============================================
+export const paymentBeneficiaries: PaymentBeneficiary[] = [
+  {
+    id: 'pben-001',
+    paymentId: 'pay-admin-001',
+    method: 'ALIPAY',
+    alipayId: '138****8888',
+    recipientName: 'Wang Wei',
+    recipientPhone: '+86 138 8888 8888',
+    qrCodeUrl: '/qr/alipay-wang.png',
+    createdAt: new Date('2024-12-10T10:30:00'),
+  },
+  {
+    id: 'pben-002',
+    paymentId: 'pay-admin-002',
+    method: 'BANK_TRANSFER',
+    bankName: 'Industrial and Commercial Bank of China',
+    accountName: 'Li Ming',
+    accountNumber: '6222 **** **** 1234',
+    swiftCode: 'ICBKCNBJ',
+    recipientName: 'Li Ming',
+    recipientPhone: '+86 139 9999 9999',
+    createdAt: new Date('2024-12-09T08:00:00'),
+  },
+  {
+    id: 'pben-003',
+    paymentId: 'pay-admin-003',
+    method: 'WECHAT',
+    wechatId: 'zhang_xm_2024',
+    recipientName: 'Zhang Xiaoming',
+    qrCodeUrl: '/qr/wechat-zhang.png',
+    createdAt: new Date('2024-12-08T09:00:00'),
+  },
+  {
+    id: 'pben-004',
+    paymentId: 'pay-admin-004',
+    method: 'ALIPAY',
+    alipayId: '138****8888',
+    recipientName: 'Wang Wei',
+    recipientPhone: '+86 138 8888 8888',
+    qrCodeUrl: '/qr/alipay-wang.png',
+    createdAt: new Date('2024-12-06T14:00:00'),
+  },
+  {
+    id: 'pben-005',
+    paymentId: 'pay-admin-005',
+    method: 'CASH_COUNTER',
+    cashCounterLocation: 'Guangzhou Western Union - Tianhe District',
+    receiverName: 'Chen Fei',
+    receiverIdNumber: '440***********1234',
+    recipientName: 'Chen Fei',
+    recipientPhone: '+86 137 7777 7777',
+    createdAt: new Date('2024-12-05T10:00:00'),
+  },
+];
+
+// ============================================
+// PAYMENT_PROOFS TABLE
+// ============================================
+export const paymentProofs: PaymentProof[] = [
+  {
+    id: 'pproof-001',
+    paymentId: 'pay-admin-003',
+    fileUrl: '/proofs/pay-003.jpg',
+    fileName: 'wechat_receipt.jpg',
+    fileType: 'image',
+    fileSize: 285000,
+    uploadedAt: new Date('2024-12-08T15:05:00'),
+    uploadedByAdminId: 'admin-001',
+  },
+  {
+    id: 'pproof-002',
+    paymentId: 'pay-admin-004',
+    fileUrl: '/proofs/pay-004.pdf',
+    fileName: 'alipay_proof.pdf',
+    fileType: 'pdf',
+    fileSize: 1100000,
+    uploadedAt: new Date('2024-12-07T12:10:00'),
+    uploadedByAdminId: 'admin-002',
+  },
+];
+
+// ============================================
+// PAYMENT_TIMELINE TABLE
+// ============================================
+export const paymentTimelines: PaymentTimelineEvent[] = [
+  // pay-admin-001 timeline (SUBMITTED)
+  {
+    id: 'ptl-001',
+    paymentId: 'pay-admin-001',
+    step: 'SUBMITTED',
+    description: 'Demande de paiement soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'John Doe',
+    timestamp: new Date('2024-12-10T10:30:00'),
+  },
+  // pay-admin-002 timeline (PROCESSING)
+  {
+    id: 'ptl-002',
+    paymentId: 'pay-admin-002',
+    step: 'SUBMITTED',
+    description: 'Demande de paiement soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'Alice Mbeki',
+    timestamp: new Date('2024-12-09T08:00:00'),
+  },
+  {
+    id: 'ptl-003',
+    paymentId: 'pay-admin-002',
+    step: 'INFO_RECEIVED',
+    description: 'Informations bénéficiaire confirmées',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-09T08:05:00'),
+  },
+  {
+    id: 'ptl-004',
+    paymentId: 'pay-admin-002',
+    step: 'READY_TO_PAY',
+    description: 'Paiement prêt à être effectué',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-09T10:00:00'),
+  },
+  {
+    id: 'ptl-005',
+    paymentId: 'pay-admin-002',
+    step: 'PROCESSING',
+    description: 'Paiement en cours de traitement',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-09T11:00:00'),
+  },
+  {
+    id: 'ptl-006',
+    paymentId: 'pay-admin-002',
+    step: 'WALLET_DEBITED',
+    description: 'Wallet débité de 1,500,000 XAF',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-09T11:00:01'),
+  },
+  // pay-admin-003 timeline (COMPLETED)
+  {
+    id: 'ptl-007',
+    paymentId: 'pay-admin-003',
+    step: 'SUBMITTED',
+    description: 'Demande de paiement soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'Marie Chen',
+    timestamp: new Date('2024-12-08T09:00:00'),
+  },
+  {
+    id: 'ptl-008',
+    paymentId: 'pay-admin-003',
+    step: 'INFO_RECEIVED',
+    description: 'QR code WeChat reçu et vérifié',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-08T09:05:00'),
+  },
+  {
+    id: 'ptl-009',
+    paymentId: 'pay-admin-003',
+    step: 'PROCESSING',
+    description: 'Paiement en cours',
+    performedBy: 'ADMIN',
+    performedByName: 'Jean Dupont',
+    performedByAdminId: 'admin-001',
+    timestamp: new Date('2024-12-08T14:00:00'),
+  },
+  {
+    id: 'ptl-010',
+    paymentId: 'pay-admin-003',
+    step: 'WALLET_DEBITED',
+    description: 'Wallet débité de 200,000 XAF',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-08T14:00:01'),
+  },
+  {
+    id: 'ptl-011',
+    paymentId: 'pay-admin-003',
+    step: 'COMPLETED',
+    description: 'Paiement effectué avec succès',
+    performedBy: 'ADMIN',
+    performedByName: 'Jean Dupont',
+    performedByAdminId: 'admin-001',
+    timestamp: new Date('2024-12-08T15:00:00'),
+  },
+  {
+    id: 'ptl-012',
+    paymentId: 'pay-admin-003',
+    step: 'PROOF_UPLOADED',
+    description: 'Preuve de paiement uploadée',
+    performedBy: 'ADMIN',
+    performedByName: 'Jean Dupont',
+    performedByAdminId: 'admin-001',
+    timestamp: new Date('2024-12-08T15:05:00'),
+  },
+  // pay-admin-004 timeline (PROOF_AVAILABLE)
+  {
+    id: 'ptl-013',
+    paymentId: 'pay-admin-004',
+    step: 'SUBMITTED',
+    description: 'Demande de paiement soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'John Doe',
+    timestamp: new Date('2024-12-06T14:00:00'),
+  },
+  {
+    id: 'ptl-014',
+    paymentId: 'pay-admin-004',
+    step: 'INFO_RECEIVED',
+    description: 'Informations Alipay confirmées',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-06T14:05:00'),
+  },
+  {
+    id: 'ptl-015',
+    paymentId: 'pay-admin-004',
+    step: 'PROCESSING',
+    description: 'Paiement en cours',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-07T10:00:00'),
+  },
+  {
+    id: 'ptl-016',
+    paymentId: 'pay-admin-004',
+    step: 'WALLET_DEBITED',
+    description: 'Wallet débité de 500,000 XAF',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-07T10:00:01'),
+  },
+  {
+    id: 'ptl-017',
+    paymentId: 'pay-admin-004',
+    step: 'COMPLETED',
+    description: 'Paiement effectué',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-07T12:00:00'),
+  },
+  {
+    id: 'ptl-018',
+    paymentId: 'pay-admin-004',
+    step: 'PROOF_UPLOADED',
+    description: 'Preuve de paiement uploadée',
+    performedBy: 'ADMIN',
+    performedByName: 'Marie Nkomo',
+    performedByAdminId: 'admin-002',
+    timestamp: new Date('2024-12-07T12:10:00'),
+  },
+  {
+    id: 'ptl-019',
+    paymentId: 'pay-admin-004',
+    step: 'PROOF_AVAILABLE',
+    description: 'Preuve disponible pour le client',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-07T12:10:01'),
+  },
+  // pay-admin-005 timeline (CANCELLED)
+  {
+    id: 'ptl-020',
+    paymentId: 'pay-admin-005',
+    step: 'SUBMITTED',
+    description: 'Demande de paiement soumise',
+    performedBy: 'CLIENT',
+    performedByName: 'Alice Mbeki',
+    timestamp: new Date('2024-12-05T10:00:00'),
+  },
+  {
+    id: 'ptl-021',
+    paymentId: 'pay-admin-005',
+    step: 'INFO_RECEIVED',
+    description: 'Informations Cash Counter reçues',
+    performedBy: 'SYSTEM',
+    timestamp: new Date('2024-12-05T10:05:00'),
+  },
+  {
+    id: 'ptl-022',
+    paymentId: 'pay-admin-005',
+    step: 'CANCELLED',
+    description: 'Paiement annulé - Demande client (infos bénéficiaire incorrectes)',
+    performedBy: 'ADMIN',
+    performedByName: 'Jean Dupont',
+    performedByAdminId: 'admin-001',
+    timestamp: new Date('2024-12-05T16:00:00'),
+  },
+];
+
+// Helper to get payment by ID
+export const getPaymentById = (paymentId: string): AdminPayment | undefined => {
+  return adminPayments.find(p => p.id === paymentId);
+};
+
+// Helper to get payment beneficiary
+export const getPaymentBeneficiary = (paymentId: string): PaymentBeneficiary | undefined => {
+  return paymentBeneficiaries.find(b => b.paymentId === paymentId);
+};
+
+// Helper to get payment proofs
+export const getPaymentProofs = (paymentId: string): PaymentProof[] => {
+  return paymentProofs.filter(p => p.paymentId === paymentId);
+};
+
+// Helper to get payment timeline
+export const getPaymentTimeline = (paymentId: string): PaymentTimelineEvent[] => {
+  return paymentTimelines
+    .filter(t => t.paymentId === paymentId)
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+};
 
 // Admin Logs
 export const adminLogs: AdminLogEntry[] = [

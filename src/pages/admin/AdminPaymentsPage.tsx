@@ -127,9 +127,11 @@ export function AdminPaymentsPage() {
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="SUBMITTED">Soumis</SelectItem>
                 <SelectItem value="INFO_RECEIVED">Infos reçues</SelectItem>
+                <SelectItem value="READY_TO_PAY">Prêt à payer</SelectItem>
                 <SelectItem value="PROCESSING">En cours</SelectItem>
                 <SelectItem value="COMPLETED">Effectué</SelectItem>
                 <SelectItem value="PROOF_AVAILABLE">Preuve dispo</SelectItem>
+                <SelectItem value="CANCELLED">Annulé</SelectItem>
               </SelectContent>
             </Select>
             <Select value={methodFilter} onValueChange={setMethodFilter}>
