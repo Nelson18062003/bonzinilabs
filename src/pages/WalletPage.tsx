@@ -1,5 +1,6 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
+import { PrimaryCTA } from '@/components/wallet/PrimaryCTA';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
@@ -9,7 +10,7 @@ const WalletPage = () => {
   return (
     <MobileLayout>
       <div className="px-4 pt-6 safe-area-top">
-        {/* Header - Personalized Welcome */}
+        {/* Header - Personalized Welcome (Feature 1) */}
         <div className="mb-6">
           <WelcomeGreeting 
             firstName={mockUser.firstName} 
@@ -17,9 +18,14 @@ const WalletPage = () => {
           />
         </div>
 
-        {/* Balance Card */}
+        {/* Balance Card with Trust Badge (Feature 2) */}
         <div className="mb-6">
           <BalanceCard balanceXAF={mockWallet.balanceXAF} />
+        </div>
+
+        {/* Primary CTA (Feature 3) */}
+        <div className="mb-6">
+          <PrimaryCTA />
         </div>
 
         {/* Quick Actions */}
