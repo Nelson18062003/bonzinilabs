@@ -22,9 +22,6 @@ export const WelcomeGreeting = ({ firstName, lastName }: WelcomeGreetingProps) =
       <h1 className="text-xl font-semibold text-foreground leading-tight">
         {greeting}
       </h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        Votre argent est en sécurité chez Bonzini.
-      </p>
     </div>
   );
 };
