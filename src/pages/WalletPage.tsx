@@ -12,7 +12,6 @@ const WalletPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Bonzini</h1>
             <p className="text-sm text-muted-foreground">Bonjour, Jean 👋</p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-xs font-medium">
