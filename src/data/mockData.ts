@@ -130,6 +130,16 @@ export const mockDeposits: Deposit[] = [
   },
 ];
 
+// Helper to add a new deposit (for simulation)
+export const addMockDeposit = (deposit: Deposit) => {
+  mockDeposits.unshift(deposit);
+};
+
+// Helper to get deposit by ID
+export const getMockDepositById = (id: string) => {
+  return mockDeposits.find(d => d.id === id);
+};
+
 export const mockDepositTimelines: DepositTimeline[] = [
   { id: 'dt-001', depositId: 'dep-003', status: 'SUBMITTED', description: 'Dépôt soumis', createdAt: new Date('2024-12-10T10:00:00') },
   { id: 'dt-002', depositId: 'dep-003', status: 'PROOF_UPLOADED', description: 'Preuve téléchargée', createdAt: new Date('2024-12-10T10:15:00') },

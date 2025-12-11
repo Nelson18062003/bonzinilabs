@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { formatXAF, mockUser } from '@/data/mockData';
+import { formatXAF, mockUser, addMockDeposit } from '@/data/mockData';
+import { Deposit } from '@/types';
 import { 
   methodFamilies, 
   getSubMethodsForFamily,
@@ -86,9 +87,45 @@ const NewDepositPage = () => {
     toast.success('Toutes les informations copiées');
   };
 
+  // Map our internal types to the Deposit method format
+  const getDepositMethod = (): import('@/types').DepositMethod => {
+    if (selectedFamily === 'BANK') {
+      return selectedSubMethod === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH_DEPOSIT';
+    }
+    if (selectedFamily === 'ORANGE_MONEY') {
+      return selectedSubMethod === 'OM_TRANSFER' ? 'ORANGE_MONEY_TRANSFER' : 'ORANGE_MONEY_WITHDRAWAL';
+    }
+    if (selectedFamily === 'MTN_MONEY') {
+      return selectedSubMethod === 'MTN_TRANSFER' ? 'MTN_MONEY_TRANSFER' : 'MTN_MONEY_WITHDRAWAL';
+    }
+    if (selectedFamily === 'AGENCY_BONZINI') return 'AGENCY_DEPOSIT';
+    if (selectedFamily === 'WAVE') return 'WAVE';
+    return 'BANK_TRANSFER';
+  };
+
   const handleSubmit = () => {
-    toast.success('Dépôt soumis avec succès !');
-    setStep('success');
+    // Create new deposit in mock data
+    const newDepositId = `dep-${Date.now()}`;
+    const newDeposit: Deposit = {
+      id: newDepositId,
+      userId: 'user-001',
+      walletId: 'wallet-001',
+      method: getDepositMethod(),
+      amountXAF: parseInt(amount),
+      status: proofFile ? 'UNDER_VERIFICATION' : 'SUBMITTED',
+      reference: depositReference,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    addMockDeposit(newDeposit);
+    
+    toast.success('Dépôt soumis avec succès !', {
+      description: 'Vous pouvez suivre son statut dans la fiche dépôt.',
+    });
+    
+    // Navigate to deposit detail page
+    navigate(`/deposits/${newDepositId}`);
   };
 
   // Determine next step based on selections
