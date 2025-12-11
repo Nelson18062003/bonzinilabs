@@ -1,4 +1,4 @@
-import { Eye, EyeOff, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { formatXAF, formatRMB, convertXAFtoRMB, currentRate } from '@/data/mockData';
 
@@ -12,11 +12,13 @@ export const BalanceCard = ({ balanceXAF }: BalanceCardProps) => {
 
   return (
     <div className="card-primary p-6 animate-fade-in">
+      {/* Header with label and toggle */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-primary-foreground/80 text-sm font-medium">Solde disponible</span>
         <button
           onClick={() => setShowBalance(!showBalance)}
           className="p-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors"
+          aria-label={showBalance ? "Masquer le solde" : "Afficher le solde"}
         >
           {showBalance ? (
             <EyeOff className="w-4 h-4 text-primary-foreground/80" />
@@ -26,6 +28,7 @@ export const BalanceCard = ({ balanceXAF }: BalanceCardProps) => {
         </button>
       </div>
       
+      {/* Balance Display */}
       <div className="mb-4">
         {showBalance ? (
           <>
@@ -50,10 +53,19 @@ export const BalanceCard = ({ balanceXAF }: BalanceCardProps) => {
         )}
       </div>
       
+      {/* Exchange Rate */}
       <div className="flex items-center gap-2 pt-4 border-t border-primary-foreground/10">
         <TrendingUp className="w-4 h-4 text-primary-foreground/60" />
         <span className="text-sm text-primary-foreground/70">
-          Taux du jour: 1 XAF = {currentRate.xafToRmb} RMB
+          Taux du jour : 1 XAF = {currentRate.xafToRmb} RMB
+        </span>
+      </div>
+
+      {/* Trust Badge - Feature 2 */}
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary-foreground/10">
+        <Shield className="w-4 h-4 text-primary-foreground/70" />
+        <span className="text-xs text-primary-foreground/70">
+          Votre solde est 100% sécurisé
         </span>
       </div>
     </div>
