@@ -2,15 +2,19 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { OperationsList } from '@/components/wallet/OperationsList';
-import { mockWallet, mockWalletOperations } from '@/data/mockData';
+import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
+import { mockWallet, mockWalletOperations, mockUser } from '@/data/mockData';
 
 const WalletPage = () => {
   return (
     <MobileLayout>
       <div className="px-4 pt-6 safe-area-top">
-        {/* Header */}
+        {/* Header - Personalized Welcome */}
         <div className="mb-6">
-          <p className="text-sm text-muted-foreground">Bonjour, Jean 👋</p>
+          <WelcomeGreeting 
+            firstName={mockUser.firstName} 
+            lastName={mockUser.lastName} 
+          />
         </div>
 
         {/* Balance Card */}
