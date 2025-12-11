@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import WalletPage from "./pages/WalletPage";
 import DepositsPage from "./pages/DepositsPage";
 import NewDepositPage from "./pages/NewDepositPage";
+import DepositDetailPage from "./pages/DepositDetailPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import NewPaymentPage from "./pages/NewPaymentPage";
 import HistoryPage from "./pages/HistoryPage";
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/" element={<WalletPage />} />
           <Route path="/deposits" element={<DepositsPage />} />
           <Route path="/deposits/new" element={<NewDepositPage />} />
+          <Route path="/deposits/:depositId" element={<DepositDetailPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/payments/new" element={<NewPaymentPage />} />
           <Route path="/history" element={<HistoryPage />} />
