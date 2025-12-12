@@ -2,12 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export type DepositMethod = 'bank_transfer' | 'bank_cash' | 'agency_cash' | 'om_transfer' | 'om_withdrawal' | 'mtn_transfer' | 'mtn_withdrawal' | 'wave';
+export type DepositStatus = 'created' | 'awaiting_proof' | 'proof_submitted' | 'admin_review' | 'validated' | 'rejected';
+
 export interface Deposit {
   id: string;
   user_id: string;
   reference: string;
   amount_xaf: number;
-  method: 'bank_transfer' | 'bank_cash' | 'agency_cash' | 'om_transfer' | 'om_withdrawal' | 'mtn_transfer' | 'mtn_withdrawal' | 'wave';
+  method: DepositMethod;
   bank_name: string | null;
   agency_name: string | null;
   client_phone: string | null;
@@ -241,6 +244,147 @@ export function useWalletByUserId(userId: string | undefined) {
       return data;
     },
     enabled: !!userId,
+  });
+}
+
+// Create deposit mutation
+export interface CreateDepositData {
+  amount_xaf: number;
+  method: DepositMethod;
+  bank_name?: string;
+  agency_name?: string;
+  client_phone?: string;
+}
+
+export function useCreateDeposit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateDepositData) => {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Vous devez être connecté');
+
+      // Generate reference
+      const { data: reference, error: refError } = await supabase.rpc('generate_deposit_reference');
+      if (refError) throw refError;
+
+      // Create deposit
+      const { data: deposit, error } = await supabase
+        .from('deposits')
+        .insert({
+          user_id: user.id,
+          reference: reference as string,
+          amount_xaf: data.amount_xaf,
+          method: data.method,
+          bank_name: data.bank_name || null,
+          agency_name: data.agency_name || null,
+          client_phone: data.client_phone || null,
+          status: 'created',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add timeline event
+      await supabase.from('deposit_timeline_events').insert({
+        deposit_id: deposit.id,
+        event_type: 'created',
+        description: 'Demande de dépôt créée',
+        performed_by: user.id,
+      });
+
+      return deposit;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
+}
+
+// Fetch current user's deposits
+export function useMyDeposits() {
+  return useQuery({
+    queryKey: ['my-deposits'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('deposits')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Deposit[];
+    },
+  });
+}
+
+// Upload proof
+export function useUploadProof() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId, file }: { depositId: string; file: File }) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Vous devez être connecté');
+
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${depositId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('deposit-proofs')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('deposit-proofs')
+        .getPublicUrl(fileName);
+
+      // Create proof record
+      const { error: proofError } = await supabase.from('deposit_proofs').insert({
+        deposit_id: depositId,
+        file_url: publicUrl,
+        file_name: file.name,
+        file_type: file.type,
+      });
+
+      if (proofError) throw proofError;
+
+      // Update deposit status
+      await supabase.from('deposits')
+        .update({ status: 'proof_submitted' as DepositStatus })
+        .eq('id', depositId);
+
+      // Add timeline event
+      await supabase.from('deposit_timeline_events').insert({
+        deposit_id: depositId,
+        event_type: 'proof_submitted',
+        description: 'Preuve de dépôt envoyée',
+        performed_by: user.id,
+      });
+
+      return { success: true };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-proofs', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      toast.success('Preuve envoyée avec succès');
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
   });
 }
 
