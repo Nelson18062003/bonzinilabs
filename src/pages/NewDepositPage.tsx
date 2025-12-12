@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { formatXAF, mockUser, addMockDeposit } from '@/data/mockData';
-import { Deposit } from '@/types';
+import { formatXAF } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCreateDeposit, DepositMethod as DBDepositMethod } from '@/hooks/useDeposits';
 import { 
   methodFamilies, 
   getSubMethodsForFamily,
@@ -13,7 +14,6 @@ import {
   waveAccount,
   familyRequiresSubMethod,
   subMethodRequiresBankSelection,
-  subMethodRequiresAgencySelection,
   subMethodRequiresClientPhone,
   generateDepositReference,
   getBankInfo,
@@ -36,7 +36,8 @@ import {
   Clock,
   Phone,
   Building2,
-  User
+  User,
+  Loader2,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -56,6 +57,8 @@ type Step =
 
 const NewDepositPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const createDeposit = useCreateDeposit();
   
   // Flow state
   const [step, setStep] = useState<Step>('amount');
@@ -70,8 +73,8 @@ const NewDepositPage = () => {
 
   // Generate reference code
   const depositReference = useMemo(() => {
-    return generateDepositReference(mockUser.firstName || 'CLIENT');
-  }, []);
+    return generateDepositReference(user?.email?.split('@')[0] || 'CLIENT');
+  }, [user]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -87,45 +90,41 @@ const NewDepositPage = () => {
     toast.success('Toutes les informations copiées');
   };
 
-  // Map our internal types to the Deposit method format
-  const getDepositMethod = (): import('@/types').DepositMethod => {
+  // Map our internal types to the database deposit method format
+  const getDepositMethod = (): DBDepositMethod => {
     if (selectedFamily === 'BANK') {
-      return selectedSubMethod === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'CASH_DEPOSIT';
+      return selectedSubMethod === 'BANK_TRANSFER' ? 'bank_transfer' : 'bank_cash';
     }
     if (selectedFamily === 'ORANGE_MONEY') {
-      return selectedSubMethod === 'OM_TRANSFER' ? 'ORANGE_MONEY_TRANSFER' : 'ORANGE_MONEY_WITHDRAWAL';
+      return selectedSubMethod === 'OM_TRANSFER' ? 'om_transfer' : 'om_withdrawal';
     }
     if (selectedFamily === 'MTN_MONEY') {
-      return selectedSubMethod === 'MTN_TRANSFER' ? 'MTN_MONEY_TRANSFER' : 'MTN_MONEY_WITHDRAWAL';
+      return selectedSubMethod === 'MTN_TRANSFER' ? 'mtn_transfer' : 'mtn_withdrawal';
     }
-    if (selectedFamily === 'AGENCY_BONZINI') return 'AGENCY_DEPOSIT';
-    if (selectedFamily === 'WAVE') return 'WAVE';
-    return 'BANK_TRANSFER';
+    if (selectedFamily === 'AGENCY_BONZINI') return 'agency_cash';
+    if (selectedFamily === 'WAVE') return 'wave';
+    return 'bank_transfer';
   };
 
-  const handleSubmit = () => {
-    // Create new deposit in mock data
-    const newDepositId = `dep-${Date.now()}`;
-    const newDeposit: Deposit = {
-      id: newDepositId,
-      userId: 'user-001',
-      walletId: 'wallet-001',
-      method: getDepositMethod(),
-      amountXAF: parseInt(amount),
-      status: proofFile ? 'UNDER_VERIFICATION' : 'SUBMITTED',
-      reference: depositReference,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    addMockDeposit(newDeposit);
-    
-    toast.success('Dépôt soumis avec succès !', {
-      description: 'Vous pouvez suivre son statut dans la fiche dépôt.',
-    });
-    
-    // Navigate to deposit detail page
-    navigate(`/deposits/${newDepositId}`);
+  const handleSubmit = async () => {
+    try {
+      const deposit = await createDeposit.mutateAsync({
+        amount_xaf: parseInt(amount),
+        method: getDepositMethod(),
+        bank_name: selectedBank || undefined,
+        agency_name: selectedAgency || undefined,
+        client_phone: clientPhone || undefined,
+      });
+      
+      toast.success('Dépôt créé avec succès !', {
+        description: 'Vous pouvez suivre son statut dans la fiche dépôt.',
+      });
+      
+      // Navigate to deposit detail page
+      navigate(`/deposits/${deposit.id}`);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
   };
 
   // Determine next step based on selections
@@ -608,12 +607,12 @@ const NewDepositPage = () => {
             </button>
           </div>
           
-          {info.bankName && (
+          {(info as any).bankName && (
             <div className="flex items-center justify-between py-2 border-b border-border/50">
               <span className="text-sm text-muted-foreground">Banque</span>
               <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{info.bankName}</span>
-                <button onClick={() => handleCopy(info.bankName!)}>
+                <span className="font-medium text-foreground">{(info as any).bankName}</span>
+                <button onClick={() => handleCopy((info as any).bankName!)}>
                   <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </button>
               </div>
@@ -739,19 +738,19 @@ const NewDepositPage = () => {
       
       <button
         onClick={handleSubmit}
-        disabled={!proofFile}
+        disabled={createDeposit.isPending}
         className={cn(
-          'w-full py-4 rounded-xl font-semibold transition-all',
-          proofFile
-            ? 'btn-primary-gradient'
-            : 'bg-muted text-muted-foreground cursor-not-allowed'
+          'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
+          'btn-primary-gradient'
         )}
       >
+        {createDeposit.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
         Soumettre le dépôt
       </button>
       
       <button
         onClick={handleSubmit}
+        disabled={createDeposit.isPending}
         className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         Envoyer la preuve plus tard
