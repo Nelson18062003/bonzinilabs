@@ -14,17 +14,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Generate a consistent UUID from email for development
+// Generate a valid UUID from email for development
 function generateDevUserId(email: string): string {
-  // Create a simple hash-based UUID for development
+  // Create a deterministic UUID based on email hash
   let hash = 0;
   for (let i = 0; i < email.length; i++) {
     const char = email.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
-  return `dev-${hashStr}-${hashStr.split('').reverse().join('')}-4000-8000-${hashStr}${hashStr}`.substring(0, 36);
+  
+  // Convert to hex and pad to create valid UUID format (8-4-4-4-12)
+  const hex = Math.abs(hash).toString(16).padStart(8, '0');
+  const hex2 = Math.abs(hash * 31).toString(16).padStart(8, '0');
+  const hex3 = Math.abs(hash * 37).toString(16).padStart(8, '0');
+  
+  return `${hex.slice(0, 8)}-${hex2.slice(0, 4)}-4${hex2.slice(5, 8)}-8${hex3.slice(1, 4)}-${hex3}${hex.slice(0, 4)}`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
