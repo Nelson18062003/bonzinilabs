@@ -6,11 +6,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  sendOtp: (email: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: Error | null }>;
-  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,49 +38,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+  const sendOtp = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-        },
+        shouldCreateUser: true,
       },
     });
-    
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+  const verifyOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
       email,
-      password,
+      token,
+      type: 'email',
     });
-    
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-  };
-
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return { error: error as Error | null };
-  };
-
-  const updatePassword = async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-    return { error: error as Error | null };
   };
 
   return (
@@ -91,11 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
-        signUp,
-        signIn,
+        sendOtp,
+        verifyOtp,
         signOut,
-        resetPassword,
-        updatePassword,
       }}
     >
       {children}
