@@ -25,7 +25,7 @@ const signUpSchema = z.object({
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp, isLoading: authLoading, user } = useAuth();
+  const { signIn, signUp, resetPassword, isLoading: authLoading, user } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -34,6 +34,8 @@ export default function AuthPage() {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   // Redirect if already logged in
   if (user) {
@@ -105,6 +107,28 @@ export default function AuthPage() {
     navigate('/');
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail || !z.string().email().safeParse(resetEmail).success) {
+      toast.error('Veuillez entrer un email valide');
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await resetPassword(resetEmail);
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success('Email de réinitialisation envoyé ! Vérifiez votre boîte mail.');
+    setShowForgotPassword(false);
+    setResetEmail('');
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -133,42 +157,86 @@ export default function AuthPage() {
             </TabsList>
             
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="votre@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
+              {showForgotPassword ? (
+                <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Entrez votre email pour recevoir un lien de réinitialisation.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="votre@email.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Mot de passe</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Envoyer le lien
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowForgotPassword(false)}
+                  >
+                    Retour à la connexion
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="votre@email.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Se connecter
-                </Button>
-              </form>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="login-password">Mot de passe</Label>
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => setShowForgotPassword(true)}
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Se connecter
+                  </Button>
+                </form>
+              )}
             </TabsContent>
             
             <TabsContent value="signup">
