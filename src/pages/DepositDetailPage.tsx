@@ -14,7 +14,7 @@ import {
   DEPOSIT_STATUS_LABELS, 
   DEPOSIT_METHOD_LABELS 
 } from '@/hooks/useDeposits';
-import { formatXAF } from '@/data/mockData';
+import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 

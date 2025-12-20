@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { LucideIcon, Check, Clock, AlertCircle, Upload, Send, FileText } from 'lucide-react';
-import { formatDate } from '@/data/mockData';
+import { formatDate } from '@/lib/formatters';
 
 interface TimelineStep {
   id: string;

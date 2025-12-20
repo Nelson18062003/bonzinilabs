@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { formatXAF } from '@/data/mockData';
+import { formatXAF } from '@/lib/formatters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateDeposit, DepositMethod as DBDepositMethod } from '@/hooks/useDeposits';
 import { 

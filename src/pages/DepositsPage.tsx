@@ -2,7 +2,7 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge, getStatusType } from '@/components/common/StatusBadge';
 import { useMyDeposits, DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/hooks/useDeposits';
-import { formatXAF } from '@/data/mockData';
+import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, ChevronRight, Loader2, Inbox, Building2, Smartphone, Store, Waves } from 'lucide-react';
