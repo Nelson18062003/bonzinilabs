@@ -16,6 +16,7 @@ import {
   AlertCircle,
   ExternalLink,
   CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,20 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { 
-  getDepositById,
-  getDepositProofs,
-  getDepositTimeline,
-  getDepositStatusLabel, 
-  getMethodLabel,
-  clients,
-  getWalletByClientId,
-} from '@/data/adminMockData';
-import { formatCurrency, formatDate } from '@/data/mockData';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { DepositStatus, DepositTimelineEvent } from '@/types/admin';
 import {
   Dialog,
   DialogContent,
@@ -45,17 +34,32 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { 
+  useDepositDetail,
+  useDepositProofs,
+  useDepositTimeline,
+  useValidateDeposit,
+  useRejectDeposit,
+  useWalletByUserId,
+  DEPOSIT_STATUS_LABELS,
+  DEPOSIT_METHOD_LABELS,
+} from '@/hooks/useDeposits';
+import { formatXAF } from '@/data/mockData';
 
 export function AdminDepositDetailPage() {
   const { depositId } = useParams();
   const navigate = useNavigate();
-  const { hasPermission, logAction, currentUser } = useAdminAuth();
+  const { hasPermission } = useAdminAuth();
   
-  const deposit = depositId ? getDepositById(depositId) : null;
-  const proofs = depositId ? getDepositProofs(depositId) : [];
-  const timeline = depositId ? getDepositTimeline(depositId) : [];
-  const client = deposit ? clients.find(c => c.id === deposit.clientId) : null;
-  const wallet = client ? getWalletByClientId(client.id) : null;
+  const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
+  const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
+  const { data: timeline, isLoading: loadingTimeline } = useDepositTimeline(depositId);
+  const { data: wallet } = useWalletByUserId(deposit?.user_id);
+  
+  const validateDeposit = useValidateDeposit();
+  const rejectDeposit = useRejectDeposit();
   
   const [isValidateDialogOpen, setIsValidateDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -63,6 +67,17 @@ export function AdminDepositDetailPage() {
   const [rejectionReason, setRejectionReason] = useState('');
 
   const canProcess = hasPermission('canProcessDeposits');
+  const isLoading = loadingDeposit || loadingProofs || loadingTimeline;
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   if (!deposit) {
     return (
@@ -82,76 +97,85 @@ export function AdminDepositDetailPage() {
     );
   }
 
-  const getStatusColor = (status: DepositStatus) => {
+  const clientName = deposit.profiles 
+    ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
+    : 'Client inconnu';
+  const initials = deposit.profiles 
+    ? `${deposit.profiles.first_name[0]}${deposit.profiles.last_name[0]}`
+    : '??';
+
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'SUBMITTED': return 'bg-gray-500/10 text-gray-600';
-      case 'PROOF_UPLOADED': return 'bg-blue-500/10 text-blue-600';
-      case 'UNDER_VERIFICATION': return 'bg-amber-500/10 text-amber-600';
-      case 'VALIDATED': return 'bg-emerald-500/10 text-emerald-600';
-      case 'REJECTED': return 'bg-red-500/10 text-red-600';
+      case 'created':
+      case 'awaiting_proof':
+        return 'bg-gray-500/10 text-gray-600';
+      case 'proof_submitted': return 'bg-blue-500/10 text-blue-600';
+      case 'admin_review': return 'bg-amber-500/10 text-amber-600';
+      case 'validated': return 'bg-emerald-500/10 text-emerald-600';
+      case 'rejected': return 'bg-red-500/10 text-red-600';
       default: return 'bg-gray-500/10 text-gray-600';
     }
   };
 
-  const getTimelineIcon = (step: string) => {
-    switch (step) {
-      case 'SUBMITTED': return <Clock className="h-4 w-4" />;
-      case 'PROOF_UPLOADED': return <FileText className="h-4 w-4" />;
-      case 'UNDER_VERIFICATION': return <AlertCircle className="h-4 w-4" />;
-      case 'VALIDATED': return <CheckCircle className="h-4 w-4" />;
-      case 'REJECTED': return <XCircle className="h-4 w-4" />;
-      case 'WALLET_CREDITED': return <Wallet className="h-4 w-4" />;
+  const getTimelineIcon = (eventType: string) => {
+    switch (eventType) {
+      case 'created': return <Clock className="h-4 w-4" />;
+      case 'proof_submitted': return <FileText className="h-4 w-4" />;
+      case 'admin_review': return <AlertCircle className="h-4 w-4" />;
+      case 'validated': return <CheckCircle className="h-4 w-4" />;
+      case 'wallet_credited': return <Wallet className="h-4 w-4" />;
+      case 'rejected': return <XCircle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };
 
-  const getTimelineColor = (step: string) => {
-    switch (step) {
-      case 'SUBMITTED': return 'bg-gray-100 text-gray-600 border-gray-300';
-      case 'PROOF_UPLOADED': return 'bg-blue-100 text-blue-600 border-blue-300';
-      case 'UNDER_VERIFICATION': return 'bg-amber-100 text-amber-600 border-amber-300';
-      case 'VALIDATED': return 'bg-emerald-100 text-emerald-600 border-emerald-300';
-      case 'WALLET_CREDITED': return 'bg-emerald-100 text-emerald-600 border-emerald-300';
-      case 'REJECTED': return 'bg-red-100 text-red-600 border-red-300';
-      default: return 'bg-gray-100 text-gray-600 border-gray-300';
+  const getTimelineColor = (eventType: string) => {
+    switch (eventType) {
+      case 'validated':
+      case 'wallet_credited':
+        return 'bg-emerald-100 text-emerald-600 border-emerald-300';
+      case 'rejected':
+        return 'bg-red-100 text-red-600 border-red-300';
+      case 'admin_review':
+        return 'bg-amber-100 text-amber-600 border-amber-300';
+      case 'proof_submitted':
+        return 'bg-blue-100 text-blue-600 border-blue-300';
+      default:
+        return 'bg-gray-100 text-gray-600 border-gray-300';
     }
   };
 
-  const handleValidate = () => {
-    logAction(
-      'DEPOSIT_VALIDATED', 
-      'DEPOSIT', 
-      `Dépôt validé pour ${deposit.clientName} - ${formatCurrency(deposit.amountXAF)}${adminComment ? ` (Commentaire: ${adminComment})` : ''}`,
-      deposit.id
-    );
-    logAction(
-      'WALLET_CREDITED',
-      'WALLET',
-      `Wallet crédité de ${formatCurrency(deposit.amountXAF)} suite au dépôt ${deposit.id}`,
-      deposit.walletId
-    );
-    toast.success(`Dépôt validé et wallet crédité de ${formatCurrency(deposit.amountXAF)}`);
-    setIsValidateDialogOpen(false);
-    navigate('/admin/deposits');
+  const handleValidate = async () => {
+    try {
+      await validateDeposit.mutateAsync({ 
+        depositId: deposit.id, 
+        adminComment: adminComment || undefined 
+      });
+      setIsValidateDialogOpen(false);
+      navigate('/admin/deposits');
+    } catch (error) {
+      // Error handled by mutation
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectionReason.trim()) {
       toast.error('Veuillez indiquer un motif de rejet');
       return;
     }
-    logAction(
-      'DEPOSIT_REJECTED', 
-      'DEPOSIT', 
-      `Dépôt rejeté pour ${deposit.clientName} - Motif: ${rejectionReason}`,
-      deposit.id
-    );
-    toast.error(`Dépôt rejeté`);
-    setIsRejectDialogOpen(false);
-    navigate('/admin/deposits');
+    try {
+      await rejectDeposit.mutateAsync({ 
+        depositId: deposit.id, 
+        reason: rejectionReason 
+      });
+      setIsRejectDialogOpen(false);
+      navigate('/admin/deposits');
+    } catch (error) {
+      // Error handled by mutation
+    }
   };
 
-  const isPending = ['SUBMITTED', 'PROOF_UPLOADED', 'UNDER_VERIFICATION'].includes(deposit.status);
+  const isPending = ['created', 'awaiting_proof', 'proof_submitted', 'admin_review'].includes(deposit.status);
 
   return (
     <AdminLayout>
@@ -164,14 +188,14 @@ export function AdminDepositDetailPage() {
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">
-                Dépôt #{deposit.id.slice(-4).toUpperCase()}
+                Dépôt #{deposit.reference.slice(-6)}
               </h1>
               <Badge className={getStatusColor(deposit.status)}>
-                {getDepositStatusLabel(deposit.status)}
+                {DEPOSIT_STATUS_LABELS[deposit.status]}
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              Créé le {formatDate(deposit.createdAt)}
+              Créé le {format(new Date(deposit.created_at), 'dd MMMM yyyy', { locale: fr })}
             </p>
           </div>
           {canProcess && isPending && (
@@ -205,22 +229,20 @@ export function AdminDepositDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Montant du dépôt</p>
                   <p className="text-3xl font-bold text-foreground">
-                    {formatCurrency(deposit.amountXAF)}
+                    {formatXAF(deposit.amount_xaf)} XAF
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    ≈ {Math.round(deposit.amountXAF / 87).toLocaleString()} RMB
+                    ≈ {Math.round(deposit.amount_xaf / 87).toLocaleString()} RMB
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <Badge variant="outline" className="text-base px-4 py-2">
-                  {getMethodLabel(deposit.method)}
+                  {DEPOSIT_METHOD_LABELS[deposit.method]}
                 </Badge>
-                {deposit.reference && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Réf: {deposit.reference}
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground mt-2">
+                  Réf: {deposit.reference}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -241,22 +263,18 @@ export function AdminDepositDetailPage() {
                 <div className="flex items-start gap-4">
                   <Avatar className="h-14 w-14">
                     <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                      {deposit.clientName.split(' ').map(n => n[0]).join('')}
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 space-y-2">
                     <div>
                       <h3 className="font-semibold text-foreground text-lg">
-                        {deposit.clientName}
+                        {clientName}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-4 w-4" />
-                        {deposit.clientEmail}
-                      </div>
-                      {client?.whatsappNumber && (
+                      {deposit.profiles?.phone && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Phone className="h-4 w-4" />
-                          {client.whatsappNumber}
+                          {deposit.profiles.phone}
                         </div>
                       )}
                     </div>
@@ -266,7 +284,7 @@ export function AdminDepositDetailPage() {
                           <Wallet className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm text-muted-foreground">Solde actuel:</span>
                           <span className="font-semibold text-foreground">
-                            {formatCurrency(wallet.currentBalanceXAF)}
+                            {formatXAF(wallet.balance_xaf)} XAF
                           </span>
                         </div>
                       </div>
@@ -275,7 +293,7 @@ export function AdminDepositDetailPage() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => navigate(`/admin/clients/${deposit.clientId}`)}
+                    onClick={() => navigate(`/admin/clients/${deposit.user_id}`)}
                   >
                     <ExternalLink className="h-4 w-4 mr-1" />
                     Voir fiche
@@ -290,13 +308,13 @@ export function AdminDepositDetailPage() {
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   Preuves de dépôt
-                  {proofs.length > 0 && (
+                  {proofs && proofs.length > 0 && (
                     <Badge variant="outline">{proofs.length} fichier(s)</Badge>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {proofs.length > 0 ? (
+                {proofs && proofs.length > 0 ? (
                   <div className="space-y-3">
                     {proofs.map((proof) => (
                       <div 
@@ -304,57 +322,28 @@ export function AdminDepositDetailPage() {
                         className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${
-                            proof.fileType === 'image' 
-                              ? 'bg-blue-500/10' 
-                              : 'bg-red-500/10'
-                          }`}>
-                            {proof.fileType === 'image' ? (
-                              <Image className="h-5 w-5 text-blue-600" />
-                            ) : (
-                              <FileText className="h-5 w-5 text-red-600" />
-                            )}
+                          <div className="p-2 rounded-lg bg-blue-500/10">
+                            <Image className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-foreground">{proof.fileName}</p>
+                            <p className="font-medium text-foreground">{proof.file_name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {proof.fileSize ? `${Math.round(proof.fileSize / 1024)} KB • ` : ''}
-                              Uploadé le {formatDate(proof.uploadedAt)}
+                              Uploadé le {format(new Date(proof.uploaded_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
                             </p>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(proof.file_url, '_blank')}
+                          >
                             <ExternalLink className="h-4 w-4 mr-1" />
                             Voir
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-1" />
-                            Télécharger
                           </Button>
                         </div>
                       </div>
                     ))}
-                  </div>
-                ) : deposit.proofUrl ? (
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-blue-500/10">
-                        <Image className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {deposit.proofFileName || 'Preuve de dépôt'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Fichier disponible
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-1" />
-                      Télécharger
-                    </Button>
                   </div>
                 ) : (
                   <div className="p-8 text-center">
@@ -366,21 +355,21 @@ export function AdminDepositDetailPage() {
             </Card>
 
             {/* Admin Comments */}
-            {(deposit.adminComment || deposit.rejectionReason) && (
+            {(deposit.admin_comment || deposit.rejection_reason) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Commentaires admin</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {deposit.adminComment && (
+                  {deposit.admin_comment && (
                     <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                      <p className="text-sm text-emerald-800">{deposit.adminComment}</p>
+                      <p className="text-sm text-emerald-800">{deposit.admin_comment}</p>
                     </div>
                   )}
-                  {deposit.rejectionReason && (
+                  {deposit.rejection_reason && (
                     <div className="p-3 rounded-lg bg-red-50 border border-red-200">
                       <p className="text-sm font-medium text-red-800 mb-1">Motif de rejet:</p>
-                      <p className="text-sm text-red-700">{deposit.rejectionReason}</p>
+                      <p className="text-sm text-red-700">{deposit.rejection_reason}</p>
                     </div>
                   )}
                 </CardContent>
@@ -398,163 +387,144 @@ export function AdminDepositDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {timeline.length > 0 ? (
+                {timeline && timeline.length > 0 ? (
                   <div className="relative">
                     <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
                     <div className="space-y-4">
-                      {timeline.map((event, index) => (
+                      {timeline.map((event) => (
                         <div key={event.id} className="relative flex gap-4 pl-2">
-                          <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${getTimelineColor(event.step)}`}>
-                            {getTimelineIcon(event.step)}
+                          <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${getTimelineColor(event.event_type)}`}>
+                            {getTimelineIcon(event.event_type)}
                           </div>
                           <div className="flex-1 pb-4">
                             <p className="text-sm font-medium text-foreground">
                               {event.description}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-muted-foreground">
-                                {formatDate(event.timestamp)}
-                              </span>
-                              {event.performedBy !== 'SYSTEM' && (
-                                <>
-                                  <span className="text-xs text-muted-foreground">•</span>
-                                  <Badge variant="outline" className="text-xs">
-                                    {event.performedBy === 'CLIENT' ? 'Client' : 'Admin'}
-                                  </Badge>
-                                  {event.performedByName && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {event.performedByName}
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(event.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+                            </span>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 text-center">
-                    <p className="text-muted-foreground text-sm">Aucun événement</p>
-                  </div>
+                  <p className="text-muted-foreground text-center py-4">Aucun événement</p>
                 )}
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Actions rapides</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate(`/admin/clients/${deposit.clientId}`)}
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Voir la fiche client
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate(`/admin/wallets/${deposit.clientId}`)}
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Voir le wallet
-                </Button>
-              </CardContent>
-            </Card>
+            {canProcess && isPending && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Actions rapides</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    onClick={() => setIsValidateDialogOpen(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Valider & Créditer
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => setIsRejectDialogOpen(true)}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Rejeter
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
-
-        {/* Validate Dialog */}
-        <Dialog open={isValidateDialogOpen} onOpenChange={setIsValidateDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Valider le dépôt</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-                <p className="text-sm text-emerald-800">
-                  Vous allez valider ce dépôt et créditer le wallet du client de{' '}
-                  <strong>{formatCurrency(deposit.amountXAF)}</strong>.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Commentaire (optionnel)</Label>
-                <Textarea
-                  placeholder="Ajouter un commentaire..."
-                  value={adminComment}
-                  onChange={(e) => setAdminComment(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="p-3 bg-muted/50 rounded-lg text-sm">
-                <p className="text-muted-foreground">
-                  Cette action sera loggée avec votre identifiant ({currentUser?.firstName} {currentUser?.lastName}).
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsValidateDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button 
-                className="bg-emerald-600 hover:bg-emerald-700"
-                onClick={handleValidate}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Valider & Créditer
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Reject Dialog */}
-        <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Rejeter le dépôt</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="p-4 rounded-lg bg-red-50 border border-red-200">
-                <p className="text-sm text-red-800">
-                  Vous allez rejeter ce dépôt. Le wallet du client ne sera pas crédité.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Motif du rejet (obligatoire)</Label>
-                <Textarea
-                  placeholder="Indiquez la raison du rejet..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="p-3 bg-muted/50 rounded-lg text-sm">
-                <p className="text-muted-foreground">
-                  Cette action sera loggée et le client sera notifié du rejet.
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={handleReject}
-                disabled={!rejectionReason.trim()}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Rejeter le dépôt
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Validate Dialog */}
+      <Dialog open={isValidateDialogOpen} onOpenChange={setIsValidateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Valider le dépôt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+              <p className="text-sm text-emerald-800">
+                Cette action va créditer le wallet du client de <strong>{formatXAF(deposit.amount_xaf)} XAF</strong>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Commentaire (optionnel)</Label>
+              <Textarea
+                placeholder="Ajouter un commentaire..."
+                value={adminComment}
+                onChange={(e) => setAdminComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsValidateDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={handleValidate}
+              disabled={validateDeposit.isPending}
+            >
+              {validateDeposit.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              Valider & Créditer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rejeter le dépôt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+              <p className="text-sm text-red-800">
+                Cette action va rejeter le dépôt. Le client sera notifié avec votre motif.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Motif du rejet *</Label>
+              <Textarea
+                placeholder="Expliquez pourquoi le dépôt est rejeté..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleReject}
+              disabled={rejectDeposit.isPending || !rejectionReason.trim()}
+            >
+              {rejectDeposit.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <XCircle className="h-4 w-4 mr-2" />
+              )}
+              Rejeter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
