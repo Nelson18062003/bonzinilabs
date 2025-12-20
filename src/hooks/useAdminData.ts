@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatXAF } from '@/lib/formatters';
+import { toast } from 'sonner';
 
 // Fetch all user roles (admin users)
 export function useAdminUsers() {
@@ -319,6 +320,57 @@ export function useAdminProofs() {
           ? `${profileMap.get(proof.deposits.user_id)!.first_name} ${profileMap.get(proof.deposits.user_id)!.last_name}`
           : 'Client inconnu',
       }));
+    },
+  });
+}
+
+// Fetch exchange rates history
+export function useExchangeRates() {
+  return useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exchange_rates')
+        .select('*')
+        .order('effective_date', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+// Add new exchange rate
+export function useAddExchangeRate() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (rateXafToRmb: number) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('exchange_rates')
+        .insert({
+          rate_xaf_to_rmb: rateXafToRmb,
+          effective_date: new Date().toISOString().split('T')[0],
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exchange-rates'] });
+      queryClient.invalidateQueries({ queryKey: ['exchange-rate'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Taux de change mis à jour');
+    },
+    onError: (error) => {
+      toast.error('Erreur lors de la mise à jour du taux');
+      console.error(error);
     },
   });
 }
