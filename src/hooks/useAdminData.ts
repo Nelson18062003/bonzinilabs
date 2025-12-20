@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { formatXAF } from '@/lib/formatters';
 
 // Fetch all user roles (admin users)
 export function useAdminUsers() {
@@ -38,14 +39,30 @@ export function useAdminAuditLogs() {
   return useQuery({
     queryKey: ['admin-audit-logs'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: logs, error } = await supabase
         .from('admin_audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
-      return data || [];
+      if (!logs) return [];
+      
+      // Get admin user IDs
+      const adminUserIds = [...new Set(logs.map(l => l.admin_user_id))];
+      
+      // Fetch profiles for admin users
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', adminUserIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      return logs.map(log => ({
+        ...log,
+        adminProfile: profileMap.get(log.admin_user_id) || null,
+      }));
     },
   });
 }
@@ -92,6 +109,216 @@ export function useDashboardStats() {
         pendingPayments: 0, // No payments table yet
         currentRate: rate?.rate_xaf_to_rmb ? Math.round(1 / rate.rate_xaf_to_rmb) : 87,
       };
+    },
+  });
+}
+
+// Fetch all deposits with client info for admin
+export function useAdminDeposits() {
+  return useQuery({
+    queryKey: ['admin-deposits'],
+    queryFn: async () => {
+      const { data: deposits, error } = await supabase
+        .from('deposits')
+        .select(`
+          *,
+          deposit_proofs(*),
+          deposit_timeline_events(*)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      if (!deposits) return [];
+      
+      // Get user IDs and fetch profiles
+      const userIds = [...new Set(deposits.map(d => d.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      return deposits.map(deposit => ({
+        ...deposit,
+        profile: profileMap.get(deposit.user_id) || null,
+        clientName: profileMap.get(deposit.user_id) 
+          ? `${profileMap.get(deposit.user_id)!.first_name} ${profileMap.get(deposit.user_id)!.last_name}`
+          : 'Client inconnu',
+      }));
+    },
+  });
+}
+
+// Fetch all wallets with client info for admin
+export function useAdminWallets() {
+  return useQuery({
+    queryKey: ['admin-wallets'],
+    queryFn: async () => {
+      const { data: wallets, error } = await supabase
+        .from('wallets')
+        .select(`
+          *,
+          wallet_operations(*)
+        `)
+        .order('updated_at', { ascending: false });
+      
+      if (error) throw error;
+      if (!wallets) return [];
+      
+      // Get user IDs and fetch profiles
+      const userIds = [...new Set(wallets.map(w => w.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      // Fetch deposits and sum for each user
+      const { data: deposits } = await supabase
+        .from('deposits')
+        .select('user_id, amount_xaf, status')
+        .eq('status', 'validated');
+      
+      const depositSums = new Map<string, number>();
+      deposits?.forEach(d => {
+        depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
+      });
+      
+      return wallets.map(wallet => ({
+        ...wallet,
+        profile: profileMap.get(wallet.user_id) || null,
+        clientName: profileMap.get(wallet.user_id)
+          ? `${profileMap.get(wallet.user_id)!.first_name} ${profileMap.get(wallet.user_id)!.last_name}`
+          : 'Client inconnu',
+        totalDeposits: depositSums.get(wallet.user_id) || 0,
+        totalPayments: 0, // No payments table yet
+      }));
+    },
+  });
+}
+
+// Fetch all clients (profiles with wallets)
+export function useAdminClients() {
+  return useQuery({
+    queryKey: ['admin-clients'],
+    queryFn: async () => {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      if (!profiles) return [];
+      
+      const userIds = profiles.map(p => p.user_id);
+      
+      // Fetch wallets
+      const { data: wallets } = await supabase
+        .from('wallets')
+        .select('*')
+        .in('user_id', userIds);
+      
+      const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
+      
+      // Fetch deposit sums
+      const { data: deposits } = await supabase
+        .from('deposits')
+        .select('user_id, amount_xaf, status')
+        .eq('status', 'validated');
+      
+      const depositSums = new Map<string, number>();
+      deposits?.forEach(d => {
+        depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
+      });
+      
+      return profiles.map(profile => ({
+        ...profile,
+        wallet: walletMap.get(profile.user_id) || null,
+        walletBalance: walletMap.get(profile.user_id)?.balance_xaf || 0,
+        totalDeposits: depositSums.get(profile.user_id) || 0,
+        totalPayments: 0,
+        status: 'ACTIVE' as const,
+      }));
+    },
+  });
+}
+
+// Fetch single client detail
+export function useAdminClientDetail(userId: string) {
+  return useQuery({
+    queryKey: ['admin-client', userId],
+    queryFn: async () => {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (!profile) return null;
+      
+      // Fetch wallet
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('*, wallet_operations(*)')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      // Fetch deposits
+      const { data: deposits } = await supabase
+        .from('deposits')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      const totalDeposits = deposits?.filter(d => d.status === 'validated')
+        .reduce((sum, d) => sum + d.amount_xaf, 0) || 0;
+      
+      return {
+        ...profile,
+        wallet,
+        deposits: deposits || [],
+        totalDeposits,
+        totalPayments: 0,
+      };
+    },
+    enabled: !!userId,
+  });
+}
+
+// Fetch all deposit proofs
+export function useAdminProofs() {
+  return useQuery({
+    queryKey: ['admin-proofs'],
+    queryFn: async () => {
+      const { data: proofs, error } = await supabase
+        .from('deposit_proofs')
+        .select(`
+          *,
+          deposits(*)
+        `)
+        .order('uploaded_at', { ascending: false });
+      
+      if (error) throw error;
+      if (!proofs) return [];
+      
+      // Get user IDs from deposits and fetch profiles
+      const userIds = [...new Set(proofs.map(p => p.deposits?.user_id).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      return proofs.map(proof => ({
+        ...proof,
+        clientName: proof.deposits && profileMap.get(proof.deposits.user_id)
+          ? `${profileMap.get(proof.deposits.user_id)!.first_name} ${profileMap.get(proof.deposits.user_id)!.last_name}`
+          : 'Client inconnu',
+      }));
     },
   });
 }

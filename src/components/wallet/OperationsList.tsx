@@ -1,6 +1,6 @@
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { WalletOperation } from '@/types';
-import { formatXAF } from '@/data/mockData';
+import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
