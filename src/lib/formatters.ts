@@ -7,6 +7,14 @@ export function formatCurrency(amountXAF: number): string {
   }).format(amountXAF) + ' XAF';
 }
 
+export function formatXAF(amount: number): string {
+  return new Intl.NumberFormat('fr-FR').format(amount);
+}
+
+export function formatRMB(amount: number): string {
+  return new Intl.NumberFormat('zh-CN').format(amount);
+}
+
 export function formatCurrencyRMB(amountRMB: number): string {
   return new Intl.NumberFormat('fr-FR', {
     style: 'decimal',
@@ -16,15 +24,15 @@ export function formatCurrencyRMB(amountRMB: number): string {
 }
 
 // Date formatting
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date, format: 'short' | 'long' | 'datetime' = 'short'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(d);
+  if (format === 'datetime') {
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  if (format === 'long') {
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDateShort(date: string | Date): string {
@@ -53,6 +61,59 @@ export function formatRelativeDate(date: string | Date): string {
 }
 
 // Convert XAF to RMB
-export function xafToRmb(amountXAF: number, rate: number = 0.01167): number {
-  return amountXAF * rate;
+export function convertXAFtoRMB(amountXAF: number, rate: number = 0.01167): number {
+  return Math.round(amountXAF * rate);
+}
+
+export function convertRMBtoXAF(amountRMB: number, rate: number = 85.69): number {
+  return Math.round(amountRMB * rate);
+}
+
+// Status labels
+export function getDepositStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    created: 'Créé',
+    awaiting_proof: 'En attente de preuve',
+    proof_submitted: 'Preuve envoyée',
+    admin_review: 'En vérification',
+    validated: 'Validé',
+    rejected: 'Rejeté',
+    // Legacy uppercase
+    SUBMITTED: 'Soumis',
+    PROOF_UPLOADED: 'Preuve envoyée',
+    UNDER_VERIFICATION: 'En vérification',
+    VALIDATED: 'Validé',
+    REJECTED: 'Rejeté',
+  };
+  return labels[status] || status;
+}
+
+export function getPaymentStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    SUBMITTED: 'Soumis',
+    INFO_RECEIVED: 'Infos reçues',
+    PROCESSING: 'En cours',
+    COMPLETED: 'Effectué',
+    PROOF_AVAILABLE: 'Preuve dispo',
+    CANCELLED: 'Annulé',
+  };
+  return labels[status] || status;
+}
+
+export function getMethodLabel(method: string): string {
+  const labels: Record<string, string> = {
+    bank_transfer: 'Virement bancaire',
+    bank_cash: 'Dépôt cash banque',
+    agency_cash: 'Agence Bonzini',
+    om_transfer: 'Orange Money (transfert)',
+    om_withdrawal: 'Orange Money (retrait)',
+    mtn_transfer: 'MTN Money (transfert)',
+    mtn_withdrawal: 'MTN Money (retrait)',
+    wave: 'Wave',
+    ALIPAY: 'Alipay',
+    WECHAT: 'WeChat',
+    BANK_TRANSFER: 'Virement',
+    CASH_COUNTER: 'Cash Counter',
+  };
+  return labels[method] || method;
 }

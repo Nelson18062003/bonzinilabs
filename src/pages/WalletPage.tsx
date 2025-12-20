@@ -3,23 +3,39 @@ import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
-import { mockWallet, mockWalletOperations, mockUser } from '@/data/mockData';
+import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
+import { useMyProfile } from '@/hooks/useProfile';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const WalletPage = () => {
+  const { data: wallet, isLoading: walletLoading } = useMyWallet();
+  const { data: operations, isLoading: opsLoading } = useMyWalletOperations();
+  const { data: profile, isLoading: profileLoading } = useMyProfile();
+
+  const isLoading = walletLoading || opsLoading || profileLoading;
+
   return (
     <MobileLayout>
       <div className="px-4 pt-6 safe-area-top">
-        {/* Header - Personalized Welcome (Feature 1) */}
+        {/* Header - Personalized Welcome */}
         <div className="mb-6">
-          <WelcomeGreeting 
-            firstName={mockUser.firstName} 
-            lastName={mockUser.lastName} 
-          />
+          {profileLoading ? (
+            <Skeleton className="h-10 w-48" />
+          ) : (
+            <WelcomeGreeting 
+              firstName={profile?.first_name || 'Utilisateur'} 
+              lastName={profile?.last_name || ''} 
+            />
+          )}
         </div>
 
-        {/* Balance Card with Trust Badge (Feature 2) */}
+        {/* Balance Card */}
         <div className="mb-6">
-          <BalanceCard balanceXAF={mockWallet.balanceXAF} />
+          {walletLoading ? (
+            <Skeleton className="h-40 w-full rounded-2xl" />
+          ) : (
+            <BalanceCard balanceXAF={wallet?.balance_xaf || 0} />
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -28,7 +44,15 @@ const WalletPage = () => {
         </div>
 
         {/* Recent Operations */}
-        <OperationsList operations={mockWalletOperations} />
+        {opsLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : (
+          <OperationsList operations={(operations || []) as any} />
+        )}
       </div>
     </MobileLayout>
   );
