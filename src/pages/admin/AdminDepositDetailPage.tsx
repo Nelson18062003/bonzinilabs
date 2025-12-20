@@ -1,19 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   User,
-  Mail,
   Phone,
   Wallet,
   Calendar,
   FileText,
-  Download,
   Image,
   CheckCircle,
   XCircle,
-  Clock,
-  AlertCircle,
   ExternalLink,
   CreditCard,
   Loader2,
@@ -26,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
 import {
   Dialog,
   DialogContent,
@@ -34,8 +31,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { 
   useDepositDetail,
   useDepositProofs,
@@ -46,6 +41,7 @@ import {
 import { useWalletByUserId } from '@/hooks/useWallet';
 import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/data/staticData';
 import { formatXAF } from '@/lib/formatters';
+import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
 
 export function AdminDepositDetailPage() {
   const { depositId } = useParams();
@@ -54,7 +50,7 @@ export function AdminDepositDetailPage() {
   
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
-  const { data: timeline, isLoading: loadingTimeline } = useDepositTimeline(depositId);
+  const { data: timelineEvents, isLoading: loadingTimeline } = useDepositTimeline(depositId);
   const { data: wallet } = useWalletByUserId(deposit?.user_id);
   
   const validateDeposit = useValidateDeposit();
@@ -64,6 +60,12 @@ export function AdminDepositDetailPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [adminComment, setAdminComment] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // Build timeline steps from deposit status and events
+  const timelineSteps = useMemo(() => {
+    if (!deposit) return [];
+    return buildDepositTimelineSteps(deposit.status, timelineEvents || []);
+  }, [deposit, timelineEvents]);
 
   const canProcess = hasPermission('canProcessDeposits');
   const isLoading = loadingDeposit || loadingProofs || loadingTimeline;
@@ -113,34 +115,6 @@ export function AdminDepositDetailPage() {
       case 'validated': return 'bg-emerald-500/10 text-emerald-600';
       case 'rejected': return 'bg-red-500/10 text-red-600';
       default: return 'bg-gray-500/10 text-gray-600';
-    }
-  };
-
-  const getTimelineIcon = (eventType: string) => {
-    switch (eventType) {
-      case 'created': return <Clock className="h-4 w-4" />;
-      case 'proof_submitted': return <FileText className="h-4 w-4" />;
-      case 'admin_review': return <AlertCircle className="h-4 w-4" />;
-      case 'validated': return <CheckCircle className="h-4 w-4" />;
-      case 'wallet_credited': return <Wallet className="h-4 w-4" />;
-      case 'rejected': return <XCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const getTimelineColor = (eventType: string) => {
-    switch (eventType) {
-      case 'validated':
-      case 'wallet_credited':
-        return 'bg-emerald-100 text-emerald-600 border-emerald-300';
-      case 'rejected':
-        return 'bg-red-100 text-red-600 border-red-300';
-      case 'admin_review':
-        return 'bg-amber-100 text-amber-600 border-amber-300';
-      case 'proof_submitted':
-        return 'bg-blue-100 text-blue-600 border-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-600 border-gray-300';
     }
   };
 
@@ -194,7 +168,7 @@ export function AdminDepositDetailPage() {
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              Créé le {format(new Date(deposit.created_at), 'dd MMMM yyyy', { locale: fr })}
+              Créé le {safeFormatDate(deposit.created_at, 'dd MMMM yyyy') || ''}
             </p>
           </div>
           {canProcess && isPending && (
@@ -327,7 +301,7 @@ export function AdminDepositDetailPage() {
                           <div>
                             <p className="font-medium text-foreground">{proof.file_name}</p>
                             <p className="text-xs text-muted-foreground">
-                              Uploadé le {format(new Date(proof.uploaded_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+                              Uploadé le {safeFormatDate(proof.uploaded_at)}
                             </p>
                           </div>
                         </div>
@@ -386,30 +360,7 @@ export function AdminDepositDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {timeline && timeline.length > 0 ? (
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
-                    <div className="space-y-4">
-                      {timeline.map((event) => (
-                        <div key={event.id} className="relative flex gap-4 pl-2">
-                          <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${getTimelineColor(event.event_type)}`}>
-                            {getTimelineIcon(event.event_type)}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <p className="text-sm font-medium text-foreground">
-                              {event.description}
-                            </p>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(event.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Aucun événement</p>
-                )}
+                <DepositTimelineDisplay steps={timelineSteps} />
               </CardContent>
             </Card>
 
