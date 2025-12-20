@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, SignUpData } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, User, Phone, Building, MapPin, Calendar, Briefcase } from 'lucide-react';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Email invalide');
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
+const nameSchema = z.string().min(1, 'Ce champ est obligatoire');
+const phoneSchema = z.string().min(8, 'Numéro de téléphone invalide');
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'reset-password';
 
@@ -25,6 +27,17 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Signup additional fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [activitySector, setActivitySector] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
 
   // Check for reset password mode from URL
   useEffect(() => {
@@ -71,15 +84,50 @@ export default function AuthPage() {
       return;
     }
 
-    if (mode === 'signup' && password !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
-      return;
+    if (mode === 'signup') {
+      // Validate required fields
+      const firstNameValidation = nameSchema.safeParse(firstName);
+      if (!firstNameValidation.success) {
+        toast.error('Le prénom est obligatoire');
+        return;
+      }
+
+      const lastNameValidation = nameSchema.safeParse(lastName);
+      if (!lastNameValidation.success) {
+        toast.error('Le nom est obligatoire');
+        return;
+      }
+
+      const phoneValidation = phoneSchema.safeParse(phone);
+      if (!phoneValidation.success) {
+        toast.error(phoneValidation.error.errors[0].message);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        toast.error('Les mots de passe ne correspondent pas');
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     if (mode === 'signup') {
-      const { error } = await signUp(email, password);
+      const signUpData: SignUpData = {
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        dateOfBirth: dateOfBirth || undefined,
+        companyName: companyName || undefined,
+        activitySector: activitySector || undefined,
+        neighborhood: neighborhood || undefined,
+        city: city || undefined,
+        country: country || undefined,
+      };
+
+      const { error } = await signUp(signUpData);
       setIsSubmitting(false);
       
       if (error) {
@@ -149,7 +197,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
-      <Card className="w-full max-w-md">
+      <Card className={`w-full ${mode === 'signup' ? 'max-w-2xl' : 'max-w-md'}`}>
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <span className="text-2xl font-bold text-primary">B</span>
@@ -159,9 +207,174 @@ export default function AuthPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'signup' && (
+              <>
+                {/* Personal Info Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Prénom *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="firstName"
+                        type="text"
+                        placeholder="Jean"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nom *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="lastName"
+                        type="text"
+                        placeholder="Dupont"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Téléphone *</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+237 6XX XXX XXX"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date de naissance</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Business Info Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Nom de l'entreprise</Label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="companyName"
+                        type="text"
+                        placeholder="Ma Société SARL"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="activitySector">Secteur d'activité</Label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="activitySector"
+                        type="text"
+                        placeholder="Commerce, Import/Export..."
+                        value={activitySector}
+                        onChange={(e) => setActivitySector(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="neighborhood">Quartier</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="neighborhood"
+                        type="text"
+                        placeholder="Bonanjo"
+                        value={neighborhood}
+                        onChange={(e) => setNeighborhood(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Ville</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="city"
+                        type="text"
+                        placeholder="Douala"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Pays</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="country"
+                        type="text"
+                        placeholder="Cameroun"
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm text-muted-foreground mb-4">Informations de connexion</p>
+                </div>
+              </>
+            )}
+
             {mode !== 'reset-password' && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email {mode === 'signup' && '*'}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -172,7 +385,7 @@ export default function AuthPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
-                    autoFocus
+                    autoFocus={mode !== 'signup'}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -181,7 +394,7 @@ export default function AuthPage() {
             
             {mode !== 'forgot-password' && (
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">Mot de passe {mode === 'signup' && '*'}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -208,7 +421,7 @@ export default function AuthPage() {
 
             {mode === 'signup' && (
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -235,6 +448,10 @@ export default function AuthPage() {
                   Mot de passe oublié ?
                 </button>
               </div>
+            )}
+
+            {mode === 'signup' && (
+              <p className="text-xs text-muted-foreground">* Champs obligatoires</p>
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>

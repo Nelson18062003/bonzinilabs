@@ -2,11 +2,25 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SignUpData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dateOfBirth?: string;
+  companyName?: string;
+  activitySector?: string;
+  neighborhood?: string;
+  city?: string;
+  country?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (data: SignUpData) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -39,18 +53,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (data: SignUpData) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: redirectUrl,
+        data: {
+          first_name: data.firstName,
+          last_name: data.lastName,
+        }
       }
     });
+
+    if (error) {
+      return { error: error as Error };
+    }
+
+    // Update profile with additional info
+    if (authData.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          phone: data.phone,
+          date_of_birth: data.dateOfBirth || null,
+          company_name: data.companyName || null,
+          activity_sector: data.activitySector || null,
+          neighborhood: data.neighborhood || null,
+          city: data.city || null,
+          country: data.country || null,
+        })
+        .eq('user_id', authData.user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+      }
+    }
     
-    return { error: error as Error | null };
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {

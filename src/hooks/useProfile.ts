@@ -9,6 +9,12 @@ export interface Profile {
   last_name: string;
   phone: string | null;
   avatar_url: string | null;
+  date_of_birth: string | null;
+  company_name: string | null;
+  activity_sector: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  country: string | null;
   created_at: string;
   updated_at: string;
 }
