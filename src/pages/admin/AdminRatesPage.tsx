@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { 
   Plus, 
   TrendingUp,
-  Edit,
-  Trash2,
   Calculator,
   ArrowRightLeft,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,17 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { exchangeRatesHistory, dashboardStats } from '@/data/adminMockData';
-import { formatDate } from '@/data/mockData';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { useExchangeRates, useAddExchangeRate } from '@/hooks/useAdminData';
+import { formatDate } from '@/lib/formatters';
 
 export function AdminRatesPage() {
   const [xafAmount, setXafAmount] = useState<string>('100000');
@@ -44,15 +35,14 @@ export function AdminRatesPage() {
   const [newRateDialogOpen, setNewRateDialogOpen] = useState(false);
   const [newRate, setNewRate] = useState<string>('87');
 
-  const currentRate = dashboardStats.currentRate;
+  const { data: rates, isLoading } = useExchangeRates();
+  const addRate = useAddExchangeRate();
 
-  const convertXafToRmb = (xaf: number) => Math.round(xaf / currentRate);
-  const convertRmbToXaf = (rmb: number) => Math.round(rmb * currentRate);
+  const currentRate = rates?.[0]?.rate_xaf_to_rmb ?? 0.01167;
+  const rmbToXaf = 1 / currentRate;
 
-  const chartData = exchangeRatesHistory.map((rate) => ({
-    date: rate.date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-    rate: rate.rmbToXaf,
-  }));
+  const convertXafToRmb = (xaf: number) => Math.round(xaf * currentRate);
+  const convertRmbToXaf = (rmb: number) => Math.round(rmb / currentRate);
 
   const handleXafChange = (value: string) => {
     setXafAmount(value);
@@ -72,197 +62,169 @@ export function AdminRatesPage() {
     }
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Taux de change</h1>
-          <p className="text-muted-foreground">Gestion des taux XAF ↔ RMB</p>
+  const handleAddRate = async () => {
+    const rateValue = parseFloat(newRate);
+    if (isNaN(rateValue) || rateValue <= 0) return;
+    
+    // Convert from RMB to XAF rate to XAF to RMB rate
+    const xafToRmbRate = 1 / rateValue;
+    
+    await addRate.mutateAsync(xafToRmbRate);
+    setNewRateDialogOpen(false);
+    setNewRate('87');
+  };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-        <Dialog open={newRateDialogOpen} onOpenChange={setNewRateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau taux
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Définir un nouveau taux</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Taux de change</h1>
+            <p className="text-muted-foreground">Gestion des taux XAF ↔ RMB</p>
+          </div>
+          <Dialog open={newRateDialogOpen} onOpenChange={setNewRateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau taux
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Définir un nouveau taux</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <Label>Taux (1 RMB = ? XAF)</Label>
+                  <Input
+                    type="number"
+                    value={newRate}
+                    onChange={(e) => setNewRate(e.target.value)}
+                    placeholder="87"
+                  />
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Aperçu:</p>
+                  <p className="text-lg font-semibold">
+                    1 RMB = {newRate} XAF
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    100,000 XAF = {Math.round(100000 / Number(newRate || 1)).toLocaleString()} RMB
+                  </p>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setNewRateDialogOpen(false)}>
+                    Annuler
+                  </Button>
+                  <Button onClick={handleAddRate} disabled={addRate.isPending}>
+                    {addRate.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Current Rate */}
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <Label>Taux (1 RMB = ? XAF)</Label>
+                <p className="text-sm text-muted-foreground">Taux actuel</p>
+                <p className="text-3xl font-bold text-foreground mt-1">
+                  1 RMB = {rmbToXaf.toFixed(2)} XAF
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Mis à jour le {rates?.[0] ? formatDate(rates[0].effective_date) : 'N/A'}
+                </p>
+              </div>
+              <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <TrendingUp className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Converter */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Simulateur de conversion
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-1 w-full">
+                <Label>Montant XAF</Label>
                 <Input
                   type="number"
-                  value={newRate}
-                  onChange={(e) => setNewRate(e.target.value)}
-                  placeholder="87"
+                  value={xafAmount}
+                  onChange={(e) => handleXafChange(e.target.value)}
+                  placeholder="100000"
                 />
               </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Aperçu:</p>
-                <p className="text-lg font-semibold">
-                  1 RMB = {newRate} XAF
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  100,000 XAF = {Math.round(100000 / Number(newRate || 1)).toLocaleString()} RMB
-                </p>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setNewRateDialogOpen(false)}>
-                  Annuler
-                </Button>
-                <Button onClick={() => setNewRateDialogOpen(false)}>
-                  Enregistrer
-                </Button>
+              <ArrowRightLeft className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1 w-full">
+                <Label>Montant RMB</Label>
+                <Input
+                  type="number"
+                  value={rmbAmount}
+                  onChange={(e) => handleRmbChange(e.target.value)}
+                  placeholder="1149"
+                />
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+            <p className="text-sm text-muted-foreground mt-4 text-center">
+              Taux appliqué: 1 RMB = {rmbToXaf.toFixed(2)} XAF
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* History Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Historique des taux</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {rates && rates.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>1 RMB = XAF</TableHead>
+                    <TableHead>1 XAF = RMB</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rates.map((rate) => (
+                    <TableRow key={rate.id}>
+                      <TableCell className="font-medium">
+                        {formatDate(rate.effective_date, 'long')}
+                      </TableCell>
+                      <TableCell>{(1 / rate.rate_xaf_to_rmb).toFixed(2)}</TableCell>
+                      <TableCell>{rate.rate_xaf_to_rmb.toFixed(5)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">Aucun taux enregistré</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Current Rate */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Taux actuel</p>
-              <p className="text-3xl font-bold text-foreground mt-1">
-                1 RMB = {currentRate} XAF
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Mis à jour le {formatDate(new Date())}
-              </p>
-            </div>
-            <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
-              <TrendingUp className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Converter */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            Simulateur de conversion
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex-1 w-full">
-              <Label>Montant XAF</Label>
-              <Input
-                type="number"
-                value={xafAmount}
-                onChange={(e) => handleXafChange(e.target.value)}
-                placeholder="100000"
-              />
-            </div>
-            <ArrowRightLeft className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-            <div className="flex-1 w-full">
-              <Label>Montant RMB</Label>
-              <Input
-                type="number"
-                value={rmbAmount}
-                onChange={(e) => handleRmbChange(e.target.value)}
-                placeholder="1149"
-              />
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground mt-4 text-center">
-            Taux appliqué: 1 RMB = {currentRate} XAF
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Évolution du taux (10 derniers jours)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                />
-                <YAxis 
-                  domain={['dataMin - 1', 'dataMax + 1']}
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="rate" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* History Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des taux</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>1 RMB = XAF</TableHead>
-                <TableHead>1 XAF = RMB</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {exchangeRatesHistory.slice().reverse().map((rate) => (
-                <TableRow key={rate.id}>
-                  <TableCell className="font-medium">
-                    {rate.date.toLocaleDateString('fr-FR', { 
-                      day: '2-digit', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </TableCell>
-                  <TableCell>{rate.rmbToXaf}</TableCell>
-                  <TableCell>{rate.xafToRmb.toFixed(4)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+    </AdminLayout>
   );
 }

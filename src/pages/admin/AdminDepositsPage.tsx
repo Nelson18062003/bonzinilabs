@@ -28,10 +28,9 @@ import {
   useAdminDeposits, 
   useValidateDeposit, 
   useRejectDeposit,
-  DEPOSIT_STATUS_LABELS,
-  DEPOSIT_METHOD_LABELS,
 } from '@/hooks/useDeposits';
-import { formatXAF, formatDate } from '@/data/mockData';
+import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/data/staticData';
+import { formatXAF, formatDate } from '@/lib/formatters';
 
 export function AdminDepositsPage() {
   const navigate = useNavigate();

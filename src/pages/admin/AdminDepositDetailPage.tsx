@@ -42,11 +42,10 @@ import {
   useDepositTimeline,
   useValidateDeposit,
   useRejectDeposit,
-  useWalletByUserId,
-  DEPOSIT_STATUS_LABELS,
-  DEPOSIT_METHOD_LABELS,
 } from '@/hooks/useDeposits';
-import { formatXAF } from '@/data/mockData';
+import { useWalletByUserId } from '@/hooks/useWallet';
+import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/data/staticData';
+import { formatXAF } from '@/lib/formatters';
 
 export function AdminDepositDetailPage() {
   const { depositId } = useParams();

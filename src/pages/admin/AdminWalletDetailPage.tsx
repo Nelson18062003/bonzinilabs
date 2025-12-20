@@ -1,48 +1,21 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Wallet,
   ArrowDownCircle,
   ArrowUpCircle,
-  Settings,
-  Plus,
   RefreshCw,
   Calendar,
-  User,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { 
-  clients, 
-  adminUsers,
-  getWalletByClientId,
-  getWalletOperationsByClientId,
-} from '@/data/adminMockData';
-import { formatCurrency, formatDate } from '@/data/mockData';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { WalletOperation, WalletOperationType } from '@/types/admin';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useProfileByUserId } from '@/hooks/useProfile';
+import { useWalletByUserId, useWalletOperations } from '@/hooks/useWallet';
+import { formatXAF, formatDate } from '@/lib/formatters';
 import {
   Table,
   TableBody,
@@ -55,18 +28,24 @@ import {
 export function AdminWalletDetailPage() {
   const { clientId } = useParams();
   const navigate = useNavigate();
-  const { hasPermission, logAction, currentUser } = useAdminAuth();
   
-  const client = clients.find(c => c.id === clientId);
-  const wallet = client ? getWalletByClientId(client.id) : null;
-  const operations = client ? getWalletOperationsByClientId(client.id) : [];
-  
-  const [isAdjustmentDialogOpen, setIsAdjustmentDialogOpen] = useState(false);
-  const [adjustmentType, setAdjustmentType] = useState<'CREDIT' | 'DEBIT'>('CREDIT');
-  const [adjustmentAmount, setAdjustmentAmount] = useState('');
-  const [adjustmentDescription, setAdjustmentDescription] = useState('');
+  const { data: profile, isLoading: loadingProfile } = useProfileByUserId(clientId);
+  const { data: wallet, isLoading: loadingWallet } = useWalletByUserId(clientId);
+  const { data: operations, isLoading: loadingOperations } = useWalletOperations(wallet?.id);
 
-  if (!client || !wallet) {
+  const isLoading = loadingProfile || loadingWallet || loadingOperations;
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!profile || !wallet) {
     return (
       <AdminLayout>
         <div className="p-6">
@@ -84,66 +63,40 @@ export function AdminWalletDetailPage() {
     );
   }
 
-  const getOperationIcon = (type: WalletOperationType) => {
+  const getOperationIcon = (type: string) => {
     switch (type) {
-      case 'CREDIT':
+      case 'deposit':
         return <ArrowDownCircle className="h-4 w-4 text-emerald-600" />;
-      case 'DEBIT':
+      case 'payment':
         return <ArrowUpCircle className="h-4 w-4 text-red-600" />;
-      case 'ADJUSTMENT':
-        return <Settings className="h-4 w-4 text-amber-600" />;
+      case 'adjustment':
+        return <RefreshCw className="h-4 w-4 text-amber-600" />;
+      default:
+        return <RefreshCw className="h-4 w-4" />;
     }
   };
 
-  const getOperationBadge = (type: WalletOperationType) => {
+  const getOperationBadge = (type: string) => {
     switch (type) {
-      case 'CREDIT':
+      case 'deposit':
         return <Badge className="bg-emerald-500/10 text-emerald-600">Crédit</Badge>;
-      case 'DEBIT':
+      case 'payment':
         return <Badge className="bg-red-500/10 text-red-600">Débit</Badge>;
-      case 'ADJUSTMENT':
+      case 'adjustment':
         return <Badge className="bg-amber-500/10 text-amber-600">Ajustement</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
     }
-  };
-
-  const getSourceLabel = (op: WalletOperation) => {
-    switch (op.sourceType) {
-      case 'DEPOSIT':
-        return `Dépôt #${op.sourceId?.slice(-4) || 'N/A'}`;
-      case 'PAYMENT':
-        return `Paiement #${op.sourceId?.slice(-4) || 'N/A'}`;
-      case 'MANUAL':
-        const admin = adminUsers.find(a => a.id === op.createdByAdminUserId);
-        return `Manuel - ${admin ? `${admin.firstName} ${admin.lastName}` : 'Admin'}`;
-    }
-  };
-
-  const handleAdjustment = () => {
-    const amount = parseFloat(adjustmentAmount);
-    if (isNaN(amount) || amount <= 0 || !adjustmentDescription.trim()) return;
-
-    const finalAmount = adjustmentType === 'DEBIT' ? -amount : amount;
-    
-    logAction(
-      adjustmentType === 'CREDIT' ? 'WALLET_CREDITED' : 'WALLET_DEBITED',
-      'WALLET',
-      wallet.id,
-      `Ajustement manuel ${adjustmentType === 'CREDIT' ? '+' : '-'}${formatCurrency(amount)} pour ${client.firstName} ${client.lastName}: ${adjustmentDescription}`
-    );
-
-    setIsAdjustmentDialogOpen(false);
-    setAdjustmentAmount('');
-    setAdjustmentDescription('');
   };
 
   // Calculate totals from operations
-  const totalCredits = operations
-    .filter(op => op.type === 'CREDIT' || (op.type === 'ADJUSTMENT' && op.amountXAF > 0))
-    .reduce((sum, op) => sum + Math.abs(op.amountXAF), 0);
+  const totalCredits = (operations || [])
+    .filter(op => op.operation_type === 'deposit' || (op.operation_type === 'adjustment' && op.amount_xaf > 0))
+    .reduce((sum, op) => sum + Math.abs(op.amount_xaf), 0);
 
-  const totalDebits = operations
-    .filter(op => op.type === 'DEBIT' || (op.type === 'ADJUSTMENT' && op.amountXAF < 0))
-    .reduce((sum, op) => sum + Math.abs(op.amountXAF), 0);
+  const totalDebits = (operations || [])
+    .filter(op => op.operation_type === 'payment' || (op.operation_type === 'adjustment' && op.amount_xaf < 0))
+    .reduce((sum, op) => sum + Math.abs(op.amount_xaf), 0);
 
   return (
     <AdminLayout>
@@ -157,95 +110,19 @@ export function AdminWalletDetailPage() {
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {client.firstName[0]}{client.lastName[0]}
+                  {profile.first_name[0]}{profile.last_name[0]}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
-                  Wallet - {client.firstName} {client.lastName}
+                  Wallet - {profile.first_name} {profile.last_name}
                 </h1>
                 <p className="text-muted-foreground">
-                  Dernière mise à jour: {formatDate(wallet.updatedAt)}
+                  Dernière mise à jour: {formatDate(wallet.updated_at)}
                 </p>
               </div>
             </div>
           </div>
-          {hasPermission('canProcessDeposits') && (
-            <Dialog open={isAdjustmentDialogOpen} onOpenChange={setIsAdjustmentDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajustement manuel
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Ajustement manuel du wallet</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Type d'ajustement</Label>
-                    <Select 
-                      value={adjustmentType} 
-                      onValueChange={(v) => setAdjustmentType(v as 'CREDIT' | 'DEBIT')}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CREDIT">
-                          <span className="flex items-center gap-2">
-                            <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
-                            Crédit (ajout)
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="DEBIT">
-                          <span className="flex items-center gap-2">
-                            <ArrowUpCircle className="h-4 w-4 text-red-600" />
-                            Débit (retrait)
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Montant (XAF)</Label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={adjustmentAmount}
-                      onChange={(e) => setAdjustmentAmount(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description (obligatoire)</Label>
-                    <Textarea
-                      placeholder="Raison de l'ajustement..."
-                      value={adjustmentDescription}
-                      onChange={(e) => setAdjustmentDescription(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="p-3 bg-muted/50 rounded-lg text-sm">
-                    <p className="text-muted-foreground">
-                      Cet ajustement sera loggué avec votre identifiant admin ({currentUser?.firstName} {currentUser?.lastName}).
-                    </p>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAdjustmentDialogOpen(false)}>
-                    Annuler
-                  </Button>
-                  <Button 
-                    onClick={handleAdjustment}
-                    disabled={!adjustmentAmount || !adjustmentDescription.trim()}
-                  >
-                    Confirmer l'ajustement
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
         </div>
 
         {/* Wallet Stats */}
@@ -259,10 +136,10 @@ export function AdminWalletDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Solde actuel</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {formatCurrency(wallet.currentBalanceXAF)}
+                    {formatXAF(wallet.balance_xaf)} XAF
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    ≈ {Math.round(wallet.currentBalanceXAF / 87).toLocaleString()} RMB
+                    ≈ {Math.round(wallet.balance_xaf / 87).toLocaleString()} RMB
                   </p>
                 </div>
               </div>
@@ -278,7 +155,7 @@ export function AdminWalletDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total crédité</p>
                   <p className="text-2xl font-bold text-emerald-600">
-                    +{formatCurrency(totalCredits)}
+                    +{formatXAF(totalCredits)} XAF
                   </p>
                 </div>
               </div>
@@ -294,7 +171,7 @@ export function AdminWalletDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total débité</p>
                   <p className="text-2xl font-bold text-red-600">
-                    -{formatCurrency(totalDebits)}
+                    -{formatXAF(totalDebits)} XAF
                   </p>
                 </div>
               </div>
@@ -310,17 +187,16 @@ export function AdminWalletDetailPage() {
                 <RefreshCw className="h-5 w-5" />
                 Historique des mouvements
               </CardTitle>
-              <Badge variant="outline">{operations.length} opérations</Badge>
+              <Badge variant="outline">{(operations || []).length} opérations</Badge>
             </div>
           </CardHeader>
           <CardContent>
-            {operations.length > 0 ? (
+            {operations && operations.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Source</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                   </TableRow>
@@ -331,38 +207,30 @@ export function AdminWalletDetailPage() {
                       <TableCell className="text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          {formatDate(operation.createdAt)}
+                          {formatDate(operation.created_at)}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {getOperationIcon(operation.type)}
-                          {getOperationBadge(operation.type)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {operation.sourceType === 'MANUAL' && (
-                            <User className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          <span className="text-sm">{getSourceLabel(operation)}</span>
+                          {getOperationIcon(operation.operation_type)}
+                          {getOperationBadge(operation.operation_type)}
                         </div>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-foreground">
-                          {operation.description}
+                          {operation.description || 'N/A'}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <span className={`font-semibold ${
-                          operation.type === 'CREDIT' || (operation.type === 'ADJUSTMENT' && operation.amountXAF > 0)
+                          operation.operation_type === 'deposit'
                             ? 'text-emerald-600'
-                            : 'text-red-600'
+                            : operation.operation_type === 'payment'
+                            ? 'text-red-600'
+                            : 'text-amber-600'
                         }`}>
-                          {operation.type === 'DEBIT' || (operation.type === 'ADJUSTMENT' && operation.amountXAF < 0)
-                            ? '-'
-                            : '+'}
-                          {formatCurrency(Math.abs(operation.amountXAF))}
+                          {operation.operation_type === 'payment' ? '-' : '+'}
+                          {formatXAF(Math.abs(operation.amount_xaf))} XAF
                         </span>
                       </TableCell>
                     </TableRow>
@@ -385,9 +253,6 @@ export function AdminWalletDetailPage() {
           </Button>
           <Button variant="outline" onClick={() => navigate('/admin/deposits')}>
             Voir les dépôts
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/admin/payments')}>
-            Voir les paiements
           </Button>
         </div>
       </div>

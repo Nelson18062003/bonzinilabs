@@ -1,6 +1,32 @@
 // Static data that doesn't change - deposit/payment method instructions
 
 import { DepositMethodInfo, PaymentMethodInfo } from '@/types';
+import { Database } from '@/integrations/supabase/types';
+
+type DepositMethod = Database['public']['Enums']['deposit_method'];
+type DepositStatus = Database['public']['Enums']['deposit_status'];
+
+// Labels for deposit methods
+export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
+  bank_transfer: 'Virement bancaire',
+  bank_cash: 'Dépôt cash banque',
+  agency_cash: 'Agence Bonzini',
+  om_transfer: 'Orange Money (transfert)',
+  om_withdrawal: 'Orange Money (retrait)',
+  mtn_transfer: 'MTN Money (transfert)',
+  mtn_withdrawal: 'MTN Money (retrait)',
+  wave: 'Wave',
+};
+
+// Labels for deposit statuses
+export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
+  created: 'Créé',
+  awaiting_proof: 'En attente de preuve',
+  proof_submitted: 'Preuve envoyée',
+  admin_review: 'En vérification',
+  validated: 'Validé',
+  rejected: 'Rejeté',
+};
 
 // Deposit Methods Info
 export const depositMethodsInfo: DepositMethodInfo[] = [
