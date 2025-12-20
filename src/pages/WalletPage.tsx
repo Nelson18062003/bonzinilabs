@@ -51,7 +51,7 @@ const WalletPage = () => {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : (
-          <OperationsList operations={(operations || []) as any} />
+          <OperationsList operations={operations || []} />
         )}
       </div>
     </MobileLayout>
