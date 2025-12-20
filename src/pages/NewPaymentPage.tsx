@@ -301,32 +301,47 @@ const NewPaymentPage = () => {
 
     return (
       <div className="animate-fade-in space-y-6">
-        <p className="text-sm text-muted-foreground">
-          {isCash 
-            ? 'Vous pourrez récupérer votre argent au bureau Bonzini.'
-            : 'Fournissez les informations du bénéficiaire ou ajoutez-les plus tard.'}
-        </p>
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Informations du bénéficiaire</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isCash
+              ? 'Vous pourrez récupérer votre argent au bureau Bonzini.'
+              : 'Ces informations permettent à Bonzini d\'effectuer le paiement. Vous pouvez les ajouter maintenant ou plus tard.'}
+          </p>
+        </div>
 
         {!isCash && (
           <div className="space-y-4">
             {isAlipayOrWechat && (
               <>
-                {/* QR Code upload */}
+                {/* QR Code upload - beneficiary info, NOT proof */}
                 <div className="space-y-2">
-                  <Label>QR Code (optionnel)</Label>
-                  <div 
+                  <Label className="flex items-center gap-1">
+                    QR Code du bénéficiaire
+                    <span className="text-xs text-muted-foreground">(recommandé)</span>
+                  </Label>
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => fileInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+                    }}
                     className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     {qrCodeFile ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <ImageIcon className="w-5 h-5 text-primary" />
-                        <span className="text-sm font-medium">{qrCodeFile.name}</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <ImageIcon className="w-8 h-8 text-primary" />
+                        <span className="text-sm font-medium text-foreground">{qrCodeFile.name}</span>
+                        <span className="text-xs text-muted-foreground">Cliquez pour changer</span>
                       </div>
                     ) : (
                       <>
                         <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Cliquez pour uploader un QR code</p>
+                        <p className="text-sm font-medium text-foreground">Ajouter le QR code Alipay / WeChat</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Le QR code de paiement fourni par votre bénéficiaire
+                        </p>
                       </>
                     )}
                   </div>
@@ -344,7 +359,7 @@ const NewPaymentPage = () => {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
+                    <span className="bg-background px-2 text-muted-foreground">Ou renseignez les infos</span>
                   </div>
                 </div>
               </>
@@ -354,7 +369,7 @@ const NewPaymentPage = () => {
               <Label>Nom du bénéficiaire</Label>
               <Input
                 value={beneficiaryForm.name}
-                onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setBeneficiaryForm((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Nom complet"
               />
             </div>
@@ -364,8 +379,8 @@ const NewPaymentPage = () => {
                 <Label>Téléphone / ID</Label>
                 <Input
                   value={beneficiaryForm.phone}
-                  onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="Numéro ou identifiant"
+                  onChange={(e) => setBeneficiaryForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Numéro ou identifiant Alipay/WeChat"
                 />
               </div>
             )}
@@ -376,7 +391,7 @@ const NewPaymentPage = () => {
                   <Label>Nom de la banque</Label>
                   <Input
                     value={beneficiaryForm.bank_name}
-                    onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, bank_name: e.target.value }))}
+                    onChange={(e) => setBeneficiaryForm((prev) => ({ ...prev, bank_name: e.target.value }))}
                     placeholder="Nom de la banque"
                   />
                 </div>
@@ -384,7 +399,7 @@ const NewPaymentPage = () => {
                   <Label>Numéro de compte</Label>
                   <Input
                     value={beneficiaryForm.bank_account}
-                    onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, bank_account: e.target.value }))}
+                    onChange={(e) => setBeneficiaryForm((prev) => ({ ...prev, bank_account: e.target.value }))}
                     placeholder="Numéro de compte bancaire"
                   />
                 </div>
@@ -395,26 +410,36 @@ const NewPaymentPage = () => {
               <Label>Notes (optionnel)</Label>
               <Textarea
                 value={beneficiaryForm.notes}
-                onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Instructions supplémentaires"
+                onChange={(e) => setBeneficiaryForm((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder="Instructions supplémentaires pour Bonzini"
                 rows={3}
               />
             </div>
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-3 pt-2">
           <button
             onClick={() => setStep('confirm')}
             className="w-full py-4 rounded-xl font-semibold btn-primary-gradient"
           >
             {isCash ? 'Continuer' : 'Continuer avec ces informations'}
           </button>
-          
+
           {!isCash && (
             <button
               onClick={() => {
                 setSkipBeneficiary(true);
+                setBeneficiaryForm({
+                  name: '',
+                  phone: '',
+                  email: '',
+                  bank_name: '',
+                  bank_account: '',
+                  notes: '',
+                  qr_code_url: '',
+                });
+                setQrCodeFile(null);
                 setStep('confirm');
               }}
               className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
@@ -429,9 +454,10 @@ const NewPaymentPage = () => {
 
   // Step 4: Confirmation
   const renderConfirmStep = () => {
-    const methodInfo = paymentMethods.find(m => m.id === selectedMethod);
+    const methodInfo = paymentMethods.find((m) => m.id === selectedMethod);
     const Icon = methodInfo?.icon || CreditCard;
-    const hasBeneficiaryInfo = beneficiaryForm.name || beneficiaryForm.phone || beneficiaryForm.bank_account || qrCodeFile;
+    const hasBeneficiaryInfo =
+      beneficiaryForm.name || beneficiaryForm.phone || beneficiaryForm.bank_account || qrCodeFile;
 
     return (
       <div className="animate-fade-in space-y-6">
