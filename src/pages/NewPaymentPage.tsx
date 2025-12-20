@@ -1,60 +1,259 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { paymentMethodsInfo } from '@/data/staticData';
-import { formatXAF, formatRMB, convertXAFtoRMB } from '@/lib/formatters';
+import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
 import { useMyWallet, useExchangeRate } from '@/hooks/useWallet';
-import { PaymentMethod, Beneficiary } from '@/types';
-import { Check, Plus, User, ArrowRightLeft, AlertCircle } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { useCreatePayment } from '@/hooks/usePayments';
+import { 
+  Check, 
+  ArrowRightLeft, 
+  AlertCircle,
+  CreditCard,
+  Wallet,
+  Building2,
+  Banknote,
+  Loader2,
+  Upload,
+  Image as ImageIcon
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
-type Step = 'method' | 'beneficiary' | 'amount' | 'confirm' | 'success';
+type Step = 'amount' | 'method' | 'beneficiary' | 'confirm' | 'success';
+type Currency = 'XAF' | 'RMB';
+type PaymentMethodType = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
+
+const paymentMethods = [
+  { id: 'alipay' as const, label: 'Alipay', icon: CreditCard, description: 'Paiement via Alipay' },
+  { id: 'wechat' as const, label: 'WeChat Pay', icon: Wallet, description: 'Paiement via WeChat' },
+  { id: 'bank_transfer' as const, label: 'Virement bancaire', icon: Building2, description: 'Transfert vers compte bancaire' },
+  { id: 'cash' as const, label: 'Cash', icon: Banknote, description: 'Retrait au bureau Bonzini' },
+];
 
 const NewPaymentPage = () => {
   const navigate = useNavigate();
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
-  const { data: exchangeRate } = useExchangeRate();
+  const { data: exchangeRateData } = useExchangeRate();
+  const createPayment = useCreatePayment();
   
-  const [step, setStep] = useState<Step>('method');
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
-  const [selectedBeneficiary, setSelectedBeneficiary] = useState<Beneficiary | null>(null);
-  const [amountXAF, setAmountXAF] = useState('');
+  const [step, setStep] = useState<Step>('amount');
+  const [currency, setCurrency] = useState<Currency>('XAF');
+  const [inputAmount, setInputAmount] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType | null>(null);
+  const [skipBeneficiary, setSkipBeneficiary] = useState(false);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  
+  // Beneficiary form
+  const [beneficiaryForm, setBeneficiaryForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    bank_name: '',
+    bank_account: '',
+    notes: '',
+    qr_code_url: '',
+  });
+  const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const rate = exchangeRate || 0.01167;
-  const amountRMB = amountXAF ? convertXAFtoRMB(parseInt(amountXAF), rate) : 0;
-  const fees = amountXAF ? Math.round(parseInt(amountXAF) * 0.01) : 0;
-  const totalXAF = amountXAF ? parseInt(amountXAF) + fees : 0;
-  const hasEnoughBalance = totalXAF <= (wallet?.balance_xaf || 0);
+  // Rate calculation
+  const rate = exchangeRateData || 0.01167;
+  
+  const amountXAF = currency === 'XAF' 
+    ? parseInt(inputAmount) || 0 
+    : Math.round((parseInt(inputAmount) || 0) / rate);
+  
+  const amountRMB = currency === 'RMB' 
+    ? parseFloat(inputAmount) || 0 
+    : parseFloat((amountXAF * rate).toFixed(2));
+  
+  const hasEnoughBalance = amountXAF <= (wallet?.balance_xaf || 0);
+  const isValidAmount = amountXAF > 0;
 
-  // TODO: Fetch beneficiaries from database when ready
-  const filteredBeneficiaries: Beneficiary[] = [];
-
-  const handleSubmit = () => {
-    if (!hasEnoughBalance) {
-      toast.error('Solde insuffisant');
-      return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setQrCodeFile(file);
     }
-    toast.success('Paiement initié avec succès !');
-    setStep('success');
   };
 
-  const renderMethodSelection = () => (
-    <div className="space-y-3 animate-fade-in">
+  const handleSubmit = async () => {
+    if (!selectedMethod || !isValidAmount || !hasEnoughBalance) return;
+
+    try {
+      // Upload QR code if provided
+      let qrCodeUrl = beneficiaryForm.qr_code_url;
+      if (qrCodeFile) {
+        const fileName = `qr-codes/${Date.now()}_${qrCodeFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(fileName, qrCodeFile);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('payment-proofs')
+            .getPublicUrl(fileName);
+          qrCodeUrl = publicUrl;
+        }
+      }
+
+      const result = await createPayment.mutateAsync({
+        amount_xaf: amountXAF,
+        amount_rmb: amountRMB,
+        exchange_rate: rate,
+        method: selectedMethod,
+        beneficiary_name: beneficiaryForm.name || undefined,
+        beneficiary_phone: beneficiaryForm.phone || undefined,
+        beneficiary_email: beneficiaryForm.email || undefined,
+        beneficiary_qr_code_url: qrCodeUrl || undefined,
+        beneficiary_bank_name: beneficiaryForm.bank_name || undefined,
+        beneficiary_bank_account: beneficiaryForm.bank_account || undefined,
+        beneficiary_notes: beneficiaryForm.notes || undefined,
+      });
+
+      if (result.payment_id) {
+        setPaymentId(result.payment_id);
+      }
+      setStep('success');
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
+
+  // Step 1: Amount input
+  const renderAmountStep = () => (
+    <div className="animate-fade-in space-y-6">
+      {/* Rate display */}
+      <div className="card-glass p-4 text-center">
+        <p className="text-sm text-muted-foreground mb-1">Taux actuel</p>
+        <p className="text-lg font-bold text-foreground">
+          1 000 000 XAF → {formatCurrencyRMB(1000000 * rate)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">Taux appliqué à ce paiement</p>
+      </div>
+
+      {/* Currency tabs */}
+      <Tabs value={currency} onValueChange={(v) => { setCurrency(v as Currency); setInputAmount(''); }}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="XAF">Par XAF</TabsTrigger>
+          <TabsTrigger value="RMB">Par RMB</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Amount input */}
+      <div className="card-primary p-6">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-primary-foreground/70 text-sm">Vous envoyez</span>
+          {walletLoading ? (
+            <Skeleton className="h-4 w-24 bg-primary-foreground/20" />
+          ) : (
+            <span className="text-primary-foreground/70 text-sm">
+              Solde: {formatXAF(wallet?.balance_xaf || 0)} XAF
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={inputAmount}
+            onChange={(e) => setInputAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+            placeholder="0"
+            className="amount-input text-primary-foreground placeholder:text-primary-foreground/30"
+          />
+          <span className="text-xl font-medium text-primary-foreground/70">{currency}</span>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 py-3 border-t border-primary-foreground/10">
+          <ArrowRightLeft className="w-5 h-5 text-primary-foreground/50" />
+        </div>
+
+        <div className="text-center">
+          <span className="text-primary-foreground/70 text-sm">
+            {currency === 'XAF' ? 'Bénéficiaire reçoit' : 'Montant débité'}
+          </span>
+          <p className="text-3xl font-bold text-primary-foreground mt-1">
+            {currency === 'XAF' ? (
+              <>
+                ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                <span className="text-lg font-medium text-primary-foreground/70 ml-2">RMB</span>
+              </>
+            ) : (
+              <>
+                {formatXAF(amountXAF)}
+                <span className="text-lg font-medium text-primary-foreground/70 ml-2">XAF</span>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Quick amounts */}
+      <div className="grid grid-cols-3 gap-2">
+        {(currency === 'XAF' ? [100000, 250000, 500000] : [1000, 5000, 10000]).map((preset) => (
+          <button
+            key={preset}
+            onClick={() => setInputAmount(preset.toString())}
+            className="py-3 rounded-xl bg-secondary text-foreground font-medium hover:bg-secondary/80 transition-colors text-sm"
+          >
+            {currency === 'XAF' ? formatXAF(preset) : `¥${preset.toLocaleString()}`}
+          </button>
+        ))}
+      </div>
+
+      {!hasEnoughBalance && isValidAmount && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="flex-1">
+            <span>Solde insuffisant.</span>
+            <button 
+              onClick={() => navigate('/deposits/new')} 
+              className="ml-1 underline font-medium"
+            >
+              Ajouter de l'argent
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => isValidAmount && hasEnoughBalance && setStep('method')}
+        disabled={!isValidAmount || !hasEnoughBalance}
+        className={cn(
+          'w-full py-4 rounded-xl font-semibold transition-all',
+          isValidAmount && hasEnoughBalance
+            ? 'btn-primary-gradient'
+            : 'bg-muted text-muted-foreground cursor-not-allowed'
+        )}
+      >
+        Continuer
+      </button>
+    </div>
+  );
+
+  // Step 2: Payment method
+  const renderMethodStep = () => (
+    <div className="animate-fade-in space-y-4">
       <p className="text-sm text-muted-foreground mb-4">
         Comment votre bénéficiaire souhaite recevoir ?
       </p>
-      {paymentMethodsInfo.map((method) => {
-        const IconComponent = (Icons as any)[method.icon] || Icons.Send;
-        const isSelected = selectedMethod === method.method;
-        
+
+      {paymentMethods.map((method) => {
+        const Icon = method.icon;
+        const isSelected = selectedMethod === method.id;
+
         return (
           <button
-            key={method.method}
-            onClick={() => setSelectedMethod(method.method as PaymentMethod)}
+            key={method.id}
+            onClick={() => setSelectedMethod(method.id)}
             className={cn(
               'method-card w-full text-left',
               isSelected && 'method-card-selected'
@@ -64,7 +263,7 @@ const NewPaymentPage = () => {
               'w-12 h-12 rounded-xl flex items-center justify-center',
               isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'
             )}>
-              <IconComponent className="w-6 h-6" />
+              <Icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-foreground">{method.label}</p>
@@ -78,7 +277,7 @@ const NewPaymentPage = () => {
           </button>
         );
       })}
-      
+
       <button
         onClick={() => selectedMethod && setStep('beneficiary')}
         disabled={!selectedMethod}
@@ -94,265 +293,293 @@ const NewPaymentPage = () => {
     </div>
   );
 
-  const renderBeneficiarySelection = () => (
-    <div className="animate-fade-in">
-      <p className="text-sm text-muted-foreground mb-4">
-        Sélectionnez ou ajoutez un bénéficiaire
-      </p>
-      
-      <div className="space-y-3 mb-6">
-        {filteredBeneficiaries.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Aucun bénéficiaire pour cette méthode</p>
-          </div>
-        )}
-        
-        <button
-          onClick={() => navigate('/beneficiaries/new')}
-          className="method-card w-full text-left border-dashed"
-        >
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <Plus className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-primary">Nouveau bénéficiaire</p>
-            <p className="text-xs text-muted-foreground">Ajouter un nouveau destinataire</p>
-          </div>
-        </button>
-      </div>
-      
-      <button
-        onClick={() => selectedBeneficiary && setStep('amount')}
-        disabled={!selectedBeneficiary}
-        className={cn(
-          'w-full py-4 rounded-xl font-semibold transition-all',
-          selectedBeneficiary
-            ? 'btn-primary-gradient'
-            : 'bg-muted text-muted-foreground cursor-not-allowed'
-        )}
-      >
-        Continuer
-      </button>
-    </div>
-  );
+  // Step 3: Beneficiary info
+  const renderBeneficiaryStep = () => {
+    const isAlipayOrWechat = selectedMethod === 'alipay' || selectedMethod === 'wechat';
+    const isBankTransfer = selectedMethod === 'bank_transfer';
+    const isCash = selectedMethod === 'cash';
 
-  const renderAmountInput = () => (
-    <div className="animate-fade-in">
-      {/* Conversion Display */}
-      <div className="card-primary p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-primary-foreground/70 text-sm">Vous envoyez</span>
-          <span className="text-primary-foreground/70 text-sm">
-            {walletLoading ? (
-              <Skeleton className="h-4 w-24 bg-primary-foreground/20" />
-            ) : (
-              `Solde: ${formatXAF(wallet?.balance_xaf || 0)} XAF`
-            )}
-          </span>
-        </div>
-        
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={amountXAF}
-            onChange={(e) => setAmountXAF(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="0"
-            className="amount-input text-primary-foreground placeholder:text-primary-foreground/30"
-          />
-          <span className="text-xl font-medium text-primary-foreground/70">XAF</span>
-        </div>
-        
-        <div className="flex items-center justify-center gap-3 py-3 border-t border-primary-foreground/10">
-          <ArrowRightLeft className="w-5 h-5 text-primary-foreground/50" />
-        </div>
-        
-        <div className="text-center">
-          <span className="text-primary-foreground/70 text-sm">Bénéficiaire reçoit</span>
-          <p className="text-3xl font-bold text-primary-foreground mt-1">
-            ¥ {formatRMB(amountRMB)}
-            <span className="text-lg font-medium text-primary-foreground/70 ml-2">RMB</span>
-          </p>
-        </div>
-      </div>
-      
-      {/* Quick amounts */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        {[100000, 250000, 500000].map((preset) => (
-          <button
-            key={preset}
-            onClick={() => setAmountXAF(preset.toString())}
-            className="py-3 rounded-xl bg-secondary text-foreground font-medium hover:bg-secondary/80 transition-colors"
-          >
-            {formatXAF(preset)}
-          </button>
-        ))}
-      </div>
-      
-      {/* Rate info */}
-      <div className="card-glass p-4 mb-6">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Taux de change</span>
-          <span className="font-medium text-foreground">1 XAF = {rate.toFixed(5)} RMB</span>
-        </div>
-        <div className="flex items-center justify-between text-sm mt-2">
-          <span className="text-muted-foreground">Frais (1%)</span>
-          <span className="font-medium text-foreground">{formatXAF(fees)} XAF</span>
-        </div>
-        <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-border">
-          <span className="text-foreground font-semibold">Total à débiter</span>
-          <span className="font-bold text-foreground">{formatXAF(totalXAF)} XAF</span>
-        </div>
-      </div>
-      
-      {!hasEnoughBalance && amountXAF && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-sm mb-4">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>Solde insuffisant. Veuillez réduire le montant ou effectuer un dépôt.</span>
-        </div>
-      )}
-      
-      <button
-        onClick={() => amountXAF && hasEnoughBalance && setStep('confirm')}
-        disabled={!amountXAF || !hasEnoughBalance}
-        className={cn(
-          'w-full py-4 rounded-xl font-semibold transition-all',
-          amountXAF && hasEnoughBalance
-            ? 'btn-primary-gradient'
-            : 'bg-muted text-muted-foreground cursor-not-allowed'
-        )}
-      >
-        Vérifier et confirmer
-      </button>
-    </div>
-  );
-
-  const renderConfirmation = () => {
-    const methodInfo = paymentMethodsInfo.find(m => m.method === selectedMethod);
-    const IconComponent = methodInfo ? (Icons as any)[methodInfo.icon] : Icons.Send;
-    
     return (
       <div className="animate-fade-in space-y-6">
-        <div className="card-elevated p-6 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-            <IconComponent className="w-8 h-8 text-primary" />
-          </div>
-          <p className="text-sm text-muted-foreground">Vous envoyez</p>
-          <p className="text-3xl font-bold text-foreground mb-1">
-            ¥ {formatRMB(amountRMB)} RMB
-          </p>
-          <p className="text-sm text-muted-foreground">
-            ({formatXAF(parseInt(amountXAF))} XAF)
-          </p>
-        </div>
-        
-        <div className="card-elevated p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Bénéficiaire</span>
-            <div className="text-right">
-              <p className="font-semibold text-foreground">{selectedBeneficiary?.name}</p>
-              {selectedBeneficiary?.chineseName && (
-                <p className="text-sm text-muted-foreground">{selectedBeneficiary.chineseName}</p>
-              )}
+        <p className="text-sm text-muted-foreground">
+          {isCash 
+            ? 'Vous pourrez récupérer votre argent au bureau Bonzini.'
+            : 'Fournissez les informations du bénéficiaire ou ajoutez-les plus tard.'}
+        </p>
+
+        {!isCash && (
+          <div className="space-y-4">
+            {isAlipayOrWechat && (
+              <>
+                {/* QR Code upload */}
+                <div className="space-y-2">
+                  <Label>QR Code (optionnel)</Label>
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    {qrCodeFile ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">{qrCodeFile.name}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Cliquez pour uploader un QR code</p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <Label>Nom du bénéficiaire</Label>
+              <Input
+                value={beneficiaryForm.name}
+                onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Nom complet"
+              />
+            </div>
+
+            {isAlipayOrWechat && (
+              <div className="space-y-2">
+                <Label>Téléphone / ID</Label>
+                <Input
+                  value={beneficiaryForm.phone}
+                  onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Numéro ou identifiant"
+                />
+              </div>
+            )}
+
+            {isBankTransfer && (
+              <>
+                <div className="space-y-2">
+                  <Label>Nom de la banque</Label>
+                  <Input
+                    value={beneficiaryForm.bank_name}
+                    onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, bank_name: e.target.value }))}
+                    placeholder="Nom de la banque"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Numéro de compte</Label>
+                  <Input
+                    value={beneficiaryForm.bank_account}
+                    onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, bank_account: e.target.value }))}
+                    placeholder="Numéro de compte bancaire"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <Label>Notes (optionnel)</Label>
+              <Textarea
+                value={beneficiaryForm.notes}
+                onChange={(e) => setBeneficiaryForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Instructions supplémentaires"
+                rows={3}
+              />
             </div>
           </div>
+        )}
+
+        <div className="space-y-3">
+          <button
+            onClick={() => setStep('confirm')}
+            className="w-full py-4 rounded-xl font-semibold btn-primary-gradient"
+          >
+            {isCash ? 'Continuer' : 'Continuer avec ces informations'}
+          </button>
           
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Méthode</span>
-            <span className="font-medium text-foreground">{methodInfo?.label}</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Frais</span>
-            <span className="font-medium text-foreground">{formatXAF(fees)} XAF</span>
-          </div>
-          
-          <div className="flex items-center justify-between pt-3 border-t border-border">
-            <span className="font-semibold text-foreground">Total débité</span>
-            <span className="font-bold text-foreground">{formatXAF(totalXAF)} XAF</span>
-          </div>
+          {!isCash && (
+            <button
+              onClick={() => {
+                setSkipBeneficiary(true);
+                setStep('confirm');
+              }}
+              className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
+            >
+              Ajouter plus tard
+            </button>
+          )}
         </div>
-        
-        <button
-          onClick={handleSubmit}
-          className="w-full btn-primary-gradient"
-        >
-          Confirmer le paiement
-        </button>
       </div>
     );
   };
 
-  const renderSuccess = () => (
-    <div className="animate-scale-in text-center py-12">
-      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/10 flex items-center justify-center">
-        <Check className="w-10 h-10 text-success" />
+  // Step 4: Confirmation
+  const renderConfirmStep = () => {
+    const methodInfo = paymentMethods.find(m => m.id === selectedMethod);
+    const Icon = methodInfo?.icon || CreditCard;
+    const hasBeneficiaryInfo = beneficiaryForm.name || beneficiaryForm.phone || beneficiaryForm.bank_account || qrCodeFile;
+
+    return (
+      <div className="animate-fade-in space-y-6">
+        <div className="card-elevated p-6 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+            <Icon className="w-8 h-8 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">Vous envoyez</p>
+          <p className="text-3xl font-bold text-foreground mb-1">
+            ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
+          </p>
+          <p className="text-sm text-muted-foreground">
+            ({formatXAF(amountXAF)} XAF)
+          </p>
+        </div>
+
+        <div className="card-elevated p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Méthode</span>
+            <span className="font-medium text-foreground">{methodInfo?.label}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Taux utilisé</span>
+            <span className="font-medium text-foreground">1 XAF = {rate.toFixed(5)} RMB</span>
+          </div>
+
+          {beneficiaryForm.name && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Bénéficiaire</span>
+              <span className="font-medium text-foreground">{beneficiaryForm.name}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <span className="font-semibold text-foreground">Montant débité</span>
+            <span className="font-bold text-foreground">{formatXAF(amountXAF)} XAF</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Nouveau solde</span>
+            <span className="font-medium text-foreground">
+              {formatXAF((wallet?.balance_xaf || 0) - amountXAF)} XAF
+            </span>
+          </div>
+        </div>
+
+        {!hasBeneficiaryInfo && selectedMethod !== 'cash' && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-yellow-500/10 text-yellow-600 text-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>Vous pourrez ajouter les informations du bénéficiaire après la création.</span>
+          </div>
+        )}
+
+        <Button
+          onClick={handleSubmit}
+          disabled={createPayment.isPending}
+          className="w-full py-6 text-lg btn-primary-gradient"
+        >
+          {createPayment.isPending ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Création en cours...
+            </>
+          ) : (
+            'Confirmer le paiement'
+          )}
+        </Button>
+
+        <p className="text-xs text-center text-muted-foreground">
+          En confirmant, vous acceptez que {formatXAF(amountXAF)} XAF soient débités de votre solde.
+        </p>
       </div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">Paiement initié !</h2>
+    );
+  };
+
+  // Step 5: Success
+  const renderSuccessStep = () => (
+    <div className="animate-scale-in text-center py-12">
+      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/10 flex items-center justify-center">
+        <Check className="w-10 h-10 text-green-500" />
+      </div>
+      <h2 className="text-2xl font-bold text-foreground mb-2">Paiement créé !</h2>
       <p className="text-muted-foreground mb-2">
-        {selectedBeneficiary?.name} recevra
+        Votre demande de paiement a été enregistrée
       </p>
-      <p className="text-2xl font-bold text-primary mb-8">
-        ¥ {formatRMB(amountRMB)} RMB
+      <p className="text-2xl font-bold text-primary mb-2">
+        ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
       </p>
-      
+      <p className="text-sm text-muted-foreground mb-8">
+        {formatXAF(amountXAF)} XAF débités de votre solde
+      </p>
+
       <div className="space-y-3">
+        {paymentId && (
+          <button
+            onClick={() => navigate(`/payments/${paymentId}`)}
+            className="w-full btn-primary-gradient"
+          >
+            Voir le paiement
+          </button>
+        )}
         <button
           onClick={() => navigate('/payments')}
-          className="w-full btn-primary-gradient"
+          className="w-full py-3 bg-secondary text-foreground font-medium rounded-xl"
         >
-          Voir mes paiements
+          Mes paiements
         </button>
         <button
           onClick={() => navigate('/')}
-          className="w-full py-3 text-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
+          className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
         >
-          Retour au wallet
+          Retour à l'accueil
         </button>
       </div>
     </div>
   );
 
-  const getStepTitle = () => {
-    const titles: Record<Step, string> = {
-      method: 'Nouveau paiement',
-      beneficiary: 'Bénéficiaire',
-      amount: 'Montant',
-      confirm: 'Confirmation',
-      success: 'Succès',
-    };
-    return titles[step];
-  };
+  const steps: Step[] = ['amount', 'method', 'beneficiary', 'confirm'];
+  const currentStepIndex = steps.indexOf(step);
 
   return (
     <MobileLayout showNav={false}>
       <PageHeader 
-        title={getStepTitle()} 
+        title={step === 'success' ? 'Succès' : 'Nouveau paiement'} 
         showBack={step !== 'success'}
       />
-      
+
       <div className="px-4 py-6">
         {step !== 'success' && (
           <div className="flex gap-1 mb-6">
-            {['method', 'beneficiary', 'amount', 'confirm'].map((s, i) => (
+            {steps.map((s, i) => (
               <div
                 key={s}
                 className={cn(
                   'h-1 flex-1 rounded-full transition-colors',
-                  ['method', 'beneficiary', 'amount', 'confirm'].indexOf(step) >= i
-                    ? 'bg-primary'
-                    : 'bg-muted'
+                  currentStepIndex >= i ? 'bg-primary' : 'bg-muted'
                 )}
               />
             ))}
           </div>
         )}
-        
-        {step === 'method' && renderMethodSelection()}
-        {step === 'beneficiary' && renderBeneficiarySelection()}
-        {step === 'amount' && renderAmountInput()}
-        {step === 'confirm' && renderConfirmation()}
-        {step === 'success' && renderSuccess()}
+
+        {step === 'amount' && renderAmountStep()}
+        {step === 'method' && renderMethodStep()}
+        {step === 'beneficiary' && renderBeneficiaryStep()}
+        {step === 'confirm' && renderConfirmStep()}
+        {step === 'success' && renderSuccessStep()}
       </div>
     </MobileLayout>
   );

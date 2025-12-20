@@ -279,20 +279,26 @@ export function useAdminPayments() {
   return useQuery({
     queryKey: ['admin-payments'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: payments, error } = await supabase
         .from('payments')
-        .select(`
-          *,
-          profiles:user_id (
-            first_name,
-            last_name,
-            phone
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Fetch profiles separately
+      const userIds = [...new Set(payments?.map(p => p.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, phone, company_name')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      return payments?.map(payment => ({
+        ...payment,
+        profiles: profileMap.get(payment.user_id) || null,
+      })) || [];
     },
   });
 }
@@ -301,23 +307,22 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['admin-payment', paymentId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: payment, error } = await supabase
         .from('payments')
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            first_name,
-            last_name,
-            phone,
-            company_name
-          )
-        `)
+        .select('*')
         .eq('id', paymentId)
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Fetch profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, phone, company_name')
+        .eq('user_id', payment.user_id)
+        .single();
+
+      return { ...payment, profiles: profile };
     },
     enabled: !!paymentId,
   });

@@ -1,20 +1,205 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/ui/AdminPageHeader';
 import { AdminCard } from '@/components/admin/ui/AdminCard';
+import { AdminFilters } from '@/components/admin/ui/AdminFilters';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminPayments } from '@/hooks/usePayments';
+import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { 
+  CreditCard, 
+  Wallet, 
+  Building2, 
+  Banknote,
+  ChevronRight,
+  Search,
+  FileCheck
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+
+const statusConfig: Record<string, { label: string; color: string }> = {
+  created: { label: 'Créé', color: 'bg-blue-500' },
+  waiting_beneficiary_info: { label: 'En attente infos', color: 'bg-yellow-500' },
+  ready_for_payment: { label: 'Prêt à payer', color: 'bg-purple-500' },
+  processing: { label: 'En cours', color: 'bg-orange-500' },
+  completed: { label: 'Effectué', color: 'bg-green-500' },
+  rejected: { label: 'Refusé', color: 'bg-red-500' },
+};
+
+const methodIcons: Record<string, React.ElementType> = {
+  alipay: CreditCard,
+  wechat: Wallet,
+  bank_transfer: Building2,
+  cash: Banknote,
+};
+
+const methodLabels: Record<string, string> = {
+  alipay: 'Alipay',
+  wechat: 'WeChat',
+  bank_transfer: 'Virement',
+  cash: 'Cash',
+};
 
 export function AdminPaymentsPage() {
+  const navigate = useNavigate();
+  const { data: payments, isLoading } = useAdminPayments();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [methodFilter, setMethodFilter] = useState<string>('all');
+
+  const filteredPayments = payments?.filter(payment => {
+    const matchesSearch = !searchQuery || 
+      payment.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.profiles?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.profiles?.last_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+    const matchesMethod = methodFilter === 'all' || payment.method === methodFilter;
+    
+    return matchesSearch && matchesStatus && matchesMethod;
+  });
+
+  const statusCounts = {
+    all: payments?.length || 0,
+    ready_for_payment: payments?.filter(p => p.status === 'ready_for_payment').length || 0,
+    processing: payments?.filter(p => p.status === 'processing').length || 0,
+    waiting_beneficiary_info: payments?.filter(p => p.status === 'waiting_beneficiary_info').length || 0,
+    completed: payments?.filter(p => p.status === 'completed').length || 0,
+  };
+
   return (
     <AdminLayout>
       <AdminPageHeader 
         title="Paiements" 
-        subtitle="Fonctionnalité à venir"
+        subtitle={`${statusCounts.ready_for_payment} à traiter`}
       />
 
-      <AdminCard className="text-center py-12">
-        <p className="text-muted-foreground">
-          La gestion des paiements sera disponible prochainement.
-        </p>
-      </AdminCard>
+      {/* Filters */}
+      <div className="p-4 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par référence ou client..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {[
+            { value: 'all', label: 'Tous', count: statusCounts.all },
+            { value: 'ready_for_payment', label: 'À traiter', count: statusCounts.ready_for_payment },
+            { value: 'processing', label: 'En cours', count: statusCounts.processing },
+            { value: 'waiting_beneficiary_info', label: 'Attente infos', count: statusCounts.waiting_beneficiary_info },
+            { value: 'completed', label: 'Effectués', count: statusCounts.completed },
+          ].map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setStatusFilter(filter.value)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                statusFilter === filter.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {filter.label} ({filter.count})
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          {[
+            { value: 'all', label: 'Toutes méthodes' },
+            { value: 'alipay', label: 'Alipay' },
+            { value: 'wechat', label: 'WeChat' },
+            { value: 'bank_transfer', label: 'Virement' },
+            { value: 'cash', label: 'Cash' },
+          ].map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setMethodFilter(filter.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                methodFilter === filter.value
+                  ? 'bg-secondary text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Payments list */}
+      <div className="px-4 pb-4 space-y-3">
+        {isLoading ? (
+          [1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))
+        ) : filteredPayments && filteredPayments.length > 0 ? (
+          filteredPayments.map((payment) => {
+            const MethodIcon = methodIcons[payment.method] || CreditCard;
+            const status = statusConfig[payment.status];
+            const clientName = payment.profiles 
+              ? `${payment.profiles.first_name || ''} ${payment.profiles.last_name || ''}`.trim() 
+              : 'Client inconnu';
+
+            return (
+              <AdminCard 
+                key={payment.id}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => navigate(`/admin/payments/${payment.id}`)}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <MethodIcon className="w-5 h-5 text-primary" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-sm">{payment.reference}</span>
+                      <Badge className={`${status?.color} text-white text-xs`}>
+                        {status?.label}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-1">{clientName}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(payment.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                      </span>
+                      <div className="text-right">
+                        <p className="font-semibold text-sm">{formatXAF(payment.amount_xaf)} XAF</p>
+                        <p className="text-xs text-primary">{formatCurrencyRMB(payment.amount_rmb)}</p>
+                      </div>
+                    </div>
+
+                    {payment.beneficiary_name && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        → {payment.beneficiary_name}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                </div>
+              </AdminCard>
+            );
+          })
+        ) : (
+          <AdminCard className="text-center py-12">
+            <FileCheck className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">Aucun paiement trouvé</p>
+          </AdminCard>
+        )}
+      </div>
     </AdminLayout>
   );
 }
