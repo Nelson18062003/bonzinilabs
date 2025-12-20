@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAdminAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAdminAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,10 +19,11 @@ export function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate('/admin');
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +40,14 @@ export function AdminLoginPage() {
       setError(result.error || 'Une erreur est survenue');
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -123,14 +132,11 @@ export function AdminLoginPage() {
               </Button>
             </form>
 
-            {/* Demo credentials hint */}
+            {/* Info */}
             <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground font-medium mb-2">Comptes de démonstration :</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p><span className="font-medium">Super Admin:</span> admin@bonzini.com / admin123</p>
-                <p><span className="font-medium">Ops:</span> ops@bonzini.com / ops123</p>
-                <p><span className="font-medium">Support:</span> support@bonzini.com / support123</p>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Seuls les utilisateurs avec un rôle admin dans la base de données peuvent se connecter.
+              </p>
             </div>
           </CardContent>
         </Card>
