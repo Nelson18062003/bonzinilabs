@@ -1,75 +1,91 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface DevUser {
-  id: string;
-  email: string;
-}
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
-  user: DevUser | null;
+  user: User | null;
+  session: Session | null;
   isLoading: boolean;
-  signIn: (email: string) => void;
-  signOut: () => void;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Generate a valid UUID from email for development
-function generateDevUserId(email: string): string {
-  // Create a deterministic UUID based on email hash
-  let hash = 0;
-  for (let i = 0; i < email.length; i++) {
-    const char = email.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  
-  // Convert to hex and pad to create valid UUID format (8-4-4-4-12)
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
-  const hex2 = Math.abs(hash * 31).toString(16).padStart(8, '0');
-  const hex3 = Math.abs(hash * 37).toString(16).padStart(8, '0');
-  
-  return `${hex.slice(0, 8)}-${hex2.slice(0, 4)}-4${hex2.slice(5, 8)}-8${hex3.slice(1, 4)}-${hex3}${hex.slice(0, 4)}`;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<DevUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for saved user
-    const savedUser = localStorage.getItem('bonzini_dev_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem('bonzini_dev_user');
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = (email: string) => {
-    const devUser: DevUser = {
-      id: generateDevUserId(email),
+  const signUp = async (email: string, password: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
       email,
-    };
-    localStorage.setItem('bonzini_dev_user', JSON.stringify(devUser));
-    setUser(devUser);
+      password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+    
+    return { error: error as Error | null };
   };
 
-  const signOut = () => {
-    localStorage.removeItem('bonzini_dev_user');
-    setUser(null);
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    return { error: error as Error | null };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const resetPassword = async (email: string) => {
+    const redirectUrl = `${window.location.origin}/auth/reset-password`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
+    
+    return { error: error as Error | null };
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        session,
         isLoading,
+        signUp,
         signIn,
         signOut,
+        resetPassword,
       }}
     >
       {children}
@@ -83,17 +99,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-// Helper to get current dev user (for hooks that need user ID)
-export function getDevUser(): DevUser | null {
-  const savedUser = localStorage.getItem('bonzini_dev_user');
-  if (savedUser) {
-    try {
-      return JSON.parse(savedUser);
-    } catch {
-      return null;
-    }
-  }
-  return null;
 }
