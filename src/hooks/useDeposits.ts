@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getDevUser } from '@/contexts/AuthContext';
 
 export type DepositMethod = 'bank_transfer' | 'bank_cash' | 'agency_cash' | 'om_transfer' | 'om_withdrawal' | 'mtn_transfer' | 'mtn_withdrawal' | 'wave';
 export type DepositStatus = 'created' | 'awaiting_proof' | 'proof_submitted' | 'admin_review' | 'validated' | 'rejected';
@@ -49,6 +48,13 @@ export interface DepositTimelineEvent {
   description: string;
   performed_by: string | null;
   created_at: string;
+}
+
+// Helper to get current user
+async function getCurrentUser() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
 }
 
 // Fetch all deposits for admin
@@ -262,8 +268,7 @@ export function useCreateDeposit() {
 
   return useMutation({
     mutationFn: async (data: CreateDepositData) => {
-      // Get dev user from localStorage
-      const user = getDevUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Vous devez être connecté');
 
       // Generate reference
@@ -313,7 +318,7 @@ export function useMyDeposits() {
   return useQuery({
     queryKey: ['my-deposits'],
     queryFn: async () => {
-      const user = getDevUser();
+      const user = await getCurrentUser();
       if (!user) return [];
 
       const { data, error } = await supabase
@@ -334,7 +339,7 @@ export function useUploadProof() {
 
   return useMutation({
     mutationFn: async ({ depositId, file }: { depositId: string; file: File }) => {
-      const user = getDevUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Vous devez être connecté');
 
       // Upload file to storage
