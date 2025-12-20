@@ -16,6 +16,7 @@ import NewDepositPage from "./pages/NewDepositPage";
 import DepositDetailPage from "./pages/DepositDetailPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import NewPaymentPage from "./pages/NewPaymentPage";
+import PaymentDetailPage from "./pages/PaymentDetailPage";
 import HistoryPage from "./pages/HistoryPage";
 import ProfilePage from "./pages/ProfilePage";
 import BeneficiariesPage from "./pages/BeneficiariesPage";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/deposits/:depositId" element={<ProtectedRoute><DepositDetailPage /></ProtectedRoute>} />
             <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
             <Route path="/payments/new" element={<ProtectedRoute><NewPaymentPage /></ProtectedRoute>} />
+            <Route path="/payments/:paymentId" element={<ProtectedRoute><PaymentDetailPage /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />

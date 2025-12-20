@@ -192,6 +192,169 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_proofs: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string
+          file_type: string | null
+          file_url: string
+          id: string
+          payment_id: string
+          uploaded_by: string
+          uploaded_by_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          payment_id: string
+          uploaded_by: string
+          uploaded_by_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          payment_id?: string
+          uploaded_by?: string
+          uploaded_by_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_timeline_events: {
+        Row: {
+          created_at: string
+          description: string
+          event_type: string
+          id: string
+          payment_id: string
+          performed_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          event_type: string
+          id?: string
+          payment_id: string
+          performed_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          event_type?: string
+          id?: string
+          payment_id?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_timeline_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          admin_comment: string | null
+          amount_rmb: number
+          amount_xaf: number
+          balance_after: number
+          balance_before: number
+          beneficiary_bank_account: string | null
+          beneficiary_bank_name: string | null
+          beneficiary_email: string | null
+          beneficiary_name: string | null
+          beneficiary_notes: string | null
+          beneficiary_phone: string | null
+          beneficiary_qr_code_url: string | null
+          cash_qr_code: string | null
+          client_visible_comment: string | null
+          created_at: string
+          exchange_rate: number
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          processed_at: string | null
+          processed_by: string | null
+          reference: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          amount_rmb: number
+          amount_xaf: number
+          balance_after: number
+          balance_before: number
+          beneficiary_bank_account?: string | null
+          beneficiary_bank_name?: string | null
+          beneficiary_email?: string | null
+          beneficiary_name?: string | null
+          beneficiary_notes?: string | null
+          beneficiary_phone?: string | null
+          beneficiary_qr_code_url?: string | null
+          cash_qr_code?: string | null
+          client_visible_comment?: string | null
+          created_at?: string
+          exchange_rate: number
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          processed_at?: string | null
+          processed_by?: string | null
+          reference: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_comment?: string | null
+          amount_rmb?: number
+          amount_xaf?: number
+          balance_after?: number
+          balance_before?: number
+          beneficiary_bank_account?: string | null
+          beneficiary_bank_name?: string | null
+          beneficiary_email?: string | null
+          beneficiary_name?: string | null
+          beneficiary_notes?: string | null
+          beneficiary_phone?: string | null
+          beneficiary_qr_code_url?: string | null
+          cash_qr_code?: string | null
+          client_visible_comment?: string | null
+          created_at?: string
+          exchange_rate?: number
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          processed_at?: string | null
+          processed_by?: string | null
+          reference?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activity_sector: string | null
@@ -343,7 +506,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_payment: {
+        Args: {
+          p_amount_rmb: number
+          p_amount_xaf: number
+          p_beneficiary_bank_account?: string
+          p_beneficiary_bank_name?: string
+          p_beneficiary_email?: string
+          p_beneficiary_name?: string
+          p_beneficiary_notes?: string
+          p_beneficiary_phone?: string
+          p_beneficiary_qr_code_url?: string
+          p_exchange_rate: number
+          p_method: Database["public"]["Enums"]["payment_method"]
+        }
+        Returns: Json
+      }
       generate_deposit_reference: { Args: never; Returns: string }
+      generate_payment_reference: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -352,6 +532,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      process_payment: {
+        Args: { p_action: string; p_comment?: string; p_payment_id: string }
+        Returns: Json
+      }
       reject_deposit: {
         Args: { p_deposit_id: string; p_reason: string }
         Returns: Json
@@ -378,6 +562,14 @@ export type Database = {
         | "proof_submitted"
         | "admin_review"
         | "validated"
+        | "rejected"
+      payment_method: "alipay" | "wechat" | "bank_transfer" | "cash"
+      payment_status:
+        | "created"
+        | "waiting_beneficiary_info"
+        | "ready_for_payment"
+        | "processing"
+        | "completed"
         | "rejected"
       wallet_operation_type: "deposit" | "payment" | "adjustment"
     }
@@ -524,6 +716,15 @@ export const Constants = {
         "proof_submitted",
         "admin_review",
         "validated",
+        "rejected",
+      ],
+      payment_method: ["alipay", "wechat", "bank_transfer", "cash"],
+      payment_status: [
+        "created",
+        "waiting_beneficiary_info",
+        "ready_for_payment",
+        "processing",
+        "completed",
         "rejected",
       ],
       wallet_operation_type: ["deposit", "payment", "adjustment"],
