@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { ProofUpload } from '@/components/deposit/ProofUpload';
+import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
 import { 
   useDepositDetail, 
   useDepositProofs, 
@@ -15,23 +16,19 @@ import {
   DEPOSIT_METHOD_LABELS 
 } from '@/hooks/useDeposits';
 import { formatXAF } from '@/lib/formatters';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
 import { 
   Copy, 
   Check, 
-  Clock, 
   ArrowLeft, 
-  FileText, 
   Building2, 
   Loader2,
-  CheckCircle,
   XCircle,
-  AlertCircle,
   Image,
   Smartphone,
   Store,
-  Waves
+  Waves,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,8 +40,14 @@ const DepositDetailPage = () => {
   
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
-  const { data: timeline, isLoading: loadingTimeline } = useDepositTimeline(depositId);
+  const { data: timelineEvents, isLoading: loadingTimeline } = useDepositTimeline(depositId);
   const uploadProof = useUploadProof();
+
+  // Build timeline steps from deposit status and events
+  const timelineSteps = useMemo(() => {
+    if (!deposit) return [];
+    return buildDepositTimelineSteps(deposit.status, timelineEvents || []);
+  }, [deposit, timelineEvents]);
 
   const isLoading = loadingDeposit || loadingProofs || loadingTimeline;
 
@@ -97,34 +100,6 @@ const DepositDetailPage = () => {
     }
   };
 
-  const getTimelineIcon = (eventType: string) => {
-    switch (eventType) {
-      case 'created': return <Clock className="w-4 h-4" />;
-      case 'proof_submitted': return <FileText className="w-4 h-4" />;
-      case 'admin_review': return <AlertCircle className="w-4 h-4" />;
-      case 'validated': return <CheckCircle className="w-4 h-4" />;
-      case 'wallet_credited': return <CheckCircle className="w-4 h-4" />;
-      case 'rejected': return <XCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getTimelineColor = (eventType: string) => {
-    switch (eventType) {
-      case 'validated':
-      case 'wallet_credited':
-        return 'bg-emerald-100 text-emerald-600 border-emerald-300';
-      case 'rejected':
-        return 'bg-red-100 text-red-600 border-red-300';
-      case 'admin_review':
-        return 'bg-amber-100 text-amber-600 border-amber-300';
-      case 'proof_submitted':
-        return 'bg-blue-100 text-blue-600 border-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-600 border-gray-300';
-    }
-  };
-
   const IconComponent = getMethodIcon();
   const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof';
 
@@ -159,7 +134,7 @@ const DepositDetailPage = () => {
       <PageHeader 
         title={`Dépôt #${deposit.reference.slice(-6)}`}
         showBack
-        subtitle={format(new Date(deposit.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+        subtitle={safeFormatDate(deposit.created_at) || ''}
       />
 
       <div className="px-4 py-4 space-y-4 pb-8">
@@ -229,7 +204,7 @@ const DepositDetailPage = () => {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">{proof.file_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(proof.uploaded_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+                      {safeFormatDate(proof.uploaded_at)}
                     </p>
                   </div>
                 </div>
@@ -250,32 +225,11 @@ const DepositDetailPage = () => {
           </Card>
         )}
 
-        {/* Timeline Section */}
-        {timeline && timeline.length > 0 && (
-          <Card className="p-4">
-            <h3 className="font-semibold text-foreground mb-4">Suivi du dépôt</h3>
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
-              <div className="space-y-4">
-                {timeline.map((event) => (
-                  <div key={event.id} className="relative flex gap-4 pl-2">
-                    <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${getTimelineColor(event.event_type)}`}>
-                      {getTimelineIcon(event.event_type)}
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <p className="text-sm font-medium text-foreground">
-                        {event.description}
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(event.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        )}
+        {/* Timeline Section - Now shows all steps */}
+        <Card className="p-4">
+          <h3 className="font-semibold text-foreground mb-4">Suivi du dépôt</h3>
+          <DepositTimelineDisplay steps={timelineSteps} />
+        </Card>
 
         {/* Back button */}
         <Button 
