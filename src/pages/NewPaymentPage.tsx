@@ -1,39 +1,37 @@
 import { useState } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { 
-  paymentMethodsInfo, 
-  mockBeneficiaries, 
-  mockWallet, 
-  formatXAF, 
-  formatRMB, 
-  convertXAFtoRMB,
-  currentRate 
-} from '@/data/mockData';
+import { paymentMethodsInfo } from '@/data/staticData';
+import { formatXAF, formatRMB, convertXAFtoRMB } from '@/lib/formatters';
+import { useMyWallet, useExchangeRate } from '@/hooks/useWallet';
 import { PaymentMethod, Beneficiary } from '@/types';
 import { Check, Plus, User, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Step = 'method' | 'beneficiary' | 'amount' | 'confirm' | 'success';
 
 const NewPaymentPage = () => {
   const navigate = useNavigate();
+  const { data: wallet, isLoading: walletLoading } = useMyWallet();
+  const { data: exchangeRate } = useExchangeRate();
+  
   const [step, setStep] = useState<Step>('method');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<Beneficiary | null>(null);
   const [amountXAF, setAmountXAF] = useState('');
 
-  const amountRMB = amountXAF ? convertXAFtoRMB(parseInt(amountXAF)) : 0;
+  const rate = exchangeRate || 0.01167;
+  const amountRMB = amountXAF ? convertXAFtoRMB(parseInt(amountXAF), rate) : 0;
   const fees = amountXAF ? Math.round(parseInt(amountXAF) * 0.01) : 0;
   const totalXAF = amountXAF ? parseInt(amountXAF) + fees : 0;
-  const hasEnoughBalance = totalXAF <= mockWallet.balanceXAF;
+  const hasEnoughBalance = totalXAF <= (wallet?.balance_xaf || 0);
 
-  const filteredBeneficiaries = mockBeneficiaries.filter(
-    b => b.paymentMethod === selectedMethod
-  );
+  // TODO: Fetch beneficiaries from database when ready
+  const filteredBeneficiaries: Beneficiary[] = [];
 
   const handleSubmit = () => {
     if (!hasEnoughBalance) {
@@ -56,7 +54,7 @@ const NewPaymentPage = () => {
         return (
           <button
             key={method.method}
-            onClick={() => setSelectedMethod(method.method)}
+            onClick={() => setSelectedMethod(method.method as PaymentMethod)}
             className={cn(
               'method-card w-full text-left',
               isSelected && 'method-card-selected'
@@ -103,42 +101,6 @@ const NewPaymentPage = () => {
       </p>
       
       <div className="space-y-3 mb-6">
-        {filteredBeneficiaries.map((beneficiary) => {
-          const isSelected = selectedBeneficiary?.id === beneficiary.id;
-          
-          return (
-            <button
-              key={beneficiary.id}
-              onClick={() => setSelectedBeneficiary(beneficiary)}
-              className={cn(
-                'method-card w-full text-left',
-                isSelected && 'method-card-selected'
-              )}
-            >
-              <div className={cn(
-                'w-12 h-12 rounded-full flex items-center justify-center',
-                isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'
-              )}>
-                <User className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{beneficiary.name}</p>
-                {beneficiary.chineseName && (
-                  <p className="text-sm text-muted-foreground">{beneficiary.chineseName}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {beneficiary.accountNumber || beneficiary.bankAccountNumber}
-                </p>
-              </div>
-              {isSelected && (
-                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-4 h-4 text-primary-foreground" />
-                </div>
-              )}
-            </button>
-          );
-        })}
-        
         {filteredBeneficiaries.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <p>Aucun bénéficiaire pour cette méthode</p>
@@ -181,7 +143,11 @@ const NewPaymentPage = () => {
         <div className="flex items-center justify-between mb-4">
           <span className="text-primary-foreground/70 text-sm">Vous envoyez</span>
           <span className="text-primary-foreground/70 text-sm">
-            Solde: {formatXAF(mockWallet.balanceXAF)} XAF
+            {walletLoading ? (
+              <Skeleton className="h-4 w-24 bg-primary-foreground/20" />
+            ) : (
+              `Solde: ${formatXAF(wallet?.balance_xaf || 0)} XAF`
+            )}
           </span>
         </div>
         
@@ -227,7 +193,7 @@ const NewPaymentPage = () => {
       <div className="card-glass p-4 mb-6">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Taux de change</span>
-          <span className="font-medium text-foreground">1 XAF = {currentRate.xafToRmb} RMB</span>
+          <span className="font-medium text-foreground">1 XAF = {rate.toFixed(5)} RMB</span>
         </div>
         <div className="flex items-center justify-between text-sm mt-2">
           <span className="text-muted-foreground">Frais (1%)</span>

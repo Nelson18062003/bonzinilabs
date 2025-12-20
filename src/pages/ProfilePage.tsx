@@ -1,6 +1,7 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { mockUser } from '@/data/mockData';
+import { useMyProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   User, 
   ChevronRight, 
@@ -13,9 +14,14 @@ import {
   FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProfilePage = () => {
-  const handleLogout = () => {
+  const { user, signOut } = useAuth();
+  const { data: profile, isLoading } = useMyProfile();
+
+  const handleLogout = async () => {
+    await signOut();
     toast.success('Déconnexion réussie');
   };
 
@@ -40,11 +46,21 @@ const ProfilePage = () => {
               <User className="w-8 h-8 text-primary-foreground" />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-primary-foreground">
-                {mockUser.firstName} {mockUser.lastName}
-              </h2>
-              <p className="text-primary-foreground/70 text-sm">{mockUser.email}</p>
-              <p className="text-primary-foreground/70 text-sm">{mockUser.phone}</p>
+              {isLoading ? (
+                <>
+                  <Skeleton className="h-6 w-32 mb-1 bg-primary-foreground/20" />
+                  <Skeleton className="h-4 w-48 mb-1 bg-primary-foreground/20" />
+                  <Skeleton className="h-4 w-32 bg-primary-foreground/20" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold text-primary-foreground">
+                    {profile?.first_name} {profile?.last_name}
+                  </h2>
+                  <p className="text-primary-foreground/70 text-sm">{user?.email}</p>
+                  <p className="text-primary-foreground/70 text-sm">{profile?.phone || '-'}</p>
+                </>
+              )}
             </div>
             <button className="p-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors">
               <ChevronRight className="w-5 h-5 text-primary-foreground" />
