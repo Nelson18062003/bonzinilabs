@@ -36,8 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { ADMIN_ROLE_LABELS, ROLE_PERMISSIONS } from '@/types/admin';
+import { useAdminAuth, ADMIN_ROLE_LABELS, RolePermission, ROLE_PERMISSIONS } from '@/contexts/AdminAuthContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -70,7 +69,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const filteredNavItems = navItems.filter(item => {
     if (item.requiresPermission) {
-      return hasPermission(item.requiresPermission as keyof typeof ROLE_PERMISSIONS.SUPER_ADMIN);
+      return hasPermission(item.requiresPermission as keyof RolePermission);
     }
     return true;
   });

@@ -1,6 +1,83 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AdminUser, AdminRole, ROLE_PERMISSIONS, RolePermission, AdminLogEntry, AdminActionType } from '@/types/admin';
-import { adminUsers as mockAdminUsers } from '@/data/adminMockData';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+
+// Types based on database app_role enum
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: AppRole;
+}
+
+export interface RolePermission {
+  canViewClients: boolean;
+  canEditClients: boolean;
+  canViewDeposits: boolean;
+  canProcessDeposits: boolean;
+  canViewPayments: boolean;
+  canProcessPayments: boolean;
+  canManageRates: boolean;
+  canViewLogs: boolean;
+  canManageUsers: boolean;
+}
+
+export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
+  super_admin: {
+    canViewClients: true,
+    canEditClients: true,
+    canViewDeposits: true,
+    canProcessDeposits: true,
+    canViewPayments: true,
+    canProcessPayments: true,
+    canManageRates: true,
+    canViewLogs: true,
+    canManageUsers: true,
+  },
+  ops: {
+    canViewClients: true,
+    canEditClients: false,
+    canViewDeposits: true,
+    canProcessDeposits: true,
+    canViewPayments: true,
+    canProcessPayments: true,
+    canManageRates: true,
+    canViewLogs: true,
+    canManageUsers: false,
+  },
+  support: {
+    canViewClients: true,
+    canEditClients: true,
+    canViewDeposits: true,
+    canProcessDeposits: false,
+    canViewPayments: true,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: true,
+    canManageUsers: false,
+  },
+  customer_success: {
+    canViewClients: true,
+    canEditClients: true,
+    canViewDeposits: true,
+    canProcessDeposits: true,
+    canViewPayments: true,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+  },
+};
+
+export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
+  super_admin: 'Super Admin',
+  ops: 'Opérations',
+  support: 'Support',
+  customer_success: 'Chargé de clientèle',
+};
 
 interface AdminAuthContextType {
   currentUser: AdminUser | null;
@@ -8,120 +85,163 @@ interface AdminAuthContextType {
   isLoading: boolean;
   permissions: RolePermission | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasPermission: (permission: keyof RolePermission) => boolean;
-  logAction: (actionType: AdminActionType, targetType: AdminLogEntry['targetType'], description: string, targetId?: string, metadata?: Record<string, any>) => void;
+  logAction: (actionType: string, targetType: string, description: string, targetId?: string, metadata?: Record<string, any>) => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-// Mock credentials for demo
-const MOCK_CREDENTIALS: Record<string, string> = {
-  'admin@bonzini.com': 'admin123',
-  'ops@bonzini.com': 'ops123',
-  'support@bonzini.com': 'support123',
-  'account@bonzini.com': 'account123',
-};
-
-const SESSION_KEY = 'bonzini_admin_session';
-
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [actionLogs, setActionLogs] = useState<AdminLogEntry[]>([]);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const savedSession = localStorage.getItem(SESSION_KEY);
-    if (savedSession) {
-      try {
-        const sessionData = JSON.parse(savedSession);
-        const user = mockAdminUsers.find(u => u.id === sessionData.userId && u.isActive);
-        if (user) {
-          setCurrentUser(user);
-        } else {
-          localStorage.removeItem(SESSION_KEY);
-        }
-      } catch {
-        localStorage.removeItem(SESSION_KEY);
+  // Fetch user role and profile after login
+  const fetchAdminData = async (user: User) => {
+    try {
+      // Check if user has an admin role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (roleError) {
+        console.error('Error fetching role:', roleError);
+        return null;
       }
+
+      if (!roleData) {
+        // User is not an admin
+        return null;
+      }
+
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      }
+
+      const adminUser: AdminUser = {
+        id: user.id,
+        email: user.email || '',
+        firstName: profileData?.first_name || 'Admin',
+        lastName: profileData?.last_name || '',
+        role: roleData.role as AppRole,
+      };
+
+      return adminUser;
+    } catch (error) {
+      console.error('Error in fetchAdminData:', error);
+      return null;
     }
-    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Defer Supabase calls with setTimeout to avoid deadlock
+          setTimeout(async () => {
+            const adminData = await fetchAdminData(session.user);
+            setCurrentUser(adminData);
+            setIsLoading(false);
+          }, 0);
+        } else {
+          setCurrentUser(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        const adminData = await fetchAdminData(session.user);
+        setCurrentUser(adminData);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
 
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    // Check credentials
-    if (MOCK_CREDENTIALS[normalizedEmail] !== password) {
-      return { success: false, error: 'Email ou mot de passe incorrect' };
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (!data.user) {
+        return { success: false, error: 'Connexion échouée' };
+      }
+
+      // Check if user is an admin
+      const adminData = await fetchAdminData(data.user);
+      
+      if (!adminData) {
+        // User exists but is not an admin - sign them out
+        await supabase.auth.signOut();
+        return { success: false, error: 'Accès non autorisé. Vous n\'êtes pas administrateur.' };
+      }
+
+      setCurrentUser(adminData);
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Une erreur est survenue' };
     }
-
-    // Find user
-    const user = mockAdminUsers.find(u => u.email.toLowerCase() === normalizedEmail);
-    if (!user) {
-      return { success: false, error: 'Utilisateur non trouvé' };
-    }
-
-    if (!user.isActive) {
-      return { success: false, error: 'Ce compte est désactivé' };
-    }
-
-    // Save session
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: user.id, loginAt: new Date().toISOString() }));
-    setCurrentUser({ ...user, lastLogin: new Date() });
-
-    // Log the login action
-    logAction('LOGIN', 'AUTH', `Connexion de ${user.firstName} ${user.lastName}`);
-
-    return { success: true };
   };
 
-  const logout = () => {
-    if (currentUser) {
-      logAction('LOGOUT', 'AUTH', `Déconnexion de ${currentUser.firstName} ${currentUser.lastName}`);
-    }
-    localStorage.removeItem(SESSION_KEY);
+  const logout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
+    setSession(null);
   };
 
   const permissions = currentUser ? ROLE_PERMISSIONS[currentUser.role] : null;
 
   const hasPermission = (permission: keyof RolePermission): boolean => {
     if (!permissions) return false;
-    const value = permissions[permission];
-    return typeof value === 'boolean' ? value : false;
+    return permissions[permission] === true;
   };
 
-  const logAction = (
-    actionType: AdminActionType, 
-    targetType: AdminLogEntry['targetType'], 
-    description: string, 
-    targetId?: string, 
+  // Log admin actions to audit log table
+  const logAction = async (
+    actionType: string,
+    targetType: string,
+    description: string,
+    targetId?: string,
     metadata?: Record<string, any>
   ) => {
     if (!currentUser) return;
     
-    const logEntry: AdminLogEntry = {
-      id: `log-${Date.now()}`,
-      adminUserId: currentUser.id,
-      adminUserName: `${currentUser.firstName} ${currentUser.lastName}`,
-      actionType,
-      targetType,
-      targetId,
-      description,
-      metadata,
-      ipAddress: '127.0.0.1', // Mock IP
-      createdAt: new Date(),
-    };
-
-    setActionLogs(prev => [logEntry, ...prev]);
-    
-    // In a real app, this would send to the server
-    console.log('[ADMIN LOG]', logEntry);
+    try {
+      await supabase.from('admin_audit_logs').insert({
+        admin_user_id: currentUser.id,
+        action_type: actionType,
+        target_type: targetType,
+        target_id: targetId,
+        details: metadata ? { description, ...metadata } : { description },
+      });
+    } catch (error) {
+      console.error('[ADMIN LOG ERROR]', error);
+    }
   };
 
   return (
