@@ -11,6 +11,7 @@ import {
   usePaymentProofs,
   useUpdateBeneficiaryInfo,
 } from '@/hooks/usePayments';
+import { usePaymentProofMultiUpload } from '@/hooks/usePaymentProofUpload';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
 import {
   CheckCircle2,
@@ -49,6 +50,8 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { PaymentProofUpload } from '@/components/payment/PaymentProofUpload';
+import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
 
 const statusConfig = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -85,11 +88,15 @@ export default function PaymentDetailPage() {
   const [isUploadingQr, setIsUploadingQr] = useState(false);
   const qrInputRef = useRef<HTMLInputElement>(null);
 
+  // Proof upload state
+  const [instructionFiles, setInstructionFiles] = useState<File[]>([]);
+
   const { data: payment, isLoading: paymentLoading } = usePaymentDetail(paymentId);
   const { data: timeline, isLoading: timelineLoading } = usePaymentTimeline(paymentId);
   const { data: proofs } = usePaymentProofs(paymentId);
 
   const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
+  const { uploadProofs, isUploading: isUploadingProofs } = usePaymentProofMultiUpload();
 
   // Initialize form when payment loads
   useEffect(() => {
@@ -249,10 +256,19 @@ export default function PaymentDetailPage() {
   // Can edit beneficiary info when not yet processing/completed/rejected
   const canEditBeneficiary = ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
   const isLocked = ['processing', 'completed', 'rejected'].includes(payment.status);
+  const canUploadInstructions = ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
 
+  const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'client');
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
 
   const isRejected = payment.status === 'rejected';
+
+  // Handle instruction upload
+  const handleUploadInstructions = async () => {
+    if (!paymentId || instructionFiles.length === 0) return;
+    await uploadProofs({ paymentId, files: instructionFiles });
+    setInstructionFiles([]);
+  };
 
   // Check if beneficiary info is provided
   const hasBeneficiaryInfo = payment.method === 'cash' || 
@@ -736,42 +752,57 @@ export default function PaymentDetailPage() {
           </Card>
         )}
 
-        {/* Proofs */}
+        {/* Client Instructions Upload */}
+        {canUploadInstructions && (
+          <Card>
+            <CardContent className="p-4">
+              <PaymentProofUpload
+                onFilesSelect={setInstructionFiles}
+                selectedFiles={instructionFiles}
+                onConfirm={handleUploadInstructions}
+                isSubmitting={isUploadingProofs}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Client Instructions Gallery */}
+        {clientProofs.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Mes instructions de paiement</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Ces documents indiquent à Bonzini où et comment effectuer le paiement.
+              </p>
+              <PaymentProofGallery
+                proofs={clientProofs}
+                title=""
+                emptyMessage="Aucune instruction ajoutée"
+                showUploadedBy={false}
+              />
+              {isLocked && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Lock className="w-3.5 h-3.5" />
+                  Les modifications ne sont plus possibles
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Admin Proofs */}
         <Card>
           <CardContent className="p-4">
-            <div className="mb-3">
-              <h3 className="font-semibold">Preuves de paiement</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Les preuves sont ajoutées par Bonzini après exécution du paiement.
-              </p>
-            </div>
-
-            {adminProofs.length > 0 ? (
-              <div className="space-y-2">
-                {adminProofs.map((proof) => (
-                  <div key={proof.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">{proof.file_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Ajouté par Bonzini • {format(new Date(proof.created_at), 'dd/MM/yyyy', { locale: fr })}
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={proof.file_url} target="_blank" rel="noopener noreferrer">
-                        <Download className="w-4 h-4" />
-                      </a>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Aucune preuve disponible pour le moment
-              </p>
-            )}
+            <h3 className="font-semibold mb-2">Preuves de paiement Bonzini</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Ces documents confirment que le paiement a été exécuté.
+            </p>
+            <PaymentProofGallery
+              proofs={adminProofs}
+              title=""
+              emptyMessage="Aucune preuve disponible pour le moment"
+              showUploadedBy={false}
+            />
           </CardContent>
         </Card>
 
