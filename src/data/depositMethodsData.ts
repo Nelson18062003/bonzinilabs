@@ -72,7 +72,7 @@ export const subMethods: SubMethodInfo[] = [
     subMethod: 'OM_WITHDRAWAL',
     family: 'ORANGE_MONEY',
     label: 'Retrait OM',
-    description: 'Nous initierons le retrait depuis votre numéro',
+    description: 'Tapez le code marchand pour payer',
   },
   // MTN sub-methods
   {
@@ -85,7 +85,7 @@ export const subMethods: SubMethodInfo[] = [
     subMethod: 'MTN_WITHDRAWAL',
     family: 'MTN_MONEY',
     label: 'Retrait MOMO',
-    description: 'Nous initierons le retrait depuis votre numéro',
+    description: 'Tapez le code marchand pour payer',
   },
   // Agency - direct
   {
@@ -197,6 +197,19 @@ export const waveAccount: MobileMoneyInfo = {
 };
 
 // ============================================
+// MERCHANT CODES FOR WITHDRAWALS
+// ============================================
+export const omMerchantInfo = {
+  accountName: 'PDV TCHAKOUTE',
+  merchantCode: '#150*14*424393*693515541*MONTANT#',
+};
+
+export const mtnMerchantInfo = {
+  accountName: 'NGANGON SOH NELSON',
+  merchantCode: '*126*14*652236856*MONTANT#',
+};
+
+// ============================================
 // HELPERS
 // ============================================
 export const getSubMethodsForFamily = (family: DepositMethodFamily): SubMethodInfo[] => {
@@ -232,8 +245,9 @@ export const subMethodRequiresAgencySelection = (subMethod: DepositSubMethod): b
 };
 
 // Check if sub-method requires client phone (for withdrawal)
+// Now returns false for OM/MTN withdrawals since they use merchant codes
 export const subMethodRequiresClientPhone = (subMethod: DepositSubMethod): boolean => {
-  return subMethod === 'OM_WITHDRAWAL' || subMethod === 'MTN_WITHDRAWAL';
+  return false; // No longer needed - withdrawals use merchant codes
 };
 
 // Generate unique reference code

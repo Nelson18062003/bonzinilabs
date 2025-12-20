@@ -12,9 +12,10 @@ import {
   orangeMoneyAccount,
   mtnMoneyAccount,
   waveAccount,
+  omMerchantInfo,
+  mtnMerchantInfo,
   familyRequiresSubMethod,
   subMethodRequiresBankSelection,
-  subMethodRequiresClientPhone,
   generateDepositReference,
   getBankInfo,
   getAgencyInfo,
@@ -147,9 +148,8 @@ const NewDepositPage = () => {
     
     if (subMethodRequiresBankSelection(subMethod)) {
       setStep('bank');
-    } else if (subMethodRequiresClientPhone(subMethod)) {
-      setStep('client-info');
     } else {
+      // All other methods (including withdrawals) go directly to instructions
       setStep('instructions');
     }
   };
@@ -218,20 +218,21 @@ const NewDepositPage = () => {
           ],
         };
       } else {
+        // Withdrawal - show merchant code
         return {
-          type: 'withdrawal',
+          type: 'merchant',
           title: 'Retrait Orange Money',
-          accountLabel: 'Votre numéro',
-          accountValue: clientPhone,
-          accountName: clientName,
+          accountLabel: 'Titulaire',
+          accountValue: omMerchantInfo.accountName,
+          accountName: omMerchantInfo.accountName,
+          merchantCode: omMerchantInfo.merchantCode,
           instructions: [
-            'Assurez-vous d\'avoir le solde disponible sur votre compte OM',
-            'Nous allons initier un retrait depuis votre numéro',
-            'Vous recevrez une demande de validation',
-            'Confirmez avec votre code PIN',
-            'Votre dépôt sera crédité après validation',
+            'Sur votre téléphone, tapez le code marchand affiché ci-dessous',
+            'Remplacez MONTANT par le montant à envoyer',
+            'Validez avec votre code PIN Orange Money',
+            'Prenez une capture d\'écran du SMS de confirmation',
           ],
-          note: 'Nous initierons le retrait dans les plus brefs délais.',
+          note: 'Limite: 500 000 XAF par transaction',
         };
       }
     }
@@ -253,20 +254,21 @@ const NewDepositPage = () => {
           ],
         };
       } else {
+        // Withdrawal - show merchant code
         return {
-          type: 'withdrawal',
+          type: 'merchant',
           title: 'Retrait MTN Mobile Money',
-          accountLabel: 'Votre numéro',
-          accountValue: clientPhone,
-          accountName: clientName,
+          accountLabel: 'Titulaire',
+          accountValue: mtnMerchantInfo.accountName,
+          accountName: mtnMerchantInfo.accountName,
+          merchantCode: mtnMerchantInfo.merchantCode,
           instructions: [
-            'Assurez-vous d\'avoir le solde disponible sur votre compte MOMO',
-            'Nous allons initier un retrait depuis votre numéro',
-            'Vous recevrez une demande de validation',
-            'Confirmez avec votre code PIN',
-            'Votre dépôt sera crédité après validation',
+            'Sur votre téléphone, tapez le code marchand affiché ci-dessous',
+            'Remplacez MONTANT par le montant à envoyer',
+            'Validez avec votre code PIN MTN Mobile Money',
+            'Prenez une capture d\'écran du SMS de confirmation',
           ],
-          note: 'Nous initierons le retrait dans les plus brefs délais.',
+          note: 'Limite: 500 000 XAF par transaction',
         };
       }
     }
@@ -650,6 +652,18 @@ const NewDepositPage = () => {
             <div className="flex items-center justify-between py-2 border-b border-border/50">
               <span className="text-sm text-muted-foreground">Horaires</span>
               <span className="font-medium text-foreground text-sm">{(info as any).hours}</span>
+            </div>
+          )}
+          {/* Merchant code for withdrawals */}
+          {(info as any).merchantCode && (
+            <div className="py-3 border-b border-border/50">
+              <span className="text-sm text-muted-foreground block mb-2">Code Marchand</span>
+              <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
+                <span className="font-bold text-foreground font-mono text-sm break-all">{(info as any).merchantCode}</span>
+                <button onClick={() => handleCopy((info as any).merchantCode)}>
+                  <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground flex-shrink-0 ml-2" />
+                </button>
+              </div>
             </div>
           )}
           
