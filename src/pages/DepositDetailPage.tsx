@@ -11,10 +11,10 @@ import {
   useDepositDetail, 
   useDepositProofs, 
   useDepositTimeline,
-  useUploadProof,
   DEPOSIT_STATUS_LABELS, 
   DEPOSIT_METHOD_LABELS 
 } from '@/hooks/useDeposits';
+import { useUploadMultipleProofs } from '@/hooks/useDepositProofMultiUpload';
 import { formatXAF } from '@/lib/formatters';
 import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
 import { 
@@ -24,24 +24,33 @@ import {
   Building2, 
   Loader2,
   XCircle,
-  Image,
   Smartphone,
   Store,
   Waves,
-  FileText
+  FileText,
+  Eye,
+  Download,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const DepositDetailPage = () => {
   const { depositId } = useParams<{ depositId: string }>();
   const navigate = useNavigate();
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [uploadedProof, setUploadedProof] = useState<File | null>(null);
+  const [uploadedProofs, setUploadedProofs] = useState<File[]>([]);
+  const [viewingProof, setViewingProof] = useState<{ url: string; name: string } | null>(null);
   
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
   const { data: timelineEvents, isLoading: loadingTimeline } = useDepositTimeline(depositId);
-  const uploadProof = useUploadProof();
+  const uploadProofs = useUploadMultipleProofs();
 
   // Build timeline steps from deposit status and events
   const timelineSteps = useMemo(() => {
@@ -114,19 +123,33 @@ const DepositDetailPage = () => {
     }
   };
 
-  const handleProofUpload = (file: File) => {
-    setUploadedProof(file);
+  const handleProofsUpload = (files: File[]) => {
+    setUploadedProofs(files);
   };
 
-  const handleConfirmProof = async () => {
-    if (!uploadedProof || !depositId) return;
+  const handleConfirmProofs = async () => {
+    if (!uploadedProofs.length || !depositId) return;
     
-    await uploadProof.mutateAsync({
+    await uploadProofs.mutateAsync({
       depositId,
-      file: uploadedProof,
+      files: uploadedProofs,
     });
     
-    setUploadedProof(null);
+    setUploadedProofs([]);
+  };
+
+  const isImageFile = (fileType: string | null) => {
+    return fileType?.startsWith('image/');
+  };
+
+  const handleDownloadProof = (url: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -190,22 +213,65 @@ const DepositDetailPage = () => {
           </Card>
         )}
 
-        {/* Proofs Section */}
+        {/* Proofs Section with Previews */}
         {proofs && proofs.length > 0 && (
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-foreground">Preuves envoyées</h3>
+              <h3 className="font-semibold text-foreground">
+                Preuves envoyées ({proofs.length})
+              </h3>
             </div>
-            <div className="space-y-2">
+            
+            {/* Grid of proof thumbnails */}
+            <div className="grid grid-cols-3 gap-2">
               {proofs.map((proof) => (
-                <div key={proof.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                  <Image className="w-5 h-5 text-blue-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{proof.file_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {safeFormatDate(proof.uploaded_at)}
-                    </p>
+                <div 
+                  key={proof.id} 
+                  className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted/30"
+                >
+                  {isImageFile(proof.file_type) ? (
+                    <>
+                      <img 
+                        src={proof.file_url} 
+                        alt={proof.file_name}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="w-8 h-8"
+                          onClick={() => setViewingProof({ url: proof.file_url, name: proof.file_name })}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="w-8 h-8"
+                          onClick={() => handleDownloadProof(proof.file_url, proof.file_name)}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div 
+                      className="w-full h-full flex flex-col items-center justify-center p-2 cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleDownloadProof(proof.file_url, proof.file_name)}
+                    >
+                      <FileText className="w-8 h-8 text-primary mb-1" />
+                      <p className="text-[10px] text-muted-foreground text-center truncate w-full">
+                        {proof.file_name}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Date badge */}
+                  <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                    {safeFormatDate(proof.uploaded_at)}
                   </div>
                 </div>
               ))}
@@ -217,10 +283,10 @@ const DepositDetailPage = () => {
         {canUploadProof && (
           <Card className="p-4">
             <ProofUpload 
-              onFileSelect={handleProofUpload}
-              selectedFile={uploadedProof}
-              onConfirm={handleConfirmProof}
-              isSubmitting={uploadProof.isPending}
+              onFilesSelect={handleProofsUpload}
+              selectedFiles={uploadedProofs}
+              onConfirm={handleConfirmProofs}
+              isSubmitting={uploadProofs.isPending}
             />
           </Card>
         )}
@@ -241,6 +307,36 @@ const DepositDetailPage = () => {
           Retour à mes dépôts
         </Button>
       </div>
+
+      {/* Proof Viewer Dialog */}
+      <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle className="flex items-center justify-between">
+              <span className="truncate">{viewingProof?.name}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-4 pt-2">
+            {viewingProof && (
+              <>
+                <img 
+                  src={viewingProof.url} 
+                  alt={viewingProof.name} 
+                  className="w-full max-h-[70vh] object-contain rounded-lg"
+                />
+                <Button
+                  className="w-full mt-4"
+                  variant="outline"
+                  onClick={() => handleDownloadProof(viewingProof.url, viewingProof.name)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Télécharger
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </MobileLayout>
   );
 };
