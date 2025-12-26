@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Client Pages
 import WalletPage from "./pages/WalletPage";
@@ -24,6 +25,7 @@ import NotFound from "./pages/NotFound";
 
 // Admin Pages
 import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
+import { AdminResetPasswordPage } from "./pages/admin/AdminResetPasswordPage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClientsPage } from "./pages/admin/AdminClientsPage";
 import { AdminClientDetailPage } from "./pages/admin/AdminClientDetailPage";
@@ -55,7 +57,7 @@ const App = () => (
           <Routes>
             {/* Auth Route */}
             <Route path="/auth" element={<AuthPage />} />
-            
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
             {/* Protected Client Routes */}
             <Route path="/" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
             <Route path="/deposits" element={<ProtectedRoute><DepositsPage /></ProtectedRoute>} />
@@ -74,6 +76,7 @@ const App = () => (
                 <AdminLoginPage />
               </AdminAuthProvider>
             } />
+            <Route path="/admin/reset-password" element={<AdminResetPasswordPage />} />
             <Route path="/admin" element={
               <AdminAuthProvider>
                 <ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>
