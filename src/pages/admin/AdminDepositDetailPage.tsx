@@ -7,7 +7,6 @@ import {
   Wallet,
   Calendar,
   FileText,
-  Image,
   CheckCircle,
   XCircle,
   ExternalLink,
@@ -23,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
+import { ProofImageGallery } from '@/components/admin/ProofImageGallery';
 import {
   Dialog,
   DialogContent,
@@ -287,43 +287,7 @@ export function AdminDepositDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {proofs && proofs.length > 0 ? (
-                  <div className="space-y-3">
-                    {proofs.map((proof) => (
-                      <div 
-                        key={proof.id} 
-                        className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-blue-500/10">
-                            <Image className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{proof.file_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Uploadé le {safeFormatDate(proof.uploaded_at)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.open(proof.file_url, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            Voir
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">Aucune preuve uploadée</p>
-                  </div>
-                )}
+                <ProofImageGallery proofs={proofs || []} />
               </CardContent>
             </Card>
 
