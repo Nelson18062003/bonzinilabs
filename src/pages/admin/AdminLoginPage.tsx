@@ -51,7 +51,7 @@ export function AdminLoginPage() {
     setError('');
     setIsLoading(true);
 
-    const redirectUrl = `${window.location.origin}/admin/login`;
+    const redirectUrl = `${window.location.origin}/admin/reset-password`;
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
