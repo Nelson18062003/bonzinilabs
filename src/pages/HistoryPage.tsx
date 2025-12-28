@@ -3,20 +3,28 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge, getStatusType } from '@/components/common/StatusBadge';
 import { useMyDeposits, DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/hooks/useDeposits';
+import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
+import { useMyProfile } from '@/hooks/useProfile';
 import { formatXAF, formatRMB, getPaymentStatusLabel } from '@/lib/formatters';
 import { paymentMethodsInfo } from '@/data/staticData';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownLeft, ArrowUpRight, Filter } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Filter, FileDown } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { ClientStatementModal } from '@/components/statement/ClientStatementModal';
 
 type FilterType = 'all' | 'deposits' | 'payments';
 
 const HistoryPage = () => {
   const [filter, setFilter] = useState<FilterType>('all');
+  const [showStatementModal, setShowStatementModal] = useState(false);
   const { data: deposits, isLoading } = useMyDeposits();
+  const { data: wallet } = useMyWallet();
+  const { data: operations } = useMyWalletOperations();
+  const { data: profile } = useMyProfile();
 
   // For now, only deposits are implemented. Payments will come from a separate hook when ready.
   const allTransactions = [
@@ -50,6 +58,17 @@ const HistoryPage = () => {
       <PageHeader 
         title="Historique" 
         subtitle="Toutes vos opérations"
+        rightElement={
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowStatementModal(true)}
+            className="gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            Relevé
+          </Button>
+        }
       />
       
       {/* Filters */}
@@ -137,6 +156,24 @@ const HistoryPage = () => {
           </div>
         )}
       </div>
+
+      {/* Statement Download Modal */}
+      <ClientStatementModal
+        open={showStatementModal}
+        onOpenChange={setShowStatementModal}
+        clientName={profile ? `${profile.first_name} ${profile.last_name}` : 'Client'}
+        clientPhone={profile?.phone || undefined}
+        operations={(operations || []).map(op => ({
+          id: op.id,
+          created_at: op.created_at,
+          operation_type: op.operation_type,
+          amount_xaf: op.amount_xaf,
+          balance_before: op.balance_before,
+          balance_after: op.balance_after,
+          description: op.description,
+        }))}
+        currentBalance={wallet?.balance_xaf || 0}
+      />
     </MobileLayout>
   );
 };
