@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Popover,
   PopoverContent,
@@ -22,6 +24,11 @@ import {
   Calendar as CalendarIcon,
   Loader2,
   FileText,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { generateStatementPDF, StatementOperation } from '@/lib/generateStatementPDF';
 import { formatXAF } from '@/lib/formatters';
@@ -32,18 +39,26 @@ interface StatementDownloadModalProps {
   onOpenChange: (open: boolean) => void;
   clientName: string;
   clientPhone?: string;
+  clientEmail?: string;
   userId: string;
   operations: StatementOperation[];
   currentBalance: number;
 }
 
-type PeriodPreset = 'this_month' | 'last_month' | 'last_3_months' | 'custom';
+type PeriodPreset = 'this_month' | 'last_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
+
+const OPERATION_TYPE_LABELS: Record<string, string> = {
+  deposit: 'Dépôt',
+  payment: 'Paiement',
+  adjustment: 'Ajustement',
+};
 
 export function StatementDownloadModal({
   open,
   onOpenChange,
   clientName,
   clientPhone,
+  clientEmail,
   operations,
   currentBalance,
 }: StatementDownloadModalProps) {
@@ -51,6 +66,7 @@ export function StatementDownloadModal({
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showOperations, setShowOperations] = useState(false);
 
   // Calculate period dates based on preset
   const { periodStart, periodEnd } = useMemo(() => {
@@ -73,6 +89,16 @@ export function StatementDownloadModal({
           periodStart: startOfMonth(subMonths(now, 2)),
           periodEnd: endOfMonth(now),
         };
+      case 'last_6_months':
+        return {
+          periodStart: startOfMonth(subMonths(now, 5)),
+          periodEnd: endOfMonth(now),
+        };
+      case 'this_year':
+        return {
+          periodStart: new Date(now.getFullYear(), 0, 1),
+          periodEnd: new Date(now.getFullYear(), 11, 31),
+        };
       case 'custom':
         return {
           periodStart: customStartDate || startOfMonth(now),
@@ -91,15 +117,45 @@ export function StatementDownloadModal({
     return operations.filter(op => {
       const opDate = parseISO(op.created_at);
       return isWithinInterval(opDate, { start: periodStart, end: periodEnd });
-    }).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [operations, periodStart, periodEnd]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    let totalCredits = 0;
+    let totalDebits = 0;
+    let depositCount = 0;
+    let paymentCount = 0;
+    let adjustmentCount = 0;
+
+    filteredOperations.forEach(op => {
+      const isCredit = op.operation_type === 'deposit' || 
+        (op.operation_type === 'adjustment' && op.balance_after > op.balance_before);
+      
+      if (isCredit) {
+        totalCredits += op.amount_xaf;
+      } else {
+        totalDebits += op.amount_xaf;
+      }
+
+      if (op.operation_type === 'deposit') depositCount++;
+      else if (op.operation_type === 'payment') paymentCount++;
+      else if (op.operation_type === 'adjustment') adjustmentCount++;
+    });
+
+    return { totalCredits, totalDebits, depositCount, paymentCount, adjustmentCount };
+  }, [filteredOperations]);
 
   // Calculate initial balance (balance before first operation in period)
   const initialBalance = useMemo(() => {
     if (filteredOperations.length === 0) {
       return currentBalance;
     }
-    return filteredOperations[0].balance_before;
+    // Sort ascending to get first operation
+    const sorted = [...filteredOperations].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    return sorted[0].balance_before;
   }, [filteredOperations, currentBalance]);
 
   // Calculate final balance (balance after last operation in period)
@@ -107,22 +163,30 @@ export function StatementDownloadModal({
     if (filteredOperations.length === 0) {
       return currentBalance;
     }
-    return filteredOperations[filteredOperations.length - 1].balance_after;
+    // Sort ascending to get last operation
+    const sorted = [...filteredOperations].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    return sorted[sorted.length - 1].balance_after;
   }, [filteredOperations, currentBalance]);
 
-  const handleDownload = async () => {
+  const handleDownloadPDF = async () => {
     setIsGenerating(true);
     
     try {
-      // Small delay for UX
       await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Sort ascending for PDF
+      const sortedOps = [...filteredOperations].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
       
       generateStatementPDF({
         clientName,
         clientPhone,
         periodStart,
         periodEnd,
-        operations: filteredOperations,
+        operations: sortedOps,
         initialBalance,
         finalBalance,
       });
@@ -136,35 +200,38 @@ export function StatementDownloadModal({
   const presets: { value: PeriodPreset; label: string }[] = [
     { value: 'this_month', label: 'Ce mois' },
     { value: 'last_month', label: 'Mois dernier' },
-    { value: 'last_3_months', label: '3 derniers mois' },
+    { value: 'last_3_months', label: '3 mois' },
+    { value: 'last_6_months', label: '6 mois' },
+    { value: 'this_year', label: 'Cette année' },
     { value: 'custom', label: 'Personnalisé' },
   ];
 
+  const variation = finalBalance - initialBalance;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Télécharger le relevé
+            Relevé de compte
           </DialogTitle>
           <DialogDescription>
-            Générer un relevé de compte PDF pour {clientName}
+            {clientName} {clientPhone && `• ${clientPhone}`} {clientEmail && `• ${clientEmail}`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="flex-1 overflow-y-auto space-y-4 py-4">
           {/* Period presets */}
-          <div className="space-y-3">
-            <Label>Période</Label>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Période</Label>
+            <div className="flex flex-wrap gap-2">
               {presets.map((preset) => (
                 <Button
                   key={preset.value}
                   variant={periodPreset === preset.value ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPeriodPreset(preset.value)}
-                  className="justify-start"
                 >
                   {preset.label}
                 </Button>
@@ -197,6 +264,7 @@ export function StatementDownloadModal({
                       onSelect={setCustomStartDate}
                       locale={fr}
                       initialFocus
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -224,6 +292,7 @@ export function StatementDownloadModal({
                       onSelect={setCustomEndDate}
                       locale={fr}
                       initialFocus
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -231,36 +300,173 @@ export function StatementDownloadModal({
             </div>
           )}
 
-          {/* Preview */}
-          <div className="p-4 bg-secondary/50 rounded-lg space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Période sélectionnée</span>
-              <span className="font-medium">
-                {format(periodStart, 'dd MMM yyyy', { locale: fr })} - {format(periodEnd, 'dd MMM yyyy', { locale: fr })}
-              </span>
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <p className="text-xs text-muted-foreground">Solde initial</p>
+              <p className="text-lg font-semibold">{formatXAF(initialBalance)} XAF</p>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Mouvements</span>
-              <span className="font-medium">{filteredOperations.length}</span>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-xs text-muted-foreground">Solde final</p>
+              <p className="text-lg font-semibold text-primary">{formatXAF(finalBalance)} XAF</p>
             </div>
-            <div className="border-t pt-3 mt-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Solde initial</span>
-                <span>{formatXAF(initialBalance)} XAF</span>
+          </div>
+
+          {/* Statistics */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                <span className="text-xs text-emerald-700">Total crédits</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Solde final</span>
-                <span className="font-bold text-primary">{formatXAF(finalBalance)} XAF</span>
-              </div>
+              <p className="text-sm font-semibold text-emerald-700 mt-1">
+                +{formatXAF(stats.totalCredits)} XAF
+              </p>
             </div>
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+              <div className="flex items-center gap-2">
+                <ArrowDownRight className="h-4 w-4 text-red-600" />
+                <span className="text-xs text-red-700">Total débits</span>
+              </div>
+              <p className="text-sm font-semibold text-red-700 mt-1">
+                -{formatXAF(stats.totalDebits)} XAF
+              </p>
+            </div>
+            <div className={cn(
+              "p-3 rounded-lg border",
+              variation >= 0 
+                ? "bg-emerald-50 border-emerald-200" 
+                : "bg-red-50 border-red-200"
+            )}>
+              <div className="flex items-center gap-2">
+                {variation >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                )}
+                <span className={cn(
+                  "text-xs",
+                  variation >= 0 ? "text-emerald-700" : "text-red-700"
+                )}>Variation</span>
+              </div>
+              <p className={cn(
+                "text-sm font-semibold mt-1",
+                variation >= 0 ? "text-emerald-700" : "text-red-700"
+              )}>
+                {variation >= 0 ? '+' : ''}{formatXAF(variation)} XAF
+              </p>
+            </div>
+          </div>
+
+          {/* Operation type breakdown */}
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="text-xs">
+              {filteredOperations.length} opération{filteredOperations.length > 1 ? 's' : ''}
+            </Badge>
+            {stats.depositCount > 0 && (
+              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                {stats.depositCount} dépôt{stats.depositCount > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {stats.paymentCount > 0 && (
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                {stats.paymentCount} paiement{stats.paymentCount > 1 ? 's' : ''}
+              </Badge>
+            )}
+            {stats.adjustmentCount > 0 && (
+              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+                {stats.adjustmentCount} ajustement{stats.adjustmentCount > 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
+
+          {/* Operations list toggle */}
+          {filteredOperations.length > 0 && (
+            <div className="border rounded-lg">
+              <Button
+                variant="ghost"
+                className="w-full justify-between px-4 py-3 h-auto"
+                onClick={() => setShowOperations(!showOperations)}
+              >
+                <span className="text-sm font-medium">
+                  Voir les {filteredOperations.length} opération{filteredOperations.length > 1 ? 's' : ''}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {showOperations ? 'Masquer' : 'Afficher'}
+                </span>
+              </Button>
+              
+              {showOperations && (
+                <ScrollArea className="h-48 border-t">
+                  <div className="divide-y">
+                    {filteredOperations.map((op) => {
+                      const isCredit = op.operation_type === 'deposit' || 
+                        (op.operation_type === 'adjustment' && op.balance_after > op.balance_before);
+                      
+                      return (
+                        <div key={op.id} className="px-4 py-2 flex items-center justify-between text-sm">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "text-xs",
+                                  op.operation_type === 'deposit' && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                  op.operation_type === 'payment' && "bg-blue-50 text-blue-700 border-blue-200",
+                                  op.operation_type === 'adjustment' && "bg-amber-50 text-amber-700 border-amber-200"
+                                )}
+                              >
+                                {OPERATION_TYPE_LABELS[op.operation_type] || op.operation_type}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(parseISO(op.created_at), 'dd/MM/yyyy HH:mm')}
+                              </span>
+                            </div>
+                            {op.description && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                {op.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className={cn(
+                              "font-medium",
+                              isCredit ? "text-emerald-600" : "text-red-600"
+                            )}>
+                              {isCredit ? '+' : '-'}{formatXAF(op.amount_xaf)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              → {formatXAF(op.balance_after)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          )}
+
+          {/* Period info */}
+          <div className="text-xs text-muted-foreground text-center">
+            Période: {format(periodStart, 'dd MMM yyyy', { locale: fr })} → {format(periodEnd, 'dd MMM yyyy', { locale: fr })}
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            Fermer
           </Button>
-          <Button onClick={handleDownload} disabled={isGenerating}>
+          <Button
+            variant="outline"
+            disabled
+            title="Export CSV disponible prochainement"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            CSV
+          </Button>
+          <Button onClick={handleDownloadPDF} disabled={isGenerating}>
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
