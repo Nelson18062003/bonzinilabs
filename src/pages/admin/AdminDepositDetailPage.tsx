@@ -289,7 +289,7 @@ export function AdminDepositDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ProofImageGallery proofs={proofs || []} />
+                <ProofImageGallery proofs={proofs || []} canDelete={canProcess && isPending} />
                 
                 {/* Admin proof upload section */}
                 {canProcess && isPending && (

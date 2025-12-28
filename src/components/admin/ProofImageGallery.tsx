@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { 
-  Image, 
   FileText, 
   Download, 
   ExternalLink, 
@@ -8,13 +7,26 @@ import {
   ChevronLeft, 
   ChevronRight,
   ZoomIn,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { safeFormatDate } from '@/lib/depositTimeline';
+import { useDeleteDepositProof } from '@/hooks/useDeposits';
 
 interface Proof {
   id: string;
@@ -26,10 +38,15 @@ interface Proof {
 
 interface ProofImageGalleryProps {
   proofs: Proof[];
+  canDelete?: boolean;
+  depositId?: string;
 }
 
-export function ProofImageGallery({ proofs }: ProofImageGalleryProps) {
+export function ProofImageGallery({ proofs, canDelete = false, depositId }: ProofImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [proofToDelete, setProofToDelete] = useState<Proof | null>(null);
+  
+  const deleteProof = useDeleteDepositProof();
 
   const isImage = (fileType?: string | null, fileName?: string) => {
     if (fileType?.startsWith('image/')) return true;
@@ -53,6 +70,27 @@ export function ProofImageGallery({ proofs }: ProofImageGalleryProps) {
     if (e.key === 'ArrowLeft') handlePrev();
     if (e.key === 'ArrowRight') handleNext();
     if (e.key === 'Escape') setSelectedIndex(null);
+  };
+
+  const handleDeleteProof = async () => {
+    if (!proofToDelete) return;
+    
+    await deleteProof.mutateAsync({
+      proofId: proofToDelete.id,
+      fileUrl: proofToDelete.file_url,
+    });
+    
+    setProofToDelete(null);
+    
+    // Close lightbox if the deleted proof was being viewed
+    if (selectedIndex !== null) {
+      const newLength = proofs.length - 1;
+      if (newLength === 0) {
+        setSelectedIndex(null);
+      } else if (selectedIndex >= newLength) {
+        setSelectedIndex(newLength - 1);
+      }
+    }
   };
 
   if (proofs.length === 0) {
@@ -106,8 +144,21 @@ export function ProofImageGallery({ proofs }: ProofImageGalleryProps) {
               )}
               
               {/* Overlay */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <ZoomIn className="h-8 w-8 text-white" />
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-white hover:bg-red-500/50 hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setProofToDelete(proof);
+                    }}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
 
               {/* File info */}
@@ -154,6 +205,16 @@ export function ProofImageGallery({ proofs }: ProofImageGalleryProps) {
                       <Download className="h-5 w-5" />
                     </a>
                   </Button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-white hover:bg-red-500/50"
+                      onClick={() => setProofToDelete(proofs[selectedIndex])}
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -250,6 +311,39 @@ export function ProofImageGallery({ proofs }: ProofImageGalleryProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={proofToDelete !== null} onOpenChange={() => setProofToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette preuve ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer le fichier "{proofToDelete?.file_name}" ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteProof}
+              disabled={deleteProof.isPending}
+            >
+              {deleteProof.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

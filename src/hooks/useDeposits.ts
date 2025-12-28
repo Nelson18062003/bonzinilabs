@@ -440,6 +440,49 @@ export function useUploadProof() {
   });
 }
 
+// Delete deposit proof mutation
+export function useDeleteDepositProof() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ proofId, fileUrl }: { proofId: string; fileUrl: string }) => {
+      // Extract the file path from the URL
+      const path = fileUrl.split('/deposit-proofs/')[1];
+      
+      // Delete file from storage
+      if (path) {
+        const { error: storageError } = await supabase.storage
+          .from('deposit-proofs')
+          .remove([path]);
+        
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+          // Continue even if storage delete fails
+        }
+      }
+
+      // Delete proof record from database
+      const { error } = await supabase
+        .from('deposit_proofs')
+        .delete()
+        .eq('id', proofId);
+
+      if (error) throw error;
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deposit-proofs'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      toast.success('Preuve supprimée avec succès');
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
+}
+
 // Status labels
 export const DEPOSIT_STATUS_LABELS: Record<string, string> = {
   created: 'Créé',
