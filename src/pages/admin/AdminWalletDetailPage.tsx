@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -7,12 +8,14 @@ import {
   RefreshCw,
   Calendar,
   Loader2,
+  Settings2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { WalletAdjustmentModal } from '@/components/admin/WalletAdjustmentModal';
 import { useProfileByUserId } from '@/hooks/useProfile';
 import { useWalletByUserId, useWalletOperations } from '@/hooks/useWallet';
 import { formatXAF, formatDate } from '@/lib/formatters';
@@ -28,6 +31,7 @@ import {
 export function AdminWalletDetailPage() {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   
   const { data: profile, isLoading: loadingProfile } = useProfileByUserId(clientId);
   const { data: wallet, isLoading: loadingWallet } = useWalletByUserId(clientId);
@@ -123,6 +127,10 @@ export function AdminWalletDetailPage() {
               </div>
             </div>
           </div>
+          <Button onClick={() => setShowAdjustmentModal(true)}>
+            <Settings2 className="h-4 w-4 mr-2" />
+            Ajustement manuel
+          </Button>
         </div>
 
         {/* Wallet Stats */}
@@ -255,6 +263,17 @@ export function AdminWalletDetailPage() {
             Voir les dépôts
           </Button>
         </div>
+
+        {/* Adjustment Modal */}
+        {clientId && profile && wallet && (
+          <WalletAdjustmentModal
+            open={showAdjustmentModal}
+            onOpenChange={setShowAdjustmentModal}
+            userId={clientId}
+            clientName={`${profile.first_name} ${profile.last_name}`}
+            currentBalance={wallet.balance_xaf}
+          />
+        )}
       </div>
     </AdminLayout>
   );
