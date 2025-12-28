@@ -234,6 +234,52 @@ export function useRejectDeposit() {
   });
 }
 
+// Delete deposit mutation
+export function useDeleteDeposit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId }: { depositId: string }) => {
+      // Delete proofs first (cascade might not work with storage)
+      const { data: proofs } = await supabase
+        .from('deposit_proofs')
+        .select('file_url')
+        .eq('deposit_id', depositId);
+
+      // Delete files from storage if any
+      if (proofs && proofs.length > 0) {
+        for (const proof of proofs) {
+          const path = proof.file_url.split('/deposit-proofs/')[1];
+          if (path) {
+            await supabase.storage.from('deposit-proofs').remove([path]);
+          }
+        }
+      }
+
+      // Delete deposit proofs records
+      await supabase.from('deposit_proofs').delete().eq('deposit_id', depositId);
+
+      // Delete timeline events
+      await supabase.from('deposit_timeline_events').delete().eq('deposit_id', depositId);
+
+      // Delete deposit
+      const { error } = await supabase.from('deposits').delete().eq('id', depositId);
+
+      if (error) throw error;
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      toast.success('Dépôt supprimé avec succès');
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
+}
+
 // Fetch wallet for user
 export function useWalletByUserId(userId: string | undefined) {
   return useQuery({

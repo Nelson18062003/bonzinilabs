@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Loader2,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,10 +26,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   useAdminDeposits, 
   useValidateDeposit, 
   useRejectDeposit,
+  useDeleteDeposit,
 } from '@/hooks/useDeposits';
 import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/data/staticData';
 import { formatXAF, formatDate } from '@/lib/formatters';
@@ -39,10 +51,13 @@ export function AdminDepositsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [depositToDelete, setDepositToDelete] = useState<{ id: string; reference: string } | null>(null);
 
   const { data: deposits, isLoading, error } = useAdminDeposits();
   const validateDeposit = useValidateDeposit();
   const rejectDeposit = useRejectDeposit();
+  const deleteDeposit = useDeleteDeposit();
 
   const canProcessDeposits = hasPermission('canProcessDeposits');
 
@@ -96,6 +111,20 @@ export function AdminDepositsPage() {
     const reason = prompt('Motif du rejet:');
     if (reason) {
       rejectDeposit.mutate({ depositId, reason });
+    }
+  };
+
+  const handleDeleteClick = (deposit: { id: string; reference: string }, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDepositToDelete(deposit);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (depositToDelete) {
+      deleteDeposit.mutate({ depositId: depositToDelete.id });
+      setDeleteDialogOpen(false);
+      setDepositToDelete(null);
     }
   };
 
@@ -269,7 +298,7 @@ export function AdminDepositsPage() {
                     </div>
                   </div>
 
-                  {canProcessDeposits && ['created', 'awaiting_proof', 'proof_submitted', 'admin_review'].includes(deposit.status) && (
+                  {canProcessDeposits && (
                     <div className="flex gap-2 mt-4 pt-4 border-t border-border">
                       <Button 
                         size="sm" 
@@ -282,23 +311,36 @@ export function AdminDepositsPage() {
                         <Eye className="h-4 w-4 mr-1" />
                         Voir
                       </Button>
-                      <Button 
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                        onClick={(e) => handleValidate(deposit.id, e)}
-                        disabled={validateDeposit.isPending}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Valider
-                      </Button>
+                      {['created', 'awaiting_proof', 'proof_submitted', 'admin_review'].includes(deposit.status) && (
+                        <>
+                          <Button 
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                            onClick={(e) => handleValidate(deposit.id, e)}
+                            disabled={validateDeposit.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Valider
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={(e) => handleReject(deposit.id, e)}
+                            disabled={rejectDeposit.isPending}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Rejeter
+                          </Button>
+                        </>
+                      )}
                       <Button 
                         size="sm" 
-                        variant="destructive"
-                        onClick={(e) => handleReject(deposit.id, e)}
-                        disabled={rejectDeposit.isPending}
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                        onClick={(e) => handleDeleteClick({ id: deposit.id, reference: deposit.reference }, e)}
+                        disabled={deleteDeposit.isPending}
                       >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Rejeter
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   )}
@@ -315,6 +357,28 @@ export function AdminDepositsPage() {
             </Card>
           )}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer ce dépôt ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Vous êtes sur le point de supprimer le dépôt <strong>{depositToDelete?.reference}</strong>.
+                Cette action est irréversible. Toutes les preuves et l'historique associés seront également supprimés.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );
