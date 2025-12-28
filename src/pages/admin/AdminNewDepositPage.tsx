@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format, isToday } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -22,6 +30,7 @@ import {
   X,
   FileImage,
   User,
+  CalendarIcon,
 } from 'lucide-react';
 import { useAllClients, useAdminCreateDeposit } from '@/hooks/useAdminCreateDeposit';
 import { DepositMethod } from '@/hooks/useDeposits';
@@ -42,10 +51,11 @@ import {
 import { formatXAF } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
-type Step = 'client' | 'amount' | 'method' | 'submethod' | 'bank' | 'agency' | 'proofs' | 'summary';
+type Step = 'client' | 'date' | 'amount' | 'method' | 'submethod' | 'bank' | 'agency' | 'proofs' | 'summary';
 
 const STEP_LABELS: Record<Step, string> = {
   client: 'Client',
+  date: 'Date',
   amount: 'Montant',
   method: 'Méthode',
   submethod: 'Type',
@@ -71,6 +81,7 @@ export function AdminNewDepositPage() {
   const [step, setStep] = useState<Step>('client');
   const [clientSearch, setClientSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState<typeof clients[0] | null>(null);
+  const [depositDate, setDepositDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState('');
   const [selectedFamily, setSelectedFamily] = useState<DepositMethodFamily | null>(null);
   const [selectedSubMethod, setSelectedSubMethod] = useState<DepositSubMethod | null>(null);
@@ -167,13 +178,14 @@ export function AdminNewDepositPage() {
       agency_name: selectedAgency || undefined,
       admin_comment: adminComment || undefined,
       proofFiles: proofFiles.length > 0 ? proofFiles : undefined,
+      deposit_date: !isToday(depositDate) ? depositDate : undefined,
     });
 
     navigate('/admin/deposits');
   };
 
   // Progress calculation
-  const steps: Step[] = ['client', 'amount', 'method'];
+  const steps: Step[] = ['client', 'date', 'amount', 'method'];
   if (familyRequiresSubMethod(selectedFamily!)) steps.push('submethod');
   if (selectedFamily === 'BANK') steps.push('bank');
   if (selectedFamily === 'AGENCY_BONZINI') steps.push('agency');
@@ -220,7 +232,7 @@ export function AdminNewDepositPage() {
                     key={client.id}
                     onClick={() => {
                       setSelectedClient(client);
-                      setStep('amount');
+                      setStep('date');
                     }}
                     className={cn(
                       'w-full flex items-center gap-3 p-3 rounded-lg border transition-all',
@@ -252,6 +264,61 @@ export function AdminNewDepositPage() {
                 )}
               </div>
             )}
+          </div>
+        );
+
+      case 'date':
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Date du dépôt
+              </p>
+              
+              <div className="flex justify-center gap-2 mb-4">
+                <Button
+                  variant={isToday(depositDate) ? 'default' : 'outline'}
+                  onClick={() => setDepositDate(new Date())}
+                >
+                  Aujourd'hui
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={!isToday(depositDate) ? 'default' : 'outline'}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {!isToday(depositDate) 
+                        ? format(depositDate, 'dd MMM yyyy', { locale: fr })
+                        : 'Autre date'
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="center">
+                    <Calendar
+                      mode="single"
+                      selected={depositDate}
+                      onSelect={(date) => date && setDepositDate(date)}
+                      locale={fr}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {!isToday(depositDate) && (
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                  <CalendarIcon className="inline h-4 w-4 mr-1" />
+                  Date sélectionnée : <strong>{format(depositDate, 'EEEE dd MMMM yyyy', { locale: fr })}</strong>
+                </div>
+              )}
+            </div>
+
+            <Button onClick={() => setStep('amount')} className="w-full">
+              Continuer <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         );
 
@@ -503,6 +570,17 @@ export function AdminNewDepositPage() {
                 </div>
 
                 <div className="border-t pt-4 space-y-3">
+                  {/* Date */}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date du dépôt</span>
+                    <span className={cn(!isToday(depositDate) && "text-amber-600 font-medium")}>
+                      {isToday(depositDate) 
+                        ? "Aujourd'hui" 
+                        : format(depositDate, 'dd MMM yyyy', { locale: fr })
+                      }
+                    </span>
+                  </div>
+
                   {/* Amount */}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Montant</span>
