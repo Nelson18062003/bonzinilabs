@@ -9,6 +9,7 @@ import {
   Calendar,
   Loader2,
   Settings2,
+  FileDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { WalletAdjustmentModal } from '@/components/admin/WalletAdjustmentModal';
+import { StatementDownloadModal } from '@/components/admin/StatementDownloadModal';
 import { useProfileByUserId } from '@/hooks/useProfile';
 import { useWalletByUserId, useWalletOperations } from '@/hooks/useWallet';
 import { formatXAF, formatDate } from '@/lib/formatters';
@@ -32,6 +34,7 @@ export function AdminWalletDetailPage() {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+  const [showStatementModal, setShowStatementModal] = useState(false);
   
   const { data: profile, isLoading: loadingProfile } = useProfileByUserId(clientId);
   const { data: wallet, isLoading: loadingWallet } = useWalletByUserId(clientId);
@@ -127,10 +130,16 @@ export function AdminWalletDetailPage() {
               </div>
             </div>
           </div>
-          <Button onClick={() => setShowAdjustmentModal(true)}>
-            <Settings2 className="h-4 w-4 mr-2" />
-            Ajustement manuel
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowStatementModal(true)}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Relevé PDF
+            </Button>
+            <Button onClick={() => setShowAdjustmentModal(true)}>
+              <Settings2 className="h-4 w-4 mr-2" />
+              Ajustement
+            </Button>
+          </div>
         </div>
 
         {/* Wallet Stats */}
@@ -271,6 +280,27 @@ export function AdminWalletDetailPage() {
             onOpenChange={setShowAdjustmentModal}
             userId={clientId}
             clientName={`${profile.first_name} ${profile.last_name}`}
+            currentBalance={wallet.balance_xaf}
+          />
+        )}
+
+        {/* Statement Download Modal */}
+        {clientId && profile && wallet && operations && (
+          <StatementDownloadModal
+            open={showStatementModal}
+            onOpenChange={setShowStatementModal}
+            clientName={`${profile.first_name} ${profile.last_name}`}
+            clientPhone={profile.phone || undefined}
+            userId={clientId}
+            operations={operations.map(op => ({
+              id: op.id,
+              created_at: op.created_at,
+              operation_type: op.operation_type,
+              amount_xaf: op.amount_xaf,
+              balance_before: op.balance_before,
+              balance_after: op.balance_after,
+              description: op.description,
+            }))}
             currentBalance={wallet.balance_xaf}
           />
         )}
