@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { DepositMethod } from './useDeposits';
+import { DepositMethod, DepositStatus } from './useDeposits';
 
 // Fetch all clients for selection
 export function useAllClients() {
@@ -28,6 +28,7 @@ export interface AdminCreateDepositData {
   client_phone?: string;
   admin_comment?: string;
   proofFiles?: File[];
+  deposit_date?: Date; // Optional custom date for the deposit
 }
 
 // Helper to get current user
@@ -50,24 +51,27 @@ export function useAdminCreateDeposit() {
       if (refError) throw refError;
 
       // Determine initial status based on proofs
-      const initialStatus = data.proofFiles && data.proofFiles.length > 0 
+      const initialStatus: DepositStatus = data.proofFiles && data.proofFiles.length > 0 
         ? 'proof_submitted' 
         : 'created';
 
       // Create deposit for the selected client
+      const insertData = {
+        user_id: data.user_id,
+        reference: reference as string,
+        amount_xaf: data.amount_xaf,
+        method: data.method,
+        bank_name: data.bank_name || null,
+        agency_name: data.agency_name || null,
+        client_phone: data.client_phone || null,
+        admin_comment: data.admin_comment || null,
+        status: initialStatus,
+        created_at: data.deposit_date ? data.deposit_date.toISOString() : new Date().toISOString(),
+      };
+
       const { data: deposit, error } = await supabase
         .from('deposits')
-        .insert({
-          user_id: data.user_id,
-          reference: reference as string,
-          amount_xaf: data.amount_xaf,
-          method: data.method,
-          bank_name: data.bank_name || null,
-          agency_name: data.agency_name || null,
-          client_phone: data.client_phone || null,
-          admin_comment: data.admin_comment || null,
-          status: initialStatus,
-        })
+        .insert(insertData)
         .select()
         .single();
 
