@@ -12,6 +12,7 @@ import {
   ExternalLink,
   CreditCard,
   Loader2,
+  Plus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
+import { AdminProofUpload } from '@/components/admin/AdminProofUpload';
 import { ProofImageGallery } from '@/components/admin/ProofImageGallery';
 import {
   Dialog,
@@ -286,8 +288,19 @@ export function AdminDepositDetailPage() {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <ProofImageGallery proofs={proofs || []} />
+                
+                {/* Admin proof upload section */}
+                {canProcess && isPending && (
+                  <div className="pt-4 border-t border-border">
+                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Ajouter des preuves supplémentaires
+                    </h4>
+                    <AdminProofUpload depositId={deposit.id} />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
