@@ -9,6 +9,7 @@ import {
   Eye,
   AlertCircle,
   Loader2,
+  Plus,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -146,6 +147,10 @@ export function AdminDepositsPage() {
               {pendingCount} dépôt(s) en attente de traitement
             </p>
           </div>
+          <Button onClick={() => navigate('/admin/deposits/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Déclarer un dépôt
+          </Button>
         </div>
 
         {/* Stats Cards */}
