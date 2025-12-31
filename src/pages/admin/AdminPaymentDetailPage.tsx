@@ -96,12 +96,15 @@ export function AdminPaymentDetailPage() {
   const [proofDescription, setProofDescription] = useState('');
   const [isProofDialogOpen, setIsProofDialogOpen] = useState(false);
   const [isAddQrDialogOpen, setIsAddQrDialogOpen] = useState(false);
+  const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false);
+  const [isDeleteQrDialogOpen, setIsDeleteQrDialogOpen] = useState(false);
   const [proofToDelete, setProofToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedQrFile, setSelectedQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [isReplacingQr, setIsReplacingQr] = useState(false);
 
   // Beneficiary edit state
   const [isEditBeneficiaryOpen, setIsEditBeneficiaryOpen] = useState(false);
@@ -181,10 +184,27 @@ export function AdminPaymentDetailPage() {
     });
     setIsAddQrDialogOpen(false);
     setSelectedQrFile(null);
+    setIsReplacingQr(false);
     if (qrPreview) {
       URL.revokeObjectURL(qrPreview);
       setQrPreview(null);
     }
+  };
+
+  const handleDeleteQrCode = async () => {
+    if (!paymentId) return;
+    await updateBeneficiary.mutateAsync({
+      paymentId,
+      beneficiaryInfo: {
+        beneficiary_qr_code_url: null,
+      },
+    });
+    setIsDeleteQrDialogOpen(false);
+  };
+
+  const handleReplaceQrCode = () => {
+    setIsReplacingQr(true);
+    qrInputRef.current?.click();
   };
 
   const handleUpdateBeneficiary = async () => {
@@ -378,12 +398,43 @@ export function AdminPaymentDetailPage() {
               {payment.beneficiary_qr_code_url && (
                 <div className="mt-3">
                   <p className="text-sm text-muted-foreground mb-2">QR Code fourni:</p>
-                  <img 
-                    src={payment.beneficiary_qr_code_url} 
-                    alt="QR Code" 
-                    className="w-32 h-32 rounded-lg border object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => window.open(payment.beneficiary_qr_code_url!, '_blank')}
-                  />
+                  <div className="flex items-start gap-3">
+                    <img 
+                      src={payment.beneficiary_qr_code_url} 
+                      alt="QR Code" 
+                      className="w-32 h-32 rounded-lg border object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => setIsQrPreviewOpen(true)}
+                    />
+                    {canAddQrCode && (
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsQrPreviewOpen(true)}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          Voir
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleReplaceQrCode}
+                        >
+                          <QrCode className="w-4 h-4 mr-1" />
+                          Remplacer
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setIsDeleteQrDialogOpen(true)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Supprimer
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               {payment.beneficiary_notes && (
@@ -719,7 +770,7 @@ export function AdminPaymentDetailPage() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajouter un QR code de paiement</DialogTitle>
+            <DialogTitle>{isReplacingQr ? 'Remplacer le QR code' : 'Ajouter un QR code de paiement'}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             {qrPreview && (
@@ -730,20 +781,75 @@ export function AdminPaymentDetailPage() {
               />
             )}
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Ce QR code sera enregistré comme méthode de paiement pour ce bénéficiaire
+              {isReplacingQr 
+                ? 'Ce QR code remplacera l\'ancien QR code de paiement'
+                : 'Ce QR code sera enregistré comme méthode de paiement pour ce bénéficiaire'
+              }
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddQrDialogOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsAddQrDialogOpen(false); setIsReplacingQr(false); }}>
               Annuler
             </Button>
             <Button onClick={handleUploadQrCode} disabled={updateBeneficiary.isPending}>
               {updateBeneficiary.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Enregistrer
+              {isReplacingQr ? 'Remplacer' : 'Enregistrer'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR code preview dialog */}
+      <Dialog open={isQrPreviewOpen} onOpenChange={setIsQrPreviewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>QR Code de paiement</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 flex flex-col items-center">
+            {payment?.beneficiary_qr_code_url && (
+              <img 
+                src={payment.beneficiary_qr_code_url} 
+                alt="QR Code" 
+                className="w-full max-w-[300px] rounded-lg border object-contain"
+              />
+            )}
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => window.open(payment?.beneficiary_qr_code_url!, '_blank')}
+            >
+              <ExternalLink className="w-4 h-4 mr-1" />
+              Ouvrir en grand
+            </Button>
+            <Button variant="outline" onClick={() => setIsQrPreviewOpen(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete QR code confirmation */}
+      <AlertDialog open={isDeleteQrDialogOpen} onOpenChange={setIsDeleteQrDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le QR code ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le QR code du bénéficiaire sera supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteQrCode}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {updateBeneficiary.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete proof confirmation */}
       <AlertDialog open={!!proofToDelete} onOpenChange={(open) => !open && setProofToDelete(null)}>

@@ -197,14 +197,14 @@ export function useAdminUpdateBeneficiaryInfo() {
         beneficiary_name?: string;
         beneficiary_phone?: string;
         beneficiary_email?: string;
-        beneficiary_qr_code_url?: string;
+        beneficiary_qr_code_url?: string | null;
         beneficiary_bank_name?: string;
         beneficiary_bank_account?: string;
         beneficiary_notes?: string;
       };
       qrCodeFile?: File;
     }) => {
-      let qrCodeUrl = beneficiaryInfo.beneficiary_qr_code_url;
+      let qrCodeUrl: string | null | undefined = beneficiaryInfo.beneficiary_qr_code_url;
       
       // Upload QR code if provided
       if (qrCodeFile) {
@@ -223,19 +223,36 @@ export function useAdminUpdateBeneficiaryInfo() {
         qrCodeUrl = publicUrl;
       }
 
-      // Determine if we have sufficient info
-      const hasInfo = qrCodeUrl || 
-                      beneficiaryInfo.beneficiary_name || 
-                      beneficiaryInfo.beneficiary_bank_account;
+      // Build update data - only include qr_code_url if it's explicitly set (including null for deletion)
+      const updateData: Record<string, unknown> = {
+        ...beneficiaryInfo,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only update QR code URL if explicitly provided (including null for deletion) or if file was uploaded
+      if (qrCodeFile || beneficiaryInfo.beneficiary_qr_code_url !== undefined) {
+        updateData.beneficiary_qr_code_url = qrCodeUrl;
+      }
+
+      // Determine if we have sufficient info after this update
+      // Fetch current payment to merge with updates
+      const { data: currentPayment } = await supabase
+        .from('payments')
+        .select('beneficiary_name, beneficiary_bank_account, beneficiary_qr_code_url')
+        .eq('id', paymentId)
+        .single();
+
+      const finalQrCode = qrCodeFile ? qrCodeUrl : (beneficiaryInfo.beneficiary_qr_code_url !== undefined ? beneficiaryInfo.beneficiary_qr_code_url : currentPayment?.beneficiary_qr_code_url);
+      const finalName = beneficiaryInfo.beneficiary_name !== undefined ? beneficiaryInfo.beneficiary_name : currentPayment?.beneficiary_name;
+      const finalBankAccount = beneficiaryInfo.beneficiary_bank_account !== undefined ? beneficiaryInfo.beneficiary_bank_account : currentPayment?.beneficiary_bank_account;
+      
+      const hasInfo = finalQrCode || finalName || finalBankAccount;
+
+      updateData.status = hasInfo ? 'ready_for_payment' : 'waiting_beneficiary_info';
 
       const { error } = await supabase
         .from('payments')
-        .update({
-          ...beneficiaryInfo,
-          beneficiary_qr_code_url: qrCodeUrl,
-          status: hasInfo ? 'ready_for_payment' : 'waiting_beneficiary_info',
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', paymentId);
 
       if (error) throw error;
