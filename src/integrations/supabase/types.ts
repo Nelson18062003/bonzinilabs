@@ -515,6 +515,25 @@ export type Database = {
         }
         Returns: Json
       }
+      create_admin_payment: {
+        Args: {
+          p_amount_rmb: number
+          p_amount_xaf: number
+          p_beneficiary_bank_account?: string
+          p_beneficiary_bank_name?: string
+          p_beneficiary_email?: string
+          p_beneficiary_name?: string
+          p_beneficiary_notes?: string
+          p_beneficiary_phone?: string
+          p_beneficiary_qr_code_url?: string
+          p_client_visible_comment?: string
+          p_desired_date?: string
+          p_exchange_rate: number
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_user_id: string
+        }
+        Returns: Json
+      }
       create_payment: {
         Args: {
           p_amount_rmb: number
@@ -531,6 +550,8 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_payment: { Args: { p_payment_id: string }; Returns: Json }
+      delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
       generate_deposit_reference: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
       has_role: {

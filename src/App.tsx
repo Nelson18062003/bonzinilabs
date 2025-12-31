@@ -36,6 +36,7 @@ import { AdminDepositDetailPage } from "./pages/admin/AdminDepositDetailPage";
 import { AdminNewDepositPage } from "./pages/admin/AdminNewDepositPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
 import { AdminPaymentDetailPage } from "./pages/admin/AdminPaymentDetailPage";
+import { AdminNewPaymentPage } from "./pages/admin/AdminNewPaymentPage";
 import { AdminRatesPage } from "./pages/admin/AdminRatesPage";
 import { AdminProofsPage } from "./pages/admin/AdminProofsPage";
 import { AdminHistoryPage } from "./pages/admin/AdminHistoryPage";
@@ -121,6 +122,11 @@ const App = () => (
             <Route path="/admin/payments" element={
               <AdminAuthProvider>
                 <ProtectedAdminRoute><AdminPaymentsPage /></ProtectedAdminRoute>
+              </AdminAuthProvider>
+            } />
+            <Route path="/admin/payments/new" element={
+              <AdminAuthProvider>
+                <ProtectedAdminRoute><AdminNewPaymentPage /></ProtectedAdminRoute>
               </AdminAuthProvider>
             } />
             <Route path="/admin/payments/:paymentId" element={
