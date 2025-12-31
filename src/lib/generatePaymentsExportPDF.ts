@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
 export interface ExportablePayment {
   id: string;
@@ -20,35 +19,26 @@ export interface ExportablePayment {
   client_name: string;
 }
 
-const formatXAF = (amount: number): string => {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-};
-
 const formatRMB = (amount: number): string => {
   return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
 const formatDateTime = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'dd/MM/yyyy HH:mm', { locale: fr });
-};
-
-const formatDate = (date: Date | string): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'dd MMM yyyy', { locale: fr });
+  return format(d, 'dd/MM/yyyy HH:mm');
 };
 
 const getMethodLabel = (method: string): string => {
   switch (method) {
     case 'alipay': return 'Alipay';
     case 'wechat': return 'WeChat Pay';
-    case 'bank_transfer': return 'Virement Bancaire';
+    case 'bank_transfer': return 'Bank Transfer';
     case 'cash': return 'Cash';
     default: return method;
   }
 };
 
-export async function generatePaymentsExportPDF(payments: ExportablePayment[]): Promise<void> {
+export async function generatePaymentsExportPDF(payments: ExportablePayment[]): Promise<jsPDF> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -64,7 +54,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   const mutedColor: [number, number, number] = [107, 114, 128];
   const accentColor: [number, number, number] = [59, 130, 246];
 
-  // ========== PAGE 1: RÉCAPITULATIF ==========
+  // ========== PAGE 1: SUMMARY ==========
   let yPos = 20;
 
   // Header
@@ -78,10 +68,10 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   
   doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
-  doc.text('Export Paiements - Prestataire Externe', pageWidth / 2, 30, { align: 'center' });
+  doc.text('Payment Orders for External Partner', pageWidth / 2, 30, { align: 'center' });
   
   doc.setFontSize(10);
-  doc.text('Genere le ' + formatDateTime(new Date()), pageWidth / 2, 40, { align: 'center' });
+  doc.text('Generated on ' + formatDateTime(new Date()), pageWidth / 2, 40, { align: 'center' });
 
   yPos = 60;
 
@@ -89,13 +79,12 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   doc.setTextColor(...textColor);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('RECAPITULATIF', 20, yPos);
+  doc.text('SUMMARY', 20, yPos);
   
   yPos += 15;
 
   // Summary boxes
   const totalRMB = payments.reduce((sum, p) => sum + p.amount_rmb, 0);
-  const totalXAF = payments.reduce((sum, p) => sum + p.amount_xaf, 0);
 
   // Number of payments box
   doc.setFillColor(249, 250, 251);
@@ -103,7 +92,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
-  doc.text('Nombre de paiements', 28, yPos + 12);
+  doc.text('Number of Payments', 28, yPos + 12);
   doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...primaryColor);
@@ -115,7 +104,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
-  doc.text('Total a payer (RMB)', 118, yPos + 12);
+  doc.text('Total Amount (RMB)', 118, yPos + 12);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...accentColor);
@@ -127,22 +116,21 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   doc.setTextColor(...textColor);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Liste des paiements inclus:', 20, yPos);
+  doc.text('Payments Included:', 20, yPos);
   
   yPos += 8;
 
   // Table of payments summary
   const summaryData = payments.map((p, index) => [
     (index + 1).toString(),
-    p.reference,
-    p.client_name,
+    p.beneficiary_name || '-',
     getMethodLabel(p.method),
     formatRMB(p.amount_rmb) + ' Y',
   ]);
 
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Reference', 'Client', 'Methode', 'Montant RMB']],
+    head: [['#', 'Beneficiary', 'Method', 'Amount RMB']],
     body: summaryData,
     theme: 'striped',
     headStyles: {
@@ -156,11 +144,10 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
       textColor: textColor,
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 45 },
-      2: { cellWidth: 50 },
-      3: { cellWidth: 35 },
-      4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
+      0: { cellWidth: 15, halign: 'center' },
+      1: { cellWidth: 80 },
+      2: { cellWidth: 40 },
+      3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
     },
     alternateRowStyles: {
       fillColor: [249, 250, 251],
@@ -175,127 +162,117 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL A PAYER:', 30, finalY + 14);
+  doc.text('TOTAL TO PAY:', 30, finalY + 14);
   doc.text(formatRMB(totalRMB) + ' RMB', pageWidth - 30, finalY + 14, { align: 'right' });
 
-  // ========== PAGES SUIVANTES: 1 PAIEMENT PAR PAGE ==========
+  // Footer on first page
+  doc.setDrawColor(229, 231, 235);
+  doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...mutedColor);
+  doc.text('Confidential Document - Internal Use Only', 20, pageHeight - 8);
+  doc.text('Page 1 / ' + (payments.length + 1), pageWidth - 20, pageHeight - 8, { align: 'right' });
+
+  // ========== FOLLOWING PAGES: 1 PAYMENT PER PAGE ==========
   for (let i = 0; i < payments.length; i++) {
     const payment = payments[i];
     doc.addPage();
     
-    yPos = 20;
+    yPos = 0;
 
-    // Header with page number
+    // Clear visual separator - top banner with payment number
     doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 35, 'F');
+    doc.rect(0, 0, pageWidth, 25, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('BONZINI TRADING - Ordre de Paiement', pageWidth / 2, 15, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Paiement ' + (i + 1) + ' / ' + payments.length + ' - ' + payment.reference, pageWidth / 2, 28, { align: 'center' });
+    doc.text('PAYMENT ORDER ' + (i + 1) + ' / ' + payments.length, pageWidth / 2, 16, { align: 'center' });
 
-    yPos = 50;
+    yPos = 35;
 
-    // Payment info section
-    doc.setTextColor(...textColor);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Informations du paiement', 20, yPos);
-    
-    yPos += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-
-    const infoLines = [
-      ['Reference:', payment.reference],
-      ['Client:', payment.client_name],
-      ['Date creation:', formatDate(payment.created_at)],
-      ['Methode:', getMethodLabel(payment.method)],
-      ['Taux applique:', '1 RMB = ' + formatXAF(Math.round(payment.amount_xaf / payment.amount_rmb)) + ' XAF'],
-      ['Equivalent XAF:', formatXAF(payment.amount_xaf) + ' XAF'],
-    ];
-
-    infoLines.forEach(([label, value]) => {
-      doc.setTextColor(...mutedColor);
-      doc.text(label, 20, yPos);
-      doc.setTextColor(...textColor);
-      doc.text(value, 70, yPos);
-      yPos += 7;
-    });
-
-    // ========== MONTANT À PAYER (TRÈS GROS) ==========
-    yPos += 10;
+    // ========== AMOUNT TO PAY (VERY LARGE) ==========
     doc.setFillColor(239, 246, 255);
-    doc.roundedRect(20, yPos, pageWidth - 40, 50, 6, 6, 'F');
+    doc.roundedRect(15, yPos, pageWidth - 30, 60, 8, 8, 'F');
+    
+    // Add border for emphasis
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(2);
+    doc.roundedRect(15, yPos, pageWidth - 30, 60, 8, 8, 'S');
+    doc.setLineWidth(0.2);
     
     doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...mutedColor);
-    doc.text('MONTANT A PAYER', pageWidth / 2, yPos + 15, { align: 'center' });
+    doc.text('AMOUNT TO PAY', pageWidth / 2, yPos + 18, { align: 'center' });
     
-    doc.setFontSize(36);
+    doc.setFontSize(48);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
-    doc.text(formatRMB(payment.amount_rmb) + ' RMB', pageWidth / 2, yPos + 40, { align: 'center' });
+    doc.text(formatRMB(payment.amount_rmb) + ' RMB', pageWidth / 2, yPos + 48, { align: 'center' });
 
-    yPos += 65;
+    yPos += 75;
 
-    // ========== INFORMATIONS BÉNÉFICIAIRE ==========
-    doc.setTextColor(...textColor);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Informations du beneficiaire', 20, yPos);
+    // ========== BENEFICIARY INFO (without title) ==========
+    doc.setFillColor(249, 250, 251);
+    doc.roundedRect(15, yPos, pageWidth - 30, 55, 4, 4, 'F');
     
-    yPos += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    let infoY = yPos + 12;
+    doc.setFontSize(11);
 
     if (payment.beneficiary_name) {
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...mutedColor);
-      doc.text('Nom:', 20, yPos);
+      doc.text('Name:', 25, infoY);
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_name, 70, yPos);
-      yPos += 7;
+      doc.text(payment.beneficiary_name, 70, infoY);
+      infoY += 10;
     }
 
     if (payment.beneficiary_phone) {
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...mutedColor);
-      doc.text('Telephone:', 20, yPos);
+      doc.text('Phone:', 25, infoY);
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_phone, 70, yPos);
-      yPos += 7;
+      doc.text(payment.beneficiary_phone, 70, infoY);
+      infoY += 10;
     }
 
     if (payment.beneficiary_bank_name) {
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...mutedColor);
-      doc.text('Banque:', 20, yPos);
+      doc.text('Bank:', 25, infoY);
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_bank_name, 70, yPos);
-      yPos += 7;
+      doc.text(payment.beneficiary_bank_name, 70, infoY);
+      infoY += 10;
     }
 
     if (payment.beneficiary_bank_account) {
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...mutedColor);
-      doc.text('Compte:', 20, yPos);
+      doc.text('Account:', 25, infoY);
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_bank_account, 70, yPos);
-      yPos += 7;
+      doc.text(payment.beneficiary_bank_account, 70, infoY);
     }
+
+    yPos += 65;
 
     // ========== QR CODE ==========
     if (payment.beneficiary_qr_code_url) {
-      yPos += 10;
-      doc.setFillColor(249, 250, 251);
-      doc.roundedRect(20, yPos, pageWidth - 40, 90, 4, 4, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(15, yPos, pageWidth - 30, 110, 4, 4, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.roundedRect(15, yPos, pageWidth - 30, 110, 4, 4, 'S');
       
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
-      doc.text('QR Code de paiement', pageWidth / 2, yPos + 12, { align: 'center' });
+      doc.text('Payment QR Code', pageWidth / 2, yPos + 15, { align: 'center' });
       
       // Try to load and embed QR code image
       try {
@@ -305,10 +282,10 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
             try {
-              // Center the QR code
-              const qrSize = 60;
+              // Center the QR code - larger size
+              const qrSize = 80;
               const qrX = (pageWidth - qrSize) / 2;
-              doc.addImage(img, 'PNG', qrX, yPos + 18, qrSize, qrSize);
+              doc.addImage(img, 'PNG', qrX, yPos + 22, qrSize, qrSize);
               resolve();
             } catch (e) {
               reject(e);
@@ -318,11 +295,11 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
             // If image fails to load, show URL instead
             doc.setFontSize(8);
             doc.setTextColor(...mutedColor);
-            doc.text('QR Code URL:', 30, yPos + 40);
+            doc.text('QR Code URL:', 25, yPos + 50);
             doc.setTextColor(...accentColor);
             const urlText = payment.beneficiary_qr_code_url || '';
-            const truncatedUrl = urlText.length > 60 ? urlText.substring(0, 60) + '...' : urlText;
-            doc.text(truncatedUrl, 30, yPos + 50);
+            const truncatedUrl = urlText.length > 70 ? urlText.substring(0, 70) + '...' : urlText;
+            doc.text(truncatedUrl, 25, yPos + 60);
             resolve();
           };
           img.src = payment.beneficiary_qr_code_url || '';
@@ -331,38 +308,37 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         // Fallback: show URL
         doc.setFontSize(8);
         doc.setTextColor(...mutedColor);
-        doc.text('QR Code disponible a:', 30, yPos + 40);
+        doc.text('QR Code available at:', 25, yPos + 50);
         doc.setTextColor(...accentColor);
         const urlText = payment.beneficiary_qr_code_url || '';
         const truncatedUrl = urlText.length > 80 ? urlText.substring(0, 80) + '...' : urlText;
-        doc.text(truncatedUrl, 30, yPos + 50);
+        doc.text(truncatedUrl, 25, yPos + 60);
       }
     }
 
+    // ========== VISUAL SEPARATOR AT BOTTOM ==========
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(3);
+    doc.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
+    doc.setLineWidth(0.2);
+
     // Footer
-    doc.setDrawColor(229, 231, 235);
-    doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
-    
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...mutedColor);
-    doc.text('Document confidentiel - Usage interne uniquement', 20, pageHeight - 8);
+    doc.text('Confidential Document - Internal Use Only', 20, pageHeight - 8);
     doc.text('Page ' + (i + 2) + ' / ' + (payments.length + 1), pageWidth - 20, pageHeight - 8, { align: 'right' });
   }
 
-  // Add footer to first page
-  doc.setPage(1);
-  doc.setDrawColor(229, 231, 235);
-  doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...mutedColor);
-  doc.text('Document confidentiel - Usage interne uniquement', 20, pageHeight - 8);
-  doc.text('Page 1 / ' + (payments.length + 1), pageWidth - 20, pageHeight - 8, { align: 'right' });
+  return doc;
+}
 
+export async function downloadPaymentsExportPDF(payments: ExportablePayment[]): Promise<void> {
+  const doc = await generatePaymentsExportPDF(payments);
+  
   // Generate filename with date
   const dateStr = format(new Date(), 'yyyy-MM-dd_HHmm');
-  const filename = 'Export_Paiements_' + dateStr + '.pdf';
+  const filename = 'Payment_Orders_' + dateStr + '.pdf';
 
   // Download
   doc.save(filename);
