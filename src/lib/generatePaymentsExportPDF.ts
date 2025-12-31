@@ -181,100 +181,117 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
     
     yPos = 0;
 
-    // Clear visual separator - top banner with payment number
+    // Clear visual separator - top banner with payment number and reference
     doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 25, 'F');
+    doc.rect(0, 0, pageWidth, 30, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('PAYMENT ORDER ' + (i + 1) + ' / ' + payments.length, pageWidth / 2, 16, { align: 'center' });
+    doc.text('PAYMENT ORDER ' + (i + 1) + ' / ' + payments.length, pageWidth / 2, 12, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(payment.reference, pageWidth / 2, 24, { align: 'center' });
 
-    yPos = 35;
+    yPos = 40;
 
     // ========== AMOUNT TO PAY (VERY LARGE) ==========
     doc.setFillColor(239, 246, 255);
-    doc.roundedRect(15, yPos, pageWidth - 30, 60, 8, 8, 'F');
+    doc.roundedRect(15, yPos, pageWidth - 30, 45, 6, 6, 'F');
     
     // Add border for emphasis
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(2);
-    doc.roundedRect(15, yPos, pageWidth - 30, 60, 8, 8, 'S');
+    doc.roundedRect(15, yPos, pageWidth - 30, 45, 6, 6, 'S');
     doc.setLineWidth(0.2);
     
-    doc.setFontSize(14);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...mutedColor);
-    doc.text('AMOUNT TO PAY', pageWidth / 2, yPos + 18, { align: 'center' });
+    doc.text('AMOUNT TO PAY', pageWidth / 2, yPos + 12, { align: 'center' });
     
-    doc.setFontSize(48);
+    doc.setFontSize(40);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
-    doc.text(formatRMB(payment.amount_rmb) + ' RMB', pageWidth / 2, yPos + 48, { align: 'center' });
+    doc.text(formatRMB(payment.amount_rmb) + ' RMB', pageWidth / 2, yPos + 36, { align: 'center' });
 
-    yPos += 75;
+    yPos += 55;
 
-    // ========== BENEFICIARY INFO (without title) ==========
-    doc.setFillColor(249, 250, 251);
-    doc.roundedRect(15, yPos, pageWidth - 30, 55, 4, 4, 'F');
+    // ========== BENEFICIARY INFO (compact) ==========
+    const hasBeneficiaryInfo = payment.beneficiary_name || payment.beneficiary_phone || 
+                               payment.beneficiary_bank_name || payment.beneficiary_bank_account;
     
-    let infoY = yPos + 12;
-    doc.setFontSize(11);
+    if (hasBeneficiaryInfo) {
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(15, yPos, pageWidth - 30, 40, 4, 4, 'F');
+      
+      let infoY = yPos + 10;
+      doc.setFontSize(10);
 
-    if (payment.beneficiary_name) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...mutedColor);
-      doc.text('Name:', 25, infoY);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_name, 70, infoY);
-      infoY += 10;
+      // Two columns layout
+      const leftCol = 25;
+      const rightCol = pageWidth / 2 + 10;
+
+      if (payment.beneficiary_name) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Name:', leftCol, infoY);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_name, leftCol + 25, infoY);
+      }
+
+      if (payment.beneficiary_phone) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Phone:', rightCol, infoY);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_phone, rightCol + 25, infoY);
+      }
+
+      infoY += 12;
+
+      if (payment.beneficiary_bank_name) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Bank:', leftCol, infoY);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_bank_name, leftCol + 25, infoY);
+      }
+
+      if (payment.beneficiary_bank_account) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Account:', rightCol, infoY);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_bank_account, rightCol + 30, infoY);
+      }
+
+      yPos += 50;
     }
 
-    if (payment.beneficiary_phone) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...mutedColor);
-      doc.text('Phone:', 25, infoY);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_phone, 70, infoY);
-      infoY += 10;
-    }
-
-    if (payment.beneficiary_bank_name) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...mutedColor);
-      doc.text('Bank:', 25, infoY);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_bank_name, 70, infoY);
-      infoY += 10;
-    }
-
-    if (payment.beneficiary_bank_account) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...mutedColor);
-      doc.text('Account:', 25, infoY);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...textColor);
-      doc.text(payment.beneficiary_bank_account, 70, infoY);
-    }
-
-    yPos += 65;
-
-    // ========== QR CODE ==========
+    // ========== QR CODE (larger area) ==========
     if (payment.beneficiary_qr_code_url) {
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(15, yPos, pageWidth - 30, 110, 4, 4, 'F');
-      doc.setDrawColor(229, 231, 235);
-      doc.roundedRect(15, yPos, pageWidth - 30, 110, 4, 4, 'S');
+      const qrBoxHeight = pageHeight - yPos - 35;
       
-      doc.setFontSize(12);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(15, yPos, pageWidth - 30, qrBoxHeight, 4, 4, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.roundedRect(15, yPos, pageWidth - 30, qrBoxHeight, 4, 4, 'S');
+      
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
-      doc.text('Payment QR Code', pageWidth / 2, yPos + 15, { align: 'center' });
+      doc.text('Payment QR Code', pageWidth / 2, yPos + 12, { align: 'center' });
       
-      // Try to load and embed QR code image
+      // Calculate QR size to fill available space
+      const availableHeight = qrBoxHeight - 25;
+      const qrSize = Math.min(availableHeight - 10, 120);
+      
       try {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
@@ -282,17 +299,15 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
             try {
-              // Center the QR code - larger size
-              const qrSize = 80;
               const qrX = (pageWidth - qrSize) / 2;
-              doc.addImage(img, 'PNG', qrX, yPos + 22, qrSize, qrSize);
+              const qrY = yPos + 18;
+              doc.addImage(img, 'PNG', qrX, qrY, qrSize, qrSize);
               resolve();
             } catch (e) {
               reject(e);
             }
           };
           img.onerror = () => {
-            // If image fails to load, show URL instead
             doc.setFontSize(8);
             doc.setTextColor(...mutedColor);
             doc.text('QR Code URL:', 25, yPos + 50);
@@ -305,7 +320,6 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
           img.src = payment.beneficiary_qr_code_url || '';
         });
       } catch {
-        // Fallback: show URL
         doc.setFontSize(8);
         doc.setTextColor(...mutedColor);
         doc.text('QR Code available at:', 25, yPos + 50);
@@ -319,7 +333,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
     // ========== VISUAL SEPARATOR AT BOTTOM ==========
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(3);
-    doc.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
+    doc.line(20, pageHeight - 22, pageWidth - 20, pageHeight - 22);
     doc.setLineWidth(0.2);
 
     // Footer
