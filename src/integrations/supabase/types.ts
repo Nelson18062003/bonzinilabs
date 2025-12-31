@@ -172,6 +172,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          effective_at: string | null
           effective_date: string
           id: string
           rate_xaf_to_rmb: number
@@ -179,6 +180,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          effective_at?: string | null
           effective_date: string
           id?: string
           rate_xaf_to_rmb: number
@@ -186,6 +188,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          effective_at?: string | null
           effective_date?: string
           id?: string
           rate_xaf_to_rmb?: number
@@ -506,6 +509,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_exchange_rate: {
+        Args: { p_effective_at?: string; p_rate_xaf_to_rmb: number }
+        Returns: Json
+      }
       admin_adjust_wallet: {
         Args: {
           p_adjustment_type: string
@@ -550,10 +557,12 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_exchange_rate: { Args: { p_rate_id: string }; Returns: Json }
       delete_payment: { Args: { p_payment_id: string }; Returns: Json }
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
       generate_deposit_reference: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
+      get_rate_usage_count: { Args: { p_rate_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -562,12 +571,21 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_rate_used: { Args: { p_rate_id: string }; Returns: boolean }
       process_payment: {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
         Returns: Json
       }
       reject_deposit: {
         Args: { p_deposit_id: string; p_reason: string }
+        Returns: Json
+      }
+      update_exchange_rate: {
+        Args: {
+          p_effective_at?: string
+          p_rate_id: string
+          p_rate_xaf_to_rmb: number
+        }
         Returns: Json
       }
       validate_deposit: {

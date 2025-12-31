@@ -21,6 +21,7 @@ import PaymentDetailPage from "./pages/PaymentDetailPage";
 import HistoryPage from "./pages/HistoryPage";
 import ProfilePage from "./pages/ProfilePage";
 import BeneficiariesPage from "./pages/BeneficiariesPage";
+import { ClientRatesPage } from "./pages/ClientRatesPage";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />
+            <Route path="/rates" element={<ProtectedRoute><ClientRatesPage /></ProtectedRoute>} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={
