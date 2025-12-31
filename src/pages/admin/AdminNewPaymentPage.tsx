@@ -119,7 +119,11 @@ export function AdminNewPaymentPage() {
   // Calculate effective rate
   const effectiveRate = useMemo(() => {
     if (useCustomRate && customRate) {
-      return parseFloat(customRate);
+      // customRate is entered as RMB for 1,000,000 XAF, so divide by 1,000,000 to get rate per 1 XAF
+      const customRateValue = parseFloat(customRate);
+      if (customRateValue > 0) {
+        return customRateValue / 1000000;
+      }
     }
     return currentRate || 0.01167;
   }, [useCustomRate, customRate, currentRate]);
