@@ -17,8 +17,10 @@ import {
   Banknote,
   ChevronRight,
   Search,
-  FileCheck
+  FileCheck,
+  Plus
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -77,6 +79,12 @@ export function AdminPaymentsPage() {
       <AdminPageHeader 
         title="Paiements" 
         subtitle={`${statusCounts.ready_for_payment} à traiter`}
+        action={
+          <Button onClick={() => navigate('/admin/payments/new')} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            Créer un paiement
+          </Button>
+        }
       />
 
       {/* Filters */}
