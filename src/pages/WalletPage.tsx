@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { TrendingUp } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
@@ -5,14 +7,17 @@ import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
 import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
+import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 
 const WalletPage = () => {
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
   const { data: operations, isLoading: opsLoading } = useMyWalletOperations();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
+  const { data: currentRate, isLoading: rateLoading } = useCurrentExchangeRate();
 
-  const isLoading = walletLoading || opsLoading || profileLoading;
+  const currentXafToRmb = currentRate?.rate_xaf_to_rmb ?? 0.01163;
 
   return (
     <MobileLayout>
@@ -30,13 +35,37 @@ const WalletPage = () => {
         </div>
 
         {/* Balance Card */}
-        <div className="mb-6">
+        <div className="mb-4">
           {walletLoading ? (
             <Skeleton className="h-40 w-full rounded-2xl" />
           ) : (
             <BalanceCard balanceXAF={wallet?.balance_xaf || 0} />
           )}
         </div>
+
+        {/* Current Rate Card */}
+        <Link to="/rates" className="block mb-6">
+          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 transition-colors">
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Taux du jour</p>
+                  {rateLoading ? (
+                    <Skeleton className="h-5 w-32" />
+                  ) : (
+                    <p className="text-sm font-semibold text-foreground">
+                      1M XAF = {Math.round(1000000 * currentXafToRmb).toLocaleString()} CNY
+                    </p>
+                  )}
+                </div>
+              </div>
+              <span className="text-xs text-primary font-medium">Voir +</span>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Quick Actions */}
         <div className="mb-8">
