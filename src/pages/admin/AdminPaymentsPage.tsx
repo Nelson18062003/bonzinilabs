@@ -128,17 +128,15 @@ export function AdminPaymentsPage() {
         subtitle={`${statusCounts.ready_for_payment} à traiter`}
         action={
           <div className="flex gap-2">
-            {exportablePayments.length > 0 && (
-              <Button 
-                onClick={handleExportPayments} 
-                size="sm" 
-                variant="outline"
-                disabled={isExporting}
-              >
-                <Download className="w-4 h-4 mr-1" />
-                {isExporting ? 'Export...' : `Exporter (${exportablePayments.length})`}
-              </Button>
-            )}
+            <Button 
+              onClick={handleExportPayments} 
+              size="sm" 
+              variant="outline"
+              disabled={isExporting || exportablePayments.length === 0}
+            >
+              <Download className="w-4 h-4 mr-1" />
+              {isExporting ? 'Export...' : `Exporter (${exportablePayments.length})`}
+            </Button>
             <Button onClick={() => navigate('/admin/payments/new')} size="sm">
               <Plus className="w-4 h-4 mr-1" />
               Créer
