@@ -1,11 +1,11 @@
 import { NavLink } from '@/components/NavLink';
-import { Wallet, ArrowDownToLine, Send, Clock, User } from 'lucide-react';
+import { Wallet, ArrowDownToLine, Send, TrendingUp, User } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: Wallet, label: 'Wallet' },
   { to: '/deposits', icon: ArrowDownToLine, label: 'Dépôts' },
   { to: '/payments', icon: Send, label: 'Paiements' },
-  { to: '/history', icon: Clock, label: 'Historique' },
+  { to: '/rates', icon: TrendingUp, label: 'Taux' },
   { to: '/profile', icon: User, label: 'Profil' },
 ];
 
