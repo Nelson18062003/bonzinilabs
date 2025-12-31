@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/ui/AdminPageHeader';
 import { AdminCard } from '@/components/admin/ui/AdminCard';
-import { AdminFilters } from '@/components/admin/ui/AdminFilters';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminPayments } from '@/hooks/usePayments';
@@ -18,10 +17,13 @@ import {
   ChevronRight,
   Search,
   FileCheck,
-  Plus
+  Plus,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { generatePaymentsExportPDF, ExportablePayment } from '@/lib/generatePaymentsExportPDF';
+import { toast } from 'sonner';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   created: { label: 'Créé', color: 'bg-blue-500' },
@@ -53,6 +55,7 @@ export function AdminPaymentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
+  const [isExporting, setIsExporting] = useState(false);
 
   const filteredPayments = payments?.filter(payment => {
     const matchesSearch = !searchQuery || 
@@ -74,16 +77,73 @@ export function AdminPaymentsPage() {
     completed: payments?.filter(p => p.status === 'completed').length || 0,
   };
 
+  // Get exportable payments (ready_for_payment or processing, with beneficiary info)
+  const exportablePayments = payments?.filter(p => {
+    const isEligibleStatus = p.status === 'ready_for_payment' || p.status === 'processing';
+    const hasBeneficiaryInfo = p.beneficiary_qr_code_url || p.beneficiary_name || p.beneficiary_bank_account || p.method === 'cash';
+    return isEligibleStatus && hasBeneficiaryInfo;
+  }) || [];
+
+  const handleExportPayments = async () => {
+    if (exportablePayments.length === 0) {
+      toast.error('Aucun paiement prêt à être exporté');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const paymentsToExport: ExportablePayment[] = exportablePayments.map(p => ({
+        id: p.id,
+        reference: p.reference,
+        created_at: p.created_at,
+        amount_xaf: p.amount_xaf,
+        amount_rmb: p.amount_rmb,
+        exchange_rate: p.exchange_rate,
+        method: p.method,
+        status: p.status,
+        beneficiary_name: p.beneficiary_name,
+        beneficiary_phone: p.beneficiary_phone,
+        beneficiary_bank_name: p.beneficiary_bank_name,
+        beneficiary_bank_account: p.beneficiary_bank_account,
+        beneficiary_qr_code_url: p.beneficiary_qr_code_url,
+        client_name: p.profiles 
+          ? `${p.profiles.first_name || ''} ${p.profiles.last_name || ''}`.trim() 
+          : 'Client inconnu',
+      }));
+
+      await generatePaymentsExportPDF(paymentsToExport);
+      toast.success(`${paymentsToExport.length} paiement(s) exporté(s)`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error("Erreur lors de l'export");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <AdminPageHeader 
         title="Paiements" 
         subtitle={`${statusCounts.ready_for_payment} à traiter`}
         action={
-          <Button onClick={() => navigate('/admin/payments/new')} size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            Créer un paiement
-          </Button>
+          <div className="flex gap-2">
+            {exportablePayments.length > 0 && (
+              <Button 
+                onClick={handleExportPayments} 
+                size="sm" 
+                variant="outline"
+                disabled={isExporting}
+              >
+                <Download className="w-4 h-4 mr-1" />
+                {isExporting ? 'Export...' : `Exporter (${exportablePayments.length})`}
+              </Button>
+            )}
+            <Button onClick={() => navigate('/admin/payments/new')} size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              Créer
+            </Button>
+          </div>
         }
       />
 
