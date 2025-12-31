@@ -13,9 +13,9 @@ import {
   usePaymentTimeline, 
   usePaymentProofs,
   useProcessPayment,
-  useAdminUploadPaymentProof
 } from '@/hooks/usePayments';
-import { useDeletePayment, useDeletePaymentProof, useAdminUpdateBeneficiaryInfo } from '@/hooks/useAdminPayments';
+import { useDeletePayment, useAdminUpdateBeneficiaryInfo } from '@/hooks/useAdminPayments';
+import { useAdminPaymentProofMultiUpload } from '@/hooks/useAdminPaymentProofMultiUpload';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,9 +29,6 @@ import {
   XCircle,
   Loader2,
   Play,
-  Upload,
-  Download,
-  Image as ImageIcon,
   User,
   AlertCircle,
   Clock,
@@ -60,6 +57,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PaymentStepper } from '@/components/admin/PaymentStepper';
+import { AdminPaymentProofGallery } from '@/components/admin/AdminPaymentProofGallery';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -86,22 +84,16 @@ export function AdminPaymentDetailPage() {
   const { data: proofs } = usePaymentProofs(paymentId);
   
   const processPayment = useProcessPayment();
-  const uploadProof = useAdminUploadPaymentProof();
+  const uploadProofs = useAdminPaymentProofMultiUpload();
   const deletePayment = useDeletePayment();
-  const deleteProof = useDeletePaymentProof();
   const updateBeneficiary = useAdminUpdateBeneficiaryInfo();
   
   const [rejectReason, setRejectReason] = useState('');
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [proofDescription, setProofDescription] = useState('');
-  const [isProofDialogOpen, setIsProofDialogOpen] = useState(false);
   const [isAddQrDialogOpen, setIsAddQrDialogOpen] = useState(false);
   const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false);
   const [isDeleteQrDialogOpen, setIsDeleteQrDialogOpen] = useState(false);
-  const [proofToDelete, setProofToDelete] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const qrInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedQrFile, setSelectedQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
   const [isReplacingQr, setIsReplacingQr] = useState(false);
@@ -140,20 +132,6 @@ export function AdminPaymentDetailPage() {
     navigate('/admin/payments');
   };
 
-  const handleDeleteProof = async () => {
-    if (!proofToDelete) return;
-    await deleteProof.mutateAsync(proofToDelete);
-    setProofToDelete(null);
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setIsProofDialogOpen(true);
-    }
-  };
-
   const handleQrFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -163,16 +141,13 @@ export function AdminPaymentDetailPage() {
     }
   };
 
-  const handleUploadProof = async () => {
-    if (!paymentId || !selectedFile) return;
-    await uploadProof.mutateAsync({
+  const handleUploadProofs = async (files: File[], description: string) => {
+    if (!paymentId) return;
+    await uploadProofs.mutateAsync({
       paymentId,
-      file: selectedFile,
-      description: proofDescription,
+      files,
+      description: description || undefined,
     });
-    setIsProofDialogOpen(false);
-    setSelectedFile(null);
-    setProofDescription('');
   };
 
   const handleUploadQrCode = async () => {
@@ -488,80 +463,15 @@ export function AdminPaymentDetailPage() {
 
         {/* Proofs */}
         <AdminCard>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Preuves de paiement</h3>
-            {canUploadProof && (
-              <>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-1" />
-                  Ajouter
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-              </>
-            )}
-          </div>
-
-          {proofs && proofs.length > 0 ? (
-            <div className="space-y-2">
-              {proofs.map((proof) => (
-                <div key={proof.id} className="flex items-center justify-between p-3 bg-muted rounded-lg group">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {proof.file_type?.startsWith('image/') ? (
-                      <img 
-                        src={proof.file_url} 
-                        alt={proof.file_name}
-                        className="w-10 h-10 rounded object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{proof.file_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Par {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'} • {format(new Date(proof.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={proof.file_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </Button>
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={proof.file_url} download={proof.file_name}>
-                        <Download className="w-4 h-4" />
-                      </a>
-                    </Button>
-                    {canDeleteProofs && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => setProofToDelete(proof.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Aucune preuve pour le moment
-            </p>
-          )}
+          <h3 className="font-semibold mb-3">Preuves de paiement</h3>
+          <AdminPaymentProofGallery
+            proofs={proofs || []}
+            paymentId={paymentId!}
+            canUpload={canUploadProof}
+            canDelete={canDeleteProofs}
+            onUpload={handleUploadProofs}
+            isUploading={uploadProofs.isPending}
+          />
         </AdminCard>
 
         {/* Client visible comment */}
@@ -727,37 +637,6 @@ export function AdminPaymentDetailPage() {
         )}
       </div>
 
-      {/* Proof upload dialog */}
-      <Dialog open={isProofDialogOpen} onOpenChange={setIsProofDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter une preuve</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            {selectedFile && (
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm font-medium">{selectedFile.name}</span>
-              </div>
-            )}
-            <Textarea
-              placeholder="Description (optionnel)..."
-              value={proofDescription}
-              onChange={(e) => setProofDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsProofDialogOpen(false); setSelectedFile(null); }}>
-              Annuler
-            </Button>
-            <Button onClick={handleUploadProof} disabled={uploadProof.isPending}>
-              {uploadProof.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Télécharger
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* QR code upload dialog */}
       <Dialog open={isAddQrDialogOpen} onOpenChange={(open) => {
@@ -850,29 +729,6 @@ export function AdminPaymentDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Delete proof confirmation */}
-      <AlertDialog open={!!proofToDelete} onOpenChange={(open) => !open && setProofToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette preuve ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteProof}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {deleteProof.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Edit beneficiary dialog */}
       <Dialog open={isEditBeneficiaryOpen} onOpenChange={setIsEditBeneficiaryOpen}>
         <DialogContent>
