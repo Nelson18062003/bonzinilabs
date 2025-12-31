@@ -59,6 +59,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PaymentStepper } from '@/components/admin/PaymentStepper';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -270,6 +271,12 @@ export function AdminPaymentDetailPage() {
             {status?.label}
           </Badge>
         </div>
+
+        {/* Payment Stepper */}
+        <AdminCard>
+          <h3 className="font-semibold mb-4">Progression du paiement</h3>
+          <PaymentStepper currentStatus={payment.status} />
+        </AdminCard>
 
         {/* Client info */}
         <AdminCard>
