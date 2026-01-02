@@ -222,8 +222,79 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
 
     yPos += 85;
 
-    // ========== QR CODE (larger area) ==========
-    if (payment.beneficiary_qr_code_url) {
+    // ========== BENEFICIARY INFO / QR CODE ==========
+    if (payment.method === 'bank_transfer') {
+      // Bank transfer: show bank details in large text
+      const infoBoxHeight = pageHeight - yPos - 35;
+      
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(15, yPos, pageWidth - 30, infoBoxHeight, 4, 4, 'F');
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(2);
+      doc.roundedRect(15, yPos, pageWidth - 30, infoBoxHeight, 4, 4, 'S');
+      doc.setLineWidth(0.2);
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...primaryColor);
+      doc.text('BANK TRANSFER DETAILS', pageWidth / 2, yPos + 18, { align: 'center' });
+      
+      let infoY = yPos + 40;
+      const lineHeight = 28;
+      
+      // Bank Name
+      if (payment.beneficiary_bank_name) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Bank Name:', 25, infoY);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_bank_name, 25, infoY + 12);
+        infoY += lineHeight;
+      }
+      
+      // Bank Account
+      if (payment.beneficiary_bank_account) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Account Number:', 25, infoY);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_bank_account, 25, infoY + 12);
+        infoY += lineHeight;
+      }
+      
+      // Beneficiary Name
+      if (payment.beneficiary_name) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Beneficiary Name:', 25, infoY);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_name, 25, infoY + 12);
+        infoY += lineHeight;
+      }
+      
+      // Beneficiary Phone
+      if (payment.beneficiary_phone) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mutedColor);
+        doc.text('Phone:', 25, infoY);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text(payment.beneficiary_phone, 25, infoY + 12);
+      }
+      
+    } else if (payment.beneficiary_qr_code_url) {
+      // QR Code for Alipay/WeChat
       const qrBoxHeight = pageHeight - yPos - 35;
       
       doc.setFillColor(255, 255, 255);
@@ -276,6 +347,20 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         const truncatedUrl = urlText.length > 80 ? urlText.substring(0, 80) + '...' : urlText;
         doc.text(truncatedUrl, 25, yPos + 60);
       }
+    } else {
+      // No QR code and not bank transfer - show available info
+      const infoBoxHeight = 60;
+      
+      doc.setFillColor(254, 243, 199);
+      doc.roundedRect(15, yPos, pageWidth - 30, infoBoxHeight, 4, 4, 'F');
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(180, 83, 9);
+      doc.text('No payment details available', pageWidth / 2, yPos + 25, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Please check the payment in the admin panel', pageWidth / 2, yPos + 40, { align: 'center' });
     }
 
     // ========== VISUAL SEPARATOR AT BOTTOM ==========
