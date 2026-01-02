@@ -38,24 +38,28 @@ const getMethodLabel = (method: string): string => {
   }
 };
 
-// Sanitize text for PDF - jsPDF with Helvetica font cannot display non-ASCII characters
-// This function checks if text contains non-ASCII chars and returns a placeholder if so
-const sanitizeTextForPDF = (text: string | null | undefined): string => {
-  if (!text) return '-';
-  
-  // Check if text contains any non-ASCII characters (including Chinese, special chars, etc.)
-  const hasNonAscii = /[^\x00-\x7F]/.test(text);
-  
-  if (hasNonAscii) {
-    // Extract only ASCII characters for partial display
-    const asciiOnly = text.replace(/[^\x00-\x7F]/g, '').trim();
-    if (asciiOnly.length > 0) {
-      return asciiOnly + ' [Contains Chinese]';
+// Load Chinese font from Google Fonts CDN
+const loadChineseFont = async (): Promise<string | null> => {
+  try {
+    // Use Noto Sans SC (Simplified Chinese) from Google Fonts
+    const fontUrl = 'https://fonts.gstatic.com/s/notosanssc/v36/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYxNbPzS5HE.ttf';
+    
+    const response = await fetch(fontUrl);
+    if (!response.ok) return null;
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64
+    let binary = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
     }
-    return '[Chinese Text - See App]';
+    return btoa(binary);
+  } catch (error) {
+    console.error('Failed to load Chinese font:', error);
+    return null;
   }
-  
-  return text;
 };
 
 export async function generatePaymentsExportPDF(payments: ExportablePayment[]): Promise<jsPDF> {
@@ -64,6 +68,29 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
     unit: 'mm',
     format: 'a4'
   });
+  
+  // Load and register Chinese font
+  const chineseFontBase64 = await loadChineseFont();
+  let useChineseFont = false;
+  
+  if (chineseFontBase64) {
+    try {
+      doc.addFileToVFS('NotoSansSC.ttf', chineseFontBase64);
+      doc.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
+      useChineseFont = true;
+    } catch (error) {
+      console.error('Failed to add Chinese font to PDF:', error);
+    }
+  }
+  
+  // Helper to set font with Chinese support when needed
+  const setFont = (style: 'normal' | 'bold' = 'normal') => {
+    if (useChineseFont) {
+      doc.setFont('NotoSansSC', 'normal');
+    } else {
+      doc.setFont('helvetica', style);
+    }
+  };
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -262,52 +289,52 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
       // Bank Name
       if (payment.beneficiary_bank_name) {
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
+        setFont('normal');
         doc.setTextColor(...mutedColor);
         doc.text('Bank Name:', 25, infoY);
         doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
+        setFont('bold');
         doc.setTextColor(...textColor);
-        doc.text(sanitizeTextForPDF(payment.beneficiary_bank_name), 25, infoY + 12);
+        doc.text(payment.beneficiary_bank_name, 25, infoY + 12);
         infoY += lineHeight;
       }
       
       // Bank Account
       if (payment.beneficiary_bank_account) {
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
+        setFont('normal');
         doc.setTextColor(...mutedColor);
         doc.text('Account Number:', 25, infoY);
         doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
+        setFont('bold');
         doc.setTextColor(...textColor);
-        doc.text(sanitizeTextForPDF(payment.beneficiary_bank_account), 25, infoY + 12);
+        doc.text(payment.beneficiary_bank_account, 25, infoY + 12);
         infoY += lineHeight;
       }
       
       // Beneficiary Name
       if (payment.beneficiary_name) {
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
+        setFont('normal');
         doc.setTextColor(...mutedColor);
         doc.text('Beneficiary Name:', 25, infoY);
         doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
+        setFont('bold');
         doc.setTextColor(...textColor);
-        doc.text(sanitizeTextForPDF(payment.beneficiary_name), 25, infoY + 12);
+        doc.text(payment.beneficiary_name, 25, infoY + 12);
         infoY += lineHeight;
       }
       
       // Beneficiary Phone
       if (payment.beneficiary_phone) {
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
+        setFont('normal');
         doc.setTextColor(...mutedColor);
         doc.text('Phone:', 25, infoY);
         doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
+        setFont('bold');
         doc.setTextColor(...textColor);
-        doc.text(sanitizeTextForPDF(payment.beneficiary_phone), 25, infoY + 12);
+        doc.text(payment.beneficiary_phone, 25, infoY + 12);
       }
       
     } else if (payment.beneficiary_qr_code_url) {
