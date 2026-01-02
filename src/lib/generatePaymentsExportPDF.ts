@@ -38,23 +38,8 @@ const getMethodLabel = (method: string): string => {
   }
 };
 
-// Sanitize text to replace non-ASCII characters with ASCII equivalents for PDF compatibility
-const sanitizeForPDF = (text: string | null | undefined): string => {
-  if (!text) return '-';
-  
-  // For Chinese characters, we cannot display them properly in basic jsPDF
-  // So we check if the text contains non-ASCII and indicate it
-  const hasNonASCII = /[^\x00-\x7F]/.test(text);
-  
-  if (hasNonASCII) {
-    // Return the text with a note that it contains special characters
-    // We'll show the original text but mark that it may not render correctly
-    // For now, just return a placeholder indicating Chinese text
-    return '[Chinese Text - See QR Code]';
-  }
-  
-  return text;
-};
+// Note: jsPDF with Helvetica font cannot display Chinese characters
+// For Chinese beneficiary info, users should rely on the QR code which contains all details
 
 export async function generatePaymentsExportPDF(payments: ExportablePayment[]): Promise<jsPDF> {
   const doc = new jsPDF({
@@ -138,17 +123,17 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
   
   yPos += 8;
 
-  // Table of payments summary
+  // Table of payments summary - only show reference and amount (no Chinese text)
   const summaryData = payments.map((p, index) => [
     (index + 1).toString(),
-    sanitizeForPDF(p.beneficiary_name),
+    p.reference,
     getMethodLabel(p.method),
     formatRMB(p.amount_rmb) + ' Y',
   ]);
 
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Beneficiary', 'Method', 'Amount RMB']],
+    head: [['#', 'Reference', 'Method', 'Amount RMB']],
     body: summaryData,
     theme: 'striped',
     headStyles: {
@@ -214,83 +199,28 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
 
     yPos = 40;
 
-    // ========== AMOUNT TO PAY (VERY LARGE) ==========
+    // ========== AMOUNT TO PAY (EXTREMELY LARGE) ==========
     doc.setFillColor(239, 246, 255);
-    doc.roundedRect(15, yPos, pageWidth - 30, 45, 6, 6, 'F');
+    doc.roundedRect(15, yPos, pageWidth - 30, 70, 6, 6, 'F');
     
     // Add border for emphasis
     doc.setDrawColor(...primaryColor);
-    doc.setLineWidth(2);
-    doc.roundedRect(15, yPos, pageWidth - 30, 45, 6, 6, 'S');
+    doc.setLineWidth(3);
+    doc.roundedRect(15, yPos, pageWidth - 30, 70, 6, 6, 'S');
     doc.setLineWidth(0.2);
     
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(...mutedColor);
-    doc.text('AMOUNT TO PAY', pageWidth / 2, yPos + 12, { align: 'center' });
+    doc.text('AMOUNT TO PAY', pageWidth / 2, yPos + 18, { align: 'center' });
     
-    doc.setFontSize(40);
+    // Very large amount
+    doc.setFontSize(55);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
-    doc.text(formatRMB(payment.amount_rmb) + ' RMB', pageWidth / 2, yPos + 36, { align: 'center' });
+    doc.text(formatRMB(payment.amount_rmb) + ' RMB', pageWidth / 2, yPos + 55, { align: 'center' });
 
-    yPos += 55;
-
-    // ========== BENEFICIARY INFO (compact) ==========
-    const hasBeneficiaryInfo = payment.beneficiary_name || payment.beneficiary_phone || 
-                               payment.beneficiary_bank_name || payment.beneficiary_bank_account;
-    
-    if (hasBeneficiaryInfo) {
-      doc.setFillColor(249, 250, 251);
-      doc.roundedRect(15, yPos, pageWidth - 30, 40, 4, 4, 'F');
-      
-      let infoY = yPos + 10;
-      doc.setFontSize(10);
-
-      // Two columns layout
-      const leftCol = 25;
-      const rightCol = pageWidth / 2 + 10;
-
-      if (payment.beneficiary_name) {
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...mutedColor);
-        doc.text('Name:', leftCol, infoY);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...textColor);
-        doc.text(sanitizeForPDF(payment.beneficiary_name), leftCol + 25, infoY);
-      }
-
-      if (payment.beneficiary_phone) {
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...mutedColor);
-        doc.text('Phone:', rightCol, infoY);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...textColor);
-        doc.text(sanitizeForPDF(payment.beneficiary_phone), rightCol + 25, infoY);
-      }
-
-      infoY += 12;
-
-      if (payment.beneficiary_bank_name) {
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...mutedColor);
-        doc.text('Bank:', leftCol, infoY);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...textColor);
-        doc.text(sanitizeForPDF(payment.beneficiary_bank_name), leftCol + 25, infoY);
-      }
-
-      if (payment.beneficiary_bank_account) {
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...mutedColor);
-        doc.text('Account:', rightCol, infoY);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...textColor);
-        doc.text(sanitizeForPDF(payment.beneficiary_bank_account), rightCol + 30, infoY);
-      }
-
-      yPos += 50;
-    }
+    yPos += 85;
 
     // ========== QR CODE (larger area) ==========
     if (payment.beneficiary_qr_code_url) {
