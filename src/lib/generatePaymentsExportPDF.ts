@@ -38,8 +38,25 @@ const getMethodLabel = (method: string): string => {
   }
 };
 
-// Note: jsPDF with Helvetica font cannot display Chinese characters
-// For Chinese beneficiary info, users should rely on the QR code which contains all details
+// Sanitize text for PDF - jsPDF with Helvetica font cannot display non-ASCII characters
+// This function checks if text contains non-ASCII chars and returns a placeholder if so
+const sanitizeTextForPDF = (text: string | null | undefined): string => {
+  if (!text) return '-';
+  
+  // Check if text contains any non-ASCII characters (including Chinese, special chars, etc.)
+  const hasNonAscii = /[^\x00-\x7F]/.test(text);
+  
+  if (hasNonAscii) {
+    // Extract only ASCII characters for partial display
+    const asciiOnly = text.replace(/[^\x00-\x7F]/g, '').trim();
+    if (asciiOnly.length > 0) {
+      return asciiOnly + ' [Contains Chinese]';
+    }
+    return '[Chinese Text - See App]';
+  }
+  
+  return text;
+};
 
 export async function generatePaymentsExportPDF(payments: ExportablePayment[]): Promise<jsPDF> {
   const doc = new jsPDF({
@@ -251,7 +268,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...textColor);
-        doc.text(payment.beneficiary_bank_name, 25, infoY + 12);
+        doc.text(sanitizeTextForPDF(payment.beneficiary_bank_name), 25, infoY + 12);
         infoY += lineHeight;
       }
       
@@ -264,7 +281,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...textColor);
-        doc.text(payment.beneficiary_bank_account, 25, infoY + 12);
+        doc.text(sanitizeTextForPDF(payment.beneficiary_bank_account), 25, infoY + 12);
         infoY += lineHeight;
       }
       
@@ -277,7 +294,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...textColor);
-        doc.text(payment.beneficiary_name, 25, infoY + 12);
+        doc.text(sanitizeTextForPDF(payment.beneficiary_name), 25, infoY + 12);
         infoY += lineHeight;
       }
       
@@ -290,7 +307,7 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...textColor);
-        doc.text(payment.beneficiary_phone, 25, infoY + 12);
+        doc.text(sanitizeTextForPDF(payment.beneficiary_phone), 25, infoY + 12);
       }
       
     } else if (payment.beneficiary_qr_code_url) {
