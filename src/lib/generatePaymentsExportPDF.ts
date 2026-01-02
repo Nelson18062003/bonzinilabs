@@ -362,9 +362,35 @@ export async function generatePaymentsExportPDF(payments: ExportablePayment[]): 
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
             try {
-              const qrX = (pageWidth - qrSize) / 2;
+              // Get original image dimensions
+              const originalWidth = img.naturalWidth || img.width;
+              const originalHeight = img.naturalHeight || img.height;
+              
+              // Calculate dimensions preserving aspect ratio
+              const maxWidth = pageWidth - 50;
+              const maxHeight = availableHeight - 10;
+              
+              let imgWidth = originalWidth;
+              let imgHeight = originalHeight;
+              
+              // Scale down if needed, preserving aspect ratio
+              if (imgWidth > maxWidth) {
+                const scale = maxWidth / imgWidth;
+                imgWidth = maxWidth;
+                imgHeight = imgHeight * scale;
+              }
+              
+              if (imgHeight > maxHeight) {
+                const scale = maxHeight / imgHeight;
+                imgHeight = maxHeight;
+                imgWidth = imgWidth * scale;
+              }
+              
+              // Center the image
+              const qrX = (pageWidth - imgWidth) / 2;
               const qrY = yPos + 18;
-              doc.addImage(img, 'PNG', qrX, qrY, qrSize, qrSize);
+              
+              doc.addImage(img, 'PNG', qrX, qrY, imgWidth, imgHeight);
               resolve();
             } catch (e) {
               reject(e);
