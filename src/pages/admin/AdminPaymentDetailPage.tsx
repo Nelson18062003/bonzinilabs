@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PaymentStepper } from '@/components/admin/PaymentStepper';
 import { AdminPaymentProofGallery } from '@/components/admin/AdminPaymentProofGallery';
+import { PaymentReceiptButton } from '@/components/admin/PaymentReceiptButton';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -516,6 +517,12 @@ export function AdminPaymentDetailPage() {
             <p className="text-sm text-red-600">{payment.rejection_reason}</p>
           </AdminCard>
         )}
+
+        {/* PDF Receipt Download */}
+        <AdminCard>
+          <h3 className="font-semibold mb-3">Document</h3>
+          <PaymentReceiptButton payment={payment} proofs={proofs || []} />
+        </AdminCard>
 
         {/* Actions */}
         {(canProcess || canComplete || canReject || canDelete) && (
