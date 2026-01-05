@@ -541,6 +541,17 @@ export type Database = {
         }
         Returns: Json
       }
+      create_client_deposit: {
+        Args: {
+          p_agency_name?: string
+          p_amount_xaf: number
+          p_bank_name?: string
+          p_client_phone?: string
+          p_method: Database["public"]["Enums"]["deposit_method"]
+          p_user_id: string
+        }
+        Returns: Json
+      }
       create_payment: {
         Args: {
           p_amount_rmb: number

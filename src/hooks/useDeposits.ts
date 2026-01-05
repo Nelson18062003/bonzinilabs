@@ -317,37 +317,25 @@ export function useCreateDeposit() {
       const user = await getCurrentUser();
       if (!user) throw new Error('Vous devez être connecté');
 
-      // Generate reference
-      const { data: reference, error: refError } = await supabase.rpc('generate_deposit_reference');
-      if (refError) throw refError;
-
-      // Create deposit
-      const { data: deposit, error } = await supabase
-        .from('deposits')
-        .insert({
-          user_id: user.id,
-          reference: reference as string,
-          amount_xaf: data.amount_xaf,
-          method: data.method,
-          bank_name: data.bank_name || null,
-          agency_name: data.agency_name || null,
-          client_phone: data.client_phone || null,
-          status: 'created',
-        })
-        .select()
-        .single();
+      // Use atomic RPC function that generates reference and inserts in one transaction
+      const { data: result, error } = await supabase.rpc('create_client_deposit', {
+        p_user_id: user.id,
+        p_amount_xaf: data.amount_xaf,
+        p_method: data.method,
+        p_bank_name: data.bank_name || null,
+        p_agency_name: data.agency_name || null,
+        p_client_phone: data.client_phone || null,
+      });
 
       if (error) throw error;
 
-      // Add timeline event
-      await supabase.from('deposit_timeline_events').insert({
-        deposit_id: deposit.id,
-        event_type: 'created',
-        description: 'Demande de dépôt créée',
-        performed_by: user.id,
-      });
+      const response = result as { success: boolean; error?: string; deposit_id?: string; reference?: string };
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la création du dépôt');
+      }
 
-      return deposit;
+      return { id: response.deposit_id, reference: response.reference };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
