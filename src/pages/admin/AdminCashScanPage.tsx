@@ -64,16 +64,45 @@ export default function AdminCashScanPage() {
     setCameraActive(false);
   };
 
+  const isEmbedded = (() => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
+
   const startCamera = async () => {
     setCameraError(null);
-    
+
+    // Camera APIs require a secure context (HTTPS)
+    if (!window.isSecureContext) {
+      setCameraError('La caméra nécessite une connexion sécurisée (HTTPS).');
+      return;
+    }
+
+    // Most browsers block getUserMedia inside iframes unless the iframe has allow="camera"
+    if (isEmbedded) {
+      setCameraError("La caméra est bloquée dans l’aperçu intégré. Ouvrez la page en plein écran.");
+      return;
+    }
+
     try {
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras || cameras.length === 0) {
+        setCameraError('Aucune caméra détectée sur cet appareil.');
+        return;
+      }
+
+      const preferred =
+        cameras.find((c) => /back|rear|environment/i.test(c.label)) ?? cameras[0];
+
       if (!html5QrCodeRef.current) {
         html5QrCodeRef.current = new Html5Qrcode(scannerContainerRef.current);
       }
 
       await html5QrCodeRef.current.start(
-        { facingMode: 'environment' },
+        preferred.id,
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
@@ -84,14 +113,15 @@ export default function AdminCashScanPage() {
         },
         () => {} // Ignore scan failures
       );
-      
+
       setCameraActive(true);
     } catch (err: any) {
       console.error('Camera error:', err);
+      const msg = String(err?.message || err || '');
       setCameraError(
-        err.message?.includes('Permission')
-          ? 'Accès à la caméra refusé. Autorisez l\'accès dans les paramètres.'
-          : 'Impossible d\'accéder à la caméra. Vérifiez les permissions.'
+        msg.includes('NotAllowedError') || msg.toLowerCase().includes('permission')
+          ? "Accès à la caméra refusé. Autorisez l’accès à la caméra puis réessayez."
+          : "Impossible d’accéder à la caméra sur cet appareil / navigateur."
       );
     }
   };
@@ -190,46 +220,61 @@ export default function AdminCashScanPage() {
 
       {/* Camera scanner */}
       <AdminCard className="p-4">
-        <div 
-          id={scannerContainerRef.current} 
-          className={`w-full min-h-[280px] rounded-xl overflow-hidden ${!cameraActive ? 'hidden' : ''}`}
-        />
-        
-        {!cameraActive && (
-          <div className="w-full h-48 bg-muted rounded-xl flex flex-col items-center justify-center gap-4 border-2 border-dashed border-primary/30">
-            {cameraError ? (
+        <div className="relative">
+          <div
+            id={scannerContainerRef.current}
+            className="w-full min-h-[280px] rounded-xl overflow-hidden bg-muted"
+          />
+
+          {!cameraActive && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-primary/30 rounded-xl">
+              {cameraError ? (
+                <>
+                  <CameraOff className="w-12 h-12 text-destructive" />
+                  <p className="text-sm text-destructive text-center px-4">{cameraError}</p>
+                </>
+              ) : (
+                <>
+                  <Camera className="w-12 h-12 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground text-center px-4">
+                    Appuyez pour activer la caméra
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <Button
+            onClick={cameraActive ? stopCamera : startCamera}
+            variant={cameraActive ? 'destructive' : 'default'}
+            className="w-full"
+          >
+            {cameraActive ? (
               <>
-                <CameraOff className="w-12 h-12 text-destructive" />
-                <p className="text-sm text-destructive text-center px-4">{cameraError}</p>
+                <CameraOff className="w-4 h-4 mr-2" />
+                Arrêter la caméra
               </>
             ) : (
               <>
-                <Camera className="w-12 h-12 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Appuyez pour activer la caméra
-                </p>
+                <Camera className="w-4 h-4 mr-2" />
+                Activer la caméra
               </>
             )}
-          </div>
-        )}
+          </Button>
 
-        <Button
-          onClick={cameraActive ? stopCamera : startCamera}
-          variant={cameraActive ? 'destructive' : 'default'}
-          className="w-full mt-4"
-        >
-          {cameraActive ? (
-            <>
-              <CameraOff className="w-4 h-4 mr-2" />
-              Arrêter la caméra
-            </>
-          ) : (
-            <>
-              <Camera className="w-4 h-4 mr-2" />
-              Activer la caméra
-            </>
+          {isEmbedded && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(window.location.href, '_blank', 'noopener,noreferrer')}
+            >
+              Ouvrir en plein écran (caméra)
+            </Button>
           )}
-        </Button>
+        </div>
       </AdminCard>
 
       <div className="relative">
