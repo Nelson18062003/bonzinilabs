@@ -3,10 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatXAF } from '@/lib/formatters';
 import { toast } from 'sonner';
 
+// Cache configuration for performance
+const STALE_TIME = 30 * 1000; // 30 seconds
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+
 // Fetch all user roles (admin users)
 export function useAdminUsers() {
   return useQuery({
     queryKey: ['admin-users'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
@@ -39,6 +45,8 @@ export function useAdminUsers() {
 export function useAdminAuditLogs() {
   return useQuery({
     queryKey: ['admin-audit-logs'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: logs, error } = await supabase
         .from('admin_audit_logs')
@@ -72,6 +80,8 @@ export function useAdminAuditLogs() {
 export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
+    staleTime: 10 * 1000, // 10 seconds for dashboard
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       // Fetch wallets for total balance
       const { data: wallets, error: walletsError } = await supabase
@@ -107,7 +117,7 @@ export function useDashboardStats() {
         activeClients: wallets?.filter(w => w.balance_xaf > 0).length || 0,
         totalWalletBalance,
         pendingDeposits,
-        pendingPayments: 0, // No payments table yet
+        pendingPayments: 0,
         currentRate: rate?.rate_xaf_to_rmb ? Math.round(1 / rate.rate_xaf_to_rmb) : 87,
       };
     },
@@ -118,6 +128,8 @@ export function useDashboardStats() {
 export function useAdminDeposits() {
   return useQuery({
     queryKey: ['admin-deposits'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: deposits, error } = await supabase
         .from('deposits')
@@ -126,7 +138,8 @@ export function useAdminDeposits() {
           deposit_proofs(*),
           deposit_timeline_events(*)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
       
       if (error) throw error;
       if (!deposits) return [];
@@ -155,14 +168,14 @@ export function useAdminDeposits() {
 export function useAdminWallets() {
   return useQuery({
     queryKey: ['admin-wallets'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: wallets, error } = await supabase
         .from('wallets')
-        .select(`
-          *,
-          wallet_operations(*)
-        `)
-        .order('updated_at', { ascending: false });
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(200);
       
       if (error) throw error;
       if (!wallets) return [];
@@ -180,7 +193,8 @@ export function useAdminWallets() {
       const { data: deposits } = await supabase
         .from('deposits')
         .select('user_id, amount_xaf, status')
-        .eq('status', 'validated');
+        .eq('status', 'validated')
+        .in('user_id', userIds);
       
       const depositSums = new Map<string, number>();
       deposits?.forEach(d => {
@@ -194,7 +208,7 @@ export function useAdminWallets() {
           ? `${profileMap.get(wallet.user_id)!.first_name} ${profileMap.get(wallet.user_id)!.last_name}`
           : 'Client inconnu',
         totalDeposits: depositSums.get(wallet.user_id) || 0,
-        totalPayments: 0, // No payments table yet
+        totalPayments: 0,
       }));
     },
   });
@@ -204,11 +218,14 @@ export function useAdminWallets() {
 export function useAdminClients() {
   return useQuery({
     queryKey: ['admin-clients'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
       
       if (error) throw error;
       if (!profiles) return [];
@@ -227,7 +244,8 @@ export function useAdminClients() {
       const { data: deposits } = await supabase
         .from('deposits')
         .select('user_id, amount_xaf, status')
-        .eq('status', 'validated');
+        .eq('status', 'validated')
+        .in('user_id', userIds);
       
       const depositSums = new Map<string, number>();
       deposits?.forEach(d => {
@@ -250,6 +268,8 @@ export function useAdminClients() {
 export function useAdminClientDetail(userId: string) {
   return useQuery({
     queryKey: ['admin-client', userId],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -272,7 +292,8 @@ export function useAdminClientDetail(userId: string) {
         .from('deposits')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
       
       const totalDeposits = deposits?.filter(d => d.status === 'validated')
         .reduce((sum, d) => sum + d.amount_xaf, 0) || 0;
@@ -293,6 +314,8 @@ export function useAdminClientDetail(userId: string) {
 export function useAdminProofs() {
   return useQuery({
     queryKey: ['admin-proofs'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: proofs, error } = await supabase
         .from('deposit_proofs')
@@ -300,7 +323,8 @@ export function useAdminProofs() {
           *,
           deposits(*)
         `)
-        .order('uploaded_at', { ascending: false });
+        .order('uploaded_at', { ascending: false })
+        .limit(100);
       
       if (error) throw error;
       if (!proofs) return [];
@@ -328,6 +352,8 @@ export function useAdminProofs() {
 export function useExchangeRates() {
   return useQuery({
     queryKey: ['exchange-rates'],
+    staleTime: 60 * 1000, // 1 minute for rates
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('exchange_rates')

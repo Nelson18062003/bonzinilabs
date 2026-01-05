@@ -3,6 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Cache configuration for performance
+const STALE_TIME = 30 * 1000; // 30 seconds
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+
 export interface Payment {
   id: string;
   user_id: string;
@@ -72,12 +76,15 @@ export function useMyPayments() {
 
   return useQuery({
     queryKey: ['my-payments', user?.id],
+    staleTime: 10 * 1000, // 10 seconds for user's own data
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payments')
         .select('*')
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
       return data as Payment[];
@@ -89,6 +96,8 @@ export function useMyPayments() {
 export function usePaymentDetail(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['payment', paymentId],
+    staleTime: 10 * 1000,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payments')
@@ -106,6 +115,8 @@ export function usePaymentDetail(paymentId: string | undefined) {
 export function usePaymentTimeline(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['payment-timeline', paymentId],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payment_timeline_events')
@@ -123,6 +134,8 @@ export function usePaymentTimeline(paymentId: string | undefined) {
 export function usePaymentProofs(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['payment-proofs', paymentId],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payment_proofs')
@@ -278,11 +291,14 @@ export function useUploadPaymentProof() {
 export function useAdminPayments() {
   return useQuery({
     queryKey: ['admin-payments'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: payments, error } = await supabase
         .from('payments')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       
@@ -306,6 +322,8 @@ export function useAdminPayments() {
 export function useAdminPaymentDetail(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['admin-payment', paymentId],
+    staleTime: 10 * 1000,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: payment, error } = await supabase
         .from('payments')
