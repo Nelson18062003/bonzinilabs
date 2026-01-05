@@ -146,21 +146,15 @@ export default function AdminCashScanPage() {
   // Handle manual code entry
   const handleManualEntry = async () => {
     if (!manualCode.trim()) return;
-    
-    // Try to parse as JSON first (full QR data)
-    try {
-      const parsed = JSON.parse(manualCode);
-      if (parsed.id) {
-        await handleScan(manualCode);
-        return;
-      }
-    } catch {
-      // Not JSON, treat as payment ID
+
+    const { paymentId, isValid } = parseCashQRCode(manualCode);
+    if (!isValid) {
+      toast.error('Code invalide. Collez l’ID du paiement ou le contenu du QR code.');
+      return;
     }
 
-    // Treat as payment ID directly
-    const result = await scanCashPayment.mutateAsync(manualCode.trim());
-    
+    const result = await scanCashPayment.mutateAsync(paymentId);
+
     if (result.success && result.payment) {
       setScannedPayment(result.payment);
       setStep('verify');
