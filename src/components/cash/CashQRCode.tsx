@@ -1,7 +1,9 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { Download } from 'lucide-react';
+import { Download, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface CashQRCodeProps {
   paymentId: string;
@@ -20,6 +22,8 @@ export function CashQRCode({
   showDownload = true,
   size = 200,
 }: CashQRCodeProps) {
+  const [copied, setCopied] = useState(false);
+
   // QR Code data structure
   const qrData = JSON.stringify({
     type: 'BONZINI_CASH_PAYMENT',
@@ -54,6 +58,17 @@ export function CashQRCode({
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(paymentId);
+      setCopied(true);
+      toast.success('ID copié !');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier');
+    }
+  };
+
   return (
     <Card className="p-6 flex flex-col items-center gap-4 bg-white">
       <div className="text-center mb-2">
@@ -84,6 +99,28 @@ export function CashQRCode({
         <p className="text-sm text-muted-foreground mt-1">
           Bénéficiaire: <span className="font-medium text-foreground">{beneficiaryName}</span>
         </p>
+      </div>
+
+      {/* ID copiable */}
+      <div className="w-full p-3 bg-muted rounded-lg">
+        <p className="text-xs text-muted-foreground text-center mb-2">ID du paiement</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 text-xs font-mono bg-background p-2 rounded border truncate">
+            {paymentId}
+          </code>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleCopyId}
+            className="shrink-0"
+          >
+            {copied ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : (
+              <Copy className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {showDownload && (
