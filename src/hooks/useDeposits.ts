@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Cache configuration for performance
+const STALE_TIME = 30 * 1000; // 30 seconds
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+
 export type DepositMethod = 'bank_transfer' | 'bank_cash' | 'agency_cash' | 'om_transfer' | 'om_withdrawal' | 'mtn_transfer' | 'mtn_withdrawal' | 'wave';
 export type DepositStatus = 'created' | 'awaiting_proof' | 'proof_submitted' | 'admin_review' | 'validated' | 'rejected';
 
@@ -61,12 +65,15 @@ async function getCurrentUser() {
 export function useAdminDeposits() {
   return useQuery({
     queryKey: ['admin-deposits'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       // First get deposits
       const { data: deposits, error: depositsError } = await supabase
         .from('deposits')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (depositsError) throw depositsError;
       if (!deposits) return [];
@@ -98,6 +105,8 @@ export function useAdminDeposits() {
 export function useDepositDetail(depositId: string | undefined) {
   return useQuery({
     queryKey: ['deposit', depositId],
+    staleTime: 10 * 1000, // 10 seconds for detail views
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       if (!depositId) return null;
 
@@ -351,6 +360,8 @@ export function useCreateDeposit() {
 export function useMyDeposits() {
   return useQuery({
     queryKey: ['my-deposits'],
+    staleTime: 10 * 1000, // 10 seconds for user's own data
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const user = await getCurrentUser();
       if (!user) return [];
@@ -359,7 +370,8 @@ export function useMyDeposits() {
         .from('deposits')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
       return data as Deposit[];
