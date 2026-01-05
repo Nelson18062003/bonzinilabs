@@ -20,19 +20,16 @@ export function CashQRCode({
   amountRMB,
   beneficiaryName,
   showDownload = true,
-  size = 200,
+  size = 240,
 }: CashQRCodeProps) {
   const [copied, setCopied] = useState(false);
 
-  // QR Code data structure
+  // QR Code payload kept intentionally SMALL for reliable scanning.
+  // The backend fetches all details from the payment ID.
   const qrData = JSON.stringify({
     type: 'BONZINI_CASH_PAYMENT',
     id: paymentId,
-    ref: paymentReference,
-    amount: amountRMB,
-    currency: 'RMB',
-    beneficiary: beneficiaryName,
-    v: 1, // version
+    v: 1,
   });
 
   const handleDownload = () => {
@@ -81,14 +78,8 @@ export function CashQRCode({
           id={`qr-${paymentId}`}
           value={qrData}
           size={size}
-          level="H"
+          level="M"
           includeMargin
-          imageSettings={{
-            src: '/favicon.ico',
-            height: 24,
-            width: 24,
-            excavate: true,
-          }}
         />
       </div>
 

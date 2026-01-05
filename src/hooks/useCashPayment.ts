@@ -107,13 +107,39 @@ export function useConfirmCashPayment() {
 
 // Parse QR code data
 export function parseCashQRCode(qrData: string): { paymentId: string; isValid: boolean } {
+  const raw = (qrData ?? '').trim();
+  if (!raw) return { paymentId: '', isValid: false };
+
+  const uuidRe = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
+
+  // 1) Preferred: JSON payload
   try {
-    const parsed = JSON.parse(qrData);
-    if (parsed.type === 'BONZINI_CASH_PAYMENT' && parsed.id) {
+    const parsed = JSON.parse(raw);
+    if (parsed?.type === 'BONZINI_CASH_PAYMENT' && typeof parsed?.id === 'string' && uuidRe.test(parsed.id)) {
       return { paymentId: parsed.id, isValid: true };
     }
-    return { paymentId: '', isValid: false };
   } catch {
-    return { paymentId: '', isValid: false };
+    // ignore
   }
+
+  // 2) URL payloads (e.g. ...?paymentId=UUID or ...?id=UUID)
+  try {
+    const url = new URL(raw);
+    const id = url.searchParams.get('paymentId') ?? url.searchParams.get('id');
+    if (id && uuidRe.test(id)) return { paymentId: id, isValid: true };
+  } catch {
+    // ignore
+  }
+
+  // 3) Raw UUID (or any string containing a UUID)
+  const match = raw.match(uuidRe);
+  if (match?.[0]) return { paymentId: match[0], isValid: true };
+
+  // 4) Legacy/simple formats like "BONZINI_CASH_PAYMENT:UUID"
+  if (/BONZINI_CASH_PAYMENT/i.test(raw)) {
+    const m = raw.match(uuidRe);
+    if (m?.[0]) return { paymentId: m[0], isValid: true };
+  }
+
+  return { paymentId: '', isValid: false };
 }
