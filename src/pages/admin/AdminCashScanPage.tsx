@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Html5Qrcode } from 'html5-qrcode';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminCard } from '@/components/admin/ui/AdminCard';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,8 @@ import {
   Banknote,
   ArrowLeft,
   Loader2,
-  ScanLine
+  ScanLine,
+  CameraOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,9 +31,70 @@ export default function AdminCashScanPage() {
   const [step, setStep] = useState<Step>('scan');
   const [manualCode, setManualCode] = useState('');
   const [scannedPayment, setScannedPayment] = useState<any>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerRef = useRef<string>('qr-reader');
   
   const scanCashPayment = useScanCashPayment();
   const confirmCashPayment = useConfirmCashPayment();
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // Stop camera when step changes
+  useEffect(() => {
+    if (step !== 'scan') {
+      stopCamera();
+    }
+  }, [step]);
+
+  const stopCamera = async () => {
+    if (html5QrCodeRef.current?.isScanning) {
+      try {
+        await html5QrCodeRef.current.stop();
+      } catch (e) {
+        console.log('Camera already stopped');
+      }
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    
+    try {
+      if (!html5QrCodeRef.current) {
+        html5QrCodeRef.current = new Html5Qrcode(scannerContainerRef.current);
+      }
+
+      await html5QrCodeRef.current.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          handleScan(decodedText);
+          stopCamera();
+        },
+        () => {} // Ignore scan failures
+      );
+      
+      setCameraActive(true);
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      setCameraError(
+        err.message?.includes('Permission')
+          ? 'Accès à la caméra refusé. Autorisez l\'accès dans les paramètres.'
+          : 'Impossible d\'accéder à la caméra. Vérifiez les permissions.'
+      );
+    }
+  };
 
   // Handle QR code scan result
   const handleScan = async (qrData: string) => {
@@ -125,14 +188,48 @@ export default function AdminCashScanPage() {
         </p>
       </div>
 
-      {/* Camera scanner placeholder - in production, use a QR scanner library */}
-      <AdminCard className="p-8 text-center">
-        <div className="w-full h-48 bg-muted rounded-xl flex flex-col items-center justify-center gap-4 border-2 border-dashed border-primary/30">
-          <Camera className="w-12 h-12 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Caméra non disponible - utilisez la saisie manuelle
-          </p>
-        </div>
+      {/* Camera scanner */}
+      <AdminCard className="p-4">
+        <div 
+          id={scannerContainerRef.current} 
+          className={`w-full min-h-[280px] rounded-xl overflow-hidden ${!cameraActive ? 'hidden' : ''}`}
+        />
+        
+        {!cameraActive && (
+          <div className="w-full h-48 bg-muted rounded-xl flex flex-col items-center justify-center gap-4 border-2 border-dashed border-primary/30">
+            {cameraError ? (
+              <>
+                <CameraOff className="w-12 h-12 text-destructive" />
+                <p className="text-sm text-destructive text-center px-4">{cameraError}</p>
+              </>
+            ) : (
+              <>
+                <Camera className="w-12 h-12 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Appuyez pour activer la caméra
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
+        <Button
+          onClick={cameraActive ? stopCamera : startCamera}
+          variant={cameraActive ? 'destructive' : 'default'}
+          className="w-full mt-4"
+        >
+          {cameraActive ? (
+            <>
+              <CameraOff className="w-4 h-4 mr-2" />
+              Arrêter la caméra
+            </>
+          ) : (
+            <>
+              <Camera className="w-4 h-4 mr-2" />
+              Activer la caméra
+            </>
+          )}
+        </Button>
       </AdminCard>
 
       <div className="relative">
