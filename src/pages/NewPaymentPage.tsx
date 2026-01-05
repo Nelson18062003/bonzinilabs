@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
@@ -14,7 +14,8 @@ import {
   Banknote,
   Loader2,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  QrCode
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { CashBeneficiaryForm, CashBeneficiaryData } from '@/components/cash/CashBeneficiaryForm';
+import { CashQRCode } from '@/components/cash/CashQRCode';
 
 type Step = 'amount' | 'method' | 'beneficiary' | 'confirm' | 'success';
 type Currency = 'XAF' | 'RMB';
@@ -62,6 +65,15 @@ const NewPaymentPage = () => {
   });
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Cash beneficiary state
+  const [cashBeneficiaryData, setCashBeneficiaryData] = useState<CashBeneficiaryData>({
+    type: 'self',
+    firstName: '',
+    lastName: '',
+    phone: '',
+  });
+  const [paymentReference, setPaymentReference] = useState<string>('');
 
   // Rate calculation
   const rate = exchangeRateData || 0.01167;
@@ -104,22 +116,32 @@ const NewPaymentPage = () => {
         }
       }
 
+      // For cash payments, use cash beneficiary data
+      const isCash = selectedMethod === 'cash';
+      const beneficiaryName = isCash 
+        ? `${cashBeneficiaryData.firstName} ${cashBeneficiaryData.lastName}`.trim()
+        : beneficiaryForm.name;
+
       const result = await createPayment.mutateAsync({
         amount_xaf: amountXAF,
         amount_rmb: amountRMB,
         exchange_rate: rate,
         method: selectedMethod,
-        beneficiary_name: beneficiaryForm.name || undefined,
-        beneficiary_phone: beneficiaryForm.phone || undefined,
+        beneficiary_name: beneficiaryName || undefined,
+        beneficiary_phone: isCash ? cashBeneficiaryData.phone : beneficiaryForm.phone || undefined,
         beneficiary_email: beneficiaryForm.email || undefined,
         beneficiary_qr_code_url: qrCodeUrl || undefined,
         beneficiary_bank_name: beneficiaryForm.bank_name || undefined,
         beneficiary_bank_account: beneficiaryForm.bank_account || undefined,
         beneficiary_notes: beneficiaryForm.notes || undefined,
+        // Cash-specific fields will be handled separately
       });
 
       if (result.payment_id) {
         setPaymentId(result.payment_id);
+      }
+      if (result.reference) {
+        setPaymentReference(result.reference);
       }
       setStep('success');
     } catch (error) {
@@ -299,18 +321,30 @@ const NewPaymentPage = () => {
     const isBankTransfer = selectedMethod === 'bank_transfer';
     const isCash = selectedMethod === 'cash';
 
+    // Cash beneficiary validation
+    const isCashBeneficiaryValid = cashBeneficiaryData.type === 'self' || 
+      (cashBeneficiaryData.firstName && cashBeneficiaryData.lastName && cashBeneficiaryData.phone);
+
+    const handleCashBeneficiaryChange = useCallback((data: CashBeneficiaryData) => {
+      setCashBeneficiaryData(data);
+    }, []);
+
     return (
       <div className="animate-fade-in space-y-6">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Informations du bénéficiaire</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {isCash ? 'Qui va récupérer le cash ?' : 'Informations du bénéficiaire'}
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {isCash
-              ? 'Vous pourrez récupérer votre argent au bureau Bonzini.'
+              ? 'Cette personne devra présenter le QR Code au bureau Bonzini Guangzhou.'
               : 'Ces informations permettent à Bonzini d\'effectuer le paiement. Vous pouvez les ajouter maintenant ou plus tard.'}
           </p>
         </div>
 
-        {!isCash && (
+        {isCash ? (
+          <CashBeneficiaryForm onChange={handleCashBeneficiaryChange} />
+        ) : (
           <div className="space-y-4">
             {isAlipayOrWechat && (
               <>
@@ -421,7 +455,13 @@ const NewPaymentPage = () => {
         <div className="space-y-3 pt-2">
           <button
             onClick={() => setStep('confirm')}
-            className="w-full py-4 rounded-xl font-semibold btn-primary-gradient"
+            disabled={isCash && !isCashBeneficiaryValid}
+            className={cn(
+              "w-full py-4 rounded-xl font-semibold transition-all",
+              isCash && !isCashBeneficiaryValid
+                ? "bg-muted text-muted-foreground cursor-not-allowed"
+                : "btn-primary-gradient"
+            )}
           >
             {isCash ? 'Continuer' : 'Continuer avec ces informations'}
           </button>
@@ -535,46 +575,91 @@ const NewPaymentPage = () => {
   };
 
   // Step 5: Success
-  const renderSuccessStep = () => (
-    <div className="animate-scale-in text-center py-12">
-      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/10 flex items-center justify-center">
-        <Check className="w-10 h-10 text-green-500" />
-      </div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">Paiement créé !</h2>
-      <p className="text-muted-foreground mb-2">
-        Votre demande de paiement a été enregistrée
-      </p>
-      <p className="text-2xl font-bold text-primary mb-2">
-        ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
-      </p>
-      <p className="text-sm text-muted-foreground mb-8">
-        {formatXAF(amountXAF)} XAF débités de votre solde
-      </p>
+  const renderSuccessStep = () => {
+    const isCash = selectedMethod === 'cash';
+    const beneficiaryName = isCash 
+      ? `${cashBeneficiaryData.firstName} ${cashBeneficiaryData.lastName}`.trim()
+      : beneficiaryForm.name;
 
-      <div className="space-y-3">
-        {paymentId && (
+    if (isCash && paymentId && paymentReference) {
+      return (
+        <div className="animate-scale-in py-6 space-y-6">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-1">Paiement cash créé !</h2>
+            <p className="text-sm text-muted-foreground">
+              Présentez ce QR Code au bureau Bonzini Guangzhou
+            </p>
+          </div>
+
+          <CashQRCode
+            paymentId={paymentId}
+            paymentReference={paymentReference}
+            amountRMB={amountRMB}
+            beneficiaryName={beneficiaryName || 'Client'}
+          />
+
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate(`/payments/${paymentId}`)}
+              className="w-full py-3 bg-secondary text-foreground font-medium rounded-xl"
+            >
+              Voir le détail du paiement
+            </button>
+            <button
+              onClick={() => navigate('/payments')}
+              className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
+            >
+              Mes paiements
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="animate-scale-in text-center py-12">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/10 flex items-center justify-center">
+          <Check className="w-10 h-10 text-green-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Paiement créé !</h2>
+        <p className="text-muted-foreground mb-2">
+          Votre demande de paiement a été enregistrée
+        </p>
+        <p className="text-2xl font-bold text-primary mb-2">
+          ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
+        </p>
+        <p className="text-sm text-muted-foreground mb-8">
+          {formatXAF(amountXAF)} XAF débités de votre solde
+        </p>
+
+        <div className="space-y-3">
+          {paymentId && (
+            <button
+              onClick={() => navigate(`/payments/${paymentId}`)}
+              className="w-full btn-primary-gradient"
+            >
+              Voir le paiement
+            </button>
+          )}
           <button
-            onClick={() => navigate(`/payments/${paymentId}`)}
-            className="w-full btn-primary-gradient"
+            onClick={() => navigate('/payments')}
+            className="w-full py-3 bg-secondary text-foreground font-medium rounded-xl"
           >
-            Voir le paiement
+            Mes paiements
           </button>
-        )}
-        <button
-          onClick={() => navigate('/payments')}
-          className="w-full py-3 bg-secondary text-foreground font-medium rounded-xl"
-        >
-          Mes paiements
-        </button>
-        <button
-          onClick={() => navigate('/')}
-          className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
-        >
-          Retour à l'accueil
-        </button>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
+          >
+            Retour à l'accueil
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const steps: Step[] = ['amount', 'method', 'beneficiary', 'confirm'];
   const currentStepIndex = steps.indexOf(step);

@@ -18,7 +18,8 @@ import {
   Search,
   FileCheck,
   Plus,
-  Download
+  Download,
+  QrCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,8 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   created: { label: 'Créé', color: 'bg-blue-500' },
   waiting_beneficiary_info: { label: 'En attente infos', color: 'bg-yellow-500' },
   ready_for_payment: { label: 'Prêt à payer', color: 'bg-purple-500' },
+  cash_pending: { label: 'QR Généré', color: 'bg-cyan-500' },
+  cash_scanned: { label: 'Scanné', color: 'bg-orange-500' },
   processing: { label: 'En cours', color: 'bg-orange-500' },
   completed: { label: 'Effectué', color: 'bg-green-500' },
   rejected: { label: 'Refusé', color: 'bg-red-500' },
@@ -75,6 +78,7 @@ export function AdminPaymentsPage() {
     processing: payments?.filter(p => p.status === 'processing').length || 0,
     waiting_beneficiary_info: payments?.filter(p => p.status === 'waiting_beneficiary_info').length || 0,
     completed: payments?.filter(p => p.status === 'completed').length || 0,
+    cash_pending: payments?.filter(p => p.status === 'cash_pending' || p.status === 'cash_scanned').length || 0,
   };
 
   // Get exportable payments (ready_for_payment or processing, with beneficiary info)
@@ -111,6 +115,15 @@ export function AdminPaymentsPage() {
         action={
           <div className="flex gap-2">
             <Button 
+              onClick={() => navigate('/admin/payments/cash-scan')} 
+              size="sm" 
+              variant="outline"
+              className="bg-cyan-500/10 border-cyan-500/30 text-cyan-600 hover:bg-cyan-500/20"
+            >
+              <QrCode className="w-4 h-4 mr-1" />
+              Scanner Cash
+            </Button>
+            <Button 
               onClick={() => setShowExportModal(true)} 
               size="sm" 
               variant="outline"
@@ -143,6 +156,7 @@ export function AdminPaymentsPage() {
           {[
             { value: 'all', label: 'Tous', count: statusCounts.all },
             { value: 'ready_for_payment', label: 'À traiter', count: statusCounts.ready_for_payment },
+            { value: 'cash_pending', label: 'Cash', count: statusCounts.cash_pending },
             { value: 'processing', label: 'En cours', count: statusCounts.processing },
             { value: 'waiting_beneficiary_info', label: 'Attente infos', count: statusCounts.waiting_beneficiary_info },
             { value: 'completed', label: 'Effectués', count: statusCounts.completed },

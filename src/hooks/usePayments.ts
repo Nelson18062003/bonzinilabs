@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 const STALE_TIME = 30 * 1000; // 30 seconds
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 
+export type PaymentStatus = 'created' | 'waiting_beneficiary_info' | 'ready_for_payment' | 'processing' | 'completed' | 'rejected' | 'cash_pending' | 'cash_scanned';
+
 export interface Payment {
   id: string;
   user_id: string;
@@ -15,7 +17,7 @@ export interface Payment {
   amount_rmb: number;
   exchange_rate: number;
   method: 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
-  status: 'created' | 'waiting_beneficiary_info' | 'ready_for_payment' | 'processing' | 'completed' | 'rejected';
+  status: PaymentStatus;
   beneficiary_name: string | null;
   beneficiary_phone: string | null;
   beneficiary_email: string | null;
@@ -24,6 +26,17 @@ export interface Payment {
   beneficiary_bank_account: string | null;
   beneficiary_notes: string | null;
   cash_qr_code: string | null;
+  // Cash-specific fields
+  cash_beneficiary_type: 'self' | 'other' | null;
+  cash_beneficiary_first_name: string | null;
+  cash_beneficiary_last_name: string | null;
+  cash_beneficiary_phone: string | null;
+  cash_signature_url: string | null;
+  cash_signature_timestamp: string | null;
+  cash_signed_by_name: string | null;
+  cash_scanned_at: string | null;
+  cash_paid_at: string | null;
+  // Standard fields
   processed_by: string | null;
   processed_at: string | null;
   rejection_reason: string | null;
@@ -68,6 +81,11 @@ export interface CreatePaymentData {
   beneficiary_bank_name?: string;
   beneficiary_bank_account?: string;
   beneficiary_notes?: string;
+  // Cash-specific fields
+  cash_beneficiary_type?: 'self' | 'other';
+  cash_beneficiary_first_name?: string;
+  cash_beneficiary_last_name?: string;
+  cash_beneficiary_phone?: string;
 }
 
 // Client hooks

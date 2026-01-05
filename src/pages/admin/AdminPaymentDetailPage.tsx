@@ -64,6 +64,8 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.E
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
   waiting_beneficiary_info: { label: 'En attente infos', color: 'bg-yellow-500', icon: AlertCircle },
   ready_for_payment: { label: 'Prêt à payer', color: 'bg-purple-500', icon: Clock },
+  cash_pending: { label: 'QR Généré', color: 'bg-cyan-500', icon: QrCode },
+  cash_scanned: { label: 'Scanné au bureau', color: 'bg-orange-500', icon: Loader2 },
   processing: { label: 'En cours', color: 'bg-orange-500', icon: Loader2 },
   completed: { label: 'Effectué', color: 'bg-green-500', icon: CheckCircle2 },
   rejected: { label: 'Refusé', color: 'bg-red-500', icon: XCircle },
@@ -271,7 +273,7 @@ export function AdminPaymentDetailPage() {
         {/* Payment Stepper */}
         <AdminCard>
           <h3 className="font-semibold mb-4">Progression du paiement</h3>
-          <PaymentStepper currentStatus={payment.status} />
+          <PaymentStepper currentStatus={payment.status as any} isCash={payment.method === 'cash'} />
         </AdminCard>
 
         {/* Client info */}
