@@ -33,6 +33,7 @@ import {
   Mail,
   FileText,
   Lock,
+  ScanLine,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -52,11 +53,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PaymentProofUpload } from '@/components/payment/PaymentProofUpload';
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
+import { CashQRCode } from '@/components/cash/CashQRCode';
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
   waiting_beneficiary_info: { label: 'En attente d\'infos bénéficiaire', color: 'bg-yellow-500', icon: AlertCircle },
   ready_for_payment: { label: 'Prêt à être payé', color: 'bg-purple-500', icon: Clock },
+  cash_pending: { label: 'QR Code généré', color: 'bg-cyan-500', icon: QrCode },
+  cash_scanned: { label: 'Scanné au bureau', color: 'bg-orange-500', icon: ScanLine },
   processing: { label: 'En cours de paiement', color: 'bg-orange-500', icon: Loader2 },
   completed: { label: 'Paiement effectué', color: 'bg-green-500', icon: CheckCircle2 },
   rejected: { label: 'Refusé', color: 'bg-red-500', icon: XCircle },
@@ -708,6 +712,56 @@ export default function PaymentDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Cash QR Code - Show for cash payments that are not yet completed/rejected */}
+        {payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status) && (
+          <CashQRCode
+            paymentId={payment.id}
+            paymentReference={payment.reference}
+            amountRMB={payment.amount_rmb}
+            beneficiaryName={payment.beneficiary_name || 'Client'}
+          />
+        )}
+
+        {/* Cash payment status info */}
+        {payment.method === 'cash' && payment.status === 'cash_scanned' && (
+          <Card className="border-orange-500/30 bg-orange-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
+                <div>
+                  <p className="font-medium text-orange-600">QR Code scanné au bureau</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Votre paiement est en cours de traitement au bureau Bonzini Guangzhou.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Cash payment completed with signature */}
+        {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-green-600">Paiement cash effectué</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Signature enregistrée le {(payment as any).cash_signature_timestamp && 
+                      format(new Date((payment as any).cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                  </p>
+                  {(payment as any).cash_signed_by_name && (
+                    <p className="text-sm text-muted-foreground">
+                      Signé par: {(payment as any).cash_signed_by_name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Beneficiary Info */}
         <Card>

@@ -38,6 +38,7 @@ import { AdminNewDepositPage } from "./pages/admin/AdminNewDepositPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
 import { AdminPaymentDetailPage } from "./pages/admin/AdminPaymentDetailPage";
 import { AdminNewPaymentPage } from "./pages/admin/AdminNewPaymentPage";
+import AdminCashScanPage from "./pages/admin/AdminCashScanPage";
 import { AdminRatesPage } from "./pages/admin/AdminRatesPage";
 import { AdminProofsPage } from "./pages/admin/AdminProofsPage";
 import { AdminHistoryPage } from "./pages/admin/AdminHistoryPage";
@@ -134,6 +135,11 @@ const App = () => (
             <Route path="/admin/payments/:paymentId" element={
               <AdminAuthProvider>
                 <ProtectedAdminRoute><AdminPaymentDetailPage /></ProtectedAdminRoute>
+              </AdminAuthProvider>
+            } />
+            <Route path="/admin/payments/cash-scan" element={
+              <AdminAuthProvider>
+                <ProtectedAdminRoute><AdminCashScanPage /></ProtectedAdminRoute>
               </AdminAuthProvider>
             } />
             <Route path="/admin/rates" element={

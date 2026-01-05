@@ -1,10 +1,11 @@
-import { Check, Clock, AlertCircle, Play, CheckCircle2, XCircle, User } from 'lucide-react';
+import { Check, Clock, AlertCircle, Play, CheckCircle2, XCircle, User, Banknote, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type PaymentStatus = 'created' | 'waiting_beneficiary_info' | 'ready_for_payment' | 'processing' | 'completed' | 'rejected';
+type PaymentStatus = 'created' | 'waiting_beneficiary_info' | 'ready_for_payment' | 'processing' | 'completed' | 'rejected' | 'cash_pending' | 'cash_scanned';
 
 interface PaymentStepperProps {
   currentStatus: PaymentStatus;
+  isCash?: boolean;
 }
 
 interface Step {
@@ -13,7 +14,7 @@ interface Step {
   icon: React.ElementType;
 }
 
-const steps: Step[] = [
+const standardSteps: Step[] = [
   { key: 'created', label: 'Créé', icon: Clock },
   { key: 'beneficiary', label: 'Infos bénéficiaire', icon: User },
   { key: 'ready', label: 'Prêt à payer', icon: AlertCircle },
@@ -21,7 +22,34 @@ const steps: Step[] = [
   { key: 'completed', label: 'Effectué', icon: CheckCircle2 },
 ];
 
-const getStepIndex = (status: PaymentStatus): number => {
+const cashSteps: Step[] = [
+  { key: 'created', label: 'Créé', icon: Clock },
+  { key: 'cash_pending', label: 'QR Généré', icon: Banknote },
+  { key: 'cash_scanned', label: 'Scanné', icon: ScanLine },
+  { key: 'completed', label: 'Payé', icon: CheckCircle2 },
+];
+
+const getStepIndex = (status: PaymentStatus, isCash: boolean): number => {
+  if (isCash) {
+    switch (status) {
+      case 'created':
+      case 'waiting_beneficiary_info':
+      case 'ready_for_payment':
+        return 0;
+      case 'cash_pending':
+        return 1;
+      case 'cash_scanned':
+      case 'processing':
+        return 2;
+      case 'completed':
+        return 3;
+      case 'rejected':
+        return -1;
+      default:
+        return 0;
+    }
+  }
+
   switch (status) {
     case 'created':
       return 0;
@@ -34,14 +62,15 @@ const getStepIndex = (status: PaymentStatus): number => {
     case 'completed':
       return 4;
     case 'rejected':
-      return -1; // Special case
+      return -1;
     default:
       return 0;
   }
 };
 
-export function PaymentStepper({ currentStatus }: PaymentStepperProps) {
-  const currentStepIndex = getStepIndex(currentStatus);
+export function PaymentStepper({ currentStatus, isCash = false }: PaymentStepperProps) {
+  const steps = isCash ? cashSteps : standardSteps;
+  const currentStepIndex = getStepIndex(currentStatus, isCash);
   const isRejected = currentStatus === 'rejected';
 
   if (isRejected) {

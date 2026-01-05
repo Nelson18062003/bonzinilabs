@@ -288,7 +288,18 @@ export type Database = {
           beneficiary_notes: string | null
           beneficiary_phone: string | null
           beneficiary_qr_code_url: string | null
+          cash_beneficiary_first_name: string | null
+          cash_beneficiary_last_name: string | null
+          cash_beneficiary_phone: string | null
+          cash_beneficiary_type: string | null
+          cash_paid_at: string | null
+          cash_paid_by: string | null
           cash_qr_code: string | null
+          cash_scanned_at: string | null
+          cash_scanned_by: string | null
+          cash_signature_timestamp: string | null
+          cash_signature_url: string | null
+          cash_signed_by_name: string | null
           client_visible_comment: string | null
           created_at: string
           exchange_rate: number
@@ -315,7 +326,18 @@ export type Database = {
           beneficiary_notes?: string | null
           beneficiary_phone?: string | null
           beneficiary_qr_code_url?: string | null
+          cash_beneficiary_first_name?: string | null
+          cash_beneficiary_last_name?: string | null
+          cash_beneficiary_phone?: string | null
+          cash_beneficiary_type?: string | null
+          cash_paid_at?: string | null
+          cash_paid_by?: string | null
           cash_qr_code?: string | null
+          cash_scanned_at?: string | null
+          cash_scanned_by?: string | null
+          cash_signature_timestamp?: string | null
+          cash_signature_url?: string | null
+          cash_signed_by_name?: string | null
           client_visible_comment?: string | null
           created_at?: string
           exchange_rate: number
@@ -342,7 +364,18 @@ export type Database = {
           beneficiary_notes?: string | null
           beneficiary_phone?: string | null
           beneficiary_qr_code_url?: string | null
+          cash_beneficiary_first_name?: string | null
+          cash_beneficiary_last_name?: string | null
+          cash_beneficiary_phone?: string | null
+          cash_beneficiary_type?: string | null
+          cash_paid_at?: string | null
+          cash_paid_by?: string | null
           cash_qr_code?: string | null
+          cash_scanned_at?: string | null
+          cash_scanned_by?: string | null
+          cash_signature_timestamp?: string | null
+          cash_signature_url?: string | null
+          cash_signed_by_name?: string | null
           client_visible_comment?: string | null
           created_at?: string
           exchange_rate?: number
@@ -522,6 +555,14 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_cash_payment: {
+        Args: {
+          p_payment_id: string
+          p_signature_url: string
+          p_signed_by_name: string
+        }
+        Returns: Json
+      }
       create_admin_payment: {
         Args: {
           p_amount_rmb: number
@@ -591,6 +632,7 @@ export type Database = {
         Args: { p_deposit_id: string; p_reason: string }
         Returns: Json
       }
+      scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
       update_exchange_rate: {
         Args: {
           p_effective_at?: string
@@ -630,6 +672,8 @@ export type Database = {
         | "processing"
         | "completed"
         | "rejected"
+        | "cash_pending"
+        | "cash_scanned"
       wallet_operation_type: "deposit" | "payment" | "adjustment"
     }
     CompositeTypes: {
@@ -785,6 +829,8 @@ export const Constants = {
         "processing",
         "completed",
         "rejected",
+        "cash_pending",
+        "cash_scanned",
       ],
       wallet_operation_type: ["deposit", "payment", "adjustment"],
     },
