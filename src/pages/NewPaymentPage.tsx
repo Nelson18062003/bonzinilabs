@@ -75,6 +75,11 @@ const NewPaymentPage = () => {
   });
   const [paymentReference, setPaymentReference] = useState<string>('');
 
+  // Callback for cash beneficiary changes - must be at top level, not inside render functions
+  const handleCashBeneficiaryChange = useCallback((data: CashBeneficiaryData) => {
+    setCashBeneficiaryData(data);
+  }, []);
+
   // Rate calculation
   const rate = exchangeRateData || 0.01167;
   
@@ -324,10 +329,6 @@ const NewPaymentPage = () => {
     // Cash beneficiary validation
     const isCashBeneficiaryValid = cashBeneficiaryData.type === 'self' || 
       (cashBeneficiaryData.firstName && cashBeneficiaryData.lastName && cashBeneficiaryData.phone);
-
-    const handleCashBeneficiaryChange = useCallback((data: CashBeneficiaryData) => {
-      setCashBeneficiaryData(data);
-    }, []);
 
     return (
       <div className="animate-fade-in space-y-6">
