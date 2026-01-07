@@ -103,6 +103,8 @@ export const translations: Translations = {
   'rmb': { en: 'RMB', zh: '人民币' },
   'signature': { en: 'Signature', zh: '签名' },
   'paid_by': { en: 'Paid by', zh: '支付人' },
+  'download_receipt': { en: 'Download Receipt', zh: '下载凭证' },
+  'receipt_available_after_payment': { en: 'Available after payment', zh: '支付后可用' },
 };
 
 interface LanguageContextType {

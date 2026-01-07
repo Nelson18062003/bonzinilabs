@@ -59,6 +59,7 @@ import {
 import { PaymentStepper } from '@/components/admin/PaymentStepper';
 import { AdminPaymentProofGallery } from '@/components/admin/AdminPaymentProofGallery';
 import { PaymentReceiptButton } from '@/components/admin/PaymentReceiptButton';
+import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -522,8 +523,25 @@ export function AdminPaymentDetailPage() {
 
         {/* PDF Receipt Download */}
         <AdminCard>
-          <h3 className="font-semibold mb-3">Document</h3>
-          <PaymentReceiptButton payment={payment} proofs={proofs || []} />
+          <h3 className="font-semibold mb-3">Documents</h3>
+          <div className="space-y-2">
+            <PaymentReceiptButton payment={payment} proofs={proofs || []} />
+            
+            {/* Cash-specific receipt with signature */}
+            {payment.method === 'cash' && (
+              <CashReceiptDownloadButton
+                payment={payment as any}
+                client={payment.profiles ? {
+                  first_name: payment.profiles.first_name || '',
+                  last_name: payment.profiles.last_name || '',
+                  phone: payment.profiles.phone,
+                } : undefined}
+                variant="outline"
+                className="w-full"
+                label="Télécharger le reçu Cash (avec signature)"
+              />
+            )}
+          </div>
         </AdminCard>
 
         {/* Actions */}

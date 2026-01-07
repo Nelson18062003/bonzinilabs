@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle2, User, Phone, Mail, AlertCircle, Building2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2, User, Phone, Mail, AlertCircle, Building2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AgentLayout } from '@/components/agent/AgentLayout';
 import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
+import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPaymentDetail } from '@/hooks/useAgentCashPayments';
 import { useConfirmCashPayment } from '@/hooks/useCashPayment';
@@ -184,6 +185,17 @@ export default function AgentPaymentDetailPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Download PDF Button */}
+        <div className="mt-4">
+          <CashReceiptDownloadButton
+            payment={payment}
+            client={payment.profile}
+            variant="default"
+            className="w-full"
+            label="下载凭证 / Download Receipt"
+          />
+        </div>
       </AgentLayout>
     );
   }

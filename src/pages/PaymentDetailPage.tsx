@@ -54,6 +54,7 @@ import { toast } from 'sonner';
 import { PaymentProofUpload } from '@/components/payment/PaymentProofUpload';
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
 import { CashQRCode } from '@/components/cash/CashQRCode';
+import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -757,6 +758,16 @@ export default function PaymentDetailPage() {
                       Signé par: {(payment as any).cash_signed_by_name}
                     </p>
                   )}
+                  
+                  {/* Download PDF Receipt */}
+                  <div className="mt-3">
+                    <CashReceiptDownloadButton
+                      payment={payment as any}
+                      variant="outline"
+                      size="sm"
+                      label="Télécharger le reçu PDF"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
