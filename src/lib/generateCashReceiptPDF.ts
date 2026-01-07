@@ -36,9 +36,33 @@ export async function generateCashPaymentReceiptPDF(payment: CashPaymentPDFData)
   const margin = 20;
   let y = margin;
 
-  // Helper functions
-  const formatRMB = (amount: number) => `¥ ${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
-  const formatXAF = (amount: number) => `${amount.toLocaleString('fr-FR')} XAF`;
+  // Helper functions - use simple formatting to avoid jsPDF character issues
+  const formatNumber = (num: number, decimals: number = 0): string => {
+    const fixed = num.toFixed(decimals);
+    const [intPart, decPart] = fixed.split('.');
+    // Add space as thousand separator (regular space, not non-breaking)
+    const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return decPart ? `${formatted},${decPart}` : formatted;
+  };
+
+  const formatRMB = (amount: number) => `Y ${formatNumber(amount, 2)}`;
+  const formatXAF = (amount: number) => `${formatNumber(amount, 0)} XAF`;
+
+  // Calculate the real exchange rate (XAF per RMB)
+  const getRealExchangeRate = (): number => {
+    if (payment.exchange_rate && payment.exchange_rate > 0) {
+      // If rate is less than 1, it's XAF to RMB rate, so invert it
+      if (payment.exchange_rate < 1) {
+        return Math.round(1 / payment.exchange_rate);
+      }
+      return payment.exchange_rate;
+    }
+    // Fallback: calculate from amounts
+    if (payment.amount_rmb > 0) {
+      return Math.round(payment.amount_xaf / payment.amount_rmb);
+    }
+    return 0;
+  };
 
   const getBeneficiaryName = () => {
     if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
@@ -133,9 +157,11 @@ export async function generateCashPaymentReceiptPDF(payment: CashPaymentPDFData)
   // XAF and rate on the right
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Équivalent: ${formatXAF(payment.amount_xaf)}`, col2, y + 18);
-  if (payment.exchange_rate) {
-    doc.text(`Taux: 1 RMB = ${payment.exchange_rate.toFixed(2)} XAF`, col2, y + 26);
+  doc.text(`Equivalent: ${formatXAF(payment.amount_xaf)}`, col2, y + 18);
+  
+  const realRate = getRealExchangeRate();
+  if (realRate > 0) {
+    doc.text(`Taux: 1 RMB = ${formatNumber(realRate, 0)} XAF`, col2, y + 26);
   }
 
   y += 45;
