@@ -17,6 +17,8 @@ export interface CashPayment {
   beneficiary_phone: string | null;
   beneficiary_email: string | null;
   cash_paid_at: string | null;
+  cash_paid_by: string | null;
+  cash_scanned_by: string | null;
   cash_signature_url: string | null;
   cash_signed_by_name: string | null;
   user_id: string;
@@ -27,15 +29,15 @@ export interface CashPayment {
   };
 }
 
-export function useAgentCashPayments(status: 'pending' | 'paid') {
+export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: string) {
   return useQuery({
-    queryKey: ['agent-cash-payments', status],
+    queryKey: ['agent-cash-payments', status, agentUserId],
     queryFn: async () => {
-      const statusFilter = status === 'pending' 
-        ? ['cash_pending', 'cash_scanned'] as const
-        : ['completed'] as const;
+      const statusFilter = status === 'pending'
+        ? (['cash_pending', 'cash_scanned', 'ready_for_payment', 'processing'] as const)
+        : (['completed'] as const);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('payments')
         .select(`
           id,
@@ -53,13 +55,22 @@ export function useAgentCashPayments(status: 'pending' | 'paid') {
           beneficiary_phone,
           beneficiary_email,
           cash_paid_at,
+          cash_paid_by,
+          cash_scanned_by,
           cash_signature_url,
           cash_signed_by_name,
           user_id
         `)
         .eq('method', 'cash')
-        .in('status', statusFilter)
-        .order('created_at', { ascending: status === 'pending' });
+        .in('status', statusFilter);
+
+      // Paid tab must show ONLY payments paid by this cash agent
+      if (status === 'paid') {
+        if (!agentUserId) return [];
+        query = query.eq('cash_paid_by', agentUserId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: status === 'pending' });
 
       if (error) throw error;
 
@@ -104,6 +115,8 @@ export function useAgentCashPaymentDetail(paymentId: string | undefined) {
           beneficiary_phone,
           beneficiary_email,
           cash_paid_at,
+          cash_paid_by,
+          cash_scanned_by,
           cash_signature_url,
           cash_signed_by_name,
           user_id
