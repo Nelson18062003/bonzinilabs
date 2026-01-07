@@ -33,11 +33,26 @@ export default function AgentScanPage() {
     setScanError(null);
 
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError(t('camera_not_supported'));
+        return;
+      }
+
       // Ensure container is visible and previous scanner is cleaned up
       await stopCamera();
       setCameraStarting(true);
       setCameraActive(true);
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      // Warm up permissions (important on some Android/iOS webviews)
+      try {
+        const warmStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+        });
+        warmStream.getTracks().forEach((track) => track.stop());
+      } catch (e) {
+        // ignore - html5-qrcode will surface a better error
+      }
 
       const scanner = new Html5Qrcode('qr-reader');
       scannerRef.current = scanner;

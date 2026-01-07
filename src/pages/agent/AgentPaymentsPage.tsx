@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAgentAuth } from '@/contexts/AgentAuthContext';
 import { useAgentCashPayments, CashPayment } from '@/hooks/useAgentCashPayments';
 import { formatRMB } from '@/lib/formatters';
 import { format } from 'date-fns';
@@ -84,8 +85,9 @@ function PaymentCard({ payment, onClick }: { payment: CashPayment; onClick: () =
 
 function PaymentList({ status }: { status: 'pending' | 'paid' }) {
   const { t } = useLanguage();
+  const { user } = useAgentAuth();
   const navigate = useNavigate();
-  const { data: payments, isLoading } = useAgentCashPayments(status);
+  const { data: payments, isLoading } = useAgentCashPayments(status, user?.id);
   const [search, setSearch] = useState('');
 
   const filteredPayments = payments?.filter(p => {
