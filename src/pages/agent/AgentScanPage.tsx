@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, Keyboard, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, Keyboard, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +15,7 @@ export default function AgentScanPage() {
   const { t } = useLanguage();
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -28,6 +29,7 @@ export default function AgentScanPage() {
 
   const startCamera = async () => {
     setCameraError(null);
+    setScanError(null);
     
     try {
       const scanner = new Html5Qrcode('qr-reader');
@@ -66,11 +68,12 @@ export default function AgentScanPage() {
   const handleScan = async (qrData: string) => {
     // Stop camera first
     await stopCamera();
+    setScanError(null);
 
     const { paymentId, isValid } = parseCashQRCode(qrData);
     
     if (!isValid) {
-      toast.error(t('invalid_qr'));
+      setScanError(t('invalid_qr'));
       return;
     }
 
@@ -78,22 +81,28 @@ export default function AgentScanPage() {
       const result = await scanCashPayment.mutateAsync(paymentId);
       
       if (result.success && result.payment) {
+        // Check if it's a cash payment
+        if (result.payment.method !== 'cash') {
+          setScanError(t('not_cash_payment'));
+          return;
+        }
         navigate(`/agent/payments/${paymentId}`);
       } else {
-        toast.error(result.error || t('error'));
+        setScanError(result.error || t('invalid_qr'));
       }
     } catch (error) {
-      toast.error(t('error'));
+      setScanError(t('invalid_qr'));
     }
   };
 
   const handleManualEntry = async () => {
     if (!manualCode.trim()) return;
+    setScanError(null);
 
     const { paymentId, isValid } = parseCashQRCode(manualCode);
     
     if (!isValid) {
-      toast.error(t('invalid_qr'));
+      setScanError(t('invalid_qr'));
       return;
     }
 
@@ -101,28 +110,58 @@ export default function AgentScanPage() {
       const result = await scanCashPayment.mutateAsync(paymentId);
       
       if (result.success && result.payment) {
+        if (result.payment.method !== 'cash') {
+          setScanError(t('not_cash_payment'));
+          return;
+        }
         navigate(`/agent/payments/${paymentId}`);
       } else {
-        toast.error(result.error || t('error'));
+        setScanError(result.error || t('invalid_qr'));
       }
     } catch (error) {
-      toast.error(t('error'));
+      setScanError(t('invalid_qr'));
     }
+  };
+
+  const handleRetry = () => {
+    setScanError(null);
+    setManualCode('');
+    startCamera();
   };
 
   return (
     <AgentLayout title={t('scan_qr')}>
       <div className="space-y-4">
+        {/* Error State */}
+        {scanError && (
+          <Card className="border-destructive bg-destructive/10">
+            <CardContent className="p-6 text-center space-y-4">
+              <AlertCircle className="w-12 h-12 mx-auto text-destructive" />
+              <p className="font-medium text-destructive">{scanError}</p>
+              <Button onClick={handleRetry} variant="outline">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {t('retry_scan')}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Camera Scanner */}
-        {!showManualEntry && (
+        {!showManualEntry && !scanError && (
           <Card>
             <CardContent className="p-4">
               {cameraActive ? (
                 <div className="space-y-4">
+                  {/* Alignment instruction */}
+                  <p className="text-center text-sm text-muted-foreground">
+                    {t('align_qr')}
+                  </p>
+                  
                   <div 
                     id="qr-reader" 
                     className="w-full aspect-square rounded-lg overflow-hidden bg-black"
                   />
+                  
                   <Button 
                     variant="outline" 
                     className="w-full"
@@ -141,12 +180,15 @@ export default function AgentScanPage() {
                       <p>{cameraError}</p>
                     </div>
                   ) : (
-                    <Camera className="w-16 h-16 mx-auto text-muted-foreground" />
+                    <>
+                      <Camera className="w-16 h-16 mx-auto text-muted-foreground" />
+                      <p className="text-muted-foreground">{t('align_qr')}</p>
+                    </>
                   )}
                   
                   <Button 
                     onClick={startCamera}
-                    className="w-full h-14"
+                    className="w-full h-14 text-lg"
                     disabled={scanCashPayment.isPending}
                   >
                     {scanCashPayment.isPending ? (
@@ -163,20 +205,22 @@ export default function AgentScanPage() {
         )}
 
         {/* Toggle Manual Entry */}
-        <Button
-          variant="ghost"
-          className="w-full"
-          onClick={() => {
-            stopCamera();
-            setShowManualEntry(!showManualEntry);
-          }}
-        >
-          <Keyboard className="w-4 h-4 mr-2" />
-          {t('manual_entry')}
-        </Button>
+        {!scanError && (
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => {
+              stopCamera();
+              setShowManualEntry(!showManualEntry);
+            }}
+          >
+            <Keyboard className="w-4 h-4 mr-2" />
+            {t('manual_entry')}
+          </Button>
+        )}
 
         {/* Manual Entry Form */}
-        {showManualEntry && (
+        {showManualEntry && !scanError && (
           <Card>
             <CardContent className="p-4 space-y-4">
               <div>
