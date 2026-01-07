@@ -32,6 +32,11 @@ export default function AgentScanPage() {
     setScanError(null);
     
     try {
+      // First check if we have camera permissions
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // Stop the test stream immediately
+      stream.getTracks().forEach(track => track.stop());
+      
       const scanner = new Html5Qrcode('qr-reader');
       scannerRef.current = scanner;
       
@@ -46,9 +51,26 @@ export default function AgentScanPage() {
       );
       
       setCameraActive(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Camera error:', error);
-      setCameraError(t('error'));
+      
+      let errorMessage = t('error');
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = 'Permission caméra refusée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.';
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        errorMessage = 'Aucune caméra détectée sur cet appareil.';
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        errorMessage = 'La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = 'Caméra arrière non disponible. Essayez avec la caméra frontale.';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = 'Accès caméra bloqué. Le site doit être en HTTPS.';
+      } else if (error.message) {
+        errorMessage = `Erreur caméra: ${error.message}`;
+      }
+      
+      setCameraError(errorMessage);
       setCameraActive(false);
     }
   };
@@ -175,9 +197,13 @@ export default function AgentScanPage() {
                   <div id="qr-reader" className="hidden" />
                   
                   {cameraError ? (
-                    <div className="text-destructive">
-                      <AlertCircle className="w-12 h-12 mx-auto mb-2" />
-                      <p>{cameraError}</p>
+                    <div className="text-destructive space-y-3">
+                      <AlertCircle className="w-12 h-12 mx-auto" />
+                      <p className="text-sm">{cameraError}</p>
+                      <Button variant="outline" onClick={startCamera} className="mt-2">
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Réessayer
+                      </Button>
                     </div>
                   ) : (
                     <>
