@@ -14,6 +14,7 @@ export default function AgentScanPage() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
@@ -30,48 +31,67 @@ export default function AgentScanPage() {
   const startCamera = async () => {
     setCameraError(null);
     setScanError(null);
-    
+
     try {
-      // First check if we have camera permissions
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      // Stop the test stream immediately
-      stream.getTracks().forEach(track => track.stop());
-      
+      // Ensure container is visible and previous scanner is cleaned up
+      await stopCamera();
+      setCameraStarting(true);
+      setCameraActive(true);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
       const scanner = new Html5Qrcode('qr-reader');
       scannerRef.current = scanner;
-      
-      await scanner.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        handleScan,
-        () => {} // Ignore scan errors
-      );
-      
+
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+      };
+
+      // Prefer a real back camera deviceId when available (more reliable on Android)
+      let cameraInput: string | { facingMode: string } = { facingMode: 'environment' };
+
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras?.length) {
+          const preferred =
+            cameras.find((c) => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+          cameraInput = preferred.id;
+        }
+      } catch (e) {
+        // Ignore, we'll still try facingMode
+      }
+
+      try {
+        await scanner.start(cameraInput as any, config, handleScan, () => {});
+      } catch (error: any) {
+        // Fallback: try front camera (some devices fail environment)
+        await scanner.start({ facingMode: 'user' } as any, config, handleScan, () => {});
+      }
+
       setCameraActive(true);
     } catch (error: any) {
       console.error('Camera error:', error);
-      
-      let errorMessage = t('error');
-      
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        errorMessage = 'Permission caméra refusée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.';
-      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        errorMessage = 'Aucune caméra détectée sur cet appareil.';
-      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        errorMessage = 'La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.';
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage = 'Caméra arrière non disponible. Essayez avec la caméra frontale.';
-      } else if (error.name === 'SecurityError') {
-        errorMessage = 'Accès caméra bloqué. Le site doit être en HTTPS.';
-      } else if (error.message) {
-        errorMessage = `Erreur caméra: ${error.message}`;
+
+      let errorMessage = t('camera_start_failed');
+
+      if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
+        errorMessage = t('camera_permission_denied');
+      } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
+        errorMessage = t('camera_not_found');
+      } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
+        errorMessage = t('camera_in_use');
+      } else if (error?.name === 'OverconstrainedError') {
+        errorMessage = t('camera_back_unavailable');
+      } else if (error?.name === 'SecurityError') {
+        errorMessage = t('camera_https_required');
+      } else if (error?.message) {
+        errorMessage = `${t('camera_start_failed')}: ${error.message}`;
       }
-      
+
       setCameraError(errorMessage);
       setCameraActive(false);
+    } finally {
+      setCameraStarting(false);
     }
   };
 
@@ -79,12 +99,18 @@ export default function AgentScanPage() {
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
-        scannerRef.current = null;
       } catch (error) {
         // Ignore stop errors
       }
+      try {
+        scannerRef.current.clear();
+      } catch (error) {
+        // Ignore clear errors
+      }
+      scannerRef.current = null;
     }
     setCameraActive(false);
+    setCameraStarting(false);
   };
 
   const handleScan = async (qrData: string) => {
@@ -172,60 +198,49 @@ export default function AgentScanPage() {
         {!showManualEntry && !scanError && (
           <Card>
             <CardContent className="p-4">
-              {cameraActive ? (
-                <div className="space-y-4">
-                  {/* Alignment instruction */}
-                  <p className="text-center text-sm text-muted-foreground">
-                    {t('align_qr')}
-                  </p>
-                  
-                  <div 
-                    id="qr-reader" 
-                    className="w-full aspect-square rounded-lg overflow-hidden bg-black"
+              <div className="space-y-4">
+                {/* Alignment instruction */}
+                <p className="text-center text-sm text-muted-foreground">{t('align_qr')}</p>
+
+                {/* Keep the container mounted (important for Android reliability) */}
+                <div className="relative w-full">
+                  <div
+                    id="qr-reader"
+                    className={
+                      `w-full aspect-square rounded-lg overflow-hidden bg-muted ` +
+                      (cameraActive ? '' : 'opacity-0 pointer-events-none')
+                    }
                   />
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={stopCamera}
-                  >
+
+                  {!cameraActive && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-3">
+                      <Camera className="w-16 h-16 text-muted-foreground" />
+                      <p className={cameraError ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}>
+                        {cameraError || t('align_qr')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {cameraActive ? (
+                  <Button variant="outline" className="w-full" onClick={stopCamera}>
                     {t('cancel')}
                   </Button>
-                </div>
-              ) : (
-                <div className="text-center py-8 space-y-4">
-                  <div id="qr-reader" className="hidden" />
-                  
-                  {cameraError ? (
-                    <div className="text-destructive space-y-3">
-                      <AlertCircle className="w-12 h-12 mx-auto" />
-                      <p className="text-sm">{cameraError}</p>
-                      <Button variant="outline" onClick={startCamera} className="mt-2">
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Réessayer
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <Camera className="w-16 h-16 mx-auto text-muted-foreground" />
-                      <p className="text-muted-foreground">{t('align_qr')}</p>
-                    </>
-                  )}
-                  
-                  <Button 
+                ) : (
+                  <Button
                     onClick={startCamera}
                     className="w-full h-14 text-lg"
-                    disabled={scanCashPayment.isPending}
+                    disabled={scanCashPayment.isPending || cameraStarting}
                   >
-                    {scanCashPayment.isPending ? (
+                    {scanCashPayment.isPending || cameraStarting ? (
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
                     ) : (
                       <Camera className="w-5 h-5 mr-2" />
                     )}
-                    {t('scan_qr')}
+                    {cameraError ? t('retry_scan') : t('scan_qr')}
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </CardContent>
           </Card>
         )}

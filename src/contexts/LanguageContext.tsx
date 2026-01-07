@@ -81,6 +81,12 @@ export const translations: Translations = {
   'payment_not_found': { en: 'Payment Not Found', zh: '未找到支付' },
   'invalid_qr': { en: 'Invalid QR Code - Payment not found', zh: '二维码无效 — 未找到支付记录' },
   'not_cash_payment': { en: 'This QR code is not a Cash payment', zh: '该二维码不是现金支付' },
+  'camera_permission_denied': { en: 'Camera permission denied. Please allow camera access in your browser settings.', zh: '相机权限被拒绝，请在浏览器设置中允许相机访问。' },
+  'camera_not_found': { en: 'No camera detected on this device.', zh: '此设备未检测到相机。' },
+  'camera_in_use': { en: 'Camera is in use by another app. Close other apps and try again.', zh: '相机正被其他应用占用，请关闭其他应用后重试。' },
+  'camera_back_unavailable': { en: 'Back camera not available. Trying front camera.', zh: '后置相机不可用，正在尝试前置相机。' },
+  'camera_https_required': { en: 'Camera is blocked. The site must be opened over HTTPS.', zh: '相机被阻止，必须通过 HTTPS 打开网站。' },
+  'camera_start_failed': { en: 'Unable to start camera', zh: '无法启动相机' },
   'error': { en: 'Error', zh: '错误' },
   'retry_scan': { en: 'Retry Scan', zh: '重新扫描' },
   
