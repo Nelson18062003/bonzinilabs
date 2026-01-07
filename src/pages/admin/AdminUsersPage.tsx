@@ -16,12 +16,13 @@ import {
 } from '@/components/ui/table';
 import { useAdminUsers } from '@/hooks/useAdminData';
 import { formatDate } from '@/lib/formatters';
+import { CreateAgentModal } from '@/components/admin/CreateAgentModal';
 import { 
   Search,
   Shield,
   Users,
   UserCheck,
-  UserX,
+  UserPlus,
   Loader2,
 } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export function AdminUsersPage() {
   const { currentUser } = useAdminAuth();
   const { data: users, isLoading } = useAdminUsers();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateAgent, setShowCreateAgent] = useState(false);
 
   const filteredUsers = users?.filter(user => {
     const searchLower = searchQuery.toLowerCase();
@@ -52,9 +54,15 @@ export function AdminUsersPage() {
     <AdminLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Utilisateurs Admin</h1>
-          <p className="text-muted-foreground">Gérez les comptes de l'équipe Bonzini</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Utilisateurs Admin</h1>
+            <p className="text-muted-foreground">Gérez les comptes de l'équipe Bonzini</p>
+          </div>
+          <Button onClick={() => setShowCreateAgent(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Créer un Agent Cash
+          </Button>
         </div>
 
         {/* Stats */}
@@ -156,6 +164,9 @@ export function AdminUsersPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Create Agent Modal */}
+        <CreateAgentModal open={showCreateAgent} onOpenChange={setShowCreateAgent} />
       </div>
     </AdminLayout>
   );
