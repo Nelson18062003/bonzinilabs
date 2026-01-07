@@ -623,6 +623,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_cash_agent: { Args: { _user_id: string }; Returns: boolean }
       is_rate_used: { Args: { p_rate_id: string }; Returns: boolean }
       process_payment: {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
@@ -647,7 +648,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "ops" | "support" | "customer_success"
+      app_role:
+        | "super_admin"
+        | "ops"
+        | "support"
+        | "customer_success"
+        | "cash_agent"
       deposit_method:
         | "bank_transfer"
         | "bank_cash"
@@ -802,7 +808,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "ops", "support", "customer_success"],
+      app_role: [
+        "super_admin",
+        "ops",
+        "support",
+        "customer_success",
+        "cash_agent",
+      ],
       deposit_method: [
         "bank_transfer",
         "bank_cash",
