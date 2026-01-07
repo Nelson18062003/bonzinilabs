@@ -49,6 +49,17 @@ import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ProtectedAdminRoute } from "./components/admin/ProtectedAdminRoute";
 
+// Agent Pages
+import AgentLoginPage from "./pages/agent/AgentLoginPage";
+import AgentPaymentsPage from "./pages/agent/AgentPaymentsPage";
+import AgentPaymentDetailPage from "./pages/agent/AgentPaymentDetailPage";
+import AgentScanPage from "./pages/agent/AgentScanPage";
+
+// Agent Auth
+import { AgentAuthProvider } from "./contexts/AgentAuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import { ProtectedAgentRoute } from "./components/agent/ProtectedAgentRoute";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -166,6 +177,36 @@ const App = () => (
               <AdminAuthProvider>
                 <ProtectedAdminRoute><AdminUsersPage /></ProtectedAdminRoute>
               </AdminAuthProvider>
+            } />
+
+            {/* Agent Cash Routes */}
+            <Route path="/agent/login" element={
+              <LanguageProvider>
+                <AgentAuthProvider>
+                  <AgentLoginPage />
+                </AgentAuthProvider>
+              </LanguageProvider>
+            } />
+            <Route path="/agent/payments" element={
+              <LanguageProvider>
+                <AgentAuthProvider>
+                  <ProtectedAgentRoute><AgentPaymentsPage /></ProtectedAgentRoute>
+                </AgentAuthProvider>
+              </LanguageProvider>
+            } />
+            <Route path="/agent/payments/:paymentId" element={
+              <LanguageProvider>
+                <AgentAuthProvider>
+                  <ProtectedAgentRoute><AgentPaymentDetailPage /></ProtectedAgentRoute>
+                </AgentAuthProvider>
+              </LanguageProvider>
+            } />
+            <Route path="/agent/scan" element={
+              <LanguageProvider>
+                <AgentAuthProvider>
+                  <ProtectedAgentRoute><AgentScanPage /></ProtectedAgentRoute>
+                </AgentAuthProvider>
+              </LanguageProvider>
             } />
             
             <Route path="*" element={<NotFound />} />
