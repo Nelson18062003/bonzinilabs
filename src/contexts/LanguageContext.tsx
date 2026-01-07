@@ -13,7 +13,7 @@ interface Translations {
 export const translations: Translations = {
   // Navigation & Headers
   'cash_payments': { en: 'Cash Payments', zh: '现金支付' },
-  'scanner': { en: 'Scanner', zh: '扫描' },
+  'scanner': { en: 'Scanner', zh: '扫码' },
   'logout': { en: 'Logout', zh: '退出登录' },
   
   // Tabs
@@ -40,6 +40,7 @@ export const translations: Translations = {
   'open': { en: 'Open', zh: '打开' },
   'scan_qr': { en: 'Scan QR Code', zh: '扫描二维码' },
   'confirm_payment': { en: 'Confirm Payment', zh: '确认支付' },
+  'proceed_to_payment': { en: 'Proceed to Payment', zh: '支付现金' },
   'clear': { en: 'Clear', zh: '清除' },
   'cancel': { en: 'Cancel', zh: '取消' },
   'back': { en: 'Back', zh: '返回' },
@@ -48,27 +49,40 @@ export const translations: Translations = {
   
   // Scanner
   'scanning': { en: 'Scanning...', zh: '扫描中...' },
+  'align_qr': { en: 'Align the QR code in the frame', zh: '请将二维码对准框内' },
   'manual_entry': { en: 'Manual Entry', zh: '手动输入' },
-  'enter_payment_id': { en: 'Enter Payment ID', zh: '输入支付编号' },
+  'enter_payment_id': { en: 'Enter Payment ID or QR content', zh: '输入支付编号或二维码内容' },
   'search': { en: 'Search', zh: '搜索' },
   
   // Payment detail
   'payment_details': { en: 'Payment Details', zh: '支付详情' },
   'beneficiary_info': { en: 'Beneficiary Information', zh: '收款人信息' },
+  'client_info': { en: 'Client Information', zh: '客户信息' },
   'amount_to_pay': { en: 'Amount to Pay', zh: '支付金额' },
+  'verify_identity': { en: 'Verify the beneficiary identity before payment', zh: '付款前请核实收款人身份' },
+  
+  // Confirmation screen
+  'cash_confirmation': { en: 'Cash Payment Confirmation', zh: '现金支付确认' },
+  'cash_handed': { en: 'Cash handed to beneficiary', zh: '已向收款人支付现金' },
   'signature_required': { en: 'Signature Required', zh: '需要签名' },
   'sign_here': { en: 'Sign here', zh: '在此签名' },
-  'signature_instruction': { en: 'The beneficiary must sign below to confirm receipt', zh: '收款人需在下方签名确认收款' },
+  'signature_instruction': { en: 'The beneficiary signs here with finger', zh: '收款人在此处用手指签名' },
+  'beneficiary_name_confirmed': { en: 'Beneficiary name (confirmed)', zh: '收款人姓名（确认）' },
+  'signature_too_short': { en: 'Signature too short, please sign again', zh: '签名太短，请重新签名' },
   
   // Success
   'payment_confirmed': { en: 'Payment Confirmed', zh: '支付已确认' },
   'payment_success': { en: 'Payment Successful!', zh: '支付成功！' },
+  'proof_available': { en: 'Proof available', zh: '凭证可用' },
   
   // Errors
   'already_paid': { en: 'Already Paid', zh: '已支付' },
+  'already_paid_on': { en: 'Paid on', zh: '支付于' },
   'payment_not_found': { en: 'Payment Not Found', zh: '未找到支付' },
-  'invalid_qr': { en: 'Invalid QR Code', zh: '无效的二维码' },
+  'invalid_qr': { en: 'Invalid QR Code - Payment not found', zh: '二维码无效 — 未找到支付记录' },
+  'not_cash_payment': { en: 'This QR code is not a Cash payment', zh: '该二维码不是现金支付' },
   'error': { en: 'Error', zh: '错误' },
+  'retry_scan': { en: 'Retry Scan', zh: '重新扫描' },
   
   // Empty states
   'no_payments': { en: 'No payments found', zh: '暂无支付记录' },
@@ -87,6 +101,8 @@ export const translations: Translations = {
   // Misc
   'loading': { en: 'Loading...', zh: '加载中...' },
   'rmb': { en: 'RMB', zh: '人民币' },
+  'signature': { en: 'Signature', zh: '签名' },
+  'paid_by': { en: 'Paid by', zh: '支付人' },
 };
 
 interface LanguageContextType {
