@@ -31,48 +31,25 @@ export function CreateAgentModal({ open, onOpenChange }: CreateAgentModalProps) 
 
   const createAgentMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // 1. Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            first_name: data.firstName,
-            last_name: data.lastName,
-          },
+      // Call edge function to create agent (uses service role, doesn't log out admin)
+      const { data: result, error } = await supabase.functions.invoke('create-agent', {
+        body: {
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Échec de création du compte');
-
-      const userId = authData.user.id;
-
-      // 2. Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: userId,
-          first_name: data.firstName,
-          last_name: data.lastName,
-        });
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        // Continue anyway - profile might be created by trigger
+      if (error) {
+        throw new Error(error.message || 'Erreur lors de la création');
       }
 
-      // 3. Assign cash_agent role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role: 'cash_agent',
-        });
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la création');
+      }
 
-      if (roleError) throw roleError;
-
-      return { userId, email: data.email };
+      return result;
     },
     onSuccess: (result) => {
       toast.success(`Agent Cash créé avec succès`, {
@@ -85,7 +62,7 @@ export function CreateAgentModal({ open, onOpenChange }: CreateAgentModalProps) 
     },
     onError: (error: Error) => {
       console.error('Create agent error:', error);
-      if (error.message.includes('already registered')) {
+      if (error.message.includes('déjà utilisé') || error.message.includes('already')) {
         setErrors({ email: 'Cet email est déjà utilisé' });
       } else {
         toast.error('Erreur lors de la création', {
