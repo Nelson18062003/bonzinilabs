@@ -243,7 +243,7 @@ export function AdminPaymentDetailPage() {
   const canReject = !['completed', 'rejected'].includes(payment.status);
   const canDelete = !['completed'].includes(payment.status);
   const canUploadProof = !['rejected'].includes(payment.status);
-  const canDeleteProofs = !['completed', 'rejected'].includes(payment.status);
+  const canDeleteProofs = !['rejected'].includes(payment.status); // Allow deletion even on completed payments
   const canAddQrCode = !['processing', 'completed', 'rejected'].includes(payment.status);
   const canEditBeneficiary = !['processing', 'completed', 'rejected'].includes(payment.status);
 
