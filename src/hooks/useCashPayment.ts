@@ -67,7 +67,7 @@ export function useConfirmCashPayment() {
     }): Promise<ConfirmCashPaymentResult> => {
       // Upload signature to storage
       const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
-      const fileName = `cash-signatures/${paymentId}/${Date.now()}_signature.png`;
+      const fileName = `${paymentId}/${Date.now()}_signature.png`;
       
       const { error: uploadError } = await supabase.storage
         .from('cash-signatures')
