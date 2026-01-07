@@ -72,48 +72,75 @@ serve(async (req) => {
       );
     }
 
-    // Create user with admin API (doesn't log in the caller)
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-      },
-    });
+    let userId: string;
+    let isExistingUser = false;
 
-    if (createError) {
-      console.error("Create user error:", createError);
-      if (createError.message.includes("already been registered")) {
+    // Check if user already exists
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email === email);
+
+    if (existingUser) {
+      // User exists - check if already has cash_agent role
+      const { data: existingRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", existingUser.id)
+        .eq("role", "cash_agent")
+        .maybeSingle();
+
+      if (existingRole) {
         return new Response(
-          JSON.stringify({ success: false, error: "Cet email est déjà utilisé" }),
+          JSON.stringify({ success: false, error: "Cet utilisateur est déjà un Agent Cash" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      return new Response(
-        JSON.stringify({ success: false, error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+
+      userId = existingUser.id;
+      isExistingUser = true;
+      console.log(`User ${email} already exists, assigning cash_agent role`);
+    } else {
+      // Create new user with admin API (doesn't log in the caller)
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+
+      if (createError) {
+        console.error("Create user error:", createError);
+        return new Response(
+          JSON.stringify({ success: false, error: createError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!newUser.user) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Échec de création du compte" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      userId = newUser.user.id;
+      console.log(`Created new user ${email} with id ${userId}`);
     }
 
-    if (!newUser.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Échec de création du compte" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const userId = newUser.user.id;
-
-    // Create profile (the trigger should handle this, but let's be safe)
-    await supabaseAdmin
+    // Ensure profile exists
+    const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .upsert({
         user_id: userId,
         first_name: firstName,
         last_name: lastName,
       }, { onConflict: 'user_id' });
+
+    if (profileError) {
+      console.error("Profile upsert error:", profileError);
+    }
 
     // Assign cash_agent role
     const { error: roleError } = await supabaseAdmin
@@ -125,13 +152,18 @@ serve(async (req) => {
 
     if (roleError) {
       console.error("Role assignment error:", roleError);
-      // Try to clean up the created user
-      await supabaseAdmin.auth.admin.deleteUser(userId);
+      // If we just created the user, clean up
+      if (!isExistingUser) {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      }
       return new Response(
         JSON.stringify({ success: false, error: "Erreur lors de l'attribution du rôle" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Successfully assigned cash_agent role to ${email}`);
+    
 
     return new Response(
       JSON.stringify({
