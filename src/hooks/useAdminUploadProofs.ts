@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createSignedUrl } from '@/lib/signedUrls';
 
 export function useAdminUploadProofs() {
   const queryClient = useQueryClient();
@@ -15,30 +16,31 @@ export function useAdminUploadProofs() {
       for (const file of files) {
         // Upload file to storage
         const fileExt = file.name.split('.').pop();
-        const fileName = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('deposit-proofs')
-          .upload(fileName, file);
+          .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('deposit-proofs')
-          .getPublicUrl(fileName);
+        // Get signed URL for immediate display
+        const signedUrl = await createSignedUrl('deposit-proofs', filePath);
+        
+        // Store the file path for later signed URL generation
+        const storedPath = `deposit-proofs/${filePath}`;
 
         // Create proof record
         const { error: proofError } = await supabase.from('deposit_proofs').insert({
           deposit_id: depositId,
-          file_url: publicUrl,
+          file_url: storedPath,
           file_name: file.name,
           file_type: file.type,
         });
 
         if (proofError) throw proofError;
 
-        uploadedProofs.push({ file_name: file.name, file_url: publicUrl });
+        uploadedProofs.push({ file_name: file.name, file_url: signedUrl });
       }
 
       // Add timeline event

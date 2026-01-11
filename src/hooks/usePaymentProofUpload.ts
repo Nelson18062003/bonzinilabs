@@ -26,24 +26,23 @@ export function usePaymentProofMultiUpload() {
 
       for (const file of files) {
         try {
-          const fileName = `instructions/${paymentId}/${Date.now()}_${file.name}`;
+          const filePath = `instructions/${paymentId}/${Date.now()}_${file.name}`;
 
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
-            .upload(fileName, file);
+            .upload(filePath, file);
 
           if (uploadError) throw uploadError;
 
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(fileName);
+          // Store the file path for later signed URL generation
+          const storedPath = `payment-proofs/${filePath}`;
 
           const { error: insertError } = await supabase.from('payment_proofs').insert({
             payment_id: paymentId,
             uploaded_by: user.id,
             uploaded_by_type: 'client',
             file_name: file.name,
-            file_url: urlData.publicUrl,
+            file_url: storedPath,
             file_type: file.type,
             description: description || 'Instructions de paiement',
           });

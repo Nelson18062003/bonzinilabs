@@ -390,23 +390,21 @@ export function useUploadProof() {
 
       // Upload file to storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${depositId}/${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${depositId}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('deposit-proofs')
-        .upload(fileName, file);
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('deposit-proofs')
-        .getPublicUrl(fileName);
+      // Store the file path for later signed URL generation
+      const storedPath = `deposit-proofs/${filePath}`;
 
       // Create proof record
       const { error: proofError } = await supabase.from('deposit_proofs').insert({
         deposit_id: depositId,
-        file_url: publicUrl,
+        file_url: storedPath,
         file_name: file.name,
         file_type: file.type,
       });

@@ -89,26 +89,24 @@ export function useAdminCreateDeposit() {
       if (data.proofFiles && data.proofFiles.length > 0) {
         for (const file of data.proofFiles) {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${data.user_id}/${deposit.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `${data.user_id}/${deposit.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           
           const { error: uploadError } = await supabase.storage
             .from('deposit-proofs')
-            .upload(fileName, file);
+            .upload(filePath, file);
 
           if (uploadError) {
             console.error('Upload error:', uploadError);
             continue;
           }
 
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('deposit-proofs')
-            .getPublicUrl(fileName);
+          // Store the file path for later signed URL generation
+          const storedPath = `deposit-proofs/${filePath}`;
 
           // Create proof record
           await supabase.from('deposit_proofs').insert({
             deposit_id: deposit.id,
-            file_url: publicUrl,
+            file_url: storedPath,
             file_name: file.name,
             file_type: file.type,
           });
