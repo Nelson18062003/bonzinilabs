@@ -244,9 +244,11 @@ export function AdminWalletDetailPage() {
                             ? 'text-emerald-600'
                             : operation.operation_type === 'payment'
                             ? 'text-red-600'
-                            : 'text-amber-600'
+                            : operation.amount_xaf >= 0
+                            ? 'text-emerald-600'
+                            : 'text-red-600'
                         }`}>
-                          {operation.operation_type === 'payment' ? '-' : '+'}
+                          {operation.operation_type === 'payment' || operation.amount_xaf < 0 ? '-' : '+'}
                           {formatXAF(Math.abs(operation.amount_xaf))} XAF
                         </span>
                       </TableCell>
