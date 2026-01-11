@@ -249,7 +249,7 @@ export function useDeleteDeposit() {
 
   return useMutation({
     mutationFn: async ({ depositId }: { depositId: string }) => {
-      // First, get the proofs to delete files from storage
+      // Delete proofs first (cascade might not work with storage)
       const { data: proofs } = await supabase
         .from('deposit_proofs')
         .select('file_url')
@@ -265,32 +265,23 @@ export function useDeleteDeposit() {
         }
       }
 
-      // Call the RPC function that handles deletion and wallet reversal
-      const { data, error } = await supabase.rpc('delete_deposit', {
-        p_deposit_id: depositId
-      });
+      // Delete deposit proofs records
+      await supabase.from('deposit_proofs').delete().eq('deposit_id', depositId);
+
+      // Delete timeline events
+      await supabase.from('deposit_timeline_events').delete().eq('deposit_id', depositId);
+
+      // Delete deposit
+      const { error } = await supabase.from('deposits').delete().eq('id', depositId);
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string; wallet_reversed?: boolean };
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Erreur lors de la suppression');
-      }
-
-      return result;
+      return { success: true };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-operations'] });
-      
-      if (data.wallet_reversed) {
-        toast.success('Dépôt supprimé et solde du wallet annulé');
-      } else {
-        toast.success('Dépôt supprimé avec succès');
-      }
+      toast.success('Dépôt supprimé avec succès');
     },
     onError: (error) => {
       toast.error(`Erreur: ${error.message}`);
