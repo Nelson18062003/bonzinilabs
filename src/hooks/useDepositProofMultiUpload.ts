@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createSignedUrl } from '@/lib/signedUrls';
 
 async function getCurrentUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -21,30 +22,32 @@ export function useUploadMultipleProofs() {
       for (const file of files) {
         // Upload file to storage
         const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${user.id}/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('deposit-proofs')
-          .upload(fileName, file);
+          .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('deposit-proofs')
-          .getPublicUrl(fileName);
+        // Get signed URL for immediate display
+        const signedUrl = await createSignedUrl('deposit-proofs', filePath);
+        
+        // Store the file path (not URL) for later signed URL generation
+        // We store the path prefixed to identify the bucket
+        const storedPath = `deposit-proofs/${filePath}`;
 
-        // Create proof record
+        // Create proof record with file path
         const { error: proofError } = await supabase.from('deposit_proofs').insert({
           deposit_id: depositId,
-          file_url: publicUrl,
+          file_url: storedPath,
           file_name: file.name,
           file_type: file.type,
         });
 
         if (proofError) throw proofError;
 
-        uploadedProofs.push({ file_name: file.name, file_url: publicUrl });
+        uploadedProofs.push({ file_name: file.name, file_url: signedUrl });
       }
 
       // Update deposit status

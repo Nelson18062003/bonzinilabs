@@ -189,15 +189,15 @@ export default function PaymentDetailPage() {
       if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
         setIsUploadingQr(true);
 
-        const fileName = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
+        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(fileName, qrFile, { upsert: true });
+          .upload(filePath, qrFile, { upsert: true });
 
         if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-        qrUrl = data.publicUrl;
+        // Store the file path for later signed URL generation
+        qrUrl = `payment-proofs/${filePath}`;
       }
 
       await updateBeneficiaryInfo.mutateAsync({

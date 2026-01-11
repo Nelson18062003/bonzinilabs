@@ -271,24 +271,23 @@ export function useUploadPaymentProof() {
       file: File; 
       description?: string 
     }) => {
-      const fileName = `${paymentId}/${Date.now()}_${file.name}`;
+      const filePath = `${paymentId}/${Date.now()}_${file.name}`;
       
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
-        .upload(fileName, file);
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(fileName);
+      // Store the file path for later signed URL generation
+      const storedPath = `payment-proofs/${filePath}`;
 
       const { error } = await supabase.from('payment_proofs').insert({
         payment_id: paymentId,
         uploaded_by: user?.id,
         uploaded_by_type: 'client',
         file_name: file.name,
-        file_url: publicUrl,
+        file_url: storedPath,
         file_type: file.type,
         description,
       });
@@ -423,17 +422,16 @@ export function useAdminUploadPaymentProof() {
       file: File; 
       description?: string 
     }) => {
-      const fileName = `admin/${paymentId}/${Date.now()}_${file.name}`;
+      const filePath = `admin/${paymentId}/${Date.now()}_${file.name}`;
       
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
-        .upload(fileName, file);
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(fileName);
+      // Store the file path for later signed URL generation
+      const storedPath = `payment-proofs/${filePath}`;
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -442,7 +440,7 @@ export function useAdminUploadPaymentProof() {
         uploaded_by: user?.id,
         uploaded_by_type: 'admin',
         file_name: file.name,
-        file_url: publicUrl,
+        file_url: storedPath,
         file_type: file.type,
         description,
       });

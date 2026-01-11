@@ -108,16 +108,14 @@ const NewPaymentPage = () => {
       // Upload QR code if provided
       let qrCodeUrl = beneficiaryForm.qr_code_url;
       if (qrCodeFile) {
-        const fileName = `qr-codes/${Date.now()}_${qrCodeFile.name}`;
+        const filePath = `qr-codes/${Date.now()}_${qrCodeFile.name}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(fileName, qrCodeFile);
+          .upload(filePath, qrCodeFile);
 
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(fileName);
-          qrCodeUrl = publicUrl;
+          // Store the file path for later signed URL generation
+          qrCodeUrl = `payment-proofs/${filePath}`;
         }
       }
 

@@ -32,19 +32,16 @@ export function useAdminCreatePayment() {
       if (data.qr_code_files && data.qr_code_files.length > 0) {
         // Upload the first QR code as the main beneficiary QR
         const file = data.qr_code_files[0];
-        const fileName = `qr-codes/${data.user_id}/${Date.now()}_${file.name}`;
+        const filePath = `qr-codes/${data.user_id}/${Date.now()}_${file.name}`;
         
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(fileName, file);
+          .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
-
-        qrCodeUrl = publicUrl;
+        // Store the file path for later signed URL generation
+        qrCodeUrl = `payment-proofs/${filePath}`;
       }
 
       // Call the RPC function
@@ -85,23 +82,22 @@ export function useAdminCreatePayment() {
         
         for (let i = 1; i < data.qr_code_files.length; i++) {
           const file = data.qr_code_files[i];
-          const fileName = `admin/${response.payment_id}/${Date.now()}_${file.name}`;
+          const filePath = `admin/${response.payment_id}/${Date.now()}_${file.name}`;
           
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
-            .upload(fileName, file);
+            .upload(filePath, file);
 
           if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('payment-proofs')
-              .getPublicUrl(fileName);
+            // Store the file path for later signed URL generation
+            const storedPath = `payment-proofs/${filePath}`;
 
             await supabase.from('payment_proofs').insert({
               payment_id: response.payment_id,
               uploaded_by: user?.id,
               uploaded_by_type: 'admin',
               file_name: file.name,
-              file_url: publicUrl,
+              file_url: storedPath,
               file_type: file.type,
               description: 'QR Code de paiement',
             });
@@ -208,19 +204,16 @@ export function useAdminUpdateBeneficiaryInfo() {
       
       // Upload QR code if provided
       if (qrCodeFile) {
-        const fileName = `qr-codes/${paymentId}/${Date.now()}_${qrCodeFile.name}`;
+        const filePath = `qr-codes/${paymentId}/${Date.now()}_${qrCodeFile.name}`;
         
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(fileName, qrCodeFile);
+          .upload(filePath, qrCodeFile);
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
-
-        qrCodeUrl = publicUrl;
+        // Store the file path for later signed URL generation
+        qrCodeUrl = `payment-proofs/${filePath}`;
       }
 
       // Build update data - only include qr_code_url if it's explicitly set (including null for deletion)

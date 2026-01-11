@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createSignedUrl } from '@/lib/signedUrls';
 
 export function useAdminPaymentProofMultiUpload() {
   const queryClient = useQueryClient();
@@ -21,27 +22,26 @@ export function useAdminPaymentProofMultiUpload() {
       const results = [];
       
       for (const file of files) {
-        const fileName = `admin/${paymentId}/${Date.now()}_${file.name}`;
+        const filePath = `admin/${paymentId}/${Date.now()}_${file.name}`;
         
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(fileName, file);
+          .upload(filePath, file);
 
         if (uploadError) {
           console.error(`Failed to upload ${file.name}:`, uploadError);
           continue;
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
+        // Store the file path for later signed URL generation
+        const storedPath = `payment-proofs/${filePath}`;
 
         const { error } = await supabase.from('payment_proofs').insert({
           payment_id: paymentId,
           uploaded_by: user.id,
           uploaded_by_type: 'admin',
           file_name: file.name,
-          file_url: publicUrl,
+          file_url: storedPath,
           file_type: file.type,
           description,
         });
