@@ -565,6 +565,7 @@ export type Database = {
             }
             Returns: Json
           }
+      admin_delete_client: { Args: { p_user_id: string }; Returns: Json }
       confirm_cash_payment: {
         Args: {
           p_payment_id: string

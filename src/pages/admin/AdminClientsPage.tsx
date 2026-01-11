@@ -5,6 +5,7 @@ import {
   MoreHorizontal,
   Phone,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,15 +17,29 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAdminClients } from '@/hooks/useAdminData';
+import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { formatXAF } from '@/lib/formatters';
 
 export function AdminClientsPage() {
   const navigate = useNavigate();
   const { data: clients, isLoading } = useAdminClients();
+  const deleteClient = useAdminDeleteClient();
   const [search, setSearch] = useState('');
+  const [clientToDelete, setClientToDelete] = useState<{ userId: string; name: string } | null>(null);
 
   const filteredClients = clients?.filter((client) => {
     const searchLower = search.toLowerCase();
@@ -112,8 +127,32 @@ export function AdminClientsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Voir le profil</DropdownMenuItem>
-                            <DropdownMenuItem>Voir le wallet</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/clients/${client.user_id}`);
+                            }}>
+                              Voir le profil
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/wallets/${client.user_id}`);
+                            }}>
+                              Voir le wallet
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setClientToDelete({
+                                  userId: client.user_id,
+                                  name: `${client.first_name} ${client.last_name}`,
+                                });
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer le client
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -153,6 +192,42 @@ export function AdminClientsPage() {
             )}
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer ce client ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Vous êtes sur le point de supprimer définitivement <strong>{clientToDelete?.name}</strong> et toutes ses données associées (dépôts, paiements, wallet, historique).
+                <br /><br />
+                <span className="text-destructive font-medium">Cette action est irréversible.</span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  if (clientToDelete) {
+                    deleteClient.mutate(clientToDelete.userId);
+                    setClientToDelete(null);
+                  }
+                }}
+                disabled={deleteClient.isPending}
+              >
+                {deleteClient.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  'Supprimer définitivement'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

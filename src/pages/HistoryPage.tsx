@@ -1,63 +1,98 @@
 import { useState } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { StatusBadge, getStatusType } from '@/components/common/StatusBadge';
-import { useMyDeposits, DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/hooks/useDeposits';
-import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
+import { useMyWallet, useMyWalletOperations, WalletOperation } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
-import { formatXAF, formatRMB, getPaymentStatusLabel } from '@/lib/formatters';
-import { paymentMethodsInfo } from '@/data/staticData';
+import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownLeft, ArrowUpRight, Filter, FileDown } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { 
+  ArrowDownLeft, 
+  ArrowUpRight, 
+  RefreshCw, 
+  Filter, 
+  FileDown,
+  Loader2
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ClientStatementModal } from '@/components/statement/ClientStatementModal';
 
-type FilterType = 'all' | 'deposits' | 'payments';
+type FilterType = 'all' | 'credits' | 'debits';
 
 const HistoryPage = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [showStatementModal, setShowStatementModal] = useState(false);
-  const { data: deposits, isLoading } = useMyDeposits();
   const { data: wallet } = useMyWallet();
-  const { data: operations } = useMyWalletOperations();
+  const { data: operations, isLoading } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
 
-  // For now, only deposits are implemented. Payments will come from a separate hook when ready.
-  const allTransactions = [
-    ...(deposits || []).map(d => ({
-      ...d,
-      type: 'deposit' as const,
-      displayAmount: d.amount_xaf,
-      date: new Date(d.created_at),
-    })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+  // Helper to determine if an operation is a debit
+  const isDebitOperation = (op: WalletOperation): boolean => {
+    if (op.operation_type === 'payment') return true;
+    if (op.operation_type === 'deposit') return false;
+    // For adjustments: check balance change
+    if (op.balance_after < op.balance_before) return true;
+    if (op.balance_after > op.balance_before) return false;
+    // Fallback: check description
+    const desc = (op.description ?? '').toLowerCase();
+    if (desc.startsWith('débit')) return true;
+    if (desc.startsWith('crédit')) return false;
+    return op.amount_xaf < 0;
+  };
 
-  const filteredTransactions = allTransactions.filter(t => {
+  // Filter operations
+  const filteredOperations = (operations || []).filter(op => {
     if (filter === 'all') return true;
-    if (filter === 'deposits') return t.type === 'deposit';
-    if (filter === 'payments') return false; // No payments yet
+    const isDebit = isDebitOperation(op);
+    if (filter === 'credits') return !isDebit;
+    if (filter === 'debits') return isDebit;
     return true;
   });
 
   // Group by date
-  const groupedTransactions = filteredTransactions.reduce((groups, transaction) => {
-    const date = format(transaction.date, 'yyyy-MM-dd');
+  const groupedOperations = filteredOperations.reduce((groups, op) => {
+    const date = format(new Date(op.created_at), 'yyyy-MM-dd');
     if (!groups[date]) {
       groups[date] = [];
     }
-    groups[date].push(transaction);
+    groups[date].push(op);
     return groups;
-  }, {} as Record<string, typeof filteredTransactions>);
+  }, {} as Record<string, WalletOperation[]>);
+
+  const getOperationIcon = (op: WalletOperation) => {
+    const isDebit = isDebitOperation(op);
+    if (op.operation_type === 'deposit') {
+      return <ArrowDownLeft className="w-5 h-5 text-success" />;
+    }
+    if (op.operation_type === 'payment') {
+      return <ArrowUpRight className="w-5 h-5 text-destructive" />;
+    }
+    // Adjustment
+    return <RefreshCw className={`w-5 h-5 ${isDebit ? 'text-destructive' : 'text-success'}`} />;
+  };
+
+  const getOperationLabel = (op: WalletOperation): string => {
+    switch (op.operation_type) {
+      case 'deposit':
+        return 'Dépôt';
+      case 'payment':
+        return 'Paiement';
+      case 'adjustment': {
+        const isDebit = isDebitOperation(op);
+        return isDebit ? 'Ajustement Débit' : 'Ajustement Crédit';
+      }
+      default:
+        return 'Opération';
+    }
+  };
 
   return (
     <MobileLayout>
       <PageHeader 
         title="Historique" 
-        subtitle="Toutes vos opérations"
+        subtitle="Tous vos mouvements"
         rightElement={
           <Button 
             variant="outline" 
@@ -75,8 +110,8 @@ const HistoryPage = () => {
       <div className="px-4 py-3 flex gap-2 overflow-x-auto">
         {[
           { value: 'all', label: 'Tout' },
-          { value: 'deposits', label: 'Dépôts' },
-          { value: 'payments', label: 'Paiements' },
+          { value: 'credits', label: 'Crédits' },
+          { value: 'debits', label: 'Débits' },
         ].map((f) => (
           <button
             key={f.value}
@@ -93,56 +128,56 @@ const HistoryPage = () => {
         ))}
       </div>
       
-      <div className="px-4 py-2 space-y-6">
+      <div className="px-4 py-2 space-y-6 pb-24">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-6 w-32" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
           </div>
-        ) : Object.entries(groupedTransactions).length > 0 ? (
-          Object.entries(groupedTransactions).map(([date, transactions]) => (
+        ) : Object.entries(groupedOperations).length > 0 ? (
+          Object.entries(groupedOperations).map(([date, ops]) => (
             <div key={date} className="animate-slide-up">
               <h3 className="text-sm font-semibold text-muted-foreground mb-3">
                 {format(new Date(date), 'EEEE d MMMM', { locale: fr })}
               </h3>
               
               <div className="space-y-2">
-                {transactions.map((transaction) => {
-                  const isDeposit = transaction.type === 'deposit';
+                {ops.map((op) => {
+                  const isDebit = isDebitOperation(op);
                   
-                  if (isDeposit) {
-                    return (
-                      <div
-                        key={transaction.id}
-                        className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/30"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                          <ArrowDownLeft className="w-5 h-5 text-success" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate">
-                            {DEPOSIT_METHOD_LABELS[transaction.method] || 'Dépôt'}
-                          </p>
-                          <StatusBadge 
-                            status={getStatusType(transaction.status)} 
-                            label={DEPOSIT_STATUS_LABELS[transaction.status] || transaction.status} 
-                            className="mt-1"
-                          />
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="font-semibold text-success">
-                            +{formatXAF(transaction.amount_xaf)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">XAF</p>
-                        </div>
+                  return (
+                    <div
+                      key={op.id}
+                      className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/30"
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center",
+                        isDebit ? "bg-destructive/10" : "bg-success/10"
+                      )}>
+                        {getOperationIcon(op)}
                       </div>
-                    );
-                  }
-                  
-                  return null;
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {getOperationLabel(op)}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {op.description || 'N/A'}
+                        </p>
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className={cn(
+                          "font-semibold",
+                          isDebit ? "text-destructive" : "text-success"
+                        )}>
+                          {isDebit ? '-' : '+'}{formatXAF(Math.abs(op.amount_xaf))}
+                        </p>
+                        <p className="text-xs text-muted-foreground">XAF</p>
+                      </div>
+                    </div>
+                  );
                 })}
               </div>
             </div>

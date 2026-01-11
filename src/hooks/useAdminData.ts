@@ -214,13 +214,23 @@ export function useAdminWallets() {
   });
 }
 
-// Fetch all clients (profiles with wallets)
+// Fetch all clients (profiles with wallets) - EXCLUDING users with admin/agent roles
 export function useAdminClients() {
   return useQuery({
     queryKey: ['admin-clients'],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
+      // First, get all user_ids that have roles (admins/agents)
+      const { data: roleUsers, error: roleError } = await supabase
+        .from('user_roles')
+        .select('user_id');
+      
+      if (roleError) throw roleError;
+      
+      const roleUserIds = new Set(roleUsers?.map(r => r.user_id) || []);
+      
+      // Fetch all profiles
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
@@ -230,7 +240,10 @@ export function useAdminClients() {
       if (error) throw error;
       if (!profiles) return [];
       
-      const userIds = profiles.map(p => p.user_id);
+      // Filter out users with roles (admins/agents)
+      const clientProfiles = profiles.filter(p => !roleUserIds.has(p.user_id));
+      
+      const userIds = clientProfiles.map(p => p.user_id);
       
       // Fetch wallets
       const { data: wallets } = await supabase
@@ -252,7 +265,7 @@ export function useAdminClients() {
         depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
       });
       
-      return profiles.map(profile => ({
+      return clientProfiles.map(profile => ({
         ...profile,
         wallet: walletMap.get(profile.user_id) || null,
         walletBalance: walletMap.get(profile.user_id)?.balance_xaf || 0,
