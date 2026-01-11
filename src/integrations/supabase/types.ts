@@ -609,6 +609,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       delete_exchange_rate: { Args: { p_rate_id: string }; Returns: Json }
       delete_payment: { Args: { p_payment_id: string }; Returns: Json }
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
