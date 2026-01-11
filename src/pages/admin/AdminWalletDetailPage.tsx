@@ -19,7 +19,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { WalletAdjustmentModal } from '@/components/admin/WalletAdjustmentModal';
 import { StatementDownloadModal } from '@/components/admin/StatementDownloadModal';
 import { useProfileByUserId } from '@/hooks/useProfile';
-import { useWalletByUserId, useWalletOperations } from '@/hooks/useWallet';
+import { useWalletByUserId, useWalletOperations, type WalletOperation } from '@/hooks/useWallet';
 import { formatXAF, formatDate } from '@/lib/formatters';
 import {
   Table,
@@ -70,39 +70,64 @@ export function AdminWalletDetailPage() {
     );
   }
 
-  const getOperationIcon = (type: string) => {
-    switch (type) {
+  const isDebitOperation = (operation: WalletOperation) => {
+    if (operation.operation_type === 'payment') return true;
+    if (operation.operation_type === 'deposit') return false;
+
+    // adjustment: infer from balances first (legacy data may store positive amounts even for debits)
+    if (operation.balance_after < operation.balance_before) return true;
+    if (operation.balance_after > operation.balance_before) return false;
+
+    const desc = (operation.description ?? '').toLowerCase();
+    if (desc.startsWith('débit')) return true;
+    if (desc.startsWith('crédit')) return false;
+
+    return operation.amount_xaf < 0;
+  };
+
+  const getOperationIcon = (operation: WalletOperation) => {
+    switch (operation.operation_type) {
       case 'deposit':
-        return <ArrowDownCircle className="h-4 w-4 text-emerald-600" />;
+        return <ArrowDownCircle className="h-4 w-4 text-success" />;
       case 'payment':
-        return <ArrowUpCircle className="h-4 w-4 text-red-600" />;
-      case 'adjustment':
-        return <RefreshCw className="h-4 w-4 text-amber-600" />;
+        return <ArrowUpCircle className="h-4 w-4 text-destructive" />;
+      case 'adjustment': {
+        const isDebit = isDebitOperation(operation);
+        return (
+          <RefreshCw className={`h-4 w-4 ${isDebit ? 'text-destructive' : 'text-success'}`} />
+        );
+      }
       default:
         return <RefreshCw className="h-4 w-4" />;
     }
   };
 
-  const getOperationBadge = (type: string) => {
-    switch (type) {
+  const getOperationBadge = (operation: WalletOperation) => {
+    switch (operation.operation_type) {
       case 'deposit':
-        return <Badge className="bg-emerald-500/10 text-emerald-600">Crédit</Badge>;
+        return <Badge className="bg-success/10 text-success">Crédit</Badge>;
       case 'payment':
-        return <Badge className="bg-red-500/10 text-red-600">Débit</Badge>;
-      case 'adjustment':
-        return <Badge className="bg-amber-500/10 text-amber-600">Ajustement</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive">Débit</Badge>;
+      case 'adjustment': {
+        const isDebit = isDebitOperation(operation);
+        return (
+          <Badge className={isDebit ? 'bg-destructive/10 text-destructive' : 'bg-success/10 text-success'}>
+            Ajustement {isDebit ? 'Débit' : 'Crédit'}
+          </Badge>
+        );
+      }
       default:
-        return <Badge variant="outline">{type}</Badge>;
+        return <Badge variant="outline">{operation.operation_type}</Badge>;
     }
   };
 
   // Calculate totals from operations
   const totalCredits = (operations || [])
-    .filter(op => op.operation_type === 'deposit' || (op.operation_type === 'adjustment' && op.amount_xaf > 0))
+    .filter(op => !isDebitOperation(op))
     .reduce((sum, op) => sum + Math.abs(op.amount_xaf), 0);
 
   const totalDebits = (operations || [])
-    .filter(op => op.operation_type === 'payment' || (op.operation_type === 'adjustment' && op.amount_xaf < 0))
+    .filter(op => isDebitOperation(op))
     .reduce((sum, op) => sum + Math.abs(op.amount_xaf), 0);
 
   return (
@@ -219,41 +244,39 @@ export function AdminWalletDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {operations.map((operation) => (
-                    <TableRow key={operation.id}>
-                      <TableCell className="text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {formatDate(operation.created_at)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getOperationIcon(operation.operation_type)}
-                          {getOperationBadge(operation.operation_type)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-foreground">
-                          {operation.description || 'N/A'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className={`font-semibold ${
-                          operation.operation_type === 'deposit'
-                            ? 'text-emerald-600'
-                            : operation.operation_type === 'payment'
-                            ? 'text-red-600'
-                            : operation.amount_xaf >= 0
-                            ? 'text-emerald-600'
-                            : 'text-red-600'
-                        }`}>
-                          {operation.operation_type === 'payment' || operation.amount_xaf < 0 ? '-' : '+'}
-                          {formatXAF(Math.abs(operation.amount_xaf))} XAF
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {operations.map((operation) => {
+                    const isDebit = isDebitOperation(operation);
+
+                    return (
+                      <TableRow key={operation.id}>
+                        <TableCell className="text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            {formatDate(operation.created_at)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getOperationIcon(operation)}
+                            {getOperationBadge(operation)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-foreground">
+                            {operation.description || 'N/A'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span
+                            className={`font-semibold ${isDebit ? 'text-destructive' : 'text-success'}`}
+                          >
+                            {isDebit ? '-' : '+'}
+                            {formatXAF(Math.abs(operation.amount_xaf))} XAF
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : (
