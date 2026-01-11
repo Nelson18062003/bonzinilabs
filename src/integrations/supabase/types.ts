@@ -546,15 +546,25 @@ export type Database = {
         Args: { p_effective_at?: string; p_rate_xaf_to_rmb: number }
         Returns: Json
       }
-      admin_adjust_wallet: {
-        Args: {
-          p_adjustment_type: string
-          p_amount: number
-          p_reason: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      admin_adjust_wallet:
+        | {
+            Args: {
+              p_adjustment_type: string
+              p_amount: number
+              p_reason: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_adjustment_type: string
+              p_amount: number
+              p_reason: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       confirm_cash_payment: {
         Args: {
           p_payment_id: string
