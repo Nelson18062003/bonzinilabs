@@ -18,6 +18,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { 
+  AdminResponsiveHeader, 
+  AdminResponsiveFilters,
+  AdminResponsiveGrid,
+  AdminScrollContainer,
+  AdminButtonGroup,
+} from '@/components/admin/ui/AdminResponsive';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   Select,
@@ -92,12 +99,12 @@ export function AdminDepositsPage() {
     switch (status) {
       case 'created':
       case 'awaiting_proof':
-        return <Clock className="h-4 w-4" />;
-      case 'proof_submitted': return <FileText className="h-4 w-4" />;
-      case 'admin_review': return <AlertCircle className="h-4 w-4" />;
-      case 'validated': return <CheckCircle className="h-4 w-4" />;
-      case 'rejected': return <XCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+        return <Clock className="h-3 w-3 sm:h-4 sm:w-4" />;
+      case 'proof_submitted': return <FileText className="h-3 w-3 sm:h-4 sm:w-4" />;
+      case 'admin_review': return <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />;
+      case 'validated': return <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />;
+      case 'rejected': return <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />;
+      default: return <Clock className="h-3 w-3 sm:h-4 sm:w-4" />;
     }
   };
 
@@ -144,7 +151,7 @@ export function AdminDepositsPage() {
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="p-6 flex items-center justify-center">
+        <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </AdminLayout>
@@ -154,36 +161,51 @@ export function AdminDepositsPage() {
   if (error) {
     return (
       <AdminLayout>
-        <div className="p-6">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-destructive">Erreur lors du chargement des dépôts</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-destructive">Erreur lors du chargement des dépôts</p>
+          </CardContent>
+        </Card>
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      <div className="p-6 space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Dépôts</h1>
-            <p className="text-muted-foreground">
-              {pendingCount} dépôt(s) en attente de traitement
-            </p>
-          </div>
-          <Button onClick={() => navigate('/admin/deposits/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Déclarer un dépôt
-          </Button>
-        </div>
+        <AdminResponsiveHeader
+          title="Dépôts"
+          subtitle={`${pendingCount} dépôt(s) en attente`}
+          actions={
+            <Button onClick={() => navigate('/admin/deposits/new')} size="sm">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Déclarer un dépôt</span>
+            </Button>
+          }
+        />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        {/* Stats Cards - Horizontal scroll on mobile, grid on desktop */}
+        <AdminScrollContainer className="lg:hidden">
+          {[
+            { label: 'Créés', count: statusCounts.created, color: 'text-gray-600' },
+            { label: 'Att. preuve', count: statusCounts.awaiting_proof, color: 'text-gray-600' },
+            { label: 'Preuve reçue', count: statusCounts.proof_submitted, color: 'text-blue-600' },
+            { label: 'En vérif.', count: statusCounts.admin_review, color: 'text-amber-600' },
+            { label: 'Validés', count: statusCounts.validated, color: 'text-emerald-600' },
+            { label: 'Rejetés', count: statusCounts.rejected, color: 'text-red-600' },
+          ].map((item) => (
+            <Card key={item.label} className="flex-shrink-0 w-[100px]">
+              <CardContent className="p-3 text-center">
+                <p className="text-xl font-bold text-foreground">{item.count}</p>
+                <p className={`text-[10px] ${item.color}`}>{item.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </AdminScrollContainer>
+
+        {/* Stats grid for desktop */}
+        <div className="hidden lg:grid grid-cols-6 gap-4">
           {[
             { label: 'Créés', status: 'created', color: 'text-gray-600', count: statusCounts.created },
             { label: 'Attente preuve', status: 'awaiting_proof', color: 'text-gray-600', count: statusCounts.awaiting_proof },
@@ -202,49 +224,45 @@ export function AdminDepositsPage() {
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher par client, référence..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-44">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="created">Créé</SelectItem>
-                  <SelectItem value="awaiting_proof">Attente preuve</SelectItem>
-                  <SelectItem value="proof_submitted">Preuve reçue</SelectItem>
-                  <SelectItem value="admin_review">En vérification</SelectItem>
-                  <SelectItem value="validated">Validé</SelectItem>
-                  <SelectItem value="rejected">Rejeté</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={methodFilter} onValueChange={setMethodFilter}>
-                <SelectTrigger className="w-full sm:w-44">
-                  <SelectValue placeholder="Méthode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes méthodes</SelectItem>
-                  <SelectItem value="bank_transfer">Virement bancaire</SelectItem>
-                  <SelectItem value="bank_cash">Dépôt cash banque</SelectItem>
-                  <SelectItem value="agency_cash">Agence Bonzini</SelectItem>
-                  <SelectItem value="om_transfer">Orange Money</SelectItem>
-                  <SelectItem value="mtn_transfer">MTN Money</SelectItem>
-                  <SelectItem value="wave">Wave</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminResponsiveFilters>
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous</SelectItem>
+              <SelectItem value="created">Créé</SelectItem>
+              <SelectItem value="awaiting_proof">Att. preuve</SelectItem>
+              <SelectItem value="proof_submitted">Preuve reçue</SelectItem>
+              <SelectItem value="admin_review">En vérif.</SelectItem>
+              <SelectItem value="validated">Validé</SelectItem>
+              <SelectItem value="rejected">Rejeté</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={methodFilter} onValueChange={setMethodFilter}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Méthode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes</SelectItem>
+              <SelectItem value="bank_transfer">Virement</SelectItem>
+              <SelectItem value="bank_cash">Cash banque</SelectItem>
+              <SelectItem value="agency_cash">Agence</SelectItem>
+              <SelectItem value="om_transfer">Orange Money</SelectItem>
+              <SelectItem value="mtn_transfer">MTN</SelectItem>
+              <SelectItem value="wave">Wave</SelectItem>
+            </SelectContent>
+          </Select>
+        </AdminResponsiveFilters>
 
         {/* Deposits List */}
         <div className="space-y-3">
@@ -259,88 +277,91 @@ export function AdminDepositsPage() {
             return (
               <Card 
                 key={deposit.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
                 onClick={() => navigate(`/admin/deposits/${deposit.id}`)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex items-start gap-2 sm:gap-4 min-w-0 flex-1">
+                      <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-foreground">
+                          <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">
                             {clientName}
                           </h3>
-                          <Badge className={getStatusColor(deposit.status)}>
+                          <Badge className={`${getStatusColor(deposit.status)} text-[10px] sm:text-xs`}>
                             {getStatusIcon(deposit.status)}
-                            <span className="ml-1">{DEPOSIT_STATUS_LABELS[deposit.status]}</span>
+                            <span className="ml-1 hidden sm:inline">{DEPOSIT_STATUS_LABELS[deposit.status]}</span>
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
                           {DEPOSIT_METHOD_LABELS[deposit.method]} • {formatDate(deposit.created_at)}
                         </p>
                         {deposit.reference && (
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
                             Réf: {deposit.reference}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">
-                        {formatXAF(deposit.amount_xaf)} XAF
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm sm:text-lg font-bold text-foreground">
+                        {formatXAF(deposit.amount_xaf)}
                       </p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">XAF</p>
                     </div>
                   </div>
 
                   {canProcessDeposits && (
-                    <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                    <div className="flex flex-wrap gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
                       <Button 
                         size="sm" 
                         variant="outline"
+                        className="text-xs h-8"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/admin/deposits/${deposit.id}`);
                         }}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Voir
+                        <Eye className="h-3 w-3 sm:mr-1" />
+                        <span className="hidden sm:inline">Voir</span>
                       </Button>
                       {['created', 'awaiting_proof', 'proof_submitted', 'admin_review'].includes(deposit.status) && (
                         <>
                           <Button 
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8"
                             onClick={(e) => handleValidate(deposit.id, e)}
                             disabled={validateDeposit.isPending}
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Valider
+                            <CheckCircle className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Valider</span>
                           </Button>
                           <Button 
                             size="sm" 
                             variant="destructive"
+                            className="text-xs h-8"
                             onClick={(e) => handleReject(deposit.id, e)}
                             disabled={rejectDeposit.isPending}
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Rejeter
+                            <XCircle className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Rejeter</span>
                           </Button>
                         </>
                       )}
                       <Button 
                         size="sm" 
                         variant="ghost"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto h-8"
                         onClick={(e) => handleDeleteClick({ id: deposit.id, reference: deposit.reference }, e)}
                         disabled={deleteDeposit.isPending}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   )}
@@ -360,19 +381,19 @@ export function AdminDepositsPage() {
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
             <AlertDialogHeader>
               <AlertDialogTitle>Supprimer ce dépôt ?</AlertDialogTitle>
               <AlertDialogDescription>
                 Vous êtes sur le point de supprimer le dépôt <strong>{depositToDelete?.reference}</strong>.
-                Cette action est irréversible. Toutes les preuves et l'historique associés seront également supprimés.
+                Cette action est irréversible.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Supprimer
               </AlertDialogAction>

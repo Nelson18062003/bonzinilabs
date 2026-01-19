@@ -12,6 +12,11 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminStatCard, AdminCard, AdminCardHeader } from '@/components/admin/ui/AdminCard';
 import { AdminPageHeader } from '@/components/admin/ui/AdminPageHeader';
 import { DepositStatusBadge } from '@/components/admin/ui/AdminBadge';
+import { 
+  AdminStatGrid, 
+  AdminTwoColumnLayout,
+  AdminResponsiveHeader 
+} from '@/components/admin/ui/AdminResponsive';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useDashboardStats, useAdminDeposits, useAdminAuditLogs } from '@/hooks/useAdminData';
 import { formatXAF, formatDate } from '@/lib/formatters';
@@ -39,13 +44,14 @@ export function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <AdminPageHeader 
+      <AdminResponsiveHeader 
         title="Tableau de bord" 
         subtitle="Vue d'ensemble des opérations Bonzini"
+        className="mb-4 sm:mb-6"
       />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* Stats Cards - Responsive grid */}
+      <AdminStatGrid className="mb-4 sm:mb-6">
         <AdminStatCard
           title="Clients actifs"
           value={stats?.activeClients || 0}
@@ -54,7 +60,7 @@ export function AdminDashboard() {
           iconColor="text-primary"
         />
         <AdminStatCard
-          title="Solde total wallets"
+          title="Solde wallets"
           value={`${((stats?.totalWalletBalance || 0) / 1000000).toFixed(1)}M`}
           subtitle="XAF"
           icon={Wallet}
@@ -74,7 +80,7 @@ export function AdminDashboard() {
           icon={ArrowUpFromLine}
           iconColor="text-blue-500"
         />
-      </div>
+      </AdminStatGrid>
 
       {/* Rate Card */}
       <AdminStatCard
@@ -83,21 +89,21 @@ export function AdminDashboard() {
         value={`1 RMB = ${stats?.currentRate || 87} XAF`}
         subtitle={`Mis à jour le ${formatDate(new Date())}`}
         icon={TrendingUp}
-        className="mb-6"
+        className="mb-4 sm:mb-6"
       />
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Two Column Layout - Stack on mobile */}
+      <AdminTwoColumnLayout className="mb-4 sm:mb-6">
         {/* Pending Deposits */}
         <AdminCard padding="none">
-          <div className="p-5 border-b border-border">
+          <div className="p-4 sm:p-5 border-b border-border">
             <AdminCardHeader 
               title="Dépôts en attente"
               icon={ArrowDownToLine}
               iconColor="text-amber-500"
               action={
-                <Button variant="ghost" size="sm" onClick={() => navigate('/admin/deposits')}>
-                  Voir tout <ArrowRight className="h-4 w-4 ml-1" />
+                <Button variant="ghost" size="sm" onClick={() => navigate('/admin/deposits')} className="text-xs sm:text-sm">
+                  Voir tout <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 </Button>
               }
               className="mb-0"
@@ -116,17 +122,17 @@ export function AdminDashboard() {
               pendingDeposits.slice(0, 5).map((deposit) => (
                 <div
                   key={deposit.id}
-                  className="flex items-center justify-between p-4 hover:bg-muted/30 cursor-pointer transition-colors"
+                  className="flex items-center justify-between p-3 sm:p-4 hover:bg-muted/30 cursor-pointer transition-colors active:bg-muted/50"
                   onClick={() => navigate(`/admin/deposits/${deposit.id}`)}
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <Avatar className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0">
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                         {deposit.clientName.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{deposit.clientName}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{deposit.clientName}</p>
                       <p className="text-xs text-muted-foreground">{formatXAF(deposit.amount_xaf)} XAF</p>
                     </div>
                   </div>
@@ -137,16 +143,16 @@ export function AdminDashboard() {
           </div>
         </AdminCard>
 
-        {/* Pending Payments - Empty for now */}
+        {/* Pending Payments */}
         <AdminCard padding="none">
-          <div className="p-5 border-b border-border">
+          <div className="p-4 sm:p-5 border-b border-border">
             <AdminCardHeader 
               title="Paiements en cours"
               icon={ArrowUpFromLine}
               iconColor="text-blue-500"
               action={
-                <Button variant="ghost" size="sm" onClick={() => navigate('/admin/payments')}>
-                  Voir tout <ArrowRight className="h-4 w-4 ml-1" />
+                <Button variant="ghost" size="sm" onClick={() => navigate('/admin/payments')} className="text-xs sm:text-sm">
+                  Voir tout <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 </Button>
               }
               className="mb-0"
@@ -158,16 +164,16 @@ export function AdminDashboard() {
             </p>
           </div>
         </AdminCard>
-      </div>
+      </AdminTwoColumnLayout>
 
       {/* Recent Activity */}
       <AdminCard padding="none">
-        <div className="p-5 border-b border-border">
+        <div className="p-4 sm:p-5 border-b border-border">
           <AdminCardHeader 
             title="Activité récente"
             action={
-              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/history')}>
-                Voir tout <ArrowRight className="h-4 w-4 ml-1" />
+              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/history')} className="text-xs sm:text-sm">
+                Voir tout <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
               </Button>
             }
             className="mb-0"
@@ -184,8 +190,8 @@ export function AdminDashboard() {
             </p>
           ) : (
             logs?.slice(0, 5).map((log) => (
-              <div key={log.id} className="flex items-start gap-3 p-4">
-                <Avatar className="h-8 w-8 flex-shrink-0">
+              <div key={log.id} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4">
+                <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                   <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                     {log.adminProfile 
                       ? `${log.adminProfile.first_name[0]}${log.adminProfile.last_name[0]}`
@@ -194,8 +200,8 @@ export function AdminDashboard() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{log.action_type}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-sm text-foreground truncate">{log.action_type}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {log.adminProfile 
                       ? `${log.adminProfile.first_name} ${log.adminProfile.last_name}` 
                       : 'Admin'
