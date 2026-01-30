@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+> **Note**: This project is now set up locally with VS Code and connected to GitHub!
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
