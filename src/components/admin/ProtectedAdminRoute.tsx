@@ -19,7 +19,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/m/login" replace />;
   }
 
   return <>{children}</>;

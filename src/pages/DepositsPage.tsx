@@ -32,6 +32,8 @@ const DepositsPage = () => {
         return 'success';
       case 'rejected':
         return 'error';
+      case 'pending_correction':
+        return 'error';
       case 'admin_review':
         return 'processing';
       case 'proof_submitted':

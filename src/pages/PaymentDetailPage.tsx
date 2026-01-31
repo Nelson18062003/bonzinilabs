@@ -20,8 +20,6 @@ import {
   XCircle,
   Loader2,
   Upload,
-  Image as ImageIcon,
-  Download,
   Edit2,
   CreditCard,
   Wallet,
@@ -37,7 +35,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisplay';
+import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -283,71 +283,11 @@ export default function PaymentDetailPage() {
     payment.beneficiary_email ||
     payment.beneficiary_bank_account;
 
-  // Timeline configuration
-  const stepOrder: string[] = isRejected
-    ? ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'rejected']
-    : ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'completed', 'proof_available'];
-
-  const currentStepKey =
-    isRejected
-      ? 'rejected'
-      : payment.status === 'completed' && adminProofs.length > 0
-        ? 'proof_available'
-        : payment.status;
-
-  const stepMeta: Record<string, { label: string; description: string; icon: React.ElementType }> = {
-    created: { label: 'Paiement créé', description: 'Montant réservé sur votre solde', icon: Clock },
-    waiting_beneficiary_info: { label: 'En attente d\'infos', description: 'Ajoutez les informations du bénéficiaire', icon: AlertCircle },
-    ready_for_payment: { label: 'Prêt à être payé', description: 'Votre paiement est dans la file Bonzini', icon: Clock },
-    processing: { label: 'En cours de paiement', description: 'Bonzini traite votre paiement', icon: Loader2 },
-    completed: { label: 'Paiement effectué', description: 'Paiement réalisé avec succès', icon: CheckCircle2 },
-    proof_available: { label: 'Preuve disponible', description: 'Preuve de paiement ajoutée par Bonzini', icon: CheckCircle2 },
-    rejected: { label: 'Paiement refusé', description: 'Montant recrédité sur votre solde', icon: XCircle },
-  };
-
-  const eventTypeToStepKey: Record<string, string | undefined> = {
-    created: 'created',
-    waiting_info: 'waiting_beneficiary_info',
-    info_provided: 'ready_for_payment',
-    processing: 'processing',
-    completed: 'completed',
-    rejected: 'rejected',
-    proof_uploaded: 'proof_available',
-  };
-
-  const stepTimestamps = new Map<string, string>();
-  (timeline ?? []).forEach((evt) => {
-    const stepKey = eventTypeToStepKey[evt.event_type];
-    if (stepKey && !stepTimestamps.has(stepKey)) {
-      stepTimestamps.set(stepKey, evt.created_at);
-    }
-  });
-
-  if (!isRejected && adminProofs.length > 0 && !stepTimestamps.has('proof_available')) {
-    stepTimestamps.set('proof_available', adminProofs[adminProofs.length - 1].created_at);
-  }
-
-  const currentIndex = stepOrder.indexOf(currentStepKey);
-
-  const timelineSteps = stepOrder.map((key, idx) => {
-    const status =
-      currentIndex === -1
-        ? idx === 0
-          ? 'current'
-          : 'pending'
-        : idx < currentIndex
-          ? 'completed'
-          : idx === currentIndex
-            ? 'current'
-            : 'pending';
-
-    return {
-      key,
-      ...stepMeta[key],
-      status,
-      created_at: stepTimestamps.get(key),
-    };
-  });
+  // Build timeline steps using the helper function
+  const timelineSteps = useMemo(() => {
+    if (!payment) return [];
+    return buildPaymentTimelineSteps(payment.status, payment.method, timeline || []);
+  }, [payment, timeline]);
 
   // Render form fields based on payment method
   const renderBeneficiaryFormFields = () => {
@@ -883,53 +823,7 @@ export default function PaymentDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="relative">
-                <div className="space-y-4">
-                  {timelineSteps.map((step, index) => {
-                    const Icon = step.icon;
-                    const isLast = index === timelineSteps.length - 1;
-
-                    return (
-                      <div key={step.key} className="relative pl-8">
-                        <div
-                          className={
-                            `absolute left-0 w-6 h-6 rounded-full flex items-center justify-center ` +
-                            (step.status === 'completed'
-                              ? 'bg-primary text-primary-foreground'
-                              : step.status === 'current'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground')
-                          }
-                        >
-                          <Icon className={`w-3 h-3 ${step.key === 'processing' && step.status === 'current' ? 'animate-spin' : ''}`} />
-                        </div>
-
-                        {!isLast && (
-                          <div 
-                            className={`absolute left-3 top-6 w-0.5 h-8 ${
-                              step.status === 'completed' ? 'bg-primary' : 'bg-border'
-                            }`} 
-                          />
-                        )}
-
-                        <div className="pb-2">
-                          <p className={`text-sm font-medium ${step.status === 'pending' ? 'text-muted-foreground' : 'text-foreground'}`}>
-                            {step.label}
-                          </p>
-                          {step.status !== 'pending' && step.description ? (
-                            <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                          ) : null}
-                          {step.created_at ? (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {format(new Date(step.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <PaymentTimelineDisplay steps={timelineSteps} />
             )}
           </CardContent>
         </Card>

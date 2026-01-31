@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm outdated:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 10 tail:*)",
+      "Bash(npx supabase:*)",
+      "Bash(code \"c:\\\\Users\\\\nasti\\\\Projects\\\\bonzinilabs\\\\supabase\\\\COMBINED_SETUP.sql\")",
+      "Bash(npm run type-check:*)",
+      "Bash(git restore:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

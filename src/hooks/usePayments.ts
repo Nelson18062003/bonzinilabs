@@ -185,6 +185,11 @@ export function useCreatePayment() {
         p_beneficiary_bank_name: data.beneficiary_bank_name || null,
         p_beneficiary_bank_account: data.beneficiary_bank_account || null,
         p_beneficiary_notes: data.beneficiary_notes || null,
+        // Cash-specific fields
+        p_cash_beneficiary_type: data.cash_beneficiary_type || null,
+        p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
+        p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
+        p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
       });
 
       if (error) throw error;

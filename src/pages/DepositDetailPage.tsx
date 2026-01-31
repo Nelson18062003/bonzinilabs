@@ -7,30 +7,35 @@ import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { ProofUpload } from '@/components/deposit/ProofUpload';
 import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
-import { 
-  useDepositDetail, 
-  useDepositProofs, 
+import { CountdownTimer } from '@/components/deposit/CountdownTimer';
+import { DepositInstructions } from '@/components/deposit/DepositInstructions';
+import {
+  useDepositDetail,
+  useDepositProofs,
   useDepositTimeline,
-  DEPOSIT_STATUS_LABELS, 
-  DEPOSIT_METHOD_LABELS 
+  useResubmitDeposit,
+  DEPOSIT_STATUS_LABELS,
+  DEPOSIT_METHOD_LABELS
 } from '@/hooks/useDeposits';
 import { useUploadMultipleProofs } from '@/hooks/useDepositProofMultiUpload';
 import { formatXAF } from '@/lib/formatters';
 import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
-import { 
-  Copy, 
-  Check, 
-  ArrowLeft, 
-  Building2, 
+import {
+  Copy,
+  Check,
+  ArrowLeft,
+  Building2,
   Loader2,
   XCircle,
+  AlertCircle,
   Smartphone,
   Store,
   Waves,
   FileText,
   Eye,
   Download,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -51,6 +56,7 @@ const DepositDetailPage = () => {
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
   const { data: timelineEvents, isLoading: loadingTimeline } = useDepositTimeline(depositId);
   const uploadProofs = useUploadMultipleProofs();
+  const resubmitDeposit = useResubmitDeposit();
 
   // Build timeline steps from deposit status and events
   const timelineSteps = useMemo(() => {
@@ -103,6 +109,7 @@ const DepositDetailPage = () => {
     switch (status) {
       case 'validated': return 'success';
       case 'rejected': return 'error';
+      case 'pending_correction': return 'error';
       case 'admin_review': return 'processing';
       case 'proof_submitted': return 'info';
       default: return 'pending';
@@ -110,7 +117,22 @@ const DepositDetailPage = () => {
   };
 
   const IconComponent = getMethodIcon();
-  const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof';
+  const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof' || deposit.status === 'pending_correction';
+  const isPendingCorrection = deposit.status === 'pending_correction';
+
+  const handleResubmit = async () => {
+    if (!depositId || !uploadedProofs.length) return;
+
+    // First upload the new proofs
+    await uploadProofs.mutateAsync({
+      depositId,
+      files: uploadedProofs,
+    });
+
+    // Then resubmit the deposit
+    await resubmitDeposit.mutateAsync({ depositId });
+    setUploadedProofs([]);
+  };
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -200,6 +222,18 @@ const DepositDetailPage = () => {
           </div>
         </Card>
 
+        {/* Countdown Timer - Show for deposits awaiting action */}
+        {canUploadProof && (
+          <CountdownTimer createdAt={deposit.created_at} />
+        )}
+
+        {/* Deposit Instructions - Show for deposits awaiting proof */}
+        {canUploadProof && (
+          <Card className="p-4">
+            <DepositInstructions deposit={deposit} />
+          </Card>
+        )}
+
         {/* Rejection Reason */}
         {deposit.status === 'rejected' && deposit.rejection_reason && (
           <Card className="p-4 border-destructive/30 bg-destructive/5">
@@ -208,6 +242,22 @@ const DepositDetailPage = () => {
               <div>
                 <p className="font-medium text-destructive">Dépôt rejeté</p>
                 <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Pending Correction Notice */}
+        {isPendingCorrection && deposit.rejection_reason && (
+          <Card className="p-4 border-amber-500/30 bg-amber-500/5">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-amber-600">Correction demandée</p>
+                <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
+                <p className="text-sm text-amber-600 mt-2">
+                  Veuillez uploader une nouvelle preuve corrigée ci-dessous.
+                </p>
               </div>
             </div>
           </Card>
@@ -282,12 +332,26 @@ const DepositDetailPage = () => {
         {/* Proof Upload Section */}
         {canUploadProof && (
           <Card className="p-4">
-            <ProofUpload 
+            <ProofUpload
               onFilesSelect={handleProofsUpload}
               selectedFiles={uploadedProofs}
-              onConfirm={handleConfirmProofs}
-              isSubmitting={uploadProofs.isPending}
+              onConfirm={isPendingCorrection ? handleResubmit : handleConfirmProofs}
+              isSubmitting={uploadProofs.isPending || resubmitDeposit.isPending}
             />
+            {isPendingCorrection && uploadedProofs.length > 0 && (
+              <Button
+                className="w-full mt-4"
+                onClick={handleResubmit}
+                disabled={uploadProofs.isPending || resubmitDeposit.isPending}
+              >
+                {(uploadProofs.isPending || resubmitDeposit.isPending) ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Renvoyer la preuve corrigée
+              </Button>
+            )}
           </Card>
         )}
 

@@ -1,4 +1,4 @@
-import { Check, Clock, Upload, FileText, Search, CheckCircle, XCircle, Wallet } from 'lucide-react';
+import { Check, Clock, Upload, FileText, Search, CheckCircle, XCircle, Wallet, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TimelineStepUI, getStepColors } from '@/lib/depositTimeline';
 
@@ -16,11 +16,12 @@ const iconMap: Record<string, React.ElementType> = {
   CheckCircle,
   XCircle,
   Wallet,
+  AlertCircle,
 };
 
 function getIcon(stepKey: string, status: 'completed' | 'current' | 'pending') {
   if (status === 'completed') return Check;
-  
+
   switch (stepKey) {
     case 'created': return Clock;
     case 'awaiting_proof': return Upload;
@@ -28,6 +29,7 @@ function getIcon(stepKey: string, status: 'completed' | 'current' | 'pending') {
     case 'admin_review': return Search;
     case 'validated': return CheckCircle;
     case 'wallet_credited': return Wallet;
+    case 'pending_correction': return AlertCircle;
     case 'rejected': return XCircle;
     default: return Clock;
   }
@@ -79,13 +81,13 @@ export function DepositTimelineDisplay({ steps, className }: DepositTimelineDisp
                   {step.formattedDate}
                 </p>
               )}
-              {step.status === 'current' && step.key !== 'validated' && step.key !== 'rejected' && (
+              {step.status === 'current' && !['validated', 'wallet_credited', 'rejected', 'pending_correction'].includes(step.key) && (
                 <span className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-1 bg-primary/10 px-2 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                   En cours
                 </span>
               )}
-              {step.status === 'current' && step.key === 'validated' && (
+              {step.status === 'current' && (step.key === 'validated' || step.key === 'wallet_credited') && (
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium mt-1 bg-emerald-100 px-2 py-0.5 rounded-full">
                   <CheckCircle className="w-3 h-3" />
                   Terminé
@@ -95,6 +97,12 @@ export function DepositTimelineDisplay({ steps, className }: DepositTimelineDisp
                 <span className="inline-flex items-center gap-1 text-xs text-destructive font-medium mt-1 bg-destructive/10 px-2 py-0.5 rounded-full">
                   <XCircle className="w-3 h-3" />
                   Rejeté
+                </span>
+              )}
+              {step.status === 'current' && step.key === 'pending_correction' && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium mt-1 bg-amber-100 px-2 py-0.5 rounded-full">
+                  <AlertCircle className="w-3 h-3" />
+                  Action requise
                 </span>
               )}
             </div>

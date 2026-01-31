@@ -4,8 +4,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { formatXAF } from '@/lib/formatters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateDeposit, DepositMethod as DBDepositMethod } from '@/hooks/useDeposits';
-import { 
-  methodFamilies, 
+import { BUSINESS_RULES } from '@/lib/constants';
+import {
+  methodFamilies,
   getSubMethodsForFamily,
   banks,
   agencies,
@@ -20,30 +21,32 @@ import {
   getBankInfo,
   getAgencyInfo,
 } from '@/data/depositMethodsData';
-import { 
-  DepositMethodFamily, 
-  DepositSubMethod, 
-  BankOption, 
-  AgencyOption 
+import {
+  DepositMethodFamily,
+  DepositSubMethod,
+  BankOption,
+  AgencyOption
 } from '@/types/deposit';
-import { 
-  Check, 
-  Upload, 
-  ArrowRight, 
+import {
+  Check,
+  Upload,
+  ArrowRight,
   ArrowLeft,
-  Copy, 
-  Info, 
-  MapPin, 
+  Copy,
+  Info,
+  MapPin,
   Clock,
   Phone,
   Building2,
   User,
   Loader2,
+  FileText,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
 
 type Step = 
   | 'amount' 
@@ -71,6 +74,8 @@ const NewDepositPage = () => {
   const [clientPhone, setClientPhone] = useState('');
   const [clientName, setClientName] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [createdDepositId, setCreatedDepositId] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Generate reference code
   const depositReference = useMemo(() => {
@@ -116,15 +121,29 @@ const NewDepositPage = () => {
         agency_name: selectedAgency || undefined,
         client_phone: clientPhone || undefined,
       });
-      
+
+      // Store the created deposit ID for navigation
+      setCreatedDepositId(deposit.id);
+
       toast.success('Dépôt créé avec succès !', {
-        description: 'Vous pouvez suivre son statut dans la fiche dépôt.',
+        description: 'Vous avez 48h pour effectuer le dépôt et envoyer la preuve.',
       });
-      
-      // Navigate to deposit detail page
-      navigate(`/deposits/${deposit.id}`);
+
+      // Go to success step instead of navigating immediately
+      setStep('success');
     } catch (error) {
       // Error is handled by the mutation
+    }
+  };
+
+  const handleCopyField = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      toast.success('Copié !');
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {
+      toast.error('Erreur lors de la copie');
     }
   };
 
@@ -218,21 +237,20 @@ const NewDepositPage = () => {
           ],
         };
       } else {
-        // Withdrawal - show merchant code
+        // Withdrawal - show merchant code with amount integrated
+        const merchantCodeWithAmount = omMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
           type: 'merchant',
           title: 'Retrait Orange Money',
           accountLabel: 'Titulaire',
           accountValue: omMerchantInfo.accountName,
           accountName: omMerchantInfo.accountName,
-          merchantCode: omMerchantInfo.merchantCode,
+          merchantCode: merchantCodeWithAmount,
           instructions: [
-            'Sur votre téléphone, tapez le code marchand affiché ci-dessous',
-            'Remplacez MONTANT par le montant à envoyer',
+            'Composez le code ci-dessous sur votre téléphone',
             'Validez avec votre code PIN Orange Money',
             'Prenez une capture d\'écran du SMS de confirmation',
           ],
-          note: 'Limite: 500 000 XAF par transaction',
         };
       }
     }
@@ -254,21 +272,20 @@ const NewDepositPage = () => {
           ],
         };
       } else {
-        // Withdrawal - show merchant code
+        // Withdrawal - show merchant code with amount integrated
+        const merchantCodeWithAmount = mtnMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
           type: 'merchant',
           title: 'Retrait MTN Mobile Money',
           accountLabel: 'Titulaire',
           accountValue: mtnMerchantInfo.accountName,
           accountName: mtnMerchantInfo.accountName,
-          merchantCode: mtnMerchantInfo.merchantCode,
+          merchantCode: merchantCodeWithAmount,
           instructions: [
-            'Sur votre téléphone, tapez le code marchand affiché ci-dessous',
-            'Remplacez MONTANT par le montant à envoyer',
+            'Composez le code ci-dessous sur votre téléphone',
             'Validez avec votre code PIN MTN Mobile Money',
             'Prenez une capture d\'écran du SMS de confirmation',
           ],
-          note: 'Limite: 500 000 XAF par transaction',
         };
       }
     }
@@ -773,28 +790,97 @@ const NewDepositPage = () => {
   );
 
   const renderSuccess = () => (
-    <div className="animate-scale-in text-center py-12">
-      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/10 flex items-center justify-center">
-        <Check className="w-10 h-10 text-success" />
+    <div className="animate-scale-in py-6">
+      {/* Success Header */}
+      <div className="text-center mb-6">
+        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
+          <Check className="w-10 h-10 text-success" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Demande enregistrée !</h2>
+        <p className="text-muted-foreground">
+          Votre demande de dépôt de {formatXAF(parseInt(amount))} XAF a été créée
+        </p>
       </div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">Dépôt soumis !</h2>
-      <p className="text-muted-foreground mb-2">
-        Votre dépôt de {formatXAF(parseInt(amount))} XAF est en cours de vérification
-      </p>
-      <p className="text-sm text-muted-foreground mb-8">
-        Référence: <span className="font-mono text-primary">{depositReference}</span>
-      </p>
-      
+
+      {/* Reference Card - Prominent */}
+      <Card className="p-4 mb-4 bg-primary/5 border-primary/20">
+        <p className="text-xs text-muted-foreground text-center mb-2">
+          Référence à utiliser lors du dépôt
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <p className="text-xl font-bold font-mono text-primary">
+            {depositReference}
+          </p>
+          <button
+            onClick={() => handleCopyField(depositReference, 'ref')}
+            className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
+          >
+            {copiedField === 'ref' ? (
+              <Check className="w-5 h-5 text-success" />
+            ) : (
+              <Copy className="w-5 h-5 text-primary" />
+            )}
+          </button>
+        </div>
+      </Card>
+
+      {/* Timer Warning */}
+      <Card className="p-4 mb-6 bg-amber-50 border-amber-200">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="font-medium text-amber-800">
+              Vous avez {BUSINESS_RULES.DEPOSIT_PROOF_DEADLINE_HOURS}h pour effectuer le dépôt
+            </p>
+            <p className="text-sm text-amber-600">
+              Envoyez la preuve depuis votre fiche dépôt
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Next Steps */}
+      <Card className="p-4 mb-6">
+        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary" />
+          Prochaines étapes
+        </h3>
+        <ol className="space-y-2">
+          <li className="flex gap-3 text-sm">
+            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">1</span>
+            <span className="text-muted-foreground">Effectuez le dépôt avec la référence ci-dessus</span>
+          </li>
+          <li className="flex gap-3 text-sm">
+            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">2</span>
+            <span className="text-muted-foreground">Prenez une photo du reçu ou capture d'écran</span>
+          </li>
+          <li className="flex gap-3 text-sm">
+            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">3</span>
+            <span className="text-muted-foreground">Envoyez la preuve depuis votre fiche dépôt</span>
+          </li>
+        </ol>
+      </Card>
+
+      {/* Action Buttons */}
       <div className="space-y-3">
         <button
-          onClick={() => navigate('/deposits')}
-          className="w-full btn-primary-gradient"
+          onClick={() => createdDepositId && navigate(`/deposits/${createdDepositId}`)}
+          className="w-full btn-primary-gradient flex items-center justify-center gap-2"
         >
-          Voir mes dépôts
+          <FileText className="w-5 h-5" />
+          Voir ma fiche dépôt
+        </button>
+        <button
+          onClick={() => navigate('/deposits')}
+          className="w-full py-3 text-foreground font-medium hover:bg-secondary rounded-xl transition-colors border border-border"
+        >
+          Mes dépôts
         </button>
         <button
           onClick={() => navigate('/')}
-          className="w-full py-3 text-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
+          className="w-full py-3 text-muted-foreground font-medium hover:text-foreground transition-colors"
         >
           Retour au wallet
         </button>

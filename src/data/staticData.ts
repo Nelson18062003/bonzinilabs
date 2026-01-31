@@ -19,11 +19,13 @@ export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
 };
 
 // Labels for deposit statuses
-export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
+// Note: Using Record<string, string> to support new pending_correction status before types regeneration
+export const DEPOSIT_STATUS_LABELS: Record<string, string> = {
   created: 'Créé',
   awaiting_proof: 'En attente de preuve',
   proof_submitted: 'Preuve envoyée',
   admin_review: 'En vérification',
+  pending_correction: 'À corriger',
   validated: 'Validé',
   rejected: 'Rejeté',
 };

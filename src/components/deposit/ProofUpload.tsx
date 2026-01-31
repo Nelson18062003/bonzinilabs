@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Camera, Image, X, FileCheck, Loader2, Eye, Download } from 'lucide-react';
+import { Upload, Camera, Image, X, FileCheck, Loader2, Eye, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FileWithPreview {
   file: File;
@@ -40,6 +50,7 @@ export const ProofUpload = (props: Props) => {
   const [dragActive, setDragActive] = useState(false);
   const [filesWithPreview, setFilesWithPreview] = useState<FileWithPreview[]>([]);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle multi-file or single-file mode
@@ -301,10 +312,10 @@ export const ProofUpload = (props: Props) => {
             ))}
           </div>
 
-          {/* Confirm Button */}
-          <Button 
+          {/* Confirm Button - Opens confirmation dialog */}
+          <Button
             className="w-full btn-primary-gradient"
-            onClick={props.onConfirm}
+            onClick={() => setShowConfirmDialog(true)}
             disabled={props.isSubmitting}
           >
             {props.isSubmitting ? (
@@ -325,6 +336,65 @@ export const ProofUpload = (props: Props) => {
           </p>
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-primary" />
+              Confirmer l'envoi des preuves
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous allez envoyer {filesWithPreview.length} preuve{filesWithPreview.length > 1 ? 's' : ''} de dépôt.
+              Cette action déclenchera la vérification par notre équipe.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {/* Thumbnail preview in dialog */}
+          <div className="grid grid-cols-4 gap-2 py-2">
+            {filesWithPreview.slice(0, 4).map((fileItem) => (
+              <div
+                key={fileItem.id}
+                className="aspect-square rounded-lg overflow-hidden border border-border bg-muted/30"
+              >
+                {fileItem.previewUrl ? (
+                  <img
+                    src={fileItem.previewUrl}
+                    alt={fileItem.file.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FileCheck className="w-6 h-6 text-primary" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {filesWithPreview.length > 4 && (
+              <div className="aspect-square rounded-lg bg-muted/50 flex items-center justify-center">
+                <span className="text-sm font-medium text-muted-foreground">
+                  +{filesWithPreview.length - 4}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowConfirmDialog(false);
+                props.onConfirm();
+              }}
+              className="btn-primary-gradient"
+            >
+              <FileCheck className="w-4 h-4 mr-2" />
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Image Viewer Dialog */}
       <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>

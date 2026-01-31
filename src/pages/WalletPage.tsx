@@ -27,9 +27,9 @@ const WalletPage = () => {
           {profileLoading ? (
             <Skeleton className="h-10 w-48" />
           ) : (
-            <WelcomeGreeting 
-              firstName={profile?.first_name || 'Utilisateur'} 
-              lastName={profile?.last_name || ''} 
+            <WelcomeGreeting
+              firstName={profile?.first_name}
+              lastName={profile?.last_name}
             />
           )}
         </div>

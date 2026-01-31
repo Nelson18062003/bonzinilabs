@@ -7,7 +7,7 @@ const STALE_TIME = 30 * 1000; // 30 seconds
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 
 export type DepositMethod = 'bank_transfer' | 'bank_cash' | 'agency_cash' | 'om_transfer' | 'om_withdrawal' | 'mtn_transfer' | 'mtn_withdrawal' | 'wave';
-export type DepositStatus = 'created' | 'awaiting_proof' | 'proof_submitted' | 'admin_review' | 'validated' | 'rejected';
+export type DepositStatus = 'created' | 'awaiting_proof' | 'proof_submitted' | 'admin_review' | 'validated' | 'rejected' | 'pending_correction';
 
 export interface Deposit {
   id: string;
@@ -18,7 +18,7 @@ export interface Deposit {
   bank_name: string | null;
   agency_name: string | null;
   client_phone: string | null;
-  status: 'created' | 'awaiting_proof' | 'proof_submitted' | 'admin_review' | 'validated' | 'rejected';
+  status: DepositStatus;
   admin_comment: string | null;
   rejection_reason: string | null;
   validated_by: string | null;
@@ -489,6 +489,7 @@ export const DEPOSIT_STATUS_LABELS: Record<string, string> = {
   admin_review: 'En vérification',
   validated: 'Validé',
   rejected: 'Rejeté',
+  pending_correction: 'À corriger',
 };
 
 // Method labels
@@ -502,3 +503,129 @@ export const DEPOSIT_METHOD_LABELS: Record<string, string> = {
   mtn_withdrawal: 'MTN Money - Retrait',
   wave: 'Wave',
 };
+
+// Request correction mutation (admin requests client to fix something)
+export function useRequestCorrection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId, reason }: { depositId: string; reason: string }) => {
+      const { data, error } = await supabase.rpc('request_deposit_correction', {
+        p_deposit_id: depositId,
+        p_reason: reason,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        throw new Error(result.error || 'Request correction failed');
+      }
+
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
+      toast.success('Demande de correction envoyée au client');
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
+}
+
+// Resubmit deposit mutation (client resubmits after correction)
+export function useResubmitDeposit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId }: { depositId: string }) => {
+      const { data, error } = await supabase.rpc('resubmit_deposit', {
+        p_deposit_id: depositId,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        throw new Error(result.error || 'Resubmit failed');
+      }
+
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
+      toast.success('Dépôt renvoyé avec succès');
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
+}
+
+// Fetch deposit stats for admin dashboard
+export interface DepositStats {
+  total: number;
+  awaiting_proof: number;
+  proof_submitted: number;
+  pending_correction: number;
+  admin_review: number;
+  validated: number;
+  rejected: number;
+  to_process: number;
+  today_validated: number;
+  today_amount: number;
+}
+
+export function useDepositStats() {
+  return useQuery({
+    queryKey: ['deposit-stats'],
+    staleTime: 10 * 1000, // 10 seconds
+    gcTime: 60 * 1000, // 1 minute
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_deposit_stats');
+
+      if (error) throw error;
+
+      return data as DepositStats;
+    },
+  });
+}
+
+// Start deposit review mutation (admin marks as in review)
+export function useStartDepositReview() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId }: { depositId: string }) => {
+      const { data, error } = await supabase.rpc('start_deposit_review', {
+        p_deposit_id: depositId,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to start review');
+      }
+
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
+}

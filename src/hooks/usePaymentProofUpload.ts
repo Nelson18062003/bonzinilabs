@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { toast } from 'sonner';
 
 export function usePaymentProofMultiUpload() {
@@ -99,4 +100,68 @@ export function usePaymentProofMultiUpload() {
     isUploading: mutation.isPending,
     uploadProgress,
   };
+}
+
+/**
+ * Hook for admin to upload payment proof (e.g., proof of completed payment)
+ */
+export function useAdminPaymentProofUpload() {
+  const queryClient = useQueryClient();
+  const { admin } = useAdminAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      file,
+      description,
+    }: {
+      paymentId: string;
+      file: File;
+      description?: string;
+    }) => {
+      if (!admin?.id) throw new Error('Non authentifié');
+
+      const filePath = `proofs/${paymentId}/${Date.now()}_${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Store the file path for later signed URL generation
+      const storedPath = `payment-proofs/${filePath}`;
+
+      const { error: insertError } = await supabase.from('payment_proofs').insert({
+        payment_id: paymentId,
+        uploaded_by: admin.id,
+        uploaded_by_type: 'admin',
+        file_name: file.name,
+        file_url: storedPath,
+        file_type: file.type,
+        description: description || 'Preuve de paiement Bonzini',
+      });
+
+      if (insertError) throw insertError;
+
+      // Add timeline event
+      await supabase.from('payment_timeline_events').insert({
+        payment_id: paymentId,
+        event_type: 'proof_uploaded',
+        description: 'Preuve de paiement ajoutée par Bonzini',
+        performed_by: admin.id,
+      });
+
+      return { success: true };
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['payment-proofs', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+      toast.success('Preuve ajoutée');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
 }

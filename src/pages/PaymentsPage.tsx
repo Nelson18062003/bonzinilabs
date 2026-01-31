@@ -13,6 +13,8 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   created: { label: 'Créé', color: 'bg-blue-500' },
   waiting_beneficiary_info: { label: 'En attente', color: 'bg-yellow-500' },
   ready_for_payment: { label: 'Prêt', color: 'bg-purple-500' },
+  cash_pending: { label: 'QR généré', color: 'bg-cyan-500' },
+  cash_scanned: { label: 'Scanné', color: 'bg-orange-500' },
   processing: { label: 'En cours', color: 'bg-orange-500' },
   completed: { label: 'Effectué', color: 'bg-green-500' },
   rejected: { label: 'Refusé', color: 'bg-red-500' },

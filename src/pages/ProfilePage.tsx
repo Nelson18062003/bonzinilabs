@@ -2,12 +2,13 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  User, 
-  ChevronRight, 
-  Bell, 
-  Shield, 
-  HelpCircle, 
+import { useNavigate } from 'react-router-dom';
+import {
+  User,
+  ChevronRight,
+  Bell,
+  Shield,
+  HelpCircle,
   LogOut,
   Smartphone,
   Globe,
@@ -19,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
   const { data: profile, isLoading } = useMyProfile();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await signOut();
@@ -26,12 +28,42 @@ const ProfilePage = () => {
   };
 
   const menuItems = [
-    { icon: Bell, label: 'Notifications', description: 'Gérer vos alertes' },
-    { icon: Shield, label: 'Sécurité', description: 'Mot de passe, 2FA' },
-    { icon: Smartphone, label: 'Appareils connectés', description: '2 appareils' },
-    { icon: Globe, label: 'Langue', description: 'Français' },
-    { icon: FileText, label: 'Documents', description: 'KYC, Pièces justificatives' },
-    { icon: HelpCircle, label: 'Aide & Support', description: 'FAQ, Contact' },
+    {
+      icon: Bell,
+      label: 'Notifications',
+      description: 'Gérer vos alertes',
+      onClick: () => navigate('/notifications')
+    },
+    {
+      icon: Shield,
+      label: 'Sécurité',
+      description: 'Mot de passe, 2FA',
+      onClick: () => navigate('/security')
+    },
+    {
+      icon: Smartphone,
+      label: 'Appareils connectés',
+      description: '2 appareils',
+      onClick: () => navigate('/devices')
+    },
+    {
+      icon: Globe,
+      label: 'Langue',
+      description: 'Français',
+      onClick: () => toast.info('Fonctionnalité bientôt disponible')
+    },
+    {
+      icon: FileText,
+      label: 'Documents',
+      description: 'KYC, Pièces justificatives',
+      onClick: () => navigate('/documents')
+    },
+    {
+      icon: HelpCircle,
+      label: 'Aide & Support',
+      description: 'FAQ, Contact',
+      onClick: () => navigate('/support')
+    },
   ];
 
   return (
@@ -73,7 +105,8 @@ const ProfilePage = () => {
           {menuItems.map((item, index) => (
             <button
               key={item.label}
-              className="w-full flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/30 hover:border-primary/30 transition-all animate-slide-up"
+              onClick={item.onClick}
+              className="w-full flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/30 hover:border-primary/30 transition-all animate-slide-up active:scale-98"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">

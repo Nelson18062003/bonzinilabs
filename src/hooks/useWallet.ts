@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
-// Cache configuration for performance
-const STALE_TIME = 30 * 1000; // 30 seconds
-const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+import { CACHE_CONFIG, QUERY_LIMITS, BUSINESS_RULES } from '@/lib/constants';
 
 export interface Wallet {
   id: string;
@@ -31,8 +28,8 @@ export interface WalletOperation {
 export function useMyWallet() {
   return useQuery({
     queryKey: ['my-wallet'],
-    staleTime: 10 * 1000, // 10 seconds for user's own wallet
-    gcTime: CACHE_TIME,
+    staleTime: CACHE_CONFIG.STALE_TIME.OWN_DATA,
+    gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -53,8 +50,8 @@ export function useMyWallet() {
 export function useMyWalletOperations() {
   return useQuery({
     queryKey: ['my-wallet-operations'],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
+    gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -75,7 +72,7 @@ export function useMyWalletOperations() {
         .select('*')
         .eq('wallet_id', wallet.id)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(QUERY_LIMITS.WALLET_OPERATIONS);
 
       if (error) throw error;
       return data as WalletOperation[];
@@ -87,8 +84,8 @@ export function useMyWalletOperations() {
 export function useWalletByUserId(userId: string | undefined) {
   return useQuery({
     queryKey: ['wallet-by-user', userId],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
+    gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
       if (!userId) return null;
 
@@ -109,15 +106,15 @@ export function useWalletByUserId(userId: string | undefined) {
 export function useAllWallets() {
   return useQuery({
     queryKey: ['all-wallets'],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
+    gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
       // Get wallets
       const { data: wallets, error: walletsError } = await supabase
         .from('wallets')
         .select('*')
         .order('updated_at', { ascending: false })
-        .limit(200);
+        .limit(QUERY_LIMITS.ALL_WALLETS);
 
       if (walletsError) throw walletsError;
       if (!wallets) return [];
@@ -148,8 +145,8 @@ export function useAllWallets() {
 export function useWalletOperations(walletId: string | undefined) {
   return useQuery({
     queryKey: ['wallet-operations', walletId],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
+    gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
       if (!walletId) return [];
 
@@ -158,7 +155,7 @@ export function useWalletOperations(walletId: string | undefined) {
         .select('*')
         .eq('wallet_id', walletId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(QUERY_LIMITS.WALLET_OPERATIONS);
 
       if (error) throw error;
       return data as WalletOperation[];
@@ -171,8 +168,8 @@ export function useWalletOperations(walletId: string | undefined) {
 export function useExchangeRate() {
   return useQuery({
     queryKey: ['exchange-rate'],
-    staleTime: 60 * 1000, // 1 minute for exchange rate
-    gcTime: CACHE_TIME,
+    staleTime: CACHE_CONFIG.STALE_TIME.EXCHANGE_RATES,
+    gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('exchange_rates')
@@ -182,7 +179,7 @@ export function useExchangeRate() {
         .maybeSingle();
 
       if (error) throw error;
-      return data?.rate_xaf_to_rmb ?? 0.01167; // Default rate
+      return data?.rate_xaf_to_rmb ?? BUSINESS_RULES.DEFAULT_EXCHANGE_RATE;
     },
   });
 }

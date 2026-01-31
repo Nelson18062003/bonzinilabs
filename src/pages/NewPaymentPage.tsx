@@ -137,7 +137,11 @@ const NewPaymentPage = () => {
         beneficiary_bank_name: beneficiaryForm.bank_name || undefined,
         beneficiary_bank_account: beneficiaryForm.bank_account || undefined,
         beneficiary_notes: beneficiaryForm.notes || undefined,
-        // Cash-specific fields will be handled separately
+        // Cash-specific fields
+        cash_beneficiary_type: isCash ? cashBeneficiaryData.type : undefined,
+        cash_beneficiary_first_name: isCash ? cashBeneficiaryData.firstName : undefined,
+        cash_beneficiary_last_name: isCash ? cashBeneficiaryData.lastName : undefined,
+        cash_beneficiary_phone: isCash ? cashBeneficiaryData.phone : undefined,
       });
 
       if (result.payment_id) {
