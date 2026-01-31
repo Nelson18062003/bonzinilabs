@@ -293,9 +293,9 @@ export function MobileDepositDetail() {
         </div>
       </div>
 
-      {/* Fixed Bottom Actions - Toujours visible si dépôt en attente */}
+      {/* Fixed Bottom Actions - Au dessus de la tab bar (z-50) */}
       {isPending && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
+        <div className="fixed bottom-[72px] left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border p-3">
           <div className="flex gap-2 max-w-lg mx-auto">
             {/* Rejeter */}
             <button
