@@ -56,15 +56,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (data: SignUpData) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
+          // IMPORTANT: is_client flag ensures the trigger creates profile and wallet
+          // Admin users don't have this flag, so no profile/wallet is created for them
+          is_client: 'true',
           first_name: data.firstName,
           last_name: data.lastName,
+          phone: data.phone,
         }
       }
     });
