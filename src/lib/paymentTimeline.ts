@@ -1,7 +1,7 @@
 import { parseISO, isValid, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// Canonical payment steps in order
+// Canonical payment steps in order (main flow)
 export const PAYMENT_STEPS = [
   { key: 'created', label: 'Paiement créé', description: 'Le montant a été réservé sur votre solde' },
   { key: 'waiting_beneficiary_info', label: 'Infos en attente', description: 'Ajoutez les informations du bénéficiaire' },
@@ -24,6 +24,22 @@ export const REJECTED_STEP = {
   description: 'Le montant a été recrédité sur votre solde'
 };
 
+// Event type configurations for display
+export const EVENT_TYPE_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  created: { label: 'Création', icon: 'Clock', color: 'primary' },
+  waiting_info: { label: 'En attente', icon: 'User', color: 'yellow' },
+  info_provided: { label: 'Infos ajoutées', icon: 'CheckCircle', color: 'green' },
+  info_updated: { label: 'Infos modifiées', icon: 'Edit', color: 'blue' },
+  instructions_uploaded: { label: 'Instructions', icon: 'Upload', color: 'blue' },
+  ready_for_payment: { label: 'Prêt', icon: 'CheckCircle', color: 'purple' },
+  processing: { label: 'En cours', icon: 'Loader2', color: 'orange' },
+  proof_uploaded: { label: 'Preuve Bonzini', icon: 'Image', color: 'green' },
+  completed: { label: 'Terminé', icon: 'CheckCircle2', color: 'green' },
+  rejected: { label: 'Refusé', icon: 'XCircle', color: 'red' },
+  cash_pending: { label: 'QR Généré', icon: 'QrCode', color: 'cyan' },
+  cash_scanned: { label: 'Scanné', icon: 'ScanLine', color: 'orange' },
+};
+
 export interface PaymentTimelineStepUI {
   id: string;
   key: string;
@@ -32,6 +48,7 @@ export interface PaymentTimelineStepUI {
   status: 'completed' | 'current' | 'pending';
   timestamp?: string;
   formattedDate?: string;
+  isExtraEvent?: boolean; // For events not in canonical flow
 }
 
 export interface PaymentTimelineEvent {
@@ -59,114 +76,190 @@ export function safeFormatDate(dateStr: string | undefined | null, formatStr: st
 }
 
 /**
- * Build UI timeline steps from payment status and timeline events
- * Shows all canonical steps with proper completed/current/pending status
+ * Build UI timeline showing ALL events in chronological order
+ * This provides a complete audit trail of the payment lifecycle
  */
 export function buildPaymentTimelineSteps(
   paymentStatus: string,
   paymentMethod: string,
   events: PaymentTimelineEvent[] = []
 ): PaymentTimelineStepUI[] {
-  // Map events by event_type for quick lookup
-  const eventMap = new Map<string, PaymentTimelineEvent>();
-  events.forEach(event => {
-    // Use the first event of each type (earliest)
-    if (!eventMap.has(event.event_type)) {
-      eventMap.set(event.event_type, event);
-    }
-  });
-
-  // If rejected, show different flow
+  // If rejected, use special timeline
   if (paymentStatus === 'rejected') {
-    return buildRejectedTimeline(paymentMethod, eventMap);
+    return buildRejectedTimeline(paymentMethod, events);
   }
 
-  // Use cash steps for cash payments
+  // If no events, use canonical steps only
+  if (events.length === 0) {
+    return buildCanonicalSteps(paymentStatus, paymentMethod);
+  }
+
+  // Build event-based timeline showing ALL events
+  return buildEventBasedTimeline(paymentStatus, paymentMethod, events);
+}
+
+/**
+ * Build canonical steps when no events exist
+ */
+function buildCanonicalSteps(paymentStatus: string, paymentMethod: string): PaymentTimelineStepUI[] {
   const steps = paymentMethod === 'cash' ? CASH_PAYMENT_STEPS : PAYMENT_STEPS;
 
-  // Find current step index based on payment status
-  const currentStepIndex = steps.findIndex(step => step.key === paymentStatus);
+  let currentStepIndex = steps.findIndex(step => step.key === paymentStatus);
 
-  // For cash_pending status (mapped from created for cash payments)
-  let effectiveCurrentIndex = currentStepIndex;
+  // Handle cash_pending mapping for cash payments
   if (paymentMethod === 'cash' && paymentStatus === 'created') {
-    effectiveCurrentIndex = steps.findIndex(step => step.key === 'cash_pending');
-    if (effectiveCurrentIndex === -1) effectiveCurrentIndex = 0;
+    currentStepIndex = steps.findIndex(step => step.key === 'cash_pending');
+    if (currentStepIndex === -1) currentStepIndex = 0;
   }
 
   return steps.map((step, index) => {
     let status: 'completed' | 'current' | 'pending';
 
-    if (effectiveCurrentIndex === -1) {
-      // Status not found in steps, mark first as current
+    if (currentStepIndex === -1) {
       status = index === 0 ? 'current' : 'pending';
-    } else if (index < effectiveCurrentIndex) {
+    } else if (index < currentStepIndex) {
       status = 'completed';
-    } else if (index === effectiveCurrentIndex) {
+    } else if (index === currentStepIndex) {
       status = 'current';
     } else {
       status = 'pending';
     }
 
-    // Get timestamp from events if available
-    const event = eventMap.get(step.key);
-    const timestamp = event?.created_at;
-
     return {
       id: `step-${step.key}`,
       key: step.key,
       label: step.label,
-      description: event?.description || step.description,
+      description: step.description,
       status,
-      timestamp,
-      formattedDate: safeFormatDate(timestamp),
     };
   });
 }
 
 /**
- * Build timeline for rejected payments
+ * Build event-based timeline showing ALL recorded events
  */
-function buildRejectedTimeline(paymentMethod: string, eventMap: Map<string, PaymentTimelineEvent>): PaymentTimelineStepUI[] {
-  // Show steps up to rejection
-  const stepsBeforeReject = paymentMethod === 'cash'
-    ? ['created', 'cash_pending', 'cash_scanned']
-    : ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing'];
-
-  const steps = paymentMethod === 'cash' ? CASH_PAYMENT_STEPS : PAYMENT_STEPS;
+function buildEventBasedTimeline(
+  paymentStatus: string,
+  paymentMethod: string,
+  events: PaymentTimelineEvent[]
+): PaymentTimelineStepUI[] {
   const result: PaymentTimelineStepUI[] = [];
+  const steps = paymentMethod === 'cash' ? CASH_PAYMENT_STEPS : PAYMENT_STEPS;
+  const processedEvents = new Set<string>();
 
-  for (const stepKey of stepsBeforeReject) {
-    const stepDef = steps.find(s => s.key === stepKey);
-    if (!stepDef) continue;
+  // Sort events by created_at
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
 
-    const event = eventMap.get(stepKey);
+  // Map to find step index by key
+  const stepIndexMap = new Map(steps.map((s, i) => [s.key, i]));
 
-    // If we have an event for this step, it was completed
-    if (event) {
+  // Find current step index
+  let currentStepIndex = stepIndexMap.get(paymentStatus) ?? -1;
+  if (paymentMethod === 'cash' && paymentStatus === 'created') {
+    currentStepIndex = stepIndexMap.get('cash_pending') ?? 0;
+  }
+
+  // Process each event
+  for (const event of sortedEvents) {
+    const eventKey = event.event_type;
+    const config = EVENT_TYPE_CONFIG[eventKey];
+    const stepDef = steps.find(s => s.key === eventKey);
+
+    // Determine if this is a main step or extra event
+    const isMainStep = stepDef !== undefined;
+    const stepIndex = stepIndexMap.get(eventKey);
+
+    let status: 'completed' | 'current' | 'pending' = 'completed';
+
+    if (isMainStep && stepIndex !== undefined) {
+      if (stepIndex < currentStepIndex) {
+        status = 'completed';
+      } else if (stepIndex === currentStepIndex) {
+        status = paymentStatus === eventKey ? 'current' : 'completed';
+      } else {
+        status = 'pending';
+      }
+    }
+
+    result.push({
+      id: event.id,
+      key: eventKey,
+      label: config?.label || stepDef?.label || eventKey,
+      description: event.description,
+      status,
+      timestamp: event.created_at,
+      formattedDate: safeFormatDate(event.created_at),
+      isExtraEvent: !isMainStep,
+    });
+
+    processedEvents.add(eventKey);
+  }
+
+  // Add future canonical steps that haven't occurred yet
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+
+    // Skip if we already have an event for this step
+    if (processedEvents.has(step.key)) continue;
+
+    // Only add if it's after current status
+    if (i > currentStepIndex) {
       result.push({
-        id: `step-${stepKey}`,
-        key: stepKey,
-        label: stepDef.label,
-        description: event.description || stepDef.description,
-        status: 'completed',
-        timestamp: event.created_at,
-        formattedDate: safeFormatDate(event.created_at),
+        id: `step-${step.key}`,
+        key: step.key,
+        label: step.label,
+        description: step.description,
+        status: 'pending',
       });
     }
   }
 
-  // Add rejected step as current
-  const rejectedEvent = eventMap.get('rejected');
-  result.push({
-    id: 'step-rejected',
-    key: 'rejected',
-    label: REJECTED_STEP.label,
-    description: rejectedEvent?.description || REJECTED_STEP.description,
-    status: 'current',
-    timestamp: rejectedEvent?.created_at,
-    formattedDate: safeFormatDate(rejectedEvent?.created_at),
-  });
+  return result;
+}
+
+/**
+ * Build timeline for rejected payments
+ */
+function buildRejectedTimeline(
+  paymentMethod: string,
+  events: PaymentTimelineEvent[]
+): PaymentTimelineStepUI[] {
+  const result: PaymentTimelineStepUI[] = [];
+
+  // Sort events chronologically
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+
+  // Add all events as completed (except the rejected one)
+  for (const event of sortedEvents) {
+    const eventKey = event.event_type;
+    const config = EVENT_TYPE_CONFIG[eventKey];
+    const isRejected = eventKey === 'rejected';
+
+    result.push({
+      id: event.id,
+      key: eventKey,
+      label: config?.label || eventKey,
+      description: event.description,
+      status: isRejected ? 'current' : 'completed',
+      timestamp: event.created_at,
+      formattedDate: safeFormatDate(event.created_at),
+    });
+  }
+
+  // If no rejected event in DB, add it manually
+  if (!sortedEvents.some(e => e.event_type === 'rejected')) {
+    result.push({
+      id: 'step-rejected',
+      key: 'rejected',
+      label: REJECTED_STEP.label,
+      description: REJECTED_STEP.description,
+      status: 'current',
+    });
+  }
 
   return result;
 }
@@ -176,6 +269,9 @@ function buildRejectedTimeline(paymentMethod: string, eventMap: Map<string, Paym
  */
 export function getPaymentStepIconName(stepKey: string, status: 'completed' | 'current' | 'pending'): string {
   if (status === 'completed') return 'Check';
+
+  const config = EVENT_TYPE_CONFIG[stepKey];
+  if (config) return config.icon;
 
   switch (stepKey) {
     case 'created': return 'Clock';
@@ -193,8 +289,12 @@ export function getPaymentStepIconName(stepKey: string, status: 'completed' | 'c
 /**
  * Get color classes for a payment step
  */
-export function getPaymentStepColors(stepKey: string, status: 'completed' | 'current' | 'pending'): string {
+export function getPaymentStepColors(stepKey: string, status: 'completed' | 'current' | 'pending', isExtraEvent?: boolean): string {
   if (status === 'completed') {
+    // Extra events get a subtle different style
+    if (isExtraEvent) {
+      return 'bg-blue-100 text-blue-600 border-blue-300';
+    }
     return 'bg-primary text-primary-foreground border-primary';
   }
 

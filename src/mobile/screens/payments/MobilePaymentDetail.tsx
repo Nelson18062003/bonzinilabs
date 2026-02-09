@@ -34,6 +34,7 @@ import {
   AlertCircle,
   Upload,
   X,
+  FileText,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -293,21 +294,57 @@ export function MobilePaymentDetail() {
           </div>
         )}
 
-        {/* Proofs */}
-        {proofs && proofs.length > 0 && (
+        {/* Client Instructions */}
+        {proofs && proofs.filter(p => p.uploaded_by_type === 'client').length > 0 && (
           <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium flex items-center gap-2">
-                <ImageIcon className="w-4 h-4" />
-                Preuves ({proofs.length})
+                <Upload className="w-4 h-4 text-blue-500" />
+                Instructions client ({proofs.filter(p => p.uploaded_by_type === 'client').length})
               </h3>
             </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Documents fournis par le client pour indiquer où effectuer le paiement.
+            </p>
             <div className="grid grid-cols-3 gap-2">
-              {proofs.map((proof) => (
+              {proofs.filter(p => p.uploaded_by_type === 'client').map((proof) => (
                 <button
                   key={proof.id}
                   onClick={() => setSelectedProof(proof.file_url)}
-                  className="aspect-square rounded-lg bg-muted overflow-hidden active:scale-95 transition-transform"
+                  className="aspect-square rounded-lg bg-muted overflow-hidden active:scale-95 transition-transform border-2 border-blue-200"
+                >
+                  <img
+                    src={proof.file_url}
+                    alt="Instruction"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Admin Proofs */}
+        {proofs && proofs.filter(p => p.uploaded_by_type === 'admin').length > 0 && (
+          <div className="bg-card rounded-xl p-4 border border-border">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-green-500" />
+                Preuves Bonzini ({proofs.filter(p => p.uploaded_by_type === 'admin').length})
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Preuves de paiement ajoutées par l'équipe Bonzini.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {proofs.filter(p => p.uploaded_by_type === 'admin').map((proof) => (
+                <button
+                  key={proof.id}
+                  onClick={() => setSelectedProof(proof.file_url)}
+                  className="aspect-square rounded-lg bg-muted overflow-hidden active:scale-95 transition-transform border-2 border-green-200"
                 >
                   <img
                     src={proof.file_url}

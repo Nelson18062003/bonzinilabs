@@ -7,7 +7,10 @@ import {
   XCircle,
   Loader2,
   QrCode,
-  ScanLine
+  ScanLine,
+  Upload,
+  Edit,
+  Image,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PaymentTimelineStepUI, getPaymentStepColors } from '@/lib/paymentTimeline';
@@ -23,8 +26,13 @@ function getIcon(stepKey: string, status: 'completed' | 'current' | 'pending') {
   switch (stepKey) {
     case 'created': return Clock;
     case 'waiting_beneficiary_info': return User;
+    case 'waiting_info': return User;
+    case 'info_provided': return CheckCircle;
+    case 'info_updated': return Edit;
+    case 'instructions_uploaded': return Upload;
     case 'ready_for_payment': return CheckCircle;
     case 'processing': return Loader2;
+    case 'proof_uploaded': return Image;
     case 'completed': return CheckCircle2;
     case 'cash_pending': return QrCode;
     case 'cash_scanned': return ScanLine;
@@ -39,7 +47,7 @@ export function PaymentTimelineDisplay({ steps, className }: PaymentTimelineDisp
       {steps.map((step, index) => {
         const Icon = getIcon(step.key, step.status);
         const isLast = index === steps.length - 1;
-        const colorClasses = getPaymentStepColors(step.key, step.status);
+        const colorClasses = getPaymentStepColors(step.key, step.status, step.isExtraEvent);
         const isSpinning = step.status === 'current' && step.key === 'processing';
 
         return (
@@ -48,30 +56,39 @@ export function PaymentTimelineDisplay({ steps, className }: PaymentTimelineDisp
             <div className="flex flex-col items-center">
               <div className={cn(
                 'w-10 h-10 rounded-full flex items-center justify-center transition-all border-2',
-                colorClasses
+                colorClasses,
+                step.isExtraEvent && step.status === 'completed' && 'w-8 h-8' // Slightly smaller for extra events
               )}>
-                <Icon className={cn('w-5 h-5', isSpinning && 'animate-spin')} />
+                <Icon className={cn(
+                  step.isExtraEvent ? 'w-4 h-4' : 'w-5 h-5',
+                  isSpinning && 'animate-spin'
+                )} />
               </div>
               {!isLast && (
                 <div className={cn(
                   'w-0.5 flex-1 mt-2 min-h-[24px]',
-                  step.status === 'completed' ? 'bg-primary' : 'bg-border'
+                  step.status === 'completed' ? 'bg-primary' : 'bg-border',
+                  step.isExtraEvent && 'bg-blue-300'
                 )} />
               )}
             </div>
 
             {/* Content */}
-            <div className="flex-1 pt-2">
+            <div className="flex-1 pt-1">
               <p className={cn(
                 'font-medium',
                 step.status === 'pending'
                   ? 'text-muted-foreground'
-                  : 'text-foreground'
+                  : 'text-foreground',
+                step.isExtraEvent && 'text-sm text-blue-700'
               )}>
                 {step.label}
               </p>
               {step.description && step.status !== 'pending' && (
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <p className={cn(
+                  'text-sm text-muted-foreground mt-0.5',
+                  step.isExtraEvent && 'text-xs'
+                )}>
                   {step.description}
                 </p>
               )}

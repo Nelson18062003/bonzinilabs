@@ -211,6 +211,7 @@ export default function PaymentDetailPage() {
           beneficiary_bank_account: beneficiaryForm.beneficiary_bank_account || null,
           beneficiary_notes: beneficiaryForm.beneficiary_notes || null,
         },
+        paymentMethod: payment.method,
       });
 
       setIsEditDialogOpen(false);
@@ -775,7 +776,10 @@ export default function PaymentDetailPage() {
         {clientProofs.length > 0 && (
           <Card>
             <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Mes instructions de paiement</h3>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Mes instructions de paiement
+              </h3>
               <p className="text-xs text-muted-foreground mb-3">
                 Ces documents indiquent à Bonzini où et comment effectuer le paiement.
               </p>

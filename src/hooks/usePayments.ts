@@ -124,7 +124,20 @@ export function usePaymentDetail(paymentId: string | undefined) {
         .single();
 
       if (error) throw error;
-      return data as Payment;
+
+      const payment = data as Payment;
+
+      // Generate signed URL for beneficiary QR code if stored as path
+      if (payment.beneficiary_qr_code_url?.startsWith('payment-proofs/')) {
+        const storagePath = payment.beneficiary_qr_code_url.replace('payment-proofs/', '');
+        const { data: signedData } = await supabase.storage
+          .from('payment-proofs')
+          .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+        payment.beneficiary_qr_code_url = signedData?.signedUrl || payment.beneficiary_qr_code_url;
+      }
+
+      return payment;
     },
     enabled: !!paymentId,
   });
@@ -162,7 +175,27 @@ export function usePaymentProofs(paymentId: string | undefined) {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as PaymentProof[];
+
+      // Generate signed URLs for all proofs
+      const proofsWithSignedUrls = await Promise.all(
+        (data as PaymentProof[]).map(async (proof) => {
+          // Check if file_url is a storage path (starts with 'payment-proofs/')
+          if (proof.file_url?.startsWith('payment-proofs/')) {
+            const storagePath = proof.file_url.replace('payment-proofs/', '');
+            const { data: signedData } = await supabase.storage
+              .from('payment-proofs')
+              .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+            return {
+              ...proof,
+              file_url: signedData?.signedUrl || proof.file_url,
+            };
+          }
+          return proof;
+        })
+      );
+
+      return proofsWithSignedUrls;
     },
     enabled: !!paymentId,
   });
@@ -217,44 +250,80 @@ export function useUpdateBeneficiaryInfo() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      paymentId, 
-      beneficiaryInfo 
-    }: { 
-      paymentId: string; 
-      beneficiaryInfo: Partial<Pick<Payment, 'beneficiary_name' | 'beneficiary_phone' | 'beneficiary_email' | 'beneficiary_qr_code_url' | 'beneficiary_bank_name' | 'beneficiary_bank_account' | 'beneficiary_notes'>> 
+    mutationFn: async ({
+      paymentId,
+      beneficiaryInfo,
+      paymentMethod
+    }: {
+      paymentId: string;
+      beneficiaryInfo: Partial<Pick<Payment, 'beneficiary_name' | 'beneficiary_phone' | 'beneficiary_email' | 'beneficiary_qr_code_url' | 'beneficiary_bank_name' | 'beneficiary_bank_account' | 'beneficiary_notes'>>;
+      paymentMethod?: Payment['method'];
     }) => {
-      // Determine if we have sufficient info
-      const hasInfo = beneficiaryInfo.beneficiary_qr_code_url || 
-                      beneficiaryInfo.beneficiary_name || 
-                      beneficiaryInfo.beneficiary_bank_account;
+      // Determine if we have sufficient info based on payment method
+      let hasValidInfo = false;
+      let infoDescription = 'Informations du bénéficiaire mises à jour';
+
+      if (paymentMethod === 'alipay' || paymentMethod === 'wechat') {
+        // For Alipay/WeChat: QR code OR (phone/email)
+        const hasQr = !!beneficiaryInfo.beneficiary_qr_code_url;
+        const hasContact = !!(beneficiaryInfo.beneficiary_phone || beneficiaryInfo.beneficiary_email);
+        hasValidInfo = hasQr || hasContact;
+
+        if (hasQr) {
+          infoDescription = `QR Code ${paymentMethod === 'alipay' ? 'Alipay' : 'WeChat'} ajouté`;
+        } else if (hasContact) {
+          infoDescription = 'Coordonnées de paiement ajoutées';
+        }
+      } else if (paymentMethod === 'bank_transfer') {
+        // For bank transfer: name + bank + account required
+        hasValidInfo = !!(
+          beneficiaryInfo.beneficiary_name &&
+          beneficiaryInfo.beneficiary_bank_name &&
+          beneficiaryInfo.beneficiary_bank_account
+        );
+        infoDescription = 'Coordonnées bancaires ajoutées';
+      } else {
+        // Fallback: any info is considered sufficient
+        hasValidInfo = !!(
+          beneficiaryInfo.beneficiary_qr_code_url ||
+          beneficiaryInfo.beneficiary_name ||
+          beneficiaryInfo.beneficiary_phone ||
+          beneficiaryInfo.beneficiary_bank_account
+        );
+      }
 
       const { error } = await supabase
         .from('payments')
         .update({
           ...beneficiaryInfo,
-          status: hasInfo ? 'ready_for_payment' : 'waiting_beneficiary_info',
+          status: hasValidInfo ? 'ready_for_payment' : 'waiting_beneficiary_info',
           updated_at: new Date().toISOString(),
         })
         .eq('id', paymentId);
 
       if (error) throw error;
 
-      // Add timeline event
-      if (hasInfo) {
-        await supabase.from('payment_timeline_events').insert({
-          payment_id: paymentId,
-          event_type: 'info_provided',
-          description: 'Informations du bénéficiaire ajoutées',
-          performed_by: (await supabase.auth.getUser()).data.user?.id,
-        });
-      }
+      // Always add timeline event when beneficiary info is modified
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      await supabase.from('payment_timeline_events').insert({
+        payment_id: paymentId,
+        event_type: hasValidInfo ? 'info_provided' : 'info_updated',
+        description: infoDescription,
+        performed_by: userId,
+      });
+
+      return { hasValidInfo };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['payment', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['my-payments'] });
-      toast.success('Informations mises à jour');
+
+      if (result.hasValidInfo) {
+        toast.success('Informations enregistrées - Paiement prêt à être traité');
+      } else {
+        toast.info('Informations partiellement enregistrées');
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -354,7 +423,7 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
         .single();
 
       if (error) throw error;
-      
+
       // Fetch profile
       const { data: profile } = await supabase
         .from('profiles')
@@ -362,7 +431,21 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
         .eq('user_id', payment.user_id)
         .single();
 
-      return { ...payment, profiles: profile };
+      // Generate signed URL for beneficiary QR code if stored as path
+      let beneficiaryQrUrl = payment.beneficiary_qr_code_url;
+      if (beneficiaryQrUrl?.startsWith('payment-proofs/')) {
+        const storagePath = beneficiaryQrUrl.replace('payment-proofs/', '');
+        const { data: signedData } = await supabase.storage
+          .from('payment-proofs')
+          .createSignedUrl(storagePath, 3600);
+        beneficiaryQrUrl = signedData?.signedUrl || beneficiaryQrUrl;
+      }
+
+      return {
+        ...payment,
+        beneficiary_qr_code_url: beneficiaryQrUrl,
+        profiles: profile
+      };
     },
     enabled: !!paymentId,
   });
