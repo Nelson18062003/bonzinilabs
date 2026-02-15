@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -385,26 +385,26 @@ export function useAdminPayments() {
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      const { data: payments, error } = await supabase
+      const { data: payments, error } = await supabaseAdmin
         .from('payments')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
-      
-      // Fetch profiles separately
+
+      // Fetch client info separately
       const userIds = [...new Set(payments?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
+      const { data: clients } = await supabaseAdmin
+        .from('clients')
         .select('user_id, first_name, last_name, phone, company_name')
         .in('user_id', userIds);
-      
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-      
+
+      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+
       return payments?.map(payment => ({
         ...payment,
-        profiles: profileMap.get(payment.user_id) || null,
+        profiles: clientMap.get(payment.user_id) || null,
       })) || [];
     },
   });
@@ -416,7 +416,7 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
     staleTime: 10 * 1000,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      const { data: payment, error } = await supabase
+      const { data: payment, error } = await supabaseAdmin
         .from('payments')
         .select('*')
         .eq('id', paymentId)
@@ -424,18 +424,18 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      // Fetch profile
-      const { data: profile } = await supabase
-        .from('profiles')
+      // Fetch client info
+      const { data: client } = await supabaseAdmin
+        .from('clients')
         .select('user_id, first_name, last_name, phone, company_name')
         .eq('user_id', payment.user_id)
-        .single();
+        .maybeSingle();
 
       // Generate signed URL for beneficiary QR code if stored as path
       let beneficiaryQrUrl = payment.beneficiary_qr_code_url;
       if (beneficiaryQrUrl?.startsWith('payment-proofs/')) {
         const storagePath = beneficiaryQrUrl.replace('payment-proofs/', '');
-        const { data: signedData } = await supabase.storage
+        const { data: signedData } = await supabaseAdmin.storage
           .from('payment-proofs')
           .createSignedUrl(storagePath, 3600);
         beneficiaryQrUrl = signedData?.signedUrl || beneficiaryQrUrl;
@@ -444,7 +444,7 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
       return {
         ...payment,
         beneficiary_qr_code_url: beneficiaryQrUrl,
-        profiles: profile
+        profiles: client
       };
     },
     enabled: !!paymentId,
@@ -464,7 +464,7 @@ export function useProcessPayment() {
       action: 'start_processing' | 'complete' | 'reject'; 
       comment?: string 
     }) => {
-      const { data, error } = await supabase.rpc('process_payment', {
+      const { data, error } = await supabaseAdmin.rpc('process_payment', {
         p_payment_id: paymentId,
         p_action: action,
         p_comment: comment || null,
@@ -511,8 +511,8 @@ export function useAdminUploadPaymentProof() {
       description?: string 
     }) => {
       const filePath = `admin/${paymentId}/${Date.now()}_${file.name}`;
-      
-      const { error: uploadError } = await supabase.storage
+
+      const { error: uploadError } = await supabaseAdmin.storage
         .from('payment-proofs')
         .upload(filePath, file);
 
@@ -521,9 +521,9 @@ export function useAdminUploadPaymentProof() {
       // Store the file path for later signed URL generation
       const storedPath = `payment-proofs/${filePath}`;
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseAdmin.auth.getUser();
 
-      const { error } = await supabase.from('payment_proofs').insert({
+      const { error } = await supabaseAdmin.from('payment_proofs').insert({
         payment_id: paymentId,
         uploaded_by: user?.id,
         uploaded_by_type: 'admin',
@@ -536,7 +536,7 @@ export function useAdminUploadPaymentProof() {
       if (error) throw error;
 
       // Add timeline event
-      await supabase.from('payment_timeline_events').insert({
+      await supabaseAdmin.from('payment_timeline_events').insert({
         payment_id: paymentId,
         event_type: 'proof_uploaded',
         description: 'Preuve de paiement ajoutée par Bonzini',
@@ -545,11 +545,68 @@ export function useAdminUploadPaymentProof() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['payment-proofs', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-proofs', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
       toast.success('Preuve téléchargée');
     },
     onError: (error: Error) => {
       toast.error(error.message);
     },
+  });
+}
+
+// Admin-specific query hooks (use supabaseAdmin for proper RLS auth)
+
+export function useAdminPaymentProofs(paymentId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin-payment-proofs', paymentId],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('payment_proofs')
+        .select('*')
+        .eq('payment_id', paymentId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Generate signed URLs for all proofs
+      const proofsWithSignedUrls = await Promise.all(
+        (data as PaymentProof[]).map(async (proof) => {
+          if (proof.file_url?.startsWith('payment-proofs/')) {
+            const storagePath = proof.file_url.replace('payment-proofs/', '');
+            const { data: signedData } = await supabaseAdmin.storage
+              .from('payment-proofs')
+              .createSignedUrl(storagePath, 3600);
+            return { ...proof, file_url: signedData?.signedUrl || proof.file_url };
+          }
+          return proof;
+        })
+      );
+
+      return proofsWithSignedUrls;
+    },
+    enabled: !!paymentId,
+  });
+}
+
+export function useAdminPaymentTimeline(paymentId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin-payment-timeline', paymentId],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('payment_timeline_events')
+        .select('*')
+        .eq('payment_id', paymentId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return data as PaymentTimelineEvent[];
+    },
+    enabled: !!paymentId,
   });
 }

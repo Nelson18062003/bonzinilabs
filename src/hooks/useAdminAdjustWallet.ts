@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/formatters';
 
 export type AdjustmentType = 'credit' | 'debit';
 
@@ -16,7 +17,7 @@ export function useAdminAdjustWallet() {
 
   return useMutation({
     mutationFn: async (data: AdjustWalletData) => {
-      const { data: result, error } = await supabase.rpc('admin_adjust_wallet', {
+      const { data: result, error } = await supabaseAdmin.rpc('admin_adjust_wallet', {
         p_user_id: data.userId,
         p_amount: data.amount,
         p_adjustment_type: data.adjustmentType,
@@ -48,7 +49,7 @@ export function useAdminAdjustWallet() {
       
       const typeLabel = variables.adjustmentType === 'credit' ? 'Crédit' : 'Débit';
       toast.success(`${typeLabel} effectué avec succès`, {
-        description: `Nouveau solde: ${data.new_balance?.toLocaleString('fr-FR')} XAF`,
+        description: `Nouveau solde: ${formatCurrency(data.new_balance || 0)}`,
       });
     },
     onError: (error) => {

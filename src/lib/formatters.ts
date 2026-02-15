@@ -12,11 +12,14 @@ export function formatXAF(amount: number): string {
 }
 
 export function formatRMB(amount: number): string {
-  return new Intl.NumberFormat('zh-CN').format(amount);
+  return new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export function formatCurrencyRMB(amountRMB: number): string {
-  return new Intl.NumberFormat('fr-FR', {
+  return '¥ ' + new Intl.NumberFormat('fr-FR', {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -60,9 +63,33 @@ export function formatRelativeDate(date: string | Date): string {
   return formatDateShort(d);
 }
 
+// Number formatting (no currency suffix)
+export function formatNumber(value: number, decimals: number = 0): string {
+  return new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
+// Compact number formatting: 12 500 000 → "12,5M" | 950 000 → "950K" | 500 → "500"
+export function formatCompact(amount: number): string {
+  if (amount >= 1_000_000) return `${formatNumber(amount / 1_000_000, 1)}M`;
+  if (amount >= 1_000) return `${formatNumber(amount / 1_000, 0)}K`;
+  return formatNumber(amount);
+}
+
+// Exchange rate display: "1 RMB = 86 XAF" or "1 XAF = 0,01167 RMB"
+export function formatRateXAFPerRMB(rate: number): string {
+  return `${formatNumber(Math.round(rate))} XAF`;
+}
+
+export function formatRateCNY(value: number): string {
+  return `${formatNumber(Math.round(value))} CNY`;
+}
+
 // Convert XAF to RMB
 export function convertXAFtoRMB(amountXAF: number, rate: number = 0.01167): number {
-  return Math.round(amountXAF * rate);
+  return Math.round(amountXAF * rate * 100) / 100;
 }
 
 export function convertRMBtoXAF(amountRMB: number, rate: number = 85.69): number {

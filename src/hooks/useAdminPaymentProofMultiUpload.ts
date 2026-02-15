@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
 
@@ -16,7 +16,7 @@ export function useAdminPaymentProofMultiUpload() {
       files: File[]; 
       description?: string 
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseAdmin.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
       const results = [];
@@ -24,7 +24,7 @@ export function useAdminPaymentProofMultiUpload() {
       for (const file of files) {
         const filePath = `admin/${paymentId}/${Date.now()}_${file.name}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
           .upload(filePath, file);
 
@@ -36,7 +36,7 @@ export function useAdminPaymentProofMultiUpload() {
         // Store the file path for later signed URL generation
         const storedPath = `payment-proofs/${filePath}`;
 
-        const { error } = await supabase.from('payment_proofs').insert({
+        const { error } = await supabaseAdmin.from('payment_proofs').insert({
           payment_id: paymentId,
           uploaded_by: user.id,
           uploaded_by_type: 'admin',
@@ -56,7 +56,7 @@ export function useAdminPaymentProofMultiUpload() {
       // Add single timeline event for all uploads
       if (results.some(r => r.success)) {
         const successCount = results.filter(r => r.success).length;
-        await supabase.from('payment_timeline_events').insert({
+        await supabaseAdmin.from('payment_timeline_events').insert({
           payment_id: paymentId,
           event_type: 'proof_uploaded',
           description: successCount > 1 

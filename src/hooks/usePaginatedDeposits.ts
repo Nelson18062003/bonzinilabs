@@ -1,63 +1,58 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG, QUERY_LIMITS } from '@/lib/constants';
+import type { DepositWithProfile } from '@/types/deposit';
 
 const PAGE_SIZE = QUERY_LIMITS.ITEMS_PER_PAGE;
 
-/**
- * Paginated hook for user's own deposits
- */
-export function usePaginatedMyDeposits() {
-  return useInfiniteQuery({
-    queryKey: ['my-deposits-paginated'],
-    staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
-    gcTime: CACHE_CONFIG.GC_TIME,
-    initialPageParam: 0,
-    queryFn: async ({ pageParam = 0 }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return { data: [], nextCursor: null };
-      }
-
-      const { data, error } = await supabase
-        .from('deposits')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .range(pageParam, pageParam + PAGE_SIZE - 1);
-
-      if (error) throw error;
-
-      const nextCursor = data && data.length === PAGE_SIZE ? pageParam + PAGE_SIZE : null;
-
-      return {
-        data: data || [],
-        nextCursor,
-      };
-    },
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  });
+export interface DepositFilters {
+  status?: string;
+  statuses?: string[];
+  method?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortField?: 'created_at' | 'amount_xaf';
+  sortAscending?: boolean;
 }
 
 /**
- * Paginated hook for admin to view all deposits
- * Includes user profile data joined
+ * Paginated hook for admin to view all deposits with infinite scroll.
+ * Supports server-side status, method, date range filtering and sort.
  */
-export function usePaginatedAdminDeposits(statusFilter?: string) {
+export function usePaginatedAdminDeposits(filters?: DepositFilters) {
   return useInfiniteQuery({
-    queryKey: ['admin-deposits-paginated', statusFilter],
+    queryKey: ['admin-deposits-paginated', filters],
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
     gcTime: CACHE_CONFIG.GC_TIME,
     initialPageParam: 0,
     queryFn: async ({ pageParam = 0 }) => {
-      let query = supabase
+      const sortField = filters?.sortField || 'created_at';
+      const sortAscending = filters?.sortAscending ?? false;
+
+      let query = supabaseAdmin
         .from('deposits')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order(sortField, { ascending: sortAscending });
 
-      // Apply status filter if provided
-      if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+      // Apply status filter
+      if (filters?.statuses && filters.statuses.length > 0) {
+        query = query.in('status', filters.statuses);
+      } else if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+
+      // Apply method filter
+      if (filters?.method && filters.method !== 'all') {
+        query = query.eq('method', filters.method);
+      }
+
+      // Apply date range filter
+      if (filters?.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        // Add end-of-day to include the full day
+        query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`);
       }
 
       const { data: deposits, error: depositsError } = await query
@@ -65,27 +60,41 @@ export function usePaginatedAdminDeposits(statusFilter?: string) {
 
       if (depositsError) throw depositsError;
       if (!deposits || deposits.length === 0) {
-        return { data: [], nextCursor: null };
+        return { data: [] as DepositWithProfile[], nextCursor: null };
       }
 
-      // Get unique user IDs
+      // Get unique user IDs for this page
       const userIds = [...new Set(deposits.map(d => d.user_id))];
+      const depositIds = deposits.map(d => d.id);
 
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('user_id', userIds);
+      // Fetch client info and proof counts in parallel
+      const [clientsResult, proofsResult] = await Promise.all([
+        supabaseAdmin
+          .from('clients')
+          .select('user_id, first_name, last_name, phone, company_name')
+          .in('user_id', userIds),
+        supabaseAdmin
+          .from('deposit_proofs')
+          .select('deposit_id')
+          .in('deposit_id', depositIds)
+          .is('deleted_at', null),
+      ]);
 
-      if (profilesError) throw profilesError;
+      if (clientsResult.error) throw clientsResult.error;
 
-      // Map profiles to deposits
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const clientMap = new Map(clientsResult.data?.map(c => [c.user_id, c]) || []);
+
+      // Build proof count map
+      const proofCountMap = new Map<string, number>();
+      proofsResult.data?.forEach(p => {
+        proofCountMap.set(p.deposit_id, (proofCountMap.get(p.deposit_id) || 0) + 1);
+      });
 
       const depositsWithProfiles = deposits.map(deposit => ({
         ...deposit,
-        profiles: profileMap.get(deposit.user_id) || null,
-      }));
+        profiles: clientMap.get(deposit.user_id) || null,
+        proof_count: proofCountMap.get(deposit.id) || 0,
+      })) as DepositWithProfile[];
 
       const nextCursor = deposits.length === PAGE_SIZE ? pageParam + PAGE_SIZE : null;
 

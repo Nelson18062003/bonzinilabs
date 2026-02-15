@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
 
@@ -8,7 +8,7 @@ export function useAdminUploadProofs() {
 
   return useMutation({
     mutationFn: async ({ depositId, files }: { depositId: string; files: File[] }) => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser();
       if (authError || !user) throw new Error('Non authentifié');
 
       const uploadedProofs = [];
@@ -18,7 +18,7 @@ export function useAdminUploadProofs() {
         const fileExt = file.name.split('.').pop();
         const filePath = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
           .from('deposit-proofs')
           .upload(filePath, file);
 
@@ -31,7 +31,7 @@ export function useAdminUploadProofs() {
         const storedPath = `deposit-proofs/${filePath}`;
 
         // Create proof record
-        const { error: proofError } = await supabase.from('deposit_proofs').insert({
+        const { error: proofError } = await supabaseAdmin.from('deposit_proofs').insert({
           deposit_id: depositId,
           file_url: storedPath,
           file_name: file.name,
@@ -44,7 +44,7 @@ export function useAdminUploadProofs() {
       }
 
       // Add timeline event
-      await supabase.from('deposit_timeline_events').insert({
+      await supabaseAdmin.from('deposit_timeline_events').insert({
         deposit_id: depositId,
         event_type: 'proof_added',
         description: `${files.length} preuve${files.length > 1 ? 's' : ''} ajoutée${files.length > 1 ? 's' : ''} par l'admin`,
@@ -52,7 +52,7 @@ export function useAdminUploadProofs() {
       });
 
       // Add audit log
-      await supabase.from('admin_audit_logs').insert({
+      await supabaseAdmin.from('admin_audit_logs').insert({
         admin_user_id: user.id,
         action_type: 'add_deposit_proofs',
         target_type: 'deposit',

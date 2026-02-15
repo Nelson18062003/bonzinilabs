@@ -1,256 +1,192 @@
+// ============================================================
+// MODULE DEPOTS — Timeline utilities (from scratch)
+// ============================================================
 import { parseISO, isValid, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { DepositTimelineEvent } from '@/types/deposit';
 
-// Canonical deposit steps in order
+// ── Step definitions ─────────────────────────────────────────
+
 export const DEPOSIT_STEPS = [
-  { key: 'created', label: 'Demande créée', description: 'Votre demande de dépôt a été enregistrée' },
-  { key: 'awaiting_proof', label: 'En attente de dépôt', description: 'Effectuez le dépôt et envoyez la preuve' },
-  { key: 'proof_submitted', label: 'Preuve envoyée', description: 'Votre preuve est en attente de vérification' },
-  { key: 'admin_review', label: 'Vérification en cours', description: 'Notre équipe vérifie votre dépôt' },
-  { key: 'validated', label: 'Dépôt validé', description: 'Votre dépôt a été vérifié et validé' },
-  { key: 'wallet_credited', label: 'Wallet crédité', description: 'Votre solde a été mis à jour' },
+  { key: 'created', label: 'Demande créée', description: 'Dépôt déclaré' },
+  { key: 'awaiting_proof', label: 'En attente de preuve', description: 'Envoyez votre preuve de dépôt' },
+  { key: 'proof_submitted', label: 'Preuve envoyée', description: 'En attente de vérification' },
+  { key: 'admin_review', label: 'En vérification', description: "L'équipe Bonzini vérifie votre dépôt" },
+  { key: 'validated', label: 'Validé', description: 'Dépôt confirmé' },
+  { key: 'wallet_credited', label: 'Solde crédité', description: 'Votre wallet a été crédité' },
 ] as const;
 
 export const REJECTED_STEP = {
   key: 'rejected',
-  label: 'Preuve rejetée',
-  description: 'Vous pouvez renvoyer une nouvelle preuve'
-};
+  label: 'Rejeté',
+  description: 'Dépôt refusé',
+} as const;
 
 export const CORRECTION_STEP = {
-  key: 'pending_correction',
+  key: 'correction_requested',
   label: 'Correction demandée',
-  description: 'Veuillez renvoyer une preuve corrigée'
-};
+  description: 'Veuillez renvoyer une preuve corrigée',
+} as const;
+
+// ── Types ────────────────────────────────────────────────────
+
+export type StepStatus = 'completed' | 'current' | 'pending';
 
 export interface TimelineStepUI {
   id: string;
   key: string;
   label: string;
   description: string;
-  status: 'completed' | 'current' | 'pending';
-  timestamp?: string; // ISO string or undefined
+  status: StepStatus;
   formattedDate?: string;
 }
 
-export interface DepositTimelineEvent {
-  id: string;
-  deposit_id: string;
-  event_type: string;
-  description: string;
-  performed_by: string | null;
-  created_at: string;
-}
+// ── Date helper ──────────────────────────────────────────────
 
-/**
- * Safely format a date string, returns undefined if invalid
- */
-export function safeFormatDate(dateStr: string | undefined | null, formatStr: string = 'dd MMM yyyy, HH:mm'): string | undefined {
-  if (!dateStr) return undefined;
-  
+export function safeFormatDate(isoStr: string | null | undefined): string | null {
+  if (!isoStr) return null;
   try {
-    const date = parseISO(dateStr);
-    if (!isValid(date)) return undefined;
-    return format(date, formatStr, { locale: fr });
+    const d = parseISO(isoStr);
+    if (!isValid(d)) return null;
+    return format(d, 'dd MMM yyyy, HH:mm', { locale: fr });
   } catch {
-    return undefined;
+    return null;
   }
 }
 
-/**
- * Build UI timeline steps from deposit status and timeline events
- * Shows all canonical steps with proper completed/current/pending status
- */
+// ── Build timeline steps ─────────────────────────────────────
+
+const STATUS_ORDER = ['created', 'awaiting_proof', 'proof_submitted', 'admin_review', 'validated', 'wallet_credited'];
+
+function findEventDate(events: DepositTimelineEvent[], eventType: string): string | null {
+  const evt = events.find((e) => e.event_type === eventType);
+  return evt ? safeFormatDate(evt.created_at) : null;
+}
+
 export function buildDepositTimelineSteps(
-  depositStatus: string,
-  events: DepositTimelineEvent[] = []
+  currentStatus: string,
+  events: DepositTimelineEvent[],
 ): TimelineStepUI[] {
-  // Map events by event_type for quick lookup
-  const eventMap = new Map<string, DepositTimelineEvent>();
-  events.forEach(event => {
-    // Use the first event of each type (earliest)
-    if (!eventMap.has(event.event_type)) {
-      eventMap.set(event.event_type, event);
-    }
-  });
-
-  // If rejected, show different flow
-  if (depositStatus === 'rejected') {
-    return buildRejectedTimeline(eventMap);
+  if (currentStatus === 'rejected') {
+    return buildRejectedTimeline(events);
+  }
+  if (currentStatus === 'pending_correction') {
+    return buildCorrectionTimeline(events);
   }
 
-  // If pending_correction, show correction flow
-  if (depositStatus === 'pending_correction') {
-    return buildCorrectionTimeline(eventMap);
-  }
+  const statusIndex = STATUS_ORDER.indexOf(currentStatus);
 
-  // For validated deposits, the final step is wallet_credited, not validated
-  // Find current step index based on deposit status
-  let currentStepIndex = DEPOSIT_STEPS.findIndex(step => step.key === depositStatus);
-
-  // If validated, check if wallet_credited event exists to show that step as current
-  if (depositStatus === 'validated') {
-    const hasWalletCredited = eventMap.has('wallet_credited');
-    // When validated, show wallet_credited as current (the final completed state)
-    currentStepIndex = DEPOSIT_STEPS.findIndex(step => step.key === 'wallet_credited');
-  }
-
-  return DEPOSIT_STEPS.map((step, index) => {
-    let status: 'completed' | 'current' | 'pending';
-
-    if (currentStepIndex === -1) {
-      // Status not found in steps (shouldn't happen), mark first as current
-      status = index === 0 ? 'current' : 'pending';
-    } else if (index < currentStepIndex) {
+  return DEPOSIT_STEPS.map((step, i) => {
+    let status: StepStatus;
+    if (currentStatus === 'validated' || currentStatus === 'wallet_credited') {
       status = 'completed';
-    } else if (index === currentStepIndex) {
+    } else if (i < statusIndex) {
+      status = 'completed';
+    } else if (i === statusIndex) {
       status = 'current';
     } else {
       status = 'pending';
     }
 
-    // Get timestamp from events if available
-    const event = eventMap.get(step.key);
-    const timestamp = event?.created_at;
-
     return {
       id: `step-${step.key}`,
       key: step.key,
       label: step.label,
-      description: event?.description || step.description,
+      description: step.description,
       status,
-      timestamp,
-      formattedDate: safeFormatDate(timestamp),
+      formattedDate: findEventDate(events, step.key) || undefined,
     };
   });
 }
 
-/**
- * Build timeline for rejected deposits
- */
-function buildRejectedTimeline(eventMap: Map<string, DepositTimelineEvent>): TimelineStepUI[] {
-  // Show steps up to rejection
-  const stepsBeforeReject = ['created', 'awaiting_proof', 'proof_submitted', 'admin_review'];
-  const result: TimelineStepUI[] = [];
+function buildRejectedTimeline(events: DepositTimelineEvent[]): TimelineStepUI[] {
+  const steps: TimelineStepUI[] = DEPOSIT_STEPS.slice(0, 3).map((step) => ({
+    id: `step-${step.key}`,
+    key: step.key,
+    label: step.label,
+    description: step.description,
+    status: 'completed' as StepStatus,
+    formattedDate: findEventDate(events, step.key) || undefined,
+  }));
 
-  for (const stepKey of stepsBeforeReject) {
-    const stepDef = DEPOSIT_STEPS.find(s => s.key === stepKey);
-    if (!stepDef) continue;
-
-    const event = eventMap.get(stepKey);
-    
-    // If we have an event for this step, it was completed
-    if (event) {
-      result.push({
-        id: `step-${stepKey}`,
-        key: stepKey,
-        label: stepDef.label,
-        description: event.description || stepDef.description,
-        status: 'completed',
-        timestamp: event.created_at,
-        formattedDate: safeFormatDate(event.created_at),
-      });
-    }
-  }
-
-  // Add rejected step as current
-  const rejectedEvent = eventMap.get('rejected');
-  result.push({
+  steps.push({
     id: 'step-rejected',
-    key: 'rejected',
+    key: REJECTED_STEP.key,
     label: REJECTED_STEP.label,
-    description: rejectedEvent?.description || REJECTED_STEP.description,
+    description: REJECTED_STEP.description,
     status: 'current',
-    timestamp: rejectedEvent?.created_at,
-    formattedDate: safeFormatDate(rejectedEvent?.created_at),
+    formattedDate: findEventDate(events, 'rejected') || undefined,
   });
 
-  return result;
+  return steps;
 }
 
-/**
- * Build timeline for deposits pending correction
- */
-function buildCorrectionTimeline(eventMap: Map<string, DepositTimelineEvent>): TimelineStepUI[] {
-  // Show steps up to correction request
-  const stepsBeforeCorrection = ['created', 'awaiting_proof', 'proof_submitted', 'admin_review'];
-  const result: TimelineStepUI[] = [];
+function buildCorrectionTimeline(events: DepositTimelineEvent[]): TimelineStepUI[] {
+  const steps: TimelineStepUI[] = DEPOSIT_STEPS.slice(0, 3).map((step) => ({
+    id: `step-${step.key}`,
+    key: step.key,
+    label: step.label,
+    description: step.description,
+    status: 'completed' as StepStatus,
+    formattedDate: findEventDate(events, step.key) || undefined,
+  }));
 
-  for (const stepKey of stepsBeforeCorrection) {
-    const stepDef = DEPOSIT_STEPS.find(s => s.key === stepKey);
-    if (!stepDef) continue;
-
-    const event = eventMap.get(stepKey);
-
-    // If we have an event for this step, it was completed
-    if (event) {
-      result.push({
-        id: `step-${stepKey}`,
-        key: stepKey,
-        label: stepDef.label,
-        description: event.description || stepDef.description,
-        status: 'completed',
-        timestamp: event.created_at,
-        formattedDate: safeFormatDate(event.created_at),
-      });
-    }
-  }
-
-  // Add correction step as current
-  const correctionEvent = eventMap.get('pending_correction') || eventMap.get('correction_requested');
-  result.push({
-    id: 'step-pending_correction',
-    key: 'pending_correction',
+  steps.push({
+    id: 'step-correction',
+    key: CORRECTION_STEP.key,
     label: CORRECTION_STEP.label,
-    description: correctionEvent?.description || CORRECTION_STEP.description,
+    description: CORRECTION_STEP.description,
     status: 'current',
-    timestamp: correctionEvent?.created_at,
-    formattedDate: safeFormatDate(correctionEvent?.created_at),
+    formattedDate: findEventDate(events, 'correction_requested') || undefined,
   });
 
-  return result;
+  return steps;
 }
 
-/**
- * Get icon name for a step (for use with lucide-react)
- */
-export function getStepIconName(stepKey: string, status: 'completed' | 'current' | 'pending'): string {
-  if (status === 'completed') return 'Check';
+// ── Visual helpers ───────────────────────────────────────────
 
-  switch (stepKey) {
-    case 'created': return 'Clock';
-    case 'awaiting_proof': return 'Upload';
-    case 'proof_submitted': return 'FileText';
-    case 'admin_review': return 'Search';
-    case 'validated': return 'CheckCircle';
-    case 'wallet_credited': return 'Wallet';
-    case 'pending_correction': return 'AlertCircle';
-    case 'rejected': return 'XCircle';
-    default: return 'Clock';
-  }
+export function getStepIconName(key: string): string {
+  const map: Record<string, string> = {
+    created: 'FileText',
+    awaiting_proof: 'Upload',
+    proof_submitted: 'Image',
+    admin_review: 'Eye',
+    validated: 'CheckCircle',
+    wallet_credited: 'Wallet',
+    rejected: 'XCircle',
+    correction_requested: 'AlertTriangle',
+  };
+  return map[key] || 'Circle';
 }
 
+export function getStepColors(key: string, status: StepStatus): string {
+  if (status === 'pending') return 'border-muted-foreground/30 text-muted-foreground/30';
+
+  if (key === 'rejected') return 'border-red-500 text-red-500 bg-red-50';
+  if (key === 'correction_requested') return 'border-orange-500 text-orange-500 bg-orange-50';
+  if (key === 'validated' || key === 'wallet_credited') return 'border-green-500 text-green-500 bg-green-50';
+
+  if (status === 'completed') return 'border-primary text-primary bg-primary/10';
+  if (status === 'current') return 'border-primary text-primary bg-primary/10';
+
+  return 'border-muted-foreground/30 text-muted-foreground/30';
+}
+
+// ── SLA age indicator ────────────────────────────────────────
+
+export type SlaLevel = 'fresh' | 'aging' | 'overdue';
+
 /**
- * Get color classes for a step
+ * Returns an SLA urgency level based on how old a deposit is.
+ * Returns null for terminal statuses (validated/rejected).
+ * - fresh: < 2 hours
+ * - aging: 2-8 hours
+ * - overdue: > 8 hours
  */
-export function getStepColors(stepKey: string, status: 'completed' | 'current' | 'pending'): string {
-  if (status === 'completed') {
-    return 'bg-primary text-primary-foreground border-primary';
-  }
-
-  if (status === 'current') {
-    if (stepKey === 'rejected') {
-      return 'bg-destructive/10 text-destructive border-destructive animate-pulse';
-    }
-    if (stepKey === 'pending_correction') {
-      return 'bg-amber-100 text-amber-600 border-amber-500 animate-pulse';
-    }
-    if (stepKey === 'validated' || stepKey === 'wallet_credited') {
-      return 'bg-emerald-100 text-emerald-600 border-emerald-500 animate-pulse';
-    }
-    return 'bg-primary/10 text-primary border-primary animate-pulse';
-  }
-
-  // pending
-  return 'bg-muted text-muted-foreground border-muted';
+export function getDepositSlaLevel(createdAt: string, status: string): SlaLevel | null {
+  if (['validated', 'rejected'].includes(status)) return null;
+  const hoursAgo = (Date.now() - new Date(createdAt).getTime()) / 3_600_000;
+  if (hoursAgo < 2) return 'fresh';
+  if (hoursAgo < 8) return 'aging';
+  return 'overdue';
 }

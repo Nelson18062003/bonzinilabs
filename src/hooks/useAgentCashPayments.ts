@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 
 export interface CashPayment {
   id: string;
@@ -38,7 +38,7 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
         ? (['processing'] as const)
         : (['completed'] as const);
 
-      let query = supabase
+      let query = supabaseAdmin
         .from('payments')
         .select(`
           id,
@@ -75,18 +75,18 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
 
       if (error) throw error;
 
-      // Fetch profiles for each payment
+      // Fetch client info for each payment
       const userIds = [...new Set(data?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
+      const { data: clients } = await supabaseAdmin
+        .from('clients')
         .select('user_id, first_name, last_name, phone')
         .in('user_id', userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
+      const clientMap = new Map(clients?.map(c => [c.user_id, c]));
 
       return (data || []).map(payment => ({
         ...payment,
-        profile: profileMap.get(payment.user_id),
+        profile: clientMap.get(payment.user_id),
       })) as CashPayment[];
     },
   });
@@ -98,7 +98,7 @@ export function useAgentCashPaymentDetail(paymentId: string | undefined) {
     queryFn: async () => {
       if (!paymentId) return null;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('payments')
         .select(`
           id,
@@ -128,12 +128,12 @@ export function useAgentCashPaymentDetail(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      // Fetch profile
-      const { data: profile } = await supabase
-        .from('profiles')
+      // Fetch client info
+      const { data: profile } = await supabaseAdmin
+        .from('clients')
         .select('first_name, last_name, phone')
         .eq('user_id', data.user_id)
-        .single();
+        .maybeSingle();
 
       return {
         ...data,

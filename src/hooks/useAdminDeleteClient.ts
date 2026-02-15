@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useAdminDeleteClient() {
@@ -7,7 +7,7 @@ export function useAdminDeleteClient() {
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      const { data, error } = await supabase.rpc('admin_delete_client', {
+      const { data, error } = await supabaseAdmin.rpc('admin_delete_client', {
         p_user_id: userId,
       });
 

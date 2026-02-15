@@ -1,16 +1,19 @@
-import { 
-  MethodFamilyInfo, 
-  SubMethodInfo, 
-  BankInfo, 
+// ============================================================
+// MODULE DEPOTS — Static data & helpers (from scratch)
+// ============================================================
+import type {
+  MethodFamilyInfo,
+  SubMethodInfo,
+  BankInfo,
   AgencyInfo,
   MobileMoneyInfo,
+  MerchantInfo,
   DepositMethodFamily,
-  DepositSubMethod 
+  DepositSubMethod,
 } from '@/types/deposit';
 
-// ============================================
-// LEVEL 1 - METHOD FAMILIES
-// ============================================
+// ── Level 1: Method families ─────────────────────────────────
+
 export const methodFamilies: MethodFamilyInfo[] = [
   {
     family: 'BANK',
@@ -20,7 +23,7 @@ export const methodFamilies: MethodFamilyInfo[] = [
   },
   {
     family: 'AGENCY_BONZINI',
-    label: 'Agence Bonzini',
+    label: 'Cash en agence Bonzini',
     icon: 'Store',
     description: 'Dépôt cash dans nos locaux',
   },
@@ -44,15 +47,13 @@ export const methodFamilies: MethodFamilyInfo[] = [
   },
 ];
 
-// ============================================
-// LEVEL 2 - SUB-METHODS
-// ============================================
+// ── Level 2: Sub-methods ─────────────────────────────────────
+
 export const subMethods: SubMethodInfo[] = [
-  // Bank sub-methods
   {
     subMethod: 'BANK_TRANSFER',
     family: 'BANK',
-    label: 'Virement bancaire',
+    label: 'Virement bancaire / microfinance',
     description: 'Effectuez un virement depuis votre compte',
   },
   {
@@ -61,51 +62,46 @@ export const subMethods: SubMethodInfo[] = [
     label: 'Dépôt cash au guichet',
     description: 'Déposez du cash en agence bancaire',
   },
-  // Orange Money sub-methods
   {
     subMethod: 'OM_TRANSFER',
     family: 'ORANGE_MONEY',
-    label: 'Transfert OM',
+    label: 'Transfert OM vers Bonzini',
     description: 'Envoyez vers le compte Bonzini',
   },
   {
     subMethod: 'OM_WITHDRAWAL',
     family: 'ORANGE_MONEY',
-    label: 'Retrait OM',
-    description: 'Tapez le code marchand pour payer',
+    label: 'Retrait OM (code marchand)',
+    description: 'Composez le code marchand pour payer',
   },
-  // MTN sub-methods
   {
     subMethod: 'MTN_TRANSFER',
     family: 'MTN_MONEY',
-    label: 'Transfert MOMO',
+    label: 'Transfert MOMO vers Bonzini',
     description: 'Envoyez vers le compte Bonzini',
   },
   {
     subMethod: 'MTN_WITHDRAWAL',
     family: 'MTN_MONEY',
-    label: 'Retrait MOMO',
-    description: 'Tapez le code marchand pour payer',
+    label: 'Retrait MOMO (code marchand)',
+    description: 'Composez le code marchand pour payer',
   },
-  // Agency - direct
   {
     subMethod: 'AGENCY_CASH',
     family: 'AGENCY_BONZINI',
     label: 'Dépôt en espèces',
-    description: 'Apportez le cash directement',
+    description: 'Apportez le cash dans une agence Bonzini',
   },
-  // Wave - direct
   {
     subMethod: 'WAVE_TRANSFER',
     family: 'WAVE',
     label: 'Transfert Wave',
-    description: 'Envoyez via l\'application Wave',
+    description: "Envoyez via l'application Wave",
   },
 ];
 
-// ============================================
-// BANKS LIST
-// ============================================
+// ── Banks (with Bonzini account info) ────────────────────────
+
 export const banks: BankInfo[] = [
   {
     bank: 'AFRILAND',
@@ -154,33 +150,31 @@ export const banks: BankInfo[] = [
   },
 ];
 
-// ============================================
-// BONZINI AGENCIES
-// ============================================
+// ── Bonzini Agencies ─────────────────────────────────────────
+
 export const agencies: AgencyInfo[] = [
   {
     agency: 'DOUALA_BONAPRISO',
-    label: 'Douala - Bonapriso',
+    label: 'Douala – Bonapriso',
     address: 'Rue de la Joie, Bonapriso, Douala',
     hours: 'Lun-Ven: 8h-18h, Sam: 9h-14h',
   },
   {
     agency: 'DOUALA_BONAMOUSSADI',
-    label: 'Douala - Bonamoussadi',
+    label: 'Douala – Bonamoussadi',
     address: 'Carrefour Maetur, Bonamoussadi, Douala',
     hours: 'Lun-Ven: 8h-18h, Sam: 9h-14h',
   },
   {
     agency: 'YAOUNDE_CENTRE',
-    label: 'Yaoundé - Centre',
+    label: 'Yaoundé – Centre',
     address: 'Avenue Kennedy, Centre-ville, Yaoundé',
     hours: 'Lun-Ven: 8h-18h, Sam: 9h-13h',
   },
 ];
 
-// ============================================
-// MOBILE MONEY ACCOUNTS
-// ============================================
+// ── Mobile Money accounts ────────────────────────────────────
+
 export const orangeMoneyAccount: MobileMoneyInfo = {
   phone: '+237 691 000 001',
   accountName: 'BONZINI TRADING',
@@ -196,65 +190,49 @@ export const waveAccount: MobileMoneyInfo = {
   accountName: 'BONZINI TRADING',
 };
 
-// ============================================
-// MERCHANT CODES FOR WITHDRAWALS
-// ============================================
-export const omMerchantInfo = {
+// ── Merchant codes (OM/MTN withdrawal) ───────────────────────
+// Per PDF: user dials this code themselves.
+// MONTANT must NOT be auto-injected.
+
+export const omMerchantInfo: MerchantInfo = {
   accountName: 'PDV TCHAKOUTE',
   merchantCode: '#150*14*424393*693515541*MONTANT#',
 };
 
-export const mtnMerchantInfo = {
+export const mtnMerchantInfo: MerchantInfo = {
   accountName: 'NGANGON SOH NELSON',
   merchantCode: '*126*14*652236856*MONTANT#',
 };
 
-// ============================================
-// HELPERS
-// ============================================
-export const getSubMethodsForFamily = (family: DepositMethodFamily): SubMethodInfo[] => {
-  return subMethods.filter(sm => sm.family === family);
-};
+// Max 500 000 XAF per mobile money transaction
+export const MOBILE_MONEY_TRANSACTION_LIMIT = 500_000;
 
-export const getFamilyInfo = (family: DepositMethodFamily): MethodFamilyInfo | undefined => {
-  return methodFamilies.find(mf => mf.family === family);
-};
+// ── Helpers ──────────────────────────────────────────────────
 
-export const getBankInfo = (bank: string): BankInfo | undefined => {
-  return banks.find(b => b.bank === bank);
-};
+export const getSubMethodsForFamily = (family: DepositMethodFamily): SubMethodInfo[] =>
+  subMethods.filter((sm) => sm.family === family);
 
-export const getAgencyInfo = (agency: string): AgencyInfo | undefined => {
-  return agencies.find(a => a.agency === agency);
-};
+export const getFamilyInfo = (family: DepositMethodFamily): MethodFamilyInfo | undefined =>
+  methodFamilies.find((mf) => mf.family === family);
 
-// Check if family requires sub-method selection
-export const familyRequiresSubMethod = (family: DepositMethodFamily): boolean => {
-  const familiesWithSubMethods: DepositMethodFamily[] = ['BANK', 'ORANGE_MONEY', 'MTN_MONEY'];
-  return familiesWithSubMethods.includes(family);
-};
+export const getBankInfo = (bank: string): BankInfo | undefined =>
+  banks.find((b) => b.bank === bank);
 
-// Check if sub-method requires bank selection
-export const subMethodRequiresBankSelection = (subMethod: DepositSubMethod): boolean => {
-  return subMethod === 'BANK_TRANSFER' || subMethod === 'BANK_CASH_DEPOSIT';
-};
+export const getAgencyInfo = (agency: string): AgencyInfo | undefined =>
+  agencies.find((a) => a.agency === agency);
 
-// Check if sub-method requires agency selection
-export const subMethodRequiresAgencySelection = (subMethod: DepositSubMethod): boolean => {
-  return subMethod === 'AGENCY_CASH';
-};
+export const familyRequiresSubMethod = (family: DepositMethodFamily): boolean =>
+  ['BANK', 'ORANGE_MONEY', 'MTN_MONEY'].includes(family);
 
-// Check if sub-method requires client phone (for withdrawal)
-// Now returns false for OM/MTN withdrawals since they use merchant codes
-export const subMethodRequiresClientPhone = (subMethod: DepositSubMethod): boolean => {
-  return false; // No longer needed - withdrawals use merchant codes
-};
+export const subMethodRequiresBankSelection = (subMethod: DepositSubMethod): boolean =>
+  subMethod === 'BANK_TRANSFER' || subMethod === 'BANK_CASH_DEPOSIT';
 
-// Generate unique reference code
-export const generateDepositReference = (clientName: string): string => {
-  const date = new Date();
-  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  const cleanName = clientName.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8);
-  return `BONZINI-${cleanName}-${dateStr}-${randomNum}`;
+export const subMethodRequiresAgencySelection = (subMethod: DepositSubMethod): boolean =>
+  subMethod === 'AGENCY_CASH';
+
+/** Generate a temporary client-side reference (server creates the real one via RPC). */
+export const generateDepositReference = (prefix: string): string => {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `DEP-${prefix.substring(0, 8).toUpperCase()}-${ts.slice(-4)}${rand}`;
 };

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/imageCompression';
 
 export function usePaymentProofMultiUpload() {
   const queryClient = useQueryClient();
@@ -25,8 +25,9 @@ export function usePaymentProofMultiUpload() {
       const results: { success: boolean; fileName: string; error?: string }[] = [];
       let completed = 0;
 
-      for (const file of files) {
+      for (const rawFile of files) {
         try {
+          const file = await compressImage(rawFile);
           const filePath = `instructions/${paymentId}/${Date.now()}_${file.name}`;
 
           const { error: uploadError } = await supabase.storage
@@ -107,7 +108,6 @@ export function usePaymentProofMultiUpload() {
  */
 export function useAdminPaymentProofUpload() {
   const queryClient = useQueryClient();
-  const { admin } = useAdminAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -119,46 +119,120 @@ export function useAdminPaymentProofUpload() {
       file: File;
       description?: string;
     }) => {
-      if (!admin?.id) throw new Error('Non authentifié');
+      const { data: { user } } = await supabaseAdmin.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
 
-      const filePath = `proofs/${paymentId}/${Date.now()}_${file.name}`;
+      const compressedFile = await compressImage(file);
+      const filePath = `proofs/${paymentId}/${Date.now()}_${compressedFile.name}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabaseAdmin.storage
         .from('payment-proofs')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
 
       if (uploadError) throw uploadError;
 
       // Store the file path for later signed URL generation
       const storedPath = `payment-proofs/${filePath}`;
 
-      const { error: insertError } = await supabase.from('payment_proofs').insert({
+      const { error: insertError } = await supabaseAdmin.from('payment_proofs').insert({
         payment_id: paymentId,
-        uploaded_by: admin.id,
+        uploaded_by: user.id,
         uploaded_by_type: 'admin',
-        file_name: file.name,
+        file_name: compressedFile.name,
         file_url: storedPath,
-        file_type: file.type,
+        file_type: compressedFile.type,
         description: description || 'Preuve de paiement Bonzini',
       });
 
       if (insertError) throw insertError;
 
       // Add timeline event
-      await supabase.from('payment_timeline_events').insert({
+      await supabaseAdmin.from('payment_timeline_events').insert({
         payment_id: paymentId,
         event_type: 'proof_uploaded',
         description: 'Preuve de paiement ajoutée par Bonzini',
-        performed_by: admin.id,
+        performed_by: user.id,
       });
 
       return { success: true };
     },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['payment-proofs', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-proofs', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
       toast.success('Preuve ajoutée');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+/**
+ * Hook for admin to upload payment instructions (QR codes, bank info, etc.)
+ * Stored with uploaded_by_type = 'admin_instruction' to distinguish from client instructions.
+ */
+export function useAdminUploadPaymentInstruction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      files,
+    }: {
+      paymentId: string;
+      files: File[];
+    }) => {
+      const { data: { user } } = await supabaseAdmin.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
+
+      let successCount = 0;
+
+      for (const rawFile of files) {
+        const file = await compressImage(rawFile);
+        const filePath = `instructions/${paymentId}/${Date.now()}_${file.name}`;
+
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('payment-proofs')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const storedPath = `payment-proofs/${filePath}`;
+
+        const { error: insertError } = await supabaseAdmin.from('payment_proofs').insert({
+          payment_id: paymentId,
+          uploaded_by: user.id,
+          uploaded_by_type: 'admin_instruction',
+          file_name: file.name,
+          file_url: storedPath,
+          file_type: file.type,
+          description: 'Instructions de paiement (admin)',
+        });
+
+        if (insertError) throw insertError;
+        successCount++;
+      }
+
+      if (successCount > 0) {
+        await supabaseAdmin.from('payment_timeline_events').insert({
+          payment_id: paymentId,
+          event_type: 'instructions_uploaded',
+          description: `${successCount} instruction(s) ajoutée(s) par l'admin`,
+          performed_by: user.id,
+        });
+      }
+
+      return { success: true, count: successCount };
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['payment-proofs', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-proofs', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
     },
     onError: (error: Error) => {
       toast.error(error.message);

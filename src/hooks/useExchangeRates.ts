@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
 
@@ -47,7 +47,7 @@ export function useExchangeRates(filter?: DateRangeFilter, customRange?: DateRan
   return useQuery({
     queryKey: ['exchange-rates', filter, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async () => {
-      let query = supabase
+      let query = supabaseAdmin
         .from('exchange_rates')
         .select('*')
         .order('effective_at', { ascending: false });
@@ -73,7 +73,7 @@ export function useExchangeRatesForChart(filter: DateRangeFilter, customRange?: 
   return useQuery({
     queryKey: ['exchange-rates-chart', filter, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('exchange_rates')
         .select('*')
         .gte('effective_at', startOfDay(range.from).toISOString())
@@ -91,7 +91,7 @@ export function useCurrentExchangeRate() {
   return useQuery({
     queryKey: ['current-exchange-rate'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('exchange_rates')
         .select('*')
         .order('effective_at', { ascending: false })
@@ -112,7 +112,7 @@ export function useAddExchangeRate() {
     mutationFn: async ({ rateRmbToXaf, effectiveAt }: { rateRmbToXaf: number; effectiveAt?: Date }) => {
       const rateXafToRmb = 1 / rateRmbToXaf;
       
-      const { data, error } = await supabase.rpc('add_exchange_rate', {
+      const { data, error } = await supabaseAdmin.rpc('add_exchange_rate', {
         p_rate_xaf_to_rmb: rateXafToRmb,
         p_effective_at: effectiveAt?.toISOString() || new Date().toISOString(),
       });
@@ -156,7 +156,7 @@ export function useUpdateExchangeRate() {
     }) => {
       const rateXafToRmb = 1 / rateRmbToXaf;
       
-      const { data, error } = await supabase.rpc('update_exchange_rate', {
+      const { data, error } = await supabaseAdmin.rpc('update_exchange_rate', {
         p_rate_id: rateId,
         p_rate_xaf_to_rmb: rateXafToRmb,
         p_effective_at: effectiveAt?.toISOString() || null,
@@ -190,7 +190,7 @@ export function useDeleteExchangeRate() {
   
   return useMutation({
     mutationFn: async (rateId: string) => {
-      const { data, error } = await supabase.rpc('delete_exchange_rate', {
+      const { data, error } = await supabaseAdmin.rpc('delete_exchange_rate', {
         p_rate_id: rateId,
       });
       
@@ -223,13 +223,13 @@ export function useCheckRateUsage(rateId: string | undefined) {
     queryFn: async () => {
       if (!rateId) return { isUsed: false, usageCount: 0 };
       
-      const { data: isUsed, error: usedError } = await supabase.rpc('is_rate_used', {
+      const { data: isUsed, error: usedError } = await supabaseAdmin.rpc('is_rate_used', {
         p_rate_id: rateId,
       });
       
       if (usedError) throw usedError;
       
-      const { data: count, error: countError } = await supabase.rpc('get_rate_usage_count', {
+      const { data: count, error: countError } = await supabaseAdmin.rpc('get_rate_usage_count', {
         p_rate_id: rateId,
       });
       

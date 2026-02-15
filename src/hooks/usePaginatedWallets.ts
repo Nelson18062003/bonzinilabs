@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG, QUERY_LIMITS } from '@/lib/constants';
 import type { Wallet } from './useWallet';
 
@@ -21,7 +21,7 @@ export function usePaginatedAllWallets() {
     initialPageParam: 0,
     queryFn: async ({ pageParam = 0 }) => {
       // Get wallets for this page
-      const { data: wallets, error: walletsError } = await supabase
+      const { data: wallets, error: walletsError } = await supabaseAdmin
         .from('wallets')
         .select('*')
         .order('updated_at', { ascending: false })
@@ -35,20 +35,20 @@ export function usePaginatedAllWallets() {
       // Get unique user IDs for this page
       const userIds = [...new Set(wallets.map(w => w.user_id))];
 
-      // Fetch profiles for these users
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+      // Fetch client info for these users
+      const { data: clients, error: clientsError } = await supabaseAdmin
+        .from('clients')
         .select('*')
         .in('user_id', userIds);
 
-      if (profilesError) throw profilesError;
+      if (clientsError) throw clientsError;
 
-      // Map profiles to wallets
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      // Map clients to wallets (keep property name 'profiles' for UI compatibility)
+      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
 
       const walletsWithProfiles: WalletWithProfile[] = wallets.map(wallet => ({
         ...wallet,
-        profiles: profileMap.get(wallet.user_id) || null,
+        profiles: clientMap.get(wallet.user_id) || null,
       }));
 
       // Calculate next cursor
@@ -79,7 +79,7 @@ export function usePaginatedWalletOperations(walletId: string | undefined) {
         return { data: [], nextCursor: null };
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('wallet_operations')
         .select('*')
         .eq('wallet_id', walletId)

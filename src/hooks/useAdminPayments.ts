@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface AdminCreatePaymentData {
@@ -34,7 +34,7 @@ export function useAdminCreatePayment() {
         const file = data.qr_code_files[0];
         const filePath = `qr-codes/${data.user_id}/${Date.now()}_${file.name}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
           .upload(filePath, file);
 
@@ -45,7 +45,7 @@ export function useAdminCreatePayment() {
       }
 
       // Call the RPC function
-      const { data: result, error } = await supabase.rpc('create_admin_payment', {
+      const { data: result, error } = await supabaseAdmin.rpc('create_admin_payment', {
         p_user_id: data.user_id,
         p_amount_xaf: data.amount_xaf,
         p_amount_rmb: data.amount_rmb,
@@ -78,13 +78,13 @@ export function useAdminCreatePayment() {
 
       // Upload additional QR codes as payment proofs
       if (data.qr_code_files && data.qr_code_files.length > 1 && response.payment_id) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseAdmin.auth.getUser();
         
         for (let i = 1; i < data.qr_code_files.length; i++) {
           const file = data.qr_code_files[i];
           const filePath = `admin/${response.payment_id}/${Date.now()}_${file.name}`;
           
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabaseAdmin.storage
             .from('payment-proofs')
             .upload(filePath, file);
 
@@ -92,7 +92,7 @@ export function useAdminCreatePayment() {
             // Store the file path for later signed URL generation
             const storedPath = `payment-proofs/${filePath}`;
 
-            await supabase.from('payment_proofs').insert({
+            await supabaseAdmin.from('payment_proofs').insert({
               payment_id: response.payment_id,
               uploaded_by: user?.id,
               uploaded_by_type: 'admin',
@@ -124,7 +124,7 @@ export function useDeletePayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      const { data, error } = await supabase.rpc('delete_payment', {
+      const { data, error } = await supabaseAdmin.rpc('delete_payment', {
         p_payment_id: paymentId,
       });
 
@@ -154,7 +154,7 @@ export function useDeletePaymentProof() {
 
   return useMutation({
     mutationFn: async (proofId: string) => {
-      const { data, error } = await supabase.rpc('delete_payment_proof', {
+      const { data, error } = await supabaseAdmin.rpc('delete_payment_proof', {
         p_proof_id: proofId,
       });
 
@@ -206,7 +206,7 @@ export function useAdminUpdateBeneficiaryInfo() {
       if (qrCodeFile) {
         const filePath = `qr-codes/${paymentId}/${Date.now()}_${qrCodeFile.name}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
           .upload(filePath, qrCodeFile);
 
@@ -229,7 +229,7 @@ export function useAdminUpdateBeneficiaryInfo() {
 
       // Determine if we have sufficient info after this update
       // Fetch current payment to merge with updates
-      const { data: currentPayment } = await supabase
+      const { data: currentPayment } = await supabaseAdmin
         .from('payments')
         .select('beneficiary_name, beneficiary_bank_account, beneficiary_qr_code_url')
         .eq('id', paymentId)
@@ -243,7 +243,7 @@ export function useAdminUpdateBeneficiaryInfo() {
 
       updateData.status = hasInfo ? 'ready_for_payment' : 'waiting_beneficiary_info';
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('payments')
         .update(updateData)
         .eq('id', paymentId);
@@ -252,8 +252,8 @@ export function useAdminUpdateBeneficiaryInfo() {
 
       // Add timeline event
       if (hasInfo) {
-        const { data: { user } } = await supabase.auth.getUser();
-        await supabase.from('payment_timeline_events').insert({
+        const { data: { user } } = await supabaseAdmin.auth.getUser();
+        await supabaseAdmin.from('payment_timeline_events').insert({
           payment_id: paymentId,
           event_type: 'info_provided',
           description: 'Informations du bénéficiaire ajoutées par l\'admin',
