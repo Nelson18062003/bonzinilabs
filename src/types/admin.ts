@@ -2,32 +2,23 @@
 // BONZINI ADMIN - TYPE DEFINITIONS
 // ============================================
 
-// Admin Roles
-export type AdminRole = 'SUPER_ADMIN' | 'OPS' | 'SUPPORT' | 'ACCOUNT_MANAGER' | 'VIEW_ONLY';
+// Import the source of truth for admin roles from AdminAuthContext
+import type { AppRole, AdminStatus } from '@/contexts/AdminAuthContext';
 
-export interface AdminUser {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: AdminRole;
-  avatar?: string;
-  isActive: boolean;
-  passwordHash?: string; // For mock auth
-  lastLogin?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Re-export for convenience
+export type { AppRole, AdminStatus };
 
-// Client (Contact) for Admin view
+// ============================================
+// CLIENT MODULE
+// ============================================
+
 export type ClientStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_KYC';
 export type ClientGender = 'MALE' | 'FEMALE' | 'OTHER';
 
-// Tags table (many-to-many with clients)
 export interface Tag {
   id: string;
   name: string;
-  color: string; // Tailwind color class
+  color: string;
   description?: string;
   createdAt: Date;
 }
@@ -47,7 +38,7 @@ export interface Client {
   email?: string;
   country: string;
   city?: string;
-  tagIds: string[]; // References to Tag table
+  tagIds: string[];
   status: ClientStatus;
   kycVerified: boolean;
   avatar?: string;
@@ -61,13 +52,15 @@ export interface Client {
   updatedAt: Date;
 }
 
-// Client with resolved tags
 export interface ClientWithTags extends Omit<Client, 'tagIds'> {
   tags: Tag[];
 }
 
-// Admin Log Entry
-export type AdminActionType = 
+// ============================================
+// ADMIN AUDIT LOG
+// ============================================
+
+export type AdminActionType =
   | 'DEPOSIT_VALIDATED'
   | 'DEPOSIT_REJECTED'
   | 'PAYMENT_PROCESSED'
@@ -105,22 +98,21 @@ export interface AdminLogEntry {
 // DEPOSIT MODULE
 // ============================================
 
-export type DepositMethod = 
-  | 'BANK_TRANSFER' 
-  | 'CASH_BANK' 
-  | 'ORANGE_MONEY' 
-  | 'MTN_MONEY' 
-  | 'WAVE' 
+export type DepositMethod =
+  | 'BANK_TRANSFER'
+  | 'CASH_BANK'
+  | 'ORANGE_MONEY'
+  | 'MTN_MONEY'
+  | 'WAVE'
   | 'AGENCY';
 
-export type DepositStatus = 
-  | 'SUBMITTED' 
-  | 'PROOF_UPLOADED' 
-  | 'UNDER_VERIFICATION' 
-  | 'VALIDATED' 
+export type DepositStatus =
+  | 'SUBMITTED'
+  | 'PROOF_UPLOADED'
+  | 'UNDER_VERIFICATION'
+  | 'VALIDATED'
   | 'REJECTED';
 
-// Enhanced Deposit for Admin
 export interface AdminDeposit {
   id: string;
   clientId: string;
@@ -145,7 +137,6 @@ export interface AdminDeposit {
   updatedAt: Date;
 }
 
-// Deposit Proofs Table
 export interface DepositProof {
   id: string;
   depositId: string;
@@ -156,8 +147,7 @@ export interface DepositProof {
   uploadedAt: Date;
 }
 
-// Deposit Timeline Table
-export type DepositTimelineStep = 
+export type DepositTimelineStep =
   | 'SUBMITTED'
   | 'PROOF_UPLOADED'
   | 'UNDER_VERIFICATION'
@@ -182,16 +172,15 @@ export interface DepositTimelineEvent {
 
 export type PaymentMethod = 'ALIPAY' | 'WECHAT' | 'BANK_TRANSFER' | 'CASH_COUNTER';
 
-export type PaymentStatus = 
-  | 'SUBMITTED' 
-  | 'INFO_RECEIVED' 
+export type PaymentStatus =
+  | 'SUBMITTED'
+  | 'INFO_RECEIVED'
   | 'READY_TO_PAY'
-  | 'PROCESSING' 
-  | 'COMPLETED' 
+  | 'PROCESSING'
+  | 'COMPLETED'
   | 'PROOF_AVAILABLE'
   | 'CANCELLED';
 
-// Enhanced Payment for Admin
 export interface AdminPayment {
   id: string;
   clientId: string;
@@ -221,31 +210,25 @@ export interface AdminPayment {
   updatedAt: Date;
 }
 
-// Payment Beneficiary Details Table (stores beneficiary info at time of payment)
 export interface PaymentBeneficiary {
   id: string;
   paymentId: string;
   method: PaymentMethod | string;
-  // Alipay / WeChat
   alipayId?: string;
   wechatId?: string;
   qrCodeUrl?: string;
-  // Bank Transfer
   bankName?: string;
   accountName?: string;
   accountNumber?: string;
   swiftCode?: string;
-  // Cash Counter
   cashCounterLocation?: string;
   receiverName?: string;
   receiverIdNumber?: string;
-  // Common
   recipientName: string;
   recipientPhone?: string;
   createdAt: Date;
 }
 
-// Payment Proofs Table
 export interface PaymentProof {
   id: string;
   paymentId: string;
@@ -257,8 +240,7 @@ export interface PaymentProof {
   uploadedByAdminId?: string;
 }
 
-// Payment Timeline Table
-export type PaymentTimelineStep = 
+export type PaymentTimelineStep =
   | 'SUBMITTED'
   | 'INFO_RECEIVED'
   | 'READY_TO_PAY'
@@ -299,14 +281,17 @@ export interface WalletOperation {
   walletId: string;
   type: WalletOperationType;
   sourceType: WalletOperationSource;
-  sourceId?: string; // id_deposit or id_payment
+  sourceId?: string;
   amountXAF: number;
   description: string;
   createdAt: Date;
-  createdByAdminUserId?: string; // For manual adjustments
+  createdByAdminUserId?: string;
 }
 
-// Dashboard Stats
+// ============================================
+// DASHBOARD
+// ============================================
+
 export interface DashboardStats {
   totalClients: number;
   activeClients: number;
@@ -319,7 +304,10 @@ export interface DashboardStats {
   currentRate: number;
 }
 
-// Notification Template
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
 export interface NotificationTemplate {
   id: string;
   name: string;
@@ -332,94 +320,181 @@ export interface NotificationTemplate {
   updatedAt: Date;
 }
 
-// Role Permissions
-export interface RolePermission {
-  role: AdminRole;
-  canViewClients: boolean;
-  canEditClients: boolean;
-  canViewDeposits: boolean;
-  canProcessDeposits: boolean;
-  canViewPayments: boolean;
-  canProcessPayments: boolean;
-  canManageRates: boolean;
-  canViewLogs: boolean;
-  canManageUsers: boolean;
-  canViewOnly: boolean;
+// ============================================
+// ADMIN MANAGEMENT MODULE (Feature A)
+// ============================================
+
+// Extended admin user with status and timestamps for admin management
+export interface AdminUserWithStatus {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: AppRole;
+  status: AdminStatus;
+  createdAt: string;
+  lastLoginAt: string | null;
 }
 
-export const ROLE_PERMISSIONS: Record<AdminRole, RolePermission> = {
-  SUPER_ADMIN: {
-    role: 'SUPER_ADMIN',
-    canViewClients: true,
-    canEditClients: true,
-    canViewDeposits: true,
-    canProcessDeposits: true,
-    canViewPayments: true,
-    canProcessPayments: true,
-    canManageRates: true,
-    canViewLogs: true,
-    canManageUsers: true,
-    canViewOnly: false,
-  },
-  OPS: {
-    role: 'OPS',
-    canViewClients: true,
-    canEditClients: false,
-    canViewDeposits: true,
-    canProcessDeposits: true,
-    canViewPayments: true,
-    canProcessPayments: true,
-    canManageRates: true,
-    canViewLogs: true,
-    canManageUsers: false,
-    canViewOnly: false,
-  },
-  SUPPORT: {
-    role: 'SUPPORT',
-    canViewClients: true,
-    canEditClients: true,
-    canViewDeposits: true,
-    canProcessDeposits: false,
-    canViewPayments: true,
-    canProcessPayments: false,
-    canManageRates: false,
-    canViewLogs: true,
-    canManageUsers: false,
-    canViewOnly: false,
-  },
-  ACCOUNT_MANAGER: {
-    role: 'ACCOUNT_MANAGER',
-    canViewClients: true,
-    canEditClients: true,
-    canViewDeposits: true,
-    canProcessDeposits: true,
-    canViewPayments: true,
-    canProcessPayments: false,
-    canManageRates: false,
-    canViewLogs: false,
-    canManageUsers: false,
-    canViewOnly: false,
-  },
-  VIEW_ONLY: {
-    role: 'VIEW_ONLY',
-    canViewClients: true,
-    canEditClients: false,
-    canViewDeposits: true,
-    canProcessDeposits: false,
-    canViewPayments: true,
-    canProcessPayments: false,
-    canManageRates: false,
-    canViewLogs: true,
-    canManageUsers: false,
-    canViewOnly: true,
-  },
-};
+// Data for creating a new admin
+export interface CreateAdminData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: AppRole;
+}
 
-// Admin Role Labels
-export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  OPS: 'Opérations',
-  SUPPORT: 'Support',
-  ACCOUNT_MANAGER: 'Chargé de clientèle',
-  VIEW_ONLY: 'Lecture seule',
-};
+// Data for updating an admin
+export interface UpdateAdminData {
+  userId: string;
+  firstName?: string;
+  lastName?: string;
+  role?: AppRole;
+}
+
+// Filter options for admin list
+export interface AdminFilters {
+  role?: AppRole | 'all';
+  status?: AdminStatus | 'all';
+  search?: string;
+}
+
+// Result from create-admin Edge Function
+export interface CreateAdminResult {
+  success: boolean;
+  userId?: string;
+  email?: string;
+  tempPassword?: string;
+  message?: string;
+  error?: string;
+}
+
+// Result from reset-admin-password Edge Function
+export interface ResetPasswordResult {
+  success: boolean;
+  tempPassword?: string;
+  message?: string;
+  error?: string;
+}
+
+// Result from RPC functions (toggle_admin_status, update_admin_role)
+export interface AdminRpcResult {
+  success: boolean;
+  error?: string;
+}
+
+// ============================================
+// LEDGER ENTRIES MODULE
+// ============================================
+
+export type LedgerEntryType =
+  | 'DEPOSIT_VALIDATED'
+  | 'DEPOSIT_REFUSED'
+  | 'PAYMENT_RESERVED'
+  | 'PAYMENT_EXECUTED'
+  | 'PAYMENT_CANCELLED_REFUNDED'
+  | 'ADMIN_CREDIT'
+  | 'ADMIN_DEBIT';
+
+export interface LedgerEntry {
+  id: string;
+  walletId: string;
+  userId: string;
+  entryType: LedgerEntryType;
+  amountXAF: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  referenceType?: 'deposit' | 'payment' | 'adjustment';
+  referenceId?: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+  createdByAdminId?: string;
+  createdByAdminName?: string;
+  createdAt: Date;
+}
+
+export interface LedgerFilters {
+  entryType?: LedgerEntryType | 'all';
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+// ============================================
+// WALLET ADJUSTMENTS MODULE
+// ============================================
+
+export type AdjustmentType = 'CREDIT' | 'DEBIT';
+
+export interface WalletAdjustment {
+  id: string;
+  walletId: string;
+  userId: string;
+  adjustmentType: AdjustmentType;
+  amountXAF: number;
+  reason: string;
+  proofUrls: string[];
+  ledgerEntryId?: string;
+  createdByAdminId: string;
+  createdByAdminName?: string;
+  createdAt: Date;
+}
+
+export interface CreateAdjustmentData {
+  userId: string;
+  adjustmentType: AdjustmentType;
+  amountXAF: number;
+  reason: string;
+  proofUrls?: string[];
+}
+
+export interface AdjustmentResult {
+  success: boolean;
+  adjustmentId?: string;
+  ledgerEntryId?: string;
+  balanceBefore?: number;
+  balanceAfter?: number;
+  error?: string;
+  currentBalance?: number;
+  requestedAmount?: number;
+}
+
+// ============================================
+// CLIENT CREATION MODULE
+// ============================================
+
+export interface CreateClientData {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  gender: ClientGender;
+  whatsappNumber: string;
+  email?: string;
+  country: string;
+  city?: string;
+}
+
+export interface CreateClientResult {
+  success: boolean;
+  clientId?: string;
+  walletId?: string;
+  email?: string;
+  authEmail?: string;
+  tempPassword?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface ClientFilters {
+  status?: ClientStatus | 'all';
+  search?: string; // Searches name, phone, ID
+}
+
+// ============================================
+// CLIENT WITH WALLET (for admin views)
+// ============================================
+
+export interface ClientWithWallet extends Client {
+  walletId: string;
+  currentBalance: number;
+  lastLedgerEntry?: LedgerEntry;
+}

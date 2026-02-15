@@ -3,30 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
-// Custom storage adapter for CLIENT sessions
-const clientStorage = {
-  getItem: (key: string) => localStorage.getItem(`client-${key}`),
-  setItem: (key: string, value: string) => localStorage.setItem(`client-${key}`, value),
-  removeItem: (key: string) => localStorage.removeItem(`client-${key}`),
-};
-
-// Custom storage adapter for ADMIN sessions
-const adminStorage = {
-  getItem: (key: string) => localStorage.getItem(`admin-${key}`),
-  setItem: (key: string, value: string) => localStorage.setItem(`admin-${key}`, value),
-  removeItem: (key: string) => localStorage.removeItem(`admin-${key}`),
-};
-
 /**
  * Supabase client for CLIENT app
- * Sessions are stored with 'client-' prefix in localStorage
+ * Uses a unique storageKey to avoid GoTrueClient instance conflicts
  */
 export const supabase = createClient<Database>(
   VITE_SUPABASE_URL,
   VITE_SUPABASE_PUBLISHABLE_KEY,
   {
     auth: {
-      storage: clientStorage,
+      storageKey: 'bonzini-client-auth',
       persistSession: true,
       autoRefreshToken: true,
     },
@@ -35,15 +21,14 @@ export const supabase = createClient<Database>(
 
 /**
  * Supabase client for ADMIN app
- * Sessions are stored with 'admin-' prefix in localStorage
- * This ensures Admin and Client sessions are completely isolated
+ * Uses a different storageKey to completely isolate Admin sessions from Client sessions
  */
 export const supabaseAdmin = createClient<Database>(
   VITE_SUPABASE_URL,
   VITE_SUPABASE_PUBLISHABLE_KEY,
   {
     auth: {
-      storage: adminStorage,
+      storageKey: 'bonzini-admin-auth',
       persistSession: true,
       autoRefreshToken: true,
     },

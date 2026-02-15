@@ -1,33 +1,48 @@
-// ============================================
-// DEPOSIT FLOW - TYPE DEFINITIONS
-// ============================================
+// ============================================================
+// MODULE DEPOTS — Types & Constants (from scratch)
+// ============================================================
 
-// Method families (Level 1)
-export type DepositMethodFamily = 
+// ---------- DB enums ----------
+
+export type DepositMethod =
+  | 'bank_transfer'
+  | 'bank_cash'
+  | 'agency_cash'
+  | 'om_transfer'
+  | 'om_withdrawal'
+  | 'mtn_transfer'
+  | 'mtn_withdrawal'
+  | 'wave';
+
+export type DepositStatus =
+  | 'created'
+  | 'awaiting_proof'
+  | 'proof_submitted'
+  | 'admin_review'
+  | 'validated'
+  | 'rejected'
+  | 'pending_correction';
+
+// ---------- UI-level method hierarchy ----------
+
+export type DepositMethodFamily =
   | 'BANK'
   | 'AGENCY_BONZINI'
   | 'ORANGE_MONEY'
   | 'MTN_MONEY'
   | 'WAVE';
 
-// Sub-methods (Level 2)
-export type DepositSubMethod = 
-  // Bank sub-methods
+export type DepositSubMethod =
   | 'BANK_TRANSFER'
   | 'BANK_CASH_DEPOSIT'
-  // Orange Money sub-methods
   | 'OM_TRANSFER'
   | 'OM_WITHDRAWAL'
-  // MTN sub-methods
   | 'MTN_TRANSFER'
   | 'MTN_WITHDRAWAL'
-  // Agency - no sub-methods needed
   | 'AGENCY_CASH'
-  // Wave - no sub-methods needed
   | 'WAVE_TRANSFER';
 
-// Banks available
-export type BankOption = 
+export type BankOption =
   | 'AFRILAND'
   | 'ECOBANK'
   | 'UBA'
@@ -35,13 +50,13 @@ export type BankOption =
   | 'ADVANS'
   | 'OTHER';
 
-// Bonzini agencies
-export type AgencyOption = 
+export type AgencyOption =
   | 'DOUALA_BONAPRISO'
   | 'DOUALA_BONAMOUSSADI'
   | 'YAOUNDE_CENTRE';
 
-// Method family info for UI
+// ---------- Data-layer interfaces ----------
+
 export interface MethodFamilyInfo {
   family: DepositMethodFamily;
   label: string;
@@ -49,7 +64,6 @@ export interface MethodFamilyInfo {
   description: string;
 }
 
-// Sub-method info for UI
 export interface SubMethodInfo {
   subMethod: DepositSubMethod;
   family: DepositMethodFamily;
@@ -57,7 +71,6 @@ export interface SubMethodInfo {
   description: string;
 }
 
-// Bank info for selection
 export interface BankInfo {
   bank: BankOption;
   label: string;
@@ -68,7 +81,6 @@ export interface BankInfo {
   };
 }
 
-// Agency info for selection
 export interface AgencyInfo {
   agency: AgencyOption;
   label: string;
@@ -76,36 +88,176 @@ export interface AgencyInfo {
   hours: string;
 }
 
-// Mobile money account info
 export interface MobileMoneyInfo {
   phone: string;
   accountName: string;
 }
 
-// Deposit request (what we create when user declares a deposit)
-export interface DepositRequest {
-  id: string;
-  clientId: string;
-  amountXAF: number;
-  methodFamily: DepositMethodFamily;
-  subMethod: DepositSubMethod;
-  bank?: BankOption;
-  agency?: AgencyOption;
-  clientPhone?: string; // For OM/MTN withdrawal
-  clientName?: string;
-  reference: string; // Generated reference code
-  status: 'DRAFT' | 'AWAITING_PROOF' | 'SUBMITTED' | 'UNDER_VERIFICATION' | 'VALIDATED' | 'REJECTED';
-  createdAt: Date;
+export interface MerchantInfo {
+  accountName: string;
+  merchantCode: string;
 }
 
-// Instructions data for the bordereau screen
-export interface DepositInstructions {
-  title: string;
-  steps: string[];
-  bonziniInfo: {
-    name: string;
-    details: string;
-    reference: string;
-    additionalInfo?: string;
-  };
+// ---------- DB row types ----------
+
+export interface Deposit {
+  id: string;
+  user_id: string;
+  reference: string;
+  amount_xaf: number;
+  method: DepositMethod;
+  bank_name: string | null;
+  agency_name: string | null;
+  client_phone: string | null;
+  status: DepositStatus;
+  admin_comment: string | null;
+  rejection_reason: string | null;
+  confirmed_amount_xaf: number | null;
+  rejection_category: string | null;
+  admin_internal_note: string | null;
+  validated_by: string | null;
+  validated_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
+
+export interface DepositWithProfile extends Deposit {
+  profiles: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    phone: string | null;
+    company_name?: string | null;
+  } | null;
+  proof_count?: number;
+}
+
+export interface DepositProof {
+  id: string;
+  deposit_id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string | null;
+  uploaded_at: string;
+  uploaded_by: string | null;
+  uploaded_by_type: 'client' | 'admin' | null;
+  is_visible_to_client: boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  delete_reason: string | null;
+}
+
+export interface DepositProofWithUrl extends DepositProof {
+  signedUrl: string | null;
+}
+
+export interface DepositTimelineEvent {
+  id: string;
+  deposit_id: string;
+  event_type: string;
+  description: string;
+  performed_by: string | null;
+  created_at: string;
+}
+
+// ---------- Mutation inputs ----------
+
+export interface CreateDepositData {
+  amount_xaf: number;
+  method: DepositMethod;
+  bank_name?: string;
+  agency_name?: string;
+  client_phone?: string;
+}
+
+export interface AdminCreateDepositData {
+  user_id: string;
+  amount_xaf: number;
+  method: DepositMethod;
+  bank_name?: string;
+  agency_name?: string;
+  client_phone?: string;
+  admin_comment?: string;
+  proofFiles?: File[];
+}
+
+// ---------- Stats ----------
+
+export interface DepositStats {
+  total: number;
+  awaiting_proof: number;
+  proof_submitted: number;
+  pending_correction: number;
+  admin_review: number;
+  validated: number;
+  rejected: number;
+  to_process: number;
+  today_validated: number;
+  today_amount: number;
+}
+
+// ---------- Mapping: UI sub-method → DB method ----------
+
+export const SUB_METHOD_TO_DB_METHOD: Record<DepositSubMethod, DepositMethod> = {
+  BANK_TRANSFER: 'bank_transfer',
+  BANK_CASH_DEPOSIT: 'bank_cash',
+  OM_TRANSFER: 'om_transfer',
+  OM_WITHDRAWAL: 'om_withdrawal',
+  MTN_TRANSFER: 'mtn_transfer',
+  MTN_WITHDRAWAL: 'mtn_withdrawal',
+  AGENCY_CASH: 'agency_cash',
+  WAVE_TRANSFER: 'wave',
+};
+
+// ---------- Display labels ----------
+
+export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
+  created: 'Demande créée',
+  awaiting_proof: 'En attente de preuve',
+  proof_submitted: 'Preuve envoyée',
+  admin_review: 'En vérification',
+  validated: 'Validé',
+  rejected: 'Rejeté',
+  pending_correction: 'À corriger',
+};
+
+export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
+  bank_transfer: 'Virement bancaire',
+  bank_cash: 'Dépôt cash banque',
+  agency_cash: 'Cash agence Bonzini',
+  om_transfer: 'Orange Money – Transfert',
+  om_withdrawal: 'Orange Money – Retrait',
+  mtn_transfer: 'MTN MoMo – Transfert',
+  mtn_withdrawal: 'MTN MoMo – Retrait',
+  wave: 'Wave',
+};
+
+export const DEPOSIT_STATUS_COLORS: Record<DepositStatus, string> = {
+  created: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+  awaiting_proof: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+  proof_submitted: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  admin_review: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  pending_correction: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  validated: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
+};
+
+// ---------- Rejection reasons (admin picks one) ----------
+
+export const REJECTION_REASONS = [
+  'Montant incorrect',
+  'Preuve illisible',
+  'Référence absente',
+  'Mauvais compte bancaire',
+  'Document non conforme',
+  'Suspicion / incohérence',
+  'Autre',
+] as const;
+
+export const PROOF_DELETE_REASONS = [
+  'Upload incorrect',
+  'Mauvais dépôt',
+  'Doublon',
+  'Image illisible',
+  'Autre',
+] as const;

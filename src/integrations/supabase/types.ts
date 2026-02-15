@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -44,30 +44,114 @@ export type Database = {
         }
         Relationships: []
       }
-      deposit_proofs: {
+      clients: {
         Row: {
-          deposit_id: string
-          file_name: string
-          file_type: string | null
-          file_url: string
+          activity_sector: string | null
+          avatar_url: string | null
+          city: string | null
+          company_name: string | null
+          country: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          first_name: string
+          gender: string
           id: string
-          uploaded_at: string
+          kyc_verified: boolean
+          last_name: string
+          neighborhood: string | null
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          deposit_id: string
-          file_name: string
-          file_type?: string | null
-          file_url: string
+          activity_sector?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name: string
+          gender?: string
           id?: string
-          uploaded_at?: string
+          kyc_verified?: boolean
+          last_name: string
+          neighborhood?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
         }
         Update: {
+          activity_sector?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string
+          gender?: string
+          id?: string
+          kyc_verified?: boolean
+          last_name?: string
+          neighborhood?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deposit_proofs: {
+        Row: {
+          id: string
+          deposit_id: string
+          file_url: string
+          file_name: string
+          file_type: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+          uploaded_by_type: string | null
+          is_visible_to_client: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+          delete_reason: string | null
+        }
+        Insert: {
+          id?: string
+          deposit_id: string
+          file_url: string
+          file_name: string
+          file_type?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_type?: string | null
+          is_visible_to_client?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+          delete_reason?: string | null
+        }
+        Update: {
+          id?: string
           deposit_id?: string
+          file_url?: string
           file_name?: string
           file_type?: string | null
-          file_url?: string
-          id?: string
           uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_type?: string | null
+          is_visible_to_client?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+          delete_reason?: string | null
         }
         Relationships: [
           {
@@ -116,55 +200,64 @@ export type Database = {
       }
       deposits: {
         Row: {
-          admin_comment: string | null
-          agency_name: string | null
-          amount_xaf: number
-          bank_name: string | null
-          client_phone: string | null
-          created_at: string
           id: string
-          method: Database["public"]["Enums"]["deposit_method"]
-          reference: string
-          rejection_reason: string | null
-          status: Database["public"]["Enums"]["deposit_status"]
-          updated_at: string
           user_id: string
-          validated_at: string | null
+          reference: string
+          amount_xaf: number
+          method: Database["public"]["Enums"]["deposit_method"]
+          bank_name: string | null
+          agency_name: string | null
+          client_phone: string | null
+          status: Database["public"]["Enums"]["deposit_status"]
+          admin_comment: string | null
+          rejection_reason: string | null
+          confirmed_amount_xaf: number | null
+          rejection_category: string | null
+          admin_internal_note: string | null
           validated_by: string | null
+          validated_at: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          admin_comment?: string | null
-          agency_name?: string | null
-          amount_xaf: number
-          bank_name?: string | null
-          client_phone?: string | null
-          created_at?: string
           id?: string
-          method: Database["public"]["Enums"]["deposit_method"]
-          reference: string
-          rejection_reason?: string | null
-          status?: Database["public"]["Enums"]["deposit_status"]
-          updated_at?: string
           user_id: string
-          validated_at?: string | null
+          reference: string
+          amount_xaf: number
+          method: Database["public"]["Enums"]["deposit_method"]
+          bank_name?: string | null
+          agency_name?: string | null
+          client_phone?: string | null
+          status?: Database["public"]["Enums"]["deposit_status"]
+          admin_comment?: string | null
+          rejection_reason?: string | null
+          confirmed_amount_xaf?: number | null
+          rejection_category?: string | null
+          admin_internal_note?: string | null
           validated_by?: string | null
+          validated_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          admin_comment?: string | null
-          agency_name?: string | null
-          amount_xaf?: number
-          bank_name?: string | null
-          client_phone?: string | null
-          created_at?: string
           id?: string
-          method?: Database["public"]["Enums"]["deposit_method"]
-          reference?: string
-          rejection_reason?: string | null
-          status?: Database["public"]["Enums"]["deposit_status"]
-          updated_at?: string
           user_id?: string
-          validated_at?: string | null
+          reference?: string
+          amount_xaf?: number
+          method?: Database["public"]["Enums"]["deposit_method"]
+          bank_name?: string | null
+          agency_name?: string | null
+          client_phone?: string | null
+          status?: Database["public"]["Enums"]["deposit_status"]
+          admin_comment?: string | null
+          rejection_reason?: string | null
+          confirmed_amount_xaf?: number | null
+          rejection_category?: string | null
+          admin_internal_note?: string | null
           validated_by?: string | null
+          validated_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -192,6 +285,95 @@ export type Database = {
           effective_date?: string
           id?: string
           rate_xaf_to_rmb?: number
+        }
+        Relationships: []
+      }
+      ledger_entries: {
+        Row: {
+          amount_xaf: number
+          balance_after: number
+          balance_before: number
+          created_at: string | null
+          created_by_admin_id: string | null
+          description: string
+          entry_type: Database["public"]["Enums"]["ledger_entry_type"]
+          id: string
+          metadata: Json | null
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          amount_xaf: number
+          balance_after: number
+          balance_before: number
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          description: string
+          entry_type: Database["public"]["Enums"]["ledger_entry_type"]
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id: string
+          wallet_id: string
+        }
+        Update: {
+          amount_xaf?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          description?: string
+          entry_type?: Database["public"]["Enums"]["ledger_entry_type"]
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -445,23 +627,92 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string
+          email: string | null
+          first_name: string | null
           id: string
+          is_disabled: boolean
+          last_login_at: string | null
+          last_name: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
+          first_name?: string | null
           id?: string
+          is_disabled?: boolean
+          last_login_at?: string | null
+          last_name?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
+          email?: string | null
+          first_name?: string | null
           id?: string
+          is_disabled?: boolean
+          last_login_at?: string | null
+          last_name?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
+      }
+      wallet_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount_xaf: number
+          created_at: string | null
+          created_by_admin_id: string
+          id: string
+          ledger_entry_id: string | null
+          proof_urls: string[] | null
+          reason: string
+          user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          adjustment_type: string
+          amount_xaf: number
+          created_at?: string | null
+          created_by_admin_id: string
+          id?: string
+          ledger_entry_id?: string | null
+          proof_urls?: string[] | null
+          reason: string
+          user_id: string
+          wallet_id: string
+        }
+        Update: {
+          adjustment_type?: string
+          amount_xaf?: number
+          created_at?: string | null
+          created_by_admin_id?: string
+          id?: string
+          ledger_entry_id?: string | null
+          proof_urls?: string[] | null
+          reason?: string
+          user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_adjustments_ledger_entry_id_fkey"
+            columns: ["ledger_entry_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_adjustments_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallet_operations: {
         Row: {
@@ -539,7 +790,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      rate_limit_usage: {
+        Row: {
+          count_last_hour: number | null
+          limit_per_hour: number | null
+          operation_type: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_exchange_rate: {
@@ -565,6 +825,20 @@ export type Database = {
             }
             Returns: Json
           }
+      admin_create_client: {
+        Args: {
+          p_city?: string
+          p_company?: string
+          p_country?: string
+          p_email?: string
+          p_first_name: string
+          p_gender?: string
+          p_last_name: string
+          p_password?: string
+          p_phone: string
+        }
+        Returns: Json
+      }
       admin_delete_client: { Args: { p_user_id: string }; Returns: Json }
       confirm_cash_payment: {
         Args: {
@@ -615,17 +889,55 @@ export type Database = {
           p_beneficiary_notes?: string
           p_beneficiary_phone?: string
           p_beneficiary_qr_code_url?: string
+          p_cash_beneficiary_first_name?: string
+          p_cash_beneficiary_last_name?: string
+          p_cash_beneficiary_phone?: string
+          p_cash_beneficiary_type?: string
           p_exchange_rate: number
           p_method: Database["public"]["Enums"]["payment_method"]
         }
         Returns: Json
       }
-      delete_deposit: { Args: { p_deposit_id: string }; Returns: Json }
+      create_wallet_adjustment: {
+        Args: {
+          p_adjustment_type: string
+          p_amount_xaf: number
+          p_proof_urls?: string[]
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       delete_exchange_rate: { Args: { p_rate_id: string }; Returns: Json }
       delete_payment: { Args: { p_payment_id: string }; Returns: Json }
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
       generate_deposit_reference: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
+      get_client_ledger: {
+        Args: {
+          p_entry_type?: Database["public"]["Enums"]["ledger_entry_type"]
+          p_limit?: number
+          p_offset?: number
+          p_user_id: string
+        }
+        Returns: {
+          amount_xaf: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          created_by_admin_id: string
+          created_by_admin_name: string
+          description: string
+          entry_type: Database["public"]["Enums"]["ledger_entry_type"]
+          id: string
+          metadata: Json
+          reference_id: string
+          reference_type: string
+          user_id: string
+          wallet_id: string
+        }[]
+      }
+      get_deposit_stats: { Args: never; Returns: Json }
       get_rate_usage_count: { Args: { p_rate_id: string }; Returns: number }
       has_role: {
         Args: {
@@ -642,10 +954,41 @@ export type Database = {
         Returns: Json
       }
       reject_deposit: {
+        Args: {
+          p_deposit_id: string
+          p_reason: string
+          p_rejection_category?: string
+          p_admin_note?: string
+        }
+        Returns: Json
+      }
+      request_deposit_correction: {
         Args: { p_deposit_id: string; p_reason: string }
         Returns: Json
       }
+      resubmit_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
+      start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
+      toggle_admin_status: {
+        Args: { p_disabled: boolean; p_target_user_id: string }
+        Returns: Json
+      }
+      update_admin_last_login: { Args: never; Returns: Json }
+      update_admin_profile: {
+        Args: {
+          p_first_name: string
+          p_last_name: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
+      update_admin_role: {
+        Args: {
+          p_new_role: Database["public"]["Enums"]["app_role"]
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       update_exchange_rate: {
         Args: {
           p_effective_at?: string
@@ -655,7 +998,12 @@ export type Database = {
         Returns: Json
       }
       validate_deposit: {
-        Args: { p_admin_comment?: string; p_deposit_id: string }
+        Args: {
+          p_deposit_id: string
+          p_admin_comment?: string
+          p_confirmed_amount?: number
+          p_send_notification?: boolean
+        }
         Returns: Json
       }
     }
@@ -682,6 +1030,15 @@ export type Database = {
         | "admin_review"
         | "validated"
         | "rejected"
+        | "pending_correction"
+      ledger_entry_type:
+        | "DEPOSIT_VALIDATED"
+        | "DEPOSIT_REFUSED"
+        | "PAYMENT_RESERVED"
+        | "PAYMENT_EXECUTED"
+        | "PAYMENT_CANCELLED_REFUNDED"
+        | "ADMIN_CREDIT"
+        | "ADMIN_DEBIT"
       payment_method: "alipay" | "wechat" | "bank_transfer" | "cash"
       payment_status:
         | "created"
@@ -844,6 +1201,16 @@ export const Constants = {
         "admin_review",
         "validated",
         "rejected",
+        "pending_correction",
+      ],
+      ledger_entry_type: [
+        "DEPOSIT_VALIDATED",
+        "DEPOSIT_REFUSED",
+        "PAYMENT_RESERVED",
+        "PAYMENT_EXECUTED",
+        "PAYMENT_CANCELLED_REFUNDED",
+        "ADMIN_CREDIT",
+        "ADMIN_DEBIT",
       ],
       payment_method: ["alipay", "wechat", "bank_transfer", "cash"],
       payment_status: [

@@ -3,7 +3,10 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent';
+
+// Admin account status
+export type AdminStatus = 'ACTIVE' | 'DISABLED';
 
 export interface AdminUser {
   id: string;
@@ -70,6 +73,17 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewLogs: false,
     canManageUsers: false,
   },
+  cash_agent: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: true,
+    canProcessPayments: true,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+  },
 };
 
 export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
@@ -77,6 +91,7 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   ops: 'Opérations',
   support: 'Support',
   customer_success: 'Chargé de clientèle',
+  cash_agent: 'Agent Cash',
 };
 
 interface AdminAuthContextType {
@@ -88,6 +103,9 @@ interface AdminAuthContextType {
   logout: () => Promise<void>;
   hasPermission: (permission: keyof RolePermission) => boolean;
   logAction: (actionType: string, targetType: string, description: string, targetId?: string, metadata?: Record<string, any>) => void;
+  // Convenience properties
+  profile: { first_name: string; last_name: string } | null;
+  canManageUsers: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -100,10 +118,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Fetch user role and profile after login
   const fetchAdminData = async (user: User) => {
     try {
-      // Check if user has an admin role
+      // Check if user has an admin role (user_roles has first_name/last_name)
       const { data: roleData, error: roleError } = await supabaseAdmin
         .from('user_roles')
-        .select('role')
+        .select('role, first_name, last_name')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -117,22 +135,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-      }
-
       const adminUser: AdminUser = {
         id: user.id,
         email: user.email || '',
-        firstName: profileData?.first_name || 'Admin',
-        lastName: profileData?.last_name || '',
+        firstName: roleData.first_name || 'Admin',
+        lastName: roleData.last_name || '',
         role: roleData.role as AppRole,
       };
 
@@ -244,6 +251,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Convenience properties
+  const profile = currentUser
+    ? { first_name: currentUser.firstName, last_name: currentUser.lastName }
+    : null;
+  const canManageUsers = hasPermission('canManageUsers');
+
   return (
     <AdminAuthContext.Provider
       value={{
@@ -255,6 +268,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         logout,
         hasPermission,
         logAction,
+        profile,
+        canManageUsers,
       }}
     >
       {children}
