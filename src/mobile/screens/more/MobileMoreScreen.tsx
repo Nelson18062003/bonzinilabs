@@ -1,5 +1,6 @@
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useAdminNotificationCount } from '@/hooks/useAdminNotifications';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
@@ -9,9 +10,10 @@ import {
   UserCog,
   LogOut,
   ChevronRight,
-  User
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -55,11 +57,12 @@ function MenuItem({ icon: Icon, label, description, onClick, destructive, badge 
 
 export function MobileMoreScreen() {
   const { profile, logout, canManageUsers } = useAdminAuth();
+  const { data: notifCount } = useAdminNotificationCount();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
-    navigate('/admin/login');
+    navigate('/m/login');
   };
 
   return (
@@ -108,19 +111,34 @@ export function MobileMoreScreen() {
             label="Notifications"
             description="Centre de notifications"
             onClick={() => navigate('/m/more/notifications')}
+            badge={notifCount && notifCount > 0 ? String(notifCount) : undefined}
           />
           {canManageUsers && (
             <MenuItem
               icon={UserCog}
-              label="Utilisateurs"
+              label="Administrateurs"
               description="Gérer les accès admin"
-              onClick={() => navigate('/m/more/users')}
+              onClick={() => navigate('/m/more/admins')}
             />
           )}
+          <MenuItem
+            icon={Settings}
+            label="Paramètres"
+            description="Thème, préférences"
+            onClick={() => navigate('/m/more/settings')}
+          />
+        </div>
+
+        {/* Theme Quick Toggle */}
+        <div className="px-4 py-3 border-t border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Thème</span>
+            <ThemeToggleCompact />
+          </div>
         </div>
 
         {/* Logout */}
-        <div className="mt-4 border-t border-border">
+        <div className="border-t border-border">
           <MenuItem
             icon={LogOut}
             label="Déconnexion"

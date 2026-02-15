@@ -7,9 +7,12 @@ import {
   ArrowUpFromLine,
   TrendingUp,
   Shield,
-  Loader2,
+  History,
 } from 'lucide-react';
 import { useAdminAuditLogs } from '@/hooks/useAdminData';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
+import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -22,14 +25,15 @@ const FILTERS = [
 ];
 
 export function MobileHistoryScreen() {
-  const { data: logs, isLoading } = useAdminAuditLogs();
+  const { data: logs, isLoading, refetch } = useAdminAuditLogs();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('all');
 
   const filteredLogs = logs?.filter((log) => {
     const matchesSearch =
-      log.action_type.toLowerCase().includes(search.toLowerCase()) ||
-      (log.adminProfile?.first_name?.toLowerCase().includes(search.toLowerCase()) ?? false);
+      log.action_type.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (log.adminProfile?.first_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ?? false);
     const matchesType = typeFilter === 'all' || log.target_type === typeFilter;
     return matchesSearch && matchesType;
   }) || [];
@@ -50,16 +54,6 @@ export function MobileHistoryScreen() {
     return <Shield className="w-4 h-4" />;
   };
 
-  const getActionColor = (actionType: string) => {
-    if (actionType.includes('validate') || actionType.includes('VALIDATE')) {
-      return 'bg-emerald-500/10 text-emerald-600';
-    }
-    if (actionType.includes('reject') || actionType.includes('REJECT')) {
-      return 'bg-red-500/10 text-red-600';
-    }
-    return 'bg-gray-500/10 text-gray-600';
-  };
-
   const getTargetColor = (targetType: string) => {
     switch (targetType) {
       case 'deposit':
@@ -75,24 +69,13 @@ export function MobileHistoryScreen() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <MobileHeader title="Historique" backTo="/m/more" showBack />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <MobileHeader title="Historique" backTo="/m/more" showBack />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Search */}
-        <div className="px-4 py-4">
+      <PullToRefresh onRefresh={refetch} className="flex-1 overflow-y-auto">
+        <div className="px-4 py-4 space-y-4">
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -100,14 +83,12 @@ export function MobileHistoryScreen() {
               placeholder="Rechercher une action..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted border-0 text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-        </div>
 
-        {/* Filter chips */}
-        <div className="px-4 pb-4">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {/* Filter chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
             {FILTERS.map((filter) => (
               <button
                 key={filter.value}
@@ -116,7 +97,7 @@ export function MobileHistoryScreen() {
                   'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
                   typeFilter === filter.value
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    : 'bg-muted text-muted-foreground',
                 )}
               >
                 {filter.label}
@@ -126,11 +107,14 @@ export function MobileHistoryScreen() {
         </div>
 
         {/* Logs list */}
-        <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="px-4">
+            <SkeletonListScreen count={8} />
+          </div>
+        ) : filteredLogs.length > 0 ? (
           <div className="divide-y divide-border">
             {filteredLogs.map((log) => (
               <div key={log.id} className="flex gap-3 px-4 py-3">
-                {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <span className="text-sm font-medium text-primary">
                     {log.adminProfile
@@ -138,8 +122,6 @@ export function MobileHistoryScreen() {
                       : 'AD'}
                   </span>
                 </div>
-
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -155,7 +137,7 @@ export function MobileHistoryScreen() {
                     <span
                       className={cn(
                         'flex items-center gap-1 text-[10px] px-2 py-1 rounded-full flex-shrink-0',
-                        getTargetColor(log.target_type)
+                        getTargetColor(log.target_type),
                       )}
                     >
                       {getActionIcon(log.action_type)}
@@ -168,15 +150,16 @@ export function MobileHistoryScreen() {
                 </div>
               </div>
             ))}
-
-            {filteredLogs.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                Aucun log trouvé
-              </div>
-            )}
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <History className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground">Aucun log trouvé</p>
+          </div>
+        )}
+      </PullToRefresh>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useAllClients } from '@/hooks/useAdminCreateDeposit';
+import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useWalletByUserId, useExchangeRate } from '@/hooks/useWallet';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
@@ -24,7 +24,9 @@ import {
   Calendar,
   AlertCircle,
   QrCode,
+  RefreshCw,
 } from 'lucide-react';
+import { BUSINESS_RULES } from '@/lib/constants';
 import {
   Drawer,
   DrawerContent,
@@ -37,8 +39,8 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 type Step = 'client' | 'amount' | 'method' | 'beneficiary' | 'summary';
 type PaymentMethod = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
 
-const AMOUNT_PRESETS_XAF = [100000, 500000, 1000000, 2000000];
-const AMOUNT_PRESETS_RMB = [500, 1000, 5000, 10000];
+const AMOUNT_PRESETS_XAF = [100000, 250000, 500000, 1000000];
+const AMOUNT_PRESETS_RMB = [1000, 5000, 10000, 20000];
 
 const paymentMethods = [
   {
@@ -70,7 +72,7 @@ const paymentMethods = [
 export function MobileNewPayment() {
   const navigate = useNavigate();
   const { data: clients, isLoading: clientsLoading } = useAllClients();
-  const { data: currentRate, isLoading: rateLoading } = useExchangeRate();
+  const { data: currentRate, isLoading: rateLoading, refetch: refetchRate } = useExchangeRate();
   const createPayment = useAdminCreatePayment();
 
   // Form state
@@ -262,75 +264,135 @@ export function MobileNewPayment() {
 
       case 'amount':
         return (
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-y-auto">
+            {/* Header */}
             <div className="px-4 py-4">
               <h2 className="text-xl font-semibold mb-1">Montant du paiement</h2>
               <p className="text-sm text-muted-foreground">
-                Pour {selectedClient?.first_name} {selectedClient?.last_name}
+                Client : {selectedClient?.first_name} {selectedClient?.last_name}
+                {selectedClient?.phone ? ` • ${selectedClient.phone}` : ''}
               </p>
+              {clientWallet && (
+                <p className="text-sm font-medium mt-1">
+                  Solde disponible : {formatXAF(clientWallet.balance_xaf)} XAF
+                </p>
+              )}
             </div>
 
-            {/* Client wallet info */}
-            {clientWallet && (
+            {/* Rate block */}
+            {rateLoading ? (
+              <div className="mx-4 mb-4 p-3 rounded-xl bg-muted/50 border border-border flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-2" />
+                <span className="text-sm text-muted-foreground">Chargement du taux...</span>
+              </div>
+            ) : !currentRate && !useCustomRate ? (
+              <div className="mx-4 mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                <p className="text-sm text-destructive font-medium">Impossible de charger le taux.</p>
+                <button
+                  onClick={() => refetchRate()}
+                  className="mt-2 flex items-center gap-2 text-sm text-primary font-medium"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Réessayer
+                </button>
+              </div>
+            ) : (
               <div className="mx-4 mb-4 p-3 rounded-xl bg-muted/50 border border-border">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Solde disponible</span>
-                  <span className="font-medium">{formatXAF(clientWallet.balance_xaf)} XAF</span>
-                </div>
+                <p className="text-xs text-muted-foreground">Taux actuel</p>
+                <p className="text-base font-semibold mt-0.5">
+                  1 000 000 XAF → {formatCurrencyRMB(1000000 * effectiveRate)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Taux appliqué à ce paiement</p>
               </div>
             )}
 
-            {/* Input mode toggle */}
-            <div className="flex justify-center gap-2 px-4 mb-4">
+            {/* Tab switch — iOS segmented control */}
+            <div className="flex gap-1 mx-4 mb-4 bg-muted rounded-lg p-1">
               <button
                 onClick={() => setInputMode('XAF')}
                 className={cn(
-                  'flex-1 h-10 rounded-lg font-medium transition-colors',
-                  inputMode === 'XAF' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  'flex-1 h-9 rounded-md text-sm font-medium transition-colors',
+                  inputMode === 'XAF'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground'
                 )}
               >
-                Saisir en XAF
+                Par XAF
               </button>
               <button
                 onClick={() => setInputMode('RMB')}
                 className={cn(
-                  'flex-1 h-10 rounded-lg font-medium transition-colors',
-                  inputMode === 'RMB' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  'flex-1 h-9 rounded-md text-sm font-medium transition-colors',
+                  inputMode === 'RMB'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground'
                 )}
               >
-                Saisir en RMB
+                Par RMB
               </button>
             </div>
 
-            {/* Amount input */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6">
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={
-                  inputMode === 'XAF'
-                    ? amountXAF
-                      ? parseInt(amountXAF).toLocaleString('fr-FR')
-                      : ''
-                    : amountRMB
-                }
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9.]/g, '');
-                  if (inputMode === 'XAF') {
-                    setAmountXAF(value.replace('.', ''));
-                  } else {
-                    setAmountRMB(value);
-                  }
-                }}
-                className="text-5xl font-bold text-center bg-transparent w-full focus:outline-none"
-              />
-              <span className="text-xl text-muted-foreground mt-2">{inputMode}</span>
+            {/* Simulator card */}
+            <div className="mx-4 mb-4 p-4 rounded-xl border border-border bg-card space-y-4">
+              {/* Input row */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {inputMode === 'XAF' ? 'Vous envoyez' : 'Bénéficiaire reçoit'}
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={
+                      inputMode === 'XAF'
+                        ? amountXAF
+                          ? parseInt(amountXAF).toLocaleString('fr-FR')
+                          : ''
+                        : amountRMB
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9.,]/g, '');
+                      if (inputMode === 'XAF') {
+                        setAmountXAF(value.replace(/[.,]/g, ''));
+                      } else {
+                        setAmountRMB(value.replace(',', '.'));
+                      }
+                    }}
+                    className="flex-1 text-3xl font-bold bg-transparent focus:outline-none"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                  />
+                  <span className="text-lg font-medium text-muted-foreground flex-shrink-0">
+                    {inputMode === 'XAF' ? 'XAF' : 'RMB'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-border" />
+
+              {/* Result row */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {inputMode === 'XAF' ? 'Bénéficiaire reçoit' : 'Montant débité'}
+                </p>
+                <p className="text-2xl font-bold text-primary">
+                  {(calculatedAmountXAF > 0 || calculatedAmountRMB > 0)
+                    ? inputMode === 'XAF'
+                      ? formatCurrencyRMB(calculatedAmountRMB)
+                      : `${formatXAF(calculatedAmountXAF)} XAF`
+                    : inputMode === 'XAF' ? '¥ 0,00 RMB' : '0 XAF'}
+                </p>
+                {clientWallet && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Solde : {formatXAF(clientWallet.balance_xaf)} XAF
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Amount presets */}
-            <div className="px-4 pb-4">
-              <p className="text-xs text-muted-foreground text-center mb-3">Montants rapides</p>
+            {/* Quick amounts */}
+            <div className="px-4 mb-4">
               <div className="grid grid-cols-4 gap-2">
                 {(inputMode === 'XAF' ? AMOUNT_PRESETS_XAF : AMOUNT_PRESETS_RMB).map((preset) => (
                   <button
@@ -343,7 +405,7 @@ export function MobileNewPayment() {
                       }
                     }}
                     className={cn(
-                      'h-12 rounded-xl font-medium transition-colors',
+                      'h-11 rounded-xl text-sm font-medium transition-colors',
                       (inputMode === 'XAF' ? amountXAF : amountRMB) === preset.toString()
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-foreground'
@@ -353,45 +415,27 @@ export function MobileNewPayment() {
                       ? preset >= 1000000
                         ? `${preset / 1000000}M`
                         : `${preset / 1000}K`
-                      : `¥${preset}`}
+                      : `¥${preset.toLocaleString('fr-FR')}`}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Conversion display */}
-            {(calculatedAmountXAF > 0 || calculatedAmountRMB > 0) && (
-              <div className="mx-4 mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Montant débité</span>
-                  <span className="font-bold">{formatXAF(calculatedAmountXAF)} XAF</span>
+            {/* Error: insufficient balance */}
+            {isBalanceInsufficient && calculatedAmountXAF > 0 && (
+              <div className="mx-4 mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+                  <span className="text-sm font-medium text-destructive">
+                    Solde insuffisant : il manque {formatXAF(Math.abs(balanceAfter))} XAF
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Montant à payer</span>
-                  <span className="font-bold text-primary">{formatCurrencyRMB(calculatedAmountRMB)}</span>
-                </div>
-                <div className="flex justify-between text-xs border-t pt-2">
-                  <span className="text-muted-foreground">Taux: 1M XAF =</span>
-                  <span>{formatCurrencyRMB(1000000 * effectiveRate)}</span>
-                </div>
-                {clientWallet && (
-                  <div
-                    className={cn(
-                      'flex justify-between text-sm font-medium border-t pt-2',
-                      isBalanceInsufficient ? 'text-destructive' : 'text-green-600'
-                    )}
-                  >
-                    <span>Solde après</span>
-                    <span>{formatXAF(balanceAfter)} XAF</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {isBalanceInsufficient && (
-              <div className="mx-4 mb-4 flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
-                <AlertCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">Solde insuffisant</span>
+                <button
+                  onClick={() => navigate('/m/deposits/new')}
+                  className="mt-2 text-sm text-primary font-medium"
+                >
+                  Ajouter un dépôt
+                </button>
               </div>
             )}
 
@@ -464,10 +508,10 @@ export function MobileNewPayment() {
               </Drawer>
             </div>
 
-            <div className="px-4 pb-6">
+            <div className="px-4 pb-6 mt-auto">
               <button
                 onClick={() => setStep('method')}
-                disabled={!calculatedAmountXAF || calculatedAmountXAF < 1000 || isBalanceInsufficient}
+                disabled={!calculatedAmountXAF || calculatedAmountXAF < BUSINESS_RULES.MIN_PAYMENT_AMOUNT || isBalanceInsufficient}
                 className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
               >
                 Continuer

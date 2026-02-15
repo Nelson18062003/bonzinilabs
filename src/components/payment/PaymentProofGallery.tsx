@@ -1,24 +1,36 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
-  Image as ImageIcon, 
-  Download, 
-  FileText, 
-  User, 
+import {
+  Eye,
+  Download,
+  FileText,
+  User,
   Building2,
-  ZoomIn,
-  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { PaymentProof } from '@/hooks/usePayments';
+
+// ── ProofImage: fallback when signed URL fails ──
+function ProofImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className={cn('flex flex-col items-center justify-center bg-muted/50', className)}>
+        <FileText className="w-8 h-8 text-muted-foreground mb-1" />
+        <p className="text-[10px] text-muted-foreground text-center">Image indisponible</p>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
+}
 
 interface PaymentProofGalleryProps {
   proofs: PaymentProof[];
@@ -27,9 +39,9 @@ interface PaymentProofGalleryProps {
   showUploadedBy?: boolean;
 }
 
-export const PaymentProofGallery = ({ 
-  proofs, 
-  title, 
+export const PaymentProofGallery = ({
+  proofs,
+  title,
   emptyMessage,
   showUploadedBy = true
 }: PaymentProofGalleryProps) => {
@@ -53,7 +65,7 @@ export const PaymentProofGallery = ({
   if (proofs.length === 0) {
     return (
       <div className="text-center py-6">
-        <ImageIcon className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+        <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       </div>
     );
@@ -62,97 +74,80 @@ export const PaymentProofGallery = ({
   return (
     <>
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
-        
-        {/* Thumbnail Grid */}
-        <div className="grid grid-cols-3 gap-2">
-          {proofs.map((proof) => (
-            <div 
-              key={proof.id} 
-              className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group"
-              onClick={() => setSelectedProof(proof)}
-            >
-              {isImage(proof.file_type) ? (
-                <img
-                  src={proof.file_url}
-                  alt={proof.file_name}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                  <FileText className="w-8 h-8 text-primary mb-1" />
-                  <p className="text-[10px] text-muted-foreground text-center truncate w-full">
-                    {proof.file_name}
-                  </p>
-                </div>
-              )}
+        {title && (
+          <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
+        )}
 
-              {/* Overlay on hover */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <ZoomIn className="w-6 h-6 text-white" />
-              </div>
-
-              {/* Badge for upload type */}
-              {showUploadedBy && (
-                <Badge
-                  variant="secondary"
-                  className="absolute top-1 left-1 text-[10px] py-0 px-1"
-                >
-                  {proof.uploaded_by_type === 'admin' ? (
-                    <Building2 className="w-2.5 h-2.5 mr-0.5" />
-                  ) : (
-                    <User className="w-2.5 h-2.5 mr-0.5" />
-                  )}
-                  {proof.uploaded_by_type === 'admin' ? 'Bonzini' : 'Moi'}
-                </Badge>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* List view for details */}
+        {/* Mobile-friendly proof list — always-visible actions */}
         <div className="space-y-2">
           {proofs.map((proof) => (
-            <div 
-              key={proof.id} 
-              className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
+            <div
+              key={proof.id}
+              className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/20"
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              {/* Thumbnail — tap to view */}
+              <div
+                className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-border bg-muted/30 cursor-pointer active:scale-95 transition-transform"
+                onClick={() => setSelectedProof(proof)}
+              >
                 {isImage(proof.file_type) ? (
-                  <ImageIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <ProofImage
+                    src={proof.file_url}
+                    alt={proof.file_name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-primary" />
+                  </div>
                 )}
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{proof.file_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {showUploadedBy && (
-                      <span>
-                        {proof.uploaded_by_type === 'admin' ? 'Bonzini' : 'Vous'} •{' '}
-                      </span>
+
+                {/* Upload type badge */}
+                {showUploadedBy && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] px-1 py-0.5 text-center flex items-center justify-center gap-0.5">
+                    {proof.uploaded_by_type === 'admin' ? (
+                      <><Building2 className="w-2.5 h-2.5" /> Bonzini</>
+                    ) : (
+                      <><User className="w-2.5 h-2.5" /> Moi</>
                     )}
-                    {format(new Date(proof.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
-                  </p>
-                </div>
+                  </div>
+                )}
               </div>
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7"
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {proof.file_name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(proof.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                </p>
+              </div>
+
+              {/* Action buttons — always visible */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-8 h-8"
                   onClick={() => setSelectedProof(proof)}
                 >
-                  <ZoomIn className="w-3.5 h-3.5" />
+                  {isImage(proof.file_type) ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7"
-                  onClick={() => handleDownload(proof)}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </Button>
+                {isImage(proof.file_type) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8"
+                    onClick={() => handleDownload(proof)}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
@@ -168,13 +163,23 @@ export const PaymentProofGallery = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="relative flex-1 overflow-auto p-4 pt-0">
+          <div className="p-4 pt-2">
             {selectedProof && isImage(selectedProof.file_type) ? (
-              <img
-                src={selectedProof.file_url}
-                alt={selectedProof.file_name}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
-              />
+              <>
+                <ProofImage
+                  src={selectedProof.file_url}
+                  alt={selectedProof.file_name}
+                  className="w-full max-h-[70vh] object-contain rounded-lg"
+                />
+                <Button
+                  className="w-full mt-4"
+                  variant="outline"
+                  onClick={() => handleDownload(selectedProof)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Télécharger
+                </Button>
+              </>
             ) : selectedProof ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <FileText className="w-16 h-16 text-primary mb-4" />
@@ -190,29 +195,17 @@ export const PaymentProofGallery = ({
             ) : null}
           </div>
 
-          {selectedProof && (
-            <div className="p-4 pt-2 border-t flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {showUploadedBy && (
-                  <span className="flex items-center gap-1">
-                    {selectedProof.uploaded_by_type === 'admin' ? (
-                      <>
-                        <Building2 className="w-3.5 h-3.5" /> Ajouté par Bonzini
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-3.5 h-3.5" /> Ajouté par vous
-                      </>
-                    )}
-                    <span className="mx-1">•</span>
-                    {format(new Date(selectedProof.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
-                  </span>
+          {selectedProof && showUploadedBy && (
+            <div className="px-4 pb-4 pt-0">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                {selectedProof.uploaded_by_type === 'admin' ? (
+                  <><Building2 className="w-3.5 h-3.5" /> Ajouté par Bonzini</>
+                ) : (
+                  <><User className="w-3.5 h-3.5" /> Ajouté par vous</>
                 )}
-              </div>
-              <Button variant="outline" size="sm" onClick={() => handleDownload(selectedProof)}>
-                <Download className="w-4 h-4 mr-2" />
-                Télécharger
-              </Button>
+                <span className="mx-1">•</span>
+                {format(new Date(selectedProof.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+              </p>
             </div>
           )}
         </DialogContent>

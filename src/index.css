@@ -543,18 +543,6 @@
     @apply w-full px-4 py-3.5 bg-secondary/50 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
   }
   
-  .nav-item {
-    @apply flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors;
-  }
-  
-  .nav-item-active {
-    @apply text-primary bg-primary/10;
-  }
-  
-  .nav-item-inactive {
-    @apply text-muted-foreground hover:text-foreground;
-  }
-  
   .amount-input {
     @apply text-4xl font-bold text-center bg-transparent border-none outline-none w-full;
     font-variant-numeric: tabular-nums;
@@ -579,6 +567,332 @@
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out;
   }
+
+  /* =====================================================
+     PREMIUM AUTH — Floating Label Inputs & Animations
+     ===================================================== */
+
+  .premium-input-wrapper {
+    @apply relative;
+  }
+
+  .premium-input {
+    @apply w-full px-4 pt-6 pb-2 bg-secondary/30 border border-border/50 rounded-xl text-foreground
+           placeholder-transparent
+           focus:outline-none focus:border-primary/50 focus:bg-secondary/20
+           transition-all duration-300;
+  }
+
+  .premium-input:focus {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  }
+
+  .premium-input-label {
+    @apply absolute left-4 text-muted-foreground transition-all duration-200 pointer-events-none;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+  }
+
+  .premium-input:focus ~ .premium-input-label,
+  .premium-input:not(:placeholder-shown) ~ .premium-input-label {
+    top: 0.5rem;
+    transform: translateY(0);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: hsl(var(--primary));
+  }
+
+  .premium-input:-webkit-autofill ~ .premium-input-label {
+    top: 0.5rem;
+    transform: translateY(0);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: hsl(var(--primary));
+  }
+
+  .premium-input-icon {
+    @apply absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors duration-200;
+  }
+
+  .premium-input:focus ~ .premium-input-icon {
+    @apply text-primary;
+  }
+
+  .premium-input-has-left-icon {
+    @apply pl-12;
+  }
+
+  .premium-input-has-left-icon ~ .premium-input-label {
+    @apply left-12;
+  }
+
+  .premium-input-has-right {
+    @apply pr-12;
+  }
+
+  .premium-input-error {
+    @apply border-destructive/50;
+  }
+
+  .premium-input-error:focus {
+    box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.1);
+  }
+
+  /* Step transition containers */
+  .step-enter-right {
+    animation: slideLeft 0.35s ease-out both;
+  }
+
+  .step-enter-left {
+    animation: slideRight 0.35s ease-out both;
+  }
+
+  /* Shake on error */
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
+
+  /* Float for decorative elements */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 7s ease-in-out infinite;
+    animation-delay: 2s;
+  }
+
+  /* Logo entrance */
+  .animate-logo-entrance {
+    animation: logoEntrance 0.6s ease-out both;
+  }
+
+  /* Fade out before route change */
+  .animate-fade-out {
+    animation: fadeOut 0.3s ease-in both;
+  }
+
+  /* KPI card entrance */
+  .animate-kpi-entrance {
+    animation: kpiEntrance 0.4s ease-out both;
+  }
+
+  /* Deposit creation loading pulse */
+  .animate-deposit-pulse {
+    animation: depositPulse 1.5s ease-in-out infinite;
+  }
+
+  /* =====================================================
+     LIQUID GLASS NAVIGATION BAR
+     ===================================================== */
+
+  .liquid-nav {
+    @apply fixed left-3 right-3 z-50 rounded-2xl overflow-hidden;
+    bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow:
+      0 -1px 0 0 hsl(var(--foreground) / 0.03),
+      0 8px 32px -8px hsl(var(--foreground) / 0.12),
+      0 2px 8px -2px hsl(var(--foreground) / 0.06);
+  }
+
+  .dark .liquid-nav {
+    background: hsl(var(--card) / 0.6);
+    border-color: hsl(var(--foreground) / 0.08);
+    box-shadow:
+      0 -1px 0 0 hsl(var(--foreground) / 0.05),
+      0 8px 32px -8px hsl(0 0% 0% / 0.4),
+      0 2px 8px -2px hsl(0 0% 0% / 0.2);
+  }
+
+  /* Noise texture overlay */
+  .liquid-nav-noise {
+    @apply absolute inset-0 pointer-events-none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    border-radius: inherit;
+  }
+
+  .dark .liquid-nav-noise {
+    opacity: 0.04;
+  }
+
+  /* Gradient tint overlay */
+  .liquid-nav-tint {
+    @apply absolute inset-0 pointer-events-none;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.04) 0%,
+      transparent 50%,
+      hsl(var(--primary) / 0.02) 100%
+    );
+    border-radius: inherit;
+  }
+
+  .dark .liquid-nav-tint {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.06) 0%,
+      transparent 50%,
+      hsl(var(--primary) / 0.03) 100%
+    );
+  }
+
+  /* Active pill — track (handles translateX transition) */
+  .liquid-pill-track {
+    @apply absolute;
+    top: 6px;
+    height: calc(100% - 12px);
+    transition:
+      transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+      width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity 0.2s ease-out;
+    will-change: transform, width;
+  }
+
+  /* Active pill — visible body (handles stretch animation) */
+  .liquid-pill-body {
+    @apply w-full h-full rounded-xl;
+    background: hsl(var(--primary) / 0.12);
+  }
+
+  .dark .liquid-pill-body {
+    background: hsl(var(--primary) / 0.15);
+  }
+
+  .liquid-pill-moving .liquid-pill-body {
+    animation: pillStretch 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Tab item */
+  .liquid-tab {
+    @apply relative flex flex-col items-center justify-center gap-0.5;
+    @apply text-muted-foreground transition-colors duration-300;
+    min-width: 56px;
+    min-height: 44px;
+    padding: 6px 12px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    z-index: 1;
+  }
+
+  .liquid-tab-active {
+    @apply text-primary;
+  }
+
+  .liquid-tab-label {
+    @apply text-[10px] font-medium leading-none;
+  }
+
+  .liquid-tab-icon {
+    @apply w-5 h-5 transition-transform duration-200;
+  }
+
+  /* Press feedback */
+  .liquid-tab:active .liquid-tab-icon {
+    transform: scale(0.85);
+  }
+
+  /* Bounce on becoming active */
+  .liquid-tab-bounce .liquid-tab-icon {
+    animation: iconBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Focus ring */
+  .liquid-tab:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+    border-radius: 0.75rem;
+  }
+
+  /* Badge */
+  .liquid-badge {
+    @apply absolute flex items-center justify-center;
+    top: 2px;
+    right: 50%;
+    transform: translateX(calc(50% + 10px));
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  .liquid-badge-enter {
+    animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* =====================================================
+     PREMIUM DEPOSIT MODULE
+     ===================================================== */
+
+  /* Glass stat card */
+  .deposit-stat-card {
+    @apply relative p-4 rounded-2xl border overflow-hidden transition-all duration-200;
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+  }
+  .deposit-stat-card.active {
+    @apply ring-2 ring-offset-1 scale-[1.02];
+  }
+
+  /* Premium deposit row */
+  .deposit-row {
+    @apply w-full bg-card rounded-2xl p-4 border border-border text-left;
+    @apply active:scale-[0.98] transition-all duration-150;
+  }
+
+  /* SLA age indicator dot */
+  .sla-dot { @apply w-2 h-2 rounded-full flex-shrink-0; }
+  .sla-fresh { @apply bg-green-500; }
+  .sla-aging { @apply bg-yellow-500; }
+  .sla-overdue { @apply bg-red-500; }
+  .sla-overdue.animate { animation: slaPulse 1.5s ease-in-out infinite; }
+
+  /* Amount hero display */
+  .amount-hero {
+    @apply text-3xl font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Proof thumbnail */
+  .proof-thumb {
+    @apply relative rounded-xl overflow-hidden border bg-muted;
+    @apply active:scale-[0.96] transition-transform duration-150;
+  }
+
+  /* Glass action bar */
+  .glass-action-bar {
+    @apply fixed left-0 right-0 z-40 p-4;
+    background: hsl(var(--background) / 0.85);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border-top: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  /* Bottom sheet */
+  .bottom-sheet-overlay {
+    @apply fixed inset-0 z-[60] bg-black/50 flex items-end;
+  }
+  .bottom-sheet-content {
+    @apply w-full bg-background rounded-t-2xl max-h-[85vh] flex flex-col;
+    animation: sheetSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+@keyframes depositPulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
 }
 
 @keyframes slideUp {
@@ -612,6 +926,17 @@
   }
 }
 
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes pulse-soft {
   0%, 100% {
     opacity: 1;
@@ -623,6 +948,91 @@
 
 .animate-pulse-soft {
   animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-30px); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+@keyframes logoEntrance {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes kpiEntrance {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Liquid nav — pill stretch/squish */
+@keyframes pillStretch {
+  0%   { transform: scaleX(1) scaleY(1); }
+  30%  { transform: scaleX(1.12) scaleY(0.92); }
+  70%  { transform: scaleX(1.04) scaleY(0.97); }
+  100% { transform: scaleX(1) scaleY(1); }
+}
+
+/* Liquid nav — icon bounce on select */
+@keyframes iconBounce {
+  0%   { transform: scale(1) translateY(0); }
+  40%  { transform: scale(1.15) translateY(-2px); }
+  70%  { transform: scale(0.95) translateY(1px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* Liquid nav — badge pop-in */
+@keyframes badgePop {
+  0%   { transform: translateX(calc(50% + 10px)) scale(0); opacity: 0; }
+  60%  { transform: translateX(calc(50% + 10px)) scale(1.2); opacity: 1; }
+  100% { transform: translateX(calc(50% + 10px)) scale(1); opacity: 1; }
+}
+
+@keyframes swapRotate {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+
+@keyframes springSwap {
+  0%   { transform: rotate(0deg); }
+  60%  { transform: rotate(200deg); }
+  80%  { transform: rotate(170deg); }
+  100% { transform: rotate(180deg); }
+}
+
+/* Deposit — SLA pulse for overdue items */
+@keyframes slaPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Deposit — Bottom sheet slide up */
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 /* Custom scrollbar */
@@ -668,5 +1078,26 @@
   .touch-target-mobile {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+/* Reduced motion — disable liquid nav animations */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-pill-track {
+    transition-duration: 0.01ms !important;
+  }
+  .liquid-pill-moving .liquid-pill-body,
+  .liquid-tab-bounce .liquid-tab-icon,
+  .liquid-badge-enter {
+    animation: none !important;
+  }
+  .liquid-tab:active .liquid-tab-icon {
+    transform: none !important;
+  }
+  .sla-overdue.animate {
+    animation: none !important;
+  }
+  .bottom-sheet-content {
+    animation: none !important;
   }
 }

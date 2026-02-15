@@ -8,7 +8,6 @@ import {
   Image,
   File,
   ArrowDownToLine,
-  Loader2,
   X,
 } from 'lucide-react';
 import {
@@ -21,18 +20,24 @@ import {
 } from '@/components/ui/drawer';
 import { useAdminProofs } from '@/hooks/useAdminData';
 import { formatDate } from '@/lib/formatters';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
+import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 
 export function MobileProofsScreen() {
-  const { data: proofs, isLoading } = useAdminProofs();
+  const { data: proofs, isLoading, refetch } = useAdminProofs();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [selectedProof, setSelectedProof] = useState<typeof proofs extends (infer T)[] | undefined ? T : never | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const filteredProofs = proofs?.filter((proof) => {
-    const matchesSearch =
-      proof.clientName.toLowerCase().includes(search.toLowerCase()) ||
-      proof.file_name.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
+    if (!debouncedSearch) return true;
+    const s = debouncedSearch.toLowerCase();
+    return (
+      proof.clientName.toLowerCase().includes(s) ||
+      proof.file_name.toLowerCase().includes(s)
+    );
   }) || [];
 
   const getFileIcon = (fileName: string) => {
@@ -53,22 +58,11 @@ export function MobileProofsScreen() {
     setPreviewOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <MobileHeader title="Justificatifs" backTo="/m/more" showBack />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <MobileHeader title="Justificatifs" backTo="/m/more" showBack />
 
-      <div className="flex-1 overflow-y-auto">
+      <PullToRefresh onRefresh={refetch} className="flex-1 overflow-y-auto">
         {/* Stats */}
         <div className="px-4 py-4 grid grid-cols-2 gap-3">
           <div className="bg-card rounded-xl p-4 border border-border">
@@ -104,12 +98,17 @@ export function MobileProofsScreen() {
               placeholder="Rechercher par client ou fichier..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted border-0 text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
 
         {/* Proofs Grid */}
+        {isLoading ? (
+          <div className="px-4 pb-6">
+            <SkeletonListScreen count={4} />
+          </div>
+        ) : (
         <div className="px-4 pb-6">
           <div className="grid grid-cols-2 gap-3">
             {filteredProofs.map((proof) => (
@@ -155,7 +154,8 @@ export function MobileProofsScreen() {
             </div>
           )}
         </div>
-      </div>
+        )}
+      </PullToRefresh>
 
       {/* Preview Drawer */}
       <Drawer open={previewOpen} onOpenChange={setPreviewOpen}>

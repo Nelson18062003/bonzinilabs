@@ -14,6 +14,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { formatNumber } from '@/lib/formatters';
 
 interface RateChartProps {
   data: Array<{
@@ -152,18 +153,18 @@ export function RateChart({ data, title = "Historique des taux", height = 350, s
           </CardTitle>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span>
-              Min: <strong className="text-red-500">{minValue.toLocaleString()} ¥</strong>
+              Min: <strong className="text-red-500">{formatNumber(minValue)} ¥</strong>
             </span>
             <span>
-              Max: <strong className="text-green-500">{maxValue.toLocaleString()} ¥</strong>
+              Max: <strong className="text-green-500">{formatNumber(maxValue)} ¥</strong>
             </span>
             <span>
-              Moy: <strong className="text-foreground">{avgValue.toLocaleString()} ¥</strong>
+              Moy: <strong className="text-foreground">{formatNumber(avgValue)} ¥</strong>
             </span>
             {maxValue !== minValue && (
               <span>
                 Variation: <strong className="text-primary">
-                  {((maxValue - minValue) / minValue * 100).toFixed(2)}%
+                  {formatNumber((maxValue - minValue) / minValue * 100, 2)}%
                 </strong>
               </span>
             )}
@@ -199,7 +200,7 @@ export function RateChart({ data, title = "Historique des taux", height = 350, s
             />
             <YAxis
               domain={yDomain}
-              tickFormatter={(value: number) => `${value.toLocaleString()} ¥`}
+              tickFormatter={(value: number) => `${formatNumber(value)} ¥`}
               tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               tickLine={{ stroke: 'hsl(var(--muted-foreground))', opacity: 0.5 }}
               axisLine={{ stroke: 'hsl(var(--muted-foreground))', opacity: 0.5 }}
@@ -218,7 +219,7 @@ export function RateChart({ data, title = "Historique des taux", height = 350, s
                       {data.formattedTime}
                     </p>
                     <p className="text-primary font-bold text-xl">
-                      {data.value.toLocaleString()} ¥
+                      {formatNumber(data.value)} ¥
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       pour 1 000 000 FCFA
@@ -228,9 +229,9 @@ export function RateChart({ data, title = "Historique des taux", height = 350, s
                         data.change > 0 ? 'text-green-500' : 'text-red-500'
                       }`}>
                         {data.change > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                        {data.change > 0 ? '+' : ''}{data.change.toLocaleString()} ¥
+                        {data.change > 0 ? '+' : ''}{formatNumber(data.change)} ¥
                         ({data.changePercent && data.changePercent > 0 ? '+' : ''}
-                        {data.changePercent?.toFixed(2)}%)
+                        {formatNumber(data.changePercent || 0, 2)}%)
                       </div>
                     )}
                   </div>

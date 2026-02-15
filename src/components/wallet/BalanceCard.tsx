@@ -1,6 +1,6 @@
-import { Eye, EyeOff, TrendingUp, Shield, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import { formatXAF, formatRMB, convertXAFtoRMB } from '@/lib/formatters';
+import { formatXAF, formatCurrencyRMB, formatNumber, convertXAFtoRMB } from '@/lib/formatters';
 import { useExchangeRate } from '@/hooks/useWallet';
 
 interface BalanceCardProps {
@@ -64,40 +64,23 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
       <div className="mb-4">
         {showBalance ? (
           <>
-            <div className="flex items-baseline">
-              <span className="balance-display text-primary-foreground">
-                {formatXAF(balanceXAF)}
-              </span>
-              <span className="balance-currency text-primary-foreground/70">XAF</span>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-primary-foreground/60 text-sm">≈</span>
-              <span className="text-xl font-semibold text-primary-foreground/90">
-                ¥ {formatRMB(balanceRMB)}
-              </span>
-              <span className="text-primary-foreground/60 text-sm">RMB</span>
-            </div>
+            <p className="balance-display text-primary-foreground">
+              {formatXAF(balanceXAF)} <span className="text-2xl font-medium text-primary-foreground/70">XAF</span>
+            </p>
+            <p className="text-lg font-semibold text-primary-foreground/80 mt-1">
+              ≈ {formatCurrencyRMB(balanceRMB)}
+            </p>
           </>
         ) : (
-          <div className="flex items-baseline">
-            <span className="balance-display text-primary-foreground">• • • • • •</span>
-          </div>
+          <p className="balance-display text-primary-foreground">• • • • • •</p>
         )}
       </div>
 
-      {/* Exchange Rate - Human readable format */}
+      {/* Exchange Rate */}
       <div className="flex items-center gap-2 pt-4 border-t border-primary-foreground/10">
         <TrendingUp className="w-4 h-4 text-primary-foreground/60" />
         <span className="text-sm text-primary-foreground/70">
-          Taux du jour : {xafPerRmb.toLocaleString('fr-FR')} XAF → 1 RMB
-        </span>
-      </div>
-
-      {/* Trust Badge - Feature 2 */}
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary-foreground/10">
-        <Shield className="w-4 h-4 text-green-400" />
-        <span className="text-xs text-primary-foreground/80">
-          Votre solde est 100% sécurisé 🛡️
+          Taux du jour : {formatNumber(xafPerRmb)} XAF = 1 RMB
         </span>
       </div>
     </div>

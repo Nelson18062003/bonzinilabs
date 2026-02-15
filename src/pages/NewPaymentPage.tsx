@@ -89,7 +89,7 @@ const NewPaymentPage = () => {
   
   const amountRMB = currency === 'RMB' 
     ? parseFloat(inputAmount) || 0 
-    : parseFloat((amountXAF * rate).toFixed(2));
+    : Math.round(amountXAF * rate * 100) / 100;
   
   const hasEnoughBalance = amountXAF <= (wallet?.balance_xaf || 0);
   const isValidAmount = amountXAF > 0;
@@ -211,10 +211,7 @@ const NewPaymentPage = () => {
           </span>
           <p className="text-3xl font-bold text-primary-foreground mt-1">
             {currency === 'XAF' ? (
-              <>
-                ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                <span className="text-lg font-medium text-primary-foreground/70 ml-2">RMB</span>
-              </>
+              formatCurrencyRMB(amountRMB)
             ) : (
               <>
                 {formatXAF(amountXAF)}
@@ -233,7 +230,7 @@ const NewPaymentPage = () => {
             onClick={() => setInputAmount(preset.toString())}
             className="py-3 rounded-xl bg-secondary text-foreground font-medium hover:bg-secondary/80 transition-colors text-sm"
           >
-            {currency === 'XAF' ? formatXAF(preset) : `¥${preset.toLocaleString()}`}
+            {currency === 'XAF' ? formatXAF(preset) : `¥${preset.toLocaleString('fr-FR')}`}
           </button>
         ))}
       </div>
@@ -510,7 +507,7 @@ const NewPaymentPage = () => {
           </div>
           <p className="text-sm text-muted-foreground">Vous envoyez</p>
           <p className="text-3xl font-bold text-foreground mb-1">
-            ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
+            {formatCurrencyRMB(amountRMB)}
           </p>
           <p className="text-sm text-muted-foreground">
             ({formatXAF(amountXAF)} XAF)
@@ -525,7 +522,7 @@ const NewPaymentPage = () => {
 
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Taux utilisé</span>
-            <span className="font-medium text-foreground">1 XAF = {rate.toFixed(5)} RMB</span>
+            <span className="font-medium text-foreground">1M XAF = {formatCurrencyRMB(1000000 * rate)}</span>
           </div>
 
           {beneficiaryForm.name && (
@@ -632,7 +629,7 @@ const NewPaymentPage = () => {
           Votre demande de paiement a été enregistrée
         </p>
         <p className="text-2xl font-bold text-primary mb-2">
-          ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
+          {formatCurrencyRMB(amountRMB)}
         </p>
         <p className="text-sm text-muted-foreground mb-8">
           {formatXAF(amountXAF)} XAF débités de votre solde

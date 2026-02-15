@@ -1,42 +1,62 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useAdminClientDetail } from '@/hooks/useAdminData';
-import { formatCurrency, formatDate } from '@/lib/formatters';
-import { DEPOSIT_STATUS_LABELS } from '@/data/staticData';
+import { useClient } from '@/hooks/useClientManagement';
+import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
+import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   Phone,
   Calendar,
   Wallet,
   ArrowDownCircle,
   ArrowUpCircle,
   ChevronRight,
-  Building2,
-  MapPin,
+  History,
+  Plus,
+  Minus,
+  MoreVertical,
+  FileDown,
 } from 'lucide-react';
+import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
+import { Button } from '@/components/ui/button';
+import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import type { AdjustmentType } from '@/types/admin';
 
-const STATUS_COLORS: Record<string, string> = {
-  created: 'bg-gray-100 text-gray-700',
-  awaiting_proof: 'bg-yellow-100 text-yellow-700',
-  proof_submitted: 'bg-blue-100 text-blue-700',
-  admin_review: 'bg-purple-100 text-purple-700',
-  validated: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  ACTIVE: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  INACTIVE: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+  SUSPENDED: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Actif',
+  INACTIVE: 'Inactif',
+  SUSPENDED: 'Suspendu',
+  PENDING_KYC: 'KYC en attente',
 };
 
 export function MobileClientDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
-  const { data: client, isLoading } = useAdminClientDetail(clientId || '');
+  const { data: client, isLoading, refetch } = useClient(clientId || '');
+  const { data: currentRate } = useCurrentExchangeRate();
+
+  // Adjustment drawer state
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
+  const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('CREDIT');
+
+  const openAdjustment = (type: AdjustmentType) => {
+    setAdjustmentType(type);
+    setAdjustmentOpen(true);
+  };
 
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
         <MobileHeader title="Détail client" showBack backTo="/m/clients" />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <SkeletonClientDetail />
       </div>
     );
   }
@@ -52,70 +72,114 @@ export function MobileClientDetail() {
     );
   }
 
-  const initials = `${client.first_name?.[0] || ''}${client.last_name?.[0] || ''}`;
-  const recentDeposits = client.deposits?.slice(0, 5) || [];
+  const initials = `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen pb-4">
       <MobileHeader
-        title="Détail client"
+        title="Fiche client"
         showBack
         backTo="/m/clients"
       />
 
       <div className="flex-1 px-4 py-4 space-y-4">
-        {/* Profile Header */}
-        <div className="bg-card rounded-2xl p-5 border border-border text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary mx-auto mb-3">
-            {initials}
-          </div>
-          <h2 className="text-xl font-semibold">
-            {client.first_name} {client.last_name}
-          </h2>
-          {client.phone && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground mt-1">
-              <Phone className="w-4 h-4" />
-              {client.phone}
+        {/* Profile Card */}
+        <div className="bg-card rounded-2xl p-5 border border-border">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-xl font-semibold text-primary flex-shrink-0">
+              {initials}
             </div>
-          )}
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-2">
-            <Calendar className="w-3 h-3" />
-            Client depuis {formatDate(client.created_at)}
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold truncate">
+                  {client.firstName} {client.lastName}
+                </h2>
+                <span className={cn(
+                  'px-2 py-0.5 rounded text-[10px] font-medium',
+                  STATUS_BADGE_STYLES[client.status]
+                )}>
+                  {STATUS_LABELS[client.status]}
+                </span>
+              </div>
+
+              {client.phone && (
+                <a
+                  href={`tel:${client.phone}`}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  {client.phone}
+                </a>
+              )}
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+                <Calendar className="w-3 h-3" />
+                Client depuis {formatDate(client.createdAt)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Wallet Balance Card */}
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Solde disponible</span>
+            </div>
+            <button
+              onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
+              className="text-primary text-sm font-medium"
+            >
+              Historique
+            </button>
           </div>
 
-          {/* Additional info */}
-          <div className="flex flex-wrap gap-2 justify-center mt-3">
-            {client.company_name && (
-              <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-xs">
-                <Building2 className="w-3 h-3" />
-                {client.company_name}
-              </span>
-            )}
-            {client.city && (
-              <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-xs">
-                <MapPin className="w-3 h-3" />
-                {client.city}
-              </span>
-            )}
+          <p className="text-3xl font-bold text-primary tracking-tight">
+            {formatXAF(client.walletBalance || 0)} <span className="text-xl font-medium text-primary/70">XAF</span>
+          </p>
+          {currentRate && (
+            <p className="text-base font-semibold text-muted-foreground mt-1">
+              ≈ {formatCurrencyRMB((client.walletBalance || 0) * currentRate.rate_xaf_to_rmb)}
+            </p>
+          )}
+
+          {client.lastLedgerEntry && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Dernier mouvement : {formatDate(client.lastLedgerEntry.createdAt)}
+            </p>
+          )}
+
+          {/* Quick Actions */}
+          <div className="flex gap-2 mt-4 pt-4 border-t border-primary/10">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/15"
+              onClick={() => openAdjustment('CREDIT')}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Crédit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/15"
+              onClick={() => openAdjustment('DEBIT')}
+            >
+              <Minus className="w-4 h-4 mr-1" />
+              Débit
+            </Button>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Wallet Balance */}
-          <button
-            onClick={() => navigate(`/m/clients/${client.user_id}/wallet`)}
-            className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20 text-left active:scale-[0.98] transition-transform"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-primary" />
-              </div>
-            </div>
-            <p className="text-lg font-bold">{formatCurrency(client.wallet?.balance_xaf || 0)}</p>
-            <p className="text-xs text-muted-foreground">Solde wallet</p>
-          </button>
-
           {/* Total Deposits */}
           <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center gap-2 mb-2">
@@ -123,7 +187,9 @@ export function MobileClientDetail() {
                 <ArrowDownCircle className="w-4 h-4 text-green-500" />
               </div>
             </div>
-            <p className="text-lg font-bold text-green-600">{formatCurrency(client.totalDeposits || 0)}</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">
+              {formatXAF(client.totalDeposits || 0)} <span className="text-sm font-medium">XAF</span>
+            </p>
             <p className="text-xs text-muted-foreground">Total dépôts</p>
           </div>
 
@@ -134,83 +200,77 @@ export function MobileClientDetail() {
                 <ArrowUpCircle className="w-4 h-4 text-blue-500" />
               </div>
             </div>
-            <p className="text-lg font-bold text-blue-600">{formatCurrency(client.totalPayments || 0)}</p>
-            <p className="text-xs text-muted-foreground">Total paiements</p>
-          </div>
-
-          {/* Last Deposit */}
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-amber-500" />
-              </div>
-            </div>
-            <p className="text-lg font-bold">
-              {recentDeposits[0] ? formatDate(recentDeposits[0].created_at) : 'N/A'}
+            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              {formatXAF(client.totalPayments || 0)} <span className="text-sm font-medium">XAF</span>
             </p>
-            <p className="text-xs text-muted-foreground">Dernier dépôt</p>
+            <p className="text-xs text-muted-foreground">Total paiements</p>
           </div>
         </div>
 
-        {/* Recent Deposits */}
-        {recentDeposits.length > 0 && (
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h3 className="font-medium">Dépôts récents</h3>
-              <button
-                onClick={() => navigate('/m/deposits')}
-                className="text-sm text-primary font-medium"
-              >
-                Voir tous
-              </button>
-            </div>
-            <div className="divide-y divide-border">
-              {recentDeposits.map((deposit) => (
-                <button
-                  key={deposit.id}
-                  onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                  className="w-full flex items-center justify-between p-4 active:bg-muted/50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium">{formatCurrency(deposit.amount_xaf)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(deposit.created_at)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px] font-medium",
-                      STATUS_COLORS[deposit.status]
-                    )}>
-                      {DEPOSIT_STATUS_LABELS[deposit.status]}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quick Actions */}
+        {/* Actions */}
         <div className="space-y-2">
           <button
-            onClick={() => navigate(`/m/clients/${client.user_id}/wallet`)}
+            onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
             className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary" />
+                <History className="w-5 h-5 text-primary" />
               </div>
               <div className="text-left">
-                <p className="font-medium">Voir le wallet</p>
-                <p className="text-xs text-muted-foreground">Historique des mouvements</p>
+                <p className="font-medium">Historique mouvements</p>
+                <p className="text-xs text-muted-foreground">Voir le ledger complet</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+
+          <button
+            onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
+            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                <ArrowDownCircle className="w-5 h-5 text-green-500" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">Déclarer un dépôt</p>
+                <p className="text-xs text-muted-foreground">Créer un nouveau dépôt</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+
+          <button
+            disabled
+            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <FileDown className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">Exporter relevé PDF</p>
+                <p className="text-xs text-muted-foreground">Bientôt disponible</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
       </div>
+
+      {/* Adjustment Drawer */}
+      <AdjustmentDrawer
+        open={adjustmentOpen}
+        onOpenChange={setAdjustmentOpen}
+        type={adjustmentType}
+        userId={client.id}
+        currentBalance={client.walletBalance || 0}
+        onSuccess={() => {
+          refetch();
+          setAdjustmentOpen(false);
+        }}
+      />
     </div>
   );
 }

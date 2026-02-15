@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { formatCurrencyRMB } from '@/lib/formatters';
 
 interface CashQRCodeProps {
   paymentId: string;
@@ -85,7 +86,7 @@ export function CashQRCode({
 
       <div className="text-center">
         <p className="text-2xl font-bold text-primary">
-          ¥ {amountRMB.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} RMB
+          {formatCurrencyRMB(amountRMB)}
         </p>
         <p className="text-sm text-muted-foreground mt-1">
           Bénéficiaire: <span className="font-medium text-foreground">{beneficiaryName}</span>

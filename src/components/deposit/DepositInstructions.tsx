@@ -1,3 +1,7 @@
+// ============================================================
+// MODULE DEPOTS — DepositInstructions (from scratch)
+// Method-specific instructions with copy-to-clipboard
+// ============================================================
 import { useState } from 'react';
 import { Copy, Check, Info, MapPin, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,7 +49,6 @@ interface InstructionInfo {
 function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
   const { method, amount_xaf, reference, bank_name, agency_name } = deposit;
 
-  // Bank methods
   if ((method === 'bank_transfer' || method === 'bank_cash') && bank_name) {
     const bankInfo = getBankInfo(bank_name);
     if (!bankInfo) return null;
@@ -73,7 +76,6 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     };
   }
 
-  // Orange Money
   if (method === 'om_transfer') {
     return {
       type: 'mobile',
@@ -109,7 +111,6 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     };
   }
 
-  // MTN Money
   if (method === 'mtn_transfer') {
     return {
       type: 'mobile',
@@ -145,7 +146,6 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     };
   }
 
-  // Agency
   if (method === 'agency_cash' && agency_name) {
     const agencyInfo = getAgencyInfo(agency_name);
     if (!agencyInfo) return null;
@@ -168,7 +168,6 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     };
   }
 
-  // Wave
   if (method === 'wave') {
     return {
       type: 'mobile',
@@ -193,10 +192,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const info = getInstructionInfo(deposit);
-
-  if (!info) {
-    return null;
-  }
+  if (!info) return null;
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -216,16 +212,12 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
       `Montant: ${formatXAF(deposit.amount_xaf)} XAF`,
       `Référence: ${deposit.reference}`,
     ];
-    if (info.bankName) {
-      parts.unshift(`Banque: ${info.bankName}`);
-    }
-    if (info.merchantCode) {
-      parts.push(`Code: ${info.merchantCode}`);
-    }
+    if (info.bankName) parts.unshift(`Banque: ${info.bankName}`);
+    if (info.merchantCode) parts.push(`Code: ${info.merchantCode}`);
     copyToClipboard(parts.join('\n'), 'all');
   };
 
-  const CopyButton = ({ text, field }: { text: string; field: string }) => (
+  const CopyBtn = ({ text, field }: { text: string; field: string }) => (
     <button
       onClick={() => copyToClipboard(text, field)}
       className="p-1.5 rounded-md hover:bg-muted transition-colors"
@@ -238,6 +230,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
     </button>
   );
 
+  // ── Compact mode (for detail screens) ──
   if (compact) {
     return (
       <div className="space-y-2 text-sm">
@@ -245,42 +238,37 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <span className="text-muted-foreground">{info.accountLabel}</span>
           <div className="flex items-center gap-1.5">
             <span className="font-medium font-mono text-xs">{info.accountValue}</span>
-            <CopyButton text={info.accountValue} field="account" />
+            <CopyBtn text={info.accountValue} field="account" />
           </div>
         </div>
         <div className="flex items-center justify-between py-1.5 border-b border-border/50">
           <span className="text-muted-foreground">Titulaire</span>
           <div className="flex items-center gap-1.5">
             <span className="font-medium">{info.accountName}</span>
-            <CopyButton text={info.accountName} field="name" />
+            <CopyBtn text={info.accountName} field="name" />
           </div>
         </div>
         <div className="flex items-center justify-between py-1.5">
           <span className="text-muted-foreground">Référence</span>
           <div className="flex items-center gap-1.5">
             <span className="font-medium text-primary font-mono text-xs">{deposit.reference}</span>
-            <CopyButton text={deposit.reference} field="reference" />
+            <CopyBtn text={deposit.reference} field="reference" />
           </div>
         </div>
       </div>
     );
   }
 
+  // ── Full mode ──
   return (
     <div className="space-y-4">
-      {/* Header with copy all */}
       {showTitle && (
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground flex items-center gap-2">
             <Info className="w-5 h-5 text-primary" />
             Instructions de dépôt
           </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={copyAllInfo}
-            className="text-xs"
-          >
+          <Button variant="ghost" size="sm" onClick={copyAllInfo} className="text-xs">
             {copiedField === 'all' ? (
               <>
                 <Check className="w-4 h-4 mr-1 text-success" />
@@ -296,14 +284,14 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
         </div>
       )}
 
-      {/* Account info */}
+      {/* Account info card */}
       <Card className="p-4 space-y-3 bg-muted/30">
         {info.bankName && (
           <div className="flex items-center justify-between py-2 border-b border-border/50">
             <span className="text-sm text-muted-foreground">Banque</span>
             <div className="flex items-center gap-2">
               <span className="font-medium text-foreground">{info.bankName}</span>
-              <CopyButton text={info.bankName} field="bank" />
+              <CopyBtn text={info.bankName} field="bank" />
             </div>
           </div>
         )}
@@ -312,7 +300,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <span className="text-sm text-muted-foreground">{info.accountLabel}</span>
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground font-mono text-sm">{info.accountValue}</span>
-            <CopyButton text={info.accountValue} field="account" />
+            <CopyBtn text={info.accountValue} field="account" />
           </div>
         </div>
 
@@ -320,7 +308,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <span className="text-sm text-muted-foreground">Titulaire</span>
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground">{info.accountName}</span>
-            <CopyButton text={info.accountName} field="name" />
+            <CopyBtn text={info.accountName} field="name" />
           </div>
         </div>
 
@@ -351,7 +339,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
               <span className="font-bold text-foreground font-mono text-sm break-all">
                 {info.merchantCode}
               </span>
-              <CopyButton text={info.merchantCode} field="merchant" />
+              <CopyBtn text={info.merchantCode} field="merchant" />
             </div>
           </div>
         )}
@@ -360,12 +348,12 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <span className="text-sm text-muted-foreground">Référence</span>
           <div className="flex items-center gap-2">
             <span className="font-medium text-primary font-mono text-xs">{deposit.reference}</span>
-            <CopyButton text={deposit.reference} field="reference" />
+            <CopyBtn text={deposit.reference} field="reference" />
           </div>
         </div>
       </Card>
 
-      {/* Instructions */}
+      {/* Step-by-step instructions */}
       <Card className="p-4">
         <p className="text-sm font-semibold text-foreground mb-4">Étapes à suivre</p>
         <ol className="space-y-3">
@@ -380,12 +368,9 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
         </ol>
       </Card>
 
-      {/* Note for withdrawal */}
       {info.note && (
         <Card className="p-4 bg-amber-50 border-amber-200">
-          <p className="text-sm text-amber-700">
-            {info.note}
-          </p>
+          <p className="text-sm text-amber-700">{info.note}</p>
         </Card>
       )}
     </div>

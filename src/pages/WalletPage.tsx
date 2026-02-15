@@ -8,6 +8,7 @@ import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
 import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
+import { formatNumber } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -57,7 +58,7 @@ const WalletPage = () => {
                     <Skeleton className="h-5 w-32" />
                   ) : (
                     <p className="text-sm font-semibold text-foreground">
-                      1M XAF = {Math.round(1000000 * currentXafToRmb).toLocaleString()} CNY
+                      1M XAF = {formatNumber(Math.round(1000000 * currentXafToRmb))} CNY
                     </p>
                   )}
                 </div>

@@ -1,13 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, SignUpData } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { LoginBackground } from '@/components/auth/LoginBackground';
+import { PremiumInput } from '@/components/auth/PremiumInput';
+import { ProgressDots } from '@/components/auth/ProgressDots';
+import { StepTransition } from '@/components/auth/StepTransition';
+import { BonziniLogo } from '@/components/BonziniLogo';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, Eye, EyeOff, User, Phone, Building, MapPin, Calendar, Briefcase } from 'lucide-react';
+import {
+  Loader2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Phone,
+  Building,
+  MapPin,
+  Calendar,
+  Briefcase,
+  ArrowLeft,
+} from 'lucide-react';
 import { z } from 'zod';
+import { cn } from '@/lib/utils';
 
 const emailSchema = z.string().email('Email invalide');
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
@@ -19,16 +34,25 @@ type AuthMode = 'login' | 'signup' | 'forgot-password' | 'reset-password';
 export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signIn, signUp, resetPassword, isLoading: authLoading, user } = useAuth();
-  
+  const { signIn, signUp, resetPassword, updatePassword, isLoading: authLoading, user } = useAuth();
+
   const [mode, setMode] = useState<AuthMode>('login');
+  const [loginStep, setLoginStep] = useState<0 | 1>(0);
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Signup additional fields
+  // Validation errors
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  // Signup fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -38,6 +62,8 @@ export default function AuthPage() {
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
+
+  const isEmailValid = emailSchema.safeParse(email).success;
 
   // Check for reset password mode from URL
   useEffect(() => {
@@ -54,109 +80,190 @@ export default function AuthPage() {
     }
   }, [user, mode, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const maskEmail = (email: string) => {
+    const [local, domain] = email.split('@');
+    if (!domain) return email;
+    const visible = local.slice(0, 3);
+    return `${visible}***@${domain}`;
+  };
+
+  const switchMode = (newMode: AuthMode) => {
+    setMode(newMode);
+    setLoginStep(0);
+    setDirection('forward');
+    setPasswordError('');
+    setEmailError('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+  };
+
+  // Login step 0 → 1
+  const handleEmailContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const emailValidation = emailSchema.safeParse(email);
-    if (!emailValidation.success) {
-      toast.error(emailValidation.error.errors[0].message);
+    setEmailError('');
+    if (!isEmailValid) {
+      setEmailError('Veuillez entrer un email valide');
+      return;
+    }
+    setDirection('forward');
+    setLoginStep(1);
+  };
+
+  // Login step 1 → submit
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    const pwdResult = passwordSchema.safeParse(password);
+    if (!pwdResult.success) {
+      setPasswordError(pwdResult.error.errors[0].message);
       return;
     }
 
-    if (mode === 'forgot-password') {
-      setIsSubmitting(true);
-      const { error } = await resetPassword(email);
-      setIsSubmitting(false);
-      
-      if (error) {
-        toast.error('Erreur lors de l\'envoi de l\'email de réinitialisation');
-        return;
+    setIsSubmitting(true);
+    const { error } = await signIn(email, password);
+    setIsSubmitting(false);
+
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        setPasswordError('Email ou mot de passe incorrect');
+      } else {
+        setPasswordError(error.message || 'Erreur lors de la connexion');
       }
-      
-      toast.success('Un email de réinitialisation a été envoyé à votre adresse');
-      setMode('login');
       return;
     }
 
-    const passwordValidation = passwordSchema.safeParse(password);
-    if (!passwordValidation.success) {
-      toast.error(passwordValidation.error.errors[0].message);
+    toast.success('Bienvenue !');
+    setIsFadingOut(true);
+    setTimeout(() => navigate('/'), 300);
+  };
+
+  // Forgot password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError('');
+
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
+      setEmailError(result.error.errors[0].message);
       return;
     }
 
-    if (mode === 'signup') {
-      // Validate required fields
-      const firstNameValidation = nameSchema.safeParse(firstName);
-      if (!firstNameValidation.success) {
-        toast.error('Le prénom est obligatoire');
-        return;
-      }
+    setIsSubmitting(true);
+    const { error } = await resetPassword(email);
+    setIsSubmitting(false);
 
-      const lastNameValidation = nameSchema.safeParse(lastName);
-      if (!lastNameValidation.success) {
-        toast.error('Le nom est obligatoire');
-        return;
-      }
+    if (error) {
+      toast.error("Erreur lors de l'envoi de l'email de réinitialisation");
+      return;
+    }
 
-      const phoneValidation = phoneSchema.safeParse(phone);
-      if (!phoneValidation.success) {
-        toast.error(phoneValidation.error.errors[0].message);
-        return;
-      }
+    toast.success('Un email de réinitialisation a été envoyé à votre adresse');
+    switchMode('login');
+  };
 
-      if (password !== confirmPassword) {
-        toast.error('Les mots de passe ne correspondent pas');
-        return;
-      }
+  // Reset password (from email link)
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    const pwdResult = passwordSchema.safeParse(password);
+    if (!pwdResult.success) {
+      setPasswordError(pwdResult.error.errors[0].message);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await updatePassword(password);
+    setIsSubmitting(false);
+
+    if (error) {
+      setPasswordError(error.message || 'Erreur lors de la réinitialisation');
+      return;
+    }
+
+    toast.success('Mot de passe mis à jour avec succès');
+    navigate('/');
+  };
+
+  // Signup
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError('');
+    setPasswordError('');
+
+    // Validate
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setEmailError(emailResult.error.errors[0].message);
+      return;
+    }
+
+    const pwdResult = passwordSchema.safeParse(password);
+    if (!pwdResult.success) {
+      setPasswordError(pwdResult.error.errors[0].message);
+      return;
+    }
+
+    const fnResult = nameSchema.safeParse(firstName);
+    if (!fnResult.success) {
+      toast.error('Le prénom est obligatoire');
+      return;
+    }
+
+    const lnResult = nameSchema.safeParse(lastName);
+    if (!lnResult.success) {
+      toast.error('Le nom est obligatoire');
+      return;
+    }
+
+    const phoneResult = phoneSchema.safeParse(phone);
+    if (!phoneResult.success) {
+      toast.error(phoneResult.error.errors[0].message);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError('Les mots de passe ne correspondent pas');
+      return;
     }
 
     setIsSubmitting(true);
 
-    if (mode === 'signup') {
-      const signUpData: SignUpData = {
-        email,
-        password,
-        firstName,
-        lastName,
-        phone,
-        dateOfBirth: dateOfBirth || undefined,
-        companyName: companyName || undefined,
-        activitySector: activitySector || undefined,
-        neighborhood: neighborhood || undefined,
-        city: city || undefined,
-        country: country || undefined,
-      };
+    const signUpData: SignUpData = {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth: dateOfBirth || undefined,
+      companyName: companyName || undefined,
+      activitySector: activitySector || undefined,
+      neighborhood: neighborhood || undefined,
+      city: city || undefined,
+      country: country || undefined,
+    };
 
-      const { error } = await signUp(signUpData);
-      setIsSubmitting(false);
-      
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast.error('Cet email est déjà utilisé');
-        } else {
-          toast.error(error.message || 'Erreur lors de l\'inscription');
-        }
-        return;
+    const { error } = await signUp(signUpData);
+    setIsSubmitting(false);
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error('Cet email est déjà utilisé');
+      } else {
+        toast.error(error.message || "Erreur lors de l'inscription");
       }
-      
-      toast.success('Compte créé avec succès !');
-      navigate('/');
-    } else if (mode === 'login') {
-      const { error } = await signIn(email, password);
-      setIsSubmitting(false);
-      
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast.error('Email ou mot de passe incorrect');
-        } else {
-          toast.error(error.message || 'Erreur lors de la connexion');
-        }
-        return;
-      }
-      
-      toast.success('Bienvenue !');
-      navigate('/');
+      return;
     }
+
+    toast.success('Compte créé avec succès !');
+    navigate('/');
   };
 
   if (authLoading) {
@@ -167,325 +274,552 @@ export default function AuthPage() {
     );
   }
 
-  const getTitle = () => {
-    switch (mode) {
-      case 'signup': return 'Créer un compte';
-      case 'forgot-password': return 'Mot de passe oublié';
-      case 'reset-password': return 'Réinitialiser le mot de passe';
-      default: return 'Connexion';
-    }
-  };
+  // ─── LOGIN MODE (multi-step) ──────────────────────────
+  if (mode === 'login') {
+    return (
+      <LoginBackground className={cn(isFadingOut && 'animate-fade-out')}>
+        <div className="flex-1 flex flex-col justify-center px-6 py-12">
+          {/* Back button (step 1 only) */}
+          {loginStep === 1 && (
+            <button
+              onClick={() => {
+                setDirection('back');
+                setLoginStep(0);
+                setPasswordError('');
+              }}
+              className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
 
-  const getDescription = () => {
-    switch (mode) {
-      case 'signup': return 'Créez votre compte pour commencer';
-      case 'forgot-password': return 'Entrez votre email pour réinitialiser votre mot de passe';
-      case 'reset-password': return 'Entrez votre nouveau mot de passe';
-      default: return 'Connectez-vous à votre compte';
-    }
-  };
-
-  const getButtonText = () => {
-    if (isSubmitting) return <Loader2 className="h-4 w-4 animate-spin" />;
-    switch (mode) {
-      case 'signup': return 'Créer mon compte';
-      case 'forgot-password': return 'Envoyer le lien';
-      case 'reset-password': return 'Réinitialiser';
-      default: return 'Se connecter';
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
-      <Card className={`w-full ${mode === 'signup' ? 'max-w-2xl' : 'max-w-md'}`}>
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <span className="text-2xl font-bold text-primary">B</span>
+          {/* Logo */}
+          <div
+            className="flex justify-center mb-6 animate-logo-entrance"
+            style={{ animationDelay: '0ms', animationFillMode: 'both' }}
+          >
+            <BonziniLogo size="xl" showText textPosition="bottom" />
           </div>
-          <CardTitle className="text-2xl font-bold">{getTitle()}</CardTitle>
-          <CardDescription>{getDescription()}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
-              <>
-                {/* Personal Info Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">Prénom *</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="firstName"
-                        type="text"
-                        placeholder="Jean"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Nom *</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="lastName"
-                        type="text"
-                        placeholder="Dupont"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
+          <StepTransition stepKey={loginStep} direction={direction}>
+            {loginStep === 0 ? (
+              <form onSubmit={handleEmailContinue} className="max-w-sm mx-auto w-full">
+                <div
+                  className="text-center mb-8 animate-slide-up"
+                  style={{ animationDelay: '80ms', animationFillMode: 'both' }}
+                >
+                  <h1 className="text-2xl font-bold mb-1">Connexion</h1>
+                  <p className="text-muted-foreground text-sm">
+                    Connectez-vous à votre compte
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone *</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+237 6XX XXX XXX"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date de naissance</Label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="dateOfBirth"
-                        type="date"
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                        className="pl-10"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Business Info Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Nom de l'entreprise</Label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="companyName"
-                        type="text"
-                        placeholder="Ma Société SARL"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="pl-10"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="activitySector">Secteur d'activité</Label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="activitySector"
-                        type="text"
-                        placeholder="Commerce, Import/Export..."
-                        value={activitySector}
-                        onChange={(e) => setActivitySector(e.target.value)}
-                        className="pl-10"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="neighborhood">Quartier</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="neighborhood"
-                        type="text"
-                        placeholder="Bonanjo"
-                        value={neighborhood}
-                        onChange={(e) => setNeighborhood(e.target.value)}
-                        className="pl-10"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="city">Ville</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="city"
-                        type="text"
-                        placeholder="Douala"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="pl-10"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Pays</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="country"
-                        type="text"
-                        placeholder="Cameroun"
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        className="pl-10"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4 mt-4">
-                  <p className="text-sm text-muted-foreground mb-4">Informations de connexion</p>
-                </div>
-              </>
-            )}
-
-            {mode !== 'reset-password' && (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email {mode === 'signup' && '*'}</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
+                <div
+                  className="mb-6 animate-slide-up"
+                  style={{ animationDelay: '160ms', animationFillMode: 'both' }}
+                >
+                  <PremiumInput
+                    id="client-email"
                     type="email"
-                    placeholder="votre@email.com"
+                    label="Adresse email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                    autoFocus={mode !== 'signup'}
-                    disabled={isSubmitting}
+                    onChange={(val) => {
+                      setEmail(val);
+                      setEmailError('');
+                    }}
+                    icon={<Mail className="w-5 h-5" />}
+                    error={emailError}
+                    isValid={isEmailValid && email.length > 0}
+                    autoComplete="email"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleEmailContinue(e);
+                    }}
                   />
                 </div>
-              </div>
-            )}
-            
-            {mode !== 'forgot-password' && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe {mode === 'signup' && '*'}</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
+
+                <ProgressDots totalSteps={2} currentStep={0} className="mb-6" />
+
+                <div
+                  className="animate-slide-up"
+                  style={{ animationDelay: '240ms', animationFillMode: 'both' }}
+                >
+                  <button
+                    type="submit"
+                    disabled={!email}
+                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Continuer
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleLogin} className="max-w-sm mx-auto w-full">
+                <div className="text-center mb-8">
+                  <h1 className="text-2xl font-bold mb-1">Bonjour,</h1>
+                  <p className="text-muted-foreground text-sm">{maskEmail(email)}</p>
+                </div>
+
+                <div className="mb-4">
+                  <PremiumInput
+                    id="client-password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    label="Mot de passe"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
-                    required
-                    disabled={isSubmitting}
+                    onChange={(val) => {
+                      setPassword(val);
+                      setPasswordError('');
+                    }}
+                    icon={<Lock className="w-5 h-5" />}
+                    rightElement={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    }
+                    error={passwordError}
+                    autoComplete="current-password"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleLogin(e);
+                    }}
                   />
+                </div>
+
+                <div className="text-right mb-4">
+                  <button
+                    type="button"
+                    onClick={() => switchMode('forgot-password')}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+
+                <ProgressDots totalSteps={2} currentStep={1} className="mb-6" />
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !password}
+                  className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Connexion...
+                    </>
+                  ) : (
+                    'Se connecter'
+                  )}
+                </button>
+              </form>
+            )}
+          </StepTransition>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            Pas encore de compte ?{' '}
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              className="text-primary hover:underline font-medium"
+            >
+              Créer un compte
+            </button>
+          </p>
+        </div>
+      </LoginBackground>
+    );
+  }
+
+  // ─── FORGOT PASSWORD MODE ──────────────────────────
+  if (mode === 'forgot-password') {
+    return (
+      <LoginBackground>
+        <div className="flex-1 flex flex-col justify-center px-6 py-12">
+          <button
+            onClick={() => switchMode('login')}
+            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <div
+            className="flex justify-center mb-6 animate-logo-entrance"
+            style={{ animationFillMode: 'both' }}
+          >
+            <BonziniLogo size="lg" showText={false} />
+          </div>
+
+          <form onSubmit={handleForgotPassword} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold mb-1">Mot de passe oublié</h1>
+              <p className="text-muted-foreground text-sm">
+                Entrez votre email pour recevoir un lien de réinitialisation
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <PremiumInput
+                id="forgot-email"
+                type="email"
+                label="Adresse email"
+                value={email}
+                onChange={(val) => {
+                  setEmail(val);
+                  setEmailError('');
+                }}
+                icon={<Mail className="w-5 h-5" />}
+                error={emailError}
+                isValid={isEmailValid && email.length > 0}
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || !email}
+              className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                'Envoyer le lien'
+              )}
+            </button>
+          </form>
+        </div>
+
+        <div className="p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            Vous vous souvenez ?{' '}
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="text-primary hover:underline font-medium"
+            >
+              Se connecter
+            </button>
+          </p>
+        </div>
+      </LoginBackground>
+    );
+  }
+
+  // ─── RESET PASSWORD MODE (from email link) ──────────────────────────
+  if (mode === 'reset-password') {
+    return (
+      <LoginBackground>
+        <div className="flex-1 flex flex-col justify-center px-6 py-12">
+          <div
+            className="flex justify-center mb-6 animate-logo-entrance"
+            style={{ animationFillMode: 'both' }}
+          >
+            <BonziniLogo size="lg" showText={false} />
+          </div>
+
+          <form onSubmit={handleResetPassword} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold mb-1">Nouveau mot de passe</h1>
+              <p className="text-muted-foreground text-sm">
+                Choisissez un nouveau mot de passe sécurisé
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <PremiumInput
+                id="reset-password"
+                type={showPassword ? 'text' : 'password'}
+                label="Nouveau mot de passe"
+                value={password}
+                onChange={(val) => {
+                  setPassword(val);
+                  setPasswordError('');
+                }}
+                icon={<Lock className="w-5 h-5" />}
+                rightElement={
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
-                </div>
-              </div>
-            )}
+                }
+                error={passwordError}
+                autoComplete="new-password"
+                autoFocus
+              />
+              <PremiumInput
+                id="reset-confirm"
+                type={showPassword ? 'text' : 'password'}
+                label="Confirmer le mot de passe"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                icon={<Lock className="w-5 h-5" />}
+                isValid={confirmPassword.length >= 6 && confirmPassword === password}
+                autoComplete="new-password"
+              />
+            </div>
 
-            {mode === 'signup' && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-            )}
-
-            {mode === 'login' && (
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => setMode('forgot-password')}
-                  className="text-sm text-primary hover:underline"
-                >
-                  Mot de passe oublié ?
-                </button>
-              </div>
-            )}
-
-            {mode === 'signup' && (
-              <p className="text-xs text-muted-foreground">* Champs obligatoires</p>
-            )}
-
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {getButtonText()}
-            </Button>
+            <button
+              type="submit"
+              disabled={isSubmitting || !password || !confirmPassword}
+              className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                'Réinitialiser'
+              )}
+            </button>
           </form>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-2">
-          {mode === 'login' && (
-            <p className="text-sm text-muted-foreground text-center">
-              Pas encore de compte ?{' '}
-              <button
-                type="button"
-                onClick={() => setMode('signup')}
-                className="text-primary hover:underline font-medium"
-              >
-                Créer un compte
-              </button>
+        </div>
+      </LoginBackground>
+    );
+  }
+
+  // ─── SIGNUP MODE ──────────────────────────
+  return (
+    <LoginBackground>
+      <div className="flex-1 flex flex-col px-4 py-8 sm:px-6">
+        <button
+          onClick={() => switchMode('login')}
+          className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+
+        <div
+          className="flex justify-center mb-4 animate-logo-entrance"
+          style={{ animationFillMode: 'both' }}
+        >
+          <BonziniLogo size="lg" showText textPosition="bottom" />
+        </div>
+
+        <div className="text-center mb-6 animate-slide-up" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
+          <h1 className="text-2xl font-bold mb-1">Créer un compte</h1>
+          <p className="text-muted-foreground text-sm">
+            Rejoignez Bonzini pour commencer
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSignup}
+          className="w-full max-w-2xl mx-auto card-glass p-5 sm:p-6 space-y-5 animate-slide-up"
+          style={{ animationDelay: '160ms', animationFillMode: 'both' }}
+        >
+          {/* Personal Info */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Informations personnelles
             </p>
-          )}
-          {(mode === 'signup' || mode === 'forgot-password') && (
-            <p className="text-sm text-muted-foreground text-center">
-              Déjà un compte ?{' '}
-              <button
-                type="button"
-                onClick={() => setMode('login')}
-                className="text-primary hover:underline font-medium"
-              >
-                Se connecter
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PremiumInput
+                id="signup-firstName"
+                label="Prénom *"
+                value={firstName}
+                onChange={setFirstName}
+                icon={<User className="w-4 h-4" />}
+                autoComplete="given-name"
+                disabled={isSubmitting}
+              />
+              <PremiumInput
+                id="signup-lastName"
+                label="Nom *"
+                value={lastName}
+                onChange={setLastName}
+                icon={<User className="w-4 h-4" />}
+                autoComplete="family-name"
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <PremiumInput
+              id="signup-phone"
+              type="tel"
+              label="Téléphone *"
+              value={phone}
+              onChange={setPhone}
+              icon={<Phone className="w-4 h-4" />}
+              autoComplete="tel"
+              disabled={isSubmitting}
+            />
+            <PremiumInput
+              id="signup-dob"
+              type="date"
+              label="Date de naissance"
+              value={dateOfBirth}
+              onChange={setDateOfBirth}
+              icon={<Calendar className="w-4 h-4" />}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* Business Info */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Entreprise (optionnel)
             </p>
-          )}
-        </CardFooter>
-      </Card>
-    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PremiumInput
+                id="signup-company"
+                label="Nom de l'entreprise"
+                value={companyName}
+                onChange={setCompanyName}
+                icon={<Building className="w-4 h-4" />}
+                disabled={isSubmitting}
+              />
+              <PremiumInput
+                id="signup-sector"
+                label="Secteur d'activité"
+                value={activitySector}
+                onChange={setActivitySector}
+                icon={<Briefcase className="w-4 h-4" />}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Adresse (optionnel)
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <PremiumInput
+                id="signup-neighborhood"
+                label="Quartier"
+                value={neighborhood}
+                onChange={setNeighborhood}
+                icon={<MapPin className="w-4 h-4" />}
+                disabled={isSubmitting}
+              />
+              <PremiumInput
+                id="signup-city"
+                label="Ville"
+                value={city}
+                onChange={setCity}
+                icon={<MapPin className="w-4 h-4" />}
+                disabled={isSubmitting}
+              />
+              <PremiumInput
+                id="signup-country"
+                label="Pays"
+                value={country}
+                onChange={setCountry}
+                icon={<MapPin className="w-4 h-4" />}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+
+          {/* Login Credentials */}
+          <div className="border-t border-border/50 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Identifiants de connexion
+            </p>
+            <div className="space-y-4">
+              <PremiumInput
+                id="signup-email"
+                type="email"
+                label="Email *"
+                value={email}
+                onChange={(val) => {
+                  setEmail(val);
+                  setEmailError('');
+                }}
+                icon={<Mail className="w-4 h-4" />}
+                error={emailError}
+                isValid={isEmailValid && email.length > 0}
+                autoComplete="email"
+                disabled={isSubmitting}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <PremiumInput
+                  id="signup-password"
+                  type={showPassword ? 'text' : 'password'}
+                  label="Mot de passe *"
+                  value={password}
+                  onChange={(val) => {
+                    setPassword(val);
+                    setPasswordError('');
+                  }}
+                  icon={<Lock className="w-4 h-4" />}
+                  rightElement={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  }
+                  error={passwordError}
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                />
+                <PremiumInput
+                  id="signup-confirm"
+                  type={showPassword ? 'text' : 'password'}
+                  label="Confirmer *"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  icon={<Lock className="w-4 h-4" />}
+                  isValid={confirmPassword.length >= 6 && confirmPassword === password}
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">* Champs obligatoires</p>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Création...
+              </>
+            ) : (
+              'Créer mon compte'
+            )}
+          </button>
+        </form>
+      </div>
+
+      <div className="p-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Déjà un compte ?{' '}
+          <button
+            type="button"
+            onClick={() => switchMode('login')}
+            className="text-primary hover:underline font-medium"
+          >
+            Se connecter
+          </button>
+        </p>
+      </div>
+    </LoginBackground>
   );
 }

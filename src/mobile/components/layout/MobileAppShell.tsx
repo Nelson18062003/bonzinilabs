@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { MobileTabBar } from './MobileTabBar';
+import { AnimatedPage } from '@/components/transitions/AnimatedPage';
 import { cn } from '@/lib/utils';
 
 interface MobileAppShellProps {
@@ -20,14 +21,14 @@ export function MobileAppShell({
   return (
     <div className={cn(
       "min-h-screen bg-background flex flex-col w-full",
-      "max-w-lg mx-auto", // Max width for larger screens (tablet in portrait)
+      "max-w-lg md:max-w-2xl mx-auto", // Wider on tablets
       className
     )}>
       <main className={cn(
         "flex-1",
-        showTabBar && "pb-20" // Space for tab bar
+        showTabBar && "pb-24" // Space for floating tab bar
       )}>
-        {children}
+        <AnimatedPage>{children}</AnimatedPage>
       </main>
       {showTabBar && <MobileTabBar />}
     </div>

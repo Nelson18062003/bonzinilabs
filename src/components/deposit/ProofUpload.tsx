@@ -1,4 +1,9 @@
-import { useState, useRef } from 'react';
+// ============================================================
+// MODULE DEPOTS — ProofUpload (from scratch)
+// Multi-file upload with drag-drop, preview, confirmation
+// Max 5 files, images + PDF
+// ============================================================
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Camera, Image, X, FileCheck, Loader2, Eye, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -7,7 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +22,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
+
+const MAX_FILES = 5;
 
 interface FileWithPreview {
   file: File;
@@ -32,7 +39,6 @@ interface ProofUploadProps {
   isSubmitting: boolean;
 }
 
-// Keep backward compatibility with single file
 interface LegacyProofUploadProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
@@ -46,6 +52,12 @@ function isMultiFileProps(props: Props): props is ProofUploadProps {
   return 'onFilesSelect' in props;
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 export const ProofUpload = (props: Props) => {
   const [dragActive, setDragActive] = useState(false);
   const [filesWithPreview, setFilesWithPreview] = useState<FileWithPreview[]>([]);
@@ -53,96 +65,82 @@ export const ProofUpload = (props: Props) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle multi-file or single-file mode
   const isMultiMode = isMultiFileProps(props);
-  const selectedFiles = isMultiMode 
-    ? props.selectedFiles 
-    : (props.selectedFile ? [props.selectedFile] : []);
-  
+
+  // Sync internal state when parent clears selectedFiles externally (e.g. after upload success)
+  useEffect(() => {
+    if (isMultiMode && (props as ProofUploadProps).selectedFiles.length === 0 && filesWithPreview.length > 0) {
+      filesWithPreview.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
+      setFilesWithPreview([]);
+      setShowConfirmDialog(false);
+    }
+  }, [isMultiMode ? (props as ProofUploadProps).selectedFiles?.length : null]);
+
   const onFilesChange = (files: File[]) => {
     if (isMultiMode) {
       props.onFilesSelect(files);
     } else {
-      props.onFileSelect(files[0] || null as any);
+      props.onFileSelect(files[0] || (null as any));
     }
   };
 
   const handleFilesChange = (newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
-    
-    // Create previews for new files
-    const newFilesWithPreview: FileWithPreview[] = fileArray.map(file => ({
+    const remaining = MAX_FILES - filesWithPreview.length;
+    const filesToAdd = fileArray.slice(0, remaining);
+
+    const newFilesWithPreview: FileWithPreview[] = filesToAdd.map((file) => ({
       file,
       previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-      id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`
+      id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
     }));
-    
+
     const updatedFiles = [...filesWithPreview, ...newFilesWithPreview];
     setFilesWithPreview(updatedFiles);
-    onFilesChange(updatedFiles.map(f => f.file));
+    onFilesChange(updatedFiles.map((f) => f.file));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFilesChange(files);
-    }
-    // Reset input for allowing same file selection
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (files && files.length > 0) handleFilesChange(files);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
     const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFilesChange(files);
-    }
+    if (files && files.length > 0) handleFilesChange(files);
   };
 
   const handleRemoveFile = (id: string) => {
-    const fileToRemove = filesWithPreview.find(f => f.id === id);
-    if (fileToRemove?.previewUrl) {
-      URL.revokeObjectURL(fileToRemove.previewUrl);
-    }
-    
-    const updatedFiles = filesWithPreview.filter(f => f.id !== id);
+    const fileToRemove = filesWithPreview.find((f) => f.id === id);
+    if (fileToRemove?.previewUrl) URL.revokeObjectURL(fileToRemove.previewUrl);
+
+    const updatedFiles = filesWithPreview.filter((f) => f.id !== id);
     setFilesWithPreview(updatedFiles);
-    onFilesChange(updatedFiles.map(f => f.file));
+    onFilesChange(updatedFiles.map((f) => f.file));
   };
 
   const handleRemoveAll = () => {
-    filesWithPreview.forEach(f => {
+    filesWithPreview.forEach((f) => {
       if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
     });
     setFilesWithPreview([]);
     onFilesChange([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const hasFiles = filesWithPreview.length > 0;
+  const atLimit = filesWithPreview.length >= MAX_FILES;
 
   return (
     <div className="space-y-4">
@@ -151,48 +149,49 @@ export const ProofUpload = (props: Props) => {
         <h3 className="font-semibold text-foreground">Joindre les preuves de dépôt</h3>
       </div>
 
-      {/* Drop Zone - Always visible to add more files */}
-      <div
-        className={cn(
-          'border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer',
-          dragActive 
-            ? 'border-primary bg-primary/5' 
-            : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30',
-          hasFiles && 'py-3'
-        )}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        {!hasFiles ? (
-          <>
-            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-              <Upload className="w-7 h-7 text-primary" />
+      {/* Drop zone */}
+      {!atLimit && (
+        <div
+          className={cn(
+            'border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer',
+            dragActive
+              ? 'border-primary bg-primary/5'
+              : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30',
+            hasFiles && 'py-3',
+          )}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {!hasFiles ? (
+            <>
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                <Upload className="w-7 h-7 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">
+                Glissez vos fichiers ici
+              </p>
+              <p className="text-xs text-muted-foreground">
+                ou cliquez pour parcourir (max {MAX_FILES} fichiers)
+              </p>
+            </>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <Upload className="w-4 h-4" />
+              <p className="text-sm font-medium">Ajouter d'autres preuves</p>
             </div>
-            <p className="text-sm font-medium text-foreground mb-1">
-              Glissez vos fichiers ici
-            </p>
-            <p className="text-xs text-muted-foreground">
-              ou cliquez pour parcourir (plusieurs fichiers possibles)
-            </p>
-          </>
-        ) : (
-          <div className="flex items-center justify-center gap-2 text-primary">
-            <Upload className="w-4 h-4" />
-            <p className="text-sm font-medium">
-              Ajouter d'autres preuves
-            </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Quick Action Buttons */}
+      {/* Quick action buttons */}
       <div className="flex gap-2">
         <Button
           variant="outline"
           className="flex-1"
+          disabled={atLimit}
           onClick={() => {
             if (fileInputRef.current) {
               fileInputRef.current.accept = 'image/*';
@@ -207,6 +206,7 @@ export const ProofUpload = (props: Props) => {
         <Button
           variant="outline"
           className="flex-1"
+          disabled={atLimit}
           onClick={() => {
             if (fileInputRef.current) {
               fileInputRef.current.accept = 'image/*,.pdf';
@@ -221,7 +221,7 @@ export const ProofUpload = (props: Props) => {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Formats acceptés : JPG, PNG, PDF • Max 10 MB par fichier
+        Formats acceptés : JPG, PNG, PDF &bull; Max 10 MB par fichier &bull; Max {MAX_FILES} fichiers
       </p>
 
       <input
@@ -233,12 +233,13 @@ export const ProofUpload = (props: Props) => {
         className="hidden"
       />
 
-      {/* Files Preview Grid */}
+      {/* Files preview grid */}
       {hasFiles && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-foreground">
-              {filesWithPreview.length} fichier{filesWithPreview.length > 1 ? 's' : ''} sélectionné{filesWithPreview.length > 1 ? 's' : ''}
+              {filesWithPreview.length} fichier{filesWithPreview.length > 1 ? 's' : ''} sélectionné
+              {filesWithPreview.length > 1 ? 's' : ''}
             </p>
             <Button
               variant="ghost"
@@ -256,18 +257,17 @@ export const ProofUpload = (props: Props) => {
 
           <div className="grid grid-cols-3 gap-2">
             {filesWithPreview.map((fileItem) => (
-              <div 
-                key={fileItem.id} 
+              <div
+                key={fileItem.id}
                 className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted/30"
               >
                 {fileItem.previewUrl ? (
                   <>
-                    <img 
-                      src={fileItem.previewUrl} 
+                    <img
+                      src={fileItem.previewUrl}
                       alt={fileItem.file.name}
                       className="w-full h-full object-cover"
                     />
-                    {/* Overlay on hover */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button
                         variant="secondary"
@@ -290,7 +290,7 @@ export const ProofUpload = (props: Props) => {
                     </p>
                   </div>
                 )}
-                
+
                 {/* Remove button */}
                 <Button
                   variant="destructive"
@@ -312,7 +312,7 @@ export const ProofUpload = (props: Props) => {
             ))}
           </div>
 
-          {/* Confirm Button - Opens confirmation dialog */}
+          {/* Confirm button */}
           <Button
             className="w-full btn-primary-gradient"
             onClick={() => setShowConfirmDialog(true)}
@@ -326,7 +326,8 @@ export const ProofUpload = (props: Props) => {
             ) : (
               <>
                 <FileCheck className="w-4 h-4 mr-2" />
-                Confirmer l'envoi ({filesWithPreview.length} preuve{filesWithPreview.length > 1 ? 's' : ''})
+                Confirmer l'envoi ({filesWithPreview.length} preuve
+                {filesWithPreview.length > 1 ? 's' : ''})
               </>
             )}
           </Button>
@@ -337,7 +338,7 @@ export const ProofUpload = (props: Props) => {
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
@@ -346,12 +347,12 @@ export const ProofUpload = (props: Props) => {
               Confirmer l'envoi des preuves
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Vous allez envoyer {filesWithPreview.length} preuve{filesWithPreview.length > 1 ? 's' : ''} de dépôt.
-              Cette action déclenchera la vérification par notre équipe.
+              Vous allez envoyer {filesWithPreview.length} preuve
+              {filesWithPreview.length > 1 ? 's' : ''} de dépôt. Cette action déclenchera la
+              vérification par notre équipe.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {/* Thumbnail preview in dialog */}
           <div className="grid grid-cols-4 gap-2 py-2">
             {filesWithPreview.slice(0, 4).map((fileItem) => (
               <div
@@ -396,7 +397,7 @@ export const ProofUpload = (props: Props) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Image Viewer Dialog */}
+      {/* Image viewer dialog */}
       <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
           <DialogHeader className="p-4 pb-0">
@@ -404,9 +405,9 @@ export const ProofUpload = (props: Props) => {
           </DialogHeader>
           <div className="p-4 pt-2">
             {viewingImage && (
-              <img 
-                src={viewingImage} 
-                alt="Aperçu" 
+              <img
+                src={viewingImage}
+                alt="Aperçu"
                 className="w-full max-h-[70vh] object-contain rounded-lg"
               />
             )}

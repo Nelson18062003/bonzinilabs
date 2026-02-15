@@ -12,10 +12,12 @@ import {
   LogOut,
   Smartphone,
   Globe,
-  FileText
+  FileText,
+  Palette,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -121,6 +123,20 @@ const ProfilePage = () => {
           ))}
         </div>
         
+        {/* Theme Section */}
+        <div className="mt-6 p-4 bg-card rounded-2xl border border-border/30">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+              <Palette className="w-5 h-5 text-foreground" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">Apparence</p>
+              <p className="text-xs text-muted-foreground">Thème de l'application</p>
+            </div>
+          </div>
+          <ThemeToggle />
+        </div>
+
         {/* Logout Button */}
         <button
           onClick={handleLogout}

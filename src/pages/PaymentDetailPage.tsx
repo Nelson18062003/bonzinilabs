@@ -95,6 +95,7 @@ export default function PaymentDetailPage() {
 
   // Proof upload state
   const [instructionFiles, setInstructionFiles] = useState<File[]>([]);
+  const [uploadKey, setUploadKey] = useState(0);
 
   const { data: payment, isLoading: paymentLoading } = usePaymentDetail(paymentId);
   const { data: timeline, isLoading: timelineLoading } = usePaymentTimeline(paymentId);
@@ -102,6 +103,12 @@ export default function PaymentDetailPage() {
 
   const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
   const { uploadProofs, isUploading: isUploadingProofs } = usePaymentProofMultiUpload();
+
+  // Build timeline steps — MUST be before any early return to respect Rules of Hooks
+  const timelineSteps = useMemo(() => {
+    if (!payment) return [];
+    return buildPaymentTimelineSteps(payment.status, payment.method, timeline || []);
+  }, [payment, timeline]);
 
   // Initialize form when payment loads
   useEffect(() => {
@@ -274,6 +281,7 @@ export default function PaymentDetailPage() {
     if (!paymentId || instructionFiles.length === 0) return;
     await uploadProofs({ paymentId, files: instructionFiles });
     setInstructionFiles([]);
+    setUploadKey(k => k + 1);
   };
 
   // Check if beneficiary info is provided
@@ -283,12 +291,6 @@ export default function PaymentDetailPage() {
     payment.beneficiary_phone ||
     payment.beneficiary_email ||
     payment.beneficiary_bank_account;
-
-  // Build timeline steps using the helper function
-  const timelineSteps = useMemo(() => {
-    if (!payment) return [];
-    return buildPaymentTimelineSteps(payment.status, payment.method, timeline || []);
-  }, [payment, timeline]);
 
   // Render form fields based on payment method
   const renderBeneficiaryFormFields = () => {
@@ -632,7 +634,7 @@ export default function PaymentDetailPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Taux appliqué</span>
-                <span>1 RMB = {(1 / payment.exchange_rate).toFixed(2)} XAF</span>
+                <span>1 RMB = {formatXAF(Math.round(1 / payment.exchange_rate))} XAF</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">ID Paiement</span>
@@ -763,6 +765,7 @@ export default function PaymentDetailPage() {
           <Card>
             <CardContent className="p-4">
               <PaymentProofUpload
+                key={uploadKey}
                 onFilesSelect={setInstructionFiles}
                 selectedFiles={instructionFiles}
                 onConfirm={handleUploadInstructions}
