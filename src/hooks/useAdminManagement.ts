@@ -3,33 +3,31 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type {
   CreateAdminData,
-  UpdateAdminData,
   CreateAdminResult,
   ResetPasswordResult,
-  AdminRpcResult
 } from '@/types/admin';
 import type { AppRole } from '@/contexts/AdminAuthContext';
 
 /**
- * Hook to create a new admin user via RPC
+ * Hook to create a new admin user via edge function
  */
 export function useCreateAdmin() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateAdminData): Promise<CreateAdminResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('admin_create_admin', {
-        p_email: data.email.trim(),
-        p_first_name: data.firstName.trim(),
-        p_last_name: data.lastName.trim(),
-        p_role: data.role,
+      const { data: result, error } = await supabaseAdmin.functions.invoke('create-admin', {
+        body: {
+          email: data.email.trim(),
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          role: data.role,
+        },
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const rpcResult = result as unknown as CreateAdminResult;
+      const rpcResult = result as CreateAdminResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || 'Erreur lors de la création');
       }
@@ -53,23 +51,17 @@ export function useUpdateAdminProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { userId: string; firstName: string; lastName: string }): Promise<AdminRpcResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('update_admin_profile', {
-        p_target_user_id: data.userId,
-        p_first_name: data.firstName,
-        p_last_name: data.lastName,
-      });
+    mutationFn: async (data: { userId: string; firstName: string; lastName: string }) => {
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          first_name: data.firstName,
+          last_name: data.lastName,
+        })
+        .eq('user_id', data.userId);
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const rpcResult = result as AdminRpcResult;
-      if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la mise à jour');
-      }
-
-      return rpcResult;
+      if (error) throw new Error(error.message);
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -88,22 +80,14 @@ export function useUpdateAdminRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { userId: string; role: AppRole }): Promise<AdminRpcResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('update_admin_role', {
-        p_target_user_id: data.userId,
-        p_new_role: data.role,
-      });
+    mutationFn: async (data: { userId: string; role: AppRole }) => {
+      const { error } = await supabaseAdmin
+        .from('user_roles')
+        .update({ role: data.role })
+        .eq('user_id', data.userId);
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const rpcResult = result as AdminRpcResult;
-      if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la mise à jour du rôle');
-      }
-
-      return rpcResult;
+      if (error) throw new Error(error.message);
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -116,54 +100,18 @@ export function useUpdateAdminRole() {
 }
 
 /**
- * Hook to toggle admin status (enable/disable)
- */
-export function useToggleAdminStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ userId, disabled }: { userId: string; disabled: boolean }): Promise<AdminRpcResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('toggle_admin_status', {
-        p_target_user_id: userId,
-        p_disabled: disabled,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const rpcResult = result as AdminRpcResult;
-      if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la modification du statut');
-      }
-
-      return rpcResult;
-    },
-    onSuccess: (_, { disabled }) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success(disabled ? 'Admin désactivé' : 'Admin réactivé');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la modification du statut');
-    },
-  });
-}
-
-/**
- * Hook to reset an admin's password via RPC
+ * Hook to reset an admin's password via edge function
  */
 export function useResetAdminPassword() {
   return useMutation({
     mutationFn: async (userId: string): Promise<ResetPasswordResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('admin_reset_password', {
-        p_target_user_id: userId,
+      const { data: result, error } = await supabaseAdmin.functions.invoke('reset-admin-password', {
+        body: { userId },
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const rpcResult = result as unknown as ResetPasswordResult;
+      const rpcResult = result as ResetPasswordResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || 'Erreur lors de la réinitialisation');
       }
@@ -175,25 +123,6 @@ export function useResetAdminPassword() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erreur lors de la réinitialisation du mot de passe');
-    },
-  });
-}
-
-/**
- * Hook to update last login timestamp
- * Called after successful admin login
- */
-export function useUpdateAdminLastLogin() {
-  return useMutation({
-    mutationFn: async (): Promise<AdminRpcResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('update_admin_last_login');
-
-      if (error) {
-        console.error('Error updating last login:', error);
-        return { success: false, error: error.message };
-      }
-
-      return result as AdminRpcResult;
     },
   });
 }

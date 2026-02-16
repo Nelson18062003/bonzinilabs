@@ -1,6 +1,6 @@
 // ============================================================
-// ADMIN-SIDE DEPOSIT HOOKS (from scratch)
-// CRITICAL: Uses `supabaseAdmin` (admin session, storageKey: bonzini-admin-auth)
+// ADMIN-SIDE DEPOSIT HOOKS
+// Uses `supabaseAdmin` (admin session)
 // ============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -8,10 +8,8 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
 import type {
   DepositWithProfile,
-  DepositProof,
   DepositProofWithUrl,
   DepositTimelineEvent,
-  DepositStats,
   AdminCreateDepositData,
 } from '@/types/deposit';
 import { compressImage } from '@/lib/imageCompression';
@@ -24,9 +22,9 @@ async function getAdminUser() {
 
 // ── Queries ──────────────────────────────────────────────────
 
-export function useAdminDeposits() {
+export function useAdminDepositsDetailed() {
   return useQuery({
-    queryKey: ['admin-deposits'],
+    queryKey: ['admin-deposits-detailed'],
     staleTime: 30_000,
     gcTime: 5 * 60_000,
     queryFn: async () => {
@@ -41,18 +39,18 @@ export function useAdminDeposits() {
 
       const userIds = [...new Set(deposits.map((d) => d.user_id))];
 
-      const { data: clients, error: clientsError } = await supabaseAdmin
-        .from('clients')
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from('profiles')
         .select('user_id, first_name, last_name, phone, company_name')
         .in('user_id', userIds);
 
-      if (clientsError) throw clientsError;
+      if (profilesError) throw profilesError;
 
-      const clientMap = new Map(clients?.map((c) => [c.user_id, c]) || []);
+      const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
 
       return deposits.map((deposit) => ({
         ...deposit,
-        profiles: clientMap.get(deposit.user_id) || null,
+        profiles: profileMap.get(deposit.user_id) || null,
       })) as DepositWithProfile[];
     },
   });
@@ -75,15 +73,15 @@ export function useAdminDepositDetail(depositId: string | undefined) {
       if (depositError) throw depositError;
       if (!deposit) return null;
 
-      const { data: client } = await supabaseAdmin
-        .from('clients')
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
         .select('user_id, first_name, last_name, phone, company_name')
         .eq('user_id', deposit.user_id)
         .maybeSingle();
 
       return {
         ...deposit,
-        profiles: client || null,
+        profiles: profile || null,
       } as DepositWithProfile;
     },
     enabled: !!depositId,
@@ -99,16 +97,14 @@ export function useAdminDepositProofs(depositId: string | undefined) {
         .from('deposit_proofs')
         .select('*')
         .eq('deposit_id', depositId)
-        .is('deleted_at', null)
         .order('uploaded_at', { ascending: false });
       if (error) throw error;
       if (!data || data.length === 0) return [] as DepositProofWithUrl[];
 
-      // Fetch signed URLs for all proofs in parallel
       const proofsWithUrls = await Promise.all(
         data.map(async (proof) => {
           const signedUrl = await getProofSignedUrl(proof.file_url);
-          return { ...proof, signedUrl } as DepositProofWithUrl;
+          return { ...proof, signedUrl } as unknown as DepositProofWithUrl;
         }),
       );
 
@@ -141,9 +137,28 @@ export function useDepositStats() {
     staleTime: 10_000,
     gcTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabaseAdmin.rpc('get_deposit_stats');
+      // Calculate stats from deposits table directly
+      const { data: deposits, error } = await supabaseAdmin
+        .from('deposits')
+        .select('status, amount_xaf, validated_at');
+      
       if (error) throw error;
-      return data as DepositStats;
+      
+      const today = new Date().toISOString().split('T')[0];
+      const stats = {
+        total: deposits?.length || 0,
+        awaiting_proof: deposits?.filter(d => d.status === 'awaiting_proof').length || 0,
+        proof_submitted: deposits?.filter(d => d.status === 'proof_submitted').length || 0,
+        pending_correction: 0,
+        admin_review: deposits?.filter(d => d.status === 'admin_review').length || 0,
+        validated: deposits?.filter(d => d.status === 'validated').length || 0,
+        rejected: deposits?.filter(d => d.status === 'rejected').length || 0,
+        to_process: deposits?.filter(d => ['proof_submitted', 'admin_review'].includes(d.status)).length || 0,
+        today_validated: deposits?.filter(d => d.status === 'validated' && d.validated_at?.startsWith(today)).length || 0,
+        today_amount: deposits?.filter(d => d.status === 'validated' && d.validated_at?.startsWith(today))
+          .reduce((sum, d) => sum + d.amount_xaf, 0) || 0,
+      };
+      return stats;
     },
   });
 }
@@ -170,7 +185,7 @@ export function useAllClients() {
     queryKey: ['all-clients-for-deposit'],
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
-        .from('clients')
+        .from('profiles')
         .select('user_id, first_name, last_name, phone, company_name')
         .order('first_name', { ascending: true });
       if (error) throw error;
@@ -188,31 +203,25 @@ export function useValidateDeposit() {
     mutationFn: async ({
       depositId,
       adminComment,
-      confirmedAmount,
-      sendNotification,
     }: {
       depositId: string;
       adminComment?: string;
-      confirmedAmount?: number;
-      sendNotification?: boolean;
     }) => {
       const { data, error } = await supabaseAdmin.rpc('validate_deposit', {
         p_deposit_id: depositId,
-        p_admin_comment: adminComment || null,
-        p_confirmed_amount: confirmedAmount ?? null,
-        p_send_notification: sendNotification ?? true,
+        p_admin_comment: adminComment || undefined,
       });
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string; new_balance?: number; amount_credited?: number };
+      const result = data as unknown as { success: boolean; error?: string; new_balance?: number; amount_credited?: number };
       if (!result.success) throw new Error(result.error || 'Validation échouée');
 
       return result;
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits-detailed'] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
@@ -233,31 +242,25 @@ export function useRejectDeposit() {
     mutationFn: async ({
       depositId,
       reason,
-      rejectionCategory,
-      adminNote,
     }: {
       depositId: string;
       reason: string;
-      rejectionCategory?: string;
-      adminNote?: string;
     }) => {
       const { data, error } = await supabaseAdmin.rpc('reject_deposit', {
         p_deposit_id: depositId,
         p_reason: reason,
-        p_rejection_category: rejectionCategory || null,
-        p_admin_note: adminNote || null,
       });
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string };
+      const result = data as unknown as { success: boolean; error?: string };
       if (!result.success) throw new Error(result.error || 'Rejet échoué');
 
       return result;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-deposits-detailed'] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
@@ -269,65 +272,7 @@ export function useRejectDeposit() {
   });
 }
 
-export function useRequestCorrection() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ depositId, reason }: { depositId: string; reason: string }) => {
-      const { data, error } = await supabaseAdmin.rpc('request_deposit_correction', {
-        p_deposit_id: depositId,
-        p_reason: reason,
-      });
-
-      if (error) throw error;
-
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) throw new Error(result.error || 'Erreur');
-
-      return result;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      toast.success('Demande de correction envoyée');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-export function useStartDepositReview() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ depositId }: { depositId: string }) => {
-      const { data, error } = await supabaseAdmin.rpc('start_deposit_review', {
-        p_deposit_id: depositId,
-      });
-
-      if (error) throw error;
-
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) throw new Error(result.error || 'Erreur');
-
-      return result;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-// ── Admin create deposit for client (Brique A2) ─────────────
+// ── Admin create deposit for client ─────────────────────────
 
 export function useAdminCreateDeposit() {
   const queryClient = useQueryClient();
@@ -341,14 +286,14 @@ export function useAdminCreateDeposit() {
         p_user_id: data.user_id,
         p_amount_xaf: data.amount_xaf,
         p_method: data.method,
-        p_bank_name: data.bank_name || null,
-        p_agency_name: data.agency_name || null,
-        p_client_phone: data.client_phone || null,
+        p_bank_name: data.bank_name || undefined,
+        p_agency_name: data.agency_name || undefined,
+        p_client_phone: data.client_phone || undefined,
       });
 
       if (error) throw error;
 
-      const response = result as { success: boolean; error?: string; deposit_id?: string; reference?: string };
+      const response = result as unknown as { success: boolean; error?: string; deposit_id?: string; reference?: string };
       if (!response.success) throw new Error(response.error || 'Erreur lors de la création');
 
       const depositId = response.deposit_id!;
@@ -382,8 +327,6 @@ export function useAdminCreateDeposit() {
               file_url: storedPath,
               file_name: file.name,
               file_type: file.type,
-              uploaded_by: admin.id,
-              uploaded_by_type: 'admin' as const,
             });
             proofUploadCount++;
           } catch (err) {
@@ -470,8 +413,6 @@ export function useAdminUploadProofs() {
             file_url: storedPath,
             file_name: file.name,
             file_type: file.type,
-            uploaded_by: admin.id,
-            uploaded_by_type: 'admin' as const,
           });
 
           if (insertError) {
@@ -491,7 +432,6 @@ export function useAdminUploadProofs() {
         throw new Error(`Échec de l'upload: ${failedFiles.join(', ')}`);
       }
 
-      // If deposit was awaiting_proof, advance to proof_submitted
       if (uploadedCount > 0 && (depositStatus === 'awaiting_proof' || depositStatus === 'created')) {
         await supabaseAdmin.from('deposits')
           .update({ status: 'proof_submitted', updated_at: new Date().toISOString() })
@@ -513,7 +453,6 @@ export function useAdminUploadProofs() {
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-proofs', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
 
       if (data.failedFiles && data.failedFiles.length > 0) {
@@ -559,94 +498,6 @@ export function useDeleteDeposit() {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       toast.success('Dépôt supprimé');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-// ── Admin soft-delete proof ───────────────────────────────────
-
-export function useAdminDeleteProof() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      proofId,
-      depositId,
-      reason,
-    }: {
-      proofId: string;
-      depositId: string;
-      reason: string;
-    }) => {
-      const admin = await getAdminUser();
-      if (!admin) throw new Error('Vous devez être connecté');
-
-      // Soft-delete the proof
-      const { error } = await supabaseAdmin
-        .from('deposit_proofs')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: admin.id,
-          delete_reason: reason,
-        })
-        .eq('id', proofId);
-
-      if (error) throw error;
-
-      // Check if any active proofs remain
-      const { count } = await supabaseAdmin
-        .from('deposit_proofs')
-        .select('id', { count: 'exact', head: true })
-        .eq('deposit_id', depositId)
-        .is('deleted_at', null);
-
-      // If no proofs remain and deposit is not in a terminal state, revert to awaiting_proof
-      if (count === 0) {
-        const { data: deposit } = await supabaseAdmin
-          .from('deposits')
-          .select('status')
-          .eq('id', depositId)
-          .maybeSingle();
-
-        if (deposit && !['validated', 'rejected'].includes(deposit.status)) {
-          await supabaseAdmin.from('deposits')
-            .update({ status: 'awaiting_proof', updated_at: new Date().toISOString() })
-            .eq('id', depositId);
-        }
-      }
-
-      // Timeline event
-      await supabaseAdmin.from('deposit_timeline_events').insert({
-        deposit_id: depositId,
-        event_type: 'proof_deleted',
-        description: `Preuve supprimée par l'admin - Motif: ${reason}`,
-        performed_by: admin.id,
-      });
-
-      // Audit log
-      await supabaseAdmin.from('admin_audit_logs').insert({
-        admin_user_id: admin.id,
-        action_type: 'delete_deposit_proof',
-        target_type: 'deposit_proof',
-        target_id: proofId,
-        details: {
-          deposit_id: depositId,
-          reason,
-        },
-      });
-
-      return { success: true };
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-proofs', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      toast.success('Preuve supprimée');
     },
     onError: (error: Error) => {
       toast.error(error.message);

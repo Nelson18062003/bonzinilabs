@@ -118,10 +118,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Fetch user role and profile after login
   const fetchAdminData = async (user: User) => {
     try {
-      // Check if user has an admin role (user_roles has first_name/last_name)
+      // Check if user has an admin role
       const { data: roleData, error: roleError } = await supabaseAdmin
         .from('user_roles')
-        .select('role, first_name, last_name')
+        .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -135,11 +135,18 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
+      // Fetch profile for name
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       const adminUser: AdminUser = {
         id: user.id,
         email: user.email || '',
-        firstName: roleData.first_name || 'Admin',
-        lastName: roleData.last_name || '',
+        firstName: profileData?.first_name || 'Admin',
+        lastName: profileData?.last_name || '',
         role: roleData.role as AppRole,
       };
 

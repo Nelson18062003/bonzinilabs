@@ -5,6 +5,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG } from '@/lib/constants';
+import type { Enums } from '@/integrations/supabase/types';
 
 export type AdminNotificationType =
   | 'deposit_needs_review'
@@ -23,12 +24,11 @@ export interface AdminNotification {
   targetPath: string;
 }
 
-const ACTIONABLE_DEPOSIT_STATUSES = ['proof_submitted', 'admin_review', 'pending_correction'];
-const ACTIONABLE_PAYMENT_STATUSES = ['ready_for_payment', 'cash_scanned', 'processing'];
+const ACTIONABLE_DEPOSIT_STATUSES: Enums<'deposit_status'>[] = ['proof_submitted', 'admin_review'];
+const ACTIONABLE_PAYMENT_STATUSES: Enums<'payment_status'>[] = ['ready_for_payment', 'cash_scanned', 'processing'];
 
 /**
  * Fetches all actionable items for the admin notification center.
- * Returns a unified list sorted by creation date.
  */
 export function useAdminNotifications() {
   return useQuery({
@@ -36,7 +36,6 @@ export function useAdminNotifications() {
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
     gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
-      // Fetch actionable deposits and payments in parallel
       const [depositsRes, paymentsRes] = await Promise.all([
         supabaseAdmin
           .from('deposits')
@@ -58,7 +57,6 @@ export function useAdminNotifications() {
       const deposits = depositsRes.data || [];
       const payments = paymentsRes.data || [];
 
-      // Collect all user IDs to fetch names
       const allUserIds = [
         ...new Set([
           ...deposits.map(d => d.user_id),
@@ -66,29 +64,24 @@ export function useAdminNotifications() {
         ]),
       ];
 
-      let clientMap = new Map<string, { first_name: string; last_name: string }>();
+      let profileMap = new Map<string, { first_name: string; last_name: string }>();
       if (allUserIds.length > 0) {
-        const { data: clients } = await supabaseAdmin
-          .from('clients')
+        const { data: profiles } = await supabaseAdmin
+          .from('profiles')
           .select('user_id, first_name, last_name')
           .in('user_id', allUserIds);
-        clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+        profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       }
 
       const getClientName = (userId: string) => {
-        const client = clientMap.get(userId);
-        return client ? `${client.first_name} ${client.last_name}` : 'Client inconnu';
+        const profile = profileMap.get(userId);
+        return profile ? `${profile.first_name} ${profile.last_name}` : 'Client inconnu';
       };
 
-      // Map deposits to notifications
       const depositNotifications: AdminNotification[] = deposits.map(d => ({
         id: `deposit-${d.id}`,
-        type: d.status === 'pending_correction'
-          ? 'deposit_needs_correction' as const
-          : 'deposit_needs_review' as const,
-        title: d.status === 'pending_correction'
-          ? 'Correction en attente'
-          : 'Dépôt à examiner',
+        type: 'deposit_needs_review' as const,
+        title: 'Dépôt à examiner',
         subtitle: `${getClientName(d.user_id)} — ${d.reference || ''}`,
         amount: d.amount_xaf,
         currency: 'XAF' as const,
@@ -96,7 +89,6 @@ export function useAdminNotifications() {
         targetPath: `/m/deposits/${d.id}`,
       }));
 
-      // Map payments to notifications
       const paymentNotifications: AdminNotification[] = payments.map(p => ({
         id: `payment-${p.id}`,
         type: p.status === 'processing'
@@ -112,7 +104,6 @@ export function useAdminNotifications() {
         targetPath: `/m/payments/${p.id}`,
       }));
 
-      // Merge and sort by date (newest first)
       return [...depositNotifications, ...paymentNotifications]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
@@ -145,7 +136,7 @@ export function useAdminNotificationCount() {
 }
 
 /**
- * Split counts of actionable deposits and payments (for separate tab badges)
+ * Split counts of actionable deposits and payments
  */
 export function useAdminActionableCounts() {
   return useQuery({

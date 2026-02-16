@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import { formatXAF } from '@/lib/formatters';
 import { toast } from 'sonner';
 import { startOfDay, subDays } from 'date-fns';
 
@@ -8,7 +7,7 @@ import { startOfDay, subDays } from 'date-fns';
 const STALE_TIME = 30 * 1000; // 30 seconds
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 
-// Fetch all user roles (admin users) with status and profile info
+// Fetch all user roles (admin users) with profile info
 export function useAdminUsers() {
   return useQuery({
     queryKey: ['admin-users'],
@@ -23,15 +22,24 @@ export function useAdminUsers() {
       if (rolesError) throw rolesError;
       if (!roles) return [];
 
+      // Fetch profiles for admin users
+      const userIds = roles.map(r => r.user_id);
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
       return roles.map(role => ({
         id: role.user_id,
-        email: role.email || '',
-        firstName: role.first_name || 'Admin',
-        lastName: role.last_name || '',
+        email: '',
+        firstName: profileMap.get(role.user_id)?.first_name || 'Admin',
+        lastName: profileMap.get(role.user_id)?.last_name || '',
         role: role.role,
-        status: role.is_disabled ? 'DISABLED' : 'ACTIVE',
+        status: 'ACTIVE' as const,
         createdAt: role.created_at,
-        lastLoginAt: role.last_login_at || null,
+        lastLoginAt: null,
       }));
     },
   });
@@ -56,20 +64,20 @@ export function useAdminAuditLogs() {
       // Get admin user IDs
       const adminUserIds = [...new Set(logs.map(l => l.admin_user_id))];
 
-      // Fetch admin names from user_roles
-      const { data: adminRoles } = await supabaseAdmin
-        .from('user_roles')
-        .select('user_id, first_name, last_name, email, role')
+      // Fetch admin names from profiles
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, first_name, last_name')
         .in('user_id', adminUserIds);
 
-      const adminMap = new Map(adminRoles?.map(r => [r.user_id, r]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       return logs.map(log => ({
         ...log,
-        adminProfile: adminMap.get(log.admin_user_id)
+        adminProfile: profileMap.get(log.admin_user_id)
           ? {
-              first_name: adminMap.get(log.admin_user_id)!.first_name || 'Admin',
-              last_name: adminMap.get(log.admin_user_id)!.last_name || '',
+              first_name: profileMap.get(log.admin_user_id)!.first_name || 'Admin',
+              last_name: profileMap.get(log.admin_user_id)!.last_name || '',
               user_id: log.admin_user_id,
             }
           : null,
@@ -82,13 +90,12 @@ export function useAdminAuditLogs() {
 export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
-    staleTime: 10 * 1000, // 10 seconds for dashboard
+    staleTime: 10 * 1000,
     gcTime: CACHE_TIME,
     queryFn: async () => {
       const todayStart = startOfDay(new Date()).toISOString();
       const weekStart = startOfDay(subDays(new Date(), 7)).toISOString();
 
-      // Run all queries in parallel
       const [
         walletsRes,
         depositsRes,
@@ -166,20 +173,19 @@ export function useAdminDeposits() {
       if (error) throw error;
       if (!deposits) return [];
       
-      // Get user IDs and fetch client info
       const userIds = [...new Set(deposits.map(d => d.user_id))];
-      const { data: clients } = await supabaseAdmin
-        .from('clients')
-        .select('*')
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, first_name, last_name')
         .in('user_id', userIds);
 
-      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       return deposits.map(deposit => ({
         ...deposit,
-        profile: clientMap.get(deposit.user_id) || null,
-        clientName: clientMap.get(deposit.user_id)
-          ? `${clientMap.get(deposit.user_id)!.first_name} ${clientMap.get(deposit.user_id)!.last_name}`
+        profile: profileMap.get(deposit.user_id) || null,
+        clientName: profileMap.get(deposit.user_id)
+          ? `${profileMap.get(deposit.user_id)!.first_name} ${profileMap.get(deposit.user_id)!.last_name}`
           : 'Client inconnu',
       }));
     },
@@ -202,16 +208,14 @@ export function useAdminWallets() {
       if (error) throw error;
       if (!wallets) return [];
       
-      // Get user IDs and fetch client info
       const userIds = [...new Set(wallets.map(w => w.user_id))];
-      const { data: clients } = await supabaseAdmin
-        .from('clients')
-        .select('*')
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, first_name, last_name')
         .in('user_id', userIds);
 
-      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-      // Fetch deposits and sum for each user
       const { data: deposits } = await supabaseAdmin
         .from('deposits')
         .select('user_id, amount_xaf, status')
@@ -225,9 +229,9 @@ export function useAdminWallets() {
 
       return wallets.map(wallet => ({
         ...wallet,
-        profile: clientMap.get(wallet.user_id) || null,
-        clientName: clientMap.get(wallet.user_id)
-          ? `${clientMap.get(wallet.user_id)!.first_name} ${clientMap.get(wallet.user_id)!.last_name}`
+        profile: profileMap.get(wallet.user_id) || null,
+        clientName: profileMap.get(wallet.user_id)
+          ? `${profileMap.get(wallet.user_id)!.first_name} ${profileMap.get(wallet.user_id)!.last_name}`
           : 'Client inconnu',
         totalDeposits: depositSums.get(wallet.user_id) || 0,
         totalPayments: 0,
@@ -236,26 +240,24 @@ export function useAdminWallets() {
   });
 }
 
-// Fetch all clients from dedicated clients table
+// Fetch all clients (profiles with wallets)
 export function useAdminClients() {
   return useQuery({
     queryKey: ['admin-clients'],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      // Query clients table directly (no admin filtering needed)
-      const { data: clients, error } = await supabaseAdmin
-        .from('clients')
+      const { data: profiles, error } = await supabaseAdmin
+        .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
-      if (!clients) return [];
+      if (!profiles) return [];
 
-      const userIds = clients.map(c => c.user_id);
+      const userIds = profiles.map(p => p.user_id);
 
-      // Fetch wallets
       const { data: wallets } = await supabaseAdmin
         .from('wallets')
         .select('*')
@@ -263,7 +265,6 @@ export function useAdminClients() {
 
       const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
 
-      // Fetch deposit sums
       const { data: deposits } = await supabaseAdmin
         .from('deposits')
         .select('user_id, amount_xaf, status')
@@ -275,11 +276,11 @@ export function useAdminClients() {
         depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
       });
 
-      return clients.map(client => ({
-        ...client,
-        wallet: walletMap.get(client.user_id) || null,
-        walletBalance: walletMap.get(client.user_id)?.balance_xaf || 0,
-        totalDeposits: depositSums.get(client.user_id) || 0,
+      return profiles.map(profile => ({
+        ...profile,
+        wallet: walletMap.get(profile.user_id) || null,
+        walletBalance: walletMap.get(profile.user_id)?.balance_xaf || 0,
+        totalDeposits: depositSums.get(profile.user_id) || 0,
         totalPayments: 0,
       }));
     },
@@ -293,23 +294,21 @@ export function useAdminClientDetail(userId: string) {
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      const { data: client, error } = await supabaseAdmin
-        .from('clients')
+      const { data: profile, error } = await supabaseAdmin
+        .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;
-      if (!client) return null;
+      if (!profile) return null;
       
-      // Fetch wallet
       const { data: wallet } = await supabaseAdmin
         .from('wallets')
         .select('*, wallet_operations(*)')
         .eq('user_id', userId)
         .maybeSingle();
       
-      // Fetch deposits
       const { data: deposits } = await supabaseAdmin
         .from('deposits')
         .select('*')
@@ -321,7 +320,7 @@ export function useAdminClientDetail(userId: string) {
         .reduce((sum, d) => sum + d.amount_xaf, 0) || 0;
       
       return {
-        ...client,
+        ...profile,
         wallet,
         deposits: deposits || [],
         totalDeposits,
@@ -351,19 +350,18 @@ export function useAdminProofs() {
       if (error) throw error;
       if (!proofs) return [];
       
-      // Get user IDs from deposits and fetch client info
-      const userIds = [...new Set(proofs.map(p => p.deposits?.user_id).filter(Boolean))];
-      const { data: clients } = await supabaseAdmin
-        .from('clients')
+      const userIds = [...new Set(proofs.map(p => p.deposits?.user_id).filter(Boolean))] as string[];
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
         .select('user_id, first_name, last_name')
         .in('user_id', userIds);
 
-      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       return proofs.map(proof => ({
         ...proof,
-        clientName: proof.deposits && clientMap.get(proof.deposits.user_id)
-          ? `${clientMap.get(proof.deposits.user_id)!.first_name} ${clientMap.get(proof.deposits.user_id)!.last_name}`
+        clientName: proof.deposits && profileMap.get(proof.deposits.user_id)
+          ? `${profileMap.get(proof.deposits.user_id)!.first_name} ${profileMap.get(proof.deposits.user_id)!.last_name}`
           : 'Client inconnu',
       }));
     },
@@ -374,7 +372,7 @@ export function useAdminProofs() {
 export function useExchangeRates() {
   return useQuery({
     queryKey: ['exchange-rates'],
-    staleTime: 60 * 1000, // 1 minute for rates
+    staleTime: 60 * 1000,
     gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data, error } = await supabaseAdmin

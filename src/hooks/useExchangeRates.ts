@@ -159,7 +159,7 @@ export function useUpdateExchangeRate() {
       const { data, error } = await supabaseAdmin.rpc('update_exchange_rate', {
         p_rate_id: rateId,
         p_rate_xaf_to_rmb: rateXafToRmb,
-        p_effective_at: effectiveAt?.toISOString() || null,
+        p_effective_at: effectiveAt?.toISOString() || undefined,
       });
       
       if (error) throw error;
