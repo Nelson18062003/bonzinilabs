@@ -77,10 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: error as Error };
     }
 
-    // Update client record with additional info
+    // Update profile with additional info
     if (authData.user) {
-      const { error: clientError } = await supabase
-        .from('clients')
+      const { error: profileError } = await supabase
+        .from('profiles')
         .update({
           first_name: data.firstName,
           last_name: data.lastName,
@@ -94,8 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .eq('user_id', authData.user.id);
 
-      if (clientError) {
-        console.error('Error updating client:', clientError);
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
       }
     }
     

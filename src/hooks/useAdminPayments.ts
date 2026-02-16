@@ -51,15 +51,15 @@ export function useAdminCreatePayment() {
         p_amount_rmb: data.amount_rmb,
         p_exchange_rate: data.exchange_rate,
         p_method: data.method,
-        p_beneficiary_name: data.beneficiary_name || null,
-        p_beneficiary_phone: data.beneficiary_phone || null,
-        p_beneficiary_email: data.beneficiary_email || null,
-        p_beneficiary_qr_code_url: qrCodeUrl || null,
-        p_beneficiary_bank_name: data.beneficiary_bank_name || null,
-        p_beneficiary_bank_account: data.beneficiary_bank_account || null,
-        p_beneficiary_notes: data.beneficiary_notes || null,
-        p_client_visible_comment: data.client_visible_comment || null,
-        p_desired_date: data.desired_date?.toISOString() || null,
+        p_beneficiary_name: data.beneficiary_name || undefined,
+        p_beneficiary_phone: data.beneficiary_phone || undefined,
+        p_beneficiary_email: data.beneficiary_email || undefined,
+        p_beneficiary_qr_code_url: qrCodeUrl || undefined,
+        p_beneficiary_bank_name: data.beneficiary_bank_name || undefined,
+        p_beneficiary_bank_account: data.beneficiary_bank_account || undefined,
+        p_beneficiary_notes: data.beneficiary_notes || undefined,
+        p_client_visible_comment: data.client_visible_comment || undefined,
+        p_desired_date: data.desired_date?.toISOString() || undefined,
       });
 
       if (error) throw error;
@@ -92,15 +92,15 @@ export function useAdminCreatePayment() {
             // Store the file path for later signed URL generation
             const storedPath = `payment-proofs/${filePath}`;
 
-            await supabaseAdmin.from('payment_proofs').insert({
-              payment_id: response.payment_id,
-              uploaded_by: user?.id,
+            await supabaseAdmin.from('payment_proofs').insert([{
+              payment_id: response.payment_id!,
+              uploaded_by: user?.id || '',
               uploaded_by_type: 'admin',
               file_name: file.name,
               file_url: storedPath,
               file_type: file.type,
               description: 'QR Code de paiement',
-            });
+            }]);
           }
         }
       }
@@ -167,7 +167,7 @@ export function useDeletePaymentProof() {
 
       return result;
     },
-    onSuccess: (_, proofId) => {
+    onSuccess: (_) => {
       queryClient.invalidateQueries({ queryKey: ['payment-proofs'] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline'] });
       toast.success('Preuve supprimée');
