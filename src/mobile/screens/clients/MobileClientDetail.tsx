@@ -154,15 +154,10 @@ export function MobileClientDetail() {
                 </a>
               )}
 
-              {client.email && (
-                <a
-                  href={`mailto:${client.email}`}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  {client.email}
-                </a>
-              )}
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                <Mail className="w-3.5 h-3.5" />
+                {client.email || 'Non renseigné'}
+              </div>
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
                 <Calendar className="w-3 h-3" />
