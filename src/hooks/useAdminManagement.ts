@@ -100,6 +100,32 @@ export function useUpdateAdminRole() {
 }
 
 /**
+ * Hook to toggle an admin's active/disabled status via RPC
+ */
+export function useToggleAdminStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, disabled }: { userId: string; disabled: boolean }) => {
+      const { data, error } = await supabaseAdmin.rpc('toggle_admin_status', {
+        p_user_id: userId,
+        p_disabled: disabled,
+      });
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success(variables.disabled ? 'Compte admin désactivé' : 'Compte admin réactivé');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors du changement de statut');
+    },
+  });
+}
+
+/**
  * Hook to reset an admin's password via edge function
  */
 export function useResetAdminPassword() {
