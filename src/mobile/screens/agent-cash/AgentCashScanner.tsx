@@ -105,7 +105,7 @@ export function AgentCashScanner() {
     <div>
       <MobileHeader title={t('scanner')} />
 
-      <div className="px-4 pt-4 pb-28 space-y-6">
+      <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-4 sm:space-y-6">
         {/* Camera viewfinder */}
         <div className="card-glass rounded-2xl overflow-hidden">
           {isStarting && !cameraError && (
@@ -117,7 +117,7 @@ export function AgentCashScanner() {
 
           {cameraError && (
             <div className="h-72 flex flex-col items-center justify-center gap-3 p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-destructive/10 flex items-center justify-center">
                 <AlertCircle className="w-6 h-6 text-destructive" />
               </div>
               <p className="text-sm text-muted-foreground">{cameraError}</p>

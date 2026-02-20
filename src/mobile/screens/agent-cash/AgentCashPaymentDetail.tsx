@@ -31,6 +31,7 @@ export function AgentCashPaymentDetail() {
 
   const isPaid = payment?.status === 'completed';
   const isPending = payment?.status === 'processing';
+  const isCashScanned = payment?.status === 'cash_scanned' || payment?.status === 'cash_pending';
 
   const handleProceedToPayment = async () => {
     if (!payment) return;
@@ -74,13 +75,13 @@ export function AgentCashPaymentDetail() {
     <div>
       <MobileHeader title={t('payment_details')} showBack backTo="/a" />
 
-      <div className="px-4 pt-4 pb-28 space-y-4">
+      <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-3 sm:space-y-4">
         {/* Amount card */}
         <div className="card-glass p-6 rounded-2xl text-center animate-slide-up" style={{ animationFillMode: 'both' }}>
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
             <Banknote className="w-7 h-7 text-primary" />
           </div>
-          <p className="text-3xl font-bold tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <p className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {formatCurrencyRMB(payment.amount_rmb)}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -91,10 +92,12 @@ export function AgentCashPaymentDetail() {
           <div className="mt-3">
             <span className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium',
-              isPaid ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600',
+              isPaid ? 'bg-green-500/10 text-green-600'
+                : isCashScanned ? 'bg-blue-500/10 text-blue-600'
+                : 'bg-amber-500/10 text-amber-600',
             )}>
               {isPaid ? <CheckCircle2 className="w-4 h-4" /> : null}
-              {isPaid ? t('status_paid') : t('status_to_pay')}
+              {isPaid ? t('status_paid') : isCashScanned ? t('status_scanned') || 'Scanné' : t('status_to_pay')}
             </span>
           </div>
         </div>
@@ -183,6 +186,16 @@ export function AgentCashPaymentDetail() {
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : null}
               {t('proceed_to_payment')}
+            </button>
+          )}
+
+          {isCashScanned && (
+            <button
+              onClick={() => navigate(`/a/payment/${payment.id}/confirm`)}
+              className="w-full btn-primary-gradient h-14 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              {t('confirm_payment') || 'Confirmer le paiement'}
             </button>
           )}
         </div>

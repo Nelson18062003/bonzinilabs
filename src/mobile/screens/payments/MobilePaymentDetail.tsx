@@ -259,14 +259,14 @@ export function MobilePaymentDetail() {
   const missingAdminProof = payment.status === 'processing' && adminProofs.length === 0;
 
   return (
-    <div className={cn("flex flex-col min-h-screen", showActions && "pb-32")}>
+    <div className={cn("flex flex-col min-h-screen", showActions && "pb-24 sm:pb-32")}>
       <MobileHeader
         title={payment.reference || 'Paiement'}
         showBack
         backTo="/m/payments"
       />
 
-      <div className="flex-1 px-4 py-4 space-y-4">
+      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* ── Status Banner with SLA ──────────────────────────── */}
         <div className={cn('bg-gradient-to-r rounded-2xl p-4 border', bannerColor)}>
           <div className="flex items-center justify-between">
@@ -347,7 +347,7 @@ export function MobilePaymentDetail() {
           className="w-full bg-card rounded-xl p-4 border border-border text-left active:scale-[0.98] transition-transform"
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-base font-medium text-primary">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center text-sm sm:text-base font-medium text-primary">
               {initials}
             </div>
             <div className="flex-1 min-w-0">

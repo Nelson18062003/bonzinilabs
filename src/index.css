@@ -698,7 +698,7 @@
      ===================================================== */
 
   .liquid-nav {
-    @apply fixed left-3 right-3 z-50 rounded-2xl overflow-hidden;
+    @apply fixed left-2 right-2 sm:left-3 sm:right-3 z-50 rounded-2xl overflow-hidden;
     bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
     background: hsl(var(--card) / 0.7);
     backdrop-filter: blur(24px) saturate(180%);
@@ -783,9 +783,9 @@
   .liquid-tab {
     @apply relative flex flex-col items-center justify-center gap-0.5;
     @apply text-muted-foreground transition-colors duration-300;
-    min-width: 56px;
+    min-width: 48px;
     min-height: 44px;
-    padding: 6px 12px;
+    padding: 6px 8px;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     z-index: 1;

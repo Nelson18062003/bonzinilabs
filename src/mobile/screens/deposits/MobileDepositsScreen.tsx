@@ -194,14 +194,14 @@ export function MobileDepositsScreen() {
         }
       />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+      <PullToRefresh onRefresh={refetch} className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 overflow-y-auto">
         {/* ── KPI Stats Row ───────────────────────────────────── */}
-        <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto pb-1 -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-hide">
           {/* À traiter */}
           <button
             onClick={() => setStatusFilter(statusFilter === 'to_process' ? 'all' : 'to_process')}
             className={cn(
-              'deposit-stat-card min-w-[130px] flex-shrink-0 border-blue-500/20 bg-blue-500/5',
+              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-blue-500/20 bg-blue-500/5',
               statusFilter === 'to_process' && 'active ring-blue-500',
             )}
           >
@@ -216,7 +216,7 @@ export function MobileDepositsScreen() {
           <button
             onClick={() => setStatusFilter(statusFilter === 'pending_correction' ? 'all' : 'pending_correction')}
             className={cn(
-              'deposit-stat-card min-w-[130px] flex-shrink-0 border-orange-500/20 bg-orange-500/5',
+              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-orange-500/20 bg-orange-500/5',
               statusFilter === 'pending_correction' && 'active ring-orange-500',
             )}
           >
@@ -231,7 +231,7 @@ export function MobileDepositsScreen() {
           <button
             onClick={() => setStatusFilter(statusFilter === 'validated' ? 'all' : 'validated')}
             className={cn(
-              'deposit-stat-card min-w-[130px] flex-shrink-0 border-green-500/20 bg-green-500/5',
+              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-green-500/20 bg-green-500/5',
               statusFilter === 'validated' && 'active ring-green-500',
             )}
           >
@@ -244,7 +244,7 @@ export function MobileDepositsScreen() {
 
           {/* Aujourd'hui */}
           {stats && stats.today_validated > 0 && (
-            <div className="deposit-stat-card min-w-[140px] flex-shrink-0 border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5">
+            <div className="deposit-stat-card min-w-[110px] sm:min-w-[140px] flex-shrink-0 border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5">
               <div className="flex items-center gap-1.5 mb-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
                 <span className="text-xs text-primary/70 font-medium">Aujourd'hui</span>
@@ -384,7 +384,7 @@ export function MobileDepositsScreen() {
         )}
 
         {/* ── Status filter chips ─────────────────────────────── */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-hide">
           {STATUS_FILTERS.map((filter) => {
             const count =
               filter.key === 'to_process'

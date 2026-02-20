@@ -48,7 +48,7 @@ export function MobileClientsScreen() {
     <div className="flex flex-col min-h-full pb-20">
       <MobileHeader title="Clients" />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+      <PullToRefresh onRefresh={refetch} className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 overflow-y-auto">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -85,7 +85,7 @@ export function MobileClientsScreen() {
               >
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-base font-medium text-primary flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center text-sm sm:text-base font-medium text-primary flex-shrink-0">
                     {client.firstName?.[0] || '?'}
                     {client.lastName?.[0] || ''}
                   </div>
@@ -122,7 +122,7 @@ export function MobileClientsScreen() {
                 </div>
 
                 {/* Stats Row */}
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+                <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50 text-xs text-muted-foreground">
                   <span>Dépôts: {formatCurrency(client.totalDeposits || 0)}</span>
                   <span>Paiements: {formatCurrency(client.totalPayments || 0)}</span>
                 </div>

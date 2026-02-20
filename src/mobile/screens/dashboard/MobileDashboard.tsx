@@ -87,7 +87,7 @@ export function MobileDashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto">
       <div
-        className="px-4 pb-24 space-y-5"
+        className="px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-5"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}
       >
         {/* ── 1. SMART HEADER ── */}
@@ -133,12 +133,12 @@ export function MobileDashboard() {
 
         {/* ── 2. KPI CARD ── */}
         <div
-          className="card-glass p-5 rounded-2xl border border-primary/20 animate-kpi-entrance"
+          className="card-glass p-4 sm:p-5 rounded-2xl border border-primary/20 animate-kpi-entrance"
           style={{ animationDelay: '50ms', animationFillMode: 'both' }}
         >
           <p className="text-sm text-muted-foreground">Solde plateforme</p>
           <p
-            className="text-3xl font-bold tracking-tight mt-1"
+            className="text-2xl sm:text-3xl font-bold tracking-tight mt-1"
             style={{ fontVariantNumeric: 'tabular-nums' }}
           >
             {formatXAF(animatedBalance)}{' '}
@@ -153,7 +153,7 @@ export function MobileDashboard() {
           )}
 
           {/* Sub-indicators */}
-          <div className="flex items-start gap-4 mt-4 pt-3 border-t border-border/50">
+          <div className="flex items-start gap-2 sm:gap-4 mt-3 sm:mt-4 pt-3 border-t border-border/50">
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-muted-foreground">Dépôts aujourd'hui</p>
               <p
@@ -187,7 +187,7 @@ export function MobileDashboard() {
         {/* ── 3. PRIORITY BLOCK ── */}
         {(pendingDepositCount > 0 || pendingPaymentCount > 0) && (
           <div
-            className="flex gap-3 animate-slide-up"
+            className="flex gap-2 sm:gap-3 animate-slide-up"
             style={{ animationDelay: '100ms', animationFillMode: 'both' }}
           >
             {pendingDepositCount > 0 && (
@@ -223,7 +223,7 @@ export function MobileDashboard() {
 
         {/* ── 4. QUICK ACTIONS ── */}
         <div
-          className="grid grid-cols-4 gap-3 animate-slide-up"
+          className="grid grid-cols-4 gap-2 sm:gap-3 animate-slide-up"
           style={{ animationDelay: '150ms', animationFillMode: 'both' }}
         >
           {[
@@ -237,10 +237,10 @@ export function MobileDashboard() {
               onClick={() => navigate(to)}
               className="flex flex-col items-center gap-2 py-3 rounded-xl active:scale-[0.95] transition-transform"
             >
-              <div className={cn('w-12 h-12 rounded-full flex items-center justify-center', bg)}>
-                <Icon className={cn('w-5 h-5', color)} />
+              <div className={cn('w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center', bg)}>
+                <Icon className={cn('w-4 h-4 sm:w-5 sm:h-5', color)} />
               </div>
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
+              <span className="text-[11px] sm:text-xs font-medium text-muted-foreground">{label}</span>
             </button>
           ))}
         </div>
@@ -303,7 +303,7 @@ export function MobileDashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center text-xs sm:text-sm font-medium text-primary flex-shrink-0">
                           {deposit.profiles?.first_name?.[0] || '?'}
                           {deposit.profiles?.last_name?.[0] || ''}
                         </div>

@@ -269,10 +269,10 @@ export function MobileDepositDetail() {
   const bannerColor = STATUS_BANNER_COLORS[deposit.status] || STATUS_BANNER_COLORS.created;
 
   return (
-    <div className="flex flex-col min-h-full pb-32">
+    <div className="flex flex-col min-h-full pb-24 sm:pb-32">
       <MobileHeader title={deposit.reference} showBack />
 
-      <div className="flex-1 px-4 py-4 space-y-4">
+      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* ── Status Banner ──────────────────────────────────── */}
         <div className={cn('bg-gradient-to-r rounded-2xl p-4 border', bannerColor)}>
           <div className="flex items-center justify-between">
@@ -408,7 +408,7 @@ export function MobileDepositDetail() {
                 return (
                   <div
                     key={proof.id}
-                    className="proof-thumb flex-shrink-0 w-28 h-28"
+                    className="proof-thumb flex-shrink-0 w-20 h-20 sm:w-28 sm:h-28"
                   >
                     {isImage && signedUrl ? (
                       <img
@@ -419,19 +419,19 @@ export function MobileDepositDetail() {
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
                         <FileText className="w-7 h-7 text-muted-foreground" />
-                        <span className="text-[9px] text-muted-foreground truncate w-full text-center">
+                        <span className="text-[10px] sm:text-[9px] text-muted-foreground truncate w-full text-center">
                           {proof.file_name}
                         </span>
                       </div>
                     )}
 
                     {/* Metadata badge */}
-                    <div className="absolute top-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
+                    <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] sm:text-[9px] px-1.5 py-0.5 rounded">
                       {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
                     </div>
 
                     {/* Date badge */}
-                    <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
+                    <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] sm:text-[9px] px-1.5 py-0.5 rounded">
                       {format(new Date(proof.uploaded_at), 'dd/MM HH:mm', { locale: fr })}
                     </div>
 

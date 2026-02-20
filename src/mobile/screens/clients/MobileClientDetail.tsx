@@ -121,12 +121,12 @@ export function MobileClientDetail() {
         backTo="/m/clients"
       />
 
-      <div className="flex-1 px-4 py-4 space-y-4">
+      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* Profile Card */}
-        <div className="bg-card rounded-2xl p-5 border border-border">
-          <div className="flex items-start gap-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border">
+          <div className="flex items-start gap-3 sm:gap-4">
             {/* Avatar */}
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-xl font-semibold text-primary flex-shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center text-lg sm:text-xl font-semibold text-primary flex-shrink-0">
               {initials}
             </div>
 
@@ -184,7 +184,7 @@ export function MobileClientDetail() {
             </button>
           </div>
 
-          <p className="text-3xl font-bold text-primary tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">
             {formatXAF(client.walletBalance || 0)} <span className="text-xl font-medium text-primary/70">XAF</span>
           </p>
           {currentRate && (
