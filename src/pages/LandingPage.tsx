@@ -171,7 +171,7 @@ function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-16">
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -202,11 +202,11 @@ function HeroSection() {
           {/* Subheadline */}
           <motion.p
             variants={itemVariants}
-            className="text-base sm:text-lg text-white/55 max-w-xl mx-auto leading-relaxed"
+            className="text-base sm:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed"
           >
-            Alipay · WeChat Pay · Virement bancaire
-            <br />
-            <span className="text-white/40 text-sm">Au meilleur taux — sous 24h — sans carte internationale</span>
+            Vous importez depuis la Chine ? Bonzini règle directement vos fournisseurs
+            sur Alipay, WeChat Pay ou par virement — en XAF, au meilleur taux, sous 24h.
+            Sans carte internationale. Sans blocage.
           </motion.p>
 
           {/* CTA buttons */}
