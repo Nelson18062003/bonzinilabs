@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { validateUploadFile } from '@/lib/utils';
 
 // Cache configuration for performance
 const STALE_TIME = 30 * 1000; // 30 seconds
@@ -345,8 +346,9 @@ export function useUploadPaymentProof() {
       file: File; 
       description?: string 
     }) => {
+      validateUploadFile(file);
       const filePath = `${paymentId}/${Date.now()}_${file.name}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
         .upload(filePath, file);

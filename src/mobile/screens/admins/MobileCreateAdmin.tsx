@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCreateAdmin } from '@/hooks/useAdminManagement';
-import { ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
+import { ADMIN_ROLE_LABELS, type AppRole, useAdminAuth } from '@/contexts/AdminAuthContext';
 import { cn } from '@/lib/utils';
 import {
   Loader2,
@@ -46,7 +46,12 @@ const ROLE_BADGE_COLORS: Record<AppRole, string> = {
 
 export function MobileCreateAdmin() {
   const navigate = useNavigate();
+  const { hasPermission } = useAdminAuth();
   const createAdminMutation = useCreateAdmin();
+
+  if (!hasPermission('canManageUsers')) {
+    return <Navigate to="/m" replace />;
+  }
 
   // Form state
   const [step, setStep] = useState<Step>('personal');

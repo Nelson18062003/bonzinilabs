@@ -27,8 +27,8 @@ function ProtectedAgentCashRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/a/login" replace />;
   }
 
-  // Only cash_agent role allowed (super_admin also allowed for testing)
-  if (currentUser?.role !== 'cash_agent' && currentUser?.role !== 'super_admin') {
+  // Only cash_agent role allowed
+  if (currentUser?.role !== 'cash_agent') {
     return <Navigate to="/a/login" replace />;
   }
 

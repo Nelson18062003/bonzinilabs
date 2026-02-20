@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
+import { validateUploadFile } from '@/lib/utils';
 import type {
   DepositWithProfile,
   DepositProof,
@@ -363,6 +364,7 @@ export function useAdminCreateDeposit() {
         let proofUploadCount = 0;
         for (const rawFile of data.proofFiles) {
           try {
+            validateUploadFile(rawFile);
             const file = await compressImage(rawFile);
             const fileExt = file.name.split('.').pop();
             const filePath = `${data.user_id}/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;

@@ -78,7 +78,8 @@ const NewDepositPage = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Count-up animation for amount preview
-  const parsedAmount = parseInt(amount) || 0;
+  const MAX_DEPOSIT_XAF = 50_000_000; // 50 000 000 XAF max par dépôt
+  const parsedAmount = Math.min(parseInt(amount) || 0, MAX_DEPOSIT_XAF);
   const animatedAmount = useCountUp(parsedAmount, { enabled: parsedAmount > 0 });
 
   // Navigate between steps

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
+import { validateUploadFile } from '@/lib/utils';
 import type {
   Deposit,
   DepositProofWithUrl,
@@ -162,6 +163,7 @@ export function useUploadProof() {
       const user = await getCurrentUser();
       if (!user) throw new Error('Vous devez être connecté');
 
+      validateUploadFile(rawFile);
       const file = await compressImage(rawFile);
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;

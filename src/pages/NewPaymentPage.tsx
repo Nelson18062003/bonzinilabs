@@ -91,8 +91,9 @@ const NewPaymentPage = () => {
     ? parseFloat(inputAmount) || 0 
     : Math.round(amountXAF * rate * 100) / 100;
   
+  const MAX_PAYMENT_XAF = 50_000_000; // 50 000 000 XAF max par transaction
   const hasEnoughBalance = amountXAF <= (wallet?.balance_xaf || 0);
-  const isValidAmount = amountXAF > 0;
+  const isValidAmount = amountXAF > 0 && amountXAF <= MAX_PAYMENT_XAF && Number.isSafeInteger(amountXAF);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
