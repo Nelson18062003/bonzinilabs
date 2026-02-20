@@ -98,7 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Error updating profile:', profileError);
       }
     }
-    
+
+    // Sign out immediately so the user must log in manually after account creation.
+    // Without this, Supabase auto-creates a session which triggers onAuthStateChange
+    // and redirects the user to the home page before they see the success screen.
+    await supabase.auth.signOut();
+
     return { error: null };
   };
 

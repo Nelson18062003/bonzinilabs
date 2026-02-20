@@ -5,6 +5,7 @@ import { LoginBackground } from '@/components/auth/LoginBackground';
 import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
+import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { toast } from 'sonner';
 import {
@@ -14,7 +15,6 @@ import {
   Eye,
   EyeOff,
   User,
-  Phone,
   Building,
   MapPin,
   Calendar,
@@ -71,7 +71,21 @@ export default function AuthPage() {
   const [lastNameError, setLastNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
 
+  // Date of birth — 3 separate selectors
+  const [dobDay, setDobDay] = useState('');
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobYear, setDobYear] = useState('');
+
   const isEmailValid = emailSchema.safeParse(email).success;
+
+  // Sync the 3 DOB selectors into the dateOfBirth string (YYYY-MM-DD)
+  useEffect(() => {
+    if (dobDay && dobMonth && dobYear) {
+      setDateOfBirth(`${dobYear}-${dobMonth.padStart(2, '0')}-${dobDay.padStart(2, '0')}`);
+    } else {
+      setDateOfBirth('');
+    }
+  }, [dobDay, dobMonth, dobYear]);
 
   // Check for reset password mode from URL
   useEffect(() => {
@@ -81,9 +95,9 @@ export default function AuthPage() {
     }
   }, [searchParams]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in — never redirect during signup flow
   useEffect(() => {
-    if (user && mode !== 'reset-password') {
+    if (user && mode !== 'reset-password' && mode !== 'signup') {
       navigate('/', { replace: true });
     }
   }, [user, mode, navigate]);
@@ -109,6 +123,9 @@ export default function AuthPage() {
     setFirstNameError('');
     setLastNameError('');
     setPhoneError('');
+    setDobDay('');
+    setDobMonth('');
+    setDobYear('');
   };
 
   // Login step 0 → 1
@@ -737,27 +754,57 @@ export default function AuthPage() {
               {/* Step 1 — Contact (phone required) */}
               {signupStep === 1 && (
                 <form onSubmit={handleSignupStepNext} className="space-y-4">
-                  <PremiumInput
-                    id="signup-phone"
-                    type="tel"
-                    label="Téléphone *"
+                  <PhoneCountryInput
                     value={phone}
                     onChange={(val) => { setPhone(val); setPhoneError(''); }}
-                    icon={<Phone className="w-4 h-4" />}
                     error={phoneError}
-                    autoComplete="tel"
                     autoFocus
                     disabled={isSubmitting}
                   />
-                  <PremiumInput
-                    id="signup-dob"
-                    type="date"
-                    label="Date de naissance"
-                    value={dateOfBirth}
-                    onChange={setDateOfBirth}
-                    icon={<Calendar className="w-4 h-4" />}
-                    disabled={isSubmitting}
-                  />
+
+                  {/* Date de naissance — 3 sélecteurs */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                      <Calendar className="w-4 h-4" />
+                      Date de naissance (optionnel)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        value={dobDay}
+                        onChange={e => setDobDay(e.target.value)}
+                        disabled={isSubmitting}
+                        className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
+                      >
+                        <option value="">Jour</option>
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                          <option key={d} value={String(d)}>{d}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={dobMonth}
+                        onChange={e => setDobMonth(e.target.value)}
+                        disabled={isSubmitting}
+                        className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
+                      >
+                        <option value="">Mois</option>
+                        {['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'].map((m, i) => (
+                          <option key={i} value={String(i + 1)}>{m}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={dobYear}
+                        onChange={e => setDobYear(e.target.value)}
+                        disabled={isSubmitting}
+                        className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
+                      >
+                        <option value="">Année</option>
+                        {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 16 - i).map(y => (
+                          <option key={y} value={String(y)}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
