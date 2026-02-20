@@ -98,7 +98,7 @@ export default function AuthPage() {
   // Redirect if already logged in — never redirect during signup flow
   useEffect(() => {
     if (user && mode !== 'reset-password' && mode !== 'signup') {
-      navigate('/', { replace: true });
+      navigate('/wallet', { replace: true });
     }
   }, [user, mode, navigate]);
 
@@ -166,7 +166,7 @@ export default function AuthPage() {
 
     toast.success('Bienvenue !');
     setIsFadingOut(true);
-    setTimeout(() => navigate('/'), 300);
+    setTimeout(() => navigate('/wallet'), 300);
   };
 
   // Forgot password
@@ -219,7 +219,7 @@ export default function AuthPage() {
     }
 
     toast.success('Mot de passe mis à jour avec succès');
-    navigate('/');
+    navigate('/wallet');
   };
 
   // Advance signup step without validation (for optional steps)

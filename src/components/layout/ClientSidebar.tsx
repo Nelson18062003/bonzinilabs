@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/', icon: Wallet, label: 'Wallet' },
+  { to: '/wallet', icon: Wallet, label: 'Wallet' },
   { to: '/deposits', icon: ArrowDownToLine, label: 'Dépôts' },
   { to: '/payments', icon: Send, label: 'Paiements' },
   { to: '/history', icon: History, label: 'Historique' },
@@ -39,7 +39,7 @@ export function ClientSidebar() {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === '/'}
+            end={item.to === '/wallet'}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
             activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
           >

@@ -26,7 +26,7 @@ export const ClientHeader = ({ className }: ClientHeaderProps) => {
           showText={true}
           textPosition="right"
           className="cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/wallet')}
         />
 
         {/* Actions */}

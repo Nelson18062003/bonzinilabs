@@ -12,7 +12,7 @@ export const BottomNav = ({ className }: BottomNavProps) => {
   const { data: unreadCount } = useUnreadNotificationCount();
 
   const navItems: TabItem[] = [
-    { to: '/', icon: Wallet, label: 'Wallet', end: true },
+    { to: '/wallet', icon: Wallet, label: 'Wallet', end: true },
     { to: '/deposits', icon: ArrowDownToLine, label: 'Dépôts' },
     { to: '/payments', icon: Send, label: 'Paiements' },
     { to: '/history', icon: History, label: 'Historique', badgeCount: unreadCount ?? 0 },

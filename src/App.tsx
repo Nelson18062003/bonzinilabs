@@ -28,6 +28,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
@@ -87,8 +88,11 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
+                {/* Landing Page (public) */}
+                <Route path="/" element={<LandingPage />} />
+
                 {/* Protected Client Routes */}
-                <Route path="/" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
                 <Route path="/deposits" element={<ProtectedRoute><DepositsPage /></ProtectedRoute>} />
                 <Route path="/deposits/new" element={<ProtectedRoute><NewDepositPage /></ProtectedRoute>} />
                 <Route path="/deposits/:depositId" element={<ProtectedRoute><DepositDetailPage /></ProtectedRoute>} />
