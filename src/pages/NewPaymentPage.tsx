@@ -651,7 +651,7 @@ const NewPaymentPage = () => {
             Mes paiements
           </button>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/wallet')}
             className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
           >
             Retour à l'accueil

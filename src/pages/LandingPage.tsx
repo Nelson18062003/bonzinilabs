@@ -1,11 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   ChevronDown,
   ArrowRight,
   Menu,
@@ -730,28 +728,6 @@ function LandingFooter() {
 
 // ── LandingPage (default export) ─────────────────────────────────────────────
 export default function LandingPage() {
-  const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
-
-  // Redirect authenticated users directly to the wallet
-  useEffect(() => {
-    if (!isLoading && user) {
-      navigate('/wallet', { replace: true });
-    }
-  }, [user, isLoading, navigate]);
-
-  // Show spinner while checking auth to avoid flash of landing page for logged-in users
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0515]">
-        <Loader2 className="h-8 w-8 animate-spin text-[hsl(258_100%_60%)]" />
-      </div>
-    );
-  }
-
-  // Avoid rendering landing page while redirect is in progress
-  if (user) return null;
-
   return (
     <div className="min-h-screen bg-[#0a0515] text-white">
       <LandingNav />

@@ -96,7 +96,7 @@ export default function ResetPasswordPage() {
     }
 
     toast.success("Mot de passe mis à jour.");
-    navigate("/", { replace: true });
+    navigate("/wallet", { replace: true });
   };
 
   if (hasSession === null) {
