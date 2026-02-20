@@ -85,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           first_name: data.firstName,
           last_name: data.lastName,
           phone: data.phone,
+          email: data.email,
           date_of_birth: data.dateOfBirth || null,
           company_name: data.companyName || null,
           activity_sector: data.activitySector || null,
@@ -96,17 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (clientError) {
         console.error('Error updating client:', clientError);
-      }
-
-      // Write email to clients table (service role bypasses RLS)
-      // The trigger handle_new_user does not populate clients.email
-      const { error: clientEmailError } = await supabaseAdmin
-        .from('clients')
-        .update({ email: data.email })
-        .eq('user_id', authData.user.id);
-
-      if (clientEmailError) {
-        console.error('Error updating client email:', clientEmailError);
       }
     }
 
