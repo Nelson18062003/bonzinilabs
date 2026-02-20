@@ -136,6 +136,7 @@ export function useClient(userId: string) {
         firstName: client.first_name || '',
         lastName: client.last_name || '',
         phone: client.phone || '',
+        email: client.email || '',
         avatarUrl: client.avatar_url,
         createdAt: client.created_at,
         updatedAt: client.updated_at,

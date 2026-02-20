@@ -23,6 +23,7 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  ChevronRight,
   X,
 } from 'lucide-react';
 import {
@@ -157,7 +158,7 @@ export function MobileAdminDetail() {
   const initials = `${admin.firstName?.[0] || ''}${admin.lastName?.[0] || ''}`;
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
+    <div className="flex flex-col min-h-screen pb-4">
       <MobileHeader title="Détail admin" showBack backTo="/m/more/admins" />
 
       <div className="flex-1 px-4 py-4 space-y-4">
@@ -262,37 +263,62 @@ export function MobileAdminDetail() {
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Cards */}
       {canManageUsers && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3 space-y-2">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
+        <div className="px-4 pb-4 space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground px-1">Actions</h3>
+          <div className="space-y-2">
+            <button
               onClick={handleOpenEditDrawer}
+              className="w-full flex items-center gap-3 bg-card rounded-xl p-4 border border-border active:scale-[0.98] transition-transform"
             >
-              <Edit2 className="w-4 h-4 mr-2" />
-              Modifier
-            </Button>
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                <Edit2 className="w-5 h-5 text-blue-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Modifier le profil</p>
+                <p className="text-xs text-muted-foreground">Nom, prénom, rôle</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
+
             {!isSelf && (
-              <Button
-                variant="outline"
-                className="flex-1"
+              <button
                 onClick={() => setStatusDrawerOpen(true)}
+                className="w-full flex items-center gap-3 bg-card rounded-xl p-4 border border-border active:scale-[0.98] transition-transform"
               >
-                <Power className="w-4 h-4 mr-2" />
-                {admin.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
-              </Button>
+                <div className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
+                  admin.status === 'ACTIVE' ? 'bg-red-500/10' : 'bg-green-500/10'
+                )}>
+                  <Power className={cn('w-5 h-5', admin.status === 'ACTIVE' ? 'text-red-500' : 'text-green-500')} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium">{admin.status === 'ACTIVE' ? 'Désactiver' : 'Activer'} le compte</p>
+                  <p className="text-xs text-muted-foreground">
+                    {admin.status === 'ACTIVE' ? 'Bloquer l\'accès' : 'Restaurer l\'accès'}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              </button>
             )}
+
+            <button
+              onClick={() => setResetDrawerOpen(true)}
+              className="w-full flex items-center gap-3 bg-card rounded-xl p-4 border border-border active:scale-[0.98] transition-transform"
+            >
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Key className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">{isSelf ? 'Changer mon mot de passe' : 'Réinitialiser mot de passe'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isSelf ? 'Générer un nouveau mot de passe' : 'Générer un mot de passe temporaire'}
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
           </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setResetDrawerOpen(true)}
-          >
-            <Key className="w-4 h-4 mr-2" />
-            {isSelf ? 'Changer mon mot de passe' : 'Réinitialiser mot de passe'}
-          </Button>
         </div>
       )}
 

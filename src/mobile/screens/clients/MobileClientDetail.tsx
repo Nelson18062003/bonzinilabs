@@ -8,6 +8,7 @@ import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/
 import { cn } from '@/lib/utils';
 import {
   Phone,
+  Mail,
   Calendar,
   Wallet,
   ArrowDownCircle,
@@ -150,6 +151,16 @@ export function MobileClientDetail() {
                 >
                   <Phone className="w-3.5 h-3.5" />
                   {client.phone}
+                </a>
+              )}
+
+              {client.email && (
+                <a
+                  href={`mailto:${client.email}`}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  {client.email}
                 </a>
               )}
 

@@ -33,7 +33,7 @@ export function useAdminUsers() {
 
       return roles.map(role => ({
         id: role.user_id,
-        email: '',
+        email: role.email || '',
         firstName: profileMap.get(role.user_id)?.first_name || 'Admin',
         lastName: profileMap.get(role.user_id)?.last_name || '',
         role: role.role,
