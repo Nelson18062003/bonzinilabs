@@ -1,6 +1,7 @@
 // ============================================================
-// MODULE DEPOTS — CountdownTimer (from scratch)
+// MODULE DEPOTS — CountdownTimer
 // 48h countdown with urgency levels + progress bar
+// Supports default (card) and banner (left-accent) variants
 // ============================================================
 import { useState, useEffect, useCallback } from 'react';
 import { Clock, AlertTriangle, XCircle } from 'lucide-react';
@@ -46,6 +47,7 @@ interface CountdownTimerProps {
   createdAt: string;
   deadlineHours?: number;
   compact?: boolean;
+  variant?: 'default' | 'banner';
   onExpire?: () => void;
 }
 
@@ -57,6 +59,8 @@ const URGENCY_STYLES = {
     borderColor: 'border-muted',
     progressColor: 'bg-muted',
     iconColor: 'text-muted-foreground',
+    bannerBorder: 'border-gray-400',
+    bannerBg: 'bg-gray-400/5',
   },
   critical: {
     icon: AlertTriangle,
@@ -65,22 +69,28 @@ const URGENCY_STYLES = {
     borderColor: 'border-destructive/30',
     progressColor: 'bg-destructive',
     iconColor: 'text-destructive',
+    bannerBorder: 'border-destructive',
+    bannerBg: 'bg-destructive/5',
   },
   warning: {
     icon: Clock,
     textColor: 'text-amber-600',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
+    bgColor: 'bg-amber-50 dark:bg-amber-500/5',
+    borderColor: 'border-amber-200 dark:border-amber-500/30',
     progressColor: 'bg-amber-500',
     iconColor: 'text-amber-600',
+    bannerBorder: 'border-amber-500',
+    bannerBg: 'bg-amber-500/5',
   },
   normal: {
     icon: Clock,
     textColor: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
+    bgColor: 'bg-emerald-50 dark:bg-emerald-500/5',
+    borderColor: 'border-emerald-200 dark:border-emerald-500/30',
     progressColor: 'bg-emerald-500',
     iconColor: 'text-emerald-600',
+    bannerBorder: 'border-emerald-500',
+    bannerBg: 'bg-emerald-500/5',
   },
 } as const;
 
@@ -88,6 +98,7 @@ export function CountdownTimer({
   createdAt,
   deadlineHours = DEFAULT_DEADLINE_HOURS,
   compact = false,
+  variant = 'default',
   onExpire,
 }: CountdownTimerProps) {
   const [timer, setTimer] = useState<TimerState>(() =>
@@ -120,6 +131,46 @@ export function CountdownTimer({
     );
   }
 
+  // Banner variant: left-border accent style
+  if (variant === 'banner') {
+    return (
+      <div className={cn('rounded-xl border-l-4 p-4', styles.bannerBorder, styles.bannerBg)}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <IconComponent className={cn('w-4 h-4', styles.iconColor)} />
+            <span className={cn('text-sm font-medium', styles.textColor)}>
+              {timer.isExpired ? 'Delai depasse' : 'Delai restant'}
+            </span>
+          </div>
+          <span className={cn('text-base font-bold tabular-nums', styles.textColor)}>
+            {timer.formattedTime}
+          </span>
+        </div>
+
+        <div className="relative h-1.5 rounded-full bg-muted/50 overflow-hidden">
+          <div
+            className={cn(
+              'absolute inset-y-0 left-0 rounded-full transition-all duration-1000',
+              styles.progressColor,
+            )}
+            style={{ width: `${timer.percentRemaining}%` }}
+          />
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-2">
+          {timer.isExpired
+            ? 'Le delai recommande est depasse, mais vous pouvez toujours envoyer votre preuve'
+            : timer.urgency === 'critical'
+              ? 'Attention: delai presque ecoule !'
+              : timer.urgency === 'warning'
+                ? 'Pensez a envoyer votre preuve rapidement'
+                : 'Effectuez le depot et envoyez la preuve'}
+        </p>
+      </div>
+    );
+  }
+
+  // Default variant: card style
   return (
     <div className={cn('rounded-xl border p-4', styles.bgColor, styles.borderColor)}>
       <div className="flex items-center justify-between mb-3">

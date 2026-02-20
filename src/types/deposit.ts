@@ -21,7 +21,8 @@ export type DepositStatus =
   | 'admin_review'
   | 'validated'
   | 'rejected'
-  | 'pending_correction';
+  | 'pending_correction'
+  | 'cancelled';
 
 // ---------- UI-level method hierarchy ----------
 
@@ -43,11 +44,10 @@ export type DepositSubMethod =
   | 'WAVE_TRANSFER';
 
 export type BankOption =
-  | 'AFRILAND'
   | 'ECOBANK'
-  | 'UBA'
   | 'CCA'
-  | 'ADVANS'
+  | 'UBA'
+  | 'AFRILAND'
   | 'OTHER';
 
 export type AgencyOption =
@@ -78,6 +78,11 @@ export interface BankInfo {
     accountName: string;
     accountNumber: string;
     bankName: string;
+    iban: string;
+    swift: string;
+    codeBanque: string;
+    codeAgence: string;
+    cleRib: string;
   };
 }
 
@@ -219,6 +224,7 @@ export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
   validated: 'Validé',
   rejected: 'Rejeté',
   pending_correction: 'À corriger',
+  cancelled: 'Annulé',
 };
 
 export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
@@ -232,6 +238,17 @@ export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
   wave: 'Wave',
 };
 
+export const DEPOSIT_METHOD_LABELS_SHORT: Record<DepositMethod, string> = {
+  bank_transfer: 'Virement',
+  bank_cash: 'Cash banque',
+  agency_cash: 'Cash agence',
+  om_transfer: 'Orange UV',
+  om_withdrawal: 'Orange code',
+  mtn_transfer: 'MTN Float',
+  mtn_withdrawal: 'MTN code',
+  wave: 'Wave',
+};
+
 export const DEPOSIT_STATUS_COLORS: Record<DepositStatus, string> = {
   created: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
   awaiting_proof: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
@@ -240,6 +257,40 @@ export const DEPOSIT_STATUS_COLORS: Record<DepositStatus, string> = {
   pending_correction: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   validated: 'bg-green-500/10 text-green-600 dark:text-green-400',
   rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  cancelled: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+};
+
+// ---------- Timeline method families ----------
+
+export type TimelineMethodFamily = 'standard' | 'withdrawal' | 'agency';
+
+export function getTimelineMethodFamily(method: string): TimelineMethodFamily {
+  if (method === 'agency_cash') return 'agency';
+  if (method === 'om_withdrawal' || method === 'mtn_withdrawal') return 'withdrawal';
+  return 'standard';
+}
+
+export const TIMELINE_STEP_KEYS = ['created', 'proof_submitted', 'admin_review', 'validated'] as const;
+
+export const TIMELINE_STEP_LABELS: Record<TimelineMethodFamily, Record<string, { label: string; description: string }>> = {
+  standard: {
+    created: { label: 'Dépôt déclaré', description: 'Votre dépôt a été enregistré' },
+    proof_submitted: { label: 'Preuve envoyée', description: 'En attente de vérification' },
+    admin_review: { label: 'En vérification', description: "L'équipe Bonzini vérifie votre dépôt" },
+    validated: { label: 'Validé — Solde crédité', description: 'Votre wallet a été crédité' },
+  },
+  withdrawal: {
+    created: { label: 'Retrait déclaré', description: 'Votre retrait a été enregistré' },
+    proof_submitted: { label: 'Code fourni', description: 'Code de retrait transmis' },
+    admin_review: { label: 'En vérification', description: "L'équipe Bonzini vérifie le retrait" },
+    validated: { label: 'Validé — Solde crédité', description: 'Votre wallet a été crédité' },
+  },
+  agency: {
+    created: { label: 'Dépôt en agence', description: 'Dépôt déclaré en agence Bonzini' },
+    proof_submitted: { label: 'Reçu confirmé', description: "Reçu de l'agence enregistré" },
+    admin_review: { label: 'En vérification', description: 'Validation en cours' },
+    validated: { label: 'Validé — Solde crédité', description: 'Votre wallet a été crédité' },
+  },
 };
 
 // ---------- Rejection reasons (admin picks one) ----------

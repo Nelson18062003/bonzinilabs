@@ -5,10 +5,11 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   showBack?: boolean;
+  onBack?: () => void;
   rightElement?: React.ReactNode;
 }
 
-export const PageHeader = ({ title, subtitle, showBack = false, rightElement }: PageHeaderProps) => {
+export const PageHeader = ({ title, subtitle, showBack = false, onBack, rightElement }: PageHeaderProps) => {
   const navigate = useNavigate();
 
   return (
@@ -17,7 +18,7 @@ export const PageHeader = ({ title, subtitle, showBack = false, rightElement }: 
         <div className="flex items-center gap-3">
           {showBack && (
             <button
-              onClick={() => navigate(-1)}
+              onClick={onBack || (() => navigate(-1))}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

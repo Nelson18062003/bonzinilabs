@@ -67,6 +67,7 @@ const STATUS_BANNER_COLORS: Record<string, string> = {
   pending_correction: 'from-orange-500/10 to-orange-500/5 border-orange-500/20',
   validated: 'from-green-500/10 to-green-500/5 border-green-500/20',
   rejected: 'from-red-500/10 to-red-500/5 border-red-500/20',
+  cancelled: 'from-gray-500/10 to-gray-500/5 border-gray-500/20',
 };
 
 export function MobileDepositDetail() {
@@ -96,6 +97,10 @@ export function MobileDepositDetail() {
   const [clientMessage, setClientMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
 
+  // Correction modal state
+  const [showCorrectionSheet, setShowCorrectionSheet] = useState(false);
+  const [correctionReason, setCorrectionReason] = useState('');
+
   // Proof management state (signed URLs now come from the proofs query directly)
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
@@ -117,6 +122,7 @@ export function MobileDepositDetail() {
 
   const timelineSteps = buildDepositTimelineSteps(
     deposit?.status || 'created',
+    deposit?.method || 'bank_transfer',
     timeline || [],
   );
 
@@ -161,6 +167,22 @@ export function MobileDepositDetail() {
     if (!depositId) return;
     startReview.mutate({ depositId });
   }, [depositId, startReview]);
+
+  const handleRequestCorrection = useCallback(() => {
+    if (!depositId || !correctionReason.trim()) return;
+    requestCorrection.mutate(
+      {
+        depositId,
+        reason: correctionReason,
+      },
+      {
+        onSuccess: () => {
+          setShowCorrectionSheet(false);
+          setCorrectionReason('');
+        },
+      },
+    );
+  }, [depositId, correctionReason, requestCorrection]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -235,7 +257,7 @@ export function MobileDepositDetail() {
   const clientName = deposit.profiles
     ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
     : 'Client inconnu';
-  const isLocked = ['validated', 'rejected'].includes(deposit.status);
+  const isLocked = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
   const canValidate = !isLocked;
   const canReject = !isLocked;
   const canStartReview = deposit.status === 'proof_submitted';
@@ -598,20 +620,29 @@ export function MobileDepositDetail() {
           )}
 
           {canValidate && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowRejectSheet(true)}
-                className="flex-1 h-12 rounded-xl border-2 border-red-500 text-red-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              >
-                <XCircle className="w-4 h-4" />
-                Rejeter
-              </button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowRejectSheet(true)}
+                  className="flex-1 h-12 rounded-xl border-2 border-red-500 text-red-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Rejeter
+                </button>
+                <button
+                  onClick={() => setShowCorrectionSheet(true)}
+                  className="flex-1 h-12 rounded-xl border-2 border-orange-500 text-orange-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Corriger
+                </button>
+              </div>
               <button
                 onClick={() => {
                   setConfirmedAmount(deposit.amount_xaf.toString());
                   setShowValidateConfirm(true);
                 }}
-                className="flex-1 h-12 rounded-xl bg-green-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                className="w-full h-12 rounded-xl bg-green-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               >
                 <CheckCircle className="w-4 h-4" />
                 Valider
@@ -960,6 +991,60 @@ export function MobileDepositDetail() {
               >
                 {deleteProof.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Correction request bottom sheet ─────────────────────── */}
+      {showCorrectionSheet && (
+        <div className="bottom-sheet-overlay" onClick={() => setShowCorrectionSheet(false)}>
+          <div
+            className="bottom-sheet-content p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Demander une correction
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Le client sera notifié et pourra renvoyer une preuve corrigée.
+            </p>
+
+            <div>
+              <label className="text-sm text-muted-foreground">
+                Motif de la correction <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={correctionReason}
+                onChange={(e) => setCorrectionReason(e.target.value)}
+                className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
+                rows={3}
+                placeholder="Expliquez au client ce qu'il faut corriger..."
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Ce message sera visible par le client
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowCorrectionSheet(false);
+                  setCorrectionReason('');
+                }}
+                className="flex-1 h-12 rounded-xl border text-sm font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRequestCorrection}
+                disabled={requestCorrection.isPending || !correctionReason.trim()}
+                className="flex-1 h-12 rounded-xl bg-orange-600 text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {requestCorrection.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Demander la correction
               </button>
             </div>
           </div>

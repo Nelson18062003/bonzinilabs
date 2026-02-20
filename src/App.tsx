@@ -53,6 +53,15 @@ const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m =>
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
 
+// ── Lazy-loaded Agent Cash Screens ──────────────────────────
+import { AgentCashRouteWrapper } from "./mobile/components/agent-cash/AgentCashRouteWrapper";
+const AgentCashLogin = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashLogin })));
+const AgentCashPayments = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashPayments })));
+const AgentCashScanner = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashScanner })));
+const AgentCashPaymentDetail = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashPaymentDetail })));
+const AgentCashConfirm = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashConfirm })));
+const AgentCashSuccess = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashSuccess })));
+
 const queryClient = new QueryClient();
 
 function PageLoader() {
@@ -114,6 +123,14 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<MobileRouteWrapper><MobileCreateAdmin /></MobileRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<MobileRouteWrapper><MobileAdminDetail /></MobileRouteWrapper>} />
                 <Route path="/m/more/settings" element={<MobileRouteWrapper><MobileSettingsScreen /></MobileRouteWrapper>} />
+
+                {/* Agent Cash Routes */}
+                <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
+                <Route path="/a" element={<AgentCashRouteWrapper><AgentCashPayments /></AgentCashRouteWrapper>} />
+                <Route path="/a/scan" element={<AgentCashRouteWrapper><AgentCashScanner /></AgentCashRouteWrapper>} />
+                <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
+                <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
+                <Route path="/a/payment/:paymentId/success" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashSuccess /></AgentCashRouteWrapper>} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

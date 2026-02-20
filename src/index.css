@@ -888,6 +888,77 @@
     @apply w-full bg-background rounded-t-2xl max-h-[85vh] flex flex-col;
     animation: sheetSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
+
+  /* =====================================================
+     REVOLUT-STYLE DEPOSIT DETAIL
+     ===================================================== */
+
+  /* Detail section with glass effect */
+  .revolut-detail-section {
+    @apply card-glass overflow-hidden;
+  }
+
+  .revolut-detail-header {
+    @apply px-4 py-3 border-b border-border/30;
+  }
+
+  .revolut-detail-row {
+    @apply flex items-center justify-between px-4 py-3.5;
+  }
+
+  /* Left-accent alert banners */
+  .revolut-alert {
+    @apply rounded-xl border-l-4 p-4;
+  }
+
+  .revolut-alert-error {
+    @apply revolut-alert border-destructive bg-destructive/5;
+  }
+
+  .revolut-alert-warning {
+    @apply revolut-alert border-amber-500 bg-amber-500/5;
+  }
+
+  .revolut-alert-info {
+    @apply revolut-alert border-primary bg-primary/5;
+  }
+
+  .revolut-alert-muted {
+    @apply revolut-alert border-gray-400 bg-gray-400/5;
+  }
+
+  /* Horizontal proof strip */
+  .proof-strip {
+    @apply flex gap-3 overflow-x-auto scrollbar-hide pb-2;
+    scroll-snap-type: x mandatory;
+  }
+
+  .proof-strip > * {
+    scroll-snap-align: start;
+  }
+
+  /* =====================================================
+     DEPOSIT FORM — Summary & Step Indicator
+     ===================================================== */
+
+  /* Summary hero card — gradient background */
+  .summary-hero-card {
+    background: var(--gradient-hero);
+    @apply rounded-2xl p-6 text-center text-primary-foreground;
+    box-shadow: var(--shadow-purple);
+  }
+
+  /* Merchant code highlight card */
+  .merchant-code-card {
+    @apply rounded-xl p-4;
+    background: hsl(var(--primary) / 0.05);
+    border: 1px solid hsl(var(--primary) / 0.15);
+  }
+
+  .dark .merchant-code-card {
+    background: hsl(var(--primary) / 0.08);
+    border-color: hsl(var(--primary) / 0.2);
+  }
 }
 
 @keyframes depositPulse {

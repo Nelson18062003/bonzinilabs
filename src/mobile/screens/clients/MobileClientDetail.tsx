@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient } from '@/hooks/useClientManagement';
+import { useClient, useResetClientPassword } from '@/hooks/useClientManagement';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import {
@@ -17,9 +18,20 @@ import {
   Minus,
   MoreVertical,
   FileDown,
+  Key,
+  Copy,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { Button } from '@/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import type { AdjustmentType } from '@/types/admin';
 
@@ -42,14 +54,40 @@ export function MobileClientDetail() {
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId || '');
   const { data: currentRate } = useCurrentExchangeRate();
+  const { hasPermission } = useAdminAuth();
+  const resetPasswordMutation = useResetClientPassword();
 
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('CREDIT');
 
+  // Password reset drawer state
+  const [resetDrawerOpen, setResetDrawerOpen] = useState(false);
+  const [passwordResultDrawerOpen, setPasswordResultDrawerOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordCopied, setPasswordCopied] = useState(false);
+
+  const canManageUsers = hasPermission('canManageUsers');
+
   const openAdjustment = (type: AdjustmentType) => {
     setAdjustmentType(type);
     setAdjustmentOpen(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!client) return;
+    const result = await resetPasswordMutation.mutateAsync(client.id);
+    if (result.tempPassword) {
+      setNewPassword(result.tempPassword);
+      setResetDrawerOpen(false);
+      setPasswordResultDrawerOpen(true);
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    await navigator.clipboard.writeText(newPassword);
+    setPasswordCopied(true);
+    setTimeout(() => setPasswordCopied(false), 2000);
   };
 
   if (isLoading) {
@@ -256,6 +294,25 @@ export function MobileClientDetail() {
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
+
+          {/* Reset Password */}
+          {canManageUsers && (
+            <button
+              onClick={() => setResetDrawerOpen(true)}
+              className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <Key className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">Réinitialiser mot de passe</p>
+                  <p className="text-xs text-muted-foreground">Générer un nouveau mot de passe</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -271,6 +328,79 @@ export function MobileClientDetail() {
           setAdjustmentOpen(false);
         }}
       />
+
+      {/* Reset Password Confirmation Drawer */}
+      <Drawer open={resetDrawerOpen} onOpenChange={setResetDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5 text-primary" />
+              Réinitialiser le mot de passe
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4">
+            <p className="text-muted-foreground">
+              Un nouveau mot de passe temporaire sera généré pour{' '}
+              <strong>{client.firstName} {client.lastName}</strong>. Vous devrez le
+              transmettre manuellement au client.
+            </p>
+          </div>
+          <DrawerFooter>
+            <Button
+              onClick={handleResetPassword}
+              disabled={resetPasswordMutation.isPending}
+            >
+              {resetPasswordMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              Générer nouveau mot de passe
+            </Button>
+            <Button variant="outline" onClick={() => setResetDrawerOpen(false)}>
+              Annuler
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Password Result Drawer */}
+      <Drawer open={passwordResultDrawerOpen} onOpenChange={setPasswordResultDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-green-500" />
+              Mot de passe généré
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 space-y-4">
+            <p className="text-muted-foreground">
+              Voici le nouveau mot de passe temporaire. Transmettez-le de manière
+              sécurisée au client.
+            </p>
+            <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
+              <code className="text-lg font-mono">{newPassword}</code>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCopyPassword}
+              >
+                {passwordCopied ? (
+                  <Check className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Copy className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-lg">
+              Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.
+            </p>
+          </div>
+          <DrawerFooter>
+            <Button onClick={() => setPasswordResultDrawerOpen(false)}>
+              Fermer
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

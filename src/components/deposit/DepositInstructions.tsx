@@ -1,5 +1,5 @@
 // ============================================================
-// MODULE DEPOTS — DepositInstructions (from scratch)
+// MODULE DEPOTS — DepositInstructions
 // Method-specific instructions with copy-to-clipboard
 // ============================================================
 import { useState } from 'react';
@@ -7,6 +7,7 @@ import { Copy, Check, Info, MapPin, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { formatXAF } from '@/lib/formatters';
 import {
   getBankInfo,
@@ -32,15 +33,16 @@ interface DepositInstructionsProps {
   compact?: boolean;
 }
 
+interface InstructionField {
+  label: string;
+  value: string;
+  mono?: boolean;
+}
+
 interface InstructionInfo {
   type: 'bank' | 'mobile' | 'merchant' | 'agency';
   title: string;
-  accountLabel: string;
-  accountValue: string;
-  accountName: string;
-  bankName?: string;
-  address?: string;
-  hours?: string;
+  fields: InstructionField[];
   merchantCode?: string;
   instructions: string[];
   note?: string;
@@ -56,10 +58,14 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     return {
       type: 'bank',
       title: method === 'bank_transfer' ? 'Virement bancaire' : 'Dépôt cash en banque',
-      accountLabel: 'N° Compte',
-      accountValue: bankInfo.bonziniAccount.accountNumber,
-      accountName: bankInfo.bonziniAccount.accountName,
-      bankName: bankInfo.bonziniAccount.bankName,
+      fields: [
+        { label: 'Banque', value: bankInfo.bonziniAccount.bankName },
+        { label: 'Titulaire', value: bankInfo.bonziniAccount.accountName },
+        { label: 'N° Compte', value: bankInfo.bonziniAccount.accountNumber, mono: true },
+        { label: 'IBAN', value: bankInfo.bonziniAccount.iban, mono: true },
+        { label: 'Code SWIFT', value: bankInfo.bonziniAccount.swift, mono: true },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       instructions: method === 'bank_transfer'
         ? [
             'Connectez-vous à votre application bancaire ou rendez-vous en agence',
@@ -79,10 +85,13 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
   if (method === 'om_transfer') {
     return {
       type: 'mobile',
-      title: 'Transfert Orange Money',
-      accountLabel: 'Numéro OM',
-      accountValue: orangeMoneyAccount.phone,
-      accountName: orangeMoneyAccount.accountName,
+      title: 'Transfert Orange UV vers Bonzini',
+      fields: [
+        { label: 'Opérateur', value: 'ORANGE MONEY CAMEROUN' },
+        { label: 'Numéro', value: orangeMoneyAccount.phone, mono: true },
+        { label: 'Titulaire', value: orangeMoneyAccount.accountName },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       instructions: [
         'Composez #150*1*1#',
         `Entrez le numéro: ${orangeMoneyAccount.phone}`,
@@ -96,10 +105,12 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
   if (method === 'om_withdrawal') {
     return {
       type: 'merchant',
-      title: 'Retrait Orange Money',
-      accountLabel: 'Titulaire',
-      accountValue: omMerchantInfo.accountName,
-      accountName: omMerchantInfo.accountName,
+      title: 'Retrait Orange Money (code marchand)',
+      fields: [
+        { label: 'Opérateur', value: 'ORANGE MONEY CAMEROUN' },
+        { label: 'Titulaire', value: omMerchantInfo.accountName },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       merchantCode: omMerchantInfo.merchantCode,
       instructions: [
         'Sur votre téléphone, tapez le code marchand affiché ci-dessous',
@@ -114,16 +125,19 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
   if (method === 'mtn_transfer') {
     return {
       type: 'mobile',
-      title: 'Transfert MTN Mobile Money',
-      accountLabel: 'Numéro MOMO',
-      accountValue: mtnMoneyAccount.phone,
-      accountName: mtnMoneyAccount.accountName,
+      title: 'Transfert MTN Float vers Bonzini',
+      fields: [
+        { label: 'Opérateur', value: 'MTN MOBILE MONEY' },
+        { label: 'Numéro', value: mtnMoneyAccount.phone, mono: true },
+        { label: 'Titulaire', value: mtnMoneyAccount.accountName },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       instructions: [
-        'Composez *126#',
-        'Sélectionnez "Transfert d\'argent"',
-        `Entrez le numéro: ${mtnMoneyAccount.phone}`,
+        'Depuis votre compte MTN Float entreprise',
+        `Effectuez un transfert vers: ${mtnMoneyAccount.phone}`,
         `Saisissez le montant: ${formatXAF(amount_xaf)} XAF`,
         'Confirmez avec votre code PIN',
+        'Prenez une capture d\'écran de la confirmation',
       ],
     };
   }
@@ -131,10 +145,12 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
   if (method === 'mtn_withdrawal') {
     return {
       type: 'merchant',
-      title: 'Retrait MTN Mobile Money',
-      accountLabel: 'Titulaire',
-      accountValue: mtnMerchantInfo.accountName,
-      accountName: mtnMerchantInfo.accountName,
+      title: 'Retrait MoMo (code marchand)',
+      fields: [
+        { label: 'Opérateur', value: 'MTN MOBILE MONEY' },
+        { label: 'Titulaire', value: mtnMerchantInfo.accountName },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       merchantCode: mtnMerchantInfo.merchantCode,
       instructions: [
         'Sur votre téléphone, tapez le code marchand affiché ci-dessous',
@@ -153,11 +169,12 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     return {
       type: 'agency',
       title: 'Dépôt en agence Bonzini',
-      accountLabel: 'Agence',
-      accountValue: agencyInfo.label,
-      accountName: 'BONZINI TRADING',
-      address: agencyInfo.address,
-      hours: agencyInfo.hours,
+      fields: [
+        { label: 'Agence', value: agencyInfo.label },
+        { label: 'Adresse', value: agencyInfo.address },
+        { label: 'Horaires', value: agencyInfo.hours },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       instructions: [
         `Rendez-vous à l'agence ${agencyInfo.label}`,
         'Présentez votre pièce d\'identité',
@@ -172,9 +189,11 @@ function getInstructionInfo(deposit: Deposit): InstructionInfo | null {
     return {
       type: 'mobile',
       title: 'Transfert Wave',
-      accountLabel: 'Numéro Wave',
-      accountValue: waveAccount.phone,
-      accountName: waveAccount.accountName,
+      fields: [
+        { label: 'Numéro Wave', value: waveAccount.phone, mono: true },
+        { label: 'Titulaire', value: waveAccount.accountName },
+        { label: 'Référence', value: reference, mono: true },
+      ],
       instructions: [
         'Ouvrez l\'application Wave',
         'Sélectionnez "Envoyer"',
@@ -206,13 +225,8 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
   };
 
   const copyAllInfo = () => {
-    const parts = [
-      `${info.accountLabel}: ${info.accountValue}`,
-      `Titulaire: ${info.accountName}`,
-      `Montant: ${formatXAF(deposit.amount_xaf)} XAF`,
-      `Référence: ${deposit.reference}`,
-    ];
-    if (info.bankName) parts.unshift(`Banque: ${info.bankName}`);
+    const parts = info.fields.map(f => `${f.label}: ${f.value}`);
+    parts.push(`Montant: ${formatXAF(deposit.amount_xaf)} XAF`);
     if (info.merchantCode) parts.push(`Code: ${info.merchantCode}`);
     copyToClipboard(parts.join('\n'), 'all');
   };
@@ -233,28 +247,23 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
   // ── Compact mode (for detail screens) ──
   if (compact) {
     return (
-      <div className="space-y-2 text-sm">
-        <div className="flex items-center justify-between py-1.5 border-b border-border/50">
-          <span className="text-muted-foreground">{info.accountLabel}</span>
-          <div className="flex items-center gap-1.5">
-            <span className="font-medium font-mono text-xs">{info.accountValue}</span>
-            <CopyBtn text={info.accountValue} field="account" />
+      <div className="text-sm">
+        {info.fields.map((field) => (
+          <div key={field.label} className="py-2 border-b border-border/50 last:border-b-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-muted-foreground mb-0.5">{field.label}</p>
+                <p className={cn(
+                  'text-sm font-medium text-foreground break-all',
+                  field.mono && 'font-mono text-xs tracking-wide',
+                )}>
+                  {field.value}
+                </p>
+              </div>
+              <CopyBtn text={field.value} field={field.label} />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center justify-between py-1.5 border-b border-border/50">
-          <span className="text-muted-foreground">Titulaire</span>
-          <div className="flex items-center gap-1.5">
-            <span className="font-medium">{info.accountName}</span>
-            <CopyBtn text={info.accountName} field="name" />
-          </div>
-        </div>
-        <div className="flex items-center justify-between py-1.5">
-          <span className="text-muted-foreground">Référence</span>
-          <div className="flex items-center gap-1.5">
-            <span className="font-medium text-primary font-mono text-xs">{deposit.reference}</span>
-            <CopyBtn text={deposit.reference} field="reference" />
-          </div>
-        </div>
+        ))}
       </div>
     );
   }
@@ -285,52 +294,23 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
       )}
 
       {/* Account info card */}
-      <Card className="p-4 space-y-3 bg-muted/30">
-        {info.bankName && (
-          <div className="flex items-center justify-between py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground">Banque</span>
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-foreground">{info.bankName}</span>
-              <CopyBtn text={info.bankName} field="bank" />
+      <Card className="p-4 bg-muted/30">
+        {info.fields.map((field) => (
+          <div key={field.label} className="py-3 border-b border-border/50 last:border-b-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
+                <p className={cn(
+                  'text-sm font-medium text-foreground break-all',
+                  field.mono && 'font-mono tracking-wide',
+                )}>
+                  {field.value}
+                </p>
+              </div>
+              <CopyBtn text={field.value} field={field.label} />
             </div>
           </div>
-        )}
-
-        <div className="flex items-center justify-between py-2 border-b border-border/50">
-          <span className="text-sm text-muted-foreground">{info.accountLabel}</span>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-foreground font-mono text-sm">{info.accountValue}</span>
-            <CopyBtn text={info.accountValue} field="account" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between py-2 border-b border-border/50">
-          <span className="text-sm text-muted-foreground">Titulaire</span>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-foreground">{info.accountName}</span>
-            <CopyBtn text={info.accountName} field="name" />
-          </div>
-        </div>
-
-        {info.address && (
-          <div className="flex items-start justify-between py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              Adresse
-            </span>
-            <span className="font-medium text-foreground text-right text-sm">{info.address}</span>
-          </div>
-        )}
-
-        {info.hours && (
-          <div className="flex items-center justify-between py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              Horaires
-            </span>
-            <span className="font-medium text-foreground text-sm">{info.hours}</span>
-          </div>
-        )}
+        ))}
 
         {info.merchantCode && (
           <div className="py-3 border-b border-border/50">
@@ -343,14 +323,6 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
             </div>
           </div>
         )}
-
-        <div className="flex items-center justify-between py-2">
-          <span className="text-sm text-muted-foreground">Référence</span>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-primary font-mono text-xs">{deposit.reference}</span>
-            <CopyBtn text={deposit.reference} field="reference" />
-          </div>
-        </div>
       </Card>
 
       {/* Step-by-step instructions */}
@@ -369,8 +341,8 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
       </Card>
 
       {info.note && (
-        <Card className="p-4 bg-amber-50 border-amber-200">
-          <p className="text-sm text-amber-700">{info.note}</p>
+        <Card className="p-4 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20">
+          <p className="text-sm text-amber-700 dark:text-amber-400">{info.note}</p>
         </Card>
       )}
     </div>

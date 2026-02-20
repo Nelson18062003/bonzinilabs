@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StepTransition } from '@/components/auth/StepTransition';
-import { CountdownTimer } from '@/components/deposit/CountdownTimer';
-import { ProofUpload } from '@/components/deposit/ProofUpload';
 import { useCountUp } from '@/hooks/useCountUp';
 import { formatXAF } from '@/lib/formatters';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreateDeposit, useUploadMultipleProofs } from '@/hooks/useDeposits';
+import { useCreateDeposit } from '@/hooks/useDeposits';
 import { SUB_METHOD_TO_DB_METHOD, type DepositMethod } from '@/types/deposit';
 import {
   methodFamilies,
@@ -38,10 +36,9 @@ import {
   Info,
   MapPin,
   Clock,
-  Phone,
   Building2,
-  User,
   Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -54,24 +51,21 @@ type Step =
   | 'submethod'
   | 'bank'
   | 'agency'
-  | 'client-info'
-  | 'creating'
-  | 'instructions'
-  | 'proof';
+  | 'recap'
+  | 'creating';
 
-const PHASE_1_STEPS: Step[] = ['amount', 'family', 'submethod', 'bank', 'agency', 'client-info'];
+const PHASE_1_STEPS: Step[] = ['amount', 'family', 'submethod', 'bank', 'agency'];
 
 function getPhaseIndex(step: Step): number {
-  if (PHASE_1_STEPS.includes(step) || step === 'creating') return 0;
-  if (step === 'instructions') return 1;
-  return 2; // proof
+  if (PHASE_1_STEPS.includes(step)) return 0;
+  if (step === 'recap') return 1;
+  return 2; // creating
 }
 
 const NewDepositPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const createDeposit = useCreateDeposit();
-  const uploadProofs = useUploadMultipleProofs();
 
   // Flow state
   const [step, setStep] = useState<Step>('amount');
@@ -81,12 +75,7 @@ const NewDepositPage = () => {
   const [selectedSubMethod, setSelectedSubMethod] = useState<DepositSubMethod | null>(null);
   const [selectedBank, setSelectedBank] = useState<BankOption | null>(null);
   const [selectedAgency, setSelectedAgency] = useState<AgencyOption | null>(null);
-  const [clientPhone, setClientPhone] = useState('');
-  const [clientName, setClientName] = useState('');
-  const [createdDeposit, setCreatedDeposit] = useState<{ id: string; reference: string } | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [proofFiles, setProofFiles] = useState<File[]>([]);
-  const [createdAtTimestamp, setCreatedAtTimestamp] = useState<string | null>(null);
 
   // Count-up animation for amount preview
   const parsedAmount = parseInt(amount) || 0;
@@ -117,37 +106,26 @@ const NewDepositPage = () => {
     return 'bank_transfer';
   };
 
-  // Create deposit (transition between Phase 1 and Phase 2)
-  const doCreateDeposit = async (overrides?: {
-    method?: DepositMethod;
-    family?: DepositMethodFamily;
-    subMethod?: DepositSubMethod;
-    bankName?: string;
-    agencyName?: string;
-  }) => {
+  // Create deposit — only called from recap after explicit user confirmation
+  const doCreateDeposit = async () => {
     goTo('creating');
     try {
       const deposit = await createDeposit.mutateAsync({
         amount_xaf: parseInt(amount),
-        method: overrides?.method || getDepositMethod(),
-        bank_name: overrides?.bankName || selectedBank || undefined,
-        agency_name: overrides?.agencyName || selectedAgency || undefined,
-        client_phone: clientPhone || undefined,
+        method: getDepositMethod(),
+        bank_name: selectedBank || undefined,
+        agency_name: selectedAgency || undefined,
       });
-
-      setCreatedDeposit({ id: deposit.id!, reference: deposit.reference! });
-      setCreatedAtTimestamp(new Date().toISOString());
-      if (overrides?.family) setSelectedFamily(overrides.family);
-      if (overrides?.subMethod) setSelectedSubMethod(overrides.subMethod);
 
       toast.success('Dépôt créé avec succès !', {
-        description: 'Suivez les instructions pour effectuer le dépôt.',
+        description: `Référence: ${deposit.reference}. Téléchargez vos justificatifs.`,
       });
 
-      goTo('instructions');
+      // Navigate to deposit detail — proof upload is handled there
+      navigate(`/deposits/${deposit.id}`, { state: { fromCreation: true } });
     } catch {
-      // Error handled by mutation's onError — go back to family selection
-      goTo('family', 'back');
+      // Error handled by mutation's onError — go back to recap
+      goTo('recap', 'back');
     }
   };
 
@@ -162,12 +140,9 @@ const NewDepositPage = () => {
       setSelectedSubMethod('AGENCY_CASH');
       setStep('agency');
     } else if (family === 'WAVE') {
-      // Wave has no sub-selection, create deposit immediately
-      doCreateDeposit({
-        method: SUB_METHOD_TO_DB_METHOD['WAVE_TRANSFER'],
-        family: family,
-        subMethod: 'WAVE_TRANSFER',
-      });
+      // Wave has no sub-selection — go directly to recap
+      setSelectedSubMethod('WAVE_TRANSFER');
+      setStep('recap');
     }
   };
 
@@ -177,78 +152,63 @@ const NewDepositPage = () => {
 
     if (subMethodRequiresBankSelection(subMethod)) {
       setStep('bank');
-    } else if (subMethod === 'OM_WITHDRAWAL' || subMethod === 'MTN_WITHDRAWAL') {
-      setStep('client-info');
     } else {
-      // Transfers go directly to deposit creation
-      doCreateDeposit();
+      // All sub-methods (transfers AND withdrawals) go to recap
+      setStep('recap');
     }
   };
 
   const handleBankSelected = (bank: BankOption) => {
     setSelectedBank(bank);
-    doCreateDeposit({ bankName: bank });
+    goTo('recap');
   };
 
   const handleAgencySelected = (agency: AgencyOption) => {
     setSelectedAgency(agency);
-    doCreateDeposit({ agencyName: agency });
+    goTo('recap');
   };
 
-  const handleClientInfoSubmit = () => {
-    if (!clientPhone || !clientName) {
-      toast.error('Veuillez remplir tous les champs');
-      return;
-    }
-    doCreateDeposit();
-  };
-
-  // Proof upload handlers
-  const handleProofConfirm = async () => {
-    if (!createdDeposit || !proofFiles.length) return;
-
-    try {
-      await uploadProofs.mutateAsync({
-        depositId: createdDeposit.id,
-        files: proofFiles,
-      });
-      navigate(`/deposits/${createdDeposit.id}`, { state: { fromProofUpload: true } });
-    } catch {
-      // Error handled by mutation
+  // Back navigation from recap depends on the path taken
+  const handleRecapBack = () => {
+    if (selectedFamily === 'WAVE') {
+      goTo('family', 'back');
+    } else if (selectedFamily === 'AGENCY_BONZINI') {
+      goTo('agency', 'back');
+    } else if (selectedBank) {
+      goTo('bank', 'back');
+    } else {
+      goTo('submethod', 'back');
     }
   };
 
-  const handleSkipProof = () => {
-    if (!createdDeposit) return;
-    navigate(`/deposits/${createdDeposit.id}`);
-  };
-
-  // Get instruction info based on selected method
-  const getInstructionInfo = () => {
+  // Build recap info with coordinates + instructions for the selected method
+  const getRecapInfo = () => {
     if (!selectedFamily) return null;
-    const depositRef = createdDeposit?.reference || '';
 
     if (selectedFamily === 'BANK' && selectedBank) {
       const bankInfo = getBankInfo(selectedBank);
       return {
-        type: 'bank',
         title: selectedSubMethod === 'BANK_TRANSFER' ? 'Virement bancaire' : 'Dépôt cash en banque',
-        accountLabel: 'N° Compte',
-        accountValue: bankInfo?.bonziniAccount.accountNumber || '',
-        accountName: bankInfo?.bonziniAccount.accountName || '',
-        bankName: bankInfo?.bonziniAccount.bankName || '',
+        fields: [
+          { label: 'Banque', value: bankInfo?.bonziniAccount.bankName || '', key: 'bank' },
+          { label: 'N° Compte', value: bankInfo?.bonziniAccount.accountNumber || '', key: 'account', mono: true },
+          { label: 'Titulaire', value: bankInfo?.bonziniAccount.accountName || '', key: 'name' },
+          { label: 'IBAN', value: bankInfo?.bonziniAccount.iban || '', key: 'iban', mono: true },
+          { label: 'SWIFT', value: bankInfo?.bonziniAccount.swift || '', key: 'swift', mono: true },
+        ],
+        merchantCode: undefined as string | undefined,
         instructions: selectedSubMethod === 'BANK_TRANSFER'
           ? [
               'Connectez-vous à votre application bancaire ou rendez-vous en agence',
               'Effectuez un virement vers le compte ci-dessus',
-              `Indiquez la référence: ${depositRef}`,
-              'Conservez le reçu et téléchargez-le ici',
+              'Vous recevrez une référence après confirmation',
+              'Conservez le reçu et téléchargez-le ensuite',
             ]
           : [
               `Rendez-vous dans une agence ${bankInfo?.label}`,
               'Effectuez un dépôt cash sur le compte ci-dessus',
-              `Indiquez la référence: ${depositRef}`,
-              'Conservez le bordereau et téléchargez-le ici',
+              'Vous recevrez une référence après confirmation',
+              'Conservez le bordereau et téléchargez-le ensuite',
             ],
       };
     }
@@ -256,11 +216,12 @@ const NewDepositPage = () => {
     if (selectedFamily === 'ORANGE_MONEY') {
       if (selectedSubMethod === 'OM_TRANSFER') {
         return {
-          type: 'mobile',
           title: 'Transfert Orange Money',
-          accountLabel: 'Numéro OM',
-          accountValue: orangeMoneyAccount.phone,
-          accountName: orangeMoneyAccount.accountName,
+          fields: [
+            { label: 'Numéro OM', value: orangeMoneyAccount.phone, key: 'account', mono: true },
+            { label: 'Titulaire', value: orangeMoneyAccount.accountName, key: 'name' },
+          ],
+          merchantCode: undefined as string | undefined,
           instructions: [
             'Composez #150*1*1#',
             `Entrez le numéro: ${orangeMoneyAccount.phone}`,
@@ -272,11 +233,10 @@ const NewDepositPage = () => {
       } else {
         const merchantCodeWithAmount = omMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
-          type: 'merchant',
           title: 'Retrait Orange Money',
-          accountLabel: 'Titulaire',
-          accountValue: omMerchantInfo.accountName,
-          accountName: omMerchantInfo.accountName,
+          fields: [
+            { label: 'Titulaire', value: omMerchantInfo.accountName, key: 'name' },
+          ],
           merchantCode: merchantCodeWithAmount,
           instructions: [
             'Composez le code ci-dessous sur votre téléphone',
@@ -290,11 +250,12 @@ const NewDepositPage = () => {
     if (selectedFamily === 'MTN_MONEY') {
       if (selectedSubMethod === 'MTN_TRANSFER') {
         return {
-          type: 'mobile',
           title: 'Transfert MTN Mobile Money',
-          accountLabel: 'Numéro MOMO',
-          accountValue: mtnMoneyAccount.phone,
-          accountName: mtnMoneyAccount.accountName,
+          fields: [
+            { label: 'Numéro MOMO', value: mtnMoneyAccount.phone, key: 'account', mono: true },
+            { label: 'Titulaire', value: mtnMoneyAccount.accountName, key: 'name' },
+          ],
+          merchantCode: undefined as string | undefined,
           instructions: [
             'Composez *126#',
             'Sélectionnez "Transfert d\'argent"',
@@ -306,11 +267,10 @@ const NewDepositPage = () => {
       } else {
         const merchantCodeWithAmount = mtnMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
-          type: 'merchant',
           title: 'Retrait MTN Mobile Money',
-          accountLabel: 'Titulaire',
-          accountValue: mtnMerchantInfo.accountName,
-          accountName: mtnMerchantInfo.accountName,
+          fields: [
+            { label: 'Titulaire', value: mtnMerchantInfo.accountName, key: 'name' },
+          ],
           merchantCode: merchantCodeWithAmount,
           instructions: [
             'Composez le code ci-dessous sur votre téléphone',
@@ -324,17 +284,17 @@ const NewDepositPage = () => {
     if (selectedFamily === 'AGENCY_BONZINI' && selectedAgency) {
       const agencyInfo = getAgencyInfo(selectedAgency);
       return {
-        type: 'agency',
         title: 'Dépôt en agence Bonzini',
-        accountLabel: 'Agence',
-        accountValue: agencyInfo?.label || '',
-        accountName: 'BONZINI TRADING',
-        address: agencyInfo?.address,
-        hours: agencyInfo?.hours,
+        fields: [
+          { label: 'Agence', value: agencyInfo?.label || '', key: 'agency' },
+          { label: 'Adresse', value: agencyInfo?.address || '', key: 'address' },
+          { label: 'Horaires', value: agencyInfo?.hours || '', key: 'hours' },
+        ],
+        merchantCode: undefined as string | undefined,
         instructions: [
           `Rendez-vous à l'agence ${agencyInfo?.label}`,
           'Présentez votre pièce d\'identité',
-          `Mentionnez la référence: ${depositRef}`,
+          'Vous recevrez une référence après confirmation',
           'Effectuez votre dépôt en espèces',
           'Conservez votre reçu',
         ],
@@ -343,11 +303,12 @@ const NewDepositPage = () => {
 
     if (selectedFamily === 'WAVE') {
       return {
-        type: 'mobile',
         title: 'Transfert Wave',
-        accountLabel: 'Numéro Wave',
-        accountValue: waveAccount.phone,
-        accountName: waveAccount.accountName,
+        fields: [
+          { label: 'Numéro Wave', value: waveAccount.phone, key: 'account', mono: true },
+          { label: 'Titulaire', value: waveAccount.accountName, key: 'name' },
+        ],
+        merchantCode: undefined as string | undefined,
         instructions: [
           'Ouvrez l\'application Wave',
           'Sélectionnez "Envoyer"',
@@ -359,15 +320,6 @@ const NewDepositPage = () => {
     }
 
     return null;
-  };
-
-  const handleCopyAll = () => {
-    const info = getInstructionInfo();
-    if (!info) return;
-    const depositRef = createdDeposit?.reference || '';
-
-    const allText = `${info.accountLabel}: ${info.accountValue}\nTitulaire: ${info.accountName}\nMontant: ${formatXAF(parseInt(amount))} XAF\nRéférence: ${depositRef}`;
-    handleCopy(allText, 'all');
   };
 
   // ============================================
@@ -614,94 +566,23 @@ const NewDepositPage = () => {
     </StepTransition>
   );
 
-  const renderClientInfoForm = () => (
-    <StepTransition stepKey="client-info" direction={direction}>
-      <div className="space-y-6">
-        <button
-          onClick={() => goTo('submethod', 'back')}
-          className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </button>
-
-        <div className="card-elevated p-4">
-          <p className="text-sm text-muted-foreground mb-4">
-            Nous avons besoin de vos informations pour initier le retrait
-          </p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Votre nom (sur le compte {selectedFamily === 'ORANGE_MONEY' ? 'OM' : 'MOMO'})
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Ex: Jean Dupont"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Numéro de téléphone
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type="tel"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="Ex: 6XX XXX XXX"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={handleClientInfoSubmit}
-          disabled={!clientPhone || !clientName}
-          className={cn(
-            'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
-            clientPhone && clientName
-              ? 'btn-primary-gradient'
-              : 'bg-muted text-muted-foreground cursor-not-allowed'
-          )}
-        >
-          Continuer
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-    </StepTransition>
-  );
-
-  const renderCreating = () => (
-    <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-deposit-pulse">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-      </div>
-      <p className="font-semibold text-foreground mt-6">Création du dépôt...</p>
-      <p className="text-sm text-muted-foreground mt-2">Un instant</p>
-    </div>
-  );
-
-  const renderInstructions = () => {
-    const info = getInstructionInfo();
+  const renderRecap = () => {
+    const info = getRecapInfo();
     if (!info) return null;
-    const depositRef = createdDeposit?.reference || '';
 
     return (
-      <StepTransition stepKey="instructions" direction={direction}>
+      <StepTransition stepKey="recap" direction={direction}>
         <div className="space-y-4">
+          <button
+            onClick={handleRecapBack}
+            className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour
+          </button>
+
           {/* Summary card */}
-          <div className="card-elevated p-4 bg-primary/5 border-primary/20 animate-scale-in">
+          <div className="card-elevated p-4 bg-primary/5 border-primary/20">
             <div className="flex justify-between items-start mb-2">
               <span className="text-sm text-muted-foreground">Montant à déposer</span>
               <span
@@ -717,106 +598,60 @@ const NewDepositPage = () => {
             </div>
           </div>
 
-          {/* Countdown timer */}
-          {createdAtTimestamp && (
-            <div className="animate-slide-up" style={{ animationDelay: '50ms', animationFillMode: 'both' }}>
-              <CountdownTimer createdAt={createdAtTimestamp} />
-            </div>
-          )}
+          {/* Coordinates */}
+          <div className="card-elevated p-4 space-y-1">
+            <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+              <Info className="w-4 h-4 text-primary" />
+              Coordonnées de dépôt
+            </p>
 
-          {/* Account info */}
-          <div
-            className="card-elevated p-4 space-y-3 animate-slide-up"
-            style={{ animationDelay: '100ms', animationFillMode: 'both' }}
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Info className="w-4 h-4 text-primary" />
-                Informations de dépôt
-              </p>
-              <button
-                onClick={handleCopyAll}
-                className="text-xs text-primary font-medium hover:underline"
-              >
-                {copiedField === 'all' ? 'Copié !' : 'Tout copier'}
-              </button>
-            </div>
-
-            {(info as any).bankName && (
-              <div className="flex items-center justify-between py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">Banque</span>
+            {info.fields.map((field) => (
+              <div key={field.key} className="flex items-center justify-between py-2 border-b border-border/50">
+                <span className="text-sm text-muted-foreground">{field.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{(info as any).bankName}</span>
-                  <button onClick={() => handleCopy((info as any).bankName!, 'bank')}>
-                    {copiedField === 'bank' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />}
+                  <span className={cn(
+                    'font-medium text-foreground text-sm text-right',
+                    field.mono && 'font-mono'
+                  )}>
+                    {field.value}
+                  </span>
+                  <button onClick={() => handleCopy(field.value, field.key)}>
+                    {copiedField === field.key
+                      ? <Check className="w-4 h-4 text-success" />
+                      : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    }
                   </button>
                 </div>
               </div>
-            )}
-
-            <div className="flex items-center justify-between py-2 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">{info.accountLabel}</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground font-mono text-sm">{info.accountValue}</span>
-                <button onClick={() => handleCopy(info.accountValue, 'account')}>
-                  {copiedField === 'account' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between py-2 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">Titulaire</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{info.accountName}</span>
-                <button onClick={() => handleCopy(info.accountName, 'name')}>
-                  {copiedField === 'name' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />}
-                </button>
-              </div>
-            </div>
-
-            {(info as any).address && (
-              <div className="flex items-start justify-between py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">Adresse</span>
-                <span className="font-medium text-foreground text-right text-sm">{(info as any).address}</span>
-              </div>
-            )}
-
-            {(info as any).hours && (
-              <div className="flex items-center justify-between py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">Horaires</span>
-                <span className="font-medium text-foreground text-sm">{(info as any).hours}</span>
-              </div>
-            )}
+            ))}
 
             {/* Merchant code for withdrawals */}
-            {(info as any).merchantCode && (
+            {info.merchantCode && (
               <div className="py-3 border-b border-border/50">
                 <span className="text-sm text-muted-foreground block mb-2">Code Marchand</span>
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
-                  <span className="font-bold text-foreground font-mono text-sm break-all">{(info as any).merchantCode}</span>
-                  <button onClick={() => handleCopy((info as any).merchantCode, 'merchant')}>
-                    {copiedField === 'merchant' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground flex-shrink-0 ml-2" />}
+                  <span className="font-bold text-foreground font-mono text-sm break-all">{info.merchantCode}</span>
+                  <button onClick={() => handleCopy(info.merchantCode!, 'merchant')} className="flex-shrink-0 ml-2">
+                    {copiedField === 'merchant'
+                      ? <Check className="w-4 h-4 text-success" />
+                      : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    }
                   </button>
                 </div>
               </div>
             )}
 
+            {/* Amount row */}
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Référence</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-primary font-mono text-xs">{depositRef}</span>
-                <button onClick={() => handleCopy(depositRef, 'ref')}>
-                  {copiedField === 'ref' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />}
-                </button>
-              </div>
+              <span className="text-sm text-muted-foreground">Montant à envoyer</span>
+              <span className="font-bold text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {formatXAF(parseInt(amount))} XAF
+              </span>
             </div>
           </div>
 
           {/* Instructions */}
-          <div
-            className="card-elevated p-4 animate-slide-up"
-            style={{ animationDelay: '150ms', animationFillMode: 'both' }}
-          >
+          <div className="card-elevated p-4">
             <p className="text-sm font-semibold text-foreground mb-4">Instructions</p>
             <ol className="space-y-3">
               {info.instructions.map((instruction, index) => (
@@ -830,39 +665,44 @@ const NewDepositPage = () => {
             </ol>
           </div>
 
+          {/* Confirmation notice */}
+          <div className="rounded-xl border-l-4 border-primary bg-primary/5 px-4 py-3">
+            <p className="text-xs text-primary leading-relaxed">
+              En confirmant, votre demande de dépôt sera enregistrée. Vous pourrez ensuite télécharger vos justificatifs.
+            </p>
+          </div>
+
+          {/* CTA */}
           <button
-            onClick={() => goTo('proof')}
-            className="w-full btn-primary-gradient flex items-center justify-center gap-2 animate-slide-up"
-            style={{ animationDelay: '200ms', animationFillMode: 'both' }}
+            onClick={doCreateDeposit}
+            disabled={createDeposit.isPending}
+            className={cn(
+              'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
+              createDeposit.isPending
+                ? 'bg-primary/60 text-primary-foreground'
+                : 'btn-primary-gradient'
+            )}
           >
-            J'ai effectué le dépôt
-            <ArrowRight className="w-4 h-4" />
+            {createDeposit.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <ShieldCheck className="w-5 h-5" />
+            )}
+            Je confirme ma demande de dépôt
           </button>
         </div>
       </StepTransition>
     );
   };
 
-  const renderProofUpload = () => (
-    <StepTransition stepKey="proof" direction={direction}>
-      <div className="space-y-4">
-        <div className="card-elevated p-4">
-          <ProofUpload
-            onFilesSelect={setProofFiles}
-            selectedFiles={proofFiles}
-            onConfirm={handleProofConfirm}
-            isSubmitting={uploadProofs.isPending}
-          />
-        </div>
-
-        <button
-          onClick={handleSkipProof}
-          className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
-        >
-          Envoyer la preuve plus tard
-        </button>
+  const renderCreating = () => (
+    <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-deposit-pulse">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
-    </StepTransition>
+      <p className="font-semibold text-foreground mt-6">Création du dépôt...</p>
+      <p className="text-sm text-muted-foreground mt-2">Un instant</p>
+    </div>
   );
 
   const getStepTitle = () => {
@@ -872,10 +712,8 @@ const NewDepositPage = () => {
       submethod: 'Type d\'opération',
       bank: 'Choix de la banque',
       agency: 'Choix de l\'agence',
-      'client-info': 'Vos informations',
+      recap: 'Récapitulatif',
       creating: 'Création...',
-      instructions: 'Bordereau',
-      proof: 'Preuve de dépôt',
     };
     return titles[step];
   };
@@ -896,10 +734,8 @@ const NewDepositPage = () => {
         {step === 'submethod' && renderSubMethodSelection()}
         {step === 'bank' && renderBankSelection()}
         {step === 'agency' && renderAgencySelection()}
-        {step === 'client-info' && renderClientInfoForm()}
+        {step === 'recap' && renderRecap()}
         {step === 'creating' && renderCreating()}
-        {step === 'instructions' && renderInstructions()}
-        {step === 'proof' && renderProofUpload()}
       </div>
     </MobileLayout>
   );

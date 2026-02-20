@@ -37,6 +37,7 @@ const STATUS_FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'pending_correction', label: 'À corriger' },
   { key: 'validated', label: 'Validés' },
   { key: 'rejected', label: 'Rejetés' },
+  { key: 'cancelled', label: 'Annulés' },
 ];
 
 const TO_PROCESS_STATUSES: DepositStatus[] = ['proof_submitted', 'admin_review'];
@@ -155,10 +156,11 @@ export function MobileDepositsScreen() {
         toProcess: stats.to_process,
         correction: stats.pending_correction,
         validated: stats.validated,
+        rejected: stats.rejected,
         total: stats.total,
       };
     }
-    return { toProcess: 0, correction: 0, validated: 0, total: 0 };
+    return { toProcess: 0, correction: 0, validated: 0, rejected: 0, total: 0 };
   }, [stats]);
 
   const activeFilterCount = useMemo(() => {
@@ -391,9 +393,11 @@ export function MobileDepositsScreen() {
                   ? counts.correction
                   : filter.key === 'validated'
                     ? counts.validated
-                    : filter.key === 'all'
-                      ? counts.total
-                      : null;
+                    : filter.key === 'rejected'
+                      ? counts.rejected
+                      : filter.key === 'all'
+                        ? counts.total
+                        : null;
             return (
               <button
                 key={filter.key}

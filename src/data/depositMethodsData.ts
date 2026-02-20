@@ -1,5 +1,5 @@
 // ============================================================
-// MODULE DEPOTS — Static data & helpers (from scratch)
+// MODULE DEPOTS — Static data & helpers
 // ============================================================
 import type {
   MethodFamilyInfo,
@@ -31,13 +31,13 @@ export const methodFamilies: MethodFamilyInfo[] = [
     family: 'ORANGE_MONEY',
     label: 'Orange Money',
     icon: 'Smartphone',
-    description: 'Transfert ou retrait OM',
+    description: 'Transfert UV ou retrait code marchand',
   },
   {
     family: 'MTN_MONEY',
     label: 'MTN Mobile Money',
     icon: 'Smartphone',
-    description: 'Transfert ou retrait MOMO',
+    description: 'Transfert Float ou retrait code marchand',
   },
   {
     family: 'WAVE',
@@ -65,26 +65,26 @@ export const subMethods: SubMethodInfo[] = [
   {
     subMethod: 'OM_TRANSFER',
     family: 'ORANGE_MONEY',
-    label: 'Transfert OM vers Bonzini',
-    description: 'Envoyez vers le compte Bonzini',
+    label: 'Transfert Orange UV vers Bonzini',
+    description: 'Envoyez vers le compte Orange UV Bonzini',
   },
   {
     subMethod: 'OM_WITHDRAWAL',
     family: 'ORANGE_MONEY',
-    label: 'Retrait OM (code marchand)',
-    description: 'Composez le code marchand pour payer',
+    label: 'Retrait Orange Money (code marchand)',
+    description: 'Composez le code marchand depuis votre téléphone',
   },
   {
     subMethod: 'MTN_TRANSFER',
     family: 'MTN_MONEY',
-    label: 'Transfert MOMO vers Bonzini',
-    description: 'Envoyez vers le compte Bonzini',
+    label: 'Transfert MTN Float vers Bonzini',
+    description: 'Pour comptes MTN entreprise (Float)',
   },
   {
     subMethod: 'MTN_WITHDRAWAL',
     family: 'MTN_MONEY',
-    label: 'Retrait MOMO (code marchand)',
-    description: 'Composez le code marchand pour payer',
+    label: 'Retrait MoMo (code marchand)',
+    description: 'Composez le code marchand depuis votre téléphone',
   },
   {
     subMethod: 'AGENCY_CASH',
@@ -100,52 +100,63 @@ export const subMethods: SubMethodInfo[] = [
   },
 ];
 
-// ── Banks (with Bonzini account info) ────────────────────────
+// ── Banks (with Bonzini RIB details) ─────────────────────────
 
 export const banks: BankInfo[] = [
   {
-    bank: 'AFRILAND',
-    label: 'Afriland First Bank',
-    bonziniAccount: {
-      accountName: 'BONZINI TRADING SARL',
-      accountNumber: '10005 00001 12345678901 23',
-      bankName: 'Afriland First Bank',
-    },
-  },
-  {
     bank: 'ECOBANK',
-    label: 'Ecobank',
+    label: 'Ecobank Cameroun',
     bonziniAccount: {
-      accountName: 'BONZINI TRADING SARL',
-      accountNumber: '20001 00001 98765432101 45',
-      bankName: 'Ecobank Cameroun',
-    },
-  },
-  {
-    bank: 'UBA',
-    label: 'UBA',
-    bonziniAccount: {
-      accountName: 'BONZINI TRADING SARL',
-      accountNumber: '30002 00001 55544433322 11',
-      bankName: 'United Bank for Africa',
+      accountName: 'NORTON GAUSS BONZINI SARL',
+      accountNumber: '30245039710',
+      bankName: 'Ecobank Cameroun SA',
+      iban: 'CM21 10029 00002 30245039710 53',
+      swift: 'ECOCCMCX',
+      codeBanque: '10029',
+      codeAgence: '00002',
+      cleRib: '53',
     },
   },
   {
     bank: 'CCA',
-    label: 'CCA Bank',
+    label: 'CCA-BANK Cameroun',
     bonziniAccount: {
-      accountName: 'BONZINI TRADING SARL',
-      accountNumber: '40003 00001 11122233344 55',
-      bankName: 'CCA Bank',
+      accountName: 'NORTON GAUSS BONZINI SARL',
+      accountNumber: '00280298901',
+      bankName: 'CCA-BANK Cameroun',
+      iban: 'CM21 10039 10444 00280298901 57',
+      swift: 'CCAMCMCY',
+      codeBanque: '10039',
+      codeAgence: '10444',
+      cleRib: '57',
     },
   },
   {
-    bank: 'ADVANS',
-    label: 'Advans Cameroun',
+    bank: 'UBA',
+    label: 'UBA Cameroun',
     bonziniAccount: {
-      accountName: 'BONZINI TRADING SARL',
-      accountNumber: '50004 00001 66677788899 00',
-      bankName: 'Advans Cameroun',
+      accountName: 'NORTON GAUSS BONZINI SARL',
+      accountNumber: '14011000141',
+      bankName: 'UBA Cameroun',
+      iban: 'CM21 10033 05214 140110001411 88',
+      swift: 'UNAFMCX',
+      codeBanque: '10033',
+      codeAgence: '05214',
+      cleRib: '88',
+    },
+  },
+  {
+    bank: 'AFRILAND',
+    label: 'Afriland First Bank',
+    bonziniAccount: {
+      accountName: 'NORTON GAUSS BONZINI SARL',
+      accountNumber: '00000020611',
+      bankName: 'AFRILAND FIRST BANK Cameroun',
+      iban: 'CM21 10005 00002 00000020611 38',
+      swift: 'CCEICMCX',
+      codeBanque: '10005',
+      codeAgence: '00002',
+      cleRib: '38',
     },
   },
 ];
@@ -176,13 +187,13 @@ export const agencies: AgencyInfo[] = [
 // ── Mobile Money accounts ────────────────────────────────────
 
 export const orangeMoneyAccount: MobileMoneyInfo = {
-  phone: '+237 691 000 001',
-  accountName: 'BONZINI TRADING',
+  phone: '6 96 10 38 64',
+  accountName: 'WONDER PHONE',
 };
 
 export const mtnMoneyAccount: MobileMoneyInfo = {
-  phone: '+237 670 000 001',
-  accountName: 'BONZINI TRADING',
+  phone: '6 52 23 68 56',
+  accountName: 'NGANGON SOH NELSON',
 };
 
 export const waveAccount: MobileMoneyInfo = {
@@ -191,12 +202,10 @@ export const waveAccount: MobileMoneyInfo = {
 };
 
 // ── Merchant codes (OM/MTN withdrawal) ───────────────────────
-// Per PDF: user dials this code themselves.
-// MONTANT must NOT be auto-injected.
 
 export const omMerchantInfo: MerchantInfo = {
-  accountName: 'PDV TCHAKOUTE',
-  merchantCode: '#150*14*424393*693515541*MONTANT#',
+  accountName: 'WONDER PHONE',
+  merchantCode: '#150*14*424393*696103864*MONTANT#',
 };
 
 export const mtnMerchantInfo: MerchantInfo = {

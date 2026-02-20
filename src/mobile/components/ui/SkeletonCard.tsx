@@ -124,44 +124,56 @@ export function SkeletonDashboard() {
   );
 }
 
-/** Skeleton for a detail screen (deposit/payment detail) */
+/** Skeleton for a detail screen (Revolut-style hero layout) */
 export function SkeletonDetail() {
   return (
-    <div className="px-4 py-4 space-y-4">
-      {/* Status badge + header */}
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-6 w-24 rounded-full" />
-        <Skeleton className="h-4 w-20" />
+    <div className="space-y-4">
+      {/* Hero zone - centered */}
+      <div className="flex flex-col items-center pt-2 pb-6 px-4">
+        <Skeleton className="w-16 h-16 rounded-2xl mb-4" />
+        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="h-5 w-20 rounded-full mb-4" />
+        <Skeleton className="h-10 w-48 mb-1" />
+        <Skeleton className="h-5 w-10 mt-1" />
+        <Skeleton className="h-4 w-36 mt-3" />
       </div>
 
-      {/* Amount card */}
-      <div className="bg-card rounded-xl p-5 border border-border space-y-3">
-        <Skeleton className="h-8 w-40 mx-auto" />
-        <Skeleton className="h-4 w-24 mx-auto" />
-      </div>
+      <div className="px-4 space-y-4">
+        {/* Transaction ID strip */}
+        <Skeleton className="h-14 w-full rounded-xl" />
 
-      {/* Info rows */}
-      <div className="bg-card rounded-xl p-4 border border-border space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-32" />
+        {/* Details card */}
+        <div className="card-glass overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/30">
+            <Skeleton className="h-4 w-16" />
           </div>
-        ))}
-      </div>
-
-      {/* Timeline */}
-      <div className="bg-card rounded-xl p-4 border border-border space-y-3">
-        <Skeleton className="h-5 w-20" />
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Skeleton className="w-6 h-6 rounded-full flex-shrink-0" />
-            <div className="space-y-1 flex-1">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-20" />
-            </div>
+          <div className="divide-y divide-border/30">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3.5">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Timeline card */}
+        <div className="card-glass overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/30">
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="w-7 h-7 rounded-full flex-shrink-0" />
+                <div className="space-y-1 flex-1">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

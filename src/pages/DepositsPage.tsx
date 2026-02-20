@@ -33,8 +33,10 @@ const DepositsPage = () => {
         return 'success';
       case 'rejected':
         return 'error';
-      case 'pending_correction':
+      case 'cancelled':
         return 'error';
+      case 'pending_correction':
+        return 'info';
       case 'admin_review':
         return 'processing';
       case 'proof_submitted':

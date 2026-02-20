@@ -285,16 +285,14 @@ export function MobileAdminDetail() {
               </Button>
             )}
           </div>
-          {!isSelf && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setResetDrawerOpen(true)}
-            >
-              <Key className="w-4 h-4 mr-2" />
-              Réinitialiser mot de passe
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setResetDrawerOpen(true)}
+          >
+            <Key className="w-4 h-4 mr-2" />
+            {isSelf ? 'Changer mon mot de passe' : 'Réinitialiser mot de passe'}
+          </Button>
         </div>
       )}
 
@@ -407,9 +405,11 @@ export function MobileAdminDetail() {
           </DrawerHeader>
           <div className="px-4">
             <p className="text-muted-foreground">
-              Un nouveau mot de passe temporaire sera généré pour{' '}
-              <strong>{admin.firstName} {admin.lastName}</strong>. Vous devrez le
-              transmettre manuellement à l'administrateur.
+              {isSelf
+                ? 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.'
+                : <>Un nouveau mot de passe temporaire sera généré pour{' '}
+                  <strong>{admin.firstName} {admin.lastName}</strong>. Vous devrez le
+                  transmettre manuellement à l'administrateur.</>}
             </p>
           </div>
           <DrawerFooter>
@@ -440,8 +440,9 @@ export function MobileAdminDetail() {
           </DrawerHeader>
           <div className="px-4 space-y-4">
             <p className="text-muted-foreground">
-              Voici le nouveau mot de passe temporaire. Transmettez-le de manière
-              sécurisée à l'administrateur.
+              {isSelf
+                ? 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.'
+                : 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l\'administrateur.'}
             </p>
             <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
               <code className="text-lg font-mono">{newPassword}</code>

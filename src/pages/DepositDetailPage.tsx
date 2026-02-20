@@ -1,9 +1,11 @@
+// ============================================================
+// MODULE DEPOTS — DepositDetailPage (Revolut-inspired redesign)
+// Premium fintech UI with hero zone, animated amount, structured details
+// ============================================================
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { ProofUpload } from '@/components/deposit/ProofUpload';
 import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
@@ -17,10 +19,12 @@ import {
   useResubmitDeposit,
   useUploadMultipleProofs,
   useDeleteDepositProof,
+  useCancelDeposit,
 } from '@/hooks/useDeposits';
-import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS, PROOF_DELETE_REASONS } from '@/types/deposit';
+import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/types/deposit';
 import { formatXAF } from '@/lib/formatters';
 import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
+import { useCountUp } from '@/hooks/useCountUp';
 import {
   Copy,
   Check,
@@ -28,15 +32,16 @@ import {
   Building2,
   XCircle,
   AlertCircle,
+  Ban,
   Smartphone,
   Store,
   Waves,
   FileText,
   Eye,
   Download,
-  RefreshCw,
   Loader2,
   Trash2,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -44,7 +49,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,21 +60,77 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PROOF_DELETE_REASONS } from '@/types/deposit';
 import { cn } from '@/lib/utils';
 
-// ── ProofImage: fallback when signed URL fails ──
+// ── Helpers ──────────────────────────────────────────────────
+
 function ProofImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
       <div className={cn('flex flex-col items-center justify-center bg-muted/50', className)}>
-        <FileText className="w-8 h-8 text-muted-foreground mb-1" />
-        <p className="text-[10px] text-muted-foreground text-center">Image indisponible</p>
+        <FileText className="w-6 h-6 text-muted-foreground" />
       </div>
     );
   }
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
+
+function DetailRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="revolut-detail-row">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={cn('text-sm font-medium text-foreground text-right', valueClassName)}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function getHeroIconStyle(status: string) {
+  switch (status) {
+    case 'validated':
+    case 'wallet_credited':
+      return 'bg-success/10 text-success animate-success-glow';
+    case 'rejected':
+      return 'bg-destructive/10 text-destructive';
+    case 'cancelled':
+      return 'bg-muted text-muted-foreground';
+    case 'pending_correction':
+      return 'bg-amber-500/10 text-amber-600';
+    default:
+      return 'bg-primary/10 text-primary animate-glow-pulse';
+  }
+}
+
+function getStatusTextColor(status: string) {
+  switch (status) {
+    case 'validated':
+    case 'wallet_credited':
+      return 'text-success';
+    case 'rejected':
+      return 'text-destructive';
+    case 'cancelled':
+      return 'text-muted-foreground';
+    case 'pending_correction':
+      return 'text-amber-600';
+    case 'admin_review':
+      return 'text-primary';
+    default:
+      return '';
+  }
+}
+
+// ── Main Component ──────────────────────────────────────────
 
 const DepositDetailPage = () => {
   const { depositId } = useParams<{ depositId: string }>();
@@ -82,6 +143,7 @@ const DepositDetailPage = () => {
   const [deletingProofId, setDeletingProofId] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [customDeleteReason, setCustomDeleteReason] = useState('');
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
 
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
@@ -89,21 +151,22 @@ const DepositDetailPage = () => {
   const uploadProofs = useUploadMultipleProofs();
   const resubmitDeposit = useResubmitDeposit();
   const deleteProof = useDeleteDepositProof();
+  const cancelDeposit = useCancelDeposit();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  // Show success toast when arriving from proof upload
+  const animatedAmount = useCountUp(deposit?.amount_xaf ?? 0, { duration: 800 });
+
   useEffect(() => {
     const state = location.state as { fromProofUpload?: boolean } | null;
     if (state?.fromProofUpload) {
       toast.success('Preuve envoyée avec succès !');
-      // Clear the state so it doesn't re-trigger on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  // Build timeline steps from deposit status and events
   const timelineSteps = useMemo(() => {
     if (!deposit) return [];
-    return buildDepositTimelineSteps(deposit.status, timelineEvents || []);
+    return buildDepositTimelineSteps(deposit.status, deposit.method, timelineEvents || []);
   }, [deposit, timelineEvents]);
 
   const isLoading = loadingDeposit || loadingProofs || loadingTimeline;
@@ -111,7 +174,14 @@ const DepositDetailPage = () => {
   if (isLoading) {
     return (
       <MobileLayout showNav={false}>
-        <PageHeader title="Détails du dépôt" showBack />
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl px-4 py-3 safe-area-top">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
         <SkeletonDetail />
       </MobileLayout>
     );
@@ -120,8 +190,15 @@ const DepositDetailPage = () => {
   if (!deposit) {
     return (
       <MobileLayout showNav={false}>
-        <PageHeader title="Dépôt introuvable" showBack />
-        <div className="p-4 text-center">
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl px-4 py-3 safe-area-top">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 text-center pt-20">
           <p className="text-muted-foreground">Ce dépôt n'existe pas.</p>
           <Button onClick={() => navigate('/deposits')} className="mt-4">
             Retour aux dépôts
@@ -149,7 +226,8 @@ const DepositDetailPage = () => {
     switch (status) {
       case 'validated': return 'success';
       case 'rejected': return 'error';
-      case 'pending_correction': return 'error';
+      case 'pending_correction': return 'info';
+      case 'cancelled': return 'error';
       case 'admin_review': return 'processing';
       case 'proof_submitted': return 'info';
       default: return 'pending';
@@ -159,19 +237,16 @@ const DepositDetailPage = () => {
   const IconComponent = getMethodIcon();
   const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof' || deposit.status === 'pending_correction';
   const isPendingCorrection = deposit.status === 'pending_correction';
-  const canDeleteProofs = !['validated', 'rejected'].includes(deposit.status);
+  const canDeleteProofs = !['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const canCancel = ['created', 'awaiting_proof', 'proof_submitted'].includes(deposit.status);
+  const isTerminal = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
 
   const handleResubmit = async () => {
     if (!depositId || !uploadedProofs.length) return;
-
-    // First upload the new proofs
-    await uploadProofs.mutateAsync({
-      depositId,
-      files: uploadedProofs,
-    });
-
-    // Then resubmit the deposit
+    // 1. D'abord resubmit (change status pending_correction → proof_submitted, clear rejection_reason)
     await resubmitDeposit.mutateAsync({ depositId });
+    // 2. Puis upload les preuves (le statut est déjà proof_submitted, l'upload ne le re-set pas)
+    await uploadProofs.mutateAsync({ depositId, files: uploadedProofs });
     setUploadedProofs([]);
     setUploadKey(k => k + 1);
   };
@@ -193,12 +268,7 @@ const DepositDetailPage = () => {
 
   const handleConfirmProofs = async () => {
     if (!uploadedProofs.length || !depositId) return;
-    
-    await uploadProofs.mutateAsync({
-      depositId,
-      files: uploadedProofs,
-    });
-
+    await uploadProofs.mutateAsync({ depositId, files: uploadedProofs });
     setUploadedProofs([]);
     setUploadKey(k => k + 1);
   };
@@ -219,200 +289,281 @@ const DepositDetailPage = () => {
 
   return (
     <MobileLayout showNav={false}>
-      <PageHeader 
-        title={`Dépôt #${deposit.reference.slice(-6)}`}
-        showBack
-        subtitle={safeFormatDate(deposit.created_at) || ''}
-      />
+      {/* ── Sticky back button ── */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl px-4 py-3 safe-area-top">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </div>
 
-      <div className="px-4 py-4 space-y-4 pb-8">
-        {/* Status Header */}
-        <Card className="p-4 border-primary/20 bg-primary/5 animate-scale-in">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <IconComponent className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">
-                {DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method}
-              </p>
-              <StatusBadge
-                status={mapStatusToType(deposit.status)}
-                label={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status}
-              />
-            </div>
-          </div>
+      {/* ── HERO ZONE ── */}
+      <div className="flex flex-col items-center pt-2 pb-6 px-4">
+        {/* Method icon with status-dependent glow */}
+        <div
+          className={cn(
+            'w-16 h-16 rounded-2xl flex items-center justify-center mb-4 animate-scale-in',
+            getHeroIconStyle(deposit.status),
+          )}
+        >
+          <IconComponent className="w-8 h-8" />
+        </div>
 
-          <div className="text-center py-3 border-t border-border/50">
-            <p className="text-2xl font-bold text-foreground tabular-nums">
-              {formatXAF(deposit.amount_xaf)} <span className="text-lg font-normal text-muted-foreground">XAF</span>
+        {/* Method label */}
+        <p className="text-sm font-medium text-muted-foreground mb-2 animate-fade-in">
+          {DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method}
+        </p>
+
+        {/* Status badge */}
+        <div
+          className="mb-4 animate-slide-up"
+          style={{ animationDelay: '50ms', animationFillMode: 'both' }}
+        >
+          <StatusBadge
+            status={mapStatusToType(deposit.status)}
+            label={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status}
+          />
+        </div>
+
+        {/* Animated amount */}
+        <p className="text-4xl sm:text-5xl font-bold text-foreground tabular-nums tracking-tight">
+          {formatXAF(animatedAmount)}
+        </p>
+        <p className="text-lg text-muted-foreground font-medium mt-1">XAF</p>
+
+        {/* Date */}
+        <p className="text-sm text-muted-foreground mt-3 animate-fade-in">
+          {safeFormatDate(deposit.created_at)}
+        </p>
+      </div>
+
+      {/* ── CONTENT SECTIONS ── */}
+      <div className="space-y-4 px-4 pb-8">
+
+        {/* Transaction ID strip */}
+        <div
+          className="flex items-center justify-between p-3.5 bg-muted/30 rounded-xl animate-slide-up"
+          style={{ animationDelay: '150ms', animationFillMode: 'both' }}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground mb-0.5">Transaction ID</p>
+            <p className="text-sm font-semibold text-foreground font-mono truncate">
+              {deposit.reference}
             </p>
           </div>
+          <button
+            onClick={() => copyToClipboard(deposit.reference, 'reference')}
+            className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0 ml-2"
+          >
+            {copiedField === 'reference' ? (
+              <Check className="w-4 h-4 text-success" />
+            ) : (
+              <Copy className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+        </div>
 
-          {/* Reference */}
-          <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20 mt-3">
-            <div>
-              <p className="text-xs text-muted-foreground">Référence</p>
-              <p className="font-bold text-primary font-mono">{deposit.reference}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => copyToClipboard(deposit.reference, 'reference')}
-            >
-              {copiedField === 'reference' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-            </Button>
-          </div>
-        </Card>
+        {/* ── Alert banners (conditional) ── */}
 
-        {/* Countdown Timer - Show for deposits awaiting action */}
-        {canUploadProof && (
-          <div className="animate-slide-up" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
-            <CountdownTimer createdAt={deposit.created_at} />
+        {/* Countdown timer — only for initial states, not pending_correction */}
+        {(deposit.status === 'created' || deposit.status === 'awaiting_proof') && (
+          <div
+            className="animate-slide-up"
+            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
+          >
+            <CountdownTimer createdAt={deposit.created_at} variant="banner" />
           </div>
         )}
 
-        {/* Deposit Instructions - Show for deposits awaiting proof */}
-        {canUploadProof && (
-          <Card className="p-4 animate-slide-up" style={{ animationDelay: '120ms', animationFillMode: 'both' }}>
-            <DepositInstructions deposit={deposit} />
-          </Card>
-        )}
-
-        {/* Rejection Reason */}
+        {/* Rejection notice */}
         {deposit.status === 'rejected' && deposit.rejection_reason && (
-          <Card className="p-4 border-destructive/30 bg-destructive/5 animate-slide-up" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
+          <div
+            className="revolut-alert-error animate-slide-up"
+            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
+          >
             <div className="flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-destructive mt-0.5" />
+              <XCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-destructive">Dépôt rejeté</p>
+                <p className="font-semibold text-sm text-destructive">Dépôt rejeté</p>
                 <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
               </div>
             </div>
-          </Card>
+          </div>
         )}
 
-        {/* Pending Correction Notice */}
+        {/* Correction notice */}
         {isPendingCorrection && deposit.rejection_reason && (
-          <Card className="p-4 border-amber-500/30 bg-amber-500/5 animate-slide-up" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
+          <div
+            className="revolut-alert-warning animate-slide-up"
+            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
+          >
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="font-medium text-amber-600">Correction demandée</p>
+                <p className="font-semibold text-sm text-amber-600 dark:text-amber-400">
+                  Correction demandée
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
-                <p className="text-sm text-amber-600 mt-2">
+                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
                   Veuillez uploader une nouvelle preuve corrigée ci-dessous.
                 </p>
               </div>
             </div>
-          </Card>
+          </div>
         )}
 
-        {/* Proofs Section with Previews */}
-        {proofs && proofs.length > 0 && (
-          <Card className="p-4 animate-slide-up" style={{ animationDelay: '160ms', animationFillMode: 'both' }}>
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-foreground">
-                Preuves envoyées ({proofs.length})
-              </h3>
+        {/* Cancelled notice */}
+        {deposit.status === 'cancelled' && (
+          <div
+            className="revolut-alert-muted animate-slide-up"
+            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
+          >
+            <div className="flex items-start gap-3">
+              <Ban className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm text-gray-600 dark:text-gray-400">
+                  Dépôt annulé
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Ce dépôt a été annulé.</p>
+              </div>
             </div>
-            
-            {/* Proof list — mobile-friendly (no hover needed) */}
-            <div className="space-y-3">
+          </div>
+        )}
+
+        {/* ── Details card ── */}
+        <div
+          className="revolut-detail-section animate-slide-up"
+          style={{ animationDelay: '220ms', animationFillMode: 'both' }}
+        >
+          <div className="revolut-detail-header">
+            <h3 className="text-sm font-semibold text-foreground">Détails</h3>
+          </div>
+          <div className="divide-y divide-border/30">
+            <DetailRow label="Méthode" value={DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method} />
+            {deposit.bank_name && (
+              <DetailRow label="Banque" value={deposit.bank_name} />
+            )}
+            {deposit.agency_name && (
+              <DetailRow label="Agence" value={deposit.agency_name} />
+            )}
+            <DetailRow label="Montant" value={`${formatXAF(deposit.amount_xaf)} XAF`} />
+            <DetailRow
+              label="Statut"
+              value={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status}
+              valueClassName={getStatusTextColor(deposit.status)}
+            />
+            <DetailRow label="Date" value={safeFormatDate(deposit.created_at) || '-'} />
+          </div>
+        </div>
+
+        {/* ── Instructions section ── */}
+        {!isTerminal && (
+          <div
+            className="revolut-detail-section animate-slide-up"
+            style={{ animationDelay: '260ms', animationFillMode: 'both' }}
+          >
+            <div className="p-4">
+              <DepositInstructions deposit={deposit} />
+            </div>
+          </div>
+        )}
+        {isTerminal && (
+          <div
+            className="animate-slide-up"
+            style={{ animationDelay: '260ms', animationFillMode: 'both' }}
+          >
+            <button
+              onClick={() => setInstructionsOpen(!instructionsOpen)}
+              className="w-full flex items-center justify-between py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span>Voir les instructions de dépôt</span>
+              <ChevronDown
+                className={cn(
+                  'w-4 h-4 transition-transform duration-200',
+                  instructionsOpen && 'rotate-180',
+                )}
+              />
+            </button>
+            {instructionsOpen && (
+              <div className="revolut-detail-section animate-slide-up">
+                <div className="p-4">
+                  <DepositInstructions deposit={deposit} showTitle={false} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Proofs section (horizontal strip) ── */}
+        {proofs && proofs.length > 0 && (
+          <div
+            className="animate-slide-up"
+            style={{ animationDelay: '300ms', animationFillMode: 'both' }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Preuves</h3>
+              <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                {proofs.length}
+              </span>
+            </div>
+            <div className="proof-strip">
               {proofs.map((proof) => (
                 <div
                   key={proof.id}
-                  className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/20"
+                  className="relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-border/50 bg-muted/20 proof-thumb cursor-pointer"
+                  onClick={() => {
+                    if (isImageFile(proof.file_type) && proof.signedUrl) {
+                      setViewingProof({ url: proof.signedUrl, name: proof.file_name });
+                    } else if (proof.signedUrl) {
+                      handleDownloadProof(proof.signedUrl, proof.file_name);
+                    }
+                  }}
                 >
-                  {/* Thumbnail — tap to view */}
-                  <div
-                    className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-border bg-muted/30 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => {
-                      if (isImageFile(proof.file_type) && proof.signedUrl) {
-                        setViewingProof({ url: proof.signedUrl, name: proof.file_name });
-                      } else if (proof.signedUrl) {
-                        handleDownloadProof(proof.signedUrl, proof.file_name);
-                      }
-                    }}
-                  >
-                    {isImageFile(proof.file_type) && proof.signedUrl ? (
-                      <ProofImage
-                        src={proof.signedUrl}
-                        alt={proof.file_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-primary" />
-                      </div>
-                    )}
+                  {isImageFile(proof.file_type) && proof.signedUrl ? (
+                    <ProofImage
+                      src={proof.signedUrl}
+                      alt={proof.file_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-primary" />
+                    </div>
+                  )}
+
+                  {/* View overlay */}
+                  <div className="absolute inset-0 bg-black/0 active:bg-black/20 transition-colors flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-white opacity-0 active:opacity-100 transition-opacity" />
                   </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {proof.file_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {safeFormatDate(proof.uploaded_at)}
-                    </p>
-                  </div>
-
-                  {/* Action buttons — always visible */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-8 h-8"
-                      onClick={() => {
-                        if (isImageFile(proof.file_type) && proof.signedUrl) {
-                          setViewingProof({ url: proof.signedUrl, name: proof.file_name });
-                        } else if (proof.signedUrl) {
-                          handleDownloadProof(proof.signedUrl, proof.file_name);
-                        }
+                  {/* Delete button */}
+                  {canDeleteProofs && (
+                    <button
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingProofId(proof.id);
+                        setDeleteReason('');
+                        setCustomDeleteReason('');
                       }}
                     >
-                      {isImageFile(proof.file_type) ? (
-                        <Eye className="w-4 h-4" />
-                      ) : (
-                        <Download className="w-4 h-4" />
-                      )}
-                    </Button>
-                    {proof.signedUrl && isImageFile(proof.file_type) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-8 h-8"
-                        onClick={() => handleDownloadProof(proof.signedUrl!, proof.file_name)}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {canDeleteProofs && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-8 h-8 text-destructive hover:text-destructive"
-                        onClick={() => {
-                          setDeletingProofId(proof.id);
-                          setDeleteReason('');
-                          setCustomDeleteReason('');
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
+                      <Trash2 className="w-3 h-3 text-white" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
-        {/* Proof Upload Section */}
+        {/* ── Proof Upload ── */}
         {canUploadProof && (
-          <Card className="p-4 animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
+          <div
+            className="revolut-detail-section p-4 animate-slide-up"
+            style={{ animationDelay: '340ms', animationFillMode: 'both' }}
+          >
             <ProofUpload
               key={uploadKey}
               onFilesSelect={handleProofsUpload}
@@ -420,42 +571,53 @@ const DepositDetailPage = () => {
               onConfirm={isPendingCorrection ? handleResubmit : handleConfirmProofs}
               isSubmitting={uploadProofs.isPending || resubmitDeposit.isPending}
             />
-            {isPendingCorrection && uploadedProofs.length > 0 && (
-              <Button
-                className="w-full mt-4"
-                onClick={handleResubmit}
-                disabled={uploadProofs.isPending || resubmitDeposit.isPending}
-              >
-                {(uploadProofs.isPending || resubmitDeposit.isPending) ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                )}
-                Renvoyer la preuve corrigée
-              </Button>
-            )}
-          </Card>
+          </div>
         )}
 
-        {/* Timeline Section - Now shows all steps */}
-        <Card className="p-4 animate-slide-up" style={{ animationDelay: '240ms', animationFillMode: 'both' }}>
-          <h3 className="font-semibold text-foreground mb-4">Suivi du dépôt</h3>
-          <DepositTimelineDisplay steps={timelineSteps} />
-        </Card>
-
-        {/* Back button */}
-        <Button
-          variant="outline"
-          className="w-full animate-slide-up"
-          style={{ animationDelay: '280ms', animationFillMode: 'both' }}
-          onClick={() => navigate('/deposits')}
+        {/* ── Timeline ── */}
+        <div
+          className="revolut-detail-section animate-slide-up"
+          style={{ animationDelay: '380ms', animationFillMode: 'both' }}
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour à mes dépôts
-        </Button>
+          <div className="revolut-detail-header">
+            <h3 className="text-sm font-semibold text-foreground">Suivi</h3>
+          </div>
+          <div className="p-4">
+            <DepositTimelineDisplay steps={timelineSteps} variant="compact" />
+          </div>
+        </div>
+
+        {/* ── Actions ── */}
+        {canCancel && (
+          <div
+            className="animate-slide-up"
+            style={{ animationDelay: '420ms', animationFillMode: 'both' }}
+          >
+            <button
+              className="w-full py-3 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
+              onClick={() => setCancelDialogOpen(true)}
+            >
+              Annuler le dépôt
+            </button>
+          </div>
+        )}
+
+        {/* Back link */}
+        <div
+          className="text-center py-4 animate-slide-up"
+          style={{ animationDelay: '460ms', animationFillMode: 'both' }}
+        >
+          <button
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+            onClick={() => navigate('/deposits')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour à mes dépôts
+          </button>
+        </div>
       </div>
 
-      {/* Proof Viewer Dialog */}
+      {/* ── Proof Viewer Dialog ── */}
       <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
           <DialogHeader className="p-4 pb-0">
@@ -485,7 +647,44 @@ const DepositDetailPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Proof Confirmation Dialog */}
+      {/* ── Cancel Deposit Dialog ── */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ban className="w-5 h-5 text-destructive" />
+              Annuler ce dépôt ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Voulez-vous vraiment annuler ce dépôt de {formatXAF(deposit.amount_xaf)} XAF ?
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Non, garder</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cancelDeposit.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!depositId) return;
+                cancelDeposit.mutate(
+                  { depositId },
+                  { onSettled: () => setCancelDialogOpen(false) },
+                );
+              }}
+            >
+              {cancelDeposit.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Ban className="w-4 h-4 mr-2" />
+              )}
+              Oui, annuler
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Delete Proof Dialog ── */}
       <AlertDialog open={!!deletingProofId} onOpenChange={(open) => { if (!open) setDeletingProofId(null); }}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
