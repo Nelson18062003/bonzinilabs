@@ -126,13 +126,15 @@ export function useToggleAdminStatus() {
 }
 
 /**
- * Hook to reset an admin's password via edge function
+ * Hook to reset an admin's password via RPC (SECURITY DEFINER)
+ * Note: functions.invoke() fails with "Invalid JWT" due to GoTrueClient conflicts.
+ * The admin_reset_password RPC is used instead.
  */
 export function useResetAdminPassword() {
   return useMutation({
     mutationFn: async (userId: string): Promise<ResetPasswordResult> => {
-      const { data: result, error } = await supabaseAdmin.functions.invoke('reset-admin-password', {
-        body: { userId },
+      const { data: result, error } = await supabaseAdmin.rpc('admin_reset_password', {
+        p_target_user_id: userId,
       });
 
       if (error) throw new Error(error.message);

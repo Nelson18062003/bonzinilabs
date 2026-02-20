@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 
 export interface SignUpData {
   email: string;
@@ -96,6 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileError) {
         console.error('Error updating profile:', profileError);
+      }
+
+      // Write email to clients table (service role bypasses RLS)
+      // The trigger handle_new_user does not populate clients.email
+      const { error: clientEmailError } = await supabaseAdmin
+        .from('clients')
+        .update({ email: data.email })
+        .eq('user_id', authData.user.id);
+
+      if (clientEmailError) {
+        console.error('Error updating client email:', clientEmailError);
       }
     }
 
