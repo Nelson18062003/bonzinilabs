@@ -171,7 +171,7 @@ function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-24 pb-16">
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-16">
         <motion.div
           variants={containerVariants}
           initial="hidden"
