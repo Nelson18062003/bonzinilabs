@@ -3,6 +3,7 @@ import { BonziniLogo } from '@/components/BonziniLogo';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
 import {
   Wallet,
   ArrowDownToLine,
@@ -25,6 +26,7 @@ const navItems = [
 export function ClientSidebar() {
   const { signOut } = useAuth();
   const { data: unreadCount } = useUnreadNotificationCount();
+  const navigate = useNavigate();
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border">
@@ -61,7 +63,7 @@ export function ClientSidebar() {
           <ThemeToggleCompact />
         </div>
         <button
-          onClick={() => signOut()}
+          onClick={() => { signOut(); navigate('/auth', { replace: true }); }}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <LogOut className="w-5 h-5" />

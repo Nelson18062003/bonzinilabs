@@ -1,23 +1,21 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Plus, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const BeneficiariesPage = () => {
-  const navigate = useNavigate();
-
   // TODO: Implement beneficiaries table and useBeneficiaries hook when ready
   const beneficiaries: any[] = [];
 
   return (
     <MobileLayout>
-      <PageHeader 
-        title="Bénéficiaires" 
+      <PageHeader
+        title="Bénéficiaires"
         subtitle="Vos destinataires en Chine"
         showBack
         rightElement={
           <button
-            onClick={() => navigate('/beneficiaries/new')}
+            onClick={() => toast.info('Fonctionnalité bientôt disponible')}
             className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-purple"
           >
             <Plus className="w-5 h-5" />

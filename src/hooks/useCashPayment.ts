@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface ScanCashPaymentResult {
@@ -31,7 +31,7 @@ export function useScanCashPayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string): Promise<ScanCashPaymentResult> => {
-      const { data, error } = await supabase.rpc('scan_cash_payment', {
+      const { data, error } = await supabaseAdmin.rpc('scan_cash_payment', {
         p_payment_id: paymentId,
       });
 
@@ -69,18 +69,18 @@ export function useConfirmCashPayment() {
       const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
       const fileName = `${paymentId}/${Date.now()}_signature.png`;
       
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabaseAdmin.storage
         .from('cash-signatures')
         .upload(fileName, signatureBlob, { contentType: 'image/png' });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = supabaseAdmin.storage
         .from('cash-signatures')
         .getPublicUrl(fileName);
 
       // Confirm the payment
-      const { data, error } = await supabase.rpc('confirm_cash_payment', {
+      const { data, error } = await supabaseAdmin.rpc('confirm_cash_payment', {
         p_payment_id: paymentId,
         p_signature_url: publicUrl,
         p_signed_by_name: signedByName,

@@ -27,6 +27,7 @@ const ProfilePage = () => {
   const handleLogout = async () => {
     await signOut();
     toast.success('Déconnexion réussie');
+    navigate('/auth', { replace: true });
   };
 
   const menuItems = [
@@ -40,13 +41,13 @@ const ProfilePage = () => {
       icon: Shield,
       label: 'Sécurité',
       description: 'Mot de passe, 2FA',
-      onClick: () => navigate('/security')
+      onClick: () => toast.info('Fonctionnalité bientôt disponible')
     },
     {
       icon: Smartphone,
       label: 'Appareils connectés',
       description: '2 appareils',
-      onClick: () => navigate('/devices')
+      onClick: () => toast.info('Fonctionnalité bientôt disponible')
     },
     {
       icon: Globe,
@@ -58,13 +59,13 @@ const ProfilePage = () => {
       icon: FileText,
       label: 'Documents',
       description: 'KYC, Pièces justificatives',
-      onClick: () => navigate('/documents')
+      onClick: () => toast.info('Fonctionnalité bientôt disponible')
     },
     {
       icon: HelpCircle,
       label: 'Aide & Support',
       description: 'FAQ, Contact',
-      onClick: () => navigate('/support')
+      onClick: () => toast.info('Fonctionnalité bientôt disponible')
     },
   ];
 
