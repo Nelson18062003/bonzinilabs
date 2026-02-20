@@ -573,57 +573,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          activity_sector: string | null
-          avatar_url: string | null
-          city: string | null
-          company_name: string | null
-          country: string | null
-          created_at: string
-          date_of_birth: string | null
-          first_name: string
-          id: string
-          last_name: string
-          neighborhood: string | null
-          phone: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          activity_sector?: string | null
-          avatar_url?: string | null
-          city?: string | null
-          company_name?: string | null
-          country?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          first_name: string
-          id?: string
-          last_name: string
-          neighborhood?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          activity_sector?: string | null
-          avatar_url?: string | null
-          city?: string | null
-          company_name?: string | null
-          country?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          first_name?: string
-          id?: string
-          last_name?: string
-          neighborhood?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -714,56 +663,6 @@ export type Database = {
           },
         ]
       }
-      wallet_operations: {
-        Row: {
-          amount_xaf: number
-          balance_after: number
-          balance_before: number
-          created_at: string
-          description: string | null
-          id: string
-          operation_type: Database["public"]["Enums"]["wallet_operation_type"]
-          performed_by: string | null
-          reference_id: string | null
-          reference_type: string | null
-          wallet_id: string
-        }
-        Insert: {
-          amount_xaf: number
-          balance_after: number
-          balance_before: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          operation_type: Database["public"]["Enums"]["wallet_operation_type"]
-          performed_by?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
-          wallet_id: string
-        }
-        Update: {
-          amount_xaf?: number
-          balance_after?: number
-          balance_before?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          operation_type?: Database["public"]["Enums"]["wallet_operation_type"]
-          performed_by?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
-          wallet_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wallet_operations_wallet_id_fkey"
-            columns: ["wallet_id"]
-            isOneToOne: false
-            referencedRelation: "wallets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       wallets: {
         Row: {
           balance_xaf: number
@@ -790,16 +689,7 @@ export type Database = {
       }
     }
     Views: {
-      rate_limit_usage: {
-        Row: {
-          count_last_hour: number | null
-          limit_per_hour: number | null
-          operation_type: string | null
-          status: string | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_exchange_rate: {

@@ -135,18 +135,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      // Fetch profile for name
-      const { data: profileData } = await supabaseAdmin
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
       const adminUser: AdminUser = {
         id: user.id,
         email: user.email || '',
-        firstName: profileData?.first_name || 'Admin',
-        lastName: profileData?.last_name || '',
+        firstName: roleData.first_name || 'Admin',
+        lastName: roleData.last_name || '',
         role: roleData.role as AppRole,
       };
 

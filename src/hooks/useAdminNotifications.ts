@@ -64,18 +64,18 @@ export function useAdminNotifications() {
         ]),
       ];
 
-      let profileMap = new Map<string, { first_name: string; last_name: string }>();
+      let clientMap = new Map<string, { first_name: string; last_name: string }>();
       if (allUserIds.length > 0) {
-        const { data: profiles } = await supabaseAdmin
-          .from('profiles')
+        const { data: clients } = await supabaseAdmin
+          .from('clients')
           .select('user_id, first_name, last_name')
           .in('user_id', allUserIds);
-        profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
       }
 
       const getClientName = (userId: string) => {
-        const profile = profileMap.get(userId);
-        return profile ? `${profile.first_name} ${profile.last_name}` : 'Client inconnu';
+        const client = clientMap.get(userId);
+        return client ? `${client.first_name} ${client.last_name}` : 'Client inconnu';
       };
 
       const depositNotifications: AdminNotification[] = deposits.map(d => ({

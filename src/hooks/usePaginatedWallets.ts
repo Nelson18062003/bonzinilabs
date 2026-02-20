@@ -80,7 +80,7 @@ export function usePaginatedWalletOperations(walletId: string | undefined) {
       }
 
       const { data, error } = await supabaseAdmin
-        .from('wallet_operations')
+        .from('ledger_entries')
         .select('*')
         .eq('wallet_id', walletId)
         .order('created_at', { ascending: false })

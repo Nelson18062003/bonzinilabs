@@ -13,7 +13,7 @@ export interface Wallet {
 export interface WalletOperation {
   id: string;
   wallet_id: string;
-  operation_type: 'deposit' | 'payment' | 'adjustment';
+  operation_type: string;
   amount_xaf: number;
   balance_before: number;
   balance_after: number;
@@ -66,16 +66,28 @@ export function useMyWalletOperations() {
       if (walletError) throw walletError;
       if (!wallet) return [];
 
-      // Then get operations
+      // Get ledger entries (replaces wallet_operations)
       const { data, error } = await supabase
-        .from('wallet_operations')
+        .from('ledger_entries')
         .select('*')
         .eq('wallet_id', wallet.id)
         .order('created_at', { ascending: false })
         .limit(QUERY_LIMITS.WALLET_OPERATIONS);
 
       if (error) throw error;
-      return data as WalletOperation[];
+      return (data || []).map(entry => ({
+        id: entry.id,
+        wallet_id: entry.wallet_id,
+        operation_type: entry.entry_type,
+        amount_xaf: entry.amount_xaf,
+        balance_before: entry.balance_before,
+        balance_after: entry.balance_after,
+        reference_id: entry.reference_id,
+        reference_type: entry.reference_type,
+        description: entry.description,
+        performed_by: entry.created_by_admin_id,
+        created_at: entry.created_at,
+      })) as WalletOperation[];
     },
   });
 }
@@ -141,7 +153,7 @@ export function useAllWallets() {
   });
 }
 
-// Fetch wallet operations for a specific wallet (for admin)
+// Fetch ledger entries for a specific wallet (for admin)
 export function useWalletOperations(walletId: string | undefined) {
   return useQuery({
     queryKey: ['wallet-operations', walletId],
@@ -151,14 +163,26 @@ export function useWalletOperations(walletId: string | undefined) {
       if (!walletId) return [];
 
       const { data, error } = await supabaseAdmin
-        .from('wallet_operations')
+        .from('ledger_entries')
         .select('*')
         .eq('wallet_id', walletId)
         .order('created_at', { ascending: false })
         .limit(QUERY_LIMITS.WALLET_OPERATIONS);
 
       if (error) throw error;
-      return data as WalletOperation[];
+      return (data || []).map(entry => ({
+        id: entry.id,
+        wallet_id: entry.wallet_id,
+        operation_type: entry.entry_type,
+        amount_xaf: entry.amount_xaf,
+        balance_before: entry.balance_before,
+        balance_after: entry.balance_after,
+        reference_id: entry.reference_id,
+        reference_type: entry.reference_type,
+        description: entry.description,
+        performed_by: entry.created_by_admin_id,
+        created_at: entry.created_at,
+      })) as WalletOperation[];
     },
     enabled: !!walletId,
   });

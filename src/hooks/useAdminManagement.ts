@@ -53,7 +53,7 @@ export function useUpdateAdminProfile() {
   return useMutation({
     mutationFn: async (data: { userId: string; firstName: string; lastName: string }) => {
       const { error } = await supabaseAdmin
-        .from('profiles')
+        .from('user_roles')
         .update({
           first_name: data.firstName,
           last_name: data.lastName,
