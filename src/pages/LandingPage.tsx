@@ -171,16 +171,16 @@ function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-20">
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-24 pb-16">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6"
+          className="space-y-8"
         >
           {/* Badge */}
           <motion.div variants={itemVariants} className="flex justify-center">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[hsl(36_100%_55%/0.15)] border border-[hsl(36_100%_55%/0.35)] text-[hsl(36_100%_70%)] text-xs font-semibold tracking-wide uppercase">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[hsl(36_100%_55%/0.15)] border border-[hsl(36_100%_55%/0.35)] text-[hsl(36_100%_70%)] text-xs font-semibold tracking-widest uppercase">
               <span className="w-1.5 h-1.5 rounded-full bg-[hsl(16_100%_55%)] animate-pulse" />
               Paiements vers la Chine · Depuis l'Afrique
             </span>
@@ -189,11 +189,12 @@ function HeroSection() {
           {/* Headline */}
           <motion.h1
             variants={itemVariants}
-            className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-[1.08] tracking-tight"
+            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight"
+            style={{ lineHeight: 1.1 }}
           >
-            Réglez vos fournisseurs
-            <br className="hidden sm:block" />
-            <span className="bg-gradient-to-r from-[hsl(36_100%_70%)] via-white to-[hsl(16_100%_65%)] bg-clip-text text-transparent">
+            <span className="block">Réglez vos</span>
+            <span className="block">fournisseurs</span>
+            <span className="block bg-gradient-to-r from-[hsl(36_100%_70%)] via-white to-[hsl(16_100%_65%)] bg-clip-text text-transparent">
               chinois en XAF.
             </span>
           </motion.h1>
@@ -201,28 +202,28 @@ function HeroSection() {
           {/* Subheadline */}
           <motion.p
             variants={itemVariants}
-            className="text-base sm:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed"
+            className="text-base sm:text-lg text-white/55 max-w-xl mx-auto leading-relaxed"
           >
-            Vous importez depuis la Chine ? Bonzini règle directement vos fournisseurs
-            sur Alipay, WeChat Pay ou par virement — en XAF, au meilleur taux, sous 24h.
-            Sans carte internationale. Sans blocage.
+            Alipay · WeChat Pay · Virement bancaire
+            <br />
+            <span className="text-white/40 text-sm">Au meilleur taux — sous 24h — sans carte internationale</span>
           </motion.p>
 
           {/* CTA buttons */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2"
           >
             <Link
               to="/auth"
               className="w-full sm:w-auto btn-primary-gradient px-8 py-4 rounded-xl text-base font-semibold text-center transition-all duration-300 hover:-translate-y-0.5"
               style={{ boxShadow: '0 8px 32px -8px hsl(258 100% 60% / 0.55)' }}
             >
-              Créer un compte gratuit
+              Ouvrir un compte gratuit →
             </Link>
             <Link
               to="/auth"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold border border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300 text-center backdrop-blur-sm"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-medium border border-white/15 text-white/70 hover:text-white hover:bg-white/8 hover:border-white/25 transition-all duration-300 text-center"
             >
               Se connecter
             </Link>
@@ -231,16 +232,16 @@ function HeroSection() {
           {/* Trust stats */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 pt-4"
+            className="flex flex-wrap items-center justify-center gap-10 sm:gap-16 pt-6"
           >
             {[
-              { value: '500+', label: 'Importateurs actifs' },
-              { value: '24h', label: 'Délai maximum' },
-              { value: '0', label: 'Blocage de paiement' },
+              { value: '500+', label: 'Importateurs actifs', color: 'text-[hsl(36_100%_65%)]' },
+              { value: '24h', label: 'Délai maximum', color: 'text-[hsl(258_100%_72%)]' },
+              { value: '100%', label: 'Sans blocage', color: 'text-[hsl(16_100%_65%)]' },
             ].map(stat => (
               <div key={stat.label} className="text-center">
-                <div className="text-2xl sm:text-3xl font-extrabold text-white">{stat.value}</div>
-                <div className="text-xs sm:text-sm text-white/45 mt-0.5">{stat.label}</div>
+                <div className={`text-3xl sm:text-4xl font-extrabold ${stat.color}`}>{stat.value}</div>
+                <div className="text-xs sm:text-sm text-white/35 mt-1 font-medium">{stat.label}</div>
               </div>
             ))}
           </motion.div>
