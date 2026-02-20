@@ -149,15 +149,25 @@
   * {
     @apply border-border;
   }
-  
+
   html {
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Samsung/iOS: prevent auto-zoom on input focus (requires font-size >= 16px) */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  /* Remove 300ms tap delay on mobile browsers */
+  button, [role="button"], a {
+    touch-action: manipulation;
   }
 }
 
@@ -873,7 +883,10 @@
 
   /* Glass action bar */
   .glass-action-bar {
-    @apply fixed left-0 right-0 z-40 p-4;
+    @apply fixed left-0 right-0 z-40;
+    padding: 1rem;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
     background: hsl(var(--background) / 0.85);
     backdrop-filter: blur(16px) saturate(150%);
     -webkit-backdrop-filter: blur(16px) saturate(150%);

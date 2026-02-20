@@ -20,6 +20,7 @@ import {
   Calendar,
   Briefcase,
   ArrowLeft,
+  CheckCircle,
 } from 'lucide-react';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
@@ -63,6 +64,13 @@ export default function AuthPage() {
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
 
+  // Multi-step signup state
+  const [signupStep, setSignupStep] = useState<0 | 1 | 2 | 3 | 4>(0);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+
   const isEmailValid = emailSchema.safeParse(email).success;
 
   // Check for reset password mode from URL
@@ -96,6 +104,11 @@ export default function AuthPage() {
     setPassword('');
     setConfirmPassword('');
     setShowPassword(false);
+    setSignupStep(0);
+    setSignupSuccess(false);
+    setFirstNameError('');
+    setLastNameError('');
+    setPhoneError('');
   };
 
   // Login step 0 → 1
@@ -192,6 +205,30 @@ export default function AuthPage() {
     navigate('/');
   };
 
+  // Advance signup step without validation (for optional steps)
+  const advanceSignupStep = () => {
+    setDirection('forward');
+    setSignupStep(s => (s + 1) as 0 | 1 | 2 | 3 | 4);
+  };
+
+  // Validate required fields per step, then advance
+  const handleSignupStepNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (signupStep === 0) {
+      setFirstNameError('');
+      setLastNameError('');
+      const fnResult = nameSchema.safeParse(firstName);
+      if (!fnResult.success) { setFirstNameError('Le prénom est obligatoire'); return; }
+      const lnResult = nameSchema.safeParse(lastName);
+      if (!lnResult.success) { setLastNameError('Le nom est obligatoire'); return; }
+    } else if (signupStep === 1) {
+      setPhoneError('');
+      const phoneResult = phoneSchema.safeParse(phone);
+      if (!phoneResult.success) { setPhoneError(phoneResult.error.errors[0].message); return; }
+    }
+    advanceSignupStep();
+  };
+
   // Signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,8 +299,7 @@ export default function AuthPage() {
       return;
     }
 
-    toast.success('Compte créé avec succès !');
-    navigate('/');
+    setSignupSuccess(true);
   };
 
   if (authLoading) {
@@ -592,234 +628,296 @@ export default function AuthPage() {
   }
 
   // ─── SIGNUP MODE ──────────────────────────
-  return (
-    <LoginBackground>
-      <div className="flex-1 flex flex-col px-4 py-8 sm:px-6">
-        <button
-          onClick={() => switchMode('login')}
-          className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-
-        <div
-          className="flex justify-center mb-4 animate-logo-entrance"
-          style={{ animationFillMode: 'both' }}
-        >
-          <BonziniLogo size="lg" showText textPosition="bottom" />
-        </div>
-
-        <div className="text-center mb-6 animate-slide-up" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
-          <h1 className="text-2xl font-bold mb-1">Créer un compte</h1>
-          <p className="text-muted-foreground text-sm">
-            Rejoignez Bonzini pour commencer
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSignup}
-          className="w-full max-w-2xl mx-auto card-glass p-5 sm:p-6 space-y-5 animate-slide-up"
-          style={{ animationDelay: '160ms', animationFillMode: 'both' }}
-        >
-          {/* Personal Info */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Informations personnelles
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <PremiumInput
-                id="signup-firstName"
-                label="Prénom *"
-                value={firstName}
-                onChange={setFirstName}
-                icon={<User className="w-4 h-4" />}
-                autoComplete="given-name"
-                disabled={isSubmitting}
-              />
-              <PremiumInput
-                id="signup-lastName"
-                label="Nom *"
-                value={lastName}
-                onChange={setLastName}
-                icon={<User className="w-4 h-4" />}
-                autoComplete="family-name"
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PremiumInput
-              id="signup-phone"
-              type="tel"
-              label="Téléphone *"
-              value={phone}
-              onChange={setPhone}
-              icon={<Phone className="w-4 h-4" />}
-              autoComplete="tel"
-              disabled={isSubmitting}
-            />
-            <PremiumInput
-              id="signup-dob"
-              type="date"
-              label="Date de naissance"
-              value={dateOfBirth}
-              onChange={setDateOfBirth}
-              icon={<Calendar className="w-4 h-4" />}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Business Info */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Entreprise (optionnel)
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <PremiumInput
-                id="signup-company"
-                label="Nom de l'entreprise"
-                value={companyName}
-                onChange={setCompanyName}
-                icon={<Building className="w-4 h-4" />}
-                disabled={isSubmitting}
-              />
-              <PremiumInput
-                id="signup-sector"
-                label="Secteur d'activité"
-                value={activitySector}
-                onChange={setActivitySector}
-                icon={<Briefcase className="w-4 h-4" />}
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Adresse (optionnel)
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <PremiumInput
-                id="signup-neighborhood"
-                label="Quartier"
-                value={neighborhood}
-                onChange={setNeighborhood}
-                icon={<MapPin className="w-4 h-4" />}
-                disabled={isSubmitting}
-              />
-              <PremiumInput
-                id="signup-city"
-                label="Ville"
-                value={city}
-                onChange={setCity}
-                icon={<MapPin className="w-4 h-4" />}
-                disabled={isSubmitting}
-              />
-              <PremiumInput
-                id="signup-country"
-                label="Pays"
-                value={country}
-                onChange={setCountry}
-                icon={<MapPin className="w-4 h-4" />}
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          {/* Login Credentials */}
-          <div className="border-t border-border/50 pt-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Identifiants de connexion
-            </p>
-            <div className="space-y-4">
-              <PremiumInput
-                id="signup-email"
-                type="email"
-                label="Email *"
-                value={email}
-                onChange={(val) => {
-                  setEmail(val);
-                  setEmailError('');
-                }}
-                icon={<Mail className="w-4 h-4" />}
-                error={emailError}
-                isValid={isEmailValid && email.length > 0}
-                autoComplete="email"
-                disabled={isSubmitting}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <PremiumInput
-                  id="signup-password"
-                  type={showPassword ? 'text' : 'password'}
-                  label="Mot de passe *"
-                  value={password}
-                  onChange={(val) => {
-                    setPassword(val);
-                    setPasswordError('');
-                  }}
-                  icon={<Lock className="w-4 h-4" />}
-                  rightElement={
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  }
-                  error={passwordError}
-                  autoComplete="new-password"
-                  disabled={isSubmitting}
-                />
-                <PremiumInput
-                  id="signup-confirm"
-                  type={showPassword ? 'text' : 'password'}
-                  label="Confirmer *"
-                  value={confirmPassword}
-                  onChange={setConfirmPassword}
-                  icon={<Lock className="w-4 h-4" />}
-                  isValid={confirmPassword.length >= 6 && confirmPassword === password}
-                  autoComplete="new-password"
-                  disabled={isSubmitting}
-                />
+  if (mode === 'signup') {
+    // ── Success screen ──
+    if (signupSuccess) {
+      return (
+        <LoginBackground>
+          <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+            <div className="text-center animate-slide-up" style={{ animationFillMode: 'both' }}>
+              <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-12 h-12 text-emerald-500" />
               </div>
+              <h1 className="text-2xl font-bold mb-3">Compte créé avec succès !</h1>
+              <p className="text-muted-foreground text-sm mb-8 max-w-xs mx-auto">
+                Votre compte a été créé. Vous pouvez maintenant vous connecter et commencer à utiliser Bonzini.
+              </p>
+              <button
+                onClick={() => switchMode('login')}
+                className="btn-primary-gradient h-12 px-8 rounded-xl flex items-center justify-center gap-2 mx-auto"
+              >
+                Se connecter
+              </button>
             </div>
           </div>
+        </LoginBackground>
+      );
+    }
 
-          <p className="text-xs text-muted-foreground">* Champs obligatoires</p>
+    // ── Step configuration ──
+    const stepConfig = [
+      { title: 'Votre identité', subtitle: 'Comment vous appelle-t-on ?', emoji: '👋' },
+      { title: 'Vos coordonnées', subtitle: 'Comment vous joindre ?', emoji: '📱' },
+      { title: 'Votre entreprise', subtitle: 'Activité professionnelle (optionnel)', emoji: '🏢' },
+      { title: 'Votre adresse', subtitle: 'Où êtes-vous basé ? (optionnel)', emoji: '📍' },
+      { title: 'Vos identifiants', subtitle: 'Email et mot de passe de connexion', emoji: '🔐' },
+    ];
+    const currentStepConfig = stepConfig[signupStep];
 
+    return (
+      <LoginBackground>
+        <div className="flex-1 flex flex-col px-4 py-6 sm:px-6">
+          {/* Back / close button */}
           <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => {
+              if (signupStep === 0) {
+                switchMode('login');
+              } else {
+                setDirection('back');
+                setSignupStep(s => (s - 1) as 0 | 1 | 2 | 3 | 4);
+              }
+            }}
+            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Création...
-              </>
-            ) : (
-              'Créer mon compte'
-            )}
+            <ArrowLeft className="w-5 h-5" />
           </button>
-        </form>
-      </div>
 
-      <div className="p-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          Déjà un compte ?{' '}
-          <button
-            type="button"
-            onClick={() => switchMode('login')}
-            className="text-primary hover:underline font-medium"
-          >
-            Se connecter
-          </button>
-        </p>
-      </div>
-    </LoginBackground>
-  );
+          {/* Logo */}
+          <div className="flex justify-center mb-5 animate-logo-entrance" style={{ animationFillMode: 'both' }}>
+            <BonziniLogo size="md" showText={false} />
+          </div>
+
+          {/* Progress indicator */}
+          <ProgressDots totalSteps={5} currentStep={signupStep} className="mb-6" />
+
+          {/* Step header */}
+          <div className="text-center mb-6 animate-slide-up" style={{ animationFillMode: 'both' }}>
+            <p className="text-4xl mb-2">{currentStepConfig.emoji}</p>
+            <h1 className="text-xl font-bold mb-1">{currentStepConfig.title}</h1>
+            <p className="text-muted-foreground text-sm">{currentStepConfig.subtitle}</p>
+          </div>
+
+          {/* Step content */}
+          <StepTransition stepKey={signupStep} direction={direction}>
+            <div className="max-w-sm mx-auto w-full">
+
+              {/* Step 0 — Identity (required) */}
+              {signupStep === 0 && (
+                <form onSubmit={handleSignupStepNext} className="space-y-4">
+                  <PremiumInput
+                    id="signup-firstName"
+                    label="Prénom *"
+                    value={firstName}
+                    onChange={(val) => { setFirstName(val); setFirstNameError(''); }}
+                    icon={<User className="w-4 h-4" />}
+                    error={firstNameError}
+                    autoComplete="given-name"
+                    autoFocus
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-lastName"
+                    label="Nom *"
+                    value={lastName}
+                    onChange={(val) => { setLastName(val); setLastNameError(''); }}
+                    icon={<User className="w-4 h-4" />}
+                    error={lastNameError}
+                    autoComplete="family-name"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="submit"
+                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                  >
+                    Continuer
+                  </button>
+                </form>
+              )}
+
+              {/* Step 1 — Contact (phone required) */}
+              {signupStep === 1 && (
+                <form onSubmit={handleSignupStepNext} className="space-y-4">
+                  <PremiumInput
+                    id="signup-phone"
+                    type="tel"
+                    label="Téléphone *"
+                    value={phone}
+                    onChange={(val) => { setPhone(val); setPhoneError(''); }}
+                    icon={<Phone className="w-4 h-4" />}
+                    error={phoneError}
+                    autoComplete="tel"
+                    autoFocus
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-dob"
+                    type="date"
+                    label="Date de naissance"
+                    value={dateOfBirth}
+                    onChange={setDateOfBirth}
+                    icon={<Calendar className="w-4 h-4" />}
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="submit"
+                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                  >
+                    Continuer
+                  </button>
+                </form>
+              )}
+
+              {/* Step 2 — Business (optional) */}
+              {signupStep === 2 && (
+                <form onSubmit={handleSignupStepNext} className="space-y-4">
+                  <PremiumInput
+                    id="signup-company"
+                    label="Nom de l'entreprise"
+                    value={companyName}
+                    onChange={setCompanyName}
+                    icon={<Building className="w-4 h-4" />}
+                    autoFocus
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-sector"
+                    label="Secteur d'activité"
+                    value={activitySector}
+                    onChange={setActivitySector}
+                    icon={<Briefcase className="w-4 h-4" />}
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="submit"
+                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                  >
+                    Continuer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={advanceSignupStep}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+                  >
+                    Passer cette étape →
+                  </button>
+                </form>
+              )}
+
+              {/* Step 3 — Address (optional) */}
+              {signupStep === 3 && (
+                <form onSubmit={handleSignupStepNext} className="space-y-4">
+                  <PremiumInput
+                    id="signup-neighborhood"
+                    label="Quartier"
+                    value={neighborhood}
+                    onChange={setNeighborhood}
+                    icon={<MapPin className="w-4 h-4" />}
+                    autoFocus
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-city"
+                    label="Ville"
+                    value={city}
+                    onChange={setCity}
+                    icon={<MapPin className="w-4 h-4" />}
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-country"
+                    label="Pays"
+                    value={country}
+                    onChange={setCountry}
+                    icon={<MapPin className="w-4 h-4" />}
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="submit"
+                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                  >
+                    Continuer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={advanceSignupStep}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+                  >
+                    Passer cette étape →
+                  </button>
+                </form>
+              )}
+
+              {/* Step 4 — Credentials (submit) */}
+              {signupStep === 4 && (
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <PremiumInput
+                    id="signup-email"
+                    type="email"
+                    label="Email *"
+                    value={email}
+                    onChange={(val) => { setEmail(val); setEmailError(''); }}
+                    icon={<Mail className="w-4 h-4" />}
+                    error={emailError}
+                    isValid={isEmailValid && email.length > 0}
+                    autoComplete="email"
+                    autoFocus
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-password"
+                    type={showPassword ? 'text' : 'password'}
+                    label="Mot de passe *"
+                    value={password}
+                    onChange={(val) => { setPassword(val); setPasswordError(''); }}
+                    icon={<Lock className="w-4 h-4" />}
+                    rightElement={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    }
+                    error={passwordError}
+                    autoComplete="new-password"
+                    disabled={isSubmitting}
+                  />
+                  <PremiumInput
+                    id="signup-confirm"
+                    type={showPassword ? 'text' : 'password'}
+                    label="Confirmer le mot de passe *"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    icon={<Lock className="w-4 h-4" />}
+                    isValid={confirmPassword.length >= 6 && confirmPassword === password}
+                    autoComplete="new-password"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Création...
+                      </>
+                    ) : (
+                      'Créer mon compte'
+                    )}
+                  </button>
+                </form>
+              )}
+
+            </div>
+          </StepTransition>
+        </div>
+      </LoginBackground>
+    );
+  }
+
+  return null;
 }

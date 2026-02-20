@@ -12,7 +12,7 @@ interface MobileLayoutProps {
 
 export const MobileLayout = ({ children, showNav = true, showHeader = true }: MobileLayoutProps) => {
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-[100dvh] bg-background flex">
       {/* Desktop Sidebar */}
       {showNav && <ClientSidebar />}
 
