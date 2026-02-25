@@ -208,7 +208,7 @@ export function ClientRatesPage() {
           <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
             {currentRate && (
               <span className="text-xs text-muted-foreground/60">
-                {formatRelativeDate(currentRate.effective_at)}
+                {formatRelativeDate(currentRate.effective_at || '')}
               </span>
             )}
             {variation && (
@@ -383,7 +383,7 @@ export function ClientRatesPage() {
         >
           <p className="text-sm font-semibold mb-3">Tendance du taux</p>
           <ResponsiveRateChart
-            data={chartData}
+            data={chartData as any}
             activePeriod={dateFilter}
             onPeriodChange={setDateFilter}
           />

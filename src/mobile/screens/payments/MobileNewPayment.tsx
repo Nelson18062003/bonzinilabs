@@ -78,7 +78,7 @@ export function MobileNewPayment() {
   // Form state
   const [step, setStep] = useState<Step>('client');
   const [clientSearch, setClientSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState<typeof clients[0] | null>(null);
+  const [selectedClient, setSelectedClient] = useState<(typeof clients extends (infer T)[] | undefined ? T : any) | null>(null);
 
   // Amount state
   const [inputMode, setInputMode] = useState<'XAF' | 'RMB'>('XAF');
