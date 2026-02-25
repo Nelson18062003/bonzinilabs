@@ -1,0 +1,27 @@
+{
+  "name": "Bonzini Admin",
+  "short_name": "BonziniAdmin",
+  "description": "Gestion des transferts - Interface administrateur",
+  "start_url": "/m",
+  "scope": "/m/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#6F3FF5",
+  "icons": [
+    {
+      "src": "/assets/bonzini-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/bonzini-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "lang": "fr"
+}
