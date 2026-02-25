@@ -77,12 +77,12 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
 
       // Fetch client info for each payment
       const userIds = [...new Set(data?.map(p => p.user_id) || [])];
-      const { data: clients } = await supabaseAdmin
-        .from('clients')
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
         .select('user_id, first_name, last_name, phone')
         .in('user_id', userIds);
 
-      const clientMap = new Map(clients?.map(c => [c.user_id, c]));
+      const clientMap = new Map(profiles?.map(c => [c.user_id, c]));
 
       return (data || []).map(payment => ({
         ...payment,
@@ -130,7 +130,7 @@ export function useAgentCashPaymentDetail(paymentId: string | undefined) {
 
       // Fetch client info
       const { data: profile } = await supabaseAdmin
-        .from('clients')
+        .from('profiles')
         .select('first_name, last_name, phone')
         .eq('user_id', data.user_id)
         .maybeSingle();

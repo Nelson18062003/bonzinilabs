@@ -6,90 +6,87 @@ import type {
   CreateClientResult,
   CreateAdjustmentData,
   AdjustmentResult,
-  LedgerEntry,
-  LedgerEntryType,
-  LedgerFilters,
   ClientFilters,
 } from '@/types/admin';
 
-// Cache configuration
-const STALE_TIME = 30 * 1000; // 30 seconds
-const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+const STALE_TIME = 30 * 1000;
+const CACHE_TIME = 5 * 60 * 1000;
 
 // ============================================
 // QUERY HOOKS
 // ============================================
 
-/**
- * Fetch clients with optional filters
- */
 export function useClients(filters?: ClientFilters) {
   return useQuery({
     queryKey: ['clients', filters],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      // Query clients table directly (no admin filtering needed)
       let query = supabaseAdmin
-        .from('clients')
+        .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
 
-      // Apply search filter server-side
       if (filters?.search) {
         query = query.or(
           `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`
         );
       }
 
-      const { data: clients, error } = await query;
+      const { data: profiles, error } = await query;
       if (error) throw error;
-      if (!clients || clients.length === 0) return [];
+      if (!profiles || profiles.length === 0) return [];
 
-      const userIds = clients.map(c => c.user_id);
+      const userIds = profiles.map(c => c.user_id);
 
-      // Fetch wallets
+      // Filter out users who have admin roles (they're not clients)
+      const { data: adminRoles } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id')
+        .in('user_id', userIds);
+      
+      const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
+      const clientProfiles = profiles.filter(p => !adminUserIds.has(p.user_id));
+
+      const clientUserIds = clientProfiles.map(c => c.user_id);
+
       const { data: wallets } = await supabaseAdmin
         .from('wallets')
         .select('*')
-        .in('user_id', userIds);
+        .in('user_id', clientUserIds);
 
       const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
 
-      // Fetch deposit totals
       const { data: deposits } = await supabaseAdmin
         .from('deposits')
         .select('user_id, amount_xaf, status')
         .eq('status', 'validated')
-        .in('user_id', userIds);
+        .in('user_id', clientUserIds);
 
       const depositSums = new Map<string, number>();
       deposits?.forEach(d => {
         depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
       });
 
-      return clients.map(client => ({
-        id: client.user_id,
-        firstName: client.first_name || '',
-        lastName: client.last_name || '',
-        phone: client.phone || '',
-        avatarUrl: client.avatar_url,
-        createdAt: client.created_at,
-        updatedAt: client.updated_at,
-        walletId: walletMap.get(client.user_id)?.id || null,
-        walletBalance: walletMap.get(client.user_id)?.balance_xaf || 0,
-        totalDeposits: depositSums.get(client.user_id) || 0,
+      return clientProfiles.map(profile => ({
+        id: profile.user_id,
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        phone: profile.phone || '',
+        avatarUrl: profile.avatar_url,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
+        walletId: walletMap.get(profile.user_id)?.id || null,
+        walletBalance: walletMap.get(profile.user_id)?.balance_xaf || 0,
+        totalDeposits: depositSums.get(profile.user_id) || 0,
         totalPayments: 0,
-        status: (client.status as 'ACTIVE') || 'ACTIVE',
+        status: 'ACTIVE' as const,
       }));
     },
   });
 }
 
-/**
- * Fetch single client detail with wallet info
- */
 export function useClient(userId: string) {
   return useQuery({
     queryKey: ['client', userId],
@@ -97,23 +94,21 @@ export function useClient(userId: string) {
     gcTime: CACHE_TIME,
     enabled: !!userId,
     queryFn: async () => {
-      const { data: client, error } = await supabaseAdmin
-        .from('clients')
+      const { data: profile, error } = await supabaseAdmin
+        .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;
-      if (!client) return null;
+      if (!profile) return null;
 
-      // Fetch wallet
       const { data: wallet } = await supabaseAdmin
         .from('wallets')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Fetch deposit totals
       const { data: deposits } = await supabaseAdmin
         .from('deposits')
         .select('amount_xaf, status')
@@ -122,114 +117,51 @@ export function useClient(userId: string) {
 
       const totalDeposits = deposits?.reduce((sum, d) => sum + d.amount_xaf, 0) || 0;
 
-      // Fetch last ledger entry
-      const { data: lastLedgerEntry } = await supabaseAdmin
-        .from('ledger_entries')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
       return {
-        id: client.user_id,
-        firstName: client.first_name || '',
-        lastName: client.last_name || '',
-        phone: client.phone || '',
-        email: client.email || '',
-        avatarUrl: client.avatar_url,
-        createdAt: client.created_at,
-        updatedAt: client.updated_at,
+        id: profile.user_id,
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        phone: profile.phone || '',
+        email: '',
+        avatarUrl: profile.avatar_url,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
         walletId: wallet?.id || null,
         walletBalance: wallet?.balance_xaf || 0,
         totalDeposits,
         totalPayments: 0,
         status: 'ACTIVE' as const,
-        lastLedgerEntry: lastLedgerEntry ? {
-          id: lastLedgerEntry.id,
-          walletId: lastLedgerEntry.wallet_id,
-          userId: lastLedgerEntry.user_id,
-          entryType: lastLedgerEntry.entry_type as LedgerEntryType,
-          amountXAF: lastLedgerEntry.amount_xaf,
-          balanceBefore: lastLedgerEntry.balance_before,
-          balanceAfter: lastLedgerEntry.balance_after,
-          referenceType: lastLedgerEntry.reference_type,
-          referenceId: lastLedgerEntry.reference_id,
-          description: lastLedgerEntry.description,
-          createdAt: new Date(lastLedgerEntry.created_at),
-        } : null,
+        lastLedgerEntry: null,
       };
     },
   });
 }
 
-/**
- * Fetch client ledger entries
- */
-export function useClientLedger(userId: string, filters?: LedgerFilters) {
+export function useClientLedger(userId: string) {
   return useQuery({
-    queryKey: ['client-ledger', userId, filters],
+    queryKey: ['client-ledger', userId],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     enabled: !!userId,
     queryFn: async () => {
-      let query = supabaseAdmin
-        .from('ledger_entries')
-        .select('*')
+      // Use wallet_operations table
+      const { data: wallet } = await supabaseAdmin
+        .from('wallets')
+        .select('id')
         .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!wallet) return [];
+
+      const { data: operations, error } = await supabaseAdmin
+        .from('wallet_operations')
+        .select('*')
+        .eq('wallet_id', wallet.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Apply entry type filter
-      if (filters?.entryType && filters.entryType !== 'all') {
-        query = query.eq('entry_type', filters.entryType);
-      }
-
-      // Apply date filters
-      if (filters?.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom.toISOString());
-      }
-      if (filters?.dateTo) {
-        query = query.lte('created_at', filters.dateTo.toISOString());
-      }
-
-      const { data: entries, error } = await query;
       if (error) throw error;
-      if (!entries) return [];
-
-      // Fetch admin names from user_roles for entries created by admins
-      const adminIds = [...new Set(entries.map(e => e.created_by_admin_id).filter(Boolean))];
-
-      let adminNameMap = new Map<string, string>();
-      if (adminIds.length > 0) {
-        const { data: adminRoles } = await supabaseAdmin
-          .from('user_roles')
-          .select('user_id, first_name, last_name')
-          .in('user_id', adminIds);
-
-        adminRoles?.forEach(r => {
-          adminNameMap.set(r.user_id, `${r.first_name || ''} ${r.last_name || ''}`.trim());
-        });
-      }
-
-      return entries.map(entry => ({
-        id: entry.id,
-        walletId: entry.wallet_id,
-        userId: entry.user_id,
-        entryType: entry.entry_type as LedgerEntryType,
-        amountXAF: entry.amount_xaf,
-        balanceBefore: entry.balance_before,
-        balanceAfter: entry.balance_after,
-        referenceType: entry.reference_type,
-        referenceId: entry.reference_id,
-        description: entry.description,
-        metadata: entry.metadata,
-        createdByAdminId: entry.created_by_admin_id,
-        createdByAdminName: entry.created_by_admin_id
-          ? adminNameMap.get(entry.created_by_admin_id)
-          : undefined,
-        createdAt: new Date(entry.created_at),
-      })) as LedgerEntry[];
+      return operations || [];
     },
   });
 }
@@ -238,10 +170,6 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
 // MUTATION HOOKS
 // ============================================
 
-/**
- * Create a new client via RPC (server-side, no email rate limits)
- * The RPC inserts directly into auth.users + profiles + wallets
- */
 export function useCreateClient() {
   const queryClient = useQueryClient();
 
@@ -249,19 +177,22 @@ export function useCreateClient() {
     mutationFn: async (data: CreateClientData): Promise<CreateClientResult> => {
       const cleanedPhone = data.whatsappNumber.replace(/[\s\-\.\(\)]/g, '');
 
-      const { data: result, error } = await supabaseAdmin.rpc('admin_create_client', {
-        p_first_name: data.firstName.trim(),
-        p_last_name: data.lastName.trim(),
-        p_phone: cleanedPhone,
-        p_email: data.email?.trim() || undefined,
-        p_gender: data.gender || 'OTHER',
-        p_country: data.country || '',
-        p_city: data.city || '',
-        p_company: data.company || '',
+      // Use edge function instead of RPC that may not exist
+      const { data: result, error } = await supabaseAdmin.functions.invoke('create-client', {
+        body: {
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          phone: cleanedPhone,
+          email: data.email?.trim() || undefined,
+          gender: data.gender || 'OTHER',
+          country: data.country || '',
+          city: data.city || '',
+          company: data.company || '',
+        },
       });
 
       if (error) {
-        console.error('RPC admin_create_client error:', error);
+        console.error('create-client error:', error);
         throw new Error(error.message);
       }
 
@@ -292,9 +223,6 @@ export function useCreateClient() {
   });
 }
 
-/**
- * Update client profile
- */
 export function useUpdateClient() {
   const queryClient = useQueryClient();
 
@@ -306,7 +234,7 @@ export function useUpdateClient() {
       if (data.phone) updateData.phone = data.phone;
 
       const { error } = await supabaseAdmin
-        .from('clients')
+        .from('profiles')
         .update(updateData)
         .eq('user_id', data.userId);
 
@@ -324,34 +252,28 @@ export function useUpdateClient() {
   });
 }
 
-/**
- * Create a wallet adjustment (credit or debit)
- */
 export function useCreateAdjustment() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateAdjustmentData): Promise<AdjustmentResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('create_wallet_adjustment', {
+      const { data: result, error } = await supabaseAdmin.rpc('admin_adjust_wallet', {
         p_user_id: data.userId,
-        p_adjustment_type: data.adjustmentType,
-        p_amount_xaf: data.amountXAF,
+        p_adjustment_type: data.adjustmentType.toLowerCase(),
+        p_amount: data.amountXAF,
         p_reason: data.reason,
-        p_proof_urls: data.proofUrls || [],
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const rpcResult = result as AdjustmentResult;
+      const rpcResult = result as unknown as AdjustmentResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || 'Erreur lors de l\'ajustement');
       }
 
       return rpcResult;
     },
-    onSuccess: (result, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['client-ledger', variables.userId] });
@@ -367,19 +289,14 @@ export function useCreateAdjustment() {
   });
 }
 
-/**
- * Reset a client's password via RPC (Super Admin only)
- */
 export function useResetClientPassword() {
   return useMutation({
     mutationFn: async (userId: string): Promise<{ success: boolean; tempPassword?: string; error?: string }> => {
-      const { data: result, error } = await supabaseAdmin.rpc('admin_reset_client_password', {
+      const { data: result, error } = await supabaseAdmin.rpc('admin_reset_password' as any, {
         p_target_user_id: userId,
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
       const rpcResult = result as unknown as { success: boolean; tempPassword?: string; error?: string };
       if (!rpcResult?.success) {
@@ -397,28 +314,23 @@ export function useResetClientPassword() {
   });
 }
 
-/**
- * Search clients by name or phone (for deposit creation)
- */
 export function useSearchClients(searchTerm: string) {
   return useQuery({
     queryKey: ['search-clients', searchTerm],
-    staleTime: 10 * 1000, // 10 seconds
+    staleTime: 10 * 1000,
     gcTime: CACHE_TIME,
     enabled: searchTerm.length >= 2,
     queryFn: async () => {
-      // Search clients table directly (no admin filtering needed)
-      const { data: clients, error } = await supabaseAdmin
-        .from('clients')
+      const { data: profiles, error } = await supabaseAdmin
+        .from('profiles')
         .select('user_id, first_name, last_name, phone')
         .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
         .limit(20);
 
       if (error) throw error;
-      if (!clients || clients.length === 0) return [];
+      if (!profiles || profiles.length === 0) return [];
 
-      // Fetch wallets
-      const userIds = clients.map(c => c.user_id);
+      const userIds = profiles.map(c => c.user_id);
       const { data: wallets } = await supabaseAdmin
         .from('wallets')
         .select('user_id, id, balance_xaf')
@@ -426,7 +338,7 @@ export function useSearchClients(searchTerm: string) {
 
       const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
 
-      return clients.map(c => ({
+      return profiles.map(c => ({
         id: c.user_id,
         firstName: c.first_name || '',
         lastName: c.last_name || '',

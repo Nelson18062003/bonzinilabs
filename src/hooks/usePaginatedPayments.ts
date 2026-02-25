@@ -73,14 +73,14 @@ export function usePaginatedAdminPayments(filters?: PaymentFilters) {
 
       // Apply status filter
       if (filters?.statuses && filters.statuses.length > 0) {
-        query = query.in('status', filters.statuses);
+        query = query.in('status', filters.statuses as any);
       } else if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+        query = query.eq('status', filters.status as any);
       }
 
       // Apply method filter
       if (filters?.method && filters.method !== 'all') {
-        query = query.eq('method', filters.method);
+        query = query.eq('method', filters.method as any);
       }
 
       // Apply date range filter
@@ -106,7 +106,7 @@ export function usePaginatedAdminPayments(filters?: PaymentFilters) {
       // Fetch client info and proof counts in parallel
       const [clientsResult, proofsResult] = await Promise.all([
         supabaseAdmin
-          .from('clients')
+          .from('profiles')
           .select('user_id, first_name, last_name, phone, company_name')
           .in('user_id', userIds),
         supabaseAdmin
@@ -213,7 +213,7 @@ export function usePaginatedAgentCashPayments(statusFilter?: string) {
 
       // Apply status filter if provided
       if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        query = query.eq('status', statusFilter as any);
       }
 
       const { data, error } = await query

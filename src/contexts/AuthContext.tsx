@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SignUpData {
   email: string;
@@ -35,16 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -63,8 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          // IMPORTANT: is_client flag ensures the trigger creates profile and wallet
-          // Admin users don't have this flag, so no profile/wallet is created for them
           is_client: 'true',
           first_name: data.firstName,
           last_name: data.lastName,
@@ -73,19 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    if (error) {
-      return { error: error as Error };
-    }
+    if (error) return { error: error as Error };
 
-    // Update client record with additional info
+    // Update profile with additional info
     if (authData.user) {
-      const { error: clientError } = await supabase
-        .from('clients')
+      const { error: profileError } = await supabase
+        .from('profiles')
         .update({
           first_name: data.firstName,
           last_name: data.lastName,
           phone: data.phone,
-          email: data.email,
           date_of_birth: data.dateOfBirth || null,
           company_name: data.companyName || null,
           activity_sector: data.activitySector || null,
@@ -95,25 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .eq('user_id', authData.user.id);
 
-      if (clientError) {
-        console.error('Error updating client:', clientError);
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
       }
     }
 
-    // Sign out immediately so the user must log in manually after account creation.
-    // Without this, Supabase auto-creates a session which triggers onAuthStateChange
-    // and redirects the user to the home page before they see the success screen.
     await supabase.auth.signOut();
-
     return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error as Error | null };
   };
 
@@ -123,11 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/auth/reset-password`;
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
-    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
     return { error: error as Error | null };
   };
 
@@ -138,16 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isLoading,
-        signUp,
-        signIn,
-        signOut,
-        resetPassword,
-        updatePassword,
-      }}
+      value={{ user, session, isLoading, signUp, signIn, signOut, resetPassword, updatePassword }}
     >
       {children}
     </AuthContext.Provider>

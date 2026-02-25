@@ -8,9 +8,6 @@ import type {
 } from '@/types/admin';
 import type { AppRole } from '@/contexts/AdminAuthContext';
 
-/**
- * Hook to create a new admin user via edge function
- */
 export function useCreateAdmin() {
   const queryClient = useQueryClient();
 
@@ -44,16 +41,14 @@ export function useCreateAdmin() {
   });
 }
 
-/**
- * Hook to update an admin's profile (first name, last name)
- */
 export function useUpdateAdminProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: { userId: string; firstName: string; lastName: string }) => {
+      // Update profiles table (not user_roles)
       const { error } = await supabaseAdmin
-        .from('user_roles')
+        .from('profiles')
         .update({
           first_name: data.firstName,
           last_name: data.lastName,
@@ -73,9 +68,6 @@ export function useUpdateAdminProfile() {
   });
 }
 
-/**
- * Hook to update an admin's role
- */
 export function useUpdateAdminRole() {
   const queryClient = useQueryClient();
 
@@ -99,16 +91,14 @@ export function useUpdateAdminRole() {
   });
 }
 
-/**
- * Hook to toggle an admin's active/disabled status via RPC
- */
 export function useToggleAdminStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ userId, disabled }: { userId: string; disabled: boolean }) => {
-      const { data, error } = await supabaseAdmin.rpc('toggle_admin_status', {
-        p_user_id: userId,
+      // toggle_admin_status RPC uses p_target_user_id
+      const { data, error } = await supabaseAdmin.rpc('toggle_admin_status' as any, {
+        p_target_user_id: userId,
         p_disabled: disabled,
       });
 
@@ -125,21 +115,16 @@ export function useToggleAdminStatus() {
   });
 }
 
-/**
- * Hook to reset an admin's password via RPC (SECURITY DEFINER)
- * Note: functions.invoke() fails with "Invalid JWT" due to GoTrueClient conflicts.
- * The admin_reset_password RPC is used instead.
- */
 export function useResetAdminPassword() {
   return useMutation({
     mutationFn: async (userId: string): Promise<ResetPasswordResult> => {
-      const { data: result, error } = await supabaseAdmin.rpc('admin_reset_password', {
+      const { data: result, error } = await supabaseAdmin.rpc('admin_reset_password' as any, {
         p_target_user_id: userId,
       });
 
       if (error) throw new Error(error.message);
 
-      const rpcResult = result as ResetPasswordResult;
+      const rpcResult = result as unknown as ResetPasswordResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || 'Erreur lors de la réinitialisation');
       }

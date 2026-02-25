@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
 // Types based on database app_role enum
@@ -103,7 +103,6 @@ interface AdminAuthContextType {
   logout: () => Promise<void>;
   hasPermission: (permission: keyof RolePermission) => boolean;
   logAction: (actionType: string, targetType: string, description: string, targetId?: string, metadata?: Record<string, any>) => void;
-  // Convenience properties
   profile: { first_name: string; last_name: string } | null;
   canManageUsers: boolean;
 }
@@ -111,14 +110,11 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch user role and profile after login
   const fetchAdminData = async (user: User) => {
     try {
-      // Check if user has an admin role
       const { data: roleData, error: roleError } = await supabaseAdmin
         .from('user_roles')
         .select('role')
@@ -130,16 +126,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (!roleData) {
-        // User is not an admin
-        return null;
-      }
+      if (!roleData) return null;
+
+      // Fetch profile for name
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       const adminUser: AdminUser = {
         id: user.id,
         email: user.email || '',
-        firstName: roleData.first_name || 'Admin',
-        lastName: roleData.last_name || '',
+        firstName: profileData?.first_name || 'Admin',
+        lastName: profileData?.last_name || '',
         role: roleData.role as AppRole,
       };
 
@@ -151,13 +151,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabaseAdmin.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        
+      (_event, session) => {
         if (session?.user) {
-          // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
             const adminData = await fetchAdminData(session.user);
             setCurrentUser(adminData);
@@ -170,9 +166,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabaseAdmin.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
       if (session?.user) {
         const adminData = await fetchAdminData(session.user);
         setCurrentUser(adminData);
@@ -190,19 +184,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      if (error) {
-        return { success: false, error: error.message };
-      }
+      if (error) return { success: false, error: error.message };
+      if (!data.user) return { success: false, error: 'Connexion échouée' };
 
-      if (!data.user) {
-        return { success: false, error: 'Connexion échouée' };
-      }
-
-      // Check if user is an admin
       const adminData = await fetchAdminData(data.user);
       
       if (!adminData) {
-        // User exists but is not an admin - sign them out
         await supabaseAdmin.auth.signOut();
         return { success: false, error: 'Accès non autorisé. Vous n\'êtes pas administrateur.' };
       }
@@ -218,7 +205,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await supabaseAdmin.auth.signOut();
     setCurrentUser(null);
-    setSession(null);
   };
 
   const permissions = currentUser ? ROLE_PERMISSIONS[currentUser.role] : null;
@@ -228,7 +214,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     return permissions[permission] === true;
   };
 
-  // Log admin actions to audit log table
   const logAction = async (
     actionType: string,
     targetType: string,
@@ -237,7 +222,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     metadata?: Record<string, any>
   ) => {
     if (!currentUser) return;
-    
     try {
       await supabaseAdmin.from('admin_audit_logs').insert({
         admin_user_id: currentUser.id,
@@ -251,7 +235,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Convenience properties
   const profile = currentUser
     ? { first_name: currentUser.firstName, last_name: currentUser.lastName }
     : null;

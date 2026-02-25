@@ -3,7 +3,7 @@
 // Method-specific instructions with copy-to-clipboard
 // ============================================================
 import { useState } from 'react';
-import { Copy, Check, Info, MapPin, Clock } from 'lucide-react';
+import { Copy, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
