@@ -137,14 +137,13 @@ export function useClient(userId: string) {
   });
 }
 
-export function useClientLedger(userId: string) {
+export function useClientLedger(userId: string, _filters?: { entryType?: string }) {
   return useQuery({
-    queryKey: ['client-ledger', userId],
+    queryKey: ['client-ledger', userId, _filters],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     enabled: !!userId,
     queryFn: async () => {
-      // Use wallet_operations table
       const { data: wallet } = await supabaseAdmin
         .from('wallets')
         .select('id')
@@ -153,17 +152,42 @@ export function useClientLedger(userId: string) {
 
       if (!wallet) return [];
 
-      const { data: operations, error } = await supabaseAdmin
+      let query = supabaseAdmin
         .from('wallet_operations')
         .select('*')
         .eq('wallet_id', wallet.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
+      const { data: operations, error } = await query;
+
       if (error) throw error;
-      return operations || [];
+
+      // Map to camelCase for UI compatibility
+      return (operations || []).map(op => ({
+        id: op.id,
+        walletId: op.wallet_id,
+        entryType: mapOperationType(op.operation_type),
+        amountXAF: op.amount_xaf,
+        balanceBefore: op.balance_before,
+        balanceAfter: op.balance_after,
+        referenceId: op.reference_id,
+        referenceType: op.reference_type,
+        description: op.description,
+        createdByAdminName: null as string | null,
+        createdAt: op.created_at,
+      }));
     },
   });
+}
+
+function mapOperationType(opType: string): string {
+  switch (opType) {
+    case 'deposit': return 'DEPOSIT_VALIDATED';
+    case 'payment': return 'PAYMENT_EXECUTED';
+    case 'adjustment': return 'ADMIN_CREDIT';
+    default: return 'ADMIN_CREDIT';
+  }
 }
 
 // ============================================

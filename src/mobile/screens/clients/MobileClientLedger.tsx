@@ -147,7 +147,7 @@ export function MobileClientLedger() {
         ) : entries && entries.length > 0 ? (
           <div className="space-y-2">
             {entries.map((entry) => {
-              const config = ENTRY_TYPE_CONFIG[entry.entryType];
+              const config = ENTRY_TYPE_CONFIG[entry.entryType as LedgerEntryType] || ENTRY_TYPE_CONFIG['ADMIN_CREDIT'];
               const Icon = config.icon;
 
               return (

@@ -195,7 +195,7 @@ export function MobileClientDetail() {
 
           {client.lastLedgerEntry && (
             <p className="text-xs text-muted-foreground mt-2">
-              Dernier mouvement : {formatDate(client.lastLedgerEntry.createdAt)}
+              Dernier mouvement : {formatDate((client as any).lastLedgerEntry?.createdAt)}
             </p>
           )}
 
