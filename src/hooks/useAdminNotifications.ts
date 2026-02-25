@@ -66,11 +66,11 @@ export function useAdminNotifications() {
 
       let clientMap = new Map<string, { first_name: string; last_name: string }>();
       if (allUserIds.length > 0) {
-        const { data: clients } = await supabaseAdmin
-          .from('clients')
+        const { data: profiles } = await supabaseAdmin
+          .from('profiles')
           .select('user_id, first_name, last_name')
           .in('user_id', allUserIds);
-        clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+        clientMap = new Map(profiles?.map(c => [c.user_id, c]) || []);
       }
 
       const getClientName = (userId: string) => {
