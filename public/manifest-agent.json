@@ -1,9 +1,9 @@
 {
-  "name": "Bonzini Admin",
-  "short_name": "Bonzini",
-  "description": "Application admin Bonzini - Gestion des transferts d'argent vers la Chine",
-  "start_url": "/m",
-  "scope": "/",
+  "name": "Bonzini Agent",
+  "short_name": "BonziniAgent",
+  "description": "Interface agent cash - Paiements physiques",
+  "start_url": "/a",
+  "scope": "/a/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
@@ -22,6 +22,6 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["finance", "business"],
+  "categories": ["finance"],
   "lang": "fr"
 }

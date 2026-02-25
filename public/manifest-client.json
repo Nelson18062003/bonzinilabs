@@ -1,0 +1,27 @@
+{
+  "name": "Bonzini",
+  "short_name": "Bonzini",
+  "description": "Payez vos fournisseurs chinois en XAF",
+  "start_url": "/wallet",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#6F3FF5",
+  "icons": [
+    {
+      "src": "/assets/bonzini-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/bonzini-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance"],
+  "lang": "fr"
+}
