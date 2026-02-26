@@ -138,7 +138,7 @@ export function ClientRatesPage() {
     return (
       <MobileLayout>
         <PageHeader title="Taux de change" showBack />
-        <div className="space-y-5 pb-24">
+        <div className="px-4 space-y-5">
           <div className="card-glass p-5 animate-pulse">
             <div className="h-3 w-16 bg-muted-foreground/10 rounded mb-4" />
             <div className="h-8 w-48 bg-muted-foreground/10 rounded mb-3" />
@@ -166,7 +166,7 @@ export function ClientRatesPage() {
     <MobileLayout>
       <PageHeader title="Taux de change" showBack />
 
-      <div className="space-y-5 pb-24">
+      <div className="px-4 space-y-5">
         {/* ═══════════════════════════════════════════════
             A. HERO "LIQUID GLASS" RATE CARD
             ═══════════════════════════════════════════════ */}

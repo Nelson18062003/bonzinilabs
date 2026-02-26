@@ -477,12 +477,14 @@
      ===================================================== */
 
   .balance-display {
-    @apply text-5xl font-bold tracking-tight;
+    font-size: clamp(1.75rem, calc(0.3rem + 7vw), 3rem);
+    @apply font-bold tracking-tight;
     font-variant-numeric: tabular-nums;
   }
   
   .balance-currency {
-    @apply text-2xl font-medium text-muted-foreground ml-2;
+    font-size: clamp(0.875rem, calc(0.2rem + 3.5vw), 1.5rem);
+    @apply font-medium text-muted-foreground ml-2;
   }
   
   .card-glass {
@@ -554,7 +556,8 @@
   }
   
   .amount-input {
-    @apply text-4xl font-bold text-center bg-transparent border-none outline-none w-full;
+    font-size: clamp(1.5rem, calc(0.1rem + 7vw), 2.5rem);
+    @apply font-bold text-center bg-transparent border-none outline-none w-full;
     font-variant-numeric: tabular-nums;
   }
   
@@ -871,7 +874,8 @@
 
   /* Amount hero display */
   .amount-hero {
-    @apply text-3xl font-bold tracking-tight;
+    font-size: clamp(1.25rem, calc(-0.2rem + 7vw), 1.875rem);
+    @apply font-bold tracking-tight;
     font-variant-numeric: tabular-nums;
   }
 

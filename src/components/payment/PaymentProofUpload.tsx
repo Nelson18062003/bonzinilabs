@@ -100,7 +100,7 @@ export const PaymentProofUpload = ({
 
       {/* Files preview grid */}
       {selectedFiles.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {selectedFiles.map((file, index) => (
             <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
               {previews[index]?.url ? (

@@ -32,7 +32,7 @@ export const ClientHeader = ({ className }: ClientHeaderProps) => {
         {/* Actions */}
         <button
           onClick={() => navigate('/notifications')}
-          className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+          className="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
         >
           <Bell className="h-5 w-5 text-muted-foreground" />
           {/* Notification badge - shown when there are unread notifications */}

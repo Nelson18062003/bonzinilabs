@@ -49,7 +49,7 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
         </div>
         <button
           onClick={() => setShowBalance(!showBalance)}
-          className="p-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors"
+          className="w-11 h-11 flex items-center justify-center rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors"
           aria-label={showBalance ? "Masquer le solde" : "Afficher le solde"}
         >
           {showBalance ? (

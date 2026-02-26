@@ -107,7 +107,7 @@ const HistoryPage = () => {
       />
       
       {/* Filters */}
-      <div className="px-4 py-3 flex gap-2 overflow-x-auto">
+      <div className="pl-4 pr-0 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
         {[
           { value: 'all', label: 'Tout' },
           { value: 'credits', label: 'Crédits' },
@@ -128,7 +128,7 @@ const HistoryPage = () => {
         ))}
       </div>
       
-      <div className="px-4 py-2 space-y-6 pb-24">
+      <div className="px-4 py-2 space-y-6">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-6 w-32" />

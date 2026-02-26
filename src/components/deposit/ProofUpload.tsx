@@ -255,7 +255,7 @@ export const ProofUpload = (props: Props) => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {filesWithPreview.map((fileItem) => (
               <div
                 key={fileItem.id}
@@ -353,7 +353,7 @@ export const ProofUpload = (props: Props) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="grid grid-cols-4 gap-2 py-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2">
             {filesWithPreview.slice(0, 4).map((fileItem) => (
               <div
                 key={fileItem.id}
