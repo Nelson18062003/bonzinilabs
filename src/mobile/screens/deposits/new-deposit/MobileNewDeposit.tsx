@@ -921,6 +921,7 @@ export function MobileNewDeposit() {
               placeholder="Note interne..."
               value={adminComment}
               onChange={(e) => setAdminComment(e.target.value)}
+              enterKeyHint="done"
               className="w-full h-20 p-3 rounded-xl border border-border/50 bg-secondary/50 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all"
             />
           </div>

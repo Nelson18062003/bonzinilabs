@@ -260,6 +260,7 @@ export function ClientStatementModal({
                       onSelect={setCustomStartDate}
                       locale={fr}
                       initialFocus
+                      showOutsideDays={false}
                       className="pointer-events-auto"
                     />
                   </PopoverContent>
@@ -288,6 +289,7 @@ export function ClientStatementModal({
                       onSelect={setCustomEndDate}
                       locale={fr}
                       initialFocus
+                      showOutsideDays={false}
                       className="pointer-events-auto"
                     />
                   </PopoverContent>

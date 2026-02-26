@@ -130,7 +130,7 @@ export function MobileCreateAdmin() {
         </div>
       )}
 
-      <div className="flex-1 px-4 py-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6">
         {/* Step 1: Personal Info */}
         {step === 'personal' && (
           <div className="space-y-6">

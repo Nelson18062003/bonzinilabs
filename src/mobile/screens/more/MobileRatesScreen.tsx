@@ -720,23 +720,27 @@ export function MobileRatesScreen() {
 
       {/* ═══ RATE FORM DRAWER ═══ */}
       <Drawer open={formDrawerOpen} onOpenChange={setFormDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
+          {/* ── En-tête fixe ── */}
+          <DrawerHeader className="flex-shrink-0 pb-2 border-b border-border/20">
             <DrawerTitle>
               {formMode === 'create' ? 'Nouveau taux de change' : 'Modifier le taux'}
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-4 space-y-5">
+
+          {/* ── Zone scrollable ── */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
             {/* Section 1: Rate Input */}
             <div className="space-y-2">
               <label className="text-sm font-medium">1 CNY = ? XAF</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                enterKeyHint="done"
                 value={formRate}
-                onChange={(e) => setFormRate(e.target.value)}
+                onChange={(e) => setFormRate(e.target.value.replace(/[^0-9.]/g, ''))}
                 placeholder="Ex : 86.21"
-                className="w-full h-12 px-4 rounded-xl border border-border bg-background text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-14 px-4 rounded-xl border border-border bg-background text-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-xs text-muted-foreground">
                 Entrez combien de XAF pour 1 CNY
@@ -745,12 +749,12 @@ export function MobileRatesScreen() {
 
             {/* Section 2: Live Preview */}
             <div className="p-4 rounded-xl bg-muted/50 space-y-2">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">1 000 000 XAF</span>
                 <span className="text-sm font-bold">{formPreviewCNY} CNY</span>
               </div>
               {currentRmbToXaf > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Taux actuel</span>
                   <span className="text-xs text-muted-foreground">
                     1 CNY = {formatNumber(currentRmbToXaf)} XAF
@@ -778,41 +782,48 @@ export function MobileRatesScreen() {
 
             {/* Section 3: Date & Time */}
             <div className="space-y-3">
+              {/* Ligne heure */}
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium flex items-center gap-1.5">
                   <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                   Date d'effet
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-xl">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                   <input
                     type="time"
                     value={formTime}
                     onChange={(e) => setFormTime(e.target.value)}
-                    className="h-9 w-24 px-2 rounded-lg border border-border/50 bg-card/60 backdrop-blur-sm text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="bg-transparent text-sm font-semibold text-center focus:outline-none w-20"
                   />
                 </div>
               </div>
 
-              {/* Inline Glass Calendar */}
-              <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl p-3 shadow-sm">
+              {/* Calendrier compact — pas de jours hors mois */}
+              <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
                 <GlassCalendar
                   mode="single"
                   selected={formDate}
                   onSelect={(d) => d && setFormDate(d)}
+                  showOutsideDays={false}
                 />
               </div>
 
-              {/* Selected date summary */}
-              <p className="text-xs text-muted-foreground text-center">
-                {formDate
-                  ? format(formDate, "EEEE dd MMMM yyyy", { locale: fr })
-                  : 'Sélectionnez une date'}{' '}
-                à {formTime}
-              </p>
+              {/* Résumé date sélectionnée */}
+              <div className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-primary/5 border border-primary/10">
+                <CalendarIcon className="w-3.5 h-3.5 text-primary" />
+                <p className="text-xs font-medium text-primary">
+                  {formDate
+                    ? format(formDate, "EEEE dd MMMM yyyy", { locale: fr })
+                    : 'Sélectionnez une date'}{' '}
+                  à {formTime}
+                </p>
+              </div>
             </div>
+          </div>
 
-            {/* Section 4: Confirmation */}
+          {/* ── Bouton sticky en bas ── */}
+          <div className="flex-shrink-0 px-4 pt-3 pb-6 border-t border-border/20 bg-background/80 backdrop-blur-sm">
             <button
               onClick={handleFormSubmit}
               disabled={
@@ -821,11 +832,11 @@ export function MobileRatesScreen() {
                 !formRate ||
                 parseFloat(formRate) <= 0
               }
-              className="w-full btn-primary-gradient h-12 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full btn-primary-gradient h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
               {addRate.isPending || updateRate.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Enregistrement...
                 </>
               ) : formMode === 'create' ? (

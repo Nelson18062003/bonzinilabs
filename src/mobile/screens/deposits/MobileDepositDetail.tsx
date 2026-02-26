@@ -673,11 +673,12 @@ export function MobileDepositDetail() {
                 <div>
                   <label className="text-xs text-muted-foreground">Montant confirmé (XAF)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    enterKeyHint="done"
                     value={confirmedAmount}
-                    onChange={(e) => setConfirmedAmount(e.target.value)}
+                    onChange={(e) => setConfirmedAmount(e.target.value.replace(/[^0-9.]/g, ''))}
                     className="w-full mt-1 p-3 rounded-xl border bg-background text-sm font-bold text-lg"
-                    min={0}
                   />
                 </div>
               </div>
@@ -712,6 +713,7 @@ export function MobileDepositDetail() {
                 <textarea
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
+                  enterKeyHint="done"
                   className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
                   rows={2}
                   placeholder="Commentaire visible uniquement par les admins..."
@@ -822,6 +824,7 @@ export function MobileDepositDetail() {
                 <textarea
                   value={adminNote}
                   onChange={(e) => setAdminNote(e.target.value)}
+                  enterKeyHint="done"
                   className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
                   rows={2}
                   placeholder="Note visible uniquement par les admins..."
