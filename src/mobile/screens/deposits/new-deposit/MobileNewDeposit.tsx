@@ -582,7 +582,7 @@ export function MobileNewDeposit() {
 
         {methodFamilies.map((family) => {
           const IconComponent =
-            (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[family.icon] ||
+            (Icons as Record<string, React.ComponentType<{ className?: string }>>)[family.icon] ||
             Icons.Banknote;
           const isSelected = selectedFamily === family.family;
 

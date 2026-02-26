@@ -92,7 +92,7 @@ export function MobilePaymentDetail() {
   const adminProofUpload = useAdminUploadPaymentProof();
   const instructionUpload = useAdminUploadPaymentInstruction();
 
-  const instructionProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'client' || (p.uploaded_by_type as string) === 'admin_instruction') ?? [], [proofs]);
+  const instructionProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'client' || p.uploaded_by_type === 'admin_instruction') ?? [], [proofs]);
   const adminProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'admin') ?? [], [proofs]);
   const timelineSteps = useMemo(
     () => payment ? buildPaymentTimelineSteps(payment.status, payment.method, timeline ?? []) : [],

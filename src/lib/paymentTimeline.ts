@@ -156,7 +156,7 @@ function buildEventBasedTimeline(
   const stepIndexMap = new Map(steps.map((s, i) => [s.key, i]));
 
   // Find current step index
-  let currentStepIndex = stepIndexMap.get(paymentStatus as any) ?? -1;
+  let currentStepIndex = stepIndexMap.get(paymentStatus) ?? -1;
   if (paymentMethod === 'cash' && paymentStatus === 'created') {
     currentStepIndex = stepIndexMap.get('cash_pending') ?? 0;
   }
@@ -164,7 +164,7 @@ function buildEventBasedTimeline(
   // Process each event
   for (const event of sortedEvents) {
     const eventKey = event.event_type;
-    const config = EVENT_TYPE_CONFIG[eventKey as keyof typeof EVENT_TYPE_CONFIG];
+    const config = EVENT_TYPE_CONFIG[eventKey];
     const stepDef = steps.find(s => s.key === eventKey);
 
     // Determine if this is a main step or extra event
@@ -223,7 +223,7 @@ function buildEventBasedTimeline(
  * Build timeline for rejected payments
  */
 function buildRejectedTimeline(
-  _paymentMethod: string,
+  paymentMethod: string,
   events: PaymentTimelineEvent[]
 ): PaymentTimelineStepUI[] {
   const result: PaymentTimelineStepUI[] = [];

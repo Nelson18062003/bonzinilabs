@@ -56,6 +56,7 @@ export function useMyProfile() {
   });
 }
 
+// For admin: fetch client profile by user ID
 export function useProfileByUserId(userId: string | undefined) {
   return useQuery({
     queryKey: ['profile', userId],
@@ -91,6 +92,7 @@ export function useProfileByUserId(userId: string | undefined) {
   });
 }
 
+// For admin: fetch all clients with wallets
 export function useAllProfiles() {
   return useQuery({
     queryKey: ['all-profiles'],
@@ -103,6 +105,7 @@ export function useAllProfiles() {
       if (clientsError) throw clientsError;
       if (!clients) return [];
 
+      // Fetch wallets
       const { data: wallets, error: walletsError } = await supabase
         .from('wallets')
         .select('*');

@@ -51,9 +51,9 @@ export function usePaymentProofMultiUpload() {
 
           if (insertError) throw insertError;
 
-          results.push({ success: true, fileName: rawFile.name });
+          results.push({ success: true, fileName: file.name });
         } catch (err: any) {
-          results.push({ success: false, fileName: rawFile.name, error: err.message });
+          results.push({ success: false, fileName: file.name, error: err.message });
         }
 
         completed++;

@@ -301,22 +301,3 @@ export function useUploadMultipleProofs() {
     },
   });
 }
-
-// Stub exports for features not yet implemented
-export function useResubmitDeposit() {
-  return { mutateAsync: async () => {}, isPending: false };
-}
-
-export function useDeleteDepositProof() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (_proofId: string) => {},
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['deposit-proofs'] }); },
-  });
-}
-
-export function useCancelDeposit() {
-  return useMutation({
-    mutationFn: async (_depositId: string) => {},
-  });
-}

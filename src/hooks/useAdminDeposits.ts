@@ -158,9 +158,6 @@ export function useDepositStats() {
         supabaseAdmin.from('deposits').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
       ]);
 
-      const to_process = (awaitingRes.count || 0) + (proofRes.count || 0) + (reviewRes.count || 0);
-      const today_amount_xaf_val = 0; // Would need a separate query for today's amount
-
       return {
         total: totalRes.count || 0,
         awaiting_proof: awaitingRes.count || 0,
@@ -172,9 +169,7 @@ export function useDepositStats() {
         created: 0,
         cancelled: 0,
         today_validated: 0,
-        today_amount_xaf: today_amount_xaf_val,
-        to_process: to_process,
-        today_amount: today_amount_xaf_val,
+        today_amount_xaf: 0,
       };
     },
   });
@@ -511,30 +506,5 @@ export function useAdminDeleteDeposit() {
     onError: (error: Error) => {
       toast.error(error.message);
     },
-  });
-}
-
-// Stub exports for features referenced but not yet implemented
-export function useRequestCorrection() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (_params: { depositId: string; reason: string }) => {},
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-deposits'] }); },
-  });
-}
-
-export function useStartDepositReview() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (_depositId: string) => {},
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-deposits'] }); },
-  });
-}
-
-export function useAdminDeleteProof() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (_proofId: string) => {},
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-deposit-proofs'] }); },
   });
 }

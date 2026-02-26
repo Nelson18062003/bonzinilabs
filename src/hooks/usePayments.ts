@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { validateUploadFile } from '@/lib/utils';
 
-const STALE_TIME = 30 * 1000;
-const CACHE_TIME = 5 * 60 * 1000;
+// Cache configuration for performance
+const STALE_TIME = 30 * 1000; // 30 seconds
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 
 export type PaymentStatus = 'created' | 'waiting_beneficiary_info' | 'ready_for_payment' | 'processing' | 'completed' | 'rejected' | 'cash_pending' | 'cash_scanned';
 
@@ -26,6 +27,7 @@ export interface Payment {
   beneficiary_bank_account: string | null;
   beneficiary_notes: string | null;
   cash_qr_code: string | null;
+  // Cash-specific fields
   cash_beneficiary_type: 'self' | 'other' | null;
   cash_beneficiary_first_name: string | null;
   cash_beneficiary_last_name: string | null;
@@ -35,6 +37,7 @@ export interface Payment {
   cash_signed_by_name: string | null;
   cash_scanned_at: string | null;
   cash_paid_at: string | null;
+  // Standard fields
   processed_by: string | null;
   processed_at: string | null;
   rejection_reason: string | null;
@@ -79,6 +82,7 @@ export interface CreatePaymentData {
   beneficiary_bank_name?: string;
   beneficiary_bank_account?: string;
   beneficiary_notes?: string;
+  // Cash-specific fields
   cash_beneficiary_type?: 'self' | 'other';
   cash_beneficiary_first_name?: string;
   cash_beneficiary_last_name?: string;
@@ -91,14 +95,13 @@ export function useMyPayments() {
 
   return useQuery({
     queryKey: ['my-payments', user?.id],
-    staleTime: 10 * 1000,
+    staleTime: 10 * 1000, // 10 seconds for user's own data
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!user?.id) return [];
       const { data, error } = await supabase
         .from('payments')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -115,7 +118,6 @@ export function usePaymentDetail(paymentId: string | undefined) {
     staleTime: 10 * 1000,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!paymentId) throw new Error('No payment ID');
       const { data, error } = await supabase
         .from('payments')
         .select('*')
@@ -126,11 +128,13 @@ export function usePaymentDetail(paymentId: string | undefined) {
 
       const payment = data as Payment;
 
+      // Generate signed URL for beneficiary QR code if stored as path
       if (payment.beneficiary_qr_code_url?.startsWith('payment-proofs/')) {
         const storagePath = payment.beneficiary_qr_code_url.replace('payment-proofs/', '');
         const { data: signedData } = await supabase.storage
           .from('payment-proofs')
-          .createSignedUrl(storagePath, 3600);
+          .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
         payment.beneficiary_qr_code_url = signedData?.signedUrl || payment.beneficiary_qr_code_url;
       }
 
@@ -146,7 +150,6 @@ export function usePaymentTimeline(paymentId: string | undefined) {
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!paymentId) throw new Error('No payment ID');
       const { data, error } = await supabase
         .from('payment_timeline_events')
         .select('*')
@@ -166,7 +169,6 @@ export function usePaymentProofs(paymentId: string | undefined) {
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!paymentId) throw new Error('No payment ID');
       const { data, error } = await supabase
         .from('payment_proofs')
         .select('*')
@@ -175,14 +177,20 @@ export function usePaymentProofs(paymentId: string | undefined) {
 
       if (error) throw error;
 
+      // Generate signed URLs for all proofs
       const proofsWithSignedUrls = await Promise.all(
         (data as PaymentProof[]).map(async (proof) => {
+          // Check if file_url is a storage path (starts with 'payment-proofs/')
           if (proof.file_url?.startsWith('payment-proofs/')) {
             const storagePath = proof.file_url.replace('payment-proofs/', '');
             const { data: signedData } = await supabase.storage
               .from('payment-proofs')
-              .createSignedUrl(storagePath, 3600);
-            return { ...proof, file_url: signedData?.signedUrl || proof.file_url };
+              .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+            return {
+              ...proof,
+              file_url: signedData?.signedUrl || proof.file_url,
+            };
           }
           return proof;
         })
@@ -204,13 +212,18 @@ export function useCreatePayment() {
         p_amount_rmb: data.amount_rmb,
         p_exchange_rate: data.exchange_rate,
         p_method: data.method,
-        p_beneficiary_name: data.beneficiary_name || undefined,
-        p_beneficiary_phone: data.beneficiary_phone || undefined,
-        p_beneficiary_email: data.beneficiary_email || undefined,
-        p_beneficiary_qr_code_url: data.beneficiary_qr_code_url || undefined,
-        p_beneficiary_bank_name: data.beneficiary_bank_name || undefined,
-        p_beneficiary_bank_account: data.beneficiary_bank_account || undefined,
-        p_beneficiary_notes: data.beneficiary_notes || undefined,
+        p_beneficiary_name: data.beneficiary_name || null,
+        p_beneficiary_phone: data.beneficiary_phone || null,
+        p_beneficiary_email: data.beneficiary_email || null,
+        p_beneficiary_qr_code_url: data.beneficiary_qr_code_url || null,
+        p_beneficiary_bank_name: data.beneficiary_bank_name || null,
+        p_beneficiary_bank_account: data.beneficiary_bank_account || null,
+        p_beneficiary_notes: data.beneficiary_notes || null,
+        // Cash-specific fields
+        p_cash_beneficiary_type: data.cash_beneficiary_type || null,
+        p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
+        p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
+        p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
       });
 
       if (error) throw error;
@@ -247,19 +260,23 @@ export function useUpdateBeneficiaryInfo() {
       beneficiaryInfo: Partial<Pick<Payment, 'beneficiary_name' | 'beneficiary_phone' | 'beneficiary_email' | 'beneficiary_qr_code_url' | 'beneficiary_bank_name' | 'beneficiary_bank_account' | 'beneficiary_notes'>>;
       paymentMethod?: Payment['method'];
     }) => {
+      // Determine if we have sufficient info based on payment method
       let hasValidInfo = false;
       let infoDescription = 'Informations du bénéficiaire mises à jour';
 
       if (paymentMethod === 'alipay' || paymentMethod === 'wechat') {
+        // For Alipay/WeChat: QR code OR (phone/email)
         const hasQr = !!beneficiaryInfo.beneficiary_qr_code_url;
         const hasContact = !!(beneficiaryInfo.beneficiary_phone || beneficiaryInfo.beneficiary_email);
         hasValidInfo = hasQr || hasContact;
+
         if (hasQr) {
           infoDescription = `QR Code ${paymentMethod === 'alipay' ? 'Alipay' : 'WeChat'} ajouté`;
         } else if (hasContact) {
           infoDescription = 'Coordonnées de paiement ajoutées';
         }
       } else if (paymentMethod === 'bank_transfer') {
+        // For bank transfer: name + bank + account required
         hasValidInfo = !!(
           beneficiaryInfo.beneficiary_name &&
           beneficiaryInfo.beneficiary_bank_name &&
@@ -267,6 +284,7 @@ export function useUpdateBeneficiaryInfo() {
         );
         infoDescription = 'Coordonnées bancaires ajoutées';
       } else {
+        // Fallback: any info is considered sufficient
         hasValidInfo = !!(
           beneficiaryInfo.beneficiary_qr_code_url ||
           beneficiaryInfo.beneficiary_name ||
@@ -281,11 +299,12 @@ export function useUpdateBeneficiaryInfo() {
           ...beneficiaryInfo,
           status: hasValidInfo ? 'ready_for_payment' : 'waiting_beneficiary_info',
           updated_at: new Date().toISOString(),
-        } as any)
+        })
         .eq('id', paymentId);
 
       if (error) throw error;
 
+      // Always add timeline event when beneficiary info is modified
       const userId = (await supabase.auth.getUser()).data.user?.id;
       await supabase.from('payment_timeline_events').insert({
         payment_id: paymentId,
@@ -336,11 +355,12 @@ export function useUploadPaymentProof() {
 
       if (uploadError) throw uploadError;
 
+      // Store the file path for later signed URL generation
       const storedPath = `payment-proofs/${filePath}`;
 
       const { error } = await supabase.from('payment_proofs').insert({
         payment_id: paymentId,
-        uploaded_by: user?.id || '',
+        uploaded_by: user?.id,
         uploaded_by_type: 'client',
         file_name: file.name,
         file_url: storedPath,
@@ -375,17 +395,18 @@ export function useAdminPayments() {
 
       if (error) throw error;
 
+      // Fetch client info separately
       const userIds = [...new Set(payments?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabaseAdmin
-        .from('profiles')
+      const { data: clients } = await supabaseAdmin
+        .from('clients')
         .select('user_id, first_name, last_name, phone, company_name')
         .in('user_id', userIds);
 
-      const profileMap = new Map(profiles?.map(c => [c.user_id, c]) || []);
+      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
 
       return payments?.map(payment => ({
         ...payment,
-        profiles: profileMap.get(payment.user_id) || null,
+        profiles: clientMap.get(payment.user_id) || null,
       })) || [];
     },
   });
@@ -397,7 +418,6 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
     staleTime: 10 * 1000,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!paymentId) throw new Error('No payment ID');
       const { data: payment, error } = await supabaseAdmin
         .from('payments')
         .select('*')
@@ -406,12 +426,14 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
+      // Fetch client info
+      const { data: client } = await supabaseAdmin
+        .from('clients')
         .select('user_id, first_name, last_name, phone, company_name')
         .eq('user_id', payment.user_id)
         .maybeSingle();
 
+      // Generate signed URL for beneficiary QR code if stored as path
       let beneficiaryQrUrl = payment.beneficiary_qr_code_url;
       if (beneficiaryQrUrl?.startsWith('payment-proofs/')) {
         const storagePath = beneficiaryQrUrl.replace('payment-proofs/', '');
@@ -424,7 +446,7 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
       return {
         ...payment,
         beneficiary_qr_code_url: beneficiaryQrUrl,
-        profiles: profile
+        profiles: client
       };
     },
     enabled: !!paymentId,
@@ -447,7 +469,7 @@ export function useProcessPayment() {
       const { data, error } = await supabaseAdmin.rpc('process_payment', {
         p_payment_id: paymentId,
         p_action: action,
-        p_comment: comment || undefined,
+        p_comment: comment || null,
       });
 
       if (error) throw error;
@@ -498,12 +520,14 @@ export function useAdminUploadPaymentProof() {
 
       if (uploadError) throw uploadError;
 
+      // Store the file path for later signed URL generation
       const storedPath = `payment-proofs/${filePath}`;
+
       const { data: { user } } = await supabaseAdmin.auth.getUser();
 
       const { error } = await supabaseAdmin.from('payment_proofs').insert({
         payment_id: paymentId,
-        uploaded_by: user?.id || '',
+        uploaded_by: user?.id,
         uploaded_by_type: 'admin',
         file_name: file.name,
         file_url: storedPath,
@@ -513,6 +537,7 @@ export function useAdminUploadPaymentProof() {
 
       if (error) throw error;
 
+      // Add timeline event
       await supabaseAdmin.from('payment_timeline_events').insert({
         payment_id: paymentId,
         event_type: 'proof_uploaded',
@@ -533,7 +558,7 @@ export function useAdminUploadPaymentProof() {
   });
 }
 
-// Admin-specific query hooks
+// Admin-specific query hooks (use supabaseAdmin for proper RLS auth)
 
 export function useAdminPaymentProofs(paymentId: string | undefined) {
   return useQuery({
@@ -541,7 +566,6 @@ export function useAdminPaymentProofs(paymentId: string | undefined) {
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!paymentId) throw new Error('No payment ID');
       const { data, error } = await supabaseAdmin
         .from('payment_proofs')
         .select('*')
@@ -550,6 +574,7 @@ export function useAdminPaymentProofs(paymentId: string | undefined) {
 
       if (error) throw error;
 
+      // Generate signed URLs for all proofs
       const proofsWithSignedUrls = await Promise.all(
         (data as PaymentProof[]).map(async (proof) => {
           if (proof.file_url?.startsWith('payment-proofs/')) {
@@ -575,7 +600,6 @@ export function useAdminPaymentTimeline(paymentId: string | undefined) {
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      if (!paymentId) throw new Error('No payment ID');
       const { data, error } = await supabaseAdmin
         .from('payment_timeline_events')
         .select('*')

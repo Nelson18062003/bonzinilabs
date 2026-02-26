@@ -9,6 +9,10 @@ interface WalletWithProfile extends Wallet {
   profiles: any;
 }
 
+/**
+ * Paginated hook for admin to fetch all wallets
+ * Uses cursor-based pagination with infinite scroll support
+ */
 export function usePaginatedAllWallets() {
   return useInfiniteQuery({
     queryKey: ['all-wallets-paginated'],
@@ -16,6 +20,7 @@ export function usePaginatedAllWallets() {
     gcTime: CACHE_CONFIG.GC_TIME,
     initialPageParam: 0,
     queryFn: async ({ pageParam = 0 }) => {
+      // Get wallets for this page
       const { data: wallets, error: walletsError } = await supabaseAdmin
         .from('wallets')
         .select('*')
@@ -27,30 +32,41 @@ export function usePaginatedAllWallets() {
         return { data: [], nextCursor: null };
       }
 
+      // Get unique user IDs for this page
       const userIds = [...new Set(wallets.map(w => w.user_id))];
 
-      const { data: profiles, error: profilesError } = await supabaseAdmin
-        .from('profiles')
+      // Fetch client info for these users
+      const { data: clients, error: clientsError } = await supabaseAdmin
+        .from('clients')
         .select('*')
         .in('user_id', userIds);
 
-      if (profilesError) throw profilesError;
+      if (clientsError) throw clientsError;
 
-      const profileMap = new Map(profiles?.map(c => [c.user_id, c]) || []);
+      // Map clients to wallets (keep property name 'profiles' for UI compatibility)
+      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
 
       const walletsWithProfiles: WalletWithProfile[] = wallets.map(wallet => ({
         ...wallet,
-        profiles: profileMap.get(wallet.user_id) || null,
+        profiles: clientMap.get(wallet.user_id) || null,
       }));
 
+      // Calculate next cursor
       const nextCursor = wallets.length === PAGE_SIZE ? pageParam + PAGE_SIZE : null;
 
-      return { data: walletsWithProfiles, nextCursor };
+      return {
+        data: walletsWithProfiles,
+        nextCursor,
+      };
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 }
 
+/**
+ * Paginated hook for wallet operations
+ * Supports both user's own operations and admin viewing any wallet
+ */
 export function usePaginatedWalletOperations(walletId: string | undefined) {
   return useInfiniteQuery({
     queryKey: ['wallet-operations-paginated', walletId],
@@ -64,7 +80,7 @@ export function usePaginatedWalletOperations(walletId: string | undefined) {
       }
 
       const { data, error } = await supabaseAdmin
-        .from('wallet_operations')
+        .from('ledger_entries')
         .select('*')
         .eq('wallet_id', walletId)
         .order('created_at', { ascending: false })
@@ -74,7 +90,10 @@ export function usePaginatedWalletOperations(walletId: string | undefined) {
 
       const nextCursor = data && data.length === PAGE_SIZE ? pageParam + PAGE_SIZE : null;
 
-      return { data: data || [], nextCursor };
+      return {
+        data: data || [],
+        nextCursor,
+      };
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });

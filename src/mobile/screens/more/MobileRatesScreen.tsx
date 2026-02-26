@@ -380,7 +380,7 @@ export function MobileRatesScreen() {
             <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
               {currentRate && (
                 <span className="text-xs text-muted-foreground/60">
-                  {formatRelativeDate(currentRate.effective_at || '')}
+                  {formatRelativeDate(currentRate.effective_at)}
                 </span>
               )}
               {variation && (
@@ -556,7 +556,7 @@ export function MobileRatesScreen() {
           >
             <p className="text-sm font-semibold mb-3">Tendance du taux</p>
             <ResponsiveRateChart
-              data={chartData as any}
+              data={chartData}
               activePeriod={dateFilter}
               onPeriodChange={setDateFilter}
             />
@@ -635,7 +635,7 @@ export function MobileRatesScreen() {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground mt-0.5">
-                              {format(parseISO(rate.effective_at || ''), "dd MMM yyyy 'à' HH:mm", {
+                              {format(parseISO(rate.effective_at), "dd MMM yyyy 'à' HH:mm", {
                                 locale: fr,
                               })}
                             </p>
@@ -665,7 +665,7 @@ export function MobileRatesScreen() {
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Date d'effet</span>
                           <span>
-                            {format(parseISO(rate.effective_at || ''), "dd MMMM yyyy 'à' HH:mm", {
+                            {format(parseISO(rate.effective_at), "dd MMMM yyyy 'à' HH:mm", {
                               locale: fr,
                             })}
                           </span>

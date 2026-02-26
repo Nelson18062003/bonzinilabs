@@ -46,7 +46,7 @@ export function MobileSettingsScreen() {
             <div className="p-4">
               <p className="text-xs text-muted-foreground">Rôle</p>
               <p className="text-sm font-medium mt-0.5 capitalize">
-                {(profile as any)?.role?.replace('_', ' ') || 'Admin'}
+                {profile?.role?.replace('_', ' ') || 'Admin'}
               </p>
             </div>
           </div>
