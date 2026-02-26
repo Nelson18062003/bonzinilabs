@@ -508,7 +508,7 @@ export function MobileNewPayment() {
               </Drawer>
             </div>
 
-            <div className="px-4 pb-6 mt-auto">
+            <div className="px-4 mt-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={() => setStep('method')}
                 disabled={!calculatedAmountXAF || calculatedAmountXAF < BUSINESS_RULES.MIN_PAYMENT_AMOUNT || isBalanceInsufficient}
@@ -696,6 +696,7 @@ export function MobileNewPayment() {
                   value={beneficiaryNotes}
                   onChange={(e) => setBeneficiaryNotes(e.target.value)}
                   placeholder="Instructions supplémentaires..."
+                  enterKeyHint="done"
                   rows={2}
                   className="w-full p-3 rounded-xl border border-border bg-background text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -708,6 +709,7 @@ export function MobileNewPayment() {
                   value={clientVisibleComment}
                   onChange={(e) => setClientVisibleComment(e.target.value)}
                   placeholder="Ce message sera visible dans l'historique du client..."
+                  enterKeyHint="done"
                   rows={2}
                   className="w-full p-3 rounded-xl border border-border bg-background text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -721,7 +723,7 @@ export function MobileNewPayment() {
               )}
             </div>
 
-            <div className="px-4 pb-6 pt-4">
+            <div className="px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={() => setStep('summary')}
                 className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-semibold active:scale-[0.98] transition-transform"

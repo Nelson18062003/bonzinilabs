@@ -83,7 +83,8 @@ export function RateDateFilter({
                 }
               }}
               locale={fr}
-              numberOfMonths={2}
+              numberOfMonths={1}
+              showOutsideDays={false}
             />
           </PopoverContent>
         </Popover>

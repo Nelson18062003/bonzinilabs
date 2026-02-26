@@ -324,11 +324,11 @@ export function MobileAdminDetail() {
 
       {/* Edit Drawer */}
       <Drawer open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
+          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle>Modifier l'admin</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 space-y-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
             <div>
               <Label htmlFor="firstName">Prénom</Label>
               <Input
@@ -388,14 +388,14 @@ export function MobileAdminDetail() {
 
       {/* Toggle Status Drawer */}
       <Drawer open={statusDrawerOpen} onOpenChange={setStatusDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
+          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
               {admin.status === 'ACTIVE' ? 'Désactiver' : 'Réactiver'} l'admin
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             <p className="text-muted-foreground">
               {admin.status === 'ACTIVE'
                 ? `Voulez-vous vraiment désactiver ${admin.firstName} ${admin.lastName} ? Cet admin ne pourra plus se connecter.`
@@ -422,14 +422,14 @@ export function MobileAdminDetail() {
 
       {/* Reset Password Drawer */}
       <Drawer open={resetDrawerOpen} onOpenChange={setResetDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
+          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle className="flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
               Réinitialiser le mot de passe
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             <p className="text-muted-foreground">
               {isSelf
                 ? 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.'
@@ -457,14 +457,14 @@ export function MobileAdminDetail() {
 
       {/* Password Result Drawer */}
       <Drawer open={passwordResultDrawerOpen} onOpenChange={setPasswordResultDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
+          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle className="flex items-center gap-2">
               <Check className="w-5 h-5 text-green-500" />
               Mot de passe généré
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 space-y-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
             <p className="text-muted-foreground">
               {isSelf
                 ? 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.'
