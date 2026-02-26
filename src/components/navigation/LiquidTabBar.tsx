@@ -62,11 +62,10 @@ export function LiquidTabBar({ items, className }: LiquidTabBarProps) {
       setBouncingIndex(activeIndex);
       const timer = setTimeout(() => setBouncingIndex(-1), 450);
       prevActiveRef.current = activeIndex;
-      return () => { clearTimeout(timer); };
+      return () => clearTimeout(timer);
     }
 
     prevActiveRef.current = activeIndex;
-    return undefined;
   }, [activeIndex, measure]);
 
   // ── Debounced resize handler ─────────────────────────────────

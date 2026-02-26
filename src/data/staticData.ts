@@ -4,6 +4,7 @@ import { DepositMethodInfo, PaymentMethodInfo } from '@/types';
 import { Database } from '@/integrations/supabase/types';
 
 type DepositMethod = Database['public']['Enums']['deposit_method'];
+type DepositStatus = Database['public']['Enums']['deposit_status'];
 
 // Labels for deposit methods
 export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {

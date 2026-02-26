@@ -11,6 +11,7 @@ import type {
   Deposit,
   DepositProofWithUrl,
   DepositTimelineEvent,
+  DepositStatus,
   CreateDepositData,
 } from '@/types/deposit';
 
@@ -74,10 +75,12 @@ export function useDepositProofs(depositId: string | undefined) {
         .from('deposit_proofs')
         .select('*')
         .eq('deposit_id', depositId)
+        .is('deleted_at', null)
         .order('uploaded_at', { ascending: false });
       if (error) throw error;
       if (!data || data.length === 0) return [] as DepositProofWithUrl[];
 
+      // Fetch signed URLs for all proofs in parallel
       const proofsWithUrls = await Promise.all(
         data.map(async (proof) => {
           const signedUrl = await getClientProofSignedUrl(proof.file_url);
@@ -131,14 +134,14 @@ export function useCreateDeposit() {
         p_user_id: user.id,
         p_amount_xaf: data.amount_xaf,
         p_method: data.method,
-        p_bank_name: data.bank_name || undefined,
-        p_agency_name: data.agency_name || undefined,
-        p_client_phone: data.client_phone || undefined,
+        p_bank_name: data.bank_name || null,
+        p_agency_name: data.agency_name || null,
+        p_client_phone: data.client_phone || null,
       });
 
       if (error) throw error;
 
-      const response = result as unknown as { success: boolean; error?: string; deposit_id?: string; reference?: string };
+      const response = result as { success: boolean; error?: string; deposit_id?: string; reference?: string };
       if (!response.success) throw new Error(response.error || 'Erreur lors de la création du dépôt');
 
       return { id: response.deposit_id, reference: response.reference };
@@ -177,17 +180,19 @@ export function useUploadProof() {
         file_url: storedPath,
         file_name: rawFile.name,
         file_type: file.type,
+        uploaded_by: user.id,
+        uploaded_by_type: 'client' as const,
       });
       if (proofError) throw proofError;
 
       // Guard: only advance status if in an uploadable state
-      const UPLOADABLE_STATUSES = ['created', 'awaiting_proof'];
+      const UPLOADABLE_STATUSES = ['created', 'awaiting_proof', 'pending_correction'];
       const { data: current } = await supabase
         .from('deposits').select('status').eq('id', depositId).single();
 
       if (current && UPLOADABLE_STATUSES.includes(current.status)) {
         await supabase.from('deposits')
-          .update({ status: 'proof_submitted' })
+          .update({ status: 'proof_submitted' as DepositStatus })
           .eq('id', depositId);
       }
 
@@ -235,6 +240,7 @@ export function useUploadMultipleProofs() {
             .upload(filePath, file);
 
           if (uploadError) {
+            console.error(`[Upload] Failed for ${rawFile.name}:`, uploadError.message);
             failedFiles.push(rawFile.name);
             continue;
           }
@@ -246,15 +252,19 @@ export function useUploadMultipleProofs() {
             file_url: storedPath,
             file_name: rawFile.name,
             file_type: file.type,
+            uploaded_by: user.id,
+            uploaded_by_type: 'client' as const,
           });
 
           if (proofError) {
+            console.error(`[Upload] DB insert failed for ${rawFile.name}:`, proofError.message);
             failedFiles.push(rawFile.name);
             continue;
           }
 
           uploadedCount++;
-        } catch {
+        } catch (err: any) {
+          console.error(`[Upload] Unexpected error for ${rawFile.name}:`, err);
           failedFiles.push(rawFile.name);
         }
       }
@@ -264,13 +274,14 @@ export function useUploadMultipleProofs() {
       }
 
       if (uploadedCount > 0) {
-        const UPLOADABLE_STATUSES = ['created', 'awaiting_proof'];
+        // Guard: only advance status if in an uploadable state
+        const UPLOADABLE_STATUSES = ['created', 'awaiting_proof', 'pending_correction'];
         const { data: current } = await supabase
           .from('deposits').select('status').eq('id', depositId).single();
 
         if (current && UPLOADABLE_STATUSES.includes(current.status)) {
           await supabase.from('deposits')
-            .update({ status: 'proof_submitted' })
+            .update({ status: 'proof_submitted' as DepositStatus })
             .eq('id', depositId);
         }
 
@@ -295,6 +306,125 @@ export function useUploadMultipleProofs() {
       } else {
         toast.success(`${data.uploadedCount} preuve(s) envoyée(s) avec succès`);
       }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useDeleteDepositProof() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      proofId,
+      depositId,
+      reason,
+    }: {
+      proofId: string;
+      depositId: string;
+      reason: string;
+    }) => {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('Vous devez être connecté');
+
+      // Soft-delete: set deleted_at, deleted_by, delete_reason
+      const { error } = await supabase
+        .from('deposit_proofs')
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+          delete_reason: reason,
+        })
+        .eq('id', proofId);
+
+      if (error) throw error;
+
+      // Check if any active proofs remain — revert status if none left
+      const { count } = await supabase
+        .from('deposit_proofs')
+        .select('id', { count: 'exact', head: true })
+        .eq('deposit_id', depositId)
+        .is('deleted_at', null);
+
+      if (count === 0) {
+        const { data: currentDeposit } = await supabase
+          .from('deposits').select('status').eq('id', depositId).single();
+
+        if (currentDeposit && !['validated', 'rejected', 'cancelled'].includes(currentDeposit.status)) {
+          await supabase.from('deposits')
+            .update({ status: 'created' as DepositStatus })
+            .eq('id', depositId);
+        }
+      }
+
+      // Timeline event for traceability
+      await supabase.from('deposit_timeline_events').insert({
+        deposit_id: depositId,
+        event_type: 'proof_deleted',
+        description: 'Preuve supprimée par le client',
+        performed_by: user.id,
+      });
+
+      return { success: true };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['deposit-proofs', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      toast.success('Preuve supprimée');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useCancelDeposit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId }: { depositId: string }) => {
+      const { data, error } = await supabase.rpc('cancel_client_deposit', {
+        p_deposit_id: depositId,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; reference?: string };
+      if (!result.success) throw new Error(result.error || 'Erreur lors de l\'annulation');
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
+      toast.success('Dépôt annulé avec succès');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useResubmitDeposit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId }: { depositId: string }) => {
+      const { data, error } = await supabase.rpc('resubmit_deposit', {
+        p_deposit_id: depositId,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Erreur');
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
+      toast.success('Dépôt renvoyé avec succès');
     },
     onError: (error: Error) => {
       toast.error(error.message);

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createSignedUrl } from '@/lib/signedUrls';
 
 export function useAdminPaymentProofMultiUpload() {
   const queryClient = useQueryClient();

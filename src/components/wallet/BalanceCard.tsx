@@ -13,7 +13,7 @@ interface BalanceCardProps {
 
 export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(true);
-  const { data: rate } = useExchangeRate();
+  const { data: rate, isLoading: rateLoading } = useExchangeRate();
   const currentRate = rate ?? 0.01167;
   const balanceRMB = convertXAFtoRMB(balanceXAF, currentRate);
 

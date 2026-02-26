@@ -347,7 +347,7 @@ serve(async (req) => {
       message: `Client ${firstName} ${lastName} créé avec succès`,
     }, 200);
   } catch (error) {
-    console.error("Unexpected error:", (error as any)?.message || error);
+    console.error("Unexpected error:", error?.message || error);
     return jsonResponse({ success: false, error: "Erreur inattendue du serveur" }, 500);
   }
 });
