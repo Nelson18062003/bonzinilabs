@@ -66,6 +66,7 @@ export function MobileRatesScreen() {
   const [formRate, setFormRate] = useState<string>('');
   const [formDate, setFormDate] = useState<Date>(new Date());
   const [formTime, setFormTime] = useState<string>(format(new Date(), 'HH:mm'));
+  const [datePreset, setDatePreset] = useState<'now' | 'today' | 'yesterday' | 'custom'>('now');
 
   // Delete drawer state
   const [deleteDrawerOpen, setDeleteDrawerOpen] = useState(false);
@@ -180,6 +181,35 @@ export function MobileRatesScreen() {
     }
   };
 
+  // ── Date/time helpers ──
+  const handleDatePreset = (preset: 'now' | 'today' | 'yesterday') => {
+    const now = new Date();
+    setDatePreset(preset);
+    if (preset === 'now') {
+      setFormDate(now);
+      setFormTime(format(now, 'HH:mm'));
+    } else if (preset === 'today') {
+      setFormDate(now);
+      setFormTime('00:00');
+    } else if (preset === 'yesterday') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 1);
+      setFormDate(d);
+      setFormTime('00:00');
+    }
+  };
+
+  const adjustTime = (unit: 'h' | 'm', delta: number) => {
+    const [h, m] = formTime.split(':').map(Number);
+    if (unit === 'h') {
+      const newH = ((h + delta + 24) % 24).toString().padStart(2, '0');
+      setFormTime(`${newH}:${m.toString().padStart(2, '0')}`);
+    } else {
+      const newM = ((m + delta + 60) % 60).toString().padStart(2, '0');
+      setFormTime(`${h.toString().padStart(2, '0')}:${newM}`);
+    }
+  };
+
   // ── Form handlers ──
   const handleCreateRate = () => {
     setFormMode('create');
@@ -187,6 +217,7 @@ export function MobileRatesScreen() {
     setFormRate('');
     setFormDate(new Date());
     setFormTime(format(new Date(), 'HH:mm'));
+    setDatePreset('now');
     setFormDrawerOpen(true);
   };
 
@@ -201,6 +232,7 @@ export function MobileRatesScreen() {
     setFormRate(rmbToXaf.toString());
     setFormDate(parseISO(rate.effective_at));
     setFormTime(format(parseISO(rate.effective_at), 'HH:mm'));
+    setDatePreset('custom');
     setFormDrawerOpen(true);
   };
 
@@ -780,43 +812,118 @@ export function MobileRatesScreen() {
               )}
             </div>
 
-            {/* Section 3: Date & Time */}
+            {/* Section 3: Date & Heure — Smart presets */}
             <div className="space-y-3">
-              {/* Ligne heure */}
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium flex items-center gap-1.5">
-                  <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-                  Date d'effet
-                </label>
-                <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-xl">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                  <input
-                    type="time"
-                    value={formTime}
-                    onChange={(e) => setFormTime(e.target.value)}
-                    className="bg-transparent text-sm font-semibold text-center focus:outline-none w-20"
+              <label className="text-sm font-medium">Date d'effet</label>
+
+              {/* Presets rapides */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Maintenant', value: 'now' },
+                  { label: "Aujourd'hui", value: 'today' },
+                  { label: 'Hier', value: 'yesterday' },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => handleDatePreset(p.value as 'now' | 'today' | 'yesterday')}
+                    className={cn(
+                      'h-11 rounded-xl text-sm font-medium transition-all active:scale-95',
+                      'border',
+                      datePreset === p.value
+                        ? 'bg-primary text-primary-foreground border-transparent shadow-sm'
+                        : 'bg-muted/50 text-foreground border-border/50',
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Autre date — bouton toggle */}
+              <button
+                type="button"
+                onClick={() => setDatePreset(datePreset === 'custom' ? 'now' : 'custom')}
+                className={cn(
+                  'w-full h-11 rounded-xl text-sm font-medium transition-all active:scale-[0.98]',
+                  'flex items-center justify-center gap-2 border',
+                  datePreset === 'custom'
+                    ? 'bg-primary/10 text-primary border-primary/30'
+                    : 'bg-muted/30 text-muted-foreground border-border/50',
+                )}
+              >
+                <CalendarIcon className="w-4 h-4" />
+                {datePreset === 'custom'
+                  ? format(formDate, 'EEEE dd MMMM', { locale: fr })
+                  : 'Autre date…'}
+              </button>
+
+              {/* Calendrier compact — visible seulement en mode "custom" */}
+              {datePreset === 'custom' && (
+                <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
+                  <GlassCalendar
+                    mode="single"
+                    selected={formDate}
+                    onSelect={(d) => d && setFormDate(d)}
+                    showOutsideDays={false}
                   />
+                </div>
+              )}
+
+              {/* Stepper heure */}
+              <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/50">
+                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm text-muted-foreground flex-1">Heure</span>
+                <div className="flex items-center gap-2">
+                  {/* Heures */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => adjustTime('h', -1)}
+                      className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-8 text-center text-base font-bold tabular-nums select-none">
+                      {formTime.split(':')[0]}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => adjustTime('h', 1)}
+                      className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <span className="text-xl font-bold text-muted-foreground leading-none">:</span>
+                  {/* Minutes — pas de 5 en 5 */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => adjustTime('m', -5)}
+                      className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-8 text-center text-base font-bold tabular-nums select-none">
+                      {formTime.split(':')[1]}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => adjustTime('m', 5)}
+                      className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Calendrier compact — pas de jours hors mois */}
-              <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
-                <GlassCalendar
-                  mode="single"
-                  selected={formDate}
-                  onSelect={(d) => d && setFormDate(d)}
-                  showOutsideDays={false}
-                />
-              </div>
-
-              {/* Résumé date sélectionnée */}
+              {/* Résumé pill */}
               <div className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-primary/5 border border-primary/10">
                 <CalendarIcon className="w-3.5 h-3.5 text-primary" />
                 <p className="text-xs font-medium text-primary">
-                  {formDate
-                    ? format(formDate, "EEEE dd MMMM yyyy", { locale: fr })
-                    : 'Sélectionnez une date'}{' '}
-                  à {formTime}
+                  {format(formDate, 'EEEE dd MMMM yyyy', { locale: fr })} à {formTime}
                 </p>
               </div>
             </div>
