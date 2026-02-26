@@ -124,6 +124,42 @@ export function useDashboardStats() {
   });
 }
 
+// Fetch all deposits with client info for admin
+export function useAdminDeposits() {
+  return useQuery({
+    queryKey: ['admin-deposits'],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    queryFn: async () => {
+      const { data: deposits, error } = await supabaseAdmin
+        .from('deposits')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+      if (!deposits) return [];
+
+      const userIds = [...new Set(deposits.map(d => d.user_id))];
+      const { data: clients } = await supabaseAdmin
+        .from('clients')
+        .select('user_id, first_name, last_name')
+        .in('user_id', userIds);
+
+      const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+
+      return deposits.map(deposit => ({
+        ...deposit,
+        profile: clientMap.get(deposit.user_id) || null,
+        clientName: clientMap.get(deposit.user_id)
+          ? `${clientMap.get(deposit.user_id)!.first_name} ${clientMap.get(deposit.user_id)!.last_name}`
+          : 'Client inconnu',
+      }));
+    },
+  });
+}
+
+// Fetch all wallets with client info for admin
 export function useAdminWallets() {
   return useQuery({
     queryKey: ['admin-wallets'],
