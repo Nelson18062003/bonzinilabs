@@ -5,7 +5,7 @@ import { LoginBackground } from '@/components/auth/LoginBackground';
 import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
-import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
+import { PhoneCountryInput, COUNTRIES } from '@/components/auth/PhoneCountryInput';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { toast } from 'sonner';
 import {
@@ -21,6 +21,7 @@ import {
   Briefcase,
   ArrowLeft,
   CheckCircle,
+  Globe,
 } from 'lucide-react';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
@@ -70,6 +71,7 @@ export default function AuthPage() {
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [countryError, setCountryError] = useState('');
 
   // Date of birth — 3 separate selectors
   const [dobDay, setDobDay] = useState('');
@@ -123,6 +125,7 @@ export default function AuthPage() {
     setFirstNameError('');
     setLastNameError('');
     setPhoneError('');
+    setCountryError('');
     setDobDay('');
     setDobMonth('');
     setDobYear('');
@@ -239,7 +242,9 @@ export default function AuthPage() {
       const lnResult = nameSchema.safeParse(lastName);
       if (!lnResult.success) { setLastNameError('Le nom est obligatoire'); return; }
     } else if (signupStep === 1) {
+      setCountryError('');
       setPhoneError('');
+      if (!country) { setCountryError('Le pays est obligatoire'); return; }
       const phoneResult = phoneSchema.safeParse(phone);
       if (!phoneResult.success) { setPhoneError(phoneResult.error.errors[0].message); return; }
     }
@@ -283,6 +288,11 @@ export default function AuthPage() {
       return;
     }
 
+    if (!country) {
+      toast.error('Le pays est obligatoire');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setPasswordError('Les mots de passe ne correspondent pas');
       return;
@@ -301,7 +311,7 @@ export default function AuthPage() {
       activitySector: activitySector || undefined,
       neighborhood: neighborhood || undefined,
       city: city || undefined,
-      country: country || undefined,
+      country,
     };
 
     const { error } = await signUp(signUpData);
@@ -751,14 +761,43 @@ export default function AuthPage() {
                 </form>
               )}
 
-              {/* Step 1 — Contact (phone required) */}
+              {/* Step 1 — Contact (country required, phone required) */}
               {signupStep === 1 && (
                 <form onSubmit={handleSignupStepNext} className="space-y-4">
+                  {/* Country selector */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1.5">
+                      <Globe className="w-4 h-4" />
+                      Pays *
+                    </label>
+                    <select
+                      value={country}
+                      onChange={e => { setCountry(e.target.value); setCountryError(''); }}
+                      disabled={isSubmitting}
+                      autoFocus
+                      className={cn(
+                        'w-full rounded-xl border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none',
+                        countryError ? 'border-destructive ring-2 ring-destructive/20' : 'border-border',
+                      )}
+                    >
+                      <option value="">S\u00e9lectionnez votre pays</option>
+                      {COUNTRIES.map(c => (
+                        <option key={`${c.dialCode}-${c.name}`} value={c.name}>
+                          {c.flag} {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {countryError && (
+                      <p className="text-xs text-destructive mt-1">{countryError}</p>
+                    )}
+                  </div>
+
                   <PhoneCountryInput
                     value={phone}
                     onChange={(val) => { setPhone(val); setPhoneError(''); }}
+                    selectedCountryName={country}
+                    onCountryChange={(c) => { setCountry(c.name); setCountryError(''); }}
                     error={phoneError}
-                    autoFocus
                     disabled={isSubmitting}
                   />
 
@@ -867,14 +906,6 @@ export default function AuthPage() {
                     label="Ville"
                     value={city}
                     onChange={setCity}
-                    icon={<MapPin className="w-4 h-4" />}
-                    disabled={isSubmitting}
-                  />
-                  <PremiumInput
-                    id="signup-country"
-                    label="Pays"
-                    value={country}
-                    onChange={setCountry}
                     icon={<MapPin className="w-4 h-4" />}
                     disabled={isSubmitting}
                   />
