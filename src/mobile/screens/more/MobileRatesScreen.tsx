@@ -64,6 +64,7 @@ export function MobileRatesScreen() {
     effectiveAt: Date;
   } | null>(null);
   const [formRate, setFormRate] = useState<string>('');
+  const [formInputMode, setFormInputMode] = useState<'cnyToXaf' | 'xafToCny'>('cnyToXaf');
   const [formDate, setFormDate] = useState<Date>(new Date());
   const [formTime, setFormTime] = useState<string>(format(new Date(), 'HH:mm'));
   const [datePreset, setDatePreset] = useState<'now' | 'today' | 'yesterday' | 'custom'>('now');
@@ -215,6 +216,7 @@ export function MobileRatesScreen() {
     setFormMode('create');
     setEditingRate(null);
     setFormRate('');
+    setFormInputMode('cnyToXaf');
     setFormDate(new Date());
     setFormTime(format(new Date(), 'HH:mm'));
     setDatePreset('now');
@@ -230,6 +232,7 @@ export function MobileRatesScreen() {
       effectiveAt: parseISO(rate.effective_at),
     });
     setFormRate(rmbToXaf.toString());
+    setFormInputMode('cnyToXaf');
     setFormDate(parseISO(rate.effective_at));
     setFormTime(format(parseISO(rate.effective_at), 'HH:mm'));
     setDatePreset('custom');
@@ -242,8 +245,7 @@ export function MobileRatesScreen() {
   };
 
   const handleFormSubmit = async () => {
-    const rateValue = parseFloat(formRate);
-    if (isNaN(rateValue) || rateValue <= 0) return;
+    if (computedRateRmbToXaf === null) return;
 
     const [hours, minutes] = formTime.split(':').map(Number);
     const effectiveAt = new Date(formDate);
@@ -251,12 +253,12 @@ export function MobileRatesScreen() {
 
     try {
       if (formMode === 'create') {
-        await addRate.mutateAsync({ rateRmbToXaf: rateValue, effectiveAt });
+        await addRate.mutateAsync({ rateRmbToXaf: computedRateRmbToXaf, effectiveAt });
         toast.success('Taux créé');
       } else if (editingRate) {
         await updateRate.mutateAsync({
           rateId: editingRate.id,
-          rateRmbToXaf: rateValue,
+          rateRmbToXaf: computedRateRmbToXaf,
           effectiveAt,
         });
         toast.success('Taux modifié');
@@ -281,18 +283,29 @@ export function MobileRatesScreen() {
     setRateToDelete(null);
   };
 
+  // Form: computed canonical rate (XAF per 1 CNY) from raw input + mode
+  const computedRateRmbToXaf = useMemo(() => {
+    const raw = parseFloat(formRate);
+    if (!formRate || isNaN(raw) || raw <= 0) return null;
+    if (formInputMode === 'cnyToXaf') return raw;
+    const computed = 1_000_000 / raw;
+    return isFinite(computed) && computed > 0 ? computed : null;
+  }, [formRate, formInputMode]);
+
   // Form preview calculations
-  const formPreviewCNY =
-    formRate && !isNaN(parseFloat(formRate))
-      ? formatNumber(Math.round(1000000 / parseFloat(formRate)))
-      : '—';
+  const formPreviewCNY = computedRateRmbToXaf !== null
+    ? formatNumber(Math.round(1_000_000 / computedRateRmbToXaf))
+    : '—';
+
+  const formPreviewXafPerCny = computedRateRmbToXaf !== null
+    ? formatNumber(Math.round(computedRateRmbToXaf))
+    : '—';
 
   const formVariationPercent = useMemo(() => {
-    if (!formRate || isNaN(parseFloat(formRate)) || !currentRmbToXaf) return null;
-    const newVal = parseFloat(formRate);
-    const diff = ((newVal - currentRmbToXaf) / currentRmbToXaf) * 100;
+    if (computedRateRmbToXaf === null || !currentRmbToXaf) return null;
+    const diff = ((computedRateRmbToXaf - currentRmbToXaf) / currentRmbToXaf) * 100;
     return diff;
-  }, [formRate, currentRmbToXaf]);
+  }, [computedRateRmbToXaf, currentRmbToXaf]);
 
   // Pull-to-refresh
   const handleRefresh = async () => {
@@ -762,29 +775,94 @@ export function MobileRatesScreen() {
 
           {/* ── Zone scrollable ── */}
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
+            {/* Section 0: Input mode toggle */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (formInputMode !== 'cnyToXaf') {
+                    if (computedRateRmbToXaf !== null) {
+                      setFormRate(Math.round(computedRateRmbToXaf).toString());
+                    } else {
+                      setFormRate('');
+                    }
+                    setFormInputMode('cnyToXaf');
+                  }
+                }}
+                className={cn(
+                  'h-11 rounded-xl text-sm font-medium transition-all active:scale-95',
+                  'border',
+                  formInputMode === 'cnyToXaf'
+                    ? 'bg-primary text-primary-foreground border-transparent shadow-sm'
+                    : 'bg-muted/50 text-foreground border-border/50',
+                )}
+              >
+                1 CNY → XAF
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (formInputMode !== 'xafToCny') {
+                    if (computedRateRmbToXaf !== null) {
+                      setFormRate(Math.round(1_000_000 / computedRateRmbToXaf).toString());
+                    } else {
+                      setFormRate('');
+                    }
+                    setFormInputMode('xafToCny');
+                  }
+                }}
+                className={cn(
+                  'h-11 rounded-xl text-sm font-medium transition-all active:scale-95',
+                  'border',
+                  formInputMode === 'xafToCny'
+                    ? 'bg-primary text-primary-foreground border-transparent shadow-sm'
+                    : 'bg-muted/50 text-foreground border-border/50',
+                )}
+              >
+                1M XAF → CNY
+              </button>
+            </div>
+
             {/* Section 1: Rate Input */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">1 CNY = ? XAF</label>
+              <label className="text-sm font-medium">
+                {formInputMode === 'cnyToXaf' ? '1 CNY = ? XAF' : '1 000 000 XAF = ? CNY'}
+              </label>
               <input
                 type="text"
-                inputMode="decimal"
+                inputMode={formInputMode === 'cnyToXaf' ? 'decimal' : 'numeric'}
                 enterKeyHint="done"
                 value={formRate}
-                onChange={(e) => setFormRate(e.target.value.replace(/[^0-9.]/g, ''))}
-                placeholder="Ex : 86.21"
+                onChange={(e) => {
+                  if (formInputMode === 'cnyToXaf') {
+                    setFormRate(e.target.value.replace(/[^0-9.]/g, ''));
+                  } else {
+                    setFormRate(e.target.value.replace(/[^0-9]/g, ''));
+                  }
+                }}
+                placeholder={formInputMode === 'cnyToXaf' ? 'Ex : 86.21' : 'Ex : 11 670'}
                 className="w-full h-14 px-4 rounded-xl border border-border bg-background text-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-xs text-muted-foreground">
-                Entrez combien de XAF pour 1 CNY
+                {formInputMode === 'cnyToXaf'
+                  ? 'Entrez combien de XAF pour 1 CNY'
+                  : 'Entrez combien de CNY pour 1 000 000 XAF'}
               </p>
             </div>
 
             {/* Section 2: Live Preview */}
             <div className="p-4 rounded-xl bg-muted/50 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">1 000 000 XAF</span>
-                <span className="text-sm font-bold">{formPreviewCNY} CNY</span>
-              </div>
+              {formInputMode === 'cnyToXaf' ? (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">1 000 000 XAF</span>
+                  <span className="text-sm font-bold">{formPreviewCNY} CNY</span>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">1 CNY</span>
+                  <span className="text-sm font-bold">{formPreviewXafPerCny} XAF</span>
+                </div>
+              )}
               {currentRmbToXaf > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Taux actuel</span>
@@ -936,8 +1014,7 @@ export function MobileRatesScreen() {
               disabled={
                 addRate.isPending ||
                 updateRate.isPending ||
-                !formRate ||
-                parseFloat(formRate) <= 0
+                computedRateRmbToXaf === null
               }
               className="w-full btn-primary-gradient h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
