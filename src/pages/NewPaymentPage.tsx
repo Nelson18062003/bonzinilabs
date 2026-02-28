@@ -4,19 +4,16 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
 import { useMyWallet, useExchangeRate } from '@/hooks/useWallet';
 import { useCreatePayment } from '@/hooks/usePayments';
-import { 
-  Check, 
-  ArrowRightLeft, 
+import {
+  Check,
+  ArrowRightLeft,
   AlertCircle,
-  CreditCard,
-  Wallet,
-  Building2,
-  Banknote,
   Loader2,
   Upload,
   Image as ImageIcon,
   QrCode
 } from 'lucide-react';
+import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,10 +31,10 @@ type Currency = 'XAF' | 'RMB';
 type PaymentMethodType = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
 
 const paymentMethods = [
-  { id: 'alipay' as const, label: 'Alipay', icon: CreditCard, description: 'Paiement via Alipay' },
-  { id: 'wechat' as const, label: 'WeChat Pay', icon: Wallet, description: 'Paiement via WeChat' },
-  { id: 'bank_transfer' as const, label: 'Virement bancaire', icon: Building2, description: 'Transfert vers compte bancaire' },
-  { id: 'cash' as const, label: 'Cash', icon: Banknote, description: 'Retrait au bureau Bonzini' },
+  { id: 'alipay' as const, label: 'Alipay', description: 'Paiement via Alipay' },
+  { id: 'wechat' as const, label: 'WeChat Pay', description: 'Paiement via WeChat' },
+  { id: 'bank_transfer' as const, label: 'Virement bancaire', description: 'Transfert vers compte bancaire' },
+  { id: 'cash' as const, label: 'Cash', description: 'Retrait au bureau Bonzini' },
 ];
 
 const NewPaymentPage = () => {
@@ -274,7 +271,6 @@ const NewPaymentPage = () => {
       </p>
 
       {paymentMethods.map((method) => {
-        const Icon = method.icon;
         const isSelected = selectedMethod === method.id;
 
         return (
@@ -286,12 +282,7 @@ const NewPaymentPage = () => {
               isSelected && 'method-card-selected'
             )}
           >
-            <div className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center',
-              isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'
-            )}>
-              <Icon className="w-6 h-6" />
-            </div>
+            <PaymentMethodLogo method={method.id} size={48} />
             <div className="flex-1">
               <p className="font-semibold text-foreground">{method.label}</p>
               <p className="text-xs text-muted-foreground">{method.description}</p>
@@ -508,15 +499,14 @@ const NewPaymentPage = () => {
   // Step 4: Confirmation
   const renderConfirmStep = () => {
     const methodInfo = paymentMethods.find((m) => m.id === selectedMethod);
-    const Icon = methodInfo?.icon || CreditCard;
     const hasBeneficiaryInfo =
       beneficiaryForm.name || beneficiaryForm.phone || beneficiaryForm.bank_account || qrCodeFile;
 
     return (
       <div className="animate-fade-in space-y-6">
         <div className="card-elevated p-6 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon className="w-8 h-8 text-primary" />
+          <div className="flex justify-center mb-4">
+            <PaymentMethodLogo method={selectedMethod || 'alipay'} size={64} />
           </div>
           <p className="text-sm text-muted-foreground">Vous envoyez</p>
           <p className="text-3xl font-bold text-foreground mb-1">

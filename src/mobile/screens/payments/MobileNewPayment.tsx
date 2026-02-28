@@ -14,9 +14,6 @@ import {
   Search,
   Check,
   ChevronRight,
-  CreditCard,
-  Wallet,
-  Building2,
   Banknote,
   Upload,
   X,
@@ -35,6 +32,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 
 type Step = 'client' | 'amount' | 'method' | 'beneficiary' | 'summary';
 type PaymentMethod = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
@@ -43,30 +41,10 @@ const AMOUNT_PRESETS_XAF = [100000, 250000, 500000, 1000000];
 const AMOUNT_PRESETS_RMB = [1000, 5000, 10000, 20000];
 
 const paymentMethods = [
-  {
-    method: 'alipay' as const,
-    label: 'Alipay',
-    icon: CreditCard,
-    description: 'QR code Alipay',
-  },
-  {
-    method: 'wechat' as const,
-    label: 'WeChat Pay',
-    icon: Wallet,
-    description: 'QR code WeChat',
-  },
-  {
-    method: 'bank_transfer' as const,
-    label: 'Virement bancaire',
-    icon: Building2,
-    description: 'Compte bancaire chinois',
-  },
-  {
-    method: 'cash' as const,
-    label: 'Cash',
-    icon: Banknote,
-    description: 'Retrait en espèces',
-  },
+  { method: 'alipay' as const, label: 'Alipay', description: 'QR code Alipay' },
+  { method: 'wechat' as const, label: 'WeChat Pay', description: 'QR code WeChat' },
+  { method: 'bank_transfer' as const, label: 'Virement bancaire', description: 'Compte bancaire chinois' },
+  { method: 'cash' as const, label: 'Cash', description: 'Retrait en espèces' },
 ];
 
 export function MobileNewPayment() {
@@ -531,9 +509,7 @@ export function MobileNewPayment() {
             </div>
 
             <div className="flex-1 px-4 space-y-3">
-              {paymentMethods.map((method) => {
-                const Icon = method.icon;
-                return (
+              {paymentMethods.map((method) => (
                   <button
                     key={method.method}
                     onClick={() => {
@@ -542,17 +518,14 @@ export function MobileNewPayment() {
                     }}
                     className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card active:scale-[0.98] transition-transform"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-primary" />
-                    </div>
+                    <PaymentMethodLogo method={method.method} size={48} />
                     <div className="flex-1 text-left">
                       <p className="font-medium">{method.label}</p>
                       <p className="text-sm text-muted-foreground">{method.description}</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </button>
-                );
-              })}
+              ))}
             </div>
           </div>
         );
@@ -736,7 +709,6 @@ export function MobileNewPayment() {
 
       case 'summary':
         const methodInfo = paymentMethods.find((m) => m.method === selectedMethod);
-        const MethodIcon = methodInfo?.icon || CreditCard;
 
         return (
           <div className="flex-1 flex flex-col overflow-y-auto">
@@ -787,9 +759,7 @@ export function MobileNewPayment() {
               {/* Method */}
               <div className="bg-card rounded-xl p-4 border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <MethodIcon className="w-5 h-5 text-primary" />
-                  </div>
+                  <PaymentMethodLogo method={selectedMethod || 'alipay'} size={40} />
                   <div className="flex-1">
                     <p className="font-medium">{methodInfo?.label}</p>
                     <span
