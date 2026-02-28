@@ -780,7 +780,7 @@ export default function AuthPage() {
                         countryError ? 'border-destructive ring-2 ring-destructive/20' : 'border-border',
                       )}
                     >
-                      <option value="">S\u00e9lectionnez votre pays</option>
+                      <option value="">Sélectionnez votre pays</option>
                       {COUNTRIES.map(c => (
                         <option key={`${c.dialCode}-${c.name}`} value={c.name}>
                           {c.flag} {c.name}
