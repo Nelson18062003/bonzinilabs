@@ -1,6 +1,7 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Plus, Send, CreditCard, Wallet, Building2, Banknote, ChevronRight } from 'lucide-react';
+import { Plus, Send, ChevronRight } from 'lucide-react';
+import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { useNavigate } from 'react-router-dom';
 import { useMyPayments } from '@/hooks/usePayments';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
@@ -18,13 +19,6 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   processing: { label: 'En cours', color: 'bg-orange-500' },
   completed: { label: 'Effectué', color: 'bg-green-500' },
   rejected: { label: 'Refusé', color: 'bg-red-500' },
-};
-
-const methodIcons: Record<string, React.ElementType> = {
-  alipay: CreditCard,
-  wechat: Wallet,
-  bank_transfer: Building2,
-  cash: Banknote,
 };
 
 const PaymentsPage = () => {
@@ -51,7 +45,6 @@ const PaymentsPage = () => {
           [1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
         ) : payments && payments.length > 0 ? (
           payments.map((payment) => {
-            const MethodIcon = methodIcons[payment.method] || CreditCard;
             const status = statusConfig[payment.status];
             return (
               <div
@@ -60,9 +53,7 @@ const PaymentsPage = () => {
                 className="bg-card rounded-xl p-4 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MethodIcon className="w-5 h-5 text-primary" />
-                  </div>
+                  <PaymentMethodLogo method={payment.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={40} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{payment.reference}</span>
