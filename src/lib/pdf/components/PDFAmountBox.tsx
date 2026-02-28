@@ -13,13 +13,15 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.muted,
     marginBottom: 6,
   },
   amount: {
     fontSize: 28,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.primary,
   },
   secondaryRow: {
@@ -37,7 +39,8 @@ const styles = StyleSheet.create({
   },
   secondaryValue: {
     fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.text,
     marginTop: 2,
   },

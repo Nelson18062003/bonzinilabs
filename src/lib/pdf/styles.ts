@@ -1,4 +1,5 @@
 import { StyleSheet } from '@react-pdf/renderer';
+import './fonts';
 
 export const colors = {
   primary: '#8B5CF6',
@@ -17,7 +18,7 @@ export const colors = {
 export const baseStyles = StyleSheet.create({
   page: {
     padding: 30,
-    fontFamily: 'Helvetica',
+    fontFamily: 'NotoSansSC',
     fontSize: 10,
     color: colors.text,
   },

@@ -23,12 +23,14 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.white,
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.text,
     marginBottom: 8,
     paddingBottom: 4,

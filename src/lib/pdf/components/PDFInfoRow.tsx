@@ -13,7 +13,8 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.text,
     flex: 1,
   },
