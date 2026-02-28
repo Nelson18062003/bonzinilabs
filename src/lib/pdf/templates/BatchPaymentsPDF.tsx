@@ -242,20 +242,20 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
       {/* Page 1: Summary */}
       <Page size="A4" style={styles.page}>
         <View style={styles.summaryHeader}>
-          <Text style={styles.summaryTitle}>PAIEMENTS EN COURS</Text>
+          <Text style={styles.summaryTitle}>待处理付款 / PENDING PAYMENTS</Text>
           <Text style={styles.summarySubtitle}>
-            Export du {generatedAt ? generatedAt.toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')}
+            生成日期 / Generated: {generatedAt ? generatedAt.toLocaleDateString('zh-CN') : new Date().toLocaleDateString('zh-CN')}
           </Text>
         </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statLabel}>NOMBRE DE PAIEMENTS</Text>
+            <Text style={styles.statLabel}>付款数量 / PAYMENT COUNT</Text>
             <Text style={styles.statValue}>{payments.length}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statLabel}>TOTAL RMB</Text>
+            <Text style={styles.statLabel}>总金额 / TOTAL AMOUNT (RMB)</Text>
             <Text style={styles.statValue}>{formatRMB(totalRMB)}</Text>
           </View>
         </View>
@@ -263,9 +263,9 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
         {/* Table */}
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderText, styles.colIndex]}>#</Text>
-          <Text style={[styles.tableHeaderText, styles.colRef]}>Référence</Text>
-          <Text style={[styles.tableHeaderText, styles.colMethod]}>Méthode</Text>
-          <Text style={[styles.tableHeaderText, styles.colAmount]}>Montant RMB</Text>
+          <Text style={[styles.tableHeaderText, styles.colRef]}>参考编号 / Reference</Text>
+          <Text style={[styles.tableHeaderText, styles.colMethod]}>付款方式 / Method</Text>
+          <Text style={[styles.tableHeaderText, styles.colAmount]}>金额 / Amount (RMB)</Text>
         </View>
 
         {payments.map((payment, index) => (
@@ -284,7 +284,7 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
 
         {/* Total row */}
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>TOTAL</Text>
+          <Text style={styles.totalLabel}>合计 / TOTAL</Text>
           <Text style={styles.totalValue}>{formatRMB(totalRMB)} RMB</Text>
         </View>
 
@@ -304,9 +304,9 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
 
           {/* Big amount */}
           <View style={styles.amountBigBox}>
-            <Text style={styles.amountBigLabel}>MONTANT À ENVOYER</Text>
+            <Text style={styles.amountBigLabel}>发送金额 / AMOUNT TO SEND</Text>
             <Text style={styles.amountBig}>{formatRMB(payment.amount_rmb)}</Text>
-            <Text style={styles.amountBigUnit}>RMB</Text>
+            <Text style={styles.amountBigUnit}>人民币 / RMB</Text>
           </View>
 
           {/* Method */}
@@ -318,25 +318,25 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
               <>
                 {payment.beneficiary_name && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>Nom</Text>
+                    <Text style={styles.bankLabel}>姓名 / Name</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_name}</Text>
                   </View>
                 )}
                 {payment.beneficiary_bank_name && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>Banque</Text>
+                    <Text style={styles.bankLabel}>开户银行 / Bank</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_bank_name}</Text>
                   </View>
                 )}
                 {payment.beneficiary_bank_account && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>N° de compte</Text>
+                    <Text style={styles.bankLabel}>账号 / Account No.</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_bank_account}</Text>
                   </View>
                 )}
                 {payment.beneficiary_phone && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>Téléphone</Text>
+                    <Text style={styles.bankLabel}>电话 / Phone</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_phone}</Text>
                   </View>
                 )}
@@ -350,26 +350,26 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
                   <View style={styles.qrContainer}>
                     <Image src={payment.beneficiary_qr_code_url} style={styles.qrImage} />
                     <Text style={styles.qrLabel}>
-                      QR Code {getPaymentMethodLabel(payment.method)}
+                      付款二维码 / {getPaymentMethodLabel(payment.method)} QR Code
                     </Text>
                   </View>
                 ) : (
                   <>
                     {payment.beneficiary_name && (
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Nom</Text>
+                        <Text style={styles.infoLabel}>姓名 / Name</Text>
                         <Text style={styles.infoValue}>{payment.beneficiary_name}</Text>
                       </View>
                     )}
                     {payment.beneficiary_phone && (
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Téléphone</Text>
+                        <Text style={styles.infoLabel}>电话 / Phone</Text>
                         <Text style={styles.infoValue}>{payment.beneficiary_phone}</Text>
                       </View>
                     )}
                     {payment.beneficiary_email && (
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email</Text>
+                        <Text style={styles.infoLabel}>电子邮件 / Email</Text>
                         <Text style={styles.infoValue}>{payment.beneficiary_email}</Text>
                       </View>
                     )}

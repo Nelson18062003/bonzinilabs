@@ -420,6 +420,18 @@ const NewPaymentPage = () => {
               </div>
             )}
 
+            {isAlipayOrWechat && (
+              <div className="space-y-2">
+                <Label>Email (optionnel)</Label>
+                <Input
+                  type="email"
+                  value={beneficiaryForm.email}
+                  onChange={(e) => setBeneficiaryForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="email@exemple.com"
+                />
+              </div>
+            )}
+
             {isBankTransfer && (
               <>
                 <div className="space-y-2">

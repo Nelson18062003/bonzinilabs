@@ -23,7 +23,7 @@ import {
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
 import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
@@ -33,11 +33,6 @@ import { formatCurrencyRMB, formatRelativeDate } from '@/lib/formatters';
 import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { downloadPDF } from '@/lib/pdf/downloadPDF';
-import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
-import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
 
 // ── Filter configuration ────────────────────────────────────
 
@@ -191,8 +186,8 @@ export function MobilePaymentsScreen() {
     if (isExporting) return;
     setIsExporting(true);
     try {
-      // Fetch processing payments (non-cash)
-      const { data: payments, error } = await supabase
+      // Fetch processing payments (non-cash) — must use supabaseAdmin (admin session)
+      const { data: payments, error } = await supabaseAdmin
         .from('payments')
         .select('id, reference, amount_rmb, method, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url')
         .eq('status', 'processing')
@@ -211,7 +206,7 @@ export function MobilePaymentsScreen() {
           let qrUrl = p.beneficiary_qr_code_url;
           if (qrUrl && qrUrl.startsWith('payment-proofs/')) {
             const storagePath = qrUrl.replace('payment-proofs/', '');
-            const { data: signedData } = await supabase.storage
+            const { data: signedData } = await supabaseAdmin.storage
               .from('payment-proofs')
               .createSignedUrl(storagePath, 3600);
             qrUrl = signedData?.signedUrl || null;
