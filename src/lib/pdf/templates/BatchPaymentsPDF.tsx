@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontFamily: 'NotoSansSC',
-    fontSize: 10,
+    fontSize: 30,
     color: colors.text,
   },
   // Summary page
@@ -22,12 +22,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryTitle: {
-    fontSize: 20,
+    fontSize: 40,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.white,
   },
   summarySubtitle: {
-    fontSize: 12,
+    fontSize: 32,
     color: colors.white,
     marginTop: 6,
     opacity: 0.9,
@@ -48,13 +48,13 @@ const styles = StyleSheet.create({
     minWidth: 140,
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 29,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.muted,
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 32,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
   },
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   tableHeaderText: {
-    fontSize: 8,
+    fontSize: 18,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.white,
   },
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgLight,
   },
   tableCell: {
-    fontSize: 9,
+    fontSize: 19,
     color: colors.text,
   },
   colIndex: { width: 30 },
@@ -101,13 +101,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   totalLabel: {
-    fontSize: 10,
+    fontSize: 20,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
     flex: 1,
   },
   totalValue: {
-    fontSize: 10,
+    fontSize: 20,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
   },
@@ -123,12 +123,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailHeaderTitle: {
-    fontSize: 16,
+    fontSize: 26,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.white,
   },
   detailHeaderRef: {
-    fontSize: 10,
+    fontSize: 20,
     color: colors.white,
     opacity: 0.8,
   },
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   amountBigLabel: {
-    fontSize: 10,
+    fontSize: 20,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.muted,
     marginBottom: 6,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   amountBigUnit: {
-    fontSize: 14,
+    fontSize: 24,
     color: colors.muted,
     marginTop: 4,
   },
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoTitle: {
-    fontSize: 11,
+    fontSize: 21,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.text,
     marginBottom: 8,
@@ -174,12 +174,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   infoLabel: {
-    fontSize: 9,
+    fontSize: 19,
     color: colors.muted,
     width: 100,
   },
   infoValue: {
-    fontSize: 11,
+    fontSize: 21,
     fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.text,
     flex: 1,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     objectFit: 'contain',
   },
   qrLabel: {
-    fontSize: 9,
+    fontSize: 19,
     color: colors.muted,
     marginTop: 6,
   },
@@ -203,13 +203,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bankLabel: {
-    fontSize: 16,
+    fontSize: 36,
     fontFamily: 'NotoSansSC',
     color: colors.muted,
     marginBottom: 4,
   },
   bankValue: {
-    fontSize: 80,
+    fontSize: 50,
     fontFamily: 'NotoSansSC',
     fontWeight: 700,
     color: colors.text,
