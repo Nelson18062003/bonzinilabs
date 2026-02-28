@@ -2,49 +2,87 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Country {
+export interface Country {
   name: string;
   flag: string;
   dialCode: string;
+  phoneFormat: string;
+  maxDigits: number;
 }
 
-const COUNTRIES: Country[] = [
-  { name: 'Cameroun', flag: '🇨🇲', dialCode: '237' },
-  { name: 'Congo', flag: '🇨🇬', dialCode: '242' },
-  { name: 'RD Congo', flag: '🇨🇩', dialCode: '243' },
-  { name: 'Gabon', flag: '🇬🇦', dialCode: '241' },
-  { name: "Côte d'Ivoire", flag: '🇨🇮', dialCode: '225' },
-  { name: 'Sénégal', flag: '🇸🇳', dialCode: '221' },
-  { name: 'Mali', flag: '🇲🇱', dialCode: '223' },
-  { name: 'Burkina Faso', flag: '🇧🇫', dialCode: '226' },
-  { name: 'Niger', flag: '🇳🇪', dialCode: '227' },
-  { name: 'Togo', flag: '🇹🇬', dialCode: '228' },
-  { name: 'Bénin', flag: '🇧🇯', dialCode: '229' },
-  { name: 'Guinée', flag: '🇬🇳', dialCode: '224' },
-  { name: 'Ghana', flag: '🇬🇭', dialCode: '233' },
-  { name: 'Maroc', flag: '🇲🇦', dialCode: '212' },
-  { name: 'Algérie', flag: '🇩🇿', dialCode: '213' },
-  { name: 'Tunisie', flag: '🇹🇳', dialCode: '216' },
-  { name: 'Cap-Vert', flag: '🇨🇻', dialCode: '238' },
-  { name: 'France', flag: '🇫🇷', dialCode: '33' },
-  { name: 'Belgique', flag: '🇧🇪', dialCode: '32' },
-  { name: 'Suisse', flag: '🇨🇭', dialCode: '41' },
-  { name: 'Allemagne', flag: '🇩🇪', dialCode: '49' },
-  { name: 'Royaume-Uni', flag: '🇬🇧', dialCode: '44' },
-  { name: 'Italie', flag: '🇮🇹', dialCode: '39' },
-  { name: 'Espagne', flag: '🇪🇸', dialCode: '34' },
-  { name: 'Portugal', flag: '🇵🇹', dialCode: '351' },
-  { name: 'Pologne', flag: '🇵🇱', dialCode: '48' },
-  { name: 'Roumanie', flag: '🇷🇴', dialCode: '40' },
-  { name: 'Chine', flag: '🇨🇳', dialCode: '86' },
-  { name: 'USA', flag: '🇺🇸', dialCode: '1' },
-  { name: 'Canada', flag: '🇨🇦', dialCode: '1' },
-  { name: 'Brésil', flag: '🇧🇷', dialCode: '55' },
+export const COUNTRIES: Country[] = [
+  // Afrique
+  { name: 'Cameroun', flag: '\u{1F1E8}\u{1F1F2}', dialCode: '237', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
+  { name: 'Congo', flag: '\u{1F1E8}\u{1F1EC}', dialCode: '242', phoneFormat: '## ### ####', maxDigits: 9 },
+  { name: 'RD Congo', flag: '\u{1F1E8}\u{1F1E9}', dialCode: '243', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'Gabon', flag: '\u{1F1EC}\u{1F1E6}', dialCode: '241', phoneFormat: '# ## ## ##', maxDigits: 7 },
+  { name: "C\u00f4te d'Ivoire", flag: '\u{1F1E8}\u{1F1EE}', dialCode: '225', phoneFormat: '## ## ## ## ##', maxDigits: 10 },
+  { name: 'S\u00e9n\u00e9gal', flag: '\u{1F1F8}\u{1F1F3}', dialCode: '221', phoneFormat: '## ### ## ##', maxDigits: 9 },
+  { name: 'Mali', flag: '\u{1F1F2}\u{1F1F1}', dialCode: '223', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Burkina Faso', flag: '\u{1F1E7}\u{1F1EB}', dialCode: '226', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Niger', flag: '\u{1F1F3}\u{1F1EA}', dialCode: '227', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Togo', flag: '\u{1F1F9}\u{1F1EC}', dialCode: '228', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'B\u00e9nin', flag: '\u{1F1E7}\u{1F1EF}', dialCode: '229', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Guin\u00e9e', flag: '\u{1F1EC}\u{1F1F3}', dialCode: '224', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Ghana', flag: '\u{1F1EC}\u{1F1ED}', dialCode: '233', phoneFormat: '## ### ####', maxDigits: 9 },
+  { name: 'Maroc', flag: '\u{1F1F2}\u{1F1E6}', dialCode: '212', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
+  { name: 'Alg\u00e9rie', flag: '\u{1F1E9}\u{1F1FF}', dialCode: '213', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Tunisie', flag: '\u{1F1F9}\u{1F1F3}', dialCode: '216', phoneFormat: '## ### ###', maxDigits: 8 },
+  { name: 'Cap-Vert', flag: '\u{1F1E8}\u{1F1FB}', dialCode: '238', phoneFormat: '### ## ##', maxDigits: 7 },
+  // Europe
+  { name: 'France', flag: '\u{1F1EB}\u{1F1F7}', dialCode: '33', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
+  { name: 'Belgique', flag: '\u{1F1E7}\u{1F1EA}', dialCode: '32', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Suisse', flag: '\u{1F1E8}\u{1F1ED}', dialCode: '41', phoneFormat: '## ### ## ##', maxDigits: 9 },
+  { name: 'Allemagne', flag: '\u{1F1E9}\u{1F1EA}', dialCode: '49', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Royaume-Uni', flag: '\u{1F1EC}\u{1F1E7}', dialCode: '44', phoneFormat: '#### ### ###', maxDigits: 10 },
+  { name: 'Italie', flag: '\u{1F1EE}\u{1F1F9}', dialCode: '39', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Espagne', flag: '\u{1F1EA}\u{1F1F8}', dialCode: '34', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Portugal', flag: '\u{1F1F5}\u{1F1F9}', dialCode: '351', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'Pologne', flag: '\u{1F1F5}\u{1F1F1}', dialCode: '48', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'Roumanie', flag: '\u{1F1F7}\u{1F1F4}', dialCode: '40', phoneFormat: '### ### ###', maxDigits: 9 },
+  // Autres
+  { name: 'Chine', flag: '\u{1F1E8}\u{1F1F3}', dialCode: '86', phoneFormat: '### #### ####', maxDigits: 11 },
+  { name: 'USA', flag: '\u{1F1FA}\u{1F1F8}', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Canada', flag: '\u{1F1E8}\u{1F1E6}', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Br\u00e9sil', flag: '\u{1F1E7}\u{1F1F7}', dialCode: '55', phoneFormat: '## ##### ####', maxDigits: 11 },
 ];
+
+function formatPhoneDisplay(digits: string, format: string): string {
+  if (!digits) return '';
+  let result = '';
+  let digitIndex = 0;
+  for (let i = 0; i < format.length && digitIndex < digits.length; i++) {
+    if (format[i] === '#') {
+      result += digits[digitIndex];
+      digitIndex++;
+    } else {
+      result += format[i];
+      // If the next format char is # and we still have digits, continue
+      // Otherwise we added a space at the end, which is fine
+    }
+  }
+  return result;
+}
+
+function getPlaceholder(format: string): string {
+  let digit = 1;
+  let result = '';
+  for (const ch of format) {
+    if (ch === '#') {
+      result += String(digit % 10);
+      digit++;
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+}
 
 interface PhoneCountryInputProps {
   value: string;
   onChange: (val: string) => void;
+  selectedCountryName?: string;
+  onCountryChange?: (country: Country) => void;
   error?: string;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -53,6 +91,8 @@ interface PhoneCountryInputProps {
 export function PhoneCountryInput({
   value,
   onChange,
+  selectedCountryName,
+  onCountryChange,
   error,
   disabled,
   autoFocus,
@@ -70,10 +110,26 @@ export function PhoneCountryInput({
       const matched = COUNTRIES.find(c => value.startsWith('+' + c.dialCode));
       if (matched) {
         setSelectedCountry(matched);
-        setLocalNumber(value.slice(matched.dialCode.length + 1));
+        const rawDigits = value.slice(matched.dialCode.length + 1);
+        setLocalNumber(formatPhoneDisplay(rawDigits, matched.phoneFormat));
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync country from external selectedCountryName prop
+  useEffect(() => {
+    if (selectedCountryName) {
+      const matched = COUNTRIES.find(c => c.name === selectedCountryName);
+      if (matched && matched.name !== selectedCountry.name) {
+        setSelectedCountry(matched);
+        const digits = localNumber.replace(/\D/g, '');
+        const truncated = digits.slice(0, matched.maxDigits);
+        const formatted = formatPhoneDisplay(truncated, matched.phoneFormat);
+        setLocalNumber(formatted);
+        onChange('+' + matched.dialCode + truncated);
+      }
+    }
+  }, [selectedCountryName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -98,14 +154,18 @@ export function PhoneCountryInput({
     setSelectedCountry(country);
     setIsOpen(false);
     setSearch('');
-    const digits = localNumber.replace(/\D/g, '');
+    const digits = localNumber.replace(/\D/g, '').slice(0, country.maxDigits);
+    const formatted = formatPhoneDisplay(digits, country.phoneFormat);
+    setLocalNumber(formatted);
     onChange('+' + country.dialCode + digits);
+    onCountryChange?.(country);
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    setLocalNumber(raw);
-    const digits = raw.replace(/\D/g, '');
+    const digits = raw.replace(/\D/g, '').slice(0, selectedCountry.maxDigits);
+    const formatted = formatPhoneDisplay(digits, selectedCountry.phoneFormat);
+    setLocalNumber(formatted);
     onChange('+' + selectedCountry.dialCode + digits);
   };
 
@@ -124,7 +184,7 @@ export function PhoneCountryInput({
       {/* Label */}
       <label className="block text-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
         <Phone className="w-4 h-4" />
-        Téléphone *
+        T\u00e9l\u00e9phone *
       </label>
 
       {/* Input container */}
@@ -154,7 +214,7 @@ export function PhoneCountryInput({
           value={localNumber}
           onChange={handleNumberChange}
           onFocus={() => !isOpen && undefined}
-          placeholder="Ex: 6 12 34 56 78"
+          placeholder={`Ex: ${getPlaceholder(selectedCountry.phoneFormat)}`}
           disabled={disabled}
           autoFocus={autoFocus}
           className="flex-1 bg-transparent px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none min-w-0"
@@ -187,7 +247,7 @@ export function PhoneCountryInput({
           {/* Country list */}
           <div className="max-h-52 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Aucun résultat</p>
+              <p className="text-sm text-muted-foreground text-center py-4">Aucun r\u00e9sultat</p>
             ) : (
               filtered.map(country => (
                 <button
