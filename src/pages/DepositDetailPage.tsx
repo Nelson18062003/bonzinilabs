@@ -48,6 +48,8 @@ import { toast } from 'sonner';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { DepositReceiptPDF } from '@/lib/pdf/templates/DepositReceiptPDF';
 import type { DepositReceiptData } from '@/lib/pdf/templates/DepositReceiptPDF';
+import { useMyProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -153,6 +155,8 @@ const DepositDetailPage = () => {
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
   const { data: timelineEvents, isLoading: loadingTimeline } = useDepositTimeline(depositId);
+  const { data: profile } = useMyProfile();
+  const { user } = useAuth();
   const uploadProofs = useUploadMultipleProofs();
   const resubmitDeposit = useResubmitDeposit();
   const deleteProof = useDeleteDepositProof();
@@ -244,7 +248,7 @@ const DepositDetailPage = () => {
   const isPendingCorrection = deposit.status === 'pending_correction';
   const canDeleteProofs = !['validated', 'rejected', 'cancelled'].includes(deposit.status);
   const canCancel = ['created', 'awaiting_proof', 'proof_submitted'].includes(deposit.status);
-  const isTerminal = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const isTerminal = ['validated', 'wallet_credited', 'rejected', 'cancelled'].includes(deposit.status);
 
   const handleResubmit = async () => {
     if (!depositId || !uploadedProofs.length) return;
@@ -296,6 +300,12 @@ const DepositDetailPage = () => {
     if (!deposit || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     try {
+      const clientName = profile
+        ? `${profile.first_name} ${profile.last_name}`
+        : (deposit as any).profiles
+          ? `${(deposit as any).profiles.first_name} ${(deposit as any).profiles.last_name}`
+          : 'Client';
+
       const receiptData: DepositReceiptData = {
         id: deposit.id,
         reference: deposit.reference,
@@ -307,11 +317,11 @@ const DepositDetailPage = () => {
         status: deposit.status,
         bank_name: deposit.bank_name,
         agency_name: deposit.agency_name,
-        client_name: deposit.profiles
-          ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
-          : 'Client',
-        client_phone: deposit.profiles?.phone,
-        company_name: deposit.profiles?.company_name,
+        client_name: clientName,
+        client_phone: profile?.phone || deposit.client_phone || undefined,
+        client_email: user?.email || undefined,
+        client_country: profile?.country || undefined,
+        company_name: profile?.company_name || (deposit as any).profiles?.company_name,
       };
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
@@ -640,6 +650,28 @@ const DepositDetailPage = () => {
             <DepositTimelineDisplay steps={timelineSteps} variant="compact" />
           </div>
         </div>
+
+        {/* ── Download Receipt ── */}
+        {isTerminal && (
+          <div
+            className="animate-slide-up"
+            style={{ animationDelay: '400ms', animationFillMode: 'both' }}
+          >
+            <Button
+              variant="outline"
+              className="w-full h-12 rounded-xl flex items-center justify-center gap-2 font-medium"
+              onClick={handleDownloadReceipt}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4" />
+              )}
+              Télécharger le relevé
+            </Button>
+          </div>
+        )}
 
         {/* ── Actions ── */}
         {canCancel && (

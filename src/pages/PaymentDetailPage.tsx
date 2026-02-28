@@ -59,6 +59,8 @@ import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownload
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
+import { useMyProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
@@ -105,6 +107,8 @@ export default function PaymentDetailPage() {
   const { data: payment, isLoading: paymentLoading } = usePaymentDetail(paymentId);
   const { data: timeline, isLoading: timelineLoading } = usePaymentTimeline(paymentId);
   const { data: proofs } = usePaymentProofs(paymentId);
+  const { data: clientProfile } = useMyProfile();
+  const { user: authUser } = useAuth();
 
   const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
   const { uploadProofs, isUploading: isUploadingProofs } = usePaymentProofMultiUpload();
@@ -247,6 +251,12 @@ export default function PaymentDetailPage() {
     if (!payment || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     try {
+      const clientName = clientProfile
+        ? `${clientProfile.first_name} ${clientProfile.last_name}`
+        : (payment as any).profiles
+          ? `${(payment as any).profiles.first_name} ${(payment as any).profiles.last_name}`
+          : 'Client';
+
       const receiptData: PaymentReceiptData = {
         id: payment.id,
         reference: payment.reference,
@@ -257,10 +267,10 @@ export default function PaymentDetailPage() {
         exchange_rate: payment.exchange_rate,
         method: payment.method,
         status: payment.status,
-        client_name: payment.profiles
-          ? `${payment.profiles.first_name} ${payment.profiles.last_name}`
-          : 'Client',
-        client_phone: payment.profiles?.phone,
+        client_name: clientName,
+        client_phone: clientProfile?.phone || (payment as any).profiles?.phone,
+        client_email: authUser?.email || undefined,
+        client_country: clientProfile?.country || undefined,
         beneficiary_name: payment.beneficiary_name,
         beneficiary_phone: payment.beneficiary_phone,
         beneficiary_email: payment.beneficiary_email,

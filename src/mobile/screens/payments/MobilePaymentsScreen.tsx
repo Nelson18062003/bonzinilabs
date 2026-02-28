@@ -20,6 +20,11 @@ import {
   Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
   FileDown, Loader2,
 } from 'lucide-react';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
+import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
@@ -247,12 +252,26 @@ export function MobilePaymentsScreen() {
       <MobileHeader
         title="Paiements"
         rightElement={
-          <button
-            onClick={() => navigate('/m/payments/new')}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground active:scale-95 transition-transform"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportBatch}
+              disabled={isExporting}
+              className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-muted text-muted-foreground text-xs font-medium active:scale-95 transition-transform disabled:opacity-50"
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4" />
+              )}
+              Exporter
+            </button>
+            <button
+              onClick={() => navigate('/m/payments/new')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground active:scale-95 transition-transform"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         }
       />
 

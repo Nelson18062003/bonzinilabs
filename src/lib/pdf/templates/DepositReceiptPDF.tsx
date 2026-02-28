@@ -53,6 +53,8 @@ export interface DepositReceiptData {
   agency_name?: string | null;
   client_name: string;
   client_phone?: string | null;
+  client_email?: string | null;
+  client_country?: string | null;
   company_name?: string | null;
 }
 
@@ -103,6 +105,8 @@ export function DepositReceiptPDF({ data }: { data: DepositReceiptData }) {
           <Text style={styles.sectionTitle}>Client</Text>
           <PDFInfoRow label="Nom" value={data.client_name} />
           {data.client_phone && <PDFInfoRow label="Téléphone" value={data.client_phone} />}
+          {data.client_email && <PDFInfoRow label="E-mail" value={data.client_email} />}
+          {data.client_country && <PDFInfoRow label="Pays" value={data.client_country} />}
           {data.company_name && <PDFInfoRow label="Entreprise" value={data.company_name} />}
         </View>
 
