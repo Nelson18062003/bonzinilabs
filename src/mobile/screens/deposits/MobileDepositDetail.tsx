@@ -41,6 +41,7 @@ import {
   AlertTriangle,
   Image as ImageIcon,
   Download,
+  FileDown,
   Eye,
   Wallet,
   Phone,
@@ -56,6 +57,10 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { DepositReceiptPDF } from '@/lib/pdf/templates/DepositReceiptPDF';
+import type { DepositReceiptData } from '@/lib/pdf/templates/DepositReceiptPDF';
+import { toast } from 'sonner';
 
 // ── Status banner color map ─────────────────────────────────
 
@@ -112,6 +117,7 @@ export function MobileDepositDetail() {
 
   // Details expandable
   const [showDetails, setShowDetails] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Initialize confirmed amount when deposit loads
   useEffect(() => {
@@ -230,6 +236,41 @@ export function MobileDepositDetail() {
     );
   }, [showDeleteProofSheet, depositId, deleteProofReason, customDeleteReason, deleteProof]);
 
+  const handleDownloadReceipt = async () => {
+    if (!deposit || isGeneratingPDF) return;
+    setIsGeneratingPDF(true);
+    try {
+      const receiptData: DepositReceiptData = {
+        id: deposit.id,
+        reference: deposit.reference,
+        created_at: deposit.created_at,
+        validated_at: deposit.validated_at,
+        amount_xaf: deposit.amount_xaf,
+        confirmed_amount_xaf: deposit.confirmed_amount_xaf,
+        method: deposit.method,
+        status: deposit.status,
+        bank_name: deposit.bank_name,
+        agency_name: deposit.agency_name,
+        client_name: deposit.profiles
+          ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
+          : 'Client',
+        client_phone: deposit.profiles?.phone,
+        company_name: deposit.profiles?.company_name,
+      };
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      await downloadPDF(
+        <DepositReceiptPDF data={receiptData} />,
+        `Depot_${deposit.reference}_${dateStr}.pdf`,
+      );
+      toast.success('Relevé téléchargé');
+    } catch (error) {
+      console.error('Error generating deposit PDF:', error);
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   // ── Loading / Error ─────────────────────────────────────────
 
   if (isLoading) {
@@ -335,6 +376,20 @@ export function MobileDepositDetail() {
               </span>
             )}
           </div>
+
+          {/* Download receipt button */}
+          <button
+            onClick={handleDownloadReceipt}
+            disabled={isGeneratingPDF}
+            className="flex items-center justify-center gap-2 w-full mt-3 pt-3 border-t border-border text-sm font-medium text-primary active:scale-[0.98] transition-transform disabled:opacity-50"
+          >
+            {isGeneratingPDF ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            Télécharger le relevé
+          </button>
         </div>
 
         {/* ── Client Info Card ────────────────────────────────── */}

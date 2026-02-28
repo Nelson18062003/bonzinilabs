@@ -39,11 +39,15 @@ import {
   FileText,
   Eye,
   Download,
+  FileDown,
   Loader2,
   Trash2,
   ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { DepositReceiptPDF } from '@/lib/pdf/templates/DepositReceiptPDF';
+import type { DepositReceiptData } from '@/lib/pdf/templates/DepositReceiptPDF';
 import {
   Dialog,
   DialogContent,
@@ -144,6 +148,7 @@ const DepositDetailPage = () => {
   const [deleteReason, setDeleteReason] = useState('');
   const [customDeleteReason, setCustomDeleteReason] = useState('');
   const [instructionsOpen, setInstructionsOpen] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
@@ -287,6 +292,41 @@ const DepositDetailPage = () => {
     document.body.removeChild(link);
   };
 
+  const handleDownloadReceipt = async () => {
+    if (!deposit || isGeneratingPDF) return;
+    setIsGeneratingPDF(true);
+    try {
+      const receiptData: DepositReceiptData = {
+        id: deposit.id,
+        reference: deposit.reference,
+        created_at: deposit.created_at,
+        validated_at: deposit.validated_at,
+        amount_xaf: deposit.amount_xaf,
+        confirmed_amount_xaf: deposit.confirmed_amount_xaf,
+        method: deposit.method,
+        status: deposit.status,
+        bank_name: deposit.bank_name,
+        agency_name: deposit.agency_name,
+        client_name: deposit.profiles
+          ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
+          : 'Client',
+        client_phone: deposit.profiles?.phone,
+        company_name: deposit.profiles?.company_name,
+      };
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      await downloadPDF(
+        <DepositReceiptPDF data={receiptData} />,
+        `Depot_${deposit.reference}_${dateStr}.pdf`,
+      );
+      toast.success('Relevé téléchargé');
+    } catch (error) {
+      console.error('Error generating deposit PDF:', error);
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   return (
     <MobileLayout showNav={false}>
       {/* ── Sticky back button ── */}
@@ -353,16 +393,30 @@ const DepositDetailPage = () => {
               {deposit.reference}
             </p>
           </div>
-          <button
-            onClick={() => copyToClipboard(deposit.reference, 'reference')}
-            className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0 ml-2"
-          >
-            {copiedField === 'reference' ? (
-              <Check className="w-4 h-4 text-success" />
-            ) : (
-              <Copy className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+            <button
+              onClick={() => copyToClipboard(deposit.reference, 'reference')}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              {copiedField === 'reference' ? (
+                <Check className="w-4 h-4 text-success" />
+              ) : (
+                <Copy className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={isGeneratingPDF}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              title="Télécharger le relevé"
+            >
+              {isGeneratingPDF ? (
+                <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* ── Alert banners (conditional) ── */}
