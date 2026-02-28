@@ -12,39 +12,39 @@ export interface Country {
 
 export const COUNTRIES: Country[] = [
   // Afrique
-  { name: 'Cameroun', flag: '\u{1F1E8}\u{1F1F2}', dialCode: '237', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Congo', flag: '\u{1F1E8}\u{1F1EC}', dialCode: '242', phoneFormat: '## ### ####', maxDigits: 9 },
-  { name: 'RD Congo', flag: '\u{1F1E8}\u{1F1E9}', dialCode: '243', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: 'Gabon', flag: '\u{1F1EC}\u{1F1E6}', dialCode: '241', phoneFormat: '# ## ## ##', maxDigits: 7 },
-  { name: "C\u00f4te d'Ivoire", flag: '\u{1F1E8}\u{1F1EE}', dialCode: '225', phoneFormat: '## ## ## ## ##', maxDigits: 10 },
-  { name: 'S\u00e9n\u00e9gal', flag: '\u{1F1F8}\u{1F1F3}', dialCode: '221', phoneFormat: '## ### ## ##', maxDigits: 9 },
-  { name: 'Mali', flag: '\u{1F1F2}\u{1F1F1}', dialCode: '223', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Burkina Faso', flag: '\u{1F1E7}\u{1F1EB}', dialCode: '226', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Niger', flag: '\u{1F1F3}\u{1F1EA}', dialCode: '227', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Togo', flag: '\u{1F1F9}\u{1F1EC}', dialCode: '228', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'B\u00e9nin', flag: '\u{1F1E7}\u{1F1EF}', dialCode: '229', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Guin\u00e9e', flag: '\u{1F1EC}\u{1F1F3}', dialCode: '224', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Ghana', flag: '\u{1F1EC}\u{1F1ED}', dialCode: '233', phoneFormat: '## ### ####', maxDigits: 9 },
-  { name: 'Maroc', flag: '\u{1F1F2}\u{1F1E6}', dialCode: '212', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Alg\u00e9rie', flag: '\u{1F1E9}\u{1F1FF}', dialCode: '213', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Tunisie', flag: '\u{1F1F9}\u{1F1F3}', dialCode: '216', phoneFormat: '## ### ###', maxDigits: 8 },
-  { name: 'Cap-Vert', flag: '\u{1F1E8}\u{1F1FB}', dialCode: '238', phoneFormat: '### ## ##', maxDigits: 7 },
+  { name: 'Cameroun', flag: '🇨🇲', dialCode: '237', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
+  { name: 'Congo', flag: '🇨🇬', dialCode: '242', phoneFormat: '## ### ####', maxDigits: 9 },
+  { name: 'RD Congo', flag: '🇨🇩', dialCode: '243', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'Gabon', flag: '🇬🇦', dialCode: '241', phoneFormat: '# ## ## ##', maxDigits: 7 },
+  { name: "Côte d'Ivoire", flag: '🇨🇮', dialCode: '225', phoneFormat: '## ## ## ## ##', maxDigits: 10 },
+  { name: 'Sénégal', flag: '🇸🇳', dialCode: '221', phoneFormat: '## ### ## ##', maxDigits: 9 },
+  { name: 'Mali', flag: '🇲🇱', dialCode: '223', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Burkina Faso', flag: '🇧🇫', dialCode: '226', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Niger', flag: '🇳🇪', dialCode: '227', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Togo', flag: '🇹🇬', dialCode: '228', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Bénin', flag: '🇧🇯', dialCode: '229', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Guinée', flag: '🇬🇳', dialCode: '224', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Ghana', flag: '🇬🇭', dialCode: '233', phoneFormat: '## ### ####', maxDigits: 9 },
+  { name: 'Maroc', flag: '🇲🇦', dialCode: '212', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
+  { name: 'Algérie', flag: '🇩🇿', dialCode: '213', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Tunisie', flag: '🇹🇳', dialCode: '216', phoneFormat: '## ### ###', maxDigits: 8 },
+  { name: 'Cap-Vert', flag: '🇨🇻', dialCode: '238', phoneFormat: '### ## ##', maxDigits: 7 },
   // Europe
-  { name: 'France', flag: '\u{1F1EB}\u{1F1F7}', dialCode: '33', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Belgique', flag: '\u{1F1E7}\u{1F1EA}', dialCode: '32', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Suisse', flag: '\u{1F1E8}\u{1F1ED}', dialCode: '41', phoneFormat: '## ### ## ##', maxDigits: 9 },
-  { name: 'Allemagne', flag: '\u{1F1E9}\u{1F1EA}', dialCode: '49', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Royaume-Uni', flag: '\u{1F1EC}\u{1F1E7}', dialCode: '44', phoneFormat: '#### ### ###', maxDigits: 10 },
-  { name: 'Italie', flag: '\u{1F1EE}\u{1F1F9}', dialCode: '39', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Espagne', flag: '\u{1F1EA}\u{1F1F8}', dialCode: '34', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Portugal', flag: '\u{1F1F5}\u{1F1F9}', dialCode: '351', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: 'Pologne', flag: '\u{1F1F5}\u{1F1F1}', dialCode: '48', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: 'Roumanie', flag: '\u{1F1F7}\u{1F1F4}', dialCode: '40', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'France', flag: '🇫🇷', dialCode: '33', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
+  { name: 'Belgique', flag: '🇧🇪', dialCode: '32', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Suisse', flag: '🇨🇭', dialCode: '41', phoneFormat: '## ### ## ##', maxDigits: 9 },
+  { name: 'Allemagne', flag: '🇩🇪', dialCode: '49', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Royaume-Uni', flag: '🇬🇧', dialCode: '44', phoneFormat: '#### ### ###', maxDigits: 10 },
+  { name: 'Italie', flag: '🇮🇹', dialCode: '39', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Espagne', flag: '🇪🇸', dialCode: '34', phoneFormat: '### ## ## ##', maxDigits: 9 },
+  { name: 'Portugal', flag: '🇵🇹', dialCode: '351', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'Pologne', flag: '🇵🇱', dialCode: '48', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'Roumanie', flag: '🇷🇴', dialCode: '40', phoneFormat: '### ### ###', maxDigits: 9 },
   // Autres
-  { name: 'Chine', flag: '\u{1F1E8}\u{1F1F3}', dialCode: '86', phoneFormat: '### #### ####', maxDigits: 11 },
-  { name: 'USA', flag: '\u{1F1FA}\u{1F1F8}', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Canada', flag: '\u{1F1E8}\u{1F1E6}', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Br\u00e9sil', flag: '\u{1F1E7}\u{1F1F7}', dialCode: '55', phoneFormat: '## ##### ####', maxDigits: 11 },
+  { name: 'Chine', flag: '🇨🇳', dialCode: '86', phoneFormat: '### #### ####', maxDigits: 11 },
+  { name: 'USA', flag: '🇺🇸', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Canada', flag: '🇨🇦', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
+  { name: 'Brésil', flag: '🇧🇷', dialCode: '55', phoneFormat: '## ##### ####', maxDigits: 11 },
 ];
 
 function formatPhoneDisplay(digits: string, format: string): string {
@@ -184,7 +184,7 @@ export function PhoneCountryInput({
       {/* Label */}
       <label className="block text-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
         <Phone className="w-4 h-4" />
-        T\u00e9l\u00e9phone *
+        Téléphone *
       </label>
 
       {/* Input container */}
@@ -247,7 +247,7 @@ export function PhoneCountryInput({
           {/* Country list */}
           <div className="max-h-52 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Aucun r\u00e9sultat</p>
+              <p className="text-sm text-muted-foreground text-center py-4">Aucun résultat</p>
             ) : (
               filtered.map(country => (
                 <button
