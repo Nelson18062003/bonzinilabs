@@ -203,13 +203,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bankLabel: {
-    fontSize: 36,
+    fontSize: 30,
     fontFamily: 'NotoSansSC',
     color: colors.muted,
     marginBottom: 4,
   },
   bankValue: {
-    fontSize: 40,
+    fontSize: 35,
     fontFamily: 'NotoSansSC',
     fontWeight: 700,
     color: colors.text,
