@@ -18,6 +18,7 @@ import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 import {
   Plus, Search, Clock, PlayCircle, CheckCircle, TrendingUp,
   Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
+  FileDown, Loader2,
 } from 'lucide-react';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
@@ -27,6 +28,11 @@ import { formatCurrencyRMB, formatRelativeDate } from '@/lib/formatters';
 import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
+import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
 
 // ── Filter configuration ────────────────────────────────────
 
@@ -83,6 +89,7 @@ export function MobilePaymentsScreen() {
   const debouncedSearch = useDebouncedValue(searchQuery);
   const { data: stats } = usePaymentStats();
   const navigate = useNavigate();
+  const [isExporting, setIsExporting] = useState(false);
 
   const sortOption = SORT_OPTIONS.find(o => o.key === sortKey) || SORT_OPTIONS[0];
 
@@ -175,6 +182,64 @@ export function MobilePaymentsScreen() {
     setSortKey('newest');
   }, []);
 
+  const handleExportBatch = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      // Fetch processing payments (non-cash)
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select('id, reference, amount_rmb, method, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url')
+        .eq('status', 'processing')
+        .neq('method', 'cash');
+
+      if (error) throw error;
+
+      if (!payments || payments.length === 0) {
+        toast.error('Aucun paiement en cours à exporter');
+        return;
+      }
+
+      // Generate signed URLs for QR codes
+      const entries: BatchPaymentEntry[] = await Promise.all(
+        payments.map(async (p) => {
+          let qrUrl = p.beneficiary_qr_code_url;
+          if (qrUrl && qrUrl.startsWith('payment-proofs/')) {
+            const storagePath = qrUrl.replace('payment-proofs/', '');
+            const { data: signedData } = await supabase.storage
+              .from('payment-proofs')
+              .createSignedUrl(storagePath, 3600);
+            qrUrl = signedData?.signedUrl || null;
+          }
+          return {
+            id: p.id,
+            reference: p.reference,
+            amount_rmb: p.amount_rmb,
+            method: p.method,
+            beneficiary_name: p.beneficiary_name,
+            beneficiary_phone: p.beneficiary_phone,
+            beneficiary_email: p.beneficiary_email,
+            beneficiary_bank_name: p.beneficiary_bank_name,
+            beneficiary_bank_account: p.beneficiary_bank_account,
+            beneficiary_qr_code_url: qrUrl,
+          };
+        }),
+      );
+
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      await downloadPDF(
+        <BatchPaymentsPDF payments={entries} generatedAt={new Date()} />,
+        `Paiements_en_cours_${dateStr}.pdf`,
+      );
+      toast.success(`Export de ${entries.length} paiement(s) téléchargé`);
+    } catch (error) {
+      console.error('Error exporting batch payments:', error);
+      toast.error('Erreur lors de l\'export');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting]);
+
   // ── Render ────────────────────────────────────────────────
 
   return (
@@ -251,6 +316,20 @@ export function MobilePaymentsScreen() {
             </div>
           )}
         </div>
+
+        {/* ── Export batch button ──────────────────────────────── */}
+        <button
+          onClick={handleExportBatch}
+          disabled={isExporting}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium active:scale-[0.98] transition-transform disabled:opacity-50"
+        >
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileDown className="w-4 h-4" />
+          )}
+          Exporter paiements en cours (PDF)
+        </button>
 
         {/* ── Search + filter toggle ──────────────────────────── */}
         <div className="flex gap-2">

@@ -55,9 +55,13 @@ import {
   X,
   AlertTriangle,
   Download,
+  FileDown,
   Clock,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
+import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 
 // ── Method icon mapping ─────────────────────────────────────
 const METHOD_ICONS: Record<string, React.ElementType> = {
@@ -121,6 +125,7 @@ export function MobilePaymentDetail() {
 
   // Expandable details
   const [showDetails, setShowDetails] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const handleProofSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -210,6 +215,46 @@ export function MobilePaymentDetail() {
       navigate('/m/payments');
     } catch {
       // Error handled by mutation
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!payment || isGeneratingPDF) return;
+    setIsGeneratingPDF(true);
+    try {
+      const clientName = payment.profiles
+        ? `${payment.profiles.first_name} ${payment.profiles.last_name}`
+        : 'Client';
+      const receiptData: PaymentReceiptData = {
+        id: payment.id,
+        reference: payment.reference,
+        created_at: payment.created_at,
+        processed_at: payment.processed_at,
+        amount_xaf: payment.amount_xaf,
+        amount_rmb: payment.amount_rmb,
+        exchange_rate: payment.exchange_rate,
+        method: payment.method,
+        status: payment.status,
+        client_name: clientName,
+        client_phone: payment.profiles?.phone,
+        beneficiary_name: payment.beneficiary_name,
+        beneficiary_phone: payment.beneficiary_phone,
+        beneficiary_email: payment.beneficiary_email,
+        beneficiary_bank_name: payment.beneficiary_bank_name,
+        beneficiary_bank_account: payment.beneficiary_bank_account,
+        beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+      };
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      await downloadPDF(
+        <PaymentReceiptPDF data={receiptData} />,
+        `Paiement_${payment.reference}_${dateStr}.pdf`,
+      );
+      toast.success('Relevé téléchargé');
+    } catch (error) {
+      console.error('Error generating payment PDF:', error);
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -340,6 +385,20 @@ export function MobilePaymentDetail() {
             </span>
           </div>
         </div>
+
+        {/* ── Download Receipt ─────────────────────────────────── */}
+        <button
+          onClick={handleDownloadReceipt}
+          disabled={isGeneratingPDF}
+          className="w-full bg-card rounded-xl p-3 border border-border flex items-center justify-center gap-2 text-sm font-medium text-primary active:scale-[0.98] transition-transform disabled:opacity-50"
+        >
+          {isGeneratingPDF ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileDown className="w-4 h-4" />
+          )}
+          Télécharger le relevé
+        </button>
 
         {/* ── Client Info ─────────────────────────────────────── */}
         <button
