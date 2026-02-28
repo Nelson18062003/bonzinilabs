@@ -24,12 +24,14 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.white,
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
     color: colors.text,
     marginBottom: 8,
     paddingBottom: 4,
@@ -150,7 +152,7 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
           <PDFHeader title="QR CODE BÉNÉFICIAIRE" reference={data.reference} />
           <View style={styles.qrCodeContainer}>
             {data.beneficiary_name && (
-              <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: colors.text, marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, fontFamily: 'NotoSansSC', fontWeight: 700, color: colors.text, marginBottom: 12 }}>
                 {data.beneficiary_name}
               </Text>
             )}

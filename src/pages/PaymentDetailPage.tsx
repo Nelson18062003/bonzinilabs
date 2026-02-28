@@ -1,10 +1,21 @@
+// ============================================================
+// PAGE CLIENT — PaymentDetailPage (Redesign v2)
+// Clean, hierarchical client payment detail page.
+// Hero amount with payment method logo, beneficiary section
+// with copyable fields, consolidated proofs, collapsible timeline.
+// ============================================================
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import {
   usePaymentDetail,
   usePaymentTimeline,
@@ -12,17 +23,17 @@ import {
   useUpdateBeneficiaryInfo,
 } from '@/hooks/usePayments';
 import { usePaymentProofMultiUpload } from '@/hooks/usePaymentProofUpload';
-import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
+import { formatXAF, formatCurrencyRMB, formatCurrency, formatNumber, formatRelativeDate } from '@/lib/formatters';
+import { PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_LABELS } from '@/types/payment';
+import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  XCircle,
   Loader2,
   Upload,
   Edit2,
   CreditCard,
-  Wallet,
   Building2,
   Banknote,
   QrCode,
@@ -33,12 +44,16 @@ import {
   FileDown,
   Lock,
   ScanLine,
+  TrendingUp,
+  Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisplay';
 import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
+import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { CopyableField } from '@/mobile/components/payments/CopyableField';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,23 +76,18 @@ import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  created: { label: 'Créé', color: 'bg-blue-500', icon: Clock },
-  waiting_beneficiary_info: { label: 'En attente d\'infos bénéficiaire', color: 'bg-yellow-500', icon: AlertCircle },
-  ready_for_payment: { label: 'Prêt à être payé', color: 'bg-purple-500', icon: Clock },
-  cash_pending: { label: 'QR Code généré', color: 'bg-cyan-500', icon: QrCode },
-  cash_scanned: { label: 'Scanné au bureau', color: 'bg-orange-500', icon: ScanLine },
-  processing: { label: 'En cours de paiement', color: 'bg-orange-500', icon: Loader2 },
-  completed: { label: 'Paiement effectué', color: 'bg-green-500', icon: CheckCircle2 },
-  rejected: { label: 'Refusé', color: 'bg-red-500', icon: XCircle },
-};
-
-const methodConfig = {
-  alipay: { label: 'Alipay', icon: CreditCard },
-  wechat: { label: 'WeChat Pay', icon: Wallet },
-  bank_transfer: { label: 'Virement bancaire', icon: Building2 },
-  cash: { label: 'Cash', icon: Banknote },
+// ── Status badge styles for header ──────────────────────────
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  created: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  waiting_beneficiary_info: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  ready_for_payment: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  cash_pending: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
+  cash_scanned: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  processing: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  completed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  rejected: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
 export default function PaymentDetailPage() {
@@ -103,6 +113,9 @@ export default function PaymentDetailPage() {
   const [instructionFiles, setInstructionFiles] = useState<File[]>([]);
   const [uploadKey, setUploadKey] = useState(0);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  // QR viewer drawer state
+  const [selectedProof, setSelectedProof] = useState<string | null>(null);
 
   const { data: payment, isLoading: paymentLoading } = usePaymentDetail(paymentId);
   const { data: timeline, isLoading: timelineLoading } = usePaymentTimeline(paymentId);
@@ -142,7 +155,7 @@ export default function PaymentDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setQrFile(file);
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -160,11 +173,11 @@ export default function PaymentDetailPage() {
       const hasQr = qrFile || beneficiaryForm.beneficiary_qr_code_url;
       const hasPhone = beneficiaryForm.beneficiary_phone.trim();
       const hasEmail = beneficiaryForm.beneficiary_email.trim();
-      
+
       if (!hasQr && !hasPhone && !hasEmail) {
-        return { 
-          valid: false, 
-          message: 'Veuillez fournir au moins un QR code, un numéro de téléphone ou un email' 
+        return {
+          valid: false,
+          message: 'Veuillez fournir au moins un QR code, un numéro de téléphone ou un email'
         };
       }
       return { valid: true };
@@ -297,8 +310,9 @@ export default function PaymentDetailPage() {
       <MobileLayout>
         <div className="p-4 space-y-4">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
         </div>
       </MobileLayout>
     );
@@ -317,9 +331,11 @@ export default function PaymentDetailPage() {
     );
   }
 
-  const StatusIcon = statusConfig[payment.status]?.icon || Clock;
-  const MethodIcon = methodConfig[payment.method]?.icon || CreditCard;
-  
+  const statusCfg = PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus]
+    || { label: payment.status, color: 'bg-gray-100 text-gray-700' };
+  const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
+  const exchangeRateXAFPerRMB = payment.exchange_rate ? Math.round(1 / payment.exchange_rate) : 0;
+
   // Can edit beneficiary info when not yet processing/completed/rejected
   const canEditBeneficiary = ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
   const isLocked = ['processing', 'completed', 'rejected'].includes(payment.status);
@@ -327,8 +343,6 @@ export default function PaymentDetailPage() {
 
   const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'client');
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
-
-  const isRejected = payment.status === 'rejected';
 
   // Handle instruction upload
   const handleUploadInstructions = async () => {
@@ -339,14 +353,14 @@ export default function PaymentDetailPage() {
   };
 
   // Check if beneficiary info is provided
-  const hasBeneficiaryInfo = payment.method === 'cash' || 
-    payment.beneficiary_qr_code_url || 
-    payment.beneficiary_name || 
+  const hasBeneficiaryInfo = payment.method === 'cash' ||
+    payment.beneficiary_qr_code_url ||
+    payment.beneficiary_name ||
     payment.beneficiary_phone ||
     payment.beneficiary_email ||
     payment.beneficiary_bank_account;
 
-  // Render form fields based on payment method
+  // Render form fields based on payment method (for the dialog)
   const renderBeneficiaryFormFields = () => {
     if (payment.method === 'alipay' || payment.method === 'wechat') {
       return (
@@ -562,9 +576,9 @@ export default function PaymentDetailPage() {
           </p>
           {payment.cash_qr_code && (
             <div className="mt-3">
-              <img 
-                src={payment.cash_qr_code} 
-                alt="QR Code Cash" 
+              <img
+                src={payment.cash_qr_code}
+                alt="QR Code Cash"
                 className="w-32 h-32 mx-auto rounded-lg border"
               />
             </div>
@@ -591,63 +605,45 @@ export default function PaymentDetailPage() {
     }
 
     return (
-      <div className="space-y-3">
-        {/* QR Code display */}
-        {payment.beneficiary_qr_code_url && (
+      <div>
+        {/* QR Code display for Alipay/WeChat — prominent, tappable */}
+        {payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method) && (
           <div className="flex justify-center mb-4">
-            <img
-              src={payment.beneficiary_qr_code_url}
-              alt="QR Code bénéficiaire"
-              className="w-28 h-28 rounded-lg border object-cover"
-            />
+            <button
+              onClick={() => setSelectedProof(payment.beneficiary_qr_code_url)}
+              className="active:scale-[0.98] transition-transform"
+            >
+              <img
+                src={payment.beneficiary_qr_code_url}
+                alt="QR Code bénéficiaire"
+                className="w-[200px] h-[200px] rounded-xl border-2 border-border object-contain bg-white"
+              />
+              <p className="text-xs text-primary mt-2 text-center">Appuyer pour agrandir</p>
+            </button>
           </div>
         )}
 
-        <div className="space-y-2 text-sm">
+        {/* Copyable fields */}
+        <div className="space-y-2.5 text-sm">
           {payment.beneficiary_name && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <User className="w-4 h-4" /> Nom
-              </span>
-              <span className="font-medium">{payment.beneficiary_name}</span>
-            </div>
+            <CopyableField label="Nom" value={payment.beneficiary_name} copyLabel="Nom bénéficiaire" />
           )}
           {payment.beneficiary_phone && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <Phone className="w-4 h-4" /> Téléphone
-              </span>
-              <span className="font-medium">{payment.beneficiary_phone}</span>
-            </div>
+            <CopyableField label="Téléphone" value={payment.beneficiary_phone} copyLabel="Téléphone bénéficiaire" />
           )}
           {payment.beneficiary_email && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <Mail className="w-4 h-4" /> Email
-              </span>
-              <span className="font-medium">{payment.beneficiary_email}</span>
-            </div>
+            <CopyableField label="Email" value={payment.beneficiary_email} copyLabel="Email bénéficiaire" />
           )}
           {payment.beneficiary_bank_name && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <Building2 className="w-4 h-4" /> Banque
-              </span>
-              <span className="font-medium">{payment.beneficiary_bank_name}</span>
-            </div>
+            <CopyableField label="Banque" value={payment.beneficiary_bank_name} copyLabel="Banque" />
           )}
           {payment.beneficiary_bank_account && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> Compte
-              </span>
-              <span className="font-medium">{payment.beneficiary_bank_account}</span>
-            </div>
+            <CopyableField label="N° de compte" value={payment.beneficiary_bank_account} copyLabel="N° de compte" />
           )}
           {payment.beneficiary_notes && (
-            <div className="pt-2 border-t">
-              <span className="text-muted-foreground text-xs">Notes:</span>
-              <p className="text-sm mt-1">{payment.beneficiary_notes}</p>
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-1">Notes</p>
+              <p className="text-sm">{payment.beneficiary_notes}</p>
             </div>
           )}
         </div>
@@ -657,76 +653,76 @@ export default function PaymentDetailPage() {
 
   return (
     <MobileLayout>
-      <PageHeader 
+      {/* ── Header with status badge ─────────────────────────── */}
+      <PageHeader
         title={payment.reference}
-        subtitle="Détail du paiement"
         showBack
+        rightElement={
+          <span className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap',
+            STATUS_BADGE_STYLES[payment.status] || STATUS_BADGE_STYLES.created
+          )}>
+            {statusCfg.label}
+          </span>
+        }
       />
 
-      <div className="px-4 py-4 space-y-4">
-        {/* Status Card */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <Badge className={`${statusConfig[payment.status]?.color} text-white`}>
-                <StatusIcon className="w-3 h-3 mr-1" />
-                {statusConfig[payment.status]?.label}
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {format(new Date(payment.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Montant débité</span>
-                <span className="font-bold text-lg">{formatXAF(payment.amount_xaf)} XAF</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Montant envoyé</span>
-                <span className="font-bold text-lg text-primary">{formatCurrencyRMB(payment.amount_rmb)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Taux appliqué</span>
-                <span>1 RMB = {formatXAF(Math.round(1 / payment.exchange_rate))} XAF</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">ID Paiement</span>
-                <span className="font-mono text-xs">{payment.id.substring(0, 8)}...</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Download receipt */}
-        <Button
-          variant="outline"
-          className="w-full gap-2"
-          onClick={handleDownloadReceipt}
-          disabled={isGeneratingPDF}
-        >
-          {isGeneratingPDF ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <FileDown className="w-4 h-4" />
-          )}
-          Télécharger le relevé
-        </Button>
-
-        {/* Payment Method */}
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="font-semibold mb-3">Mode de paiement</h3>
+      <div className="px-4 py-4 space-y-6">
+        {/* ── Hero Amount Card ─────────────────────────────────── */}
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+          {/* Method logo + label + download button */}
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <MethodIcon className="w-5 h-5 text-primary" />
-              </div>
-              <span className="font-medium">{methodConfig[payment.method]?.label}</span>
+              <PaymentMethodLogo method={payment.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={48} />
+              <span className="text-lg font-semibold">{methodLabel}</span>
             </div>
-          </CardContent>
-        </Card>
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={isGeneratingPDF}
+              className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform disabled:opacity-50"
+              aria-label="Télécharger le relevé"
+            >
+              {isGeneratingPDF ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <FileDown className="w-5 h-5" />
+              )}
+            </button>
+          </div>
 
-        {/* Cash QR Code - Show for cash payments that are not yet completed/rejected */}
+          {/* Primary amount: RMB */}
+          <p className="text-[32px] sm:text-[36px] font-bold tracking-tight leading-none">
+            {formatCurrencyRMB(payment.amount_rmb)}
+          </p>
+
+          {/* Secondary amount: XAF */}
+          <p className="text-xl sm:text-2xl font-semibold text-muted-foreground mt-1">
+            {formatCurrency(payment.amount_xaf)}
+          </p>
+
+          {/* Exchange rate — explicit and visible */}
+          <div className="mt-4 bg-muted/50 rounded-xl p-3 border border-border/50">
+            <div className="flex items-start gap-2">
+              <TrendingUp className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">
+                  Taux appliqué : 1 RMB = {formatNumber(exchangeRateXAFPerRMB)} XAF
+                </p>
+                <p className="text-muted-foreground mt-0.5">
+                  {formatNumber(payment.amount_rmb, 2)} RMB = {formatNumber(payment.amount_xaf)} XAF
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Date info */}
+          <p className="text-xs text-muted-foreground mt-3">
+            Créé {formatRelativeDate(payment.created_at)} · {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+            {isLocked && ' · Verrouillé'}
+          </p>
+        </div>
+
+        {/* ── Cash QR Code ──────────────────────────────────────── */}
         {payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status) && (
           <CashQRCode
             paymentId={payment.id}
@@ -736,103 +732,143 @@ export default function PaymentDetailPage() {
           />
         )}
 
-        {/* Cash payment status info */}
+        {/* Cash scanned status */}
         {payment.method === 'cash' && payment.status === 'cash_scanned' && (
-          <Card className="border-orange-500/30 bg-orange-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
-                <div>
-                  <p className="font-medium text-orange-600">QR Code scanné au bureau</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Votre paiement est en cours de traitement au bureau Bonzini Guangzhou.
-                  </p>
-                </div>
+          <div className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border border-orange-200 dark:border-orange-800">
+            <div className="flex items-start gap-3">
+              <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
+              <div>
+                <p className="font-medium text-orange-600">QR Code scanné au bureau</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Votre paiement est en cours de traitement au bureau Bonzini Guangzhou.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Cash payment completed with signature */}
-        {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
-          <Card className="border-green-500/30 bg-green-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-medium text-green-600">Paiement cash effectué</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Signature enregistrée le {(payment as any).cash_signature_timestamp && 
-                      format(new Date((payment as any).cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                  </p>
-                  {(payment as any).cash_signed_by_name && (
-                    <p className="text-sm text-muted-foreground">
-                      Signé par: {(payment as any).cash_signed_by_name}
-                    </p>
-                  )}
-                  
-                  {/* Download PDF Receipt */}
-                  <div className="mt-3">
-                    <CashReceiptDownloadButton
-                      payment={payment as any}
-                      variant="outline"
-                      size="sm"
-                      label="Télécharger le reçu PDF"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Beneficiary Info */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Informations du bénéficiaire</h3>
-              {isLocked ? (
-                <Badge variant="secondary" className="gap-1">
-                  <Lock className="w-3 h-3" />
-                  Verrouillé
-                </Badge>
-              ) : canEditBeneficiary && hasBeneficiaryInfo && payment.method !== 'cash' ? (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(true)}
-                >
-                  <Edit2 className="w-4 h-4 mr-1" />
-                  Modifier
-                </Button>
-              ) : null}
             </div>
-
-            {renderBeneficiaryDisplay()}
-          </CardContent>
-        </Card>
-
-        {/* Ready for payment message */}
-        {payment.status === 'ready_for_payment' && (
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-medium text-primary">Votre paiement est prêt à être traité</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Bonzini va procéder au paiement dans les meilleurs délais.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         )}
 
-        {/* Client Instructions Upload */}
-        {canUploadInstructions && (
-          <Card>
-            <CardContent className="p-4">
+        {/* Cash completed with signature */}
+        {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
+          <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-green-600">Paiement cash effectué</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Signature enregistrée le {(payment as any).cash_signature_timestamp &&
+                    format(new Date((payment as any).cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                </p>
+                {(payment as any).cash_signed_by_name && (
+                  <p className="text-sm text-muted-foreground">
+                    Signé par: {(payment as any).cash_signed_by_name}
+                  </p>
+                )}
+
+                <div className="mt-3">
+                  <CashReceiptDownloadButton
+                    payment={payment as any}
+                    variant="outline"
+                    size="sm"
+                    label="Télécharger le reçu PDF"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Beneficiary Section ──────────────────────────────── */}
+        <div className="bg-card rounded-2xl p-5 border border-border">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Bénéficiaire
+            </h3>
+            {isLocked ? (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                <Lock className="w-3 h-3" />
+                Verrouillé
+              </span>
+            ) : canEditBeneficiary && hasBeneficiaryInfo && payment.method !== 'cash' ? (
+              <button
+                onClick={() => setIsEditDialogOpen(true)}
+                className="text-xs font-medium text-primary active:scale-95 transition-transform flex items-center gap-1"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                Modifier
+              </button>
+            ) : null}
+          </div>
+
+          {renderBeneficiaryDisplay()}
+        </div>
+
+        {/* ── Ready for payment message ─────────────────────────── */}
+        {payment.status === 'ready_for_payment' && (
+          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl p-5 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
+              <div>
+                <p className="font-medium text-primary">Votre paiement est prêt à être traité</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Bonzini va procéder au paiement dans les meilleurs délais.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Documents Section (consolidated proofs) ──────────── */}
+        <div className="bg-card rounded-2xl p-5 border border-border">
+          <h3 className="text-base font-semibold mb-4">Documents</h3>
+
+          {/* Admin proofs (Bonzini proof of payment) */}
+          {adminProofs.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Preuves Bonzini ({adminProofs.length})
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Ces documents confirment que le paiement a été exécuté.
+              </p>
+              <PaymentProofGallery
+                proofs={adminProofs}
+                title=""
+                emptyMessage=""
+                showUploadedBy={false}
+              />
+            </div>
+          )}
+
+          {/* Client instruction proofs */}
+          {clientProofs.length > 0 && (
+            <div className={cn(adminProofs.length > 0 && "mt-4 pt-4 border-t border-border")}>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Mes instructions ({clientProofs.length})
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Ces documents indiquent à Bonzini où et comment effectuer le paiement.
+              </p>
+              <PaymentProofGallery
+                proofs={clientProofs}
+                title=""
+                emptyMessage=""
+                showUploadedBy={false}
+              />
+              {isLocked && (
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Lock className="w-3.5 h-3.5" />
+                  Les modifications ne sont plus possibles
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Client instruction upload area */}
+          {canUploadInstructions && (
+            <div className={cn(
+              (adminProofs.length > 0 || clientProofs.length > 0) && "mt-4 pt-4 border-t border-border"
+            )}>
               <PaymentProofUpload
                 key={uploadKey}
                 onFilesSelect={setInstructionFiles}
@@ -840,92 +876,120 @@ export default function PaymentDetailPage() {
                 onConfirm={handleUploadInstructions}
                 isSubmitting={isUploadingProofs}
               />
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        {/* Client Instructions Gallery */}
-        {clientProofs.length > 0 && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Mes instructions de paiement
-              </h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Ces documents indiquent à Bonzini où et comment effectuer le paiement.
-              </p>
-              <PaymentProofGallery
-                proofs={clientProofs}
-                title=""
-                emptyMessage="Aucune instruction ajoutée"
-                showUploadedBy={false}
-              />
-              {isLocked && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Lock className="w-3.5 h-3.5" />
-                  Les modifications ne sont plus possibles
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+          {/* Empty state */}
+          {adminProofs.length === 0 && clientProofs.length === 0 && !canUploadInstructions && (
+            <p className="text-sm text-muted-foreground text-center py-3">Aucun document</p>
+          )}
+        </div>
 
-        {/* Admin Proofs */}
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="font-semibold mb-2">Preuves de paiement Bonzini</h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Ces documents confirment que le paiement a été exécuté.
-            </p>
-            <PaymentProofGallery
-              proofs={adminProofs}
-              title=""
-              emptyMessage="Aucune preuve disponible pour le moment"
-              showUploadedBy={false}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Timeline */}
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="font-semibold mb-4">Historique</h3>
-
-            {timelineLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : (
-              <PaymentTimelineDisplay steps={timelineSteps} />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Rejection reason */}
+        {/* ── Rejection reason ──────────────────────────────────── */}
         {payment.status === 'rejected' && payment.rejection_reason && (
-          <Card className="border-destructive/30 bg-destructive/5">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-destructive mb-2">Raison du refus</h3>
-              <p className="text-sm">{payment.rejection_reason}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-red-50 dark:bg-red-950/30 rounded-2xl p-5 border border-red-200 dark:border-red-800">
+            <p className="text-sm font-semibold text-red-800 dark:text-red-400 mb-1">Raison du refus</p>
+            <p className="text-sm text-red-700 dark:text-red-300">{payment.rejection_reason}</p>
+          </div>
         )}
 
-        {/* Admin comment */}
+        {/* ── Bonzini message ──────────────────────────────────── */}
         {payment.client_visible_comment && (
-          <Card className="border-green-500/30 bg-green-500/5">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-green-700 mb-2">Message de Bonzini</h3>
-              <p className="text-sm">{payment.client_visible_comment}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
+            <p className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">Message de Bonzini</p>
+            <p className="text-sm text-green-700 dark:text-green-300">{payment.client_visible_comment}</p>
+          </div>
+        )}
+
+        {/* ── Timeline & Details (collapsed by default) ─────────── */}
+        {timelineSteps.length > 0 && (
+          <Accordion type="single" collapsible className="bg-card rounded-2xl border border-border overflow-hidden">
+            <AccordionItem value="timeline" className="border-0">
+              <AccordionTrigger className="px-5 py-4 hover:no-underline">
+                <span className="flex items-center gap-2 font-semibold text-base">
+                  <Clock className="w-4 h-4" />
+                  Historique & Détails
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="px-5 pb-5">
+                <div className="space-y-4">
+                  {/* Secondary info grid */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs">Référence</p>
+                      <p className="font-mono text-xs mt-0.5">{payment.reference}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Méthode</p>
+                      <p className="font-medium text-xs mt-0.5">{methodLabel}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Créé le</p>
+                      <p className="text-xs mt-0.5">
+                        {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+                      </p>
+                    </div>
+                    {payment.processed_at && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Traité le</p>
+                        <p className="text-xs mt-0.5">
+                          {format(new Date(payment.processed_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Timeline */}
+                  {timelineLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-12 w-full" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="pt-2">
+                      <PaymentTimelineDisplay steps={timelineSteps} />
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
       </div>
 
-      {/* Edit Beneficiary Dialog */}
+      {/* ── QR Code Viewer Drawer ─────────────────────────────── */}
+      <Drawer open={!!selectedProof} onOpenChange={() => setSelectedProof(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>QR Code bénéficiaire</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 space-y-3">
+            {payment.beneficiary_name && (
+              <p className="text-center text-sm font-medium">{payment.beneficiary_name}</p>
+            )}
+            {selectedProof && (
+              <img
+                src={selectedProof}
+                alt="QR Code"
+                className="w-full rounded-xl"
+              />
+            )}
+            {selectedProof && (
+              <a
+                href={selectedProof}
+                download="qr-code-beneficiaire"
+                className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-border font-medium text-sm active:scale-[0.98] transition-transform"
+              >
+                <Download className="w-4 h-4" />
+                Télécharger le QR Code
+              </a>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ── Edit Beneficiary Dialog ───────────────────────────── */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -946,8 +1010,8 @@ export default function PaymentDetailPage() {
 
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             {(payment.method === 'alipay' || payment.method === 'wechat') && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleCompleteLater}
                 className="w-full sm:w-auto"
               >
