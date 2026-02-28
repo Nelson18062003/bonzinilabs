@@ -7,7 +7,7 @@ import '../fonts';
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    fontFamily: 'Helvetica',
+    fontFamily: 'NotoSansSC',
     fontSize: 10,
     color: colors.text,
   },
@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontSize: 20,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.white,
   },
   summarySubtitle: {
@@ -49,13 +49,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.muted,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 22,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
   },
   // Table
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderText: {
     fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.white,
   },
   tableRow: {
@@ -102,13 +102,13 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
     flex: 1,
   },
   totalValue: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
   },
   // Detail page
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   detailHeaderTitle: {
     fontSize: 16,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.white,
   },
   detailHeaderRef: {
@@ -143,13 +143,13 @@ const styles = StyleSheet.create({
   },
   amountBigLabel: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.muted,
     marginBottom: 6,
   },
   amountBig: {
     fontSize: 48,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.primary,
   },
   amountBigUnit: {
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.text,
     marginBottom: 8,
     paddingBottom: 4,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'NotoSansSC', fontWeight: 700,
     color: colors.text,
     flex: 1,
   },
@@ -197,6 +197,22 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.muted,
     marginTop: 6,
+  },
+  // Bank transfer detail - stacked layout with large font
+  bankField: {
+    marginBottom: 12,
+  },
+  bankLabel: {
+    fontSize: 16,
+    fontFamily: 'NotoSansSC',
+    color: colors.muted,
+    marginBottom: 4,
+  },
+  bankValue: {
+    fontSize: 80,
+    fontFamily: 'NotoSansSC',
+    fontWeight: 700,
+    color: colors.text,
   },
 });
 
@@ -260,7 +276,7 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
             <Text style={[styles.tableCell, styles.colIndex]}>{index + 1}</Text>
             <Text style={[styles.tableCell, styles.colRef]}>{payment.reference}</Text>
             <Text style={[styles.tableCell, styles.colMethod]}>{getPaymentMethodLabel(payment.method)}</Text>
-            <Text style={[styles.tableCell, styles.colAmount, { fontFamily: 'Helvetica-Bold' }]}>
+            <Text style={[styles.tableCell, styles.colAmount, { fontFamily: 'NotoSansSC', fontWeight: 700 }]}>
               {formatRMB(payment.amount_rmb)}
             </Text>
           </View>
@@ -297,31 +313,31 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
           <View style={styles.infoSection}>
             <Text style={styles.infoTitle}>{getPaymentMethodLabel(payment.method)}</Text>
 
-            {/* Bank transfer details */}
+            {/* Bank transfer details - large stacked layout */}
             {payment.method === 'bank_transfer' && (
               <>
                 {payment.beneficiary_name && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Nom</Text>
-                    <Text style={styles.infoValue}>{payment.beneficiary_name}</Text>
+                  <View style={styles.bankField}>
+                    <Text style={styles.bankLabel}>Nom</Text>
+                    <Text style={styles.bankValue}>{payment.beneficiary_name}</Text>
                   </View>
                 )}
                 {payment.beneficiary_bank_name && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Banque</Text>
-                    <Text style={styles.infoValue}>{payment.beneficiary_bank_name}</Text>
+                  <View style={styles.bankField}>
+                    <Text style={styles.bankLabel}>Banque</Text>
+                    <Text style={styles.bankValue}>{payment.beneficiary_bank_name}</Text>
                   </View>
                 )}
                 {payment.beneficiary_bank_account && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>N° de compte</Text>
-                    <Text style={styles.infoValue}>{payment.beneficiary_bank_account}</Text>
+                  <View style={styles.bankField}>
+                    <Text style={styles.bankLabel}>N° de compte</Text>
+                    <Text style={styles.bankValue}>{payment.beneficiary_bank_account}</Text>
                   </View>
                 )}
                 {payment.beneficiary_phone && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Téléphone</Text>
-                    <Text style={styles.infoValue}>{payment.beneficiary_phone}</Text>
+                  <View style={styles.bankField}>
+                    <Text style={styles.bankLabel}>Téléphone</Text>
+                    <Text style={styles.bankValue}>{payment.beneficiary_phone}</Text>
                   </View>
                 )}
               </>
