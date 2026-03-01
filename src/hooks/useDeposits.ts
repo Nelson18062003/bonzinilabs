@@ -69,6 +69,8 @@ export function useDepositDetail(depositId: string | undefined) {
 export function useDepositProofs(depositId: string | undefined) {
   return useQuery({
     queryKey: ['deposit-proofs', depositId],
+    staleTime: 55 * 60_000, // Signed URLs valid 1h — avoid re-generating every navigation
+    gcTime: 60 * 60_000,
     queryFn: async () => {
       if (!depositId) return [] as DepositProofWithUrl[];
       const { data, error } = await supabase

@@ -36,7 +36,7 @@ export function useMyWallet() {
 
       const { data, error } = await supabase
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -69,7 +69,7 @@ export function useMyWalletOperations() {
       // Get ledger entries (replaces wallet_operations)
       const { data, error } = await supabase
         .from('ledger_entries')
-        .select('*')
+        .select('id, wallet_id, entry_type, amount_xaf, balance_before, balance_after, reference_id, reference_type, description, created_by_admin_id, created_at')
         .eq('wallet_id', wallet.id)
         .order('created_at', { ascending: false })
         .limit(QUERY_LIMITS.WALLET_OPERATIONS);
@@ -103,7 +103,7 @@ export function useWalletByUserId(userId: string | undefined) {
 
       const { data, error } = await supabaseAdmin
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -124,7 +124,7 @@ export function useAllWallets() {
       // Get wallets
       const { data: wallets, error: walletsError } = await supabaseAdmin
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .order('updated_at', { ascending: false })
         .limit(QUERY_LIMITS.ALL_WALLETS);
 
@@ -164,7 +164,7 @@ export function useWalletOperations(walletId: string | undefined) {
 
       const { data, error } = await supabaseAdmin
         .from('ledger_entries')
-        .select('*')
+        .select('id, wallet_id, entry_type, amount_xaf, balance_before, balance_after, reference_id, reference_type, description, created_by_admin_id, created_at')
         .eq('wallet_id', walletId)
         .order('created_at', { ascending: false })
         .limit(QUERY_LIMITS.WALLET_OPERATIONS);
@@ -197,7 +197,7 @@ export function useExchangeRate() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('exchange_rates')
-        .select('*')
+        .select('rate_xaf_to_rmb, effective_date')
         .order('effective_date', { ascending: false })
         .limit(1)
         .maybeSingle();
