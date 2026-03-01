@@ -380,6 +380,59 @@ export function useUploadPaymentProof() {
   });
 }
 
+export function useAdminUpdateBeneficiaryInfo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      beneficiaryInfo,
+    }: {
+      paymentId: string;
+      beneficiaryInfo: Partial<Pick<Payment,
+        | 'beneficiary_name'
+        | 'beneficiary_phone'
+        | 'beneficiary_email'
+        | 'beneficiary_qr_code_url'
+        | 'beneficiary_bank_name'
+        | 'beneficiary_bank_account'
+        | 'beneficiary_notes'
+      >>;
+    }) => {
+      const { data: result, error } = await supabaseAdmin.rpc(
+        'admin_update_payment_beneficiary' as never,
+        {
+          p_payment_id: paymentId,
+          p_beneficiary_name: beneficiaryInfo.beneficiary_name ?? null,
+          p_beneficiary_phone: beneficiaryInfo.beneficiary_phone ?? null,
+          p_beneficiary_email: beneficiaryInfo.beneficiary_email ?? null,
+          p_beneficiary_qr_code_url: beneficiaryInfo.beneficiary_qr_code_url ?? null,
+          p_beneficiary_bank_name: beneficiaryInfo.beneficiary_bank_name ?? null,
+          p_beneficiary_bank_account: beneficiaryInfo.beneficiary_bank_account ?? null,
+          p_beneficiary_notes: beneficiaryInfo.beneficiary_notes ?? null,
+        } as never
+      );
+
+      if (error) throw new Error(error.message);
+
+      const rpcResult = result as { success: boolean; error?: string };
+      if (!rpcResult?.success) {
+        throw new Error(rpcResult?.error || 'Erreur lors de la mise à jour');
+      }
+
+      return rpcResult;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      toast.success('Infos bénéficiaire mises à jour');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la mise à jour');
+    },
+  });
+}
+
 // Admin hooks
 export function useAdminPayments() {
   return useQuery({

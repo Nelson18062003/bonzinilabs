@@ -9,25 +9,23 @@ import type {
 import type { AppRole } from '@/contexts/AdminAuthContext';
 
 /**
- * Hook to create a new admin user via edge function
+ * Hook to create a new admin user via RPC (SECURITY DEFINER)
  */
 export function useCreateAdmin() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateAdminData): Promise<CreateAdminResult> => {
-      const { data: result, error } = await supabaseAdmin.functions.invoke('create-admin', {
-        body: {
-          email: data.email.trim(),
-          firstName: data.firstName.trim(),
-          lastName: data.lastName.trim(),
-          role: data.role,
-        },
+      const { data: result, error } = await supabaseAdmin.rpc('admin_create_admin', {
+        p_email: data.email.trim(),
+        p_first_name: data.firstName.trim(),
+        p_last_name: data.lastName.trim(),
+        p_role: data.role,
       });
 
       if (error) throw new Error(error.message);
 
-      const rpcResult = result as CreateAdminResult;
+      const rpcResult = result as unknown as CreateAdminResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || 'Erreur lors de la création');
       }
