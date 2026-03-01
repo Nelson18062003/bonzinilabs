@@ -972,7 +972,7 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_name}
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
                       placeholder="Nom complet"
-                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     />
                   </div>
                   <div>
@@ -982,7 +982,7 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_bank_name}
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_name: e.target.value }))}
                       placeholder="Bank of China, ICBC…"
-                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     />
                   </div>
                   <div>
@@ -992,7 +992,7 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_bank_account}
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_account: e.target.value }))}
                       placeholder="Numéro de compte bancaire"
-                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base font-mono"
                     />
                   </div>
                   <div>
@@ -1002,7 +1002,7 @@ export function MobilePaymentDetail() {
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
                       rows={2}
-                      className="w-full p-3 rounded-xl border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full p-3 rounded-xl border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     />
                   </div>
                 </div>
@@ -1078,7 +1078,7 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_phone}
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_phone: e.target.value }))}
                       placeholder="+86 138 0000 0000"
-                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     />
                   </div>
                   <div>
@@ -1088,7 +1088,7 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_email}
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_email: e.target.value }))}
                       placeholder="beneficiaire@example.com"
-                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     />
                   </div>
                   <div>
@@ -1098,7 +1098,7 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_name}
                       onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
                       placeholder="Nom du bénéficiaire"
-                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     />
                   </div>
                 </div>
