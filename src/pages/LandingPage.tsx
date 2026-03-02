@@ -82,7 +82,7 @@ function LandingNav() {
             Se connecter
           </Link>
           <Link
-            to="/auth"
+            to="/auth?mode=signup"
             className="btn-primary-gradient text-sm px-5 py-2.5 rounded-xl font-semibold"
           >
             Ouvrir un compte
@@ -116,7 +116,7 @@ function LandingNav() {
             Se connecter
           </Link>
           <Link
-            to="/auth"
+            to="/auth?mode=signup"
             className="block btn-primary-gradient text-center py-3 rounded-xl text-sm font-semibold"
             onClick={() => setMobileOpen(false)}
           >
@@ -215,7 +215,7 @@ function HeroSection() {
             className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2"
           >
             <Link
-              to="/auth"
+              to="/auth?mode=signup"
               className="w-full sm:w-auto btn-primary-gradient px-8 py-4 rounded-xl text-base font-semibold text-center transition-all duration-300 hover:-translate-y-0.5"
               style={{ boxShadow: '0 8px 32px -8px hsl(258 100% 60% / 0.55)' }}
             >
@@ -681,7 +681,7 @@ function CtaBannerSection() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Link
-                to="/auth"
+                to="/auth?mode=signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-[hsl(258_100%_40%)] font-bold px-8 py-4 rounded-xl text-base hover:bg-white/92 transition-all duration-200 hover:-translate-y-0.5 shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
               >
                 Ouvrir mon compte gratuitement
@@ -724,7 +724,7 @@ function LandingFooter() {
             <ul className="space-y-2.5">
               {[
                 { label: 'Se connecter', to: '/auth' },
-                { label: 'Ouvrir un compte', to: '/auth' },
+                { label: 'Ouvrir un compte', to: '/auth?mode=signup' },
               ].map(link => (
                 <li key={link.label}>
                   <Link
