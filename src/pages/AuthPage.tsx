@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 const emailSchema = z.string().email('Email invalide');
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
@@ -89,11 +91,15 @@ export default function AuthPage() {
     }
   }, [dobDay, dobMonth, dobYear]);
 
-  // Check for reset password mode from URL
+  // Check for reset password mode or signup mode from URL
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'recovery') {
       setMode('reset-password');
+    }
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'signup') {
+      setMode('signup');
     }
   }, [searchParams]);
 
@@ -488,18 +494,26 @@ export default function AuthPage() {
           </StepTransition>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Pas encore de compte ?{' '}
-            <button
-              type="button"
+        {/* Footer — shadcn/ui Separator + Button(outline) */}
+        <div className="px-6 pt-2 pb-8 flex-shrink-0">
+          <div className="max-w-sm mx-auto">
+            <div className="relative flex items-center gap-3 mb-4">
+              <Separator className="flex-1" />
+              <span className="text-xs text-muted-foreground">ou</span>
+              <Separator className="flex-1" />
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
               onClick={() => switchMode('signup')}
-              className="text-primary hover:underline font-medium"
+              className="w-full h-12 rounded-xl text-sm font-semibold"
             >
-              Créer un compte
-            </button>
-          </p>
+              Créer mon compte gratuit
+            </Button>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              Rejoignez 500+ importateurs qui font confiance à Bonzini
+            </p>
+          </div>
         </div>
       </LoginBackground>
     );
@@ -992,6 +1006,20 @@ export default function AuthPage() {
 
             </div>
           </StepTransition>
+        </div>
+
+        {/* Footer signup — "Déjà client ?" avec Button link shadcn/ui */}
+        <div className="px-6 pb-6 pt-2 text-center flex-shrink-0">
+          <p className="text-sm text-muted-foreground">
+            Déjà client ?{' '}
+            <Button
+              variant="link"
+              onClick={() => switchMode('login')}
+              className="text-primary font-semibold p-0 h-auto"
+            >
+              Connectez-vous
+            </Button>
+          </p>
         </div>
       </LoginBackground>
     );
