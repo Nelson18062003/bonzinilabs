@@ -55,10 +55,9 @@ export function PaymentMethodLogo({ method, size = 48, className }: PaymentMetho
         <div
           className={cn(
             'rounded-xl flex items-center justify-center flex-shrink-0',
-            'bg-gradient-to-br from-emerald-500 to-emerald-700',
             className
           )}
-          style={containerStyle}
+          style={{ ...containerStyle, background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}
         >
           <Banknote className="text-white" style={iconSize} />
         </div>

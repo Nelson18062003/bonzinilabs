@@ -110,6 +110,7 @@ export interface PaymentReceiptData {
   beneficiary_bank_name?: string | null;
   beneficiary_bank_account?: string | null;
   beneficiary_qr_code_url?: string | null;
+  cashPaymentQrDataUrl?: string | null;
   adminProofs?: AdminProofItem[];
 }
 
@@ -200,6 +201,23 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
             <Image src={data.beneficiary_qr_code_url!} style={styles.qrCodeImage} />
             <Text style={styles.qrCodeLabel}>
               {getPaymentMethodLabel(data.method)} — {formatRMB(data.amount_rmb)} RMB
+            </Text>
+          </View>
+          <PDFFooter />
+        </Page>
+      )}
+
+      {/* Cash Payment QR Code page */}
+      {data.cashPaymentQrDataUrl && (
+        <Page size="A4" style={baseStyles.page}>
+          <PDFHeader title="QR CODE DE PAIEMENT CASH" reference={data.reference} />
+          <View style={styles.qrCodeContainer}>
+            <Text style={{ fontSize: 14, fontFamily: 'NotoSansSC', fontWeight: 700, color: colors.text, marginBottom: 12 }}>
+              Présentez ce QR Code au bureau Bonzini
+            </Text>
+            <Image src={data.cashPaymentQrDataUrl} style={styles.qrCodeImage} />
+            <Text style={styles.qrCodeLabel}>
+              {data.reference} — {formatRMB(data.amount_rmb)} RMB
             </Text>
           </View>
           <PDFFooter />

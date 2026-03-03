@@ -47,6 +47,10 @@ export interface Payment {
   balance_after: number;
   created_at: string;
   updated_at: string;
+  // Beneficiary system fields
+  beneficiary_id: string | null;
+  beneficiary_details: Record<string, unknown> | null;
+  rate_is_custom: boolean;
 }
 
 export interface PaymentProof {
@@ -87,6 +91,10 @@ export interface CreatePaymentData {
   cash_beneficiary_first_name?: string;
   cash_beneficiary_last_name?: string;
   cash_beneficiary_phone?: string;
+  // Beneficiary system fields
+  beneficiary_id?: string;
+  beneficiary_details?: Record<string, unknown>;
+  rate_is_custom?: boolean;
 }
 
 // Client hooks
@@ -224,6 +232,10 @@ export function useCreatePayment() {
         p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
         p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
         p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
+        // Beneficiary system fields
+        p_beneficiary_id: data.beneficiary_id || null,
+        p_beneficiary_details: data.beneficiary_details || null,
+        p_rate_is_custom: data.rate_is_custom ?? false,
       });
 
       if (error) throw error;

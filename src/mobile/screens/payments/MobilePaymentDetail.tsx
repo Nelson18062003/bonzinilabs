@@ -31,6 +31,8 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
 import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisplay';
 import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
+import { CashQRCode } from '@/components/cash/CashQRCode';
+import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import {
   Accordion,
@@ -60,6 +62,7 @@ import {
   Upload,
   Pencil,
   QrCode,
+  ScanLine,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
@@ -122,7 +125,7 @@ export function MobilePaymentDetail() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Beneficiary edit drawer state
-  const [isEditBeneficiaryOpen, setIsEditBeneficiaryOpen] = useState(false);
+  const [isBeneficiaryEditOpen, setIsBeneficiaryEditOpen] = useState(false);
   const [beneficiaryForm, setBeneficiaryForm] = useState({
     beneficiary_name: '',
     beneficiary_phone: '',
@@ -179,19 +182,8 @@ export function MobilePaymentDetail() {
   const canProcess = hasPermission('canProcessPayments');
 
   const handleOpenBeneficiaryEdit = () => {
-    if (!payment) return;
-    setBeneficiaryForm({
-      beneficiary_name: payment.beneficiary_name ?? '',
-      beneficiary_phone: payment.beneficiary_phone ?? '',
-      beneficiary_email: payment.beneficiary_email ?? '',
-      beneficiary_qr_code_url: payment.beneficiary_qr_code_url ?? '',
-      beneficiary_bank_name: payment.beneficiary_bank_name ?? '',
-      beneficiary_bank_account: payment.beneficiary_bank_account ?? '',
-      beneficiary_notes: payment.beneficiary_notes ?? '',
-    });
-    setQrFile(null);
-    setQrPreview(null);
-    setIsEditBeneficiaryOpen(true);
+    initBeneficiaryForm();
+    setIsBeneficiaryEditOpen(true);
   };
 
   const handleSaveBeneficiaryInfo = async () => {
@@ -236,7 +228,7 @@ export function MobilePaymentDetail() {
         },
       });
 
-      setIsEditBeneficiaryOpen(false);
+      setIsBeneficiaryEditOpen(false);
       setQrFile(null);
       setQrPreview(null);
     } catch {
@@ -295,6 +287,26 @@ export function MobilePaymentDetail() {
     }
   };
 
+  // Capture QR SVG from DOM and convert to data URL for PDF
+  const captureQrDataUrl = (id: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const svgElement = document.getElementById(`qr-${id}`);
+      if (!svgElement) { resolve(null); return; }
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    });
+  };
+
   const handleDownloadReceipt = async () => {
     if (!payment || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
@@ -302,6 +314,13 @@ export function MobilePaymentDetail() {
       const clientName = payment.profiles
         ? `${payment.profiles.first_name} ${payment.profiles.last_name}`
         : 'Client';
+
+      // Capture cash QR code from DOM if present
+      let cashPaymentQrDataUrl: string | null = null;
+      if (payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status)) {
+        cashPaymentQrDataUrl = await captureQrDataUrl(payment.id);
+      }
+
       const receiptData: PaymentReceiptData = {
         id: payment.id,
         reference: payment.reference,
@@ -320,6 +339,7 @@ export function MobilePaymentDetail() {
         beneficiary_bank_name: payment.beneficiary_bank_name,
         beneficiary_bank_account: payment.beneficiary_bank_account,
         beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+        cashPaymentQrDataUrl,
         adminProofs: adminProofs.map(p => ({
           file_url: p.file_url,
           file_type: p.file_type,
@@ -339,6 +359,22 @@ export function MobilePaymentDetail() {
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  // Initialize beneficiary form when payment loads
+  const initBeneficiaryForm = () => {
+    if (!payment) return;
+    setBeneficiaryForm({
+      beneficiary_name: payment.beneficiary_name || '',
+      beneficiary_phone: payment.beneficiary_phone || '',
+      beneficiary_email: payment.beneficiary_email || '',
+      beneficiary_qr_code_url: payment.beneficiary_qr_code_url || '',
+      beneficiary_bank_name: payment.beneficiary_bank_name || '',
+      beneficiary_bank_account: payment.beneficiary_bank_account || '',
+      beneficiary_notes: payment.beneficiary_notes || '',
+    });
+    setQrFile(null);
+    setQrPreview(null);
   };
 
   if (isLoading) {
@@ -384,6 +420,7 @@ export function MobilePaymentDetail() {
   const missingBeneficiary = !hasBeneficiaryInfo && !['completed', 'rejected', 'created'].includes(payment.status);
   const missingAdminProof = payment.status === 'processing' && adminProofs.length === 0;
 
+  const canEditBeneficiary = canProcess && !isLocked && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
   const exchangeRateXAFPerRMB = payment.exchange_rate ? Math.round(1 / payment.exchange_rate) : 0;
 
   return (
@@ -466,6 +503,56 @@ export function MobilePaymentDetail() {
           </p>
         </div>
 
+        {/* ── Cash QR Code ──────────────────────────────────────── */}
+        {payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status) && (
+          <CashQRCode
+            paymentId={payment.id}
+            paymentReference={payment.reference}
+            amountRMB={payment.amount_rmb}
+            beneficiaryName={payment.beneficiary_name || clientName}
+          />
+        )}
+
+        {/* Cash scanned status */}
+        {payment.method === 'cash' && payment.status === 'cash_scanned' && (
+          <div className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border border-orange-200 dark:border-orange-800">
+            <div className="flex items-start gap-3">
+              <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
+              <div>
+                <p className="font-medium text-orange-600">QR Code scanné au bureau</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Le client s'est présenté au bureau Bonzini Guangzhou.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cash completed with signature */}
+        {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
+          <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-green-600">Paiement cash effectué</p>
+                {(payment as any).cash_signed_by_name && (
+                  <p className="text-sm text-muted-foreground">
+                    Signé par: {(payment as any).cash_signed_by_name}
+                  </p>
+                )}
+                <div className="mt-3">
+                  <CashReceiptDownloadButton
+                    payment={payment as any}
+                    variant="outline"
+                    size="sm"
+                    label="Télécharger le reçu PDF"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Beneficiary Section ──────────────────────────────── */}
         {payment.method !== 'cash' && (
           <div className="bg-card rounded-2xl p-5 border border-border">
@@ -474,9 +561,9 @@ export function MobilePaymentDetail() {
                 <User className="w-4 h-4" />
                 Bénéficiaire
               </h3>
-              {canProcess && !isLocked && (
+              {canEditBeneficiary && payment.method !== 'cash' && (
                 <button
-                  onClick={handleOpenBeneficiaryEdit}
+                  onClick={() => { initBeneficiaryForm(); setIsBeneficiaryEditOpen(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium active:scale-95 transition-transform"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -949,7 +1036,7 @@ export function MobilePaymentDetail() {
       </Drawer>
 
       {/* ── Edit Beneficiary Drawer ───────────────────────────── */}
-      <Drawer open={isEditBeneficiaryOpen} onOpenChange={(open) => {
+      <Drawer open={isBeneficiaryEditOpen} onOpenChange={(open) => {
         setIsEditBeneficiaryOpen(open);
         if (!open) { setQrFile(null); setQrPreview(null); }
       }}>
@@ -1173,6 +1260,7 @@ export function MobilePaymentDetail() {
           </div>
         </DrawerContent>
       </Drawer>
+
     </div>
   );
 }

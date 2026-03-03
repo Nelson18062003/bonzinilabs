@@ -260,6 +260,26 @@ export default function PaymentDetailPage() {
     toast.info('Vous pourrez compléter les informations plus tard');
   };
 
+  // Capture QR SVG from DOM and convert to data URL for PDF
+  const captureQrDataUrl = (paymentId: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const svgElement = document.getElementById(`qr-${paymentId}`);
+      if (!svgElement) { resolve(null); return; }
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    });
+  };
+
   const handleDownloadReceipt = async () => {
     if (!payment || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
@@ -269,6 +289,12 @@ export default function PaymentDetailPage() {
         : (payment as any).profiles
           ? `${(payment as any).profiles.first_name} ${(payment as any).profiles.last_name}`
           : 'Client';
+
+      // Capture cash QR code from DOM if present
+      let cashPaymentQrDataUrl: string | null = null;
+      if (payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status)) {
+        cashPaymentQrDataUrl = await captureQrDataUrl(payment.id);
+      }
 
       const receiptData: PaymentReceiptData = {
         id: payment.id,
@@ -290,6 +316,7 @@ export default function PaymentDetailPage() {
         beneficiary_bank_name: payment.beneficiary_bank_name,
         beneficiary_bank_account: payment.beneficiary_bank_account,
         beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+        cashPaymentQrDataUrl,
         adminProofs: adminProofs.map(p => ({
           file_url: p.file_url,
           file_type: p.file_type,
