@@ -5,9 +5,8 @@ import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
-import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
+import { useMyWallet, useMyWalletOperations, useExchangeRate } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
-import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { formatNumber } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,9 +15,9 @@ const WalletPage = () => {
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
   const { data: operations, isLoading: opsLoading } = useMyWalletOperations();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
-  const { data: currentRate, isLoading: rateLoading } = useCurrentExchangeRate();
+  const { data: currentRate, isLoading: rateLoading } = useExchangeRate();
 
-  const currentXafToRmb = currentRate?.rate_xaf_to_rmb ?? 0.01163;
+  const currentXafToRmb = currentRate ?? 0.01163;
 
   return (
     <MobileLayout>
