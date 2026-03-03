@@ -1,6 +1,6 @@
-import { Eye, EyeOff, TrendingUp, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import { formatXAF, formatCurrencyRMB, formatNumber, convertXAFtoRMB } from '@/lib/formatters';
+import { formatXAF, formatCurrencyRMB, convertXAFtoRMB } from '@/lib/formatters';
 import { useExchangeRate } from '@/hooks/useWallet';
 
 interface BalanceCardProps {
@@ -16,9 +16,6 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
   const { data: rate, isLoading: rateLoading } = useExchangeRate();
   const currentRate = rate ?? 0.01167;
   const balanceRMB = convertXAFtoRMB(balanceXAF, currentRate);
-
-  // Calculate human-readable rate: how many XAF for 1 RMB
-  const xafPerRmb = Math.round(1 / currentRate);
 
   // Error fallback
   if (hasError) {
@@ -74,14 +71,6 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
         ) : (
           <p className="balance-display text-primary-foreground">• • • • • •</p>
         )}
-      </div>
-
-      {/* Exchange Rate */}
-      <div className="flex items-center gap-2 pt-4 border-t border-primary-foreground/10">
-        <TrendingUp className="w-4 h-4 text-primary-foreground/60" />
-        <span className="text-sm text-primary-foreground/70">
-          Taux du jour : {formatNumber(xafPerRmb)} XAF = 1 RMB
-        </span>
       </div>
     </div>
   );

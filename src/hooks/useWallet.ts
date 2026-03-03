@@ -197,8 +197,9 @@ export function useExchangeRate() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('exchange_rates')
-        .select('rate_xaf_to_rmb, effective_date')
-        .order('effective_date', { ascending: false })
+        .select('rate_xaf_to_rmb')
+        .order('effective_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
