@@ -51,18 +51,20 @@ export function useExchangeRates(filter?: DateRangeFilter, customRange?: DateRan
         .from('exchange_rates')
         .select('*')
         .order('effective_at', { ascending: false });
-      
+
       if (range) {
         query = query
           .gte('effective_at', startOfDay(range.from).toISOString())
           .lte('effective_at', endOfDay(range.to).toISOString());
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
       return data || [];
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 
@@ -83,6 +85,8 @@ export function useExchangeRatesForChart(filter: DateRangeFilter, customRange?: 
       if (error) throw error;
       return data || [];
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 
@@ -101,6 +105,8 @@ export function useCurrentExchangeRate() {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 

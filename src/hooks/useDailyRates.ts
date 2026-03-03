@@ -203,6 +203,7 @@ export function useClientRates() {
       };
     },
     staleTime: 60_000,
+    retry: 1,
   });
 }
 
@@ -224,6 +225,7 @@ export function useClientRatesChart(period: ChartPeriod) {
       return (data || []) as Pick<DailyRate, 'id' | 'rate_cash' | 'effective_at'>[];
     },
     staleTime: 60_000,
+    retry: 1,
   });
 }
 
