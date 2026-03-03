@@ -562,8 +562,8 @@ const NewPaymentPage = () => {
 
   return (
     <MobileLayout showNav={false}>
-      <PageHeader title="Nouveau paiement" showBack={step !== 'method'}
-        onBack={() => { const idx = currentStepIndex; if (idx > 0) setStep(STEPS[idx - 1].key); else navigate(-1); }} />
+      <PageHeader title="Nouveau paiement" showBack
+        onBack={() => { const idx = currentStepIndex; if (idx > 0) setStep(STEPS[idx - 1].key); else navigate('/payments'); }} />
 
       <div className="px-4 py-2">
         <StepProgressBar steps={STEPS} currentStepIndex={currentStepIndex} />
