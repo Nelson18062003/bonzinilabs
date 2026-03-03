@@ -35,6 +35,8 @@ export function useActiveDailyRate() {
       if (error) throw error;
       return data as DailyRate | null;
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 
@@ -52,6 +54,8 @@ export function useDailyRatesHistory(limit = 20) {
       if (error) throw error;
       return (data || []) as DailyRate[];
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 
@@ -72,6 +76,8 @@ export function useDailyRatesForChart(period: ChartPeriod) {
       if (error) throw error;
       return (data || []) as DailyRate[];
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 
@@ -129,6 +135,8 @@ export function useRateAdjustments() {
       if (error) throw error;
       return (data || []) as RateAdjustment[];
     },
+    staleTime: 30_000,
+    retry: 1,
   });
 }
 
