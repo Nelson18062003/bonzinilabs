@@ -14,7 +14,7 @@ interface BalanceCardProps {
 
 export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(true);
-  const currentRate = rateXafToRmb ?? 1 / 85;
+  const currentRate = rateXafToRmb ?? 11765 / 1_000_000;
   const balanceRMB = convertXAFtoRMB(balanceXAF, currentRate);
 
   // Error fallback

@@ -18,10 +18,10 @@ const WalletPage = () => {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: clientRatesData, isLoading: rateLoading } = useClientRates();
 
-  // Use Alipay rate as the main display rate (XAF per RMB, e.g. 85)
-  const alipayRate = clientRatesData?.activeRate?.rate_alipay ?? 85;
-  // Convert to XAF-to-RMB multiplier for display (e.g. 1/85 = 0.01176)
-  const rateXafToRmb = 1 / alipayRate;
+  // rate_alipay is "CNY per 1M XAF" (e.g. 11765 means 1M XAF = 11 765 CNY)
+  const alipayRate = clientRatesData?.activeRate?.rate_alipay ?? 11765;
+  // Convert to XAF-to-RMB multiplier (e.g. 11765 / 1M = 0.011765)
+  const rateXafToRmb = alipayRate / 1_000_000;
 
   return (
     <MobileLayout>
@@ -61,7 +61,7 @@ const WalletPage = () => {
                     <Skeleton className="h-5 w-32" />
                   ) : (
                     <p className="text-sm font-semibold text-foreground">
-                      1M XAF = {formatNumber(Math.round(1000000 / alipayRate))} CNY
+                      1M XAF = {formatNumber(Math.round(alipayRate))} CNY
                     </p>
                   )}
                 </div>
