@@ -232,18 +232,26 @@ export function useCreatePayment() {
         p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
         p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
         p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
-        // Beneficiary system fields
-        p_beneficiary_id: data.beneficiary_id || null,
-        p_beneficiary_details: data.beneficiary_details || null,
-        p_rate_is_custom: data.rate_is_custom ?? false,
       });
 
       if (error) throw error;
-      
+
       const response = result as { success: boolean; error?: string; payment_id?: string; reference?: string; new_balance?: number };
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de la création du paiement');
+      }
+
+      // Update beneficiary system fields separately (migration pending)
+      if (response.payment_id && (data.beneficiary_id || data.beneficiary_details || data.rate_is_custom)) {
+        await supabase
+          .from('payments')
+          .update({
+            beneficiary_id: data.beneficiary_id || null,
+            beneficiary_details: data.beneficiary_details || null,
+            rate_is_custom: data.rate_is_custom ?? false,
+          })
+          .eq('id', response.payment_id);
       }
 
       return response;
