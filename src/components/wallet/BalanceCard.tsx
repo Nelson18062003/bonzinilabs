@@ -1,20 +1,20 @@
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { formatXAF, formatCurrencyRMB, convertXAFtoRMB } from '@/lib/formatters';
-import { useExchangeRate } from '@/hooks/useWallet';
 
 interface BalanceCardProps {
   balanceXAF: number;
+  /** XAF-to-RMB multiplier (e.g. 0.01176 for 85 XAF/RMB) */
+  rateXafToRmb?: number;
   /** Show loading state when balance is being refreshed */
   isRefreshing?: boolean;
   /** Error state - shows fallback UI */
   hasError?: boolean;
 }
 
-export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardProps) => {
+export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(true);
-  const { data: rate, isLoading: rateLoading } = useExchangeRate();
-  const currentRate = rate ?? 0.01167;
+  const currentRate = rateXafToRmb ?? 1 / 85;
   const balanceRMB = convertXAFtoRMB(balanceXAF, currentRate);
 
   // Error fallback

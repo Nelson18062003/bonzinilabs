@@ -5,8 +5,9 @@ import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
-import { useMyWallet, useMyWalletOperations, useExchangeRate } from '@/hooks/useWallet';
+import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
+import { useClientRates } from '@/hooks/useDailyRates';
 import { formatNumber } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +16,12 @@ const WalletPage = () => {
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
   const { data: operations, isLoading: opsLoading } = useMyWalletOperations();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
-  const { data: currentRate, isLoading: rateLoading } = useExchangeRate();
+  const { data: clientRatesData, isLoading: rateLoading } = useClientRates();
 
-  const currentXafToRmb = currentRate ?? 0.01163;
+  // Use Alipay rate as the main display rate (XAF per RMB, e.g. 85)
+  const alipayRate = clientRatesData?.activeRate?.rate_alipay ?? 85;
+  // Convert to XAF-to-RMB multiplier for display (e.g. 1/85 = 0.01176)
+  const rateXafToRmb = 1 / alipayRate;
 
   return (
     <MobileLayout>
@@ -39,7 +43,7 @@ const WalletPage = () => {
           {walletLoading ? (
             <Skeleton className="h-40 w-full rounded-2xl" />
           ) : (
-            <BalanceCard balanceXAF={wallet?.balance_xaf || 0} />
+            <BalanceCard balanceXAF={wallet?.balance_xaf || 0} rateXafToRmb={rateXafToRmb} />
           )}
         </div>
 
@@ -52,12 +56,12 @@ const WalletPage = () => {
                   <TrendingUp className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Taux du jour</p>
+                  <p className="text-xs text-muted-foreground">Taux Alipay du jour</p>
                   {rateLoading ? (
                     <Skeleton className="h-5 w-32" />
                   ) : (
                     <p className="text-sm font-semibold text-foreground">
-                      1M XAF = {formatNumber(Math.round(1000000 * currentXafToRmb))} CNY
+                      1M XAF = {formatNumber(Math.round(1000000 / alipayRate))} CNY
                     </p>
                   )}
                 </div>

@@ -106,7 +106,7 @@ export function useToggleAdminStatus() {
   return useMutation({
     mutationFn: async ({ userId, disabled }: { userId: string; disabled: boolean }) => {
       const { data, error } = await supabaseAdmin.rpc('toggle_admin_status', {
-        p_user_id: userId,
+        p_target_user_id: userId,
         p_disabled: disabled,
       });
 
