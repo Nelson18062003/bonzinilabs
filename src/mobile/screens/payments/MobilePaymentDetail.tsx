@@ -8,12 +8,14 @@ import { useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import {
   useAdminPaymentDetail,
   useAdminPaymentTimeline,
   useAdminPaymentProofs,
   useProcessPayment,
   useAdminUploadPaymentProof,
+  useAdminUpdateBeneficiaryInfo,
 } from '@/hooks/usePayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
 import {
@@ -31,11 +33,6 @@ import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisp
 import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
 import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
-import { useUpdateBeneficiaryInfo } from '@/hooks/usePayments';
-import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import {
   Accordion,
@@ -63,11 +60,8 @@ import {
   FileDown,
   Clock,
   Upload,
-  Edit2,
+  Pencil,
   QrCode,
-  Mail,
-  CreditCard,
-  Building2,
   ScanLine,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
@@ -99,6 +93,7 @@ export function MobilePaymentDetail() {
   const processPayment = useProcessPayment();
   const adminProofUpload = useAdminUploadPaymentProof();
   const instructionUpload = useAdminUploadPaymentInstruction();
+  const adminUpdateBeneficiaryInfo = useAdminUpdateBeneficiaryInfo();
 
   const instructionProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'client' || p.uploaded_by_type === 'admin_instruction') ?? [], [proofs]);
   const adminProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'admin') ?? [], [proofs]);
@@ -144,7 +139,6 @@ export function MobilePaymentDetail() {
   const [qrPreview, setQrPreview] = useState<string | null>(null);
   const [isUploadingQr, setIsUploadingQr] = useState(false);
   const qrInputRef = useRef<HTMLInputElement>(null);
-  const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
 
   const handleProofSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -186,6 +180,63 @@ export function MobilePaymentDetail() {
   };
 
   const canProcess = hasPermission('canProcessPayments');
+
+  const handleOpenBeneficiaryEdit = () => {
+    initBeneficiaryForm();
+    setIsBeneficiaryEditOpen(true);
+  };
+
+  const handleSaveBeneficiaryInfo = async () => {
+    if (!payment || !paymentId) return;
+
+    if (payment.method === 'alipay' || payment.method === 'wechat') {
+      const hasContact = !!(beneficiaryForm.beneficiary_phone || beneficiaryForm.beneficiary_email);
+      const hasQr = !!(qrFile || beneficiaryForm.beneficiary_qr_code_url);
+      if (!hasContact && !hasQr) {
+        toast.error('Fournissez au moins un QR code, un téléphone ou un email');
+        return;
+      }
+    } else if (payment.method === 'bank_transfer') {
+      if (!beneficiaryForm.beneficiary_name) { toast.error('Le nom du bénéficiaire est requis'); return; }
+      if (!beneficiaryForm.beneficiary_bank_name) { toast.error('Le nom de la banque est requis'); return; }
+      if (!beneficiaryForm.beneficiary_bank_account) { toast.error('Le numéro de compte est requis'); return; }
+    }
+
+    try {
+      let qrUrl = beneficiaryForm.beneficiary_qr_code_url;
+
+      if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
+        setIsUploadingQr(true);
+        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('payment-proofs')
+          .upload(filePath, qrFile, { upsert: true });
+        if (uploadError) throw uploadError;
+        qrUrl = `payment-proofs/${filePath}`;
+      }
+
+      await adminUpdateBeneficiaryInfo.mutateAsync({
+        paymentId,
+        beneficiaryInfo: {
+          beneficiary_name: beneficiaryForm.beneficiary_name || undefined,
+          beneficiary_phone: beneficiaryForm.beneficiary_phone || undefined,
+          beneficiary_email: beneficiaryForm.beneficiary_email || undefined,
+          beneficiary_qr_code_url: qrUrl || undefined,
+          beneficiary_bank_name: beneficiaryForm.beneficiary_bank_name || undefined,
+          beneficiary_bank_account: beneficiaryForm.beneficiary_bank_account || undefined,
+          beneficiary_notes: beneficiaryForm.beneficiary_notes || undefined,
+        },
+      });
+
+      setIsBeneficiaryEditOpen(false);
+      setQrFile(null);
+      setQrPreview(null);
+    } catch {
+      // Error handled by mutation
+    } finally {
+      setIsUploadingQr(false);
+    }
+  };
 
   const handleStartProcessing = async () => {
     if (!paymentId) return;
@@ -289,6 +340,12 @@ export function MobilePaymentDetail() {
         beneficiary_bank_account: payment.beneficiary_bank_account,
         beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
         cashPaymentQrDataUrl,
+        adminProofs: adminProofs.map(p => ({
+          file_url: p.file_url,
+          file_type: p.file_type,
+          file_name: p.file_name,
+          created_at: p.created_at,
+        })),
       };
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
@@ -318,55 +375,6 @@ export function MobilePaymentDetail() {
     });
     setQrFile(null);
     setQrPreview(null);
-  };
-
-  const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setQrFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setQrPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveBeneficiaryInfo = async () => {
-    if (!paymentId || !payment) return;
-    try {
-      let qrUrl = beneficiaryForm.beneficiary_qr_code_url;
-
-      if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
-        setIsUploadingQr(true);
-        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('payment-proofs')
-          .upload(filePath, qrFile, { upsert: true });
-        if (uploadError) throw uploadError;
-        qrUrl = `payment-proofs/${filePath}`;
-      }
-
-      await updateBeneficiaryInfo.mutateAsync({
-        paymentId,
-        beneficiaryInfo: {
-          beneficiary_name: beneficiaryForm.beneficiary_name || null,
-          beneficiary_phone: beneficiaryForm.beneficiary_phone || null,
-          beneficiary_email: beneficiaryForm.beneficiary_email || null,
-          beneficiary_qr_code_url: qrUrl || null,
-          beneficiary_bank_name: beneficiaryForm.beneficiary_bank_name || null,
-          beneficiary_bank_account: beneficiaryForm.beneficiary_bank_account || null,
-          beneficiary_notes: beneficiaryForm.beneficiary_notes || null,
-        },
-        paymentMethod: payment.method,
-      });
-
-      setIsBeneficiaryEditOpen(false);
-      setQrFile(null);
-      setQrPreview(null);
-      toast.success('Informations bénéficiaire enregistrées');
-    } catch (err: any) {
-      toast.error(err?.message || 'Impossible d\'enregistrer les informations');
-    } finally {
-      setIsUploadingQr(false);
-    }
   };
 
   if (isLoading) {
@@ -546,7 +554,7 @@ export function MobilePaymentDetail() {
         )}
 
         {/* ── Beneficiary Section ──────────────────────────────── */}
-        {hasBeneficiaryInfo ? (
+        {payment.method !== 'cash' && (
           <div className="bg-card rounded-2xl p-5 border border-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold flex items-center gap-2">
@@ -556,80 +564,72 @@ export function MobilePaymentDetail() {
               {canEditBeneficiary && payment.method !== 'cash' && (
                 <button
                   onClick={() => { initBeneficiaryForm(); setIsBeneficiaryEditOpen(true); }}
-                  className="text-xs font-medium text-primary active:scale-95 transition-transform flex items-center gap-1"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium active:scale-95 transition-transform"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
+                  <Pencil className="w-3.5 h-3.5" />
                   Modifier
                 </button>
               )}
             </div>
 
-            {/* QR Code display for Alipay/WeChat — prominent */}
-            {payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method) && (
-              <div className="flex justify-center mb-4">
-                <button
-                  onClick={() => setSelectedProof(payment.beneficiary_qr_code_url)}
-                  className="active:scale-[0.98] transition-transform"
-                >
-                  <img
-                    src={payment.beneficiary_qr_code_url}
-                    alt="QR Code bénéficiaire"
-                    className="w-[200px] h-[200px] rounded-xl border-2 border-border object-contain bg-white"
-                  />
-                  <p className="text-xs text-primary mt-2 text-center">Appuyer pour agrandir</p>
-                </button>
-              </div>
-            )}
-
-            {/* Copyable fields */}
-            <div className="space-y-2.5 text-sm">
-              {payment.beneficiary_name && (
-                <CopyableField label="Nom" value={payment.beneficiary_name} copyLabel="Nom bénéficiaire" />
-              )}
-              {payment.beneficiary_phone && (
-                <CopyableField label="Téléphone" value={payment.beneficiary_phone} copyLabel="Téléphone bénéficiaire" />
-              )}
-              {payment.beneficiary_email && (
-                <CopyableField label="Email" value={payment.beneficiary_email} copyLabel="Email bénéficiaire" />
-              )}
-              {payment.beneficiary_bank_name && (
-                <CopyableField label="Banque" value={payment.beneficiary_bank_name} copyLabel="Banque" />
-              )}
-              {payment.beneficiary_bank_account && (
-                <CopyableField label="N° de compte" value={payment.beneficiary_bank_account} copyLabel="N° de compte" />
-              )}
-              {payment.beneficiary_notes && (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-xs text-muted-foreground mb-1">Notes</p>
-                  <p className="text-sm">{payment.beneficiary_notes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : missingBeneficiary ? (
-          <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-2xl p-5 border border-yellow-200 dark:border-yellow-800">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-yellow-700 dark:text-yellow-400">
-                  Infos bénéficiaire manquantes
-                </p>
-                <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
-                  Le client n'a pas encore fourni les informations du bénéficiaire.
-                </p>
-                {canEditBeneficiary && payment.method !== 'cash' && (
-                  <button
-                    onClick={() => { initBeneficiaryForm(); setIsBeneficiaryEditOpen(true); }}
-                    className="mt-3 h-10 px-4 rounded-xl bg-yellow-600 text-white font-medium text-sm flex items-center gap-2 active:scale-[0.98] transition-transform"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Compléter le bénéficiaire
-                  </button>
+            {hasBeneficiaryInfo ? (
+              <>
+                {/* QR Code display for Alipay/WeChat — prominent */}
+                {payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method) && (
+                  <div className="flex justify-center mb-4">
+                    <button
+                      onClick={() => setSelectedProof(payment.beneficiary_qr_code_url)}
+                      className="active:scale-[0.98] transition-transform"
+                    >
+                      <img
+                        src={payment.beneficiary_qr_code_url}
+                        alt="QR Code bénéficiaire"
+                        className="w-[200px] h-[200px] rounded-xl border-2 border-border object-contain bg-white"
+                      />
+                      <p className="text-xs text-primary mt-2 text-center">Appuyer pour agrandir</p>
+                    </button>
+                  </div>
                 )}
+
+                {/* Copyable fields */}
+                <div className="space-y-2.5 text-sm">
+                  {payment.beneficiary_name && (
+                    <CopyableField label="Nom" value={payment.beneficiary_name} copyLabel="Nom bénéficiaire" />
+                  )}
+                  {payment.beneficiary_phone && (
+                    <CopyableField label="Téléphone" value={payment.beneficiary_phone} copyLabel="Téléphone bénéficiaire" />
+                  )}
+                  {payment.beneficiary_email && (
+                    <CopyableField label="Email" value={payment.beneficiary_email} copyLabel="Email bénéficiaire" />
+                  )}
+                  {payment.beneficiary_bank_name && (
+                    <CopyableField label="Banque" value={payment.beneficiary_bank_name} copyLabel="Banque" />
+                  )}
+                  {payment.beneficiary_bank_account && (
+                    <CopyableField label="N° de compte" value={payment.beneficiary_bank_account} copyLabel="N° de compte" />
+                  )}
+                  {payment.beneficiary_notes && (
+                    <div className="pt-2 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-1">Notes</p>
+                      <p className="text-sm">{payment.beneficiary_notes}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : missingBeneficiary ? (
+              <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-xl p-3 border border-yellow-200 dark:border-yellow-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                <span className="text-sm text-yellow-700 dark:text-yellow-400">
+                  Infos manquantes — paiement impossible
+                </span>
               </div>
-            </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                Aucune information bénéficiaire
+              </p>
+            )}
           </div>
-        ) : null}
+        )}
 
         {/* ── Client Section ───────────────────────────────────── */}
         <button
@@ -1035,6 +1035,201 @@ export function MobilePaymentDetail() {
         </DrawerContent>
       </Drawer>
 
+      {/* ── Edit Beneficiary Drawer ───────────────────────────── */}
+      <Drawer open={isBeneficiaryEditOpen} onOpenChange={(open) => {
+        setIsEditBeneficiaryOpen(open);
+        if (!open) { setQrFile(null); setQrPreview(null); }
+      }}>
+        <DrawerContent className="flex flex-col max-h-[85vh]">
+          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
+            <DrawerTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Infos bénéficiaire
+            </DrawerTitle>
+          </DrawerHeader>
+
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
+            {/* Bank Transfer fields */}
+            {payment?.method === 'bank_transfer' && (
+              <>
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-400">
+                    Renseignez les coordonnées bancaires complètes du bénéficiaire.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Nom <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={beneficiaryForm.beneficiary_name}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
+                      placeholder="Nom complet"
+                      autoComplete="off"
+                      className="w-full h-12 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Banque <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={beneficiaryForm.beneficiary_bank_name}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_name: e.target.value }))}
+                      placeholder="Bank of China, ICBC…"
+                      autoComplete="off"
+                      className="w-full h-12 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">N° de compte <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={beneficiaryForm.beneficiary_bank_account}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_account: e.target.value }))}
+                      placeholder="Numéro de compte bancaire"
+                      autoComplete="off"
+                      inputMode="text"
+                      className="w-full h-12 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Notes <span className="text-muted-foreground text-xs">(optionnel)</span></label>
+                    <textarea
+                      value={beneficiaryForm.beneficiary_notes}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
+                      placeholder="Instructions supplémentaires…"
+                      rows={2}
+                      className="w-full px-3 py-3 rounded-xl border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary text-base"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Alipay / WeChat fields */}
+            {(payment?.method === 'alipay' || payment?.method === 'wechat') && (
+              <>
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-400">
+                    Fournissez au moins un élément : QR code, téléphone ou email.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">QR Code</label>
+                  <input
+                    ref={qrInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setQrFile(file);
+                      const reader = new FileReader();
+                      reader.onloadend = () => setQrPreview(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {qrPreview || beneficiaryForm.beneficiary_qr_code_url ? (
+                    <div className="relative">
+                      <img
+                        src={qrPreview ?? beneficiaryForm.beneficiary_qr_code_url}
+                        alt="QR Code"
+                        className="w-full h-40 object-contain rounded-xl border border-border bg-muted"
+                      />
+                      <button
+                        onClick={() => {
+                          setQrFile(null);
+                          setQrPreview(null);
+                          setBeneficiaryForm(f => ({ ...f, beneficiary_qr_code_url: '' }));
+                          if (qrInputRef.current) qrInputRef.current.value = '';
+                        }}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => qrInputRef.current?.click()}
+                      className="w-full h-24 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground active:bg-muted/50"
+                    >
+                      <QrCode className="w-6 h-6" />
+                      <span className="text-sm">Importer un QR Code</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">ou</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={beneficiaryForm.beneficiary_phone}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_phone: e.target.value }))}
+                      placeholder="+86 138 0000 0000"
+                      inputMode="tel"
+                      className="w-full h-12 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Email <span className="text-muted-foreground text-xs">(optionnel)</span></label>
+                    <input
+                      type="email"
+                      value={beneficiaryForm.beneficiary_email}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_email: e.target.value }))}
+                      placeholder="beneficiaire@example.com"
+                      inputMode="email"
+                      className="w-full h-12 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Nom <span className="text-muted-foreground text-xs">(optionnel)</span></label>
+                    <input
+                      type="text"
+                      value={beneficiaryForm.beneficiary_name}
+                      onChange={(e) => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
+                      placeholder="Nom du bénéficiaire"
+                      autoComplete="off"
+                      className="w-full h-12 px-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DrawerFooter className="flex-row gap-3 flex-shrink-0">
+            <button
+              onClick={() => setIsEditBeneficiaryOpen(false)}
+              disabled={adminUpdateBeneficiaryInfo.isPending || isUploadingQr}
+              className="flex-1 h-12 rounded-xl border border-border font-medium disabled:opacity-50"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleSaveBeneficiaryInfo}
+              disabled={adminUpdateBeneficiaryInfo.isPending || isUploadingQr}
+              className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {(adminUpdateBeneficiaryInfo.isPending || isUploadingQr) ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <CheckCircle className="w-5 h-5" />
+              )}
+              Enregistrer
+            </button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
       {/* ── QR Code Viewer Drawer ─────────────────────────────── */}
       <Drawer open={!!selectedProof} onOpenChange={() => setSelectedProof(null)}>
         <DrawerContent className="max-h-[90vh]">
@@ -1066,163 +1261,6 @@ export function MobilePaymentDetail() {
         </DrawerContent>
       </Drawer>
 
-      {/* ── Beneficiary Edit Drawer ─────────────────────────────── */}
-      <Drawer open={isBeneficiaryEditOpen} onOpenChange={(open) => {
-        setIsBeneficiaryEditOpen(open);
-        if (!open) { setQrFile(null); setQrPreview(null); }
-      }}>
-        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
-          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle>
-              {hasBeneficiaryInfo ? 'Modifier' : 'Compléter'} le bénéficiaire
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
-            {(payment.method === 'alipay' || payment.method === 'wechat') && (
-              <>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="text-sm text-muted-foreground">
-                    Fournissez <strong>au moins un</strong> des éléments suivants.
-                  </p>
-                </div>
-
-                {/* QR Code Upload */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <QrCode className="w-4 h-4" />
-                    QR Code {payment.method === 'alipay' ? 'Alipay' : 'WeChat'}
-                  </Label>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => qrInputRef.current?.click()}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') qrInputRef.current?.click(); }}
-                    className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                  >
-                    {qrPreview ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <img src={qrPreview} alt="Aperçu QR code" className="w-32 h-32 rounded-lg border object-cover" />
-                        <span className="text-xs text-muted-foreground">Cliquez pour remplacer</span>
-                      </div>
-                    ) : beneficiaryForm.beneficiary_qr_code_url ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <img src={beneficiaryForm.beneficiary_qr_code_url} alt="QR code" className="w-32 h-32 rounded-lg border object-cover" loading="lazy" />
-                        <span className="text-xs text-muted-foreground">Cliquez pour remplacer</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm font-medium">Ajouter le QR code</p>
-                      </>
-                    )}
-                  </div>
-                  <input ref={qrInputRef} type="file" accept="image/*" className="hidden" onChange={handleQrFileChange} />
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">ou</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Phone className="w-4 h-4" /> Téléphone</Label>
-                  <Input
-                    value={beneficiaryForm.beneficiary_phone}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_phone: e.target.value }))}
-                    placeholder="Ex: +86 138 0000 0000"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Mail className="w-4 h-4" /> Email (optionnel)</Label>
-                  <Input
-                    type="email"
-                    value={beneficiaryForm.beneficiary_email}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_email: e.target.value }))}
-                    placeholder="email@exemple.com"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><User className="w-4 h-4" /> Nom (optionnel)</Label>
-                  <Input
-                    value={beneficiaryForm.beneficiary_name}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_name: e.target.value }))}
-                    placeholder="Nom complet"
-                  />
-                </div>
-              </>
-            )}
-
-            {payment.method === 'bank_transfer' && (
-              <>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="text-sm text-muted-foreground">
-                    Informations bancaires complètes du bénéficiaire.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><User className="w-4 h-4" /> Nom du bénéficiaire *</Label>
-                  <Input
-                    value={beneficiaryForm.beneficiary_name}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_name: e.target.value }))}
-                    placeholder="Nom complet du titulaire"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Building2 className="w-4 h-4" /> Banque *</Label>
-                  <Input
-                    value={beneficiaryForm.beneficiary_bank_name}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_bank_name: e.target.value }))}
-                    placeholder="Ex: Bank of China, ICBC..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> N° de compte *</Label>
-                  <Input
-                    value={beneficiaryForm.beneficiary_bank_account}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_bank_account: e.target.value }))}
-                    placeholder="Numéro de compte bancaire"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Commentaire (optionnel)</Label>
-                  <Textarea
-                    value={beneficiaryForm.beneficiary_notes}
-                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_notes: e.target.value }))}
-                    placeholder="Instructions supplémentaires..."
-                    rows={3}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <DrawerFooter className="flex-row gap-3">
-            <button
-              onClick={() => setIsBeneficiaryEditOpen(false)}
-              className="flex-1 h-12 rounded-xl border border-border font-medium"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handleSaveBeneficiaryInfo}
-              disabled={updateBeneficiaryInfo.isPending || isUploadingQr}
-              className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {(updateBeneficiaryInfo.isPending || isUploadingQr) && (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              )}
-              Enregistrer
-            </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
     </div>
   );
 }

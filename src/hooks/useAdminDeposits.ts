@@ -94,6 +94,8 @@ export function useAdminDepositDetail(depositId: string | undefined) {
 export function useAdminDepositProofs(depositId: string | undefined) {
   return useQuery({
     queryKey: ['admin-deposit-proofs', depositId],
+    staleTime: 55 * 60_000, // Signed URLs valid 1h — avoid re-generating every navigation
+    gcTime: 60 * 60_000,
     queryFn: async () => {
       if (!depositId) return [];
       const { data, error } = await supabaseAdmin
@@ -139,8 +141,8 @@ export function useAdminDepositTimeline(depositId: string | undefined) {
 export function useDepositStats() {
   return useQuery({
     queryKey: ['deposit-stats'],
-    staleTime: 10_000,
-    gcTime: 60_000,
+    staleTime: 60_000, // 1 minute — updated via invalidation after mutations
+    gcTime: 5 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabaseAdmin.rpc('get_deposit_stats');
       if (error) throw error;
@@ -156,7 +158,7 @@ export function useAdminWalletByUserId(userId: string | undefined) {
       if (!userId) return null;
       const { data, error } = await supabaseAdmin
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .eq('user_id', userId)
         .maybeSingle();
       if (error) throw error;
@@ -212,12 +214,29 @@ export function useValidateDeposit() {
       return result;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
+      const { depositId } = variables;
+      const newStatus = 'validated';
+
+      // Update status in-cache for all deposit lists (no refetch)
+      queryClient.setQueryData(
+        ['admin-deposit', depositId],
+        (old: any) => old ? { ...old, status: newStatus } : old,
+      );
+      queryClient.setQueryData(
+        ['admin-deposits'],
+        (old: DepositWithProfile[] | undefined) =>
+          old?.map(d => d.id === depositId ? { ...d, status: newStatus } : d) ?? old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['admin-deposits-paginated'] },
+        (old: any) => old?.pages
+          ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
+          : old,
+      );
+
+      // Only refetch what can't be computed locally
+      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(`Dépôt validé ! Wallet crédité de ${formatCurrency(data.amount_credited || 0)}`);
     },
@@ -257,10 +276,26 @@ export function useRejectDeposit() {
       return result;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
+      const { depositId } = variables;
+      const newStatus = 'rejected';
+
+      queryClient.setQueryData(
+        ['admin-deposit', depositId],
+        (old: any) => old ? { ...old, status: newStatus } : old,
+      );
+      queryClient.setQueryData(
+        ['admin-deposits'],
+        (old: DepositWithProfile[] | undefined) =>
+          old?.map(d => d.id === depositId ? { ...d, status: newStatus } : d) ?? old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['admin-deposits-paginated'] },
+        (old: any) => old?.pages
+          ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
+          : old,
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       toast.error('Dépôt rejeté');
     },
@@ -288,9 +323,26 @@ export function useRequestCorrection() {
       return result;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
+      const { depositId } = variables;
+      const newStatus = 'pending_correction';
+
+      queryClient.setQueryData(
+        ['admin-deposit', depositId],
+        (old: any) => old ? { ...old, status: newStatus } : old,
+      );
+      queryClient.setQueryData(
+        ['admin-deposits'],
+        (old: DepositWithProfile[] | undefined) =>
+          old?.map(d => d.id === depositId ? { ...d, status: newStatus } : d) ?? old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['admin-deposits-paginated'] },
+        (old: any) => old?.pages
+          ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
+          : old,
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       toast.success('Demande de correction envoyée');
     },
@@ -317,9 +369,26 @@ export function useStartDepositReview() {
       return result;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
+      const { depositId } = variables;
+      const newStatus = 'admin_review';
+
+      queryClient.setQueryData(
+        ['admin-deposit', depositId],
+        (old: any) => old ? { ...old, status: newStatus } : old,
+      );
+      queryClient.setQueryData(
+        ['admin-deposits'],
+        (old: DepositWithProfile[] | undefined) =>
+          old?.map(d => d.id === depositId ? { ...d, status: newStatus } : d) ?? old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['admin-deposits-paginated'] },
+        (old: any) => old?.pages
+          ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
+          : old,
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
     },
     onError: (error: Error) => {
@@ -513,11 +582,13 @@ export function useAdminUploadProofs() {
       return { success: true, uploadedCount, failedFiles };
     },
     onSuccess: (data, variables) => {
+      // Proofs, detail and timeline definitely changed
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-proofs', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
+      // Paginated list status may have changed
       queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      // Note: upload doesn't affect financial stats — deposit-stats not invalidated
 
       if (data.failedFiles && data.failedFiles.length > 0) {
         toast.warning(`${data.uploadedCount} preuve(s) ajoutée(s), ${data.failedFiles.length} échec(s)`);
@@ -644,11 +715,13 @@ export function useAdminDeleteProof() {
       return { success: true };
     },
     onSuccess: (_, variables) => {
+      // Proofs, detail (status may revert) and timeline definitely changed
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-proofs', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', variables.depositId] });
+      // Paginated list status may have changed (revert to 'created' if no proofs left)
       queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      // Note: proof deletion doesn't affect financial stats — deposit-stats not invalidated
       toast.success('Preuve supprimée');
     },
     onError: (error: Error) => {

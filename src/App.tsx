@@ -41,6 +41,7 @@ const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m =
 const MobilePaymentsScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentsScreen })));
 const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentDetail })));
 const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileNewPayment })));
+const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
@@ -116,6 +117,7 @@ const App = () => (
                 <Route path="/m/payments" element={<MobileRouteWrapper><MobilePaymentsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/payments/new" element={<MobileRouteWrapper><MobileNewPayment /></MobileRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<MobileRouteWrapper><MobilePaymentDetail /></MobileRouteWrapper>} />
+                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<MobileRouteWrapper><MobileBeneficiaryEdit /></MobileRouteWrapper>} />
                 <Route path="/m/clients" element={<MobileRouteWrapper><MobileClientsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/clients/new" element={<MobileRouteWrapper><MobileCreateClient /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<MobileRouteWrapper><MobileClientDetail /></MobileRouteWrapper>} />

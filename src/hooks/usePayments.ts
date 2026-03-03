@@ -174,8 +174,8 @@ export function usePaymentTimeline(paymentId: string | undefined) {
 export function usePaymentProofs(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['payment-proofs', paymentId],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    staleTime: 55 * 60_000, // Signed URLs valid 1h — avoid re-generating every 30s
+    gcTime: 60 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payment_proofs')
@@ -248,9 +248,18 @@ export function useCreatePayment() {
 
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Update wallet balance instantly (no refetch needed — RPC returns new_balance)
+      if (response.new_balance !== undefined) {
+        queryClient.setQueryData(['my-wallet'], (old: any) =>
+          old ? { ...old, balance_xaf: response.new_balance } : old,
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['my-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['my-wallet'] });
+      // Note: my-wallet is updated above via setQueryData — invalidate only if RPC didn't return balance
+      if (response.new_balance === undefined) {
+        queryClient.invalidateQueries({ queryKey: ['my-wallet'] });
+      }
       toast.success('Paiement créé avec succès');
     },
     onError: (error: Error) => {
@@ -392,6 +401,59 @@ export function useUploadPaymentProof() {
   });
 }
 
+export function useAdminUpdateBeneficiaryInfo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      beneficiaryInfo,
+    }: {
+      paymentId: string;
+      beneficiaryInfo: Partial<Pick<Payment,
+        | 'beneficiary_name'
+        | 'beneficiary_phone'
+        | 'beneficiary_email'
+        | 'beneficiary_qr_code_url'
+        | 'beneficiary_bank_name'
+        | 'beneficiary_bank_account'
+        | 'beneficiary_notes'
+      >>;
+    }) => {
+      const { data: result, error } = await supabaseAdmin.rpc(
+        'admin_update_payment_beneficiary' as never,
+        {
+          p_payment_id: paymentId,
+          p_beneficiary_name: beneficiaryInfo.beneficiary_name ?? null,
+          p_beneficiary_phone: beneficiaryInfo.beneficiary_phone ?? null,
+          p_beneficiary_email: beneficiaryInfo.beneficiary_email ?? null,
+          p_beneficiary_qr_code_url: beneficiaryInfo.beneficiary_qr_code_url ?? null,
+          p_beneficiary_bank_name: beneficiaryInfo.beneficiary_bank_name ?? null,
+          p_beneficiary_bank_account: beneficiaryInfo.beneficiary_bank_account ?? null,
+          p_beneficiary_notes: beneficiaryInfo.beneficiary_notes ?? null,
+        } as never
+      );
+
+      if (error) throw new Error(error.message);
+
+      const rpcResult = result as { success: boolean; error?: string };
+      if (!rpcResult?.success) {
+        throw new Error(rpcResult?.error || 'Erreur lors de la mise à jour');
+      }
+
+      return rpcResult;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      toast.success('Infos bénéficiaire mises à jour');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la mise à jour');
+    },
+  });
+}
+
 // Admin hooks
 export function useAdminPayments() {
   return useQuery({
@@ -438,27 +500,26 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      // Fetch client info
-      const { data: client } = await supabaseAdmin
-        .from('clients')
-        .select('user_id, first_name, last_name, phone, company_name')
-        .eq('user_id', payment.user_id)
-        .maybeSingle();
+      // Fetch client info and signed URL in parallel (saves ~300ms per open)
+      const qrPath = payment.beneficiary_qr_code_url?.startsWith('payment-proofs/')
+        ? payment.beneficiary_qr_code_url.replace('payment-proofs/', '')
+        : null;
 
-      // Generate signed URL for beneficiary QR code if stored as path
-      let beneficiaryQrUrl = payment.beneficiary_qr_code_url;
-      if (beneficiaryQrUrl?.startsWith('payment-proofs/')) {
-        const storagePath = beneficiaryQrUrl.replace('payment-proofs/', '');
-        const { data: signedData } = await supabaseAdmin.storage
-          .from('payment-proofs')
-          .createSignedUrl(storagePath, 3600);
-        beneficiaryQrUrl = signedData?.signedUrl || beneficiaryQrUrl;
-      }
+      const [clientResult, signedUrlResult] = await Promise.all([
+        supabaseAdmin
+          .from('clients')
+          .select('user_id, first_name, last_name, phone, company_name')
+          .eq('user_id', payment.user_id)
+          .maybeSingle(),
+        qrPath
+          ? supabaseAdmin.storage.from('payment-proofs').createSignedUrl(qrPath, 3600)
+          : Promise.resolve({ data: null }),
+      ]);
 
       return {
         ...payment,
-        beneficiary_qr_code_url: beneficiaryQrUrl,
-        profiles: client
+        beneficiary_qr_code_url: signedUrlResult.data?.signedUrl || payment.beneficiary_qr_code_url,
+        profiles: clientResult.data,
       };
     },
     enabled: !!paymentId,
@@ -494,10 +555,35 @@ export function useProcessPayment() {
       return result;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+      const statusMap: Record<string, PaymentStatus> = {
+        start_processing: 'processing',
+        complete: 'completed',
+        reject: 'rejected',
+      };
+      const newStatus = statusMap[variables.action];
+
+      if (newStatus) {
+        // Update status in-cache for all payment lists (no refetch)
+        queryClient.setQueryData(
+          ['admin-payment', variables.paymentId],
+          (old: any) => old ? { ...old, status: newStatus } : old,
+        );
+        queryClient.setQueryData(
+          ['admin-payments'],
+          (old: any[] | undefined) =>
+            old?.map(p => p.id === variables.paymentId ? { ...p, status: newStatus } : p) ?? old,
+        );
+        queryClient.setQueriesData(
+          { queryKey: ['admin-payments-paginated'] },
+          (old: any) => old?.pages
+            ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === variables.paymentId ? { ...d, status: newStatus } : d) })) }
+            : old,
+        );
+      }
+
+      // Only the timeline can't be computed locally
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
-      
+
       const messages = {
         start_processing: 'Paiement en cours de traitement',
         complete: 'Paiement marqué comme effectué',
@@ -575,8 +661,8 @@ export function useAdminUploadPaymentProof() {
 export function useAdminPaymentProofs(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['admin-payment-proofs', paymentId],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    staleTime: 55 * 60_000, // Signed URLs valid 1h — avoid re-generating every 30s
+    gcTime: 60 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('payment_proofs')

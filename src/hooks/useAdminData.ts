@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { startOfDay, subDays } from 'date-fns';
 
 // Cache configuration for performance
 const STALE_TIME = 30 * 1000; // 30 seconds
@@ -16,7 +15,7 @@ export function useAdminUsers() {
     queryFn: async () => {
       const { data: roles, error: rolesError } = await supabaseAdmin
         .from('user_roles')
-        .select('*')
+        .select('user_id, email, first_name, last_name, role, is_disabled, created_at')
         .order('created_at', { ascending: false });
 
       if (rolesError) throw rolesError;
@@ -77,68 +76,24 @@ export function useAdminAuditLogs() {
   });
 }
 
-// Dashboard stats
+// Dashboard stats — single RPC call instead of 6 separate queries
 export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
-    staleTime: 10 * 1000,
+    staleTime: 60 * 1000, // 1 minute — updated via invalidation after mutations
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      const todayStart = startOfDay(new Date()).toISOString();
-      const weekStart = startOfDay(subDays(new Date(), 7)).toISOString();
-
-      const [
-        walletsRes,
-        depositsRes,
-        rateRes,
-        pendingPaymentsRes,
-        todayPaymentsRes,
-        weekDepositsRes,
-      ] = await Promise.all([
-        supabaseAdmin.from('wallets').select('balance_xaf'),
-        supabaseAdmin.from('deposits').select('status'),
-        supabaseAdmin.from('exchange_rates')
-          .select('rate_xaf_to_rmb')
-          .order('effective_date', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabaseAdmin.from('payments')
-          .select('id', { count: 'exact', head: true })
-          .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned']),
-        supabaseAdmin.from('payments')
-          .select('amount_xaf')
-          .eq('status', 'completed')
-          .gte('processed_at', todayStart),
-        supabaseAdmin.from('deposits')
-          .select('amount_xaf')
-          .eq('status', 'validated')
-          .gte('validated_at', weekStart),
-      ]);
-
-      if (walletsRes.error) throw walletsRes.error;
-      if (depositsRes.error) throw depositsRes.error;
-      if (rateRes.error) throw rateRes.error;
-
-      const wallets = walletsRes.data;
-      const deposits = depositsRes.data;
-      const rate = rateRes.data;
-
-      const totalWalletBalance = wallets?.reduce((sum, w) => sum + (w.balance_xaf || 0), 0) || 0;
-      const pendingDeposits = deposits?.filter(d =>
-        ['created', 'awaiting_proof', 'proof_submitted', 'admin_review'].includes(d.status)
-      ).length || 0;
-      const todayPaymentsAmount = todayPaymentsRes.data?.reduce((sum, p) => sum + (p.amount_xaf || 0), 0) || 0;
-      const weekVolume = weekDepositsRes.data?.reduce((sum, d) => sum + (d.amount_xaf || 0), 0) || 0;
-
-      return {
-        totalClients: wallets?.length || 0,
-        activeClients: wallets?.filter(w => w.balance_xaf > 0).length || 0,
-        totalWalletBalance,
-        pendingDeposits,
-        pendingPayments: pendingPaymentsRes.count || 0,
-        currentRate: rate?.rate_xaf_to_rmb ? Math.round(1 / rate.rate_xaf_to_rmb) : 87,
-        todayPaymentsAmount,
-        weekVolume,
+      const { data, error } = await supabaseAdmin.rpc('get_dashboard_stats' as never);
+      if (error) throw error;
+      return data as {
+        totalClients: number;
+        activeClients: number;
+        totalWalletBalance: number;
+        pendingDeposits: number;
+        pendingPayments: number;
+        currentRate: number;
+        todayPaymentsAmount: number;
+        weekVolume: number;
       };
     },
   });
@@ -189,7 +144,7 @@ export function useAdminWallets() {
     queryFn: async () => {
       const { data: wallets, error } = await supabaseAdmin
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .order('updated_at', { ascending: false })
         .limit(200);
 
@@ -248,7 +203,7 @@ export function useAdminClients() {
 
       const { data: wallets } = await supabaseAdmin
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .in('user_id', userIds);
 
       const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
@@ -293,7 +248,7 @@ export function useAdminClientDetail(userId: string) {
 
       const { data: wallet } = await supabaseAdmin
         .from('wallets')
-        .select('*')
+        .select('id, user_id, balance_xaf, created_at, updated_at')
         .eq('user_id', userId)
         .maybeSingle();
       
@@ -365,7 +320,7 @@ export function useExchangeRates() {
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('exchange_rates')
-        .select('*')
+        .select('id, rate_xaf_to_rmb, effective_date, created_at')
         .order('effective_date', { ascending: false })
         .limit(50);
       
