@@ -1,8 +1,11 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
-import { useMyWallet, useExchangeRate } from '@/hooks/useWallet';
+import { useMyWallet } from '@/hooks/useWallet';
+import { useClientRates } from '@/hooks/useDailyRates';
+import { calculateFinalRate, getBaseRate } from '@/lib/rateCalculation';
+import type { PaymentMethodKey } from '@/types/rates';
 import { useCreatePayment } from '@/hooks/usePayments';
 import {
   Check,
@@ -37,10 +40,16 @@ const paymentMethods = [
   { id: 'cash' as const, label: 'Cash', description: 'Retrait au bureau Bonzini' },
 ];
 
+function toRateKey(method: PaymentMethodType | null): PaymentMethodKey {
+  if (method === 'bank_transfer') return 'virement';
+  if (method === 'alipay' || method === 'wechat' || method === 'cash') return method;
+  return 'cash';
+}
+
 const NewPaymentPage = () => {
   const navigate = useNavigate();
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
-  const { data: exchangeRateData } = useExchangeRate();
+  const { data: clientRatesData } = useClientRates();
   const createPayment = useCreatePayment();
   
   const [step, setStep] = useState<Step>('amount');
@@ -77,8 +86,28 @@ const NewPaymentPage = () => {
     setCashBeneficiaryData(data);
   }, []);
 
-  // Rate calculation
-  const rate = exchangeRateData || 0.01167;
+  // Rate calculation — uses multi-level system with per-method rates, country & tier adjustments
+  const rate = useMemo(() => {
+    if (!clientRatesData?.activeRate) return 0.01167;
+    const rateKey = toRateKey(selectedMethod);
+    const baseRate = getBaseRate(clientRatesData.activeRate, rateKey);
+    const countryAdj = clientRatesData.adjustments.find(a => a.type === 'country' && a.key === 'cameroun');
+    const countryPct = countryAdj?.percentage ?? 0;
+    const tierAdjs = clientRatesData.adjustments
+      .filter(a => a.type === 'tier')
+      .map(a => ({ key: a.key, percentage: a.percentage }));
+    let prelimXAF: number;
+    if (currency === 'XAF') {
+      prelimXAF = parseInt(inputAmount) || 1_000_000;
+    } else {
+      const baseRateDecimal = baseRate * (1 + countryPct / 100) / 1_000_000;
+      prelimXAF = baseRateDecimal > 0
+        ? Math.round((parseFloat(inputAmount) || 0) / baseRateDecimal)
+        : 1_000_000;
+    }
+    const result = calculateFinalRate(baseRate, countryPct, prelimXAF, tierAdjs);
+    return result.finalRate / 1_000_000;
+  }, [clientRatesData, selectedMethod, currency, inputAmount]);
   
   const amountXAF = currency === 'XAF' 
     ? parseInt(inputAmount) || 0 

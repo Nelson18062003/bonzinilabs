@@ -4,7 +4,10 @@ import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAllClients } from '@/hooks/useAdminDeposits';
-import { useWalletByUserId, useExchangeRate } from '@/hooks/useWallet';
+import { useWalletByUserId } from '@/hooks/useWallet';
+import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { calculateFinalRate, getBaseRate } from '@/lib/rateCalculation';
+import type { PaymentMethodKey } from '@/types/rates';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -37,6 +40,12 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 type Step = 'client' | 'amount' | 'method' | 'beneficiary' | 'summary';
 type PaymentMethod = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
 
+function toRateKey(method: PaymentMethod | null): PaymentMethodKey {
+  if (method === 'bank_transfer') return 'virement';
+  if (method === 'alipay' || method === 'wechat' || method === 'cash') return method;
+  return 'cash';
+}
+
 const AMOUNT_PRESETS_XAF = [100000, 250000, 500000, 1000000];
 const AMOUNT_PRESETS_RMB = [1000, 5000, 10000, 20000];
 
@@ -50,7 +59,8 @@ const paymentMethods = [
 export function MobileNewPayment() {
   const navigate = useNavigate();
   const { data: clients, isLoading: clientsLoading } = useAllClients();
-  const { data: currentRate, isLoading: rateLoading, refetch: refetchRate } = useExchangeRate();
+  const { data: activeDailyRate, isLoading: rateLoading, refetch: refetchRate } = useActiveDailyRate();
+  const { data: rateAdjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
 
   // Form state
@@ -85,16 +95,31 @@ export function MobileNewPayment() {
   // Get selected client's wallet
   const { data: clientWallet } = useWalletByUserId(selectedClient?.user_id);
 
-  // Calculate effective rate
+  // Calculate effective rate — uses multi-level system with per-method rates
   const effectiveRate = useMemo(() => {
     if (useCustomRate && customRate) {
       const customRateValue = parseFloat(customRate);
-      if (customRateValue > 0) {
-        return customRateValue / 1000000;
-      }
+      if (customRateValue > 0) return customRateValue / 1_000_000;
     }
-    return currentRate || 0.01167;
-  }, [useCustomRate, customRate, currentRate]);
+    if (!activeDailyRate) return 0.01167;
+    const rateKey = toRateKey(selectedMethod);
+    const baseRate = getBaseRate(activeDailyRate, rateKey);
+    const countryAdj = rateAdjustments?.find(a => a.type === 'country' && a.key === 'cameroun');
+    const countryPct = countryAdj?.percentage ?? 0;
+    const tierAdjs = (rateAdjustments?.filter(a => a.type === 'tier') || [])
+      .map(a => ({ key: a.key, percentage: a.percentage }));
+    let prelimXAF: number;
+    if (inputMode === 'XAF') {
+      prelimXAF = parseInt(amountXAF) || 1_000_000;
+    } else {
+      const baseRateDecimal = baseRate * (1 + countryPct / 100) / 1_000_000;
+      prelimXAF = baseRateDecimal > 0
+        ? Math.round((parseFloat(amountRMB) || 0) / baseRateDecimal)
+        : 1_000_000;
+    }
+    const result = calculateFinalRate(baseRate, countryPct, prelimXAF, tierAdjs);
+    return result.finalRate / 1_000_000;
+  }, [useCustomRate, customRate, activeDailyRate, rateAdjustments, selectedMethod, inputMode, amountXAF, amountRMB]);
 
   // Calculate amounts based on input mode
   const calculatedAmountXAF = useMemo(() => {
@@ -263,7 +288,7 @@ export function MobileNewPayment() {
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-2" />
                 <span className="text-sm text-muted-foreground">Chargement du taux...</span>
               </div>
-            ) : !currentRate && !useCustomRate ? (
+            ) : !activeDailyRate && !useCustomRate ? (
               <div className="mx-4 mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
                 <p className="text-sm text-destructive font-medium">Impossible de charger le taux.</p>
                 <button
@@ -444,7 +469,7 @@ export function MobileNewPayment() {
                     inputMode="decimal"
                     value={customRate}
                     onChange={(e) => setCustomRate(e.target.value.replace(/[^0-9.]/g, ''))}
-                    placeholder={(currentRate ? (1000000 * currentRate).toFixed(0) : '11670')}
+                    placeholder={(activeDailyRate ? activeDailyRate.rate_cash.toFixed(0) : '11670')}
                     className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <span className="text-sm text-muted-foreground">RMB</span>
