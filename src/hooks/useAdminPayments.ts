@@ -18,6 +18,10 @@ export interface AdminCreatePaymentData {
   client_visible_comment?: string;
   desired_date?: Date;
   qr_code_files?: File[];
+  // Beneficiary system fields
+  beneficiary_id?: string;
+  beneficiary_details?: Record<string, unknown>;
+  rate_is_custom?: boolean;
 }
 
 // Create payment for a client (admin only)
@@ -60,6 +64,10 @@ export function useAdminCreatePayment() {
         p_beneficiary_notes: data.beneficiary_notes || undefined,
         p_client_visible_comment: data.client_visible_comment || undefined,
         p_desired_date: data.desired_date?.toISOString() || undefined,
+        // Beneficiary system fields
+        p_beneficiary_id: data.beneficiary_id || undefined,
+        p_beneficiary_details: data.beneficiary_details || undefined,
+        p_rate_is_custom: data.rate_is_custom ?? false,
       });
 
       if (error) throw error;
