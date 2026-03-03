@@ -30,8 +30,8 @@ export function MobileRatesScreen() {
   const [activeTab, setActiveTab] = useState<MainTab>('rates');
   const [activeSubTab, setActiveSubTab] = useState<RatesSubTab>('set');
 
-  const { data: activeRate, isLoading: rateLoading } = useActiveDailyRate();
-  const { data: adjustments, isLoading: adjLoading } = useRateAdjustments();
+  const { data: activeRate, isLoading: rateLoading, isError: rateError } = useActiveDailyRate();
+  const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
@@ -114,6 +114,7 @@ export function MobileRatesScreen() {
               activeRate={activeRate}
               adjustments={adjustments || []}
               isLoading={rateLoading || adjLoading}
+              isError={rateError || adjError}
             />
           )}
         </div>

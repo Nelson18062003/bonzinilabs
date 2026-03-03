@@ -10,11 +10,12 @@ interface RateSimulatorTabProps {
   activeRate: DailyRate | null | undefined;
   adjustments: RateAdjustment[];
   isLoading: boolean;
+  isError?: boolean;
 }
 
 const QUICK_AMOUNTS = ['50000', '250000', '500000', '1000000', '2000000'];
 
-export function RateSimulatorTab({ activeRate, adjustments, isLoading }: RateSimulatorTabProps) {
+export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }: RateSimulatorTabProps) {
   const [amount, setAmount] = useState('500000');
   const [method, setMethod] = useState<PaymentMethodKey>('cash');
   const [country, setCountry] = useState('cameroun');
@@ -55,6 +56,17 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading }: RateSim
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-red-50 rounded-2xl p-6 text-center border border-red-200">
+        <div className="text-red-600 font-semibold text-sm mb-1">Erreur de chargement</div>
+        <div className="text-muted-foreground text-xs">
+          Impossible de charger les donnees. Verifiez que la migration SQL a ete executee.
+        </div>
       </div>
     );
   }

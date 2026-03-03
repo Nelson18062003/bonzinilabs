@@ -8,7 +8,7 @@ import type { RateAdjustment } from '@/types/rates';
 import { toast } from 'sonner';
 
 export function RateConfigTab() {
-  const { data: adjustments, isLoading } = useRateAdjustments();
+  const { data: adjustments, isLoading, isError } = useRateAdjustments();
   const updateAdjustment = useUpdateRateAdjustment();
 
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
@@ -25,10 +25,21 @@ export function RateConfigTab() {
     }
   }, [adjustments]);
 
-  if (isLoading || !adjustments) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  if (isError || !adjustments) {
+    return (
+      <div className="bg-red-50 rounded-2xl p-6 text-center border border-red-200">
+        <div className="text-red-600 font-semibold text-sm mb-1">Erreur de chargement</div>
+        <div className="text-muted-foreground text-xs">
+          Impossible de charger la configuration. Verifiez que la migration SQL a ete executee.
+        </div>
       </div>
     );
   }

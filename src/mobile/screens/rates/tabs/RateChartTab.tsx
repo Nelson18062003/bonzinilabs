@@ -5,7 +5,7 @@ import { useDailyRatesForChart, type ChartPeriod } from '@/hooks/useDailyRates';
 
 export function RateChartTab() {
   const [period, setPeriod] = useState<ChartPeriod>('30d');
-  const { data: chartData, isLoading } = useDailyRatesForChart(period);
+  const { data: chartData, isLoading, isError } = useDailyRatesForChart(period);
 
   const PERIODS: { key: ChartPeriod; label: string }[] = [
     { key: '7d', label: '7J' },
@@ -35,6 +35,13 @@ export function RateChartTab() {
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+        </div>
+      ) : isError ? (
+        <div className="bg-red-50 rounded-2xl p-6 text-center border border-red-200">
+          <div className="text-red-600 font-semibold text-sm mb-1">Erreur de chargement</div>
+          <div className="text-muted-foreground text-xs">
+            Impossible de charger les donnees du graphique. Verifiez que la migration SQL a ete executee.
+          </div>
         </div>
       ) : chartData && chartData.length > 0 ? (
         <MultiCurveChart data={chartData} />
