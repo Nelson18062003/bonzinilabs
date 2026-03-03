@@ -6,6 +6,7 @@ import {
   Minus,
   ArrowUpDown,
   Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -32,7 +33,7 @@ export function ClientRatesPage() {
   const [dateFilter, setDateFilter] = useState<DateRangeFilter>('30d');
 
   // ── Data hooks ──
-  const { data: currentRate, isLoading } = useCurrentExchangeRate();
+  const { data: currentRate, isLoading, isError } = useCurrentExchangeRate();
   const { data: rawChartData } = useExchangeRatesForChart(dateFilter);
   const { data: rates } = useExchangeRates(dateFilter, undefined);
 
@@ -156,6 +157,30 @@ export function ClientRatesPage() {
               ))}
             </div>
             <div className="h-[200px] bg-muted-foreground/10 rounded" />
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  // ── ERROR ──
+  if (isError) {
+    return (
+      <MobileLayout>
+        <PageHeader title="Taux de change" showBack />
+        <div className="px-4 py-8">
+          <div className="card-glass p-6 text-center space-y-3">
+            <AlertTriangle className="w-10 h-10 text-destructive mx-auto" />
+            <p className="text-sm font-semibold">Erreur de chargement</p>
+            <p className="text-xs text-muted-foreground">
+              Impossible de charger les taux de change. Veuillez réessayer.
+            </p>
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['current-exchange-rate'] })}
+              className="mt-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Réessayer
+            </button>
           </div>
         </div>
       </MobileLayout>
