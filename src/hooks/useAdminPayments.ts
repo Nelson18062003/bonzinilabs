@@ -64,24 +64,32 @@ export function useAdminCreatePayment() {
         p_beneficiary_notes: data.beneficiary_notes || undefined,
         p_client_visible_comment: data.client_visible_comment || undefined,
         p_desired_date: data.desired_date?.toISOString() || undefined,
-        // Beneficiary system fields
-        p_beneficiary_id: data.beneficiary_id || undefined,
-        p_beneficiary_details: data.beneficiary_details || undefined,
-        p_rate_is_custom: data.rate_is_custom ?? false,
       });
 
       if (error) throw error;
 
-      const response = result as { 
-        success: boolean; 
-        error?: string; 
-        payment_id?: string; 
-        reference?: string; 
-        new_balance?: number 
+      const response = result as {
+        success: boolean;
+        error?: string;
+        payment_id?: string;
+        reference?: string;
+        new_balance?: number
       };
 
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de la création du paiement');
+      }
+
+      // Update beneficiary system fields separately (migration pending)
+      if (response.payment_id && (data.beneficiary_id || data.beneficiary_details || data.rate_is_custom)) {
+        await supabaseAdmin
+          .from('payments')
+          .update({
+            beneficiary_id: data.beneficiary_id || null,
+            beneficiary_details: data.beneficiary_details || null,
+            rate_is_custom: data.rate_is_custom ?? false,
+          })
+          .eq('id', response.payment_id);
       }
 
       // Upload additional QR codes as payment proofs
