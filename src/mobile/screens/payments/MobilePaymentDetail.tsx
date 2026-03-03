@@ -29,6 +29,13 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
 import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisplay';
 import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
+import { CashQRCode } from '@/components/cash/CashQRCode';
+import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
+import { useUpdateBeneficiaryInfo } from '@/hooks/usePayments';
+import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import {
   Accordion,
@@ -56,6 +63,12 @@ import {
   FileDown,
   Clock,
   Upload,
+  Edit2,
+  QrCode,
+  Mail,
+  CreditCard,
+  Building2,
+  ScanLine,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
@@ -115,6 +128,23 @@ export function MobilePaymentDetail() {
   const instructionInputRef = useRef<HTMLInputElement>(null);
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  // Beneficiary edit drawer state
+  const [isBeneficiaryEditOpen, setIsBeneficiaryEditOpen] = useState(false);
+  const [beneficiaryForm, setBeneficiaryForm] = useState({
+    beneficiary_name: '',
+    beneficiary_phone: '',
+    beneficiary_email: '',
+    beneficiary_qr_code_url: '',
+    beneficiary_bank_name: '',
+    beneficiary_bank_account: '',
+    beneficiary_notes: '',
+  });
+  const [qrFile, setQrFile] = useState<File | null>(null);
+  const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const qrInputRef = useRef<HTMLInputElement>(null);
+  const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
 
   const handleProofSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -206,6 +236,26 @@ export function MobilePaymentDetail() {
     }
   };
 
+  // Capture QR SVG from DOM and convert to data URL for PDF
+  const captureQrDataUrl = (id: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const svgElement = document.getElementById(`qr-${id}`);
+      if (!svgElement) { resolve(null); return; }
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    });
+  };
+
   const handleDownloadReceipt = async () => {
     if (!payment || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
@@ -213,6 +263,13 @@ export function MobilePaymentDetail() {
       const clientName = payment.profiles
         ? `${payment.profiles.first_name} ${payment.profiles.last_name}`
         : 'Client';
+
+      // Capture cash QR code from DOM if present
+      let cashPaymentQrDataUrl: string | null = null;
+      if (payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status)) {
+        cashPaymentQrDataUrl = await captureQrDataUrl(payment.id);
+      }
+
       const receiptData: PaymentReceiptData = {
         id: payment.id,
         reference: payment.reference,
@@ -231,6 +288,7 @@ export function MobilePaymentDetail() {
         beneficiary_bank_name: payment.beneficiary_bank_name,
         beneficiary_bank_account: payment.beneficiary_bank_account,
         beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+        cashPaymentQrDataUrl,
       };
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
@@ -243,6 +301,71 @@ export function MobilePaymentDetail() {
       toast.error('Erreur lors de la génération du PDF');
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  // Initialize beneficiary form when payment loads
+  const initBeneficiaryForm = () => {
+    if (!payment) return;
+    setBeneficiaryForm({
+      beneficiary_name: payment.beneficiary_name || '',
+      beneficiary_phone: payment.beneficiary_phone || '',
+      beneficiary_email: payment.beneficiary_email || '',
+      beneficiary_qr_code_url: payment.beneficiary_qr_code_url || '',
+      beneficiary_bank_name: payment.beneficiary_bank_name || '',
+      beneficiary_bank_account: payment.beneficiary_bank_account || '',
+      beneficiary_notes: payment.beneficiary_notes || '',
+    });
+    setQrFile(null);
+    setQrPreview(null);
+  };
+
+  const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setQrFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setQrPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveBeneficiaryInfo = async () => {
+    if (!paymentId || !payment) return;
+    try {
+      let qrUrl = beneficiaryForm.beneficiary_qr_code_url;
+
+      if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
+        setIsUploadingQr(true);
+        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(filePath, qrFile, { upsert: true });
+        if (uploadError) throw uploadError;
+        qrUrl = `payment-proofs/${filePath}`;
+      }
+
+      await updateBeneficiaryInfo.mutateAsync({
+        paymentId,
+        beneficiaryInfo: {
+          beneficiary_name: beneficiaryForm.beneficiary_name || null,
+          beneficiary_phone: beneficiaryForm.beneficiary_phone || null,
+          beneficiary_email: beneficiaryForm.beneficiary_email || null,
+          beneficiary_qr_code_url: qrUrl || null,
+          beneficiary_bank_name: beneficiaryForm.beneficiary_bank_name || null,
+          beneficiary_bank_account: beneficiaryForm.beneficiary_bank_account || null,
+          beneficiary_notes: beneficiaryForm.beneficiary_notes || null,
+        },
+        paymentMethod: payment.method,
+      });
+
+      setIsBeneficiaryEditOpen(false);
+      setQrFile(null);
+      setQrPreview(null);
+      toast.success('Informations bénéficiaire enregistrées');
+    } catch (err: any) {
+      toast.error(err?.message || 'Impossible d\'enregistrer les informations');
+    } finally {
+      setIsUploadingQr(false);
     }
   };
 
@@ -289,6 +412,7 @@ export function MobilePaymentDetail() {
   const missingBeneficiary = !hasBeneficiaryInfo && !['completed', 'rejected', 'created'].includes(payment.status);
   const missingAdminProof = payment.status === 'processing' && adminProofs.length === 0;
 
+  const canEditBeneficiary = canProcess && !isLocked && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
   const exchangeRateXAFPerRMB = payment.exchange_rate ? Math.round(1 / payment.exchange_rate) : 0;
 
   return (
@@ -371,13 +495,74 @@ export function MobilePaymentDetail() {
           </p>
         </div>
 
+        {/* ── Cash QR Code ──────────────────────────────────────── */}
+        {payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status) && (
+          <CashQRCode
+            paymentId={payment.id}
+            paymentReference={payment.reference}
+            amountRMB={payment.amount_rmb}
+            beneficiaryName={payment.beneficiary_name || clientName}
+          />
+        )}
+
+        {/* Cash scanned status */}
+        {payment.method === 'cash' && payment.status === 'cash_scanned' && (
+          <div className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border border-orange-200 dark:border-orange-800">
+            <div className="flex items-start gap-3">
+              <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
+              <div>
+                <p className="font-medium text-orange-600">QR Code scanné au bureau</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Le client s'est présenté au bureau Bonzini Guangzhou.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cash completed with signature */}
+        {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
+          <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-green-600">Paiement cash effectué</p>
+                {(payment as any).cash_signed_by_name && (
+                  <p className="text-sm text-muted-foreground">
+                    Signé par: {(payment as any).cash_signed_by_name}
+                  </p>
+                )}
+                <div className="mt-3">
+                  <CashReceiptDownloadButton
+                    payment={payment as any}
+                    variant="outline"
+                    size="sm"
+                    label="Télécharger le reçu PDF"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Beneficiary Section ──────────────────────────────── */}
         {hasBeneficiaryInfo ? (
           <div className="bg-card rounded-2xl p-5 border border-border">
-            <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
-              <User className="w-4 h-4" />
-              Bénéficiaire
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Bénéficiaire
+              </h3>
+              {canEditBeneficiary && payment.method !== 'cash' && (
+                <button
+                  onClick={() => { initBeneficiaryForm(); setIsBeneficiaryEditOpen(true); }}
+                  className="text-xs font-medium text-primary active:scale-95 transition-transform flex items-center gap-1"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Modifier
+                </button>
+              )}
+            </div>
 
             {/* QR Code display for Alipay/WeChat — prominent */}
             {payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method) && (
@@ -422,11 +607,27 @@ export function MobilePaymentDetail() {
             </div>
           </div>
         ) : missingBeneficiary ? (
-          <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-2xl p-4 border border-yellow-200 dark:border-yellow-800 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <span className="text-sm text-yellow-700 dark:text-yellow-400">
-              Infos bénéficiaire manquantes — paiement impossible
-            </span>
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-2xl p-5 border border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-yellow-700 dark:text-yellow-400">
+                  Infos bénéficiaire manquantes
+                </p>
+                <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
+                  Le client n'a pas encore fourni les informations du bénéficiaire.
+                </p>
+                {canEditBeneficiary && payment.method !== 'cash' && (
+                  <button
+                    onClick={() => { initBeneficiaryForm(); setIsBeneficiaryEditOpen(true); }}
+                    className="mt-3 h-10 px-4 rounded-xl bg-yellow-600 text-white font-medium text-sm flex items-center gap-2 active:scale-[0.98] transition-transform"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Compléter le bénéficiaire
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -862,6 +1063,164 @@ export function MobilePaymentDetail() {
               </a>
             )}
           </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ── Beneficiary Edit Drawer ─────────────────────────────── */}
+      <Drawer open={isBeneficiaryEditOpen} onOpenChange={(open) => {
+        setIsBeneficiaryEditOpen(open);
+        if (!open) { setQrFile(null); setQrPreview(null); }
+      }}>
+        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
+          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
+            <DrawerTitle>
+              {hasBeneficiaryInfo ? 'Modifier' : 'Compléter'} le bénéficiaire
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
+            {(payment.method === 'alipay' || payment.method === 'wechat') && (
+              <>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground">
+                    Fournissez <strong>au moins un</strong> des éléments suivants.
+                  </p>
+                </div>
+
+                {/* QR Code Upload */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <QrCode className="w-4 h-4" />
+                    QR Code {payment.method === 'alipay' ? 'Alipay' : 'WeChat'}
+                  </Label>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => qrInputRef.current?.click()}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') qrInputRef.current?.click(); }}
+                    className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    {qrPreview ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <img src={qrPreview} alt="Aperçu QR code" className="w-32 h-32 rounded-lg border object-cover" />
+                        <span className="text-xs text-muted-foreground">Cliquez pour remplacer</span>
+                      </div>
+                    ) : beneficiaryForm.beneficiary_qr_code_url ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <img src={beneficiaryForm.beneficiary_qr_code_url} alt="QR code" className="w-32 h-32 rounded-lg border object-cover" loading="lazy" />
+                        <span className="text-xs text-muted-foreground">Cliquez pour remplacer</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm font-medium">Ajouter le QR code</p>
+                      </>
+                    )}
+                  </div>
+                  <input ref={qrInputRef} type="file" accept="image/*" className="hidden" onChange={handleQrFileChange} />
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Phone className="w-4 h-4" /> Téléphone</Label>
+                  <Input
+                    value={beneficiaryForm.beneficiary_phone}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_phone: e.target.value }))}
+                    placeholder="Ex: +86 138 0000 0000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Mail className="w-4 h-4" /> Email (optionnel)</Label>
+                  <Input
+                    type="email"
+                    value={beneficiaryForm.beneficiary_email}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_email: e.target.value }))}
+                    placeholder="email@exemple.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><User className="w-4 h-4" /> Nom (optionnel)</Label>
+                  <Input
+                    value={beneficiaryForm.beneficiary_name}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_name: e.target.value }))}
+                    placeholder="Nom complet"
+                  />
+                </div>
+              </>
+            )}
+
+            {payment.method === 'bank_transfer' && (
+              <>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground">
+                    Informations bancaires complètes du bénéficiaire.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><User className="w-4 h-4" /> Nom du bénéficiaire *</Label>
+                  <Input
+                    value={beneficiaryForm.beneficiary_name}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_name: e.target.value }))}
+                    placeholder="Nom complet du titulaire"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Building2 className="w-4 h-4" /> Banque *</Label>
+                  <Input
+                    value={beneficiaryForm.beneficiary_bank_name}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_bank_name: e.target.value }))}
+                    placeholder="Ex: Bank of China, ICBC..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> N° de compte *</Label>
+                  <Input
+                    value={beneficiaryForm.beneficiary_bank_account}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_bank_account: e.target.value }))}
+                    placeholder="Numéro de compte bancaire"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Commentaire (optionnel)</Label>
+                  <Textarea
+                    value={beneficiaryForm.beneficiary_notes}
+                    onChange={(e) => setBeneficiaryForm(p => ({ ...p, beneficiary_notes: e.target.value }))}
+                    placeholder="Instructions supplémentaires..."
+                    rows={3}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DrawerFooter className="flex-row gap-3">
+            <button
+              onClick={() => setIsBeneficiaryEditOpen(false)}
+              className="flex-1 h-12 rounded-xl border border-border font-medium"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleSaveBeneficiaryInfo}
+              disabled={updateBeneficiaryInfo.isPending || isUploadingQr}
+              className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {(updateBeneficiaryInfo.isPending || isUploadingQr) && (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              )}
+              Enregistrer
+            </button>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     </div>
