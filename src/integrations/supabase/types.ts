@@ -261,6 +261,42 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          is_active: boolean
+          rate_alipay: number
+          rate_cash: number
+          rate_virement: number
+          rate_wechat: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          rate_alipay: number
+          rate_cash: number
+          rate_virement: number
+          rate_wechat: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          rate_alipay?: number
+          rate_cash?: number
+          rate_virement?: number
+          rate_wechat?: number
+        }
+        Relationships: []
+      }
       exchange_rates: {
         Row: {
           created_at: string
@@ -455,6 +491,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_adjustments: {
+        Row: {
+          id: string
+          is_reference: boolean
+          key: string
+          label: string
+          percentage: number
+          sort_order: number
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          is_reference?: boolean
+          key: string
+          label: string
+          percentage?: number
+          sort_order?: number
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          is_reference?: boolean
+          key?: string
+          label?: string
+          percentage?: number
+          sort_order?: number
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       payments: {
         Row: {
@@ -692,6 +764,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_final_rate: {
+        Args: {
+          p_payment_method: string
+          p_country_key: string
+          p_amount_xaf: number
+        }
+        Returns: Json
+      }
+      create_daily_rates: {
+        Args: {
+          p_rate_cash: number
+          p_rate_alipay: number
+          p_rate_wechat: number
+          p_rate_virement: number
+          p_effective_at?: string
+        }
+        Returns: Json
+      }
+      update_rate_adjustment: {
+        Args: {
+          p_adjustment_id: string
+          p_percentage: number
+        }
+        Returns: Json
+      }
       add_exchange_rate: {
         Args: { p_effective_at?: string; p_rate_xaf_to_rmb: number }
         Returns: Json

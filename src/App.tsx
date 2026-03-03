@@ -27,7 +27,7 @@ const PaymentDetailPage = lazy(() => import("./pages/PaymentDetailPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
-const ClientRatesPage = lazy(() => import("./pages/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
+const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
