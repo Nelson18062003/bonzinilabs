@@ -56,7 +56,39 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  proofPageContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  proofLabel: {
+    fontSize: 10,
+    color: colors.muted,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  proofImage: {
+    maxWidth: '100%',
+    maxHeight: 600,
+    objectFit: 'contain',
+  },
+  pdfProofsContainer: {
+    padding: 20,
+  },
+  pdfProofItem: {
+    marginBottom: 8,
+    fontSize: 11,
+    color: colors.text,
+  },
 });
+
+export interface AdminProofItem {
+  file_url: string;
+  file_type: string | null;
+  file_name: string;
+  created_at: string;
+}
 
 export interface PaymentReceiptData {
   id: string;
@@ -78,7 +110,14 @@ export interface PaymentReceiptData {
   beneficiary_bank_name?: string | null;
   beneficiary_bank_account?: string | null;
   beneficiary_qr_code_url?: string | null;
+  adminProofs?: AdminProofItem[];
 }
+
+const isImageProof = (proof: AdminProofItem): boolean => {
+  const type = proof.file_type ?? '';
+  const name = proof.file_name.toLowerCase();
+  return type.startsWith('image/') || /\.(jpe?g|png|gif|webp)$/.test(name);
+};
 
 export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
   const statusColor = getStatusColor(data.status);
@@ -87,6 +126,8 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
     : 'Non défini';
 
   const hasQrCode = !!data.beneficiary_qr_code_url;
+  const imageProofs = (data.adminProofs ?? []).filter(isImageProof);
+  const pdfProofs = (data.adminProofs ?? []).filter(p => !isImageProof(p));
 
   return (
     <Document>
@@ -160,6 +201,38 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
             <Text style={styles.qrCodeLabel}>
               {getPaymentMethodLabel(data.method)} — {formatRMB(data.amount_rmb)} RMB
             </Text>
+          </View>
+          <PDFFooter />
+        </Page>
+      )}
+
+      {/* Pages for each admin image proof */}
+      {imageProofs.map((proof, index) => (
+        <Page key={proof.file_url} size="A4" style={baseStyles.page}>
+          <PDFHeader title="PREUVE DE PAIEMENT" reference={data.reference} />
+          <View style={styles.proofPageContainer}>
+            <Text style={styles.proofLabel}>
+              Preuve {index + 1} / {imageProofs.length} — {formatDate(proof.created_at)}
+            </Text>
+            <Image src={proof.file_url} style={styles.proofImage} />
+          </View>
+          <PDFFooter />
+        </Page>
+      ))}
+
+      {/* Page listing non-image proofs (PDFs) if any */}
+      {pdfProofs.length > 0 && (
+        <Page size="A4" style={baseStyles.page}>
+          <PDFHeader title="PREUVES DE PAIEMENT" reference={data.reference} />
+          <View style={styles.pdfProofsContainer}>
+            <Text style={[styles.proofLabel, { fontSize: 12, marginBottom: 16 }]}>
+              Documents joints ({pdfProofs.length} fichier{pdfProofs.length > 1 ? 's' : ''}) :
+            </Text>
+            {pdfProofs.map((proof, index) => (
+              <Text key={proof.file_url} style={styles.pdfProofItem}>
+                {index + 1}. {proof.file_name} — {formatDate(proof.created_at)}
+              </Text>
+            ))}
           </View>
           <PDFFooter />
         </Page>

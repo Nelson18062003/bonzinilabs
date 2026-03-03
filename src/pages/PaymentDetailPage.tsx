@@ -290,6 +290,12 @@ export default function PaymentDetailPage() {
         beneficiary_bank_name: payment.beneficiary_bank_name,
         beneficiary_bank_account: payment.beneficiary_bank_account,
         beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+        adminProofs: adminProofs.map(p => ({
+          file_url: p.file_url,
+          file_type: p.file_type,
+          file_name: p.file_name,
+          created_at: p.created_at,
+        })),
       };
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
