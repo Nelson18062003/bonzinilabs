@@ -33,9 +33,10 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
   return useQuery({
     queryKey: ['agent-cash-payments', status, agentUserId],
     queryFn: async () => {
-      // To Pay tab: only show cash payments with "processing" status (En cours)
+      // To Pay tab: show cash payments that are not yet fully paid
+      // This includes 'processing' (awaiting scan), 'cash_scanned', and 'cash_pending'
       const statusFilter = status === 'pending'
-        ? (['processing'] as const)
+        ? (['processing', 'cash_scanned', 'cash_pending'] as const)
         : (['completed'] as const);
 
       let query = supabaseAdmin
