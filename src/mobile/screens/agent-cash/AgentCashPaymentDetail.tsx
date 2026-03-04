@@ -45,10 +45,22 @@ export function AgentCashPaymentDetail() {
       if (result.success) {
         navigate(`/a/payment/${payment.id}/confirm`);
       } else {
-        toast.error(result.error || t('error'));
+        // If scan fails because already scanned, still allow proceeding to confirm
+        const alreadyScanned = payment.status === 'cash_scanned' || payment.status === 'cash_pending';
+        if (alreadyScanned) {
+          navigate(`/a/payment/${payment.id}/confirm`);
+        } else {
+          toast.error(result.error || t('error'));
+        }
       }
     } catch {
-      toast.error(t('error'));
+      // If RPC throws but payment is already scanned, allow continuing
+      const alreadyScanned = payment.status === 'cash_scanned' || payment.status === 'cash_pending';
+      if (alreadyScanned) {
+        navigate(`/a/payment/${payment.id}/confirm`);
+      } else {
+        toast.error(t('error'));
+      }
     }
   };
 
@@ -199,13 +211,18 @@ export function AgentCashPaymentDetail() {
           )}
 
           {isCashScanned && (
-            <button
-              onClick={() => navigate(`/a/payment/${payment.id}/confirm`)}
-              className="w-full btn-primary-gradient h-14 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold"
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              {t('confirm_payment') || 'Confirmer le paiement'}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate(`/a/payment/${payment.id}/confirm`)}
+                className="w-full btn-primary-gradient h-14 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                {t('confirm_payment') || 'Confirmer le paiement'}
+              </button>
+              <p className="text-xs text-center text-muted-foreground">
+                {t('qr_already_scanned_continue') || 'QR déjà scanné — continuez vers la confirmation'}
+              </p>
+            </div>
           )}
         </div>
       </div>
