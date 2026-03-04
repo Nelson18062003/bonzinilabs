@@ -43,7 +43,7 @@ export function AgentCashRouteWrapper({
   return (
     <AdminAuthProvider>
       <LanguageProvider>
-        <ErrorBoundary>
+        <ErrorBoundary onError={(error, info) => console.error('[AgentCash] Route error:', error.message, error.stack, info.componentStack)}>
           {requireAuth ? (
             <ProtectedAgentCashRoute>
               <AgentCashShell showTabBar={showTabBar}>

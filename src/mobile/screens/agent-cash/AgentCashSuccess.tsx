@@ -12,11 +12,13 @@ export function AgentCashSuccess() {
   const { data: payment, isLoading } = useAgentCashPaymentDetail(paymentId);
 
   const getBeneficiaryName = () => {
-    if (!payment) return '—';
-    if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-      return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-    }
-    return payment.beneficiary_name || '—';
+    try {
+      if (!payment) return '—';
+      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
+        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
+      }
+      return payment.beneficiary_name || '—';
+    } catch { return '—'; }
   };
 
   if (isLoading) {
@@ -52,10 +54,10 @@ export function AgentCashSuccess() {
           style={{ animationDelay: '150ms', animationFillMode: 'both' }}
         >
           <p className="text-3xl font-bold tracking-tight mt-4" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {formatCurrencyRMB(payment.amount_rmb)}
+            {formatCurrencyRMB(typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0)}
           </p>
           <p className="text-muted-foreground mt-2">{getBeneficiaryName()}</p>
-          <p className="text-sm text-muted-foreground font-mono">{payment.reference}</p>
+          <p className="text-sm text-muted-foreground font-mono">{payment.reference || '—'}</p>
         </div>
       )}
 

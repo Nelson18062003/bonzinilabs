@@ -17,16 +17,20 @@ export function AgentCashPaymentDetail() {
   const scanMutation = useAgentScanCashPayment();
 
   const getBeneficiaryName = () => {
-    if (!payment) return '—';
-    if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-      return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-    }
-    return payment.beneficiary_name || '—';
+    try {
+      if (!payment) return '—';
+      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
+        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
+      }
+      return payment.beneficiary_name || '—';
+    } catch { return '—'; }
   };
 
   const getClientName = () => {
-    if (!payment?.profile) return '—';
-    return `${payment.profile.first_name} ${payment.profile.last_name}`;
+    try {
+      if (!payment?.profile) return '—';
+      return `${payment.profile.first_name ?? ''} ${payment.profile.last_name ?? ''}`.trim() || '—';
+    } catch { return '—'; }
   };
 
   const isPaid = payment?.status === 'completed';
@@ -71,6 +75,9 @@ export function AgentCashPaymentDetail() {
     );
   }
 
+  const safeAmountRmb = typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0;
+  const safeAmountXaf = typeof payment.amount_xaf === 'number' ? payment.amount_xaf : 0;
+
   return (
     <div>
       <MobileHeader title={t('payment_details')} showBack backTo="/a" />
@@ -82,10 +89,10 @@ export function AgentCashPaymentDetail() {
             <Banknote className="w-7 h-7 text-primary" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {formatCurrencyRMB(payment.amount_rmb)}
+            {formatCurrencyRMB(safeAmountRmb)}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            {formatNumber(payment.amount_xaf)} XAF
+            {formatNumber(safeAmountXaf)} XAF
           </p>
 
           {/* Status badge */}
@@ -139,12 +146,14 @@ export function AgentCashPaymentDetail() {
             </div>
             <div className="flex items-center gap-3">
               <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="font-mono text-sm">{payment.reference}</span>
+              <span className="font-mono text-sm">{payment.reference || '—'}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span>{formatDate(payment.created_at, 'datetime')}</span>
-            </div>
+            {payment.created_at && (
+              <div className="flex items-center gap-3">
+                <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span>{formatDate(payment.created_at, 'datetime')}</span>
+              </div>
+            )}
           </div>
         </div>
 

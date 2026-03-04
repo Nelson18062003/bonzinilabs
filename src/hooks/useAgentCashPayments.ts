@@ -73,73 +73,105 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
 
       const { data, error } = await query.order('created_at', { ascending: status === 'pending' });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AgentCash] Payments list error:', error.message, error.code);
+        return [];
+      }
 
-      // Fetch client info for each payment
-      const userIds = [...new Set(data?.map(p => p.user_id) || [])];
-      const { data: clients } = await supabaseAdmin
-        .from('clients')
-        .select('user_id, first_name, last_name, phone')
-        .in('user_id', userIds);
+      if (!data?.length) return [];
 
-      const clientMap = new Map(clients?.map(c => [c.user_id, c]));
+      // Fetch client info for each payment (non-blocking)
+      const userIds = [...new Set(data.map(p => p.user_id).filter(Boolean))];
+      let clientMap = new Map<string, { user_id: string; first_name: string; last_name: string; phone: string | null }>();
 
-      return (data || []).map(payment => ({
+      try {
+        if (userIds.length > 0) {
+          const { data: clients } = await supabaseAdmin
+            .from('clients')
+            .select('user_id, first_name, last_name, phone')
+            .in('user_id', userIds);
+          clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
+        }
+      } catch (profileErr) {
+        console.error('[AgentCash] Clients fetch error:', profileErr);
+      }
+
+      return data.map(payment => ({
         ...payment,
         profile: clientMap.get(payment.user_id) as CashPayment['profile'],
       })) as CashPayment[];
     },
+    retry: 1,
   });
 }
 
 export function useAgentCashPaymentDetail(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['agent-cash-payment', paymentId],
-    queryFn: async () => {
+    queryFn: async (): Promise<CashPayment | null> => {
       if (!paymentId) return null;
 
-      const { data, error } = await supabaseAdmin
-        .from('payments')
-        .select(`
-          id,
-          reference,
-          amount_rmb,
-          amount_xaf,
-          status,
-          method,
-          created_at,
-          cash_beneficiary_type,
-          cash_beneficiary_first_name,
-          cash_beneficiary_last_name,
-          cash_beneficiary_phone,
-          beneficiary_name,
-          beneficiary_phone,
-          beneficiary_email,
-          cash_paid_at,
-          cash_paid_by,
-          cash_scanned_by,
-          cash_signature_url,
-          cash_signed_by_name,
-          user_id
-        `)
-        .eq('id', paymentId)
-        .eq('method', 'cash')
-        .single();
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('payments')
+          .select(`
+            id,
+            reference,
+            amount_rmb,
+            amount_xaf,
+            status,
+            method,
+            created_at,
+            cash_beneficiary_type,
+            cash_beneficiary_first_name,
+            cash_beneficiary_last_name,
+            cash_beneficiary_phone,
+            beneficiary_name,
+            beneficiary_phone,
+            beneficiary_email,
+            cash_paid_at,
+            cash_paid_by,
+            cash_scanned_by,
+            cash_signature_url,
+            cash_signed_by_name,
+            user_id
+          `)
+          .eq('id', paymentId)
+          .eq('method', 'cash')
+          .single();
 
-      if (error) throw error;
+        if (error) {
+          console.error('[AgentCash] Payment fetch error:', error.message, error.code);
+          return null;
+        }
 
-      // Fetch client info
-      const { data: profile } = await supabaseAdmin
-        .from('clients')
-        .select('first_name, last_name, phone')
-        .eq('user_id', data.user_id)
-        .maybeSingle();
+        if (!data) return null;
 
-      return {
-        ...data,
-        profile: profile as CashPayment['profile'],
-      } as CashPayment;
+        // Fetch client info (non-blocking — profile is optional)
+        let profile: CashPayment['profile'] = undefined;
+        try {
+          if (data.user_id) {
+            const { data: profileData } = await supabaseAdmin
+              .from('clients')
+              .select('first_name, last_name, phone')
+              .eq('user_id', data.user_id)
+              .maybeSingle();
+            profile = profileData as CashPayment['profile'];
+          }
+        } catch (profileErr) {
+          console.error('[AgentCash] Profile fetch error:', profileErr);
+        }
+
+        return {
+          ...data,
+          profile,
+        } as CashPayment;
+      } catch (err) {
+        console.error('[AgentCash] Unexpected error fetching payment:', err);
+        return null;
+      }
     },
     enabled: !!paymentId,
+    retry: 1,
   });
 }
