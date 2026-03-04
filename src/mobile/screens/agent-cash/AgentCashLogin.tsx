@@ -65,7 +65,7 @@ export function AgentCashLogin() {
         setIsFadingOut(true);
         setTimeout(() => navigate('/a'), 300);
       } else {
-        setError(t('invalid_credentials'));
+        setError(result.error || t('invalid_credentials'));
       }
     } catch {
       setError(t('error'));
