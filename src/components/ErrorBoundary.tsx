@@ -94,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardHeader>
 
             <CardContent>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {this.state.error && (
                 <div className="bg-muted p-4 rounded-md overflow-auto max-h-[200px]">
                   <p className="font-mono text-sm text-destructive mb-2">
                     {this.state.error.toString()}
@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </div>
               )}
 
-              {process.env.NODE_ENV === 'production' && (
+              {!this.state.error && (
                 <p className="text-sm text-muted-foreground">
                   Si le problème persiste, veuillez contacter le support technique.
                 </p>

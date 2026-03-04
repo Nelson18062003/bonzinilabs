@@ -9,6 +9,19 @@ import { ScanLine, Search, AlertCircle, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
 
+function safeStopScanner(scanner: Html5Qrcode | null) {
+  if (!scanner) return;
+  try {
+    const state = scanner.getState();
+    // Only stop if scanner is actively scanning or paused
+    if (state === 2 /* SCANNING */ || state === 3 /* PAUSED */) {
+      scanner.stop().catch(() => {});
+    }
+  } catch {
+    // Scanner not in a stoppable state — ignore
+  }
+}
+
 export function AgentCashScanner() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -25,7 +38,7 @@ export function AgentCashScanner() {
     if (isValid && paymentId) {
       hasNavigated.current = true;
       // Stop scanner before navigating
-      scannerRef.current?.stop().catch(() => {});
+      safeStopScanner(scannerRef.current);
       navigate(`/a/payment/${paymentId}`);
     } else {
       toast.error(t('invalid_qr'));
@@ -84,7 +97,7 @@ export function AgentCashScanner() {
 
     return () => {
       mounted = false;
-      scannerRef.current?.stop().catch(() => {});
+      safeStopScanner(scannerRef.current);
       scannerRef.current = null;
     };
   }, [handleScanResult, t]);
