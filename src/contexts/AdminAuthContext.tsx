@@ -121,7 +121,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       // Check if user has an admin role
       const { data: roleData, error: roleError } = await supabaseAdmin
         .from('user_roles')
-        .select('role')
+        .select('role, first_name, last_name, is_disabled')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -131,8 +131,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!roleData) {
-        // User is not an admin
+        // User is not an admin/agent
         return null;
+      }
+
+      // Check if account is disabled
+      if (roleData.is_disabled) {
+        return { disabled: true as const };
       }
 
       const adminUser: AdminUser = {
@@ -160,7 +165,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
           // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
             const adminData = await fetchAdminData(session.user);
-            setCurrentUser(adminData);
+            setCurrentUser(adminData && !('disabled' in adminData) ? adminData : null);
             setIsLoading(false);
           }, 0);
         } else {
@@ -175,7 +180,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       if (session?.user) {
         const adminData = await fetchAdminData(session.user);
-        setCurrentUser(adminData);
+        setCurrentUser(adminData && !('disabled' in adminData) ? adminData : null);
       }
       setIsLoading(false);
     });
@@ -198,13 +203,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Connexion échouée' };
       }
 
-      // Check if user is an admin
+      // Check if user is an admin/agent
       const adminData = await fetchAdminData(data.user);
-      
+
       if (!adminData) {
-        // User exists but is not an admin - sign them out
         await supabaseAdmin.auth.signOut();
-        return { success: false, error: 'Accès non autorisé. Vous n\'êtes pas administrateur.' };
+        return { success: false, error: 'Accès non autorisé. Aucun rôle attribué à ce compte.' };
+      }
+
+      if ('disabled' in adminData) {
+        await supabaseAdmin.auth.signOut();
+        return { success: false, error: 'Ce compte a été désactivé. Contactez un administrateur.' };
       }
 
       setCurrentUser(adminData);
