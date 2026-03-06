@@ -19,6 +19,7 @@ interface CashReceiptDownloadButtonProps {
     processed_at?: string | null;
     cash_paid_at?: string | null;
     cash_signature_url?: string | null;
+    cash_signature_timestamp?: string | null;
     cash_signed_by_name?: string | null;
     cash_beneficiary_first_name?: string | null;
     cash_beneficiary_last_name?: string | null;
@@ -80,6 +81,9 @@ export function CashReceiptDownloadButton({
         beneficiary_name: beneficiaryName,
         beneficiary_phone: payment.cash_beneficiary_phone || payment.beneficiary_phone,
         beneficiary_email: payment.beneficiary_email,
+        cash_signature_url: payment.cash_signature_url,
+        cash_signature_timestamp: payment.cash_signature_timestamp,
+        cash_signed_by_name: payment.cash_signed_by_name,
       };
 
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
