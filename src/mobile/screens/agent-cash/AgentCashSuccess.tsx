@@ -58,6 +58,26 @@ export function AgentCashSuccess() {
           </p>
           <p className="text-muted-foreground mt-2">{getBeneficiaryName()}</p>
           <p className="text-sm text-muted-foreground font-mono">{payment.reference || '—'}</p>
+
+          {/* Signature confirmation */}
+          {payment.cash_signature_url && (
+            <div className="mt-4 p-3 bg-white rounded-xl border border-green-500/20 w-full max-w-xs mx-auto">
+              <p className="text-xs text-muted-foreground mb-2 font-medium text-center">
+                {t('beneficiary_signature') || 'Signature du bénéficiaire'}
+              </p>
+              <img
+                src={payment.cash_signature_url}
+                alt="Signature"
+                className="w-full h-auto rounded"
+                style={{ maxHeight: '100px', objectFit: 'contain' }}
+              />
+              {payment.cash_signed_by_name && (
+                <p className="text-xs text-muted-foreground mt-1 text-center">
+                  {payment.cash_signed_by_name}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

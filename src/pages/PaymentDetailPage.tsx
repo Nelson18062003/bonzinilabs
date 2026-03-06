@@ -797,6 +797,17 @@ export default function PaymentDetailPage() {
                   </p>
                 )}
 
+                {/* Signature image */}
+                <div className="mt-3 p-3 bg-white rounded-xl border border-green-200 dark:border-green-800">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Signature du bénéficiaire</p>
+                  <img
+                    src={(payment as any).cash_signature_url}
+                    alt="Signature du bénéficiaire"
+                    className="w-full max-w-xs h-auto rounded"
+                    style={{ maxHeight: '120px', objectFit: 'contain' }}
+                  />
+                </div>
+
                 <div className="mt-3">
                   <CashReceiptDownloadButton
                     payment={payment as any}

@@ -81,6 +81,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text,
   },
+  signatureSection: {
+    marginBottom: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: '#fafafa',
+  },
+  signatureImage: {
+    width: 220,
+    height: 100,
+    objectFit: 'contain',
+    marginVertical: 8,
+  },
+  signatureLabel: {
+    fontSize: 9,
+    color: colors.muted,
+    marginTop: 4,
+  },
 });
 
 export interface AdminProofItem {
@@ -111,6 +130,9 @@ export interface PaymentReceiptData {
   beneficiary_bank_account?: string | null;
   beneficiary_qr_code_url?: string | null;
   cashPaymentQrDataUrl?: string | null;
+  cash_signature_url?: string | null;
+  cash_signed_by_name?: string | null;
+  cash_signature_timestamp?: string | null;
   adminProofs?: AdminProofItem[];
 }
 
@@ -184,6 +206,23 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
             <PDFInfoRow label="Info" value="Non renseigné" />
           )}
         </View>
+
+        {/* Signature section (cash payments) */}
+        {data.cash_signature_url && (
+          <View style={styles.signatureSection}>
+            <Text style={styles.sectionTitle}>Signature du bénéficiaire</Text>
+            <Image src={data.cash_signature_url} style={styles.signatureImage} />
+            {data.cash_signed_by_name && (
+              <PDFInfoRow label="Signé par" value={data.cash_signed_by_name} />
+            )}
+            {data.cash_signature_timestamp && (
+              <PDFInfoRow label="Date de signature" value={formatDate(data.cash_signature_timestamp)} />
+            )}
+            <Text style={styles.signatureLabel}>
+              Cette signature confirme la réception du paiement en espèces par le bénéficiaire.
+            </Text>
+          </View>
+        )}
 
         <PDFFooter />
       </Page>

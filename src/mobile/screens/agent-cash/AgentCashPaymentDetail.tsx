@@ -179,6 +179,26 @@ export function AgentCashPaymentDetail() {
             <p className="text-sm text-muted-foreground">
               {t('already_paid_on')} {formatDate(payment.cash_paid_at, 'datetime')}
             </p>
+            {payment.cash_signed_by_name && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('signed_by') || 'Signé par'}: {payment.cash_signed_by_name}
+              </p>
+            )}
+
+            {/* Signature image */}
+            {payment.cash_signature_url && (
+              <div className="mt-3 p-3 bg-white rounded-xl border border-green-500/20">
+                <p className="text-xs text-muted-foreground mb-2 font-medium">
+                  {t('beneficiary_signature') || 'Signature du bénéficiaire'}
+                </p>
+                <img
+                  src={payment.cash_signature_url}
+                  alt="Signature"
+                  className="w-full max-w-xs h-auto rounded"
+                  style={{ maxHeight: '120px', objectFit: 'contain' }}
+                />
+              </div>
+            )}
           </div>
         )}
 
