@@ -52,17 +52,27 @@ export function fmtDateLong(iso: string): string {
 
 /** Returns false for operations that must be excluded from the statement. */
 export function shouldIncludeWalletOp(op: RawWalletOp): boolean {
-  // BUG 6: Exclude refused deposits
-  if (op.operation_type.toUpperCase() === 'DEPOSIT_REFUSED') return false;
-  // BUG 7: Exclude test operations
+  const t = op.operation_type.toUpperCase();
+  // Refuse deposits: no balance impact
+  if (t === 'DEPOSIT_REFUSED') return false;
+  // Reservation debit: shown only when payment is executed (PAYMENT_EXECUTED)
+  if (t === 'PAYMENT_RESERVED') return false;
+  // Refund of a rejected payment: rejected payments never appear in the statement
+  if (t === 'PAYMENT_CANCELLED_REFUNDED') return false;
+  // Test operations
   if (op.is_test) return false;
   return true;
 }
 
 export function shouldIncludeLedgerEntry(entry: RawLedgerEntry): boolean {
-  // BUG 6: Exclude refused deposits
-  if (entry.entryType.toUpperCase() === 'DEPOSIT_REFUSED') return false;
-  // BUG 7: Exclude test operations
+  const t = entry.entryType.toUpperCase();
+  // Refused deposits: no balance impact
+  if (t === 'DEPOSIT_REFUSED') return false;
+  // Reservation debit: shown only when payment is executed (PAYMENT_EXECUTED)
+  if (t === 'PAYMENT_RESERVED') return false;
+  // Refund of a rejected payment: rejected payments never appear in the statement
+  if (t === 'PAYMENT_CANCELLED_REFUNDED') return false;
+  // Test operations
   if (entry.isTest) return false;
   return true;
 }
@@ -100,7 +110,18 @@ function getFallbackMotif(entryType: string): string {
   return map[entryType.toUpperCase()] || entryType;
 }
 
-function buildRef(refType?: string | null, refId?: string | null, id?: string): string {
+/** Extract the business reference (e.g. BZ-PY-2026-0017) from a ledger description. */
+function extractBusinessRef(description?: string | null): string | null {
+  if (!description) return null;
+  const m = description.match(/BZ-[A-Z]+-\d{4}-\d+/);
+  return m ? m[0] : null;
+}
+
+function buildRef(refType?: string | null, refId?: string | null, id?: string, description?: string | null): string {
+  // Prefer the real business reference embedded in the description
+  const businessRef = extractBusinessRef(description);
+  if (businessRef) return businessRef;
+  // Fallback: short UUID-based identifier
   const prefix = refType === 'deposit' ? 'DEP' : refType === 'payment' ? 'PAY' : 'OP';
   const suffix = (refId || id || '').slice(0, 6).toUpperCase();
   return `${prefix}-${suffix}`;
@@ -112,7 +133,7 @@ export function buildMovementFromWalletOp(op: RawWalletOp): StatementMovement {
   const credit = isCredit(op.operation_type, op.balance_before, op.balance_after);
   return {
     date:      op.created_at,
-    reference: buildRef(op.reference_type, op.reference_id, op.id),
+    reference: buildRef(op.reference_type, op.reference_id, op.id, op.description),
     type:      getMovementType(op.operation_type),
     motif:     op.description || getFallbackMotif(op.operation_type),
     debit:     credit ? 0 : Math.abs(op.amount_xaf),
@@ -125,7 +146,7 @@ export function buildMovementFromLedgerEntry(entry: RawLedgerEntry): StatementMo
   const credit = isCredit(entry.entryType, entry.balanceBefore, entry.balanceAfter);
   return {
     date:      entry.createdAt.toISOString(),
-    reference: buildRef(entry.referenceType, entry.referenceId, entry.id),
+    reference: buildRef(entry.referenceType, entry.referenceId, entry.id, entry.description),
     type:      getMovementType(entry.entryType),
     motif:     entry.description || getFallbackMotif(entry.entryType),
     debit:     credit ? 0 : Math.abs(entry.amountXAF),

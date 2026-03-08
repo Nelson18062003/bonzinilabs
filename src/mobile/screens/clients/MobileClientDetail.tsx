@@ -121,6 +121,7 @@ export function MobileClientDetail() {
       await generateClientStatement({
         clientName: `${client.firstName} ${client.lastName}`,
         clientPhone: client.phone ?? undefined,
+        clientEmail: client.email || undefined,
         movements,
         periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
         periodTo: fmtDateLong(new Date().toISOString()),
