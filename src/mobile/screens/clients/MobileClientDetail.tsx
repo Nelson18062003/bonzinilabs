@@ -62,7 +62,7 @@ export function MobileClientDetail() {
 
   // Statement drawer state
   const [statementOpen, setStatementOpen] = useState(false);
-  const [statementPeriod, setStatementPeriod] = useState<'this_month' | 'last_month' | 'last_3_months' | 'this_year'>('this_month');
+  const [statementPeriod, setStatementPeriod] = useState<'this_month' | 'last_month' | 'last_3_months' | 'this_year' | 'all'>('this_month');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { data: ledgerEntries } = useClientLedger(clientId || '');
 
@@ -102,17 +102,29 @@ export function MobileClientDetail() {
           periodStart = new Date(now.getFullYear(), 0, 1);
           periodEnd = new Date(now.getFullYear(), 11, 31);
           break;
+        case 'all':
+          if (statementOperations.length > 0) {
+            const sorted = [...statementOperations].sort((a, b) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            periodStart = new Date(sorted[0].created_at);
+            periodEnd = now;
+          } else {
+            periodStart = startOfMonth(now);
+            periodEnd = endOfMonth(now);
+          }
+          break;
         default:
           periodStart = startOfMonth(now);
           periodEnd = endOfMonth(now);
       }
 
-      const filtered = statementOperations
-        .filter(op => {
-          const d = parseISO(op.created_at);
-          return isWithinInterval(d, { start: periodStart, end: periodEnd });
-        })
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const filtered = (statementPeriod === 'all'
+        ? [...statementOperations]
+        : statementOperations.filter(op => {
+            const d = parseISO(op.created_at);
+            return isWithinInterval(d, { start: periodStart, end: periodEnd });
+          })
+      ).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
       const initialBalance = filtered.length > 0 ? filtered[0].balance_before : (client.walletBalance || 0);
       const finalBalance = filtered.length > 0 ? filtered[filtered.length - 1].balance_after : (client.walletBalance || 0);
@@ -495,11 +507,12 @@ export function MobileClientDetail() {
             </p>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { value: 'this_month', label: 'Ce mois' },
-                { value: 'last_month', label: 'Mois dernier' },
-                { value: 'last_3_months', label: '3 derniers mois' },
-                { value: 'this_year', label: 'Cette année' },
-              ] as const).map(p => (
+                { value: 'this_month' as const, label: 'Ce mois' },
+                { value: 'last_month' as const, label: 'Mois dernier' },
+                { value: 'last_3_months' as const, label: '3 derniers mois' },
+                { value: 'this_year' as const, label: 'Cette année' },
+                { value: 'all' as const, label: 'Tout' },
+              ]).map(p => (
                 <Button
                   key={p.value}
                   variant={statementPeriod === p.value ? 'default' : 'outline'}

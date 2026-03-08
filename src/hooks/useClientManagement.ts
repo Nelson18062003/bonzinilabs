@@ -199,7 +199,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(1000);
 
       // Apply entry type filter
       if (filters?.entryType && filters.entryType !== 'all') {
