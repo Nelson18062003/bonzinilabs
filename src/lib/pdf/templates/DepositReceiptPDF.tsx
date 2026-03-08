@@ -10,35 +10,50 @@ import {
   getDepositMethodLabel,
   getStatusLabel,
   getStatusColor,
+  getStatusBgColor,
 } from '../helpers';
 import '../fonts';
 
 const styles = StyleSheet.create({
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
   statusBadge: {
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 20,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
   },
   statusText: {
-    fontSize: 10,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.white,
+    fontSize: 11,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+  },
+  statusDate: {
+    fontSize: 11,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
+    color: colors.muted,
   },
   sectionTitle: {
-    fontSize: 11,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.text,
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: 18,
     marginBottom: 8,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  section: {
-    marginBottom: 14,
   },
 });
 
@@ -61,7 +76,10 @@ export interface DepositReceiptData {
 }
 
 export function DepositReceiptPDF({ data }: { data: DepositReceiptData }) {
+  const statusLabel = getStatusLabel(data.status);
   const statusColor = getStatusColor(data.status);
+  const statusBg = getStatusBgColor(data.status);
+  const dateDisplay = data.validated_at || data.created_at;
 
   const secondaryItems: Array<{ label: string; value: string }> = [];
   if (data.confirmed_amount_xaf && data.confirmed_amount_xaf !== data.amount_xaf) {
@@ -74,43 +92,40 @@ export function DepositReceiptPDF({ data }: { data: DepositReceiptData }) {
   return (
     <Document>
       <Page size="A4" style={baseStyles.page}>
-        <PDFHeader title="FICHE DE DÉPÔT" reference={data.reference} />
+        <PDFHeader type="depot" reference={data.reference} />
 
-        {/* Status badge */}
-        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-          <Text style={styles.statusText}>{getStatusLabel(data.status)}</Text>
+        {/* Statut + date */}
+        <View style={styles.statusRow}>
+          <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+          </View>
+          <Text style={styles.statusDate}>{formatDate(dateDisplay)}</Text>
         </View>
 
-        {/* Amount */}
+        {/* Bloc montant */}
         <PDFAmountBox
-          label="MONTANT DU DÉPÔT"
-          amount={`${formatXAF(data.amount_xaf)} XAF`}
+          amount={formatXAF(data.amount_xaf)}
           secondaryItems={secondaryItems}
         />
 
-        {/* Summary section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Récapitulatif</Text>
-          <PDFInfoRow label="Référence" value={data.reference} />
-          <PDFInfoRow label="Statut" value={getStatusLabel(data.status)} />
-          <PDFInfoRow label="Date de création" value={formatDate(data.created_at)} />
-          {data.validated_at && (
-            <PDFInfoRow label="Date validation" value={formatDate(data.validated_at)} />
-          )}
-          <PDFInfoRow label="Mode de dépôt" value={getDepositMethodLabel(data.method)} />
-          {data.bank_name && <PDFInfoRow label="Banque" value={data.bank_name} />}
-          {data.agency_name && <PDFInfoRow label="Agence" value={data.agency_name} />}
-        </View>
+        {/* Section TRANSACTION */}
+        <Text style={styles.sectionTitle}>Transaction</Text>
+        <PDFInfoRow label="Mode de dépôt" value={getDepositMethodLabel(data.method)} />
+        {data.agency_name && <PDFInfoRow label="Agence" value={data.agency_name} />}
+        {data.bank_name && <PDFInfoRow label="Banque" value={data.bank_name} />}
+        <PDFInfoRow label="Date de création" value={formatDate(data.created_at)} />
+        {data.validated_at && (
+          <PDFInfoRow label="Date de validation" value={formatDate(data.validated_at)} />
+        )}
 
-        {/* Client section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Client</Text>
-          <PDFInfoRow label="Nom" value={data.client_name} />
-          {data.client_phone && <PDFInfoRow label="Téléphone" value={data.client_phone} />}
-          {data.client_email && <PDFInfoRow label="E-mail" value={data.client_email} />}
-          {data.client_country && <PDFInfoRow label="Pays" value={data.client_country} />}
-          {data.company_name && <PDFInfoRow label="Entreprise" value={data.company_name} />}
-        </View>
+        {/* Section CLIENT */}
+        <Text style={styles.sectionTitle}>Client</Text>
+        <PDFInfoRow label="Nom" value={data.client_name} bold />
+        {data.client_phone && <PDFInfoRow label="Téléphone" value={data.client_phone} />}
+        {data.client_email && <PDFInfoRow label="Email" value={data.client_email} />}
+        {data.client_country && <PDFInfoRow label="Pays" value={data.client_country} />}
+        {data.company_name && <PDFInfoRow label="Entreprise" value={data.company_name} />}
 
         <PDFFooter />
       </Page>

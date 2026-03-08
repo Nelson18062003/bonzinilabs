@@ -324,10 +324,9 @@ export default function PaymentDetailPage() {
           created_at: p.created_at,
         })),
       };
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
         <PaymentReceiptPDF data={receiptData} />,
-        `Paiement_${payment.reference}_${dateStr}.pdf`,
+        `recu_paiement_${payment.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
       toast.success('Relevé téléchargé');
     } catch (error) {
