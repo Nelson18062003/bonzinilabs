@@ -1,0 +1,358 @@
+import { useState } from "react";
+
+// ============================================================
+// BONZINI — RELEVÉ PDF CLIENT
+// Couleurs marque : Violet #9b59b6 · Or #e8a838 · Orange #e8632b
+// ============================================================
+
+const BRAND = {
+  violet: "#9b59b6",
+  violetDark: "#7d3c98",
+  violetLight: "#f3ecf8",
+  gold: "#e8a838",
+  goldLight: "#fdf4e3",
+  orange: "#e8632b",
+  orangeLight: "#fdeee8",
+  dark: "#1a1028",
+  text: "#2d2040",
+  muted: "#7a7290",
+  light: "#f8f6fa",
+  border: "#ebe6f0",
+  green: "#10b981",
+  red: "#e8632b",
+};
+
+const CLIENT = {
+  name: "Kamga Paul",
+  phone: "+237 677 889 900",
+  country: "Cameroun",
+  id: "CLI-0042",
+};
+
+const PERIOD = {
+  from: "15 janvier 2026",
+  to: "8 mars 2026",
+  emission: "8 mars 2026 à 14:32",
+};
+
+const MOVEMENTS = [
+  { date: "16/01/2026", ref: "DEP-001", type: "Dépôt", motif: "Dépôt espèces", debit: 0, credit: 500000 },
+  { date: "18/01/2026", ref: "PAY-001", type: "Paiement", motif: "Paiement Alipay — Zhang Wei — ¥559", debit: 500000, credit: 0 },
+  { date: "25/01/2026", ref: "DEP-002", type: "Dépôt", motif: "Dépôt virement bancaire", debit: 0, credit: 2000000 },
+  { date: "26/01/2026", ref: "PAY-002", type: "Paiement", motif: "Paiement WeChat — Li Ming — ¥1 118", debit: 1000000, credit: 0 },
+  { date: "02/02/2026", ref: "PAY-003", type: "Paiement", motif: "Paiement Alipay — Liu Yang — ¥559", debit: 500000, credit: 0 },
+  { date: "10/02/2026", ref: "DEP-003", type: "Dépôt", motif: "Dépôt espèces", debit: 0, credit: 3000000 },
+  { date: "11/02/2026", ref: "PAY-004", type: "Paiement", motif: "Paiement Virement — Wang Corp — ¥2 230", debit: 2000000, credit: 0 },
+  { date: "15/02/2026", ref: "RMB-001", type: "Remboursement", motif: "Remboursement PAY-004 (partiel)", debit: 0, credit: 200000 },
+  { date: "20/02/2026", ref: "DEP-004", type: "Dépôt", motif: "Dépôt Mobile Money", debit: 0, credit: 1500000 },
+  { date: "22/02/2026", ref: "PAY-005", type: "Paiement", motif: "Paiement Cash — Chen Fang — ¥880", debit: 800000, credit: 0 },
+  { date: "28/02/2026", ref: "DEP-005", type: "Dépôt", motif: "Dépôt virement bancaire", debit: 0, credit: 5000000 },
+  { date: "01/03/2026", ref: "PAY-006", type: "Paiement", motif: "Paiement Alipay — Zhang Wei — ¥3 360", debit: 3000000, credit: 0 },
+  { date: "03/03/2026", ref: "PAY-007", type: "Paiement", motif: "Paiement WeChat — Li Ming — ¥1 677", debit: 1500000, credit: 0 },
+  { date: "05/03/2026", ref: "DEP-006", type: "Dépôt", motif: "Dépôt espèces", debit: 0, credit: 2000000 },
+  { date: "07/03/2026", ref: "PAY-008", type: "Paiement", motif: "Paiement Virement — Bank of China — ¥5 575", debit: 5000000, credit: 0 },
+];
+
+function fmt(n) { return n.toLocaleString("fr-FR"); }
+
+function computeMovements() {
+  let solde = 0;
+  return MOVEMENTS.map(m => {
+    solde = solde + m.credit - m.debit;
+    return { ...m, solde };
+  });
+}
+
+// ─── LOGO SVG (tracé vectoriel automatique du vrai logo — NE PAS MODIFIER) ───
+function BonziniLogo({ size = 40 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50.8,43.87L49.79,43.9L48.86,43.85L47.93,43.7L47.15,43.52L46.4,43.24L45.69,42.93L45.05,42.56L44.45,42.12L43.91,41.66L43.44,41.12L43.01,40.56L42.57,39.97L42.12,39.37L41.69,38.78L41.25,38.19L40.81,37.6L40.39,37.0L39.97,36.45L39.54,35.85L39.12,35.27L38.7,34.7L38.27,34.12L37.85,33.53L37.41,32.94L36.98,32.35L36.55,31.75L36.13,31.16L35.68,30.57L35.27,29.97L34.82,29.38L34.42,28.79L33.97,28.2L33.55,27.6L33.11,27.02L32.68,26.43L32.29,25.83L32.47,25.15L33.02,24.72L33.67,24.3L34.29,23.88L34.89,23.53L35.56,23.15L36.24,22.79L36.92,22.45L37.6,22.12L38.27,21.84L39.03,21.54L39.8,21.27L40.56,21.02L41.32,20.8L42.13,20.58L42.93,20.39L43.86,20.25L44.25,20.91L44.44,21.76L44.61,22.61L44.78,23.45L44.96,24.29L45.12,25.15L45.29,25.99L45.46,26.84L45.63,27.69L45.81,28.52L45.97,29.38L46.15,30.23L46.32,31.06L46.49,31.91L46.66,32.75L46.82,33.6L46.99,34.44L47.17,35.22L47.34,36.07L47.51,36.92L47.67,37.76L47.81,38.7L48.05,39.46L48.52,39.99L49.27,40.3L50.21,40.34L51.06,40.18L51.64,39.71L51.97,39.03L52.16,38.26L52.33,37.41L52.5,36.49L52.67,35.65L52.83,34.8L52.99,33.95L53.17,33.11L53.34,32.26L53.49,31.41L53.66,30.57L53.83,29.72L54.01,28.87L54.18,28.03L54.34,27.18L54.52,26.33L54.69,25.49L54.86,24.64L55.03,23.79L55.2,22.95L55.38,22.18L55.57,21.34L55.8,20.5L56.14,19.85L56.96,20.07L57.66,20.38L58.34,20.67L59.1,20.99L59.78,21.3L60.47,21.59L61.21,21.93L61.9,22.22L62.59,22.52L63.34,22.85L64.01,23.15L64.73,23.45L65.45,23.77L66.13,24.06L66.86,24.39L67.56,24.72L67.67,25.4L67.36,26.08L66.98,26.74L66.55,27.34L66.13,27.92L65.71,28.49L65.28,29.09L64.86,29.68L64.44,30.24L64.0,30.82L63.59,31.42L63.16,32.01L62.73,32.6L62.31,33.19L61.87,33.78L61.44,34.38L61.01,34.97L60.58,35.56L60.14,36.16L59.71,36.75L59.27,37.33L58.85,37.91L58.43,38.48L58.0,39.06L57.58,39.66L57.14,40.22L56.71,40.81L56.22,41.4L55.72,41.91L55.18,42.34L54.53,42.74L53.86,43.1L53.18,43.37L52.41,43.61L51.57,43.79Z" fill="#F3A745"/>
+      <path d="M51.4,49.03L50.21,49.07L49.03,49.07L47.84,49.07L46.74,48.97L45.64,48.9L44.54,48.82L43.44,48.72L42.42,48.57L41.41,48.41L40.39,48.24L39.33,48.09L38.36,47.91L37.34,47.75L36.33,47.57L35.31,47.4L34.29,47.21L33.28,47.02L32.26,46.83L31.33,46.65L30.31,46.46L29.3,46.25L28.35,46.06L27.35,45.87L26.33,45.69L25.32,45.5L24.3,45.32L23.29,45.13L22.35,44.96L21.34,44.76L20.49,44.45L19.98,43.73L20.15,42.77L20.46,41.91L20.78,41.07L21.09,40.22L21.43,39.37L21.76,38.49L22.1,37.62L22.43,36.75L22.75,35.9L23.09,35.06L23.4,34.21L23.74,33.36L24.44,33.11L25.19,33.53L25.91,33.97L26.67,34.45L27.35,34.9L28.09,35.39L28.79,35.86L29.49,36.33L30.23,36.83L30.91,37.27L31.65,37.76L32.35,38.23L33.06,38.7L33.78,39.19L34.46,39.64L35.19,40.14L35.9,40.6L36.6,41.07L37.34,41.56L38.02,42.02L38.77,42.51L39.46,42.96L40.22,43.43L40.98,43.82L41.78,44.2L42.59,44.55L43.45,44.88L44.37,45.16L45.3,45.4L46.32,45.61L47.33,45.78L48.43,45.85L49.53,45.93L50.64,45.87L51.82,45.81L52.84,45.65L53.79,45.47L54.78,45.22L55.63,44.96L56.56,44.63L57.39,44.28L58.17,43.94L58.93,43.51L59.7,43.07L60.44,42.59L61.13,42.13L61.84,41.66L62.57,41.17L63.26,40.73L64.01,40.23L64.69,39.75L65.39,39.29L66.13,38.8L66.81,38.35L67.57,37.87L68.25,37.4L68.95,36.92L69.69,36.42L70.36,35.99L71.13,35.48L71.8,35.05L72.51,34.55L73.24,34.08L73.96,33.62L74.68,33.17L75.44,33.21L75.81,34.04L76.14,34.89L76.49,35.73L76.84,36.58L77.18,37.43L77.52,38.27L77.86,39.12L78.2,39.97L78.54,40.81L78.89,41.66L79.23,42.51L79.57,43.35L79.75,44.2L78.91,44.54L77.9,44.75L76.88,44.94L75.87,45.12L74.94,45.3L73.92,45.48L72.9,45.67L71.89,45.85L70.87,46.06L69.93,46.23L68.92,46.41L67.91,46.64L66.98,46.83L65.96,47.04L64.94,47.22L64.01,47.44L63.0,47.64L61.98,47.81L60.97,48.0L59.95,48.16L58.93,48.3L57.88,48.43L56.82,48.56L55.8,48.71L54.7,48.79L53.6,48.9L52.41,48.93Z" fill="#A947FE"/>
+      <path d="M75.61,66.81L74.77,66.56L74.12,66.13L73.47,65.71L72.8,65.28L72.14,64.83L71.46,64.42L70.79,63.97L70.11,63.53L69.43,63.09L68.76,62.67L68.1,62.24L67.44,61.81L66.79,61.39L66.13,60.93L65.45,60.49L64.8,60.03L64.18,59.6L63.51,59.13L62.88,58.68L62.24,58.2L61.63,57.75L60.97,57.26L60.32,56.82L59.64,56.39L58.93,56.02L58.17,55.63L57.45,55.29L56.65,55.0L55.8,54.74L54.95,54.51L54.02,54.3L53.09,54.15L52.16,54.02L51.06,53.98L49.96,53.98L48.86,53.99L47.87,54.11L46.91,54.21L45.98,54.39L45.05,54.61L44.2,54.85L43.43,55.12L42.61,55.46L41.83,55.8L41.15,56.15L40.4,56.56L39.71,56.96L39.03,57.39L38.36,57.83L37.68,58.25L37.02,58.68L36.36,59.1L35.7,59.53L35.05,59.95L34.38,60.4L33.7,60.85L33.02,61.29L32.39,61.73L31.75,62.16L31.08,62.6L30.4,63.06L29.76,63.51L29.12,63.93L28.45,64.39L27.77,64.85L27.1,65.28L26.49,65.71L25.83,66.16L25.15,66.59L24.39,66.76L24.01,66.05L23.7,65.28L23.37,64.5L23.03,63.7L22.71,62.91L22.4,62.15L22.09,61.39L21.75,60.63L21.42,59.84L21.11,59.02L20.77,58.26L20.45,57.49L20.14,56.73L20.24,55.9L21.08,55.64L21.91,55.38L22.72,55.12L23.6,54.87L24.47,54.65L25.32,54.4L26.16,54.19L27.1,53.96L27.94,53.75L28.87,53.53L29.75,53.34L30.65,53.16L31.58,52.97L32.51,52.79L33.45,52.63L34.38,52.46L35.31,52.3L36.3,52.16L37.26,52.01L38.27,51.92L39.2,51.78L40.22,51.66L41.24,51.59L42.17,51.46L43.27,51.41L44.28,51.33L45.3,51.27L46.4,51.24L47.42,51.19L48.52,51.18L49.53,51.1L50.64,51.1L51.65,51.18L52.75,51.2L53.77,51.25L54.87,51.27L55.88,51.34L56.9,51.43L57.94,51.48L58.93,51.59L59.95,51.68L60.97,51.79L61.9,51.92L62.91,52.05L63.84,52.18L64.78,52.33L65.79,52.49L66.72,52.65L67.65,52.83L68.59,53.0L69.46,53.18L70.36,53.4L71.3,53.57L72.14,53.78L73.07,54.02L73.92,54.21L74.8,54.45L75.7,54.69L76.55,54.91L77.39,55.17L78.24,55.43L79.09,55.69L79.85,56.01L79.73,56.9L79.4,57.66L79.09,58.48L78.76,59.27L78.44,60.03L78.15,60.8L77.82,61.62L77.49,62.4L77.16,63.17L76.85,63.93L76.55,64.74L76.21,65.54L75.9,66.3Z" fill="#A947FE"/>
+      <path d="M56.31,80.04L55.73,79.59L55.55,78.76L55.38,77.93L55.21,77.1L55.04,76.29L54.87,75.44L54.69,74.6L54.52,73.75L54.34,72.9L54.17,72.06L54.0,71.21L53.82,70.36L53.65,69.52L53.48,68.67L53.3,67.82L53.13,66.98L52.96,66.13L52.79,65.28L52.61,64.44L52.43,63.59L52.26,62.74L52.12,61.9L51.96,61.05L51.68,60.29L51.21,59.78L50.47,59.51L49.45,59.48L48.66,59.7L48.11,60.2L47.8,60.88L47.63,61.73L47.47,62.57L47.3,63.42L47.15,64.27L46.98,65.11L46.8,65.96L46.64,66.81L46.47,67.65L46.3,68.5L46.14,69.35L45.96,70.19L45.79,71.04L45.62,71.89L45.44,72.73L45.27,73.58L45.11,74.43L44.93,75.28L44.76,76.12L44.59,76.97L44.4,77.82L44.2,78.63L43.95,79.38L43.16,79.51L42.34,79.31L41.49,79.1L40.73,78.89L39.97,78.65L39.2,78.38L38.44,78.09L37.76,77.8L37.06,77.48L36.37,77.14L35.7,76.8L35.06,76.44L34.38,76.04L33.78,75.67L33.18,75.28L32.58,74.85L32.1,74.26L32.5,73.58L32.91,72.99L33.35,72.4L33.78,71.8L34.21,71.22L34.63,70.64L35.06,70.04L35.48,69.46L35.9,68.9L36.33,68.29L36.75,67.73L37.18,67.15L37.63,66.55L38.08,65.96L38.52,65.37L38.95,64.81L39.37,64.23L39.8,63.66L40.22,63.08L40.66,62.49L41.07,61.88L41.49,61.24L41.9,60.63L42.27,60.03L42.69,59.44L43.17,58.85L43.65,58.34L44.2,57.83L44.79,57.43L45.39,57.07L46.15,56.74L46.91,56.48L47.68,56.31L48.6,56.18L49.53,56.1L50.47,56.16L51.48,56.22L52.33,56.35L53.17,56.56L53.85,56.83L54.56,57.15L55.19,57.58L55.72,58.01L56.23,58.51L56.73,59.1L57.15,59.68L57.58,60.27L57.99,60.88L58.41,61.47L58.83,62.07L59.25,62.66L59.68,63.25L60.11,63.84L60.54,64.43L60.96,65.03L61.39,65.6L61.81,66.17L62.24,66.75L62.66,67.33L63.09,67.91L63.52,68.5L63.96,69.09L64.41,69.69L64.84,70.28L65.28,70.87L65.71,71.45L66.13,72.03L66.55,72.63L66.97,73.24L67.34,73.84L67.74,74.49L67.43,75.11L66.72,75.42L66.05,75.72L65.35,76.04L64.61,76.36L63.93,76.65L63.25,76.97L62.5,77.31L61.81,77.62L61.13,77.92L60.41,78.24L59.7,78.54L59.02,78.85L58.29,79.17L57.58,79.49L56.9,79.79Z" fill="#FE560D"/>
+    </svg>
+  );
+}
+
+// ─── PDF DOCUMENT ───
+function PDFPreview() {
+  const movements = computeMovements();
+  const totalCredits = movements.reduce((s, m) => s + m.credit, 0);
+  const totalDebits = movements.reduce((s, m) => s + m.debit, 0);
+  const soldeFinal = movements[movements.length - 1]?.solde || 0;
+
+  const typeStyle = {
+    "Dépôt": { color: BRAND.green, bg: "#ecfdf5" },
+    "Paiement": { color: BRAND.orange, bg: BRAND.orangeLight },
+    "Remboursement": { color: "#3b82f6", bg: "#eff6ff" },
+  };
+
+  return (
+    <div style={{
+      background: "#fff", maxWidth: 960, margin: "0 auto",
+      fontFamily: "'DM Sans', sans-serif", color: BRAND.text,
+      boxShadow: "0 4px 40px rgba(0,0,0,0.1)", borderRadius: 4,
+      overflow: "hidden", aspectRatio: "297 / 210",
+    }}>
+
+      {/* ═══ EN-TÊTE ═══ */}
+      <div style={{
+        background: `linear-gradient(135deg, ${BRAND.dark} 0%, #2a1845 60%, ${BRAND.violetDark} 100%)`,
+        padding: "28px 32px 24px", color: "#fff",
+        position: "relative", overflow: "hidden",
+      }}>
+        {/* Decorative circles */}
+        <div style={{
+          position: "absolute", top: -60, right: -40,
+          width: 180, height: 180, borderRadius: "50%",
+          background: `radial-gradient(circle, ${BRAND.violet}15, transparent 70%)`,
+        }} />
+        <div style={{
+          position: "absolute", bottom: -30, left: -20,
+          width: 100, height: 100, borderRadius: "50%",
+          background: `radial-gradient(circle, ${BRAND.gold}10, transparent 70%)`,
+        }} />
+
+        {/* Logo + Titre */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+          position: "relative",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <BonziniLogo size={42} />
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.5px" }}>Bonzini</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>Paiements CEMAC → Chine</div>
+            </div>
+          </div>
+          <div style={{
+            textAlign: "right",
+            background: "rgba(255,255,255,0.06)",
+            padding: "8px 14px", borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}>
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700 }}>Document</div>
+            <div style={{ fontSize: 14, fontWeight: 800, marginTop: 1 }}>Relevé de compte</div>
+          </div>
+        </div>
+
+        {/* Barre décorative aux couleurs de la marque */}
+        <div style={{ display: "flex", gap: 0, margin: "20px 0 18px", borderRadius: 3, overflow: "hidden", height: 3 }}>
+          <div style={{ flex: 2, background: BRAND.gold }} />
+          <div style={{ flex: 3, background: BRAND.violet }} />
+          <div style={{ flex: 2, background: BRAND.orange }} />
+        </div>
+
+        {/* Infos client + période */}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 8, color: BRAND.gold, textTransform: "uppercase", letterSpacing: 2, fontWeight: 800, marginBottom: 6 }}>Client</div>
+            <div style={{ fontSize: 16, fontWeight: 800 }}>{CLIENT.name}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{CLIENT.phone}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{CLIENT.country} · {CLIENT.id}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 8, color: BRAND.gold, textTransform: "uppercase", letterSpacing: 2, fontWeight: 800, marginBottom: 6 }}>Période</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Du {PERIOD.from}</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Au {PERIOD.to}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 6 }}>Émis le {PERIOD.emission}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ RÉSUMÉ ═══ */}
+      <div style={{ display: "flex", borderBottom: `2px solid ${BRAND.border}` }}>
+        {[
+          { label: "Total dépôts", value: `+${fmt(totalCredits)}`, color: BRAND.green, bg: "#ecfdf5" },
+          { label: "Total paiements", value: `-${fmt(totalDebits)}`, color: BRAND.orange, bg: BRAND.orangeLight },
+          { label: "Solde final", value: fmt(soldeFinal), color: BRAND.violet, bg: BRAND.violetLight },
+        ].map((s, i) => (
+          <div key={s.label} style={{
+            flex: 1, padding: "16px 16px", textAlign: "center",
+            background: s.bg,
+            borderRight: i < 2 ? `1px solid ${BRAND.border}` : "none",
+          }}>
+            <div style={{ fontSize: 8, fontWeight: 800, color: BRAND.muted, textTransform: "uppercase", letterSpacing: 1.5 }}>{s.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: s.color, letterSpacing: "-0.5px", marginTop: 4 }}>{s.value}</div>
+            <div style={{ fontSize: 9, color: BRAND.muted, fontWeight: 500 }}>XAF</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══ TABLEAU ═══ */}
+      <div style={{ padding: "18px 24px" }}>
+        <div style={{
+          fontSize: 10, fontWeight: 800, color: BRAND.muted, textTransform: "uppercase",
+          letterSpacing: 1.5, marginBottom: 10,
+        }}>
+          Détail des mouvements ({movements.length})
+        </div>
+
+        {/* Header */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "78px 68px 82px 1fr 105px 105px 110px",
+          padding: "8px 10px",
+          background: BRAND.dark, borderRadius: "8px 8px 0 0",
+          fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.6)",
+          textTransform: "uppercase", letterSpacing: 1.2,
+        }}>
+          <span>Date</span>
+          <span>Réf.</span>
+          <span>Type</span>
+          <span>Motif</span>
+          <span style={{ textAlign: "right" }}>Débit</span>
+          <span style={{ textAlign: "right" }}>Crédit</span>
+          <span style={{ textAlign: "right" }}>Solde</span>
+        </div>
+
+        {/* Lignes */}
+        {movements.map((m, i) => {
+          const ts = typeStyle[m.type] || { color: BRAND.muted, bg: "#f5f5f5" };
+          return (
+            <div key={m.ref} style={{
+              display: "grid",
+              gridTemplateColumns: "78px 68px 82px 1fr 105px 105px 110px",
+              padding: "8px 10px",
+              borderBottom: `1px solid ${BRAND.border}`,
+              background: i % 2 === 0 ? "#fff" : BRAND.light,
+              fontSize: 11, alignItems: "center",
+            }}>
+              <span style={{ color: BRAND.muted, fontWeight: 500, fontSize: 10 }}>{m.date}</span>
+              <span style={{ color: BRAND.muted, fontWeight: 500, fontSize: 9.5, fontFamily: "monospace" }}>{m.ref}</span>
+              <span>
+                <span style={{
+                  fontSize: 8, fontWeight: 800, color: ts.color,
+                  background: ts.bg, padding: "2px 6px", borderRadius: 4,
+                }}>{m.type}</span>
+              </span>
+              <span style={{
+                color: BRAND.text, fontWeight: 500, fontSize: 10,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 6,
+              }}>{m.motif}</span>
+              <span style={{
+                textAlign: "right", fontWeight: 700, fontSize: 11,
+                color: m.debit > 0 ? BRAND.orange : "transparent",
+              }}>{m.debit > 0 ? `-${fmt(m.debit)}` : ""}</span>
+              <span style={{
+                textAlign: "right", fontWeight: 700, fontSize: 11,
+                color: m.credit > 0 ? BRAND.green : "transparent",
+              }}>{m.credit > 0 ? `+${fmt(m.credit)}` : ""}</span>
+              <span style={{
+                textAlign: "right", fontWeight: 800, fontSize: 11,
+                color: m.solde >= 0 ? BRAND.text : BRAND.orange,
+              }}>{fmt(m.solde)}</span>
+            </div>
+          );
+        })}
+
+        {/* Ligne de totaux */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "78px 68px 82px 1fr 105px 105px 110px",
+          padding: "10px 10px",
+          background: BRAND.dark, borderRadius: "0 0 8px 8px",
+          fontSize: 11, fontWeight: 800, color: "#fff", alignItems: "center",
+        }}>
+          <span />
+          <span />
+          <span />
+          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>Totaux</span>
+          <span style={{ textAlign: "right", color: "#ff8a65" }}>-{fmt(totalDebits)}</span>
+          <span style={{ textAlign: "right", color: "#66bb6a" }}>+{fmt(totalCredits)}</span>
+          <span style={{ textAlign: "right", fontSize: 12 }}>{fmt(soldeFinal)}</span>
+        </div>
+      </div>
+
+      {/* ═══ STATS ═══ */}
+      <div style={{
+        margin: "0 24px", padding: "14px 20px",
+        background: BRAND.light, borderRadius: 10,
+        display: "flex", justifyContent: "space-around",
+        border: `1px solid ${BRAND.border}`,
+      }}>
+        {[
+          { label: "Mouvements", value: movements.length, color: BRAND.violet },
+          { label: "Dépôts", value: movements.filter(m => m.type === "Dépôt").length, color: BRAND.green },
+          { label: "Paiements", value: movements.filter(m => m.type === "Paiement").length, color: BRAND.orange },
+          { label: "Remboursements", value: movements.filter(m => m.type === "Remboursement").length, color: "#3b82f6" },
+        ].map(s => (
+          <div key={s.label} style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 8, fontWeight: 700, color: BRAND.muted, textTransform: "uppercase", letterSpacing: 0.8 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══ PIED DE PAGE ═══ */}
+      <div style={{ padding: "20px 24px 24px", textAlign: "center" }}>
+        {/* Barre de marque */}
+        <div style={{ display: "flex", gap: 0, margin: "0 auto 16px", maxWidth: 200, borderRadius: 2, overflow: "hidden", height: 2 }}>
+          <div style={{ flex: 2, background: BRAND.gold }} />
+          <div style={{ flex: 3, background: BRAND.violet }} />
+          <div style={{ flex: 2, background: BRAND.orange }} />
+        </div>
+
+        <div style={{ fontSize: 9, color: BRAND.muted, lineHeight: 1.6 }}>
+          Document généré automatiquement par Bonzini — {PERIOD.emission}
+        </div>
+        <div style={{ fontSize: 9, color: "#b8b0c4", marginTop: 2 }}>
+          Ce relevé est fourni à titre informatif · support@bonzinilabs.com
+        </div>
+
+        <div style={{
+          marginTop: 14, display: "flex", justifyContent: "center", alignItems: "center", gap: 8,
+        }}>
+          <BonziniLogo size={22} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: BRAND.muted, letterSpacing: "-0.3px" }}>bonzinilabs.com</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SHOWCASE ───
+export default function App() {
+  const [zoom, setZoom] = useState(false);
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#f0edf3",
+      fontFamily: "'DM Sans', sans-serif", padding: "24px 16px",
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+      <div style={{ textAlign: "center", marginBottom: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: BRAND.muted, textTransform: "uppercase", letterSpacing: 2 }}>Prévisualisation PDF — A4 Paysage</div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: BRAND.dark, letterSpacing: "-0.5px", marginTop: 4 }}>Relevé de compte — {CLIENT.name}</div>
+        <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 6 }}>
+          <span style={{
+            fontFamily: "monospace", fontSize: 11,
+            background: BRAND.violetLight, color: BRAND.violet,
+            padding: "3px 10px", borderRadius: 5, fontWeight: 600,
+          }}>releve_KamgaPaul_20260308.pdf</span>
+        </div>
+      </div>
+
+      <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <button onClick={() => setZoom(!zoom)} style={{
+          padding: "8px 18px", borderRadius: 8,
+          border: `1px solid ${BRAND.border}`,
+          background: "#fff", color: BRAND.violet, fontWeight: 700, fontSize: 12,
+          cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+        }}>
+          {zoom ? "Vue réduite" : "Vue pleine taille"}
+        </button>
+      </div>
+
+      <div style={{
+        transform: zoom ? "none" : "scale(0.55)",
+        transformOrigin: "top center",
+        transition: "transform 0.3s ease",
+      }}>
+        <PDFPreview />
+      </div>
+    </div>
+  );
+}
