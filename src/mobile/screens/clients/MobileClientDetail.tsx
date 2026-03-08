@@ -8,6 +8,7 @@ import { formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
 import {
   generateClientStatement,
   buildMovementFromLedgerEntry,
+  shouldIncludeLedgerEntry,
   fmtDateLong,
 } from '@/lib/generateClientStatement';
 import { cn } from '@/lib/utils';
@@ -91,9 +92,18 @@ export function MobileClientDetail() {
     }
     setIsStatementGenerating(true);
     try {
-      const sorted = [...ledgerEntries].sort(
-        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-      );
+      const sorted = [...ledgerEntries]
+        .filter(entry => shouldIncludeLedgerEntry({
+          id: entry.id,
+          entryType: entry.entryType,
+          amountXAF: entry.amountXAF,
+          balanceBefore: entry.balanceBefore,
+          balanceAfter: entry.balanceAfter,
+          description: entry.description,
+          createdAt: entry.createdAt,
+          isTest: (entry as any).isTest,
+        }))
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
       const movements = sorted.map(entry =>
         buildMovementFromLedgerEntry({
           id: entry.id,
@@ -108,7 +118,7 @@ export function MobileClientDetail() {
         })
       );
 
-      generateClientStatement({
+      await generateClientStatement({
         clientName: `${client.firstName} ${client.lastName}`,
         clientPhone: client.phone ?? undefined,
         movements,

@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import {
   generateClientStatement,
   buildMovementFromWalletOp,
+  shouldIncludeWalletOp,
   fmtDateLong,
 } from '@/lib/generateClientStatement';
 
@@ -97,13 +98,13 @@ const HistoryPage = () => {
     }
     setIsGenerating(true);
     try {
-      const sorted = [...operations].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+      const sorted = [...operations]
+        .filter(op => shouldIncludeWalletOp(op))
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       const movements = sorted.map(op => buildMovementFromWalletOp(op));
       const clientName = profile ? `${profile.first_name} ${profile.last_name}` : 'Client';
 
-      generateClientStatement({
+      await generateClientStatement({
         clientName,
         clientPhone: profile?.phone ?? undefined,
         movements,
