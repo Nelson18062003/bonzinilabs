@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useResetClientPassword, useClientLedger } from '@/hooks/useClientManagement';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
-import { generateStatementPDF, loadLogoBase64, type StatementOperation } from '@/lib/generateStatementPDF';
-import { startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from 'date-fns';
+import { formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
+import {
+  generateClientStatement,
+  buildMovementFromLedgerEntry,
+  fmtDateLong,
+} from '@/lib/generateClientStatement';
 import { cn } from '@/lib/utils';
 import {
   Phone,
@@ -19,7 +22,6 @@ import {
   History,
   Plus,
   Minus,
-  MoreVertical,
   FileDown,
   Key,
   Copy,
@@ -36,19 +38,20 @@ import {
   DrawerFooter,
 } from '@/components/ui/drawer';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import { toast } from 'sonner';
 import type { AdjustmentType } from '@/types/admin';
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
-  ACTIVE: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  INACTIVE: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-  SUSPENDED: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  ACTIVE:      'bg-green-500/10 text-green-600 dark:text-green-400',
+  INACTIVE:    'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+  SUSPENDED:   'bg-red-500/10 text-red-600 dark:text-red-400',
   PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Actif',
-  INACTIVE: 'Inactif',
-  SUSPENDED: 'Suspendu',
+  ACTIVE:      'Actif',
+  INACTIVE:    'Inactif',
+  SUSPENDED:   'Suspendu',
   PENDING_KYC: 'KYC en attente',
 };
 
@@ -60,89 +63,8 @@ export function MobileClientDetail() {
   const { hasPermission } = useAdminAuth();
   const resetPasswordMutation = useResetClientPassword();
 
-  // Statement drawer state
-  const [statementOpen, setStatementOpen] = useState(false);
-  const [statementPeriod, setStatementPeriod] = useState<'this_month' | 'last_month' | 'last_3_months' | 'this_year' | 'all'>('this_month');
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isStatementGenerating, setIsStatementGenerating] = useState(false);
   const { data: ledgerEntries } = useClientLedger(clientId || '');
-
-  const statementOperations: StatementOperation[] = useMemo(() => {
-    if (!ledgerEntries) return [];
-    return ledgerEntries.map(entry => ({
-      id: entry.id,
-      created_at: entry.createdAt.toISOString(),
-      operation_type: entry.entryType,
-      amount_xaf: entry.amountXAF,
-      balance_before: entry.balanceBefore,
-      balance_after: entry.balanceAfter,
-      description: entry.description,
-    }));
-  }, [ledgerEntries]);
-
-  const handleGenerateStatement = async () => {
-    if (!client) return;
-    setIsGeneratingPDF(true);
-    try {
-      const now = new Date();
-      let periodStart: Date, periodEnd: Date;
-      switch (statementPeriod) {
-        case 'last_month': {
-          const lm = subMonths(now, 1);
-          periodStart = startOfMonth(lm);
-          periodEnd = endOfMonth(lm);
-          break;
-        }
-        case 'last_3_months':
-          periodStart = startOfMonth(subMonths(now, 2));
-          periodEnd = endOfMonth(now);
-          break;
-        case 'this_year':
-          periodStart = new Date(now.getFullYear(), 0, 1);
-          periodEnd = new Date(now.getFullYear(), 11, 31);
-          break;
-        case 'all':
-          if (statementOperations.length > 0) {
-            const sorted = [...statementOperations].sort((a, b) =>
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-            periodStart = new Date(sorted[0].created_at);
-            periodEnd = now;
-          } else {
-            periodStart = startOfMonth(now);
-            periodEnd = endOfMonth(now);
-          }
-          break;
-        default:
-          periodStart = startOfMonth(now);
-          periodEnd = endOfMonth(now);
-      }
-
-      const filtered = (statementPeriod === 'all'
-        ? [...statementOperations]
-        : statementOperations.filter(op => {
-            const d = parseISO(op.created_at);
-            return isWithinInterval(d, { start: periodStart, end: periodEnd });
-          })
-      ).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-      const initialBalance = filtered.length > 0 ? filtered[0].balance_before : (client.walletBalance || 0);
-      const finalBalance = filtered.length > 0 ? filtered[filtered.length - 1].balance_after : (client.walletBalance || 0);
-
-      const logoBase64 = await loadLogoBase64();
-      generateStatementPDF({
-        clientName: `${client.firstName} ${client.lastName}`,
-        clientPhone: client.phone,
-        periodStart,
-        periodEnd,
-        operations: filtered,
-        initialBalance,
-        finalBalance,
-        logoBase64,
-      });
-      setStatementOpen(false);
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
 
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
@@ -159,6 +81,50 @@ export function MobileClientDetail() {
   const openAdjustment = (type: AdjustmentType) => {
     setAdjustmentType(type);
     setAdjustmentOpen(true);
+  };
+
+  const handleDownloadStatement = async () => {
+    if (!client) return;
+    if (!ledgerEntries?.length) {
+      toast.error('Aucun mouvement à exporter');
+      return;
+    }
+    setIsStatementGenerating(true);
+    try {
+      const sorted = [...ledgerEntries].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      );
+      const movements = sorted.map(entry =>
+        buildMovementFromLedgerEntry({
+          id: entry.id,
+          entryType: entry.entryType,
+          amountXAF: entry.amountXAF,
+          balanceBefore: entry.balanceBefore,
+          balanceAfter: entry.balanceAfter,
+          referenceId: entry.referenceId,
+          referenceType: entry.referenceType,
+          description: entry.description,
+          createdAt: entry.createdAt,
+        })
+      );
+
+      generateClientStatement({
+        clientName: `${client.firstName} ${client.lastName}`,
+        clientPhone: client.phone ?? undefined,
+        movements,
+        periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
+        periodTo: fmtDateLong(new Date().toISOString()),
+        generatedAt: new Date().toLocaleString('fr-FR', {
+          day: 'numeric', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        }),
+      });
+    } catch (err) {
+      console.error('Error generating statement:', err);
+      toast.error('Erreur lors de la génération du relevé');
+    } finally {
+      setIsStatementGenerating(false);
+    }
   };
 
   const handleResetPassword = async () => {
@@ -201,22 +167,16 @@ export function MobileClientDetail() {
 
   return (
     <div className="flex flex-col min-h-screen pb-4">
-      <MobileHeader
-        title="Fiche client"
-        showBack
-        backTo="/m/clients"
-      />
+      <MobileHeader title="Fiche client" showBack backTo="/m/clients" />
 
       <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* Profile Card */}
         <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border">
           <div className="flex items-start gap-3 sm:gap-4">
-            {/* Avatar */}
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center text-lg sm:text-xl font-semibold text-primary flex-shrink-0">
               {initials}
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold truncate">
@@ -271,7 +231,8 @@ export function MobileClientDetail() {
           </div>
 
           <p className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">
-            {formatXAF(client.walletBalance || 0)} <span className="text-xl font-medium text-primary/70">XAF</span>
+            {formatXAF(client.walletBalance || 0)}{' '}
+            <span className="text-xl font-medium text-primary/70">XAF</span>
           </p>
           {currentRate && (
             <p className="text-base font-semibold text-muted-foreground mt-1">
@@ -310,7 +271,6 @@ export function MobileClientDetail() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Total Deposits */}
           <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -318,12 +278,12 @@ export function MobileClientDetail() {
               </div>
             </div>
             <p className="text-lg font-bold text-green-600 dark:text-green-400">
-              {formatXAF(client.totalDeposits || 0)} <span className="text-sm font-medium">XAF</span>
+              {formatXAF(client.totalDeposits || 0)}{' '}
+              <span className="text-sm font-medium">XAF</span>
             </p>
             <p className="text-xs text-muted-foreground">Total dépôts</p>
           </div>
 
-          {/* Total Payments */}
           <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -331,7 +291,8 @@ export function MobileClientDetail() {
               </div>
             </div>
             <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-              {formatXAF(client.totalPayments || 0)} <span className="text-sm font-medium">XAF</span>
+              {formatXAF(client.totalPayments || 0)}{' '}
+              <span className="text-sm font-medium">XAF</span>
             </p>
             <p className="text-xs text-muted-foreground">Total paiements</p>
           </div>
@@ -372,16 +333,27 @@ export function MobileClientDetail() {
           </button>
 
           <button
-            onClick={() => setStatementOpen(true)}
-            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+            onClick={handleDownloadStatement}
+            disabled={isStatementGenerating}
+            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform disabled:opacity-60"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <FileDown className="w-5 h-5 text-blue-500" />
+                {isStatementGenerating ? (
+                  <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                ) : (
+                  <FileDown className="w-5 h-5 text-blue-500" />
+                )}
               </div>
               <div className="text-left">
-                <p className="font-medium">Exporter relevé PDF</p>
-                <p className="text-xs text-muted-foreground">Télécharger l'historique</p>
+                <p className="font-medium">
+                  {isStatementGenerating ? 'Génération en cours…' : 'Exporter relevé PDF'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {ledgerEntries?.length
+                    ? `${ledgerEntries.length} opération${ledgerEntries.length > 1 ? 's' : ''}`
+                    : 'Télécharger l\'historique'}
+                </p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -438,10 +410,7 @@ export function MobileClientDetail() {
             </p>
           </div>
           <DrawerFooter>
-            <Button
-              onClick={handleResetPassword}
-              disabled={resetPasswordMutation.isPending}
-            >
+            <Button onClick={handleResetPassword} disabled={resetPasswordMutation.isPending}>
               {resetPasswordMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
@@ -465,16 +434,11 @@ export function MobileClientDetail() {
           </DrawerHeader>
           <div className="px-4 space-y-4">
             <p className="text-muted-foreground">
-              Voici le nouveau mot de passe temporaire. Transmettez-le de manière
-              sécurisée au client.
+              Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.
             </p>
             <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
               <code className="text-lg font-mono">{newPassword}</code>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCopyPassword}
-              >
+              <Button variant="ghost" size="icon" onClick={handleCopyPassword}>
                 {passwordCopied ? (
                   <Check className="w-5 h-5 text-green-500" />
                 ) : (
@@ -487,57 +451,7 @@ export function MobileClientDetail() {
             </p>
           </div>
           <DrawerFooter>
-            <Button onClick={() => setPasswordResultDrawerOpen(false)}>
-              Fermer
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Statement PDF Drawer */}
-      <Drawer open={statementOpen} onOpenChange={setStatementOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Exporter relevé PDF</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Choisissez la période puis téléchargez le relevé.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                { value: 'this_month' as const, label: 'Ce mois' },
-                { value: 'last_month' as const, label: 'Mois dernier' },
-                { value: 'last_3_months' as const, label: '3 derniers mois' },
-                { value: 'this_year' as const, label: 'Cette année' },
-                { value: 'all' as const, label: 'Tout' },
-              ]).map(p => (
-                <Button
-                  key={p.value}
-                  variant={statementPeriod === p.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatementPeriod(p.value)}
-                  className="w-full"
-                >
-                  {p.label}
-                </Button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              {statementOperations.length} opération{statementOperations.length > 1 ? 's' : ''} au total
-            </p>
-          </div>
-          <DrawerFooter>
-            <Button onClick={handleGenerateStatement} disabled={isGeneratingPDF}>
-              {isGeneratingPDF ? (
-                <><Loader2 className="w-4 h-4 animate-spin mr-2" />Génération...</>
-              ) : (
-                <><FileDown className="w-4 h-4 mr-2" />Télécharger PDF</>
-              )}
-            </Button>
-            <Button variant="outline" onClick={() => setStatementOpen(false)}>
-              Annuler
-            </Button>
+            <Button onClick={() => setPasswordResultDrawerOpen(false)}>Fermer</Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
