@@ -73,7 +73,7 @@ export function useClients(filters?: ClientFilters) {
       const { data: payments } = await supabaseAdmin
         .from('payments')
         .select('user_id, amount_xaf, status')
-        .in('status', ['completed', 'cash_completed'])
+        .eq('status', 'completed')
         .in('user_id', userIds);
 
       const paymentSums = new Map<string, number>();
@@ -139,7 +139,7 @@ export function useClient(userId: string) {
         .from('payments')
         .select('amount_xaf, status')
         .eq('user_id', userId)
-        .in('status', ['completed', 'cash_completed']);
+        .eq('status', 'completed');
 
       const totalPayments = clientPayments?.reduce((sum, p) => sum + p.amount_xaf, 0) || 0;
 
@@ -199,7 +199,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(1000);
 
       // Apply entry type filter
       if (filters?.entryType && filters.entryType !== 'all') {
