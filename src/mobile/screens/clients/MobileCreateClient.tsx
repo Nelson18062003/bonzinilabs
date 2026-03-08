@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import type { ClientGender } from '@/types/admin';
 
 type Step = 'identity' | 'contact' | 'confirm' | 'success';
@@ -123,7 +124,7 @@ export function MobileCreateClient() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="h-dvh flex flex-col overflow-hidden">
       <MobileHeader
         title="Nouveau client"
         showBack
@@ -221,17 +222,12 @@ export function MobileCreateClient() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="whatsappNumber">Numéro WhatsApp *</Label>
-                <Input
-                  id="whatsappNumber"
-                  type="tel"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="+237 6XX XXX XXX"
-                  className="mt-1.5"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Format international avec indicatif pays
-                </p>
+                <div className="mt-1.5">
+                  <PhoneCountryInput
+                    value={whatsappNumber}
+                    onChange={setWhatsappNumber}
+                  />
+                </div>
               </div>
 
               <div>
@@ -415,7 +411,7 @@ export function MobileCreateClient() {
 
       {/* Bottom Navigation */}
       {step !== 'success' && (
-        <div className="sticky bottom-0 bg-background border-t border-border px-4 py-3">
+        <div className="flex-shrink-0 bg-background border-t border-border px-4 py-3">
           <div className="flex gap-3">
             {step !== 'identity' && (
               <Button

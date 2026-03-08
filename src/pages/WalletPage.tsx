@@ -50,23 +50,39 @@ const WalletPage = () => {
         {/* Current Rate Card */}
         <Link to="/rates" className="block mb-6">
           <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 transition-colors">
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <TrendingUp className="h-4 w-4 text-primary" />
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-full bg-primary/10">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Taux du jour</p>
+                    <p className="text-xs text-muted-foreground">1M XAF =</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Taux Alipay du jour</p>
-                  {rateLoading ? (
-                    <Skeleton className="h-5 w-32" />
-                  ) : (
-                    <p className="text-sm font-semibold text-foreground">
-                      1M XAF = {formatNumber(Math.round(alipayRate))} CNY
-                    </p>
-                  )}
-                </div>
+                <span className="text-xs text-primary font-medium">Voir +</span>
               </div>
-              <span className="text-xs text-primary font-medium">Voir +</span>
+              {rateLoading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : clientRatesData?.activeRate ? (
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: 'Alipay', icon: '支', rate: clientRatesData.activeRate.rate_alipay, color: '#1677ff' },
+                    { label: 'WeChat', icon: '微', rate: clientRatesData.activeRate.rate_wechat, color: '#07c160' },
+                    { label: 'Virement', icon: '🏦', rate: clientRatesData.activeRate.rate_virement, color: '#8b5cf6' },
+                    { label: 'Cash', icon: '¥', rate: clientRatesData.activeRate.rate_cash, color: '#dc2626' },
+                  ].map(({ label, icon, rate, color }) => (
+                    <div key={label} className="flex items-center gap-1.5 px-2 py-1 rounded bg-background/50">
+                      <span className="text-xs font-bold" style={{ color }}>{icon}</span>
+                      <span className="text-[11px] text-muted-foreground flex-1">{label}</span>
+                      <span className="text-xs font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>¥{formatNumber(Math.round(rate))}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Non configuré</p>
+              )}
             </CardContent>
           </Card>
         </Link>

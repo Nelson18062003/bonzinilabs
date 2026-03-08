@@ -13,9 +13,12 @@ export interface Country {
 export const COUNTRIES: Country[] = [
   // Afrique
   { name: 'Cameroun', flag: '🇨🇲', dialCode: '237', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Congo', flag: '🇨🇬', dialCode: '242', phoneFormat: '## ### ####', maxDigits: 9 },
-  { name: 'RD Congo', flag: '🇨🇩', dialCode: '243', phoneFormat: '### ### ###', maxDigits: 9 },
   { name: 'Gabon', flag: '🇬🇦', dialCode: '241', phoneFormat: '# ## ## ##', maxDigits: 7 },
+  { name: 'Tchad', flag: '🇹🇩', dialCode: '235', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Centrafrique', flag: '🇨🇫', dialCode: '236', phoneFormat: '## ## ## ##', maxDigits: 8 },
+  { name: 'Congo', flag: '🇨🇬', dialCode: '242', phoneFormat: '## ### ####', maxDigits: 9 },
+  { name: 'Guinée Équatoriale', flag: '🇬🇶', dialCode: '240', phoneFormat: '### ### ###', maxDigits: 9 },
+  { name: 'RD Congo', flag: '🇨🇩', dialCode: '243', phoneFormat: '### ### ###', maxDigits: 9 },
   { name: "Côte d'Ivoire", flag: '🇨🇮', dialCode: '225', phoneFormat: '## ## ## ## ##', maxDigits: 10 },
   { name: 'Sénégal', flag: '🇸🇳', dialCode: '221', phoneFormat: '## ### ## ##', maxDigits: 9 },
   { name: 'Mali', flag: '🇲🇱', dialCode: '223', phoneFormat: '## ## ## ##', maxDigits: 8 },

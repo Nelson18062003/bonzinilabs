@@ -69,6 +69,18 @@ export function useClients(filters?: ClientFilters) {
         depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
       });
 
+      // Fetch payment totals (completed payments)
+      const { data: payments } = await supabaseAdmin
+        .from('payments')
+        .select('user_id, amount_xaf, status')
+        .in('status', ['completed', 'cash_completed'])
+        .in('user_id', userIds);
+
+      const paymentSums = new Map<string, number>();
+      payments?.forEach(p => {
+        paymentSums.set(p.user_id, (paymentSums.get(p.user_id) || 0) + p.amount_xaf);
+      });
+
       return clients.map(client => ({
         id: client.user_id,
         firstName: client.first_name || '',
@@ -80,7 +92,7 @@ export function useClients(filters?: ClientFilters) {
         walletId: walletMap.get(client.user_id)?.id || null,
         walletBalance: walletMap.get(client.user_id)?.balance_xaf || 0,
         totalDeposits: depositSums.get(client.user_id) || 0,
-        totalPayments: 0,
+        totalPayments: paymentSums.get(client.user_id) || 0,
         status: (client.status as 'ACTIVE') || 'ACTIVE',
       }));
     },
@@ -122,6 +134,15 @@ export function useClient(userId: string) {
 
       const totalDeposits = deposits?.reduce((sum, d) => sum + d.amount_xaf, 0) || 0;
 
+      // Fetch payment totals (completed payments)
+      const { data: clientPayments } = await supabaseAdmin
+        .from('payments')
+        .select('amount_xaf, status')
+        .eq('user_id', userId)
+        .in('status', ['completed', 'cash_completed']);
+
+      const totalPayments = clientPayments?.reduce((sum, p) => sum + p.amount_xaf, 0) || 0;
+
       // Fetch last ledger entry
       const { data: lastLedgerEntry } = await supabaseAdmin
         .from('ledger_entries')
@@ -143,7 +164,7 @@ export function useClient(userId: string) {
         walletId: wallet?.id || null,
         walletBalance: wallet?.balance_xaf || 0,
         totalDeposits,
-        totalPayments: 0,
+        totalPayments,
         status: 'ACTIVE' as const,
         lastLedgerEntry: lastLedgerEntry ? {
           id: lastLedgerEntry.id,

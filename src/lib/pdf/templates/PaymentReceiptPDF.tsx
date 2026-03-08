@@ -167,7 +167,7 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
           label="MONTANTS"
           amount={`${formatXAF(data.amount_xaf)} XAF`}
           secondaryItems={[
-            { label: 'Montant envoyé', value: `${formatRMB(data.amount_rmb)} RMB` },
+            { label: 'Montant envoyé', value: `¥${formatRMB(data.amount_rmb)}` },
             { label: 'Taux de change', value: rateDisplay },
           ]}
         />
@@ -239,7 +239,7 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
             )}
             <Image src={data.beneficiary_qr_code_url!} style={styles.qrCodeImage} />
             <Text style={styles.qrCodeLabel}>
-              {getPaymentMethodLabel(data.method)} — {formatRMB(data.amount_rmb)} RMB
+              {getPaymentMethodLabel(data.method)} — ¥{formatRMB(data.amount_rmb)}
             </Text>
           </View>
           <PDFFooter />
@@ -256,7 +256,7 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
             </Text>
             <Image src={data.cashPaymentQrDataUrl} style={styles.qrCodeImage} />
             <Text style={styles.qrCodeLabel}>
-              {data.reference} — {formatRMB(data.amount_rmb)} RMB
+              {data.reference} — ¥{formatRMB(data.amount_rmb)}
             </Text>
           </View>
           <PDFFooter />

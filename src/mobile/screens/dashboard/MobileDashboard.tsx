@@ -5,6 +5,7 @@ import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaymentStats } from '@/hooks/usePaginatedPayments';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
+import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useGreeting } from '@/hooks/useGreeting';
 import { useCountUp } from '@/hooks/useCountUp';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
@@ -43,6 +44,7 @@ export function MobileDashboard() {
   const { data: depositStats } = useDepositStats();
   const { data: paymentStats } = usePaymentStats();
   const { data: currentRate } = useCurrentExchangeRate();
+  const { data: activeDailyRate } = useActiveDailyRate();
   const { data: allDeposits } = useAdminDeposits();
 
   // Derived data
@@ -246,28 +248,42 @@ export function MobileDashboard() {
         </div>
 
         {/* ── 5. EXCHANGE RATE CARD ── */}
-        {currentRate && (
-          <button
-            onClick={() => navigate('/m/more/rates')}
-            className="w-full admin-card p-4 text-left active:scale-[0.98] transition-transform animate-slide-up"
-            style={{ animationDelay: '200ms', animationFillMode: 'both' }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Taux du jour</p>
-                  <p className="text-lg font-semibold">
-                    1M XAF = {formatCurrencyRMB(1000000 * currentRate.rate_xaf_to_rmb)}
-                  </p>
-                </div>
+        <button
+          onClick={() => navigate('/m/more/rates')}
+          className="w-full admin-card p-4 text-left active:scale-[0.98] transition-transform animate-slide-up"
+          style={{ animationDelay: '200ms', animationFillMode: 'both' }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary" />
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Taux du jour</p>
+                <p className="text-sm font-medium text-muted-foreground">1M XAF =</p>
+              </div>
             </div>
-          </button>
-        )}
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </div>
+          {activeDailyRate ? (
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Alipay', icon: '支', rate: activeDailyRate.rate_alipay, color: '#1677ff' },
+                { label: 'WeChat', icon: '微', rate: activeDailyRate.rate_wechat, color: '#07c160' },
+                { label: 'Virement', icon: '🏦', rate: activeDailyRate.rate_virement, color: '#8b5cf6' },
+                { label: 'Cash', icon: '¥', rate: activeDailyRate.rate_cash, color: '#dc2626' },
+              ].map(({ label, icon, rate, color }) => (
+                <div key={label} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/50">
+                  <span className="text-sm font-bold" style={{ color, minWidth: '1.2rem', textAlign: 'center' }}>{icon}</span>
+                  <span className="text-xs text-muted-foreground flex-1">{label}</span>
+                  <span className="text-sm font-semibold tabular-nums">¥{formatXAF(Math.round(rate))}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Non configuré</p>
+          )}
+        </button>
 
         {/* ── 6. RECENT ACTIVITY ── */}
         {recentDeposits.length > 0 && (
