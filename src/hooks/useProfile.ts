@@ -7,6 +7,7 @@ export interface Profile {
   user_id: string;
   first_name: string;
   last_name: string;
+  email: string | null;
   phone: string | null;
   avatar_url: string | null;
   date_of_birth: string | null;
@@ -40,6 +41,7 @@ export function useMyProfile() {
         user_id: data.user_id,
         first_name: data.first_name,
         last_name: data.last_name,
+        email: data.email,
         phone: data.phone,
         avatar_url: data.avatar_url,
         date_of_birth: data.date_of_birth,

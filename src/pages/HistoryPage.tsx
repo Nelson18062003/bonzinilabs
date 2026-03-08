@@ -107,6 +107,7 @@ const HistoryPage = () => {
       await generateClientStatement({
         clientName,
         clientPhone: profile?.phone ?? undefined,
+        clientEmail: profile?.email ?? undefined,
         movements,
         periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
         periodTo: fmtDateLong(new Date().toISOString()),

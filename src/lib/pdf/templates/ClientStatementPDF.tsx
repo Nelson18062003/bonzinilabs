@@ -24,6 +24,7 @@ export interface StatementMovement {
 export interface StatementInput {
   clientName: string;
   clientPhone?: string;
+  clientEmail?: string;
   clientCountry?: string;
   clientRef?: string;
   movements: StatementMovement[];
@@ -515,6 +516,7 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
   const {
     clientName,
     clientPhone,
+    clientEmail,
     clientCountry,
     clientRef,
     movements,
@@ -565,6 +567,7 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
               <Text style={s.headerGoldLabel}>Client</Text>
               <Text style={s.headerClientName}>{san(clientName)}</Text>
               {clientPhone ? <Text style={s.headerClientSub}>{san(clientPhone)}</Text> : null}
+              {clientEmail ? <Text style={s.headerClientSub}>{san(clientEmail)}</Text> : null}
               {extraInfo ? <Text style={s.headerClientSub}>{san(extraInfo)}</Text> : null}
             </View>
             <View style={s.headerPeriodRight}>
