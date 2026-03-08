@@ -742,7 +742,7 @@ export default function PaymentDetailPage() {
                   Taux appliqué : 1 RMB = {formatNumber(exchangeRateXAFPerRMB)} XAF
                 </p>
                 <p className="text-muted-foreground mt-0.5">
-                  {formatNumber(payment.amount_rmb, 2)} RMB = {formatNumber(payment.amount_xaf)} XAF
+                  ¥{formatNumber(payment.amount_rmb, 2)} = {formatNumber(payment.amount_xaf)} XAF
                 </p>
               </div>
             </div>

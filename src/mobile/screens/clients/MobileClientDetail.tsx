@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient, useResetClientPassword } from '@/hooks/useClientManagement';
+import { useClient, useResetClientPassword, useClientLedger } from '@/hooks/useClientManagement';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
+import { ClientStatementModal } from '@/components/statement/ClientStatementModal';
 import { cn } from '@/lib/utils';
 import {
   Phone,
@@ -57,6 +58,25 @@ export function MobileClientDetail() {
   const { data: currentRate } = useCurrentExchangeRate();
   const { hasPermission } = useAdminAuth();
   const resetPasswordMutation = useResetClientPassword();
+
+  // Statement modal state
+  const [statementOpen, setStatementOpen] = useState(false);
+  const { data: ledgerEntries } = useClientLedger(clientId || '');
+
+  const statementOperations = useMemo(() => {
+    if (!ledgerEntries) return [];
+    return ledgerEntries.map(entry => ({
+      id: entry.id,
+      created_at: entry.createdAt.toISOString(),
+      operation_type: entry.entryType === 'DEPOSIT_VALIDATED' ? 'deposit'
+        : entry.entryType.startsWith('PAYMENT') ? 'payment'
+        : 'adjustment',
+      amount_xaf: entry.amountXAF,
+      balance_before: entry.balanceBefore,
+      balance_after: entry.balanceAfter,
+      description: entry.description,
+    }));
+  }, [ledgerEntries]);
 
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
@@ -286,16 +306,16 @@ export function MobileClientDetail() {
           </button>
 
           <button
-            disabled
-            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border opacity-50"
+            onClick={() => setStatementOpen(true)}
+            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                <FileDown className="w-5 h-5 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <FileDown className="w-5 h-5 text-blue-500" />
               </div>
               <div className="text-left">
                 <p className="font-medium">Exporter relevé PDF</p>
-                <p className="text-xs text-muted-foreground">Bientôt disponible</p>
+                <p className="text-xs text-muted-foreground">Télécharger l'historique</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -407,6 +427,18 @@ export function MobileClientDetail() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Statement PDF Modal */}
+      {client && (
+        <ClientStatementModal
+          open={statementOpen}
+          onOpenChange={setStatementOpen}
+          clientName={`${client.firstName} ${client.lastName}`}
+          clientPhone={client.phone}
+          operations={statementOperations}
+          currentBalance={client.walletBalance || 0}
+        />
+      )}
     </div>
   );
 }

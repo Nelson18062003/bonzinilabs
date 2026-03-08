@@ -23,7 +23,7 @@ export function formatCurrencyRMB(amountRMB: number): string {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amountRMB) + ' RMB';
+  }).format(amountRMB);
 }
 
 // Date formatting

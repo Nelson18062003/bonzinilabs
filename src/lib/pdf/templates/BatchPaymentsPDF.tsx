@@ -285,7 +285,7 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
         {/* Total row */}
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>合计 / TOTAL</Text>
-          <Text style={styles.totalValue}>{formatRMB(totalRMB)} RMB</Text>
+          <Text style={styles.totalValue}>¥{formatRMB(totalRMB)}</Text>
         </View>
 
         <PDFFooter confidential />
