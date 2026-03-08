@@ -1,807 +1,460 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, useInView } from 'framer-motion';
-import { BonziniLogo } from '@/components/BonziniLogo';
-import { cn } from '@/lib/utils';
-import {
-  ChevronDown,
-  ArrowRight,
-  Menu,
-  X,
-  UserPlus,
-  ArrowDownToLine,
-  CheckCircle2,
-  TrendingUp,
-  Zap,
-  Shield,
-  Activity,
-  Headphones,
-  Smartphone,
-} from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, useInView, animate } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
-// ── Logo palette — 3 couleurs extraites du logo Bonzini ──────────────────────
-// Purple  hsl(258 100% 60%) — ailes du logo — confiance, tech
-// Amber   hsl(36  100% 55%) — "U" du logo   — chaleur, taux, valeur
-// Orange  hsl(16  100% 55%) — "n" du logo   — énergie, CTA, vitesse
-
-// ── Shared animation variants ────────────────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.05 },
-  },
+// ─── Constants ────────────────────────────────────────────────────────────────
+const C = {
+  bg: '#050208', violet: '#a64af7', violetGlow: '#c084fc',
+  gold: '#f3a745', orange: '#fe560d',
+  muted: '#8b82a0', dim: '#3d3555',
+  surface: '#0f0b18', surfaceLight: '#1a1428',
+  alipay: '#1677ff', wechat: '#07c160',
 };
+const F = { display: "'Syne', sans-serif", body: "'DM Sans', sans-serif" };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as number[] },
-  },
-};
+// ─── Logo SVG ─────────────────────────────────────────────────────────────────
+function Logo({ size = 36 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <path d="M50.8,43.87L49.79,43.9L48.86,43.85L47.93,43.7L47.15,43.52L46.4,43.24L45.69,42.93L45.05,42.56L44.45,42.12L43.91,41.66L43.44,41.12L43.01,40.56L42.57,39.97L42.12,39.37L41.69,38.78L41.25,38.19L40.81,37.6L40.39,37.0L39.97,36.45L39.54,35.85L39.12,35.27L38.7,34.7L38.27,34.12L37.85,33.53L37.41,32.94L36.98,32.35L36.55,31.75L36.13,31.16L35.68,30.57L35.27,29.97L34.82,29.38L34.42,28.79L33.97,28.2L33.55,27.6L33.11,27.02L32.68,26.43L32.29,25.83L32.47,25.15L33.02,24.72L33.67,24.3L34.29,23.88L34.89,23.53L35.56,23.15L36.24,22.79L36.92,22.45L37.6,22.12L38.27,21.84L39.03,21.54L39.8,21.27L40.56,21.02L41.32,20.8L42.13,20.58L42.93,20.39L43.86,20.25L44.25,20.91L44.44,21.76L44.61,22.61L44.78,23.45L44.96,24.29L45.12,25.15L45.29,25.99L45.46,26.84L45.63,27.69L45.81,28.52L45.97,29.38L46.15,30.23L46.32,31.06L46.49,31.91L46.66,32.75L46.82,33.6L46.99,34.44L47.17,35.22L47.34,36.07L47.51,36.92L47.67,37.76L47.81,38.7L48.05,39.46L48.52,39.99L49.27,40.3L50.21,40.34L51.06,40.18L51.64,39.71L51.97,39.03L52.16,38.26L52.33,37.41L52.5,36.49L52.67,35.65L52.83,34.8L52.99,33.95L53.17,33.11L53.34,32.26L53.49,31.41L53.66,30.57L53.83,29.72L54.01,28.87L54.18,28.03L54.34,27.18L54.52,26.33L54.69,25.49L54.86,24.64L55.03,23.79L55.2,22.95L55.38,22.18L55.57,21.34L55.8,20.5L56.14,19.85L56.96,20.07L57.66,20.38L58.34,20.67L59.1,20.99L59.78,21.3L60.47,21.59L61.21,21.93L61.9,22.22L62.59,22.52L63.34,22.85L64.01,23.15L64.73,23.45L65.45,23.77L66.13,24.06L66.86,24.39L67.56,24.72L67.67,25.4L67.36,26.08L66.98,26.74L66.55,27.34L66.13,27.92L65.71,28.49L65.28,29.09L64.86,29.68L64.44,30.24L64.0,30.82L63.59,31.42L63.16,32.01L62.73,32.6L62.31,33.19L61.87,33.78L61.44,34.38L61.01,34.97L60.58,35.56L60.14,36.16L59.71,36.75L59.27,37.33L58.85,37.91L58.43,38.48L58.0,39.06L57.58,39.66L57.14,40.22L56.71,40.81L56.22,41.4L55.72,41.91L55.18,42.34L54.53,42.74L53.86,43.1L53.18,43.37L52.41,43.61L51.57,43.79Z" fill="#F3A745"/>
+      <path d="M51.4,49.03L50.21,49.07L49.03,49.07L47.84,49.07L46.74,48.97L45.64,48.9L44.54,48.82L43.44,48.72L42.42,48.57L41.41,48.41L40.39,48.24L39.33,48.09L38.36,47.91L37.34,47.75L36.33,47.57L35.31,47.4L34.29,47.21L33.28,47.02L32.26,46.83L31.33,46.65L30.31,46.46L29.3,46.25L28.35,46.06L27.35,45.87L26.33,45.69L25.32,45.5L24.3,45.32L23.29,45.13L22.35,44.96L21.34,44.76L20.49,44.45L19.98,43.73L20.15,42.77L20.46,41.91L20.78,41.07L21.09,40.22L21.43,39.37L21.76,38.49L22.1,37.62L22.43,36.75L22.75,35.9L23.09,35.06L23.4,34.21L23.74,33.36L24.44,33.11L25.19,33.53L25.91,33.97L26.67,34.45L27.35,34.9L28.09,35.39L28.79,35.86L29.49,36.33L30.23,36.83L30.91,37.27L31.65,37.76L32.35,38.23L33.06,38.7L33.78,39.19L34.46,39.64L35.19,40.14L35.9,40.6L36.6,41.07L37.34,41.56L38.02,42.02L38.77,42.51L39.46,42.96L40.22,43.43L40.98,43.82L41.78,44.2L42.59,44.55L43.45,44.88L44.37,45.16L45.3,45.4L46.32,45.61L47.33,45.78L48.43,45.85L49.53,45.93L50.64,45.87L51.82,45.81L52.84,45.65L53.79,45.47L54.78,45.22L55.63,44.96L56.56,44.63L57.39,44.28L58.17,43.94L58.93,43.51L59.7,43.07L60.44,42.59L61.13,42.13L61.84,41.66L62.57,41.17L63.26,40.73L64.01,40.23L64.69,39.75L65.39,39.29L66.13,38.8L66.81,38.35L67.57,37.87L68.25,37.4L68.95,36.92L69.69,36.42L70.36,35.99L71.13,35.48L71.8,35.05L72.51,34.55L73.24,34.08L73.96,33.62L74.68,33.17L75.44,33.21L75.81,34.04L76.14,34.89L76.49,35.73L76.84,36.58L77.18,37.43L77.52,38.27L77.86,39.12L78.2,39.97L78.54,40.81L78.89,41.66L79.23,42.51L79.57,43.35L79.75,44.2L78.91,44.54L77.9,44.75L76.88,44.94L75.87,45.12L74.94,45.3L73.92,45.48L72.9,45.67L71.89,45.85L70.87,46.06L69.93,46.23L68.92,46.41L67.91,46.64L66.98,46.83L65.96,47.04L64.94,47.22L64.01,47.44L63.0,47.64L61.98,47.81L60.97,48.0L59.95,48.16L58.93,48.3L57.88,48.43L56.82,48.56L55.8,48.71L54.7,48.79L53.6,48.9L52.41,48.93L51.4,49.03Z" fill="#A947FE"/>
+      <path d="M75.61,66.81L74.77,66.56L74.12,66.13L73.47,65.71L72.8,65.28L72.14,64.83L71.46,64.42L70.79,63.97L70.11,63.53L69.43,63.09L68.76,62.67L68.1,62.24L67.44,61.81L66.79,61.39L66.13,60.93L65.45,60.49L64.8,60.03L64.18,59.6L63.51,59.13L62.88,58.68L62.24,58.2L61.63,57.75L60.97,57.26L60.32,56.82L59.64,56.39L58.93,56.02L58.17,55.63L57.45,55.29L56.65,55.0L55.8,54.74L54.95,54.51L54.02,54.3L53.09,54.15L52.16,54.02L51.06,53.98L49.96,53.98L48.86,53.99L47.87,54.11L46.91,54.21L45.98,54.39L45.05,54.61L44.2,54.85L43.43,55.12L42.61,55.46L41.83,55.8L41.15,56.15L40.4,56.56L39.71,56.96L39.03,57.39L38.36,57.83L37.68,58.25L37.02,58.68L36.36,59.1L35.7,59.53L35.05,59.95L34.38,60.4L33.7,60.85L33.02,61.29L32.39,61.73L31.75,62.16L31.08,62.6L30.4,63.06L29.76,63.51L29.12,63.93L28.45,64.39L27.77,64.85L27.1,65.28L26.49,65.71L25.83,66.16L25.15,66.59L24.39,66.76L24.01,66.05L23.7,65.28L23.37,64.5L23.03,63.7L22.71,62.91L22.4,62.15L22.09,61.39L21.75,60.63L21.42,59.84L21.11,59.02L20.77,58.26L20.45,57.49L20.14,56.73L20.24,55.9L21.08,55.64L21.91,55.38L22.72,55.12L23.6,54.87L24.47,54.65L25.32,54.4L26.16,54.19L27.1,53.96L27.94,53.75L28.87,53.53L29.75,53.34L30.65,53.16L31.58,52.97L32.51,52.79L33.45,52.63L34.38,52.46L35.31,52.3L36.3,52.16L37.26,52.01L38.27,51.92L39.2,51.78L40.22,51.66L41.24,51.59L42.17,51.46L43.27,51.41L44.28,51.33L45.3,51.27L46.4,51.24L47.42,51.19L48.52,51.18L49.53,51.1L50.64,51.1L51.65,51.18L52.75,51.2L53.77,51.25L54.87,51.27L55.88,51.34L56.9,51.43L57.94,51.48L58.93,51.59L59.95,51.68L60.97,51.79L61.9,51.92L62.91,52.05L63.84,52.18L64.78,52.33L65.79,52.49L66.72,52.65L67.65,52.83L68.59,53.0L69.46,53.18L70.36,53.4L71.3,53.57L72.14,53.78L73.07,54.02L73.92,54.21L74.8,54.45L75.7,54.69L76.55,54.91L77.39,55.17L78.24,55.43L79.09,55.69L79.85,56.01L79.73,56.9L79.4,57.66L79.09,58.48L78.76,59.27L78.44,60.03L78.15,60.8L77.82,61.62L77.49,62.4L77.16,63.17L76.85,63.93L76.55,64.74L76.21,65.54L75.9,66.3Z" fill="#A947FE"/>
+      <path d="M56.31,80.04L55.73,79.59L55.55,78.76L55.38,77.93L55.21,77.1L55.04,76.29L54.87,75.44L54.69,74.6L54.52,73.75L54.34,72.9L54.17,72.06L54.0,71.21L53.82,70.36L53.65,69.52L53.48,68.67L53.3,67.82L53.13,66.98L52.96,66.13L52.79,65.28L52.61,64.44L52.43,63.59L52.26,62.74L52.12,61.9L51.96,61.05L51.68,60.29L51.21,59.78L50.47,59.51L49.45,59.48L48.66,59.7L48.11,60.2L47.8,60.88L47.63,61.73L47.47,62.57L47.3,63.42L47.15,64.27L46.98,65.11L46.8,65.96L46.64,66.81L46.47,67.65L46.3,68.5L46.14,69.35L45.96,70.19L45.79,71.04L45.62,71.89L45.44,72.73L45.27,73.58L45.11,74.43L44.93,75.28L44.76,76.12L44.59,76.97L44.4,77.82L44.2,78.63L43.95,79.38L43.16,79.51L42.34,79.31L41.49,79.1L40.73,78.89L39.97,78.65L39.2,78.38L38.44,78.09L37.76,77.8L37.06,77.48L36.37,77.14L35.7,76.8L35.06,76.44L34.38,76.04L33.78,75.67L33.18,75.28L32.58,74.85L32.1,74.26L32.5,73.58L32.91,72.99L33.35,72.4L33.78,71.8L34.21,71.22L34.63,70.64L35.06,70.04L35.48,69.46L35.9,68.9L36.33,68.29L36.75,67.73L37.18,67.15L37.63,66.55L38.08,65.96L38.52,65.37L38.95,64.81L39.37,64.23L39.8,63.66L40.22,63.08L40.66,62.49L41.07,61.88L41.49,61.24L41.9,60.63L42.27,60.03L42.69,59.44L43.17,58.85L43.65,58.34L44.2,57.83L44.79,57.43L45.39,57.07L46.15,56.74L46.91,56.48L47.68,56.31L48.6,56.18L49.53,56.1L50.47,56.16L51.48,56.22L52.33,56.35L53.17,56.56L53.85,56.83L54.56,57.15L55.19,57.58L55.72,58.01L56.23,58.51L56.73,59.1L57.15,59.68L57.58,60.27L57.99,60.88L58.41,61.47L58.83,62.07L59.25,62.66L59.68,63.25L60.11,63.84L60.54,64.43L60.96,65.03L61.39,65.6L61.81,66.17L62.24,66.75L62.66,67.33L63.09,67.91L63.52,68.5L63.96,69.09L64.41,69.69L64.84,70.28L65.28,70.87L65.71,71.45L66.13,72.03L66.55,72.63L66.97,73.24L67.34,73.84L67.74,74.49L67.43,75.11L66.72,75.42L66.05,75.72L65.35,76.04L64.61,76.36L63.93,76.65L63.25,76.97L62.5,77.31L61.81,77.62L61.13,77.92L60.41,78.24L59.7,78.54L59.02,78.85L58.29,79.17L57.58,79.49L56.9,79.79Z" fill="#FE560D"/>
+    </svg>
+  );
+}
 
-// ── LandingNav ───────────────────────────────────────────────────────────────
-function LandingNav() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const navigate = useNavigate();
+// ─── Reveal (scroll animation) ───────────────────────────────────────────────
+function Reveal({ children, delay = 0, y = 50 }: { children: React.ReactNode; delay?: number; y?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-50px' });
+  return (
+    <motion.div ref={ref} initial={{ opacity: 0, y }} animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}>
+      {children}
+    </motion.div>
+  );
+}
 
+// ─── Counter ─────────────────────────────────────────────────────────────────
+function Counter({ end, suffix = '', prefix = '' }: { end: number; suffix?: string; prefix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const [display, setDisplay] = useState(0);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    if (!inView) return;
+    const ctrl = animate(0, end, { duration: 2, ease: 'easeOut', onUpdate: v => setDisplay(Math.floor(v)) });
+    return ctrl.stop;
+  }, [inView, end]);
+  return <span ref={ref}>{prefix}{display}{suffix}</span>;
+}
+
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+function Nav({ onCTA }: { onCTA: () => void }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', h);
+    return () => window.removeEventListener('scroll', h);
   }, []);
 
   return (
-    <header
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'bg-[#0a0515]/85 backdrop-blur-xl border-b border-white/10'
-          : 'bg-transparent',
-      )}
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          aria-label="Accueil"
-        >
-          <BonziniLogo size="sm" showText textPosition="right" className="[&_span]:text-white [&_span]:font-bold" />
-        </button>
-
-        {/* Desktop nav */}
-        <div className="hidden sm:flex items-center gap-3">
-          <Link
-            to="/auth"
-            className="text-white/80 hover:text-white text-sm font-medium transition-colors px-4 py-2"
-          >
-            Se connecter
-          </Link>
-          <Link
-            to="/auth?mode=signup"
-            className="btn-primary-gradient text-sm px-5 py-2.5 rounded-xl font-semibold"
-          >
-            Ouvrir un compte
-          </Link>
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+      background: scrolled ? 'rgba(5,2,8,0.85)' : 'transparent',
+      backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
+      borderBottom: scrolled ? `1px solid ${C.dim}40` : 'none',
+      transition: 'all 0.5s cubic-bezier(0.16,1,0.3,1)',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Logo size={28} />
+          <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 20, color: '#fff', letterSpacing: '-0.5px' }}>Bonzini</span>
         </div>
-
+        {/* Desktop */}
+        <div className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
+          {['Fonctionnement', 'Tarifs', 'FAQ'].map(t => (
+            <a key={t} href={`#${t.toLowerCase()}`} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none' }}>{t}</a>
+          ))}
+          <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13, color: '#fff', background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, border: 'none', padding: '10px 22px', borderRadius: 50, cursor: 'pointer' }}>
+            Envoyer un paiement
+          </button>
+        </div>
         {/* Mobile hamburger */}
-        <button
-          className="sm:hidden text-white/80 hover:text-white p-2 transition-colors"
-          onClick={() => setMobileOpen(v => !v)}
-          aria-label="Menu"
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8 }}>
+          {menuOpen
+            ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>}
         </button>
       </div>
-
-      {/* Mobile dropdown */}
-      {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.18 }}
-          className="sm:hidden bg-[#0a0515]/95 backdrop-blur-xl border-b border-white/10 px-4 pb-4 space-y-2"
-        >
-          <Link
-            to="/auth"
-            className="block py-3 text-white/80 hover:text-white text-sm font-medium transition-colors"
-            onClick={() => setMobileOpen(false)}
-          >
-            Se connecter
-          </Link>
-          <Link
-            to="/auth?mode=signup"
-            className="block btn-primary-gradient text-center py-3 rounded-xl text-sm font-semibold"
-            onClick={() => setMobileOpen(false)}
-          >
-            Ouvrir un compte
-          </Link>
-        </motion.div>
+      {menuOpen && (
+        <div style={{ background: `${C.surface}f5`, backdropFilter: 'blur(20px)', borderTop: `1px solid ${C.dim}`, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {['Fonctionnement', 'Tarifs', 'FAQ'].map(t => (
+            <a key={t} href={`#${t.toLowerCase()}`} onClick={() => setMenuOpen(false)} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none', padding: '8px 0' }}>{t}</a>
+          ))}
+          <button onClick={() => { setMenuOpen(false); onCTA(); }} style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13, color: '#fff', background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, border: 'none', padding: '12px 24px', borderRadius: 50, cursor: 'pointer' }}>
+            Envoyer un paiement
+          </button>
+        </div>
       )}
-    </header>
+    </nav>
   );
 }
 
-// ── HeroSection ──────────────────────────────────────────────────────────────
-function HeroSection() {
-  return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#0a0515] via-[#0f0a2e] to-[#0a0515]">
-      {/* Animated gradient orbs — tricolores */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        {/* Orbe 1 : Violet (ailes) */}
-        <motion.div
-          className="absolute w-[600px] h-[600px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, hsl(258 100% 60% / 0.22) 0%, transparent 70%)',
-            top: '-15%',
-            left: '-20%',
-          }}
-          animate={{ x: [0, 40, 0], y: [0, -25, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        {/* Orbe 2 : Orange (énergie) */}
-        <motion.div
-          className="absolute w-[700px] h-[700px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, hsl(16 100% 55% / 0.18) 0%, transparent 70%)',
-            bottom: '-25%',
-            right: '-25%',
-          }}
-          animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
-        {/* Orbe 3 : Ambre (chaleur) */}
-        <motion.div
-          className="absolute w-[350px] h-[350px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, hsl(36 100% 55% / 0.12) 0%, transparent 70%)',
-            top: '45%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
+// ─── Hero ─────────────────────────────────────────────────────────────────────
+function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
+  const [ok, setOk] = useState(false);
+  const [xafKey, setXafKey] = useState('500K');
+  const amountMap: Record<string, number> = { '100K': 100000, '500K': 500000, '1M': 1000000, '5M': 5000000 };
+  const displayMap: Record<string, string> = { '100K': '100 000', '500K': '500 000', '1M': '1 000 000', '5M': '5 000 000' };
+  const cny = Math.round(amountMap[xafKey] * rate / 1_000_000);
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-8"
-        >
-          {/* Badge */}
-          <motion.div variants={itemVariants} className="flex justify-center">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[hsl(36_100%_55%/0.15)] border border-[hsl(36_100%_55%/0.35)] text-[hsl(36_100%_70%)] text-xs font-semibold tracking-widest uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(16_100%_55%)] animate-pulse" />
-              Paiements vers la Chine · Depuis l'Afrique
-            </span>
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1
-            variants={itemVariants}
-            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight"
-            style={{ lineHeight: 1.1 }}
-          >
-            <span className="block">Réglez vos</span>
-            <span className="block">fournisseurs</span>
-            <span className="block bg-gradient-to-r from-[hsl(36_100%_70%)] via-white to-[hsl(16_100%_65%)] bg-clip-text text-transparent">
-              chinois en XAF.
-            </span>
-          </motion.h1>
-
-          {/* Subheadline */}
-          <motion.p
-            variants={itemVariants}
-            className="text-base sm:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed"
-          >
-            Vous importez depuis la Chine ? Bonzini règle directement vos fournisseurs
-            sur Alipay, WeChat Pay ou par virement — en XAF, au meilleur taux, sous 24h.
-            Sans carte internationale. Sans blocage.
-          </motion.p>
-
-          {/* CTA buttons */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2"
-          >
-            <Link
-              to="/auth?mode=signup"
-              className="w-full sm:w-auto btn-primary-gradient px-8 py-4 rounded-xl text-base font-semibold text-center transition-all duration-300 hover:-translate-y-0.5"
-              style={{ boxShadow: '0 8px 32px -8px hsl(258 100% 60% / 0.55)' }}
-            >
-              Ouvrir un compte gratuit →
-            </Link>
-            <Link
-              to="/auth"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-medium border border-white/15 text-white/70 hover:text-white hover:bg-white/8 hover:border-white/25 transition-all duration-300 text-center"
-            >
-              Se connecter
-            </Link>
-          </motion.div>
-
-          {/* Trust stats */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-wrap items-center justify-center gap-10 sm:gap-16 pt-6"
-          >
-            {[
-              { value: '500+', label: 'Importateurs actifs', color: 'text-[hsl(36_100%_65%)]' },
-              { value: '24h', label: 'Délai maximum', color: 'text-[hsl(258_100%_72%)]' },
-              { value: '100%', label: 'Sans blocage', color: 'text-[hsl(16_100%_65%)]' },
-            ].map(stat => (
-              <div key={stat.label} className="text-center">
-                <div className={`text-3xl sm:text-4xl font-extrabold ${stat.color}`}>{stat.value}</div>
-                <div className="text-xs sm:text-sm text-white/35 mt-1 font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/25"
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <ChevronDown className="w-6 h-6" />
-      </motion.div>
-    </section>
-  );
-}
-
-// ── TrustBar ─────────────────────────────────────────────────────────────────
-function TrustBar() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-
-  const methods = [
-    {
-      emoji: '📱',
-      chineseLabel: '支付宝',
-      label: 'Alipay',
-      color: 'hsl(36 100% 55%)',
-    },
-    {
-      emoji: '💬',
-      chineseLabel: '微信支付',
-      label: 'WeChat Pay',
-      color: 'hsl(16 100% 55%)',
-    },
-    {
-      emoji: '🏦',
-      chineseLabel: '银行转账',
-      label: 'Virement',
-      color: 'hsl(258 100% 60%)',
-    },
-  ];
+  useEffect(() => { const t = setTimeout(() => setOk(true), 200); return () => clearTimeout(t); }, []);
+  const t = (delay: number) => ({ opacity: ok ? 1 : 0, transform: ok ? 'none' : 'translateY(30px)', transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${delay}s` });
 
   return (
-    <section className="bg-[#0a0515] border-y border-white/5 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12"
-        >
-          <p className="text-white/35 text-xs uppercase tracking-widest font-semibold whitespace-nowrap">
-            Méthodes de paiement acceptées en Chine
+    <section style={{ minHeight: '100vh', background: C.bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', padding: '100px 24px 60px' }}>
+      {/* Orbs */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', borderRadius: '50%', filter: 'blur(150px)', opacity: 0.2, background: `conic-gradient(from 180deg, ${C.violet}, ${C.gold}, ${C.orange}, ${C.violet})`, animation: 'lp-spin 20s linear infinite' }} />
+        <div style={{ position: 'absolute', bottom: '-30%', right: '-15%', width: '50%', height: '70%', borderRadius: '50%', filter: 'blur(140px)', opacity: 0.12, background: `radial-gradient(circle, ${C.gold}, transparent)`, animation: 'lp-pulse 6s ease-in-out infinite' }} />
+      </div>
+
+      <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', position: 'relative', zIndex: 2, display: 'flex', gap: 60, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Left */}
+        <div style={{ flex: 1, minWidth: 300 }}>
+          <div style={t(0.1)}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `linear-gradient(135deg, ${C.violet}15, ${C.gold}10)`, border: `1px solid ${C.violet}20`, borderRadius: 50, padding: '7px 16px', marginBottom: 28 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 12px #4ade80' }} />
+              <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.violetGlow }}>Le paiement, c'est nous. Le business, c'est vous.</span>
+            </div>
+          </div>
+
+          <h1 style={{ ...t(0.25), fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(38px, 6.5vw, 68px)', lineHeight: 0.98, color: '#fff', letterSpacing: '-3px', margin: '0 0 24px' }}>
+            Votre fournisseur est{' '}
+            <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.orange})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>payé</span>
+            {' '}avant{' '}
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              <svg width="100%" height="8" viewBox="0 0 200 8" style={{ position: 'absolute', bottom: -4, left: 0 }}>
+                <path d="M0 4 Q50 0 100 4 Q150 8 200 4" stroke={C.gold} strokeWidth="3" fill="none" strokeLinecap="round" />
+              </svg>
+              ce soir
+            </span>
+          </h1>
+
+          <p style={{ ...t(0.45), fontFamily: F.body, fontSize: 18, color: C.muted, lineHeight: 1.65, margin: '0 0 36px', maxWidth: 440 }}>
+            Alipay, WeChat, virement ou cash. Vous envoyez en francs CFA, votre fournisseur reçoit en yuan. Avec la <strong style={{ color: '#fff' }}>preuve dans votre poche</strong>.
           </p>
-          <div className="flex items-center gap-8 sm:gap-12">
-            {methods.map(m => (
-              <div key={m.label} className="flex flex-col items-center gap-1.5">
-                <span className="text-2xl">{m.emoji}</span>
-                <span className="text-white/40 text-xs font-medium">{m.label}</span>
-                <span className="text-white/20 text-[10px]">{m.chineseLabel}</span>
+
+          <div style={{ ...t(0.6), display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 800, fontSize: 16, background: C.violet, color: '#fff', border: 'none', padding: '16px 32px', borderRadius: 14, cursor: 'pointer', boxShadow: `0 0 40px ${C.violet}40` }}>
+              Envoyer un paiement
+            </button>
+            <button style={{ fontFamily: F.body, fontWeight: 600, fontSize: 15, background: 'transparent', color: C.muted, border: `1px solid ${C.dim}`, padding: '16px 28px', borderRadius: 14, cursor: 'pointer' }}>
+              Voir les taux
+            </button>
+          </div>
+        </div>
+
+        {/* Simulator */}
+        <div style={{ ...t(0.5), width: 360, flexShrink: 0, transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}>
+          <div style={{ background: `linear-gradient(160deg, ${C.surfaceLight}, ${C.surface})`, borderRadius: 24, padding: 28, border: `1px solid ${C.dim}`, boxShadow: `0 20px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)` }}>
+            <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Simulateur de paiement</div>
+
+            <div style={{ background: C.bg, borderRadius: 14, padding: '16px 18px', border: `1px solid ${C.dim}`, marginBottom: 10 }}>
+              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>VOUS ENVOYEZ</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>{displayMap[xafKey]}</span>
+                <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, background: `${C.gold}15`, color: C.gold, padding: '5px 12px', borderRadius: 8 }}>XAF</span>
               </div>
-            ))}
+            </div>
+
+            <div style={{ textAlign: 'center', margin: '4px 0' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: C.violet, color: '#fff', fontSize: 16, boxShadow: `0 4px 20px ${C.violet}40` }}>↓</div>
+            </div>
+
+            <div style={{ background: C.bg, borderRadius: 14, padding: '16px 18px', border: `1px solid ${C.dim}`, marginTop: 10 }}>
+              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>FOURNISSEUR REÇOIT</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: C.gold, letterSpacing: '-1px' }}>¥{cny.toLocaleString('fr-FR')}</span>
+                <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, background: `${C.alipay}15`, color: C.alipay, padding: '5px 12px', borderRadius: 8 }}>支 Alipay</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontFamily: F.body, fontSize: 11, color: C.muted }}>
+              <span>Taux: 1M XAF = ¥{rate.toLocaleString('fr-FR')}</span>
+              <span style={{ color: '#4ade80', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />
+                Instantané
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+              {Object.keys(amountMap).map(q => (
+                <button key={q} onClick={() => setXafKey(q)} style={{
+                  flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
+                  fontFamily: F.body, fontWeight: 700, fontSize: 11,
+                  background: xafKey === q ? `${C.violet}20` : `${C.dim}50`,
+                  color: xafKey === q ? C.violetGlow : C.muted,
+                  border: `1px solid ${xafKey === q ? C.violet + '30' : 'transparent'}`,
+                  transition: 'all 0.2s',
+                }}>{q}</button>
+              ))}
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
-// ── HowItWorksSection ────────────────────────────────────────────────────────
-function HowItWorksSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-
-  const steps = [
-    {
-      icon: UserPlus,
-      title: 'Créez votre compte',
-      description:
-        'Inscription gratuite en 2 minutes. Aucun document complexe. Vous êtes opérationnel immédiatement.',
-      // Violet
-      iconBg: 'bg-[hsl(258_100%_60%/0.15)]',
-      iconBorder: 'border-[hsl(258_100%_60%/0.25)]',
-      iconColor: 'text-[hsl(258_100%_72%)]',
-      badgeBg: 'bg-[hsl(258_100%_60%)]',
-      badgeText: 'text-white',
-    },
-    {
-      icon: ArrowDownToLine,
-      title: 'Déposez en XAF',
-      description:
-        'Mobile Money ou virement depuis votre banque locale. Votre solde Bonzini est crédité rapidement, sans frais cachés.',
-      // Ambre
-      iconBg: 'bg-[hsl(36_100%_55%/0.15)]',
-      iconBorder: 'border-[hsl(36_100%_55%/0.25)]',
-      iconColor: 'text-[hsl(36_100%_70%)]',
-      badgeBg: 'bg-[hsl(36_100%_50%)]',
-      badgeText: 'text-black',
-    },
-    {
-      icon: CheckCircle2,
-      title: 'Votre fournisseur reçoit',
-      description:
-        'Paiement direct sur son Alipay, WeChat Pay ou compte bancaire chinois. Sous 24h. Il reçoit exactement le montant convenu.',
-      // Orange
-      iconBg: 'bg-[hsl(16_100%_55%/0.15)]',
-      iconBorder: 'border-[hsl(16_100%_55%/0.25)]',
-      iconColor: 'text-[hsl(16_100%_70%)]',
-      badgeBg: 'bg-[hsl(16_100%_55%)]',
-      badgeText: 'text-white',
-    },
-  ];
-
+// ─── Ticker ───────────────────────────────────────────────────────────────────
+function Ticker() {
+  const items = ['Alipay', 'WeChat Pay', 'Virement bancaire', 'Cash RMB', 'Cameroun', 'Gabon', 'Tchad', 'RCA', 'Congo', 'Paiement instantané', 'Meilleur taux', 'Sans carte'];
   return (
-    <section className="bg-gradient-to-b from-[#0a0515] to-[#080312] py-24 px-4">
-      <div className="max-w-5xl mx-auto">
-        <motion.div
-          ref={ref}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-        >
-          {/* Section header */}
-          <motion.div variants={itemVariants} className="text-center mb-16">
-            <p className="text-[hsl(36_100%_65%)] text-xs font-semibold uppercase tracking-widest mb-3">
-              De l'Afrique à la Chine en 3 étapes
-            </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
-              Comment ça marche ?
-            </h2>
-            <p className="text-white/50 text-base sm:text-lg max-w-xl mx-auto">
-              Pas de banque internationale. Pas d'intermédiaire. Juste votre paiement, là où il doit aller.
-            </p>
-          </motion.div>
-
-          {/* Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 relative">
-            {/* Connecting line — desktop only — gradient tricolore */}
-            <div
-              className="hidden md:block absolute top-11 left-[calc(16.67%+28px)] right-[calc(16.67%+28px)] h-px"
-              style={{
-                background: 'linear-gradient(to right, hsl(258 100% 60% / 0.5), hsl(36 100% 55% / 0.7), hsl(16 100% 55% / 0.5))',
-              }}
-            />
-
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                variants={itemVariants}
-                className="relative flex flex-col items-center text-center px-4"
-              >
-                {/* Icon circle */}
-                <div className="relative mb-6">
-                  <div className={cn('w-14 h-14 rounded-2xl border flex items-center justify-center backdrop-blur-sm', step.iconBg, step.iconBorder)}>
-                    <step.icon className={cn('w-6 h-6', step.iconColor)} />
-                  </div>
-                  <span className={cn('absolute -top-2 -right-2 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center', step.badgeBg, step.badgeText)}>
-                    {i + 1}
-                  </span>
-                </div>
-
-                <h3 className="text-white font-bold text-lg sm:text-xl mb-3">{step.title}</h3>
-                <p className="text-white/45 text-sm leading-relaxed">{step.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+    <div style={{ overflow: 'hidden', background: C.violet, padding: '14px 0' }}>
+      <div style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap', animation: 'lp-ticker 30s linear infinite' }}>
+        {[...items, ...items, ...items].map((t, i) => (
+          <span key={i} style={{ fontFamily: F.display, fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />{t}
+          </span>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
 
-// ── PaymentMethodsSection ────────────────────────────────────────────────────
-function PaymentMethodsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-
-  const methods = [
-    {
-      emoji: '📱',
-      chineseLabel: '支付宝',
-      title: 'Alipay',
-      description:
-        "Le standard des paiements en Chine. Plus de 900 millions d'utilisateurs. Votre fournisseur l'a forcément.",
-      badge: 'Instantané',
-      badgeClass: 'text-[hsl(36_100%_70%)] bg-[hsl(36_100%_55%/0.12)] border-[hsl(36_100%_55%/0.25)]',
-      hoverBorder: 'hover:border-[hsl(36_100%_55%/0.4)]',
-    },
-    {
-      emoji: '💬',
-      chineseLabel: '微信支付',
-      title: 'WeChat Pay',
-      description:
-        "Intégré à l'application que tous les commerçants chinois utilisent au quotidien. Paiement en quelques secondes.",
-      badge: 'Populaire',
-      badgeClass: 'text-[hsl(16_100%_70%)] bg-[hsl(16_100%_55%/0.12)] border-[hsl(16_100%_55%/0.25)]',
-      hoverBorder: 'hover:border-[hsl(16_100%_55%/0.4)]',
-    },
-    {
-      emoji: '🏦',
-      chineseLabel: '银行转账',
-      title: 'Virement bancaire',
-      description:
-        'Pour les montants importants ou les entreprises chinoises sans portefeuille numérique. Sécurisé, traçable, sans limite.',
-      badge: 'Grandes sommes',
-      badgeClass: 'text-[hsl(258_100%_75%)] bg-[hsl(258_100%_60%/0.12)] border-[hsl(258_100%_60%/0.25)]',
-      hoverBorder: 'hover:border-[hsl(258_100%_60%/0.4)]',
-    },
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function Stats() {
+  const stats = [
+    { end: 5, suffix: ' pays', label: 'Zone CEMAC couverte' },
+    { end: 4, suffix: ' modes', label: 'De paiement acceptés' },
+    { end: 5, suffix: ' min', prefix: '<', label: 'Temps de traitement moyen' },
+    { end: 0, suffix: ' frais', label: 'Cachés. Jamais.' },
   ];
-
   return (
-    <section className="bg-[#080312] py-24 px-4">
-      <div className="max-w-5xl mx-auto">
-        <motion.div
-          ref={ref}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-        >
-          {/* Section header */}
-          <motion.div variants={itemVariants} className="text-center mb-14">
-            <p className="text-[hsl(16_100%_65%)] text-xs font-semibold uppercase tracking-widest mb-3">
-              Paiements directs vers la Chine
-            </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
-              Payé directement sur leur compte
-            </h2>
-            <p className="text-white/50 text-base max-w-xl mx-auto">
-              Pas de SWIFT, pas d'intermédiaire opaque. Votre fournisseur reçoit son argent là où il l'attend.
-            </p>
-          </motion.div>
-
-          {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {methods.map(m => (
-              <motion.div
-                key={m.title}
-                variants={itemVariants}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className={cn(
-                  'relative p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/[0.07] transition-colors duration-300',
-                  m.hoverBorder,
-                )}
-              >
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-5">
-                  <span className="text-4xl">{m.emoji}</span>
-                  <div>
-                    <p className="text-white/25 text-xs font-medium">{m.chineseLabel}</p>
-                    <h3 className="text-white font-bold text-xl leading-tight">{m.title}</h3>
-                  </div>
-                </div>
-
-                <p className="text-white/45 text-sm leading-relaxed mb-5">{m.description}</p>
-
-                <span
-                  className={cn(
-                    'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border',
-                    m.badgeClass,
-                  )}
-                >
-                  {m.badge}
+    <section style={{ padding: '80px 24px', background: C.bg }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 40, justifyItems: 'center' }}>
+        {stats.map((s, i) => (
+          <Reveal key={i} delay={i * 0.1}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(48px, 8vw, 72px)', letterSpacing: '-3px' }}>
+                <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.orange})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  <Counter end={s.end} prefix={s.prefix ?? ''} suffix={s.suffix} />
                 </span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+              </div>
+              <div style={{ fontFamily: F.body, fontSize: 14, color: C.muted, fontWeight: 500, marginTop: 4 }}>{s.label}</div>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </section>
   );
 }
 
-// ── WhyBonziniSection ────────────────────────────────────────────────────────
-function WhyBonziniSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-
-  const features = [
-    {
-      icon: TrendingUp,
-      title: 'Taux direct, sans surprise',
-      description:
-        'Nous accédons aux taux de change interbancaires. Pas de marge cachée. Vous savez exactement ce que vous payez avant de valider.',
-      cardClass: 'bg-[hsl(36_100%_55%/0.12)] border-[hsl(36_100%_55%/0.3)] hover:bg-[hsl(36_100%_55%/0.18)]',
-      iconBg: 'bg-[hsl(36_100%_55%/0.25)]',
-      iconColor: 'text-[hsl(36_100%_70%)]',
-    },
-    {
-      icon: Zap,
-      title: 'Paiement en moins de 24h',
-      description:
-        "Votre fournisseur reçoit son règlement le lendemain. Fini l'attente de 3 à 5 jours ouvrables.",
-      cardClass: 'bg-[hsl(16_100%_55%/0.10)] border-[hsl(16_100%_55%/0.25)] hover:bg-[hsl(16_100%_55%/0.16)]',
-      iconBg: 'bg-[hsl(16_100%_55%/0.25)]',
-      iconColor: 'text-[hsl(16_100%_70%)]',
-    },
-    {
-      icon: Shield,
-      title: 'Accès direct Alipay & WeChat',
-      description:
-        'Votre carte est refusée ? Pas avec Bonzini. Nous avons les accès directs aux réseaux de paiement chinois.',
-      cardClass: 'bg-[hsl(258_100%_60%/0.12)] border-[hsl(258_100%_60%/0.3)] hover:bg-[hsl(258_100%_60%/0.18)]',
-      iconBg: 'bg-[hsl(258_100%_60%/0.25)]',
-      iconColor: 'text-[hsl(258_100%_72%)]',
-    },
-    {
-      icon: Activity,
-      title: 'Suivi en temps réel',
-      description:
-        'Notification à chaque étape. Vous savez exactement où en est votre paiement, de la validation à la réception.',
-      cardClass: 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.07]',
-      iconBg: 'bg-white/10',
-      iconColor: 'text-white/60',
-    },
-    {
-      icon: Headphones,
-      title: 'Support humain',
-      description:
-        'Un conseiller disponible pour répondre à vos questions. En français. Par vous, pour vous.',
-      cardClass: 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.07]',
-      iconBg: 'bg-white/10',
-      iconColor: 'text-white/60',
-    },
-    {
-      icon: Smartphone,
-      title: "Aussi simple qu'un virement local",
-      description:
-        'Interface pensée pour des entrepreneurs, pas des banquiers. 3 clics suffisent.',
-      cardClass: 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.07]',
-      iconBg: 'bg-white/10',
-      iconColor: 'text-white/60',
-    },
+// ─── How it works ─────────────────────────────────────────────────────────────
+function HowItWorks() {
+  const steps = [
+    { num: '01', title: 'Choisissez', desc: "Alipay, WeChat, virement ou cash. Selon la préférence de votre fournisseur." },
+    { num: '02', title: 'Montant', desc: "En XAF ou en yuan. Le taux instantané s'affiche, optimisé selon le volume." },
+    { num: '03', title: 'Bénéficiaire', desc: "QR code, identifiant ou coordonnées bancaires. Sauvegardé pour la prochaine fois." },
+    { num: '04', title: 'Instantané', desc: "Votre fournisseur reçoit les fonds immédiatement. Preuve de paiement dans l'app." },
   ];
-
   return (
-    <section className="bg-gradient-to-b from-[#080312] to-[#0a0515] py-24 px-4">
-      <div className="max-w-5xl mx-auto">
-        <motion.div
-          ref={ref}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-        >
-          {/* Section header */}
-          <motion.div variants={itemVariants} className="text-center mb-14">
-            <p className="text-[hsl(258_100%_70%)] text-xs font-semibold uppercase tracking-widest mb-3">
-              Conçu pour les importateurs africains
-            </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
-              Pourquoi Bonzini ?
+    <section id="fonctionnement" style={{ padding: '100px 24px', background: C.bg }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ marginBottom: 64 }}>
+            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.violet, textTransform: 'uppercase', letterSpacing: 3 }}>Fonctionnement</span>
+            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-2px' }}>
+              Quatre étapes.<br /><span style={{ color: C.muted }}>Cinq minutes.</span>
             </h2>
-            <p className="text-white/50 text-base max-w-xl mx-auto">
-              Nous avons vécu vos galères. Cartes refusées, taux opaques, virements bloqués.
-              Bonzini est la solution que vous attendiez.
-            </p>
-          </motion.div>
+          </div>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2 }}>
+          {steps.map((s, i) => (
+            <Reveal key={s.num} delay={i * 0.12}>
+              <div style={{ padding: '40px 32px', background: C.surface, position: 'relative', overflow: 'hidden', borderLeft: i === 0 ? 'none' : `1px solid ${C.dim}`, transition: 'all 0.4s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = C.surfaceLight)}
+                onMouseLeave={e => (e.currentTarget.style.background = C.surface)}>
+                <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 80, position: 'absolute', top: -10, right: 10, background: `linear-gradient(180deg, ${C.dim}40, transparent)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-4px', userSelect: 'none' }}>{s.num}</span>
+                <div style={{ width: 40, height: 3, borderRadius: 2, background: `linear-gradient(90deg, ${C.gold}, ${C.orange})`, marginBottom: 20 }} />
+                <h3 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 24, color: '#fff', margin: '0 0 10px', letterSpacing: '-0.5px' }}>{s.title}</h3>
+                <p style={{ fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0, position: 'relative', zIndex: 2 }}>{s.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-          {/* Features grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {features.map(f => (
-              <motion.div
-                key={f.title}
-                variants={itemVariants}
-                className={cn(
-                  'p-6 rounded-2xl border transition-all duration-300',
-                  f.cardClass,
-                )}
-              >
-                <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-4', f.iconBg)}>
-                  <f.icon className={cn('w-5 h-5', f.iconColor)} />
+// ─── Methods ──────────────────────────────────────────────────────────────────
+function Methods() {
+  const methods = [
+    { icon: '支', name: 'Alipay', color: C.alipay, tag: 'Le plus populaire', desc: "QR code ou identifiant. Paiement instantané vers n'importe quel compte Alipay en Chine." },
+    { icon: '微', name: 'WeChat Pay', color: C.wechat, tag: 'Rapide', desc: "Via l'écosystème WeChat. Idéal pour les fournisseurs qui utilisent WeChat au quotidien." },
+    { icon: '🏦', name: 'Virement', color: C.violet, tag: 'Gros montants', desc: "Directement sur le compte bancaire de votre fournisseur. Pour les commandes importantes." },
+    { icon: '¥', name: 'Cash', color: C.orange, tag: 'Sur place', desc: "Remise en espèces avec signature de réception. Pour les fournisseurs qui préfèrent le cash." },
+  ];
+  return (
+    <section style={{ padding: '100px 24px', background: C.surface }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: 3 }}>Modes de paiement</span>
+            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(28px, 4.5vw, 48px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-2px' }}>Le mode que votre fournisseur préfère</h2>
+          </div>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          {methods.map((m, i) => (
+            <Reveal key={m.name} delay={i * 0.1}>
+              <div style={{ padding: 32, borderRadius: 20, background: C.bg, border: `1px solid ${C.dim}`, cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)', position: 'relative', overflow: 'hidden' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${m.color}40`; e.currentTarget.style.transform = 'translateY(-6px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.dim; e.currentTarget.style.transform = 'none'; }}>
+                <div style={{ position: 'absolute', bottom: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: `${m.color}06` }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: `${m.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: m.color, fontWeight: 700 }}>{m.icon}</div>
+                  <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, color: m.color, background: `${m.color}12`, padding: '4px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{m.tag}</span>
                 </div>
-                <h3 className="text-white font-bold text-base mb-2">{f.title}</h3>
-                <p className="text-white/45 text-sm leading-relaxed">{f.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+                <h3 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 22, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>{m.name}</h3>
+                <p style={{ fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// ── CtaBannerSection ─────────────────────────────────────────────────────────
-function CtaBannerSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px' });
-
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(null);
+  const faqs = [
+    { q: 'Les paiements sont-ils vraiment instantanés ?', a: 'Oui. Les paiements Alipay et WeChat sont traités en quelques minutes. Les virements bancaires prennent généralement quelques heures. Le cash est immédiat.' },
+    { q: 'Quel est le montant minimum ?', a: '10 000 XAF par transaction. Pas de maximum, mais les gros montants bénéficient d\'un meilleur taux.' },
+    { q: 'Comment le taux est-il calculé ?', a: 'Le taux de base dépend du mode de paiement. Un ajustement s\'applique selon votre pays. Plus le montant est élevé, meilleur est le taux.' },
+    { q: 'Comment mon fournisseur sait-il qu\'il a été payé ?', a: 'Vous recevez une preuve de paiement dans l\'application : capture d\'écran pour Alipay/WeChat, confirmation pour les virements, signature pour le cash.' },
+    { q: 'Y a-t-il des frais cachés ?', a: 'Aucun. Le taux affiché est le taux final. Zéro commission supplémentaire, zéro surprise.' },
+    { q: 'Dans quels pays est disponible Bonzini ?', a: 'Cameroun, Gabon, Tchad, République centrafricaine et Congo.' },
+  ];
   return (
-    <section className="py-24 px-4 bg-[#0a0515]">
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          ref={ref}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          className="relative overflow-hidden rounded-3xl px-8 py-16 sm:py-20 text-center"
-          style={{
-            background: 'linear-gradient(135deg, hsl(36 100% 45%), hsl(258 100% 50%), hsl(16 100% 45%))',
-            boxShadow: '0 24px 80px -16px hsl(258 100% 60% / 0.4), 0 0 60px -20px hsl(16 100% 55% / 0.25)',
-          }}
-        >
-          {/* Decorative blobs */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl" aria-hidden="true">
-            <div className="absolute w-72 h-72 rounded-full bg-white/10 blur-3xl -top-12 -right-12" />
-            <div className="absolute w-52 h-52 rounded-full bg-white/5 blur-2xl bottom-0 left-0" />
+    <section id="faq" style={{ padding: '100px 24px', background: C.bg }}>
+      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.violet, textTransform: 'uppercase', letterSpacing: 3 }}>FAQ</span>
+            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(28px, 4vw, 40px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-1.5px' }}>Vos questions</h2>
           </div>
-
-          {/* Content */}
-          <div className="relative z-10">
-            <motion.p
-              variants={itemVariants}
-              className="text-white/75 text-xs font-semibold uppercase tracking-widest mb-4"
-            >
-              Votre prochain paiement en Chine
-            </motion.p>
-
-            <motion.h2
-              variants={itemVariants}
-              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 tracking-tight"
-            >
-              Prêt à régler votre fournisseur ?
-            </motion.h2>
-
-            <motion.p
-              variants={itemVariants}
-              className="text-white/70 text-base sm:text-lg max-w-xl mx-auto mb-8 leading-relaxed"
-            >
-              Des centaines d'importateurs africains utilisent Bonzini pour régler leurs
-              partenaires chinois chaque semaine. Sans blocage. Sans surprise.
-            </motion.p>
-
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <Link
-                to="/auth?mode=signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-[hsl(258_100%_40%)] font-bold px-8 py-4 rounded-xl text-base hover:bg-white/92 transition-all duration-200 hover:-translate-y-0.5 shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
-              >
-                Ouvrir mon compte gratuitement
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </motion.div>
-
-            <motion.p
-              variants={itemVariants}
-              className="mt-5 text-white/45 text-xs"
-            >
-              Inscription gratuite — Aucune carte bancaire requise
-            </motion.p>
-          </div>
-        </motion.div>
+        </Reveal>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {faqs.map((f, i) => (
+            <Reveal key={i} delay={i * 0.05}>
+              <div style={{ background: C.surface, borderRadius: 16, overflow: 'hidden', border: `1px solid ${open === i ? C.violet + '30' : C.dim}`, transition: 'all 0.3s' }}>
+                <button onClick={() => setOpen(open === i ? null : i)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <span style={{ fontFamily: F.body, fontWeight: 700, fontSize: 15, color: '#fff' }}>{f.q}</span>
+                  <span style={{ fontFamily: F.display, fontSize: 24, color: C.muted, transform: open === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s', flexShrink: 0, marginLeft: 12 }}>+</span>
+                </button>
+                <div style={{ maxHeight: open === i ? 200 : 0, overflow: 'hidden', transition: 'max-height 0.5s cubic-bezier(0.16,1,0.3,1)' }}>
+                  <div style={{ padding: '0 24px 20px', fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.65 }}>{f.a}</div>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// ── LandingFooter ────────────────────────────────────────────────────────────
-function LandingFooter() {
+// ─── CTA ──────────────────────────────────────────────────────────────────────
+function CTASection({ onCTA }: { onCTA: () => void }) {
   return (
-    <footer className="bg-[#080312] border-t border-white/5 px-4 py-14">
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-10">
-          {/* Brand */}
-          <div className="space-y-4">
-            <BonziniLogo size="sm" showText textPosition="right" className="[&_span]:text-white [&_span]:font-bold" />
-            <p className="text-white/35 text-sm leading-relaxed max-w-xs">
-              La solution de paiement vers la Chine pour la diaspora africaine francophone.
-            </p>
-          </div>
-
-          {/* Quick links */}
-          <div>
-            <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-4">
-              Accès rapide
-            </p>
-            <ul className="space-y-2.5">
-              {[
-                { label: 'Se connecter', to: '/auth' },
-                { label: 'Ouvrir un compte', to: '/auth?mode=signup' },
-              ].map(link => (
-                <li key={link.label}>
-                  <Link
-                    to={link.to}
-                    className="text-white/35 hover:text-white/70 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact + Legal */}
-          <div>
-            <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-4">
-              Contact
-            </p>
-            <ul className="space-y-2.5 mb-6">
-              <li>
-                <a
-                  href="mailto:contact@bonzinilabs.com"
-                  className="text-white/35 hover:text-white/70 text-sm transition-colors"
-                >
-                  contact@bonzinilabs.com
-                </a>
-              </li>
-            </ul>
-            <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-4">
-              Légal
-            </p>
-            <ul className="space-y-2.5">
-              {['Mentions légales', 'Confidentialité', 'CGU'].map(item => (
-                <li key={item}>
-                  <a href="#" className="text-white/35 hover:text-white/70 text-sm transition-colors">
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <section style={{ padding: '120px 24px', position: 'relative', overflow: 'hidden', background: `radial-gradient(ellipse 70% 50% at 50% 50%, ${C.surfaceLight}, ${C.bg})` }}>
+      <div style={{ position: 'absolute', top: '50%', left: '50%', width: 500, height: 500, transform: 'translate(-50%, -50%)', borderRadius: '50%', border: `1px solid ${C.dim}`, opacity: 0.3, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: '50%', left: '50%', width: 700, height: 700, transform: 'translate(-50%, -50%)', borderRadius: '50%', border: `1px solid ${C.dim}`, opacity: 0.15, pointerEvents: 'none' }} />
+      <Reveal>
+        <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 2 }}>
+          <Logo size={52} />
+          <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)', color: '#fff', margin: '28px 0 16px', letterSpacing: '-2px' }}>Vos fournisseurs attendent</h2>
+          <p style={{ fontFamily: F.body, fontSize: 17, color: C.muted, lineHeight: 1.65, margin: '0 0 36px' }}>Chaque minute compte dans le commerce. Envoyez votre premier paiement maintenant.</p>
+          <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 800, fontSize: 17, background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, color: '#fff', border: 'none', padding: '20px 48px', borderRadius: 50, cursor: 'pointer', boxShadow: `0 0 60px ${C.violet}40` }}>
+            Commencer maintenant
+          </button>
         </div>
+      </Reveal>
+    </section>
+  );
+}
 
-        {/* Ligne de séparation tricolore */}
-        <div
-          className="h-px mb-6"
-          style={{
-            background: 'linear-gradient(to right, hsl(36 100% 55% / 0.4), hsl(258 100% 60% / 0.6), hsl(16 100% 55% / 0.4))',
-          }}
-        />
-
-        {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-white/20 text-xs">
-            © {new Date().getFullYear()} BonziniLabs. Tous droits réservés.
-          </p>
-          <p className="text-white/20 text-xs">
-            Fait avec soin pour la diaspora africaine 🌍
-          </p>
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function Footer() {
+  const cols = [
+    { t: 'Produit', l: ['Fonctionnement', 'Tarifs', 'FAQ', 'Sécurité'] },
+    { t: 'Entreprise', l: ['À propos', 'Contact', 'Mentions légales', 'CGU'] },
+    { t: 'Support', l: ['WhatsApp', 'Email', "Centre d'aide"] },
+  ];
+  return (
+    <footer style={{ padding: '56px 24px 28px', background: C.bg, borderTop: `1px solid ${C.dim}` }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 40, marginBottom: 40 }}>
+          <div style={{ maxWidth: 260 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <Logo size={24} />
+              <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 17, color: '#fff' }}>Bonzini</span>
+            </div>
+            <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, opacity: 0.6 }}>Paiements instantanés vers la Chine pour les importateurs de la zone CEMAC.</p>
+          </div>
+          {cols.map(col => (
+            <div key={col.t}>
+              <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 11, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.t}</h4>
+              {col.l.map(l => <a key={l} href="#" style={{ display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' }}>{l}</a>)}
+            </div>
+          ))}
         </div>
+        <div style={{ display: 'flex', borderRadius: 2, overflow: 'hidden', height: 2, marginBottom: 20 }}>
+          <div style={{ flex: 2, background: C.gold }} />
+          <div style={{ flex: 3, background: C.violet }} />
+          <div style={{ flex: 2, background: C.orange }} />
+        </div>
+        <div style={{ fontFamily: F.body, fontSize: 12, color: C.dim, textAlign: 'center' }}>&copy; 2026 Bonzini. Tous droits réservés.</div>
       </div>
     </footer>
   );
 }
 
-// ── LandingPage (default export) ─────────────────────────────────────────────
+// ─── Main export ──────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const [alipayRate, setAlipayRate] = useState(11610);
+
+  useEffect(() => {
+    supabase
+      .from('daily_rates')
+      .select('rate_alipay')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data?.rate_alipay) setAlipayRate(data.rate_alipay); });
+  }, []);
+
+  const onCTA = () => navigate('/auth');
+
   return (
-    <div className="min-h-screen bg-[#0a0515] text-white">
-      <LandingNav />
-      <HeroSection />
-      <TrustBar />
-      <HowItWorksSection />
-      <PaymentMethodsSection />
-      <WhyBonziniSection />
-      <CtaBannerSection />
-      <LandingFooter />
+    <div style={{ background: C.bg, overflowX: 'hidden' }}>
+      <Nav onCTA={onCTA} />
+      <Hero rate={alipayRate} onCTA={onCTA} />
+      <Ticker />
+      <Stats />
+      <HowItWorks />
+      <Methods />
+      <FAQ />
+      <CTASection onCTA={onCTA} />
+      <Footer />
     </div>
   );
 }
