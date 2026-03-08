@@ -4,13 +4,15 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 // ============================================================
-// Relevé de Compte Client — Format bancaire professionnel
+// Relevé de Compte Client — Design Bonzini
+// Couleurs marque : Violet #9b59b6 · Or #e8a838 · Orange #e8632b
+// Format : A4 Paysage (297×210mm)
 // ============================================================
 
 export interface StatementOperation {
   id: string;
   created_at: string;
-  operation_type: string; // 'deposit' | 'payment' | 'adjustment'
+  operation_type: string; // simplified ('deposit'|'payment'|'adjustment') or raw enum ('DEPOSIT_VALIDATED'|'PAYMENT_EXECUTED'|...)
   amount_xaf: number;
   balance_before: number;
   balance_after: number;
@@ -21,239 +23,347 @@ export interface StatementData {
   clientName: string;
   clientPhone?: string;
   clientCountry?: string;
+  clientId?: string;
   periodStart: Date;
   periodEnd: Date;
   operations: StatementOperation[];
   initialBalance: number;
   finalBalance: number;
+  logoBase64?: string;
 }
 
 // ---------- Helpers ----------
 
+type RGB = [number, number, number];
+
 const fmtXAF = (n: number): string =>
   Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+const fmtDateLong = (d: Date | string): string =>
+  format(typeof d === 'string' ? new Date(d) : d, 'd MMMM yyyy', { locale: fr });
+
+const fmtDateTime = (d: Date | string): string =>
+  format(typeof d === 'string' ? new Date(d) : d, "d MMMM yyyy 'a' HH:mm", { locale: fr });
 
 const fmtDate = (d: Date | string): string =>
   format(typeof d === 'string' ? new Date(d) : d, 'dd/MM/yyyy');
 
-const fmtDateLong = (d: Date | string): string =>
-  format(typeof d === 'string' ? new Date(d) : d, 'dd MMMM yyyy', { locale: fr });
+// ---------- Credit/Debit determination ----------
 
-const fmtDateTime = (d: Date | string): string =>
-  format(typeof d === 'string' ? new Date(d) : d, "dd/MM/yyyy 'a' HH:mm");
+export const isCreditOperation = (opType: string, balanceBefore: number, balanceAfter: number): boolean => {
+  const t = opType.toUpperCase();
+  // Explicit credits (raw enum + simplified)
+  if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'ADMIN_CREDIT' || t === 'PAYMENT_CANCELLED_REFUNDED') return true;
+  // Explicit debits
+  if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT' || t === 'DEPOSIT_REFUSED') return false;
+  // Fallback for 'adjustment' or unknown
+  return balanceAfter > balanceBefore;
+};
 
-const typeLabel = (type: string): string => {
-  switch (type) {
-    case 'deposit': return 'Depot';
-    case 'payment': return 'Paiement';
-    case 'adjustment': return 'Ajustement';
+export const typeLabel = (type: string): string => {
+  switch (type.toUpperCase()) {
+    case 'DEPOSIT': case 'DEPOSIT_VALIDATED': return 'Depot';
+    case 'DEPOSIT_REFUSED': return 'Depot refuse';
+    case 'PAYMENT': case 'PAYMENT_EXECUTED': return 'Paiement';
+    case 'PAYMENT_RESERVED': return 'Paiement reserve';
+    case 'PAYMENT_CANCELLED_REFUNDED': return 'Remboursement';
+    case 'ADMIN_CREDIT': return 'Credit admin';
+    case 'ADMIN_DEBIT': return 'Debit admin';
+    case 'ADJUSTMENT': return 'Ajustement';
     default: return type;
   }
 };
 
-// ---------- Colors ----------
+// ---------- Brand Colors ----------
 
-const C = {
-  primary:  [30, 64, 175] as [number, number, number],   // Indigo-800
-  primaryL: [219, 234, 254] as [number, number, number],  // Blue-100
-  dark:     [17, 24, 39] as [number, number, number],     // Gray-900
-  text:     [31, 41, 55] as [number, number, number],     // Gray-800
-  muted:    [107, 114, 128] as [number, number, number],  // Gray-500
-  light:    [243, 244, 246] as [number, number, number],  // Gray-100
-  white:    [255, 255, 255] as [number, number, number],
-  green:    [5, 122, 85] as [number, number, number],     // Emerald-700
-  greenBg:  [236, 253, 245] as [number, number, number],  // Emerald-50
-  red:      [185, 28, 28] as [number, number, number],    // Red-700
-  redBg:    [254, 242, 242] as [number, number, number],  // Red-50
-  border:   [209, 213, 219] as [number, number, number],  // Gray-300
+const B = {
+  violet:      [155, 89, 182] as RGB,   // #9b59b6
+  violetDark:  [125, 60, 152] as RGB,   // #7d3c98
+  violetLight: [243, 236, 248] as RGB,  // #f3ecf8
+  gold:        [232, 168, 56] as RGB,   // #e8a838
+  goldLight:   [253, 244, 227] as RGB,  // #fdf4e3
+  orange:      [232, 99, 43] as RGB,    // #e8632b
+  orangeLight: [253, 238, 232] as RGB,  // #fdeee8
+  dark:        [26, 16, 40] as RGB,     // #1a1028
+  text:        [45, 32, 64] as RGB,     // #2d2040
+  muted:       [122, 114, 144] as RGB,  // #7a7290
+  light:       [248, 246, 250] as RGB,  // #f8f6fa
+  border:      [235, 230, 240] as RGB,  // #ebe6f0
+  white:       [255, 255, 255] as RGB,
+  green:       [16, 185, 129] as RGB,   // #10b981
+  greenBg:     [236, 253, 245] as RGB,  // #ecfdf5
+  blue:        [59, 130, 246] as RGB,   // #3b82f6
+  blueBg:      [239, 246, 255] as RGB,  // #eff6ff
 };
+
+// Type badge colors
+const TYPE_COLORS: Record<string, { text: RGB; bg: RGB }> = {
+  'Depot':           { text: B.green, bg: B.greenBg },
+  'Paiement':        { text: B.orange, bg: B.orangeLight },
+  'Remboursement':   { text: B.blue, bg: B.blueBg },
+  'Credit admin':    { text: B.green, bg: B.greenBg },
+  'Debit admin':     { text: B.orange, bg: B.orangeLight },
+  'Depot refuse':    { text: B.muted, bg: B.light },
+  'Paiement reserve': { text: B.orange, bg: B.orangeLight },
+  'Ajustement':      { text: B.muted, bg: B.light },
+};
+
+// ---------- Brand bar helper ----------
+
+function drawBrandBar(doc: jsPDF, x: number, y: number, width: number, height: number) {
+  const goldW = width * 0.33;
+  const violetW = width * 0.40;
+  const orangeW = width - goldW - violetW;
+  doc.setFillColor(...B.gold);
+  doc.rect(x, y, goldW, height, 'F');
+  doc.setFillColor(...B.violet);
+  doc.rect(x + goldW, y, violetW, height, 'F');
+  doc.setFillColor(...B.orange);
+  doc.rect(x + goldW + violetW, y, orangeW, height, 'F');
+}
+
+// ============================================================
+// Logo loader utility
+// ============================================================
+
+export async function loadLogoBase64(): Promise<string | undefined> {
+  try {
+    const response = await fetch('/assets/bonzini-logo.jpg');
+    const blob = await response.blob();
+    return await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined;
+  }
+}
 
 // ============================================================
 // Main export function
 // ============================================================
 
 export function generateStatementPDF(data: StatementData): void {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pw = doc.internal.pageSize.getWidth();   // 210
-  const ph = doc.internal.pageSize.getHeight();   // 297
-  const ml = 15; // margin left
-  const mr = 15; // margin right
-  const cw = pw - ml - mr; // content width
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.getWidth();   // 297
+  const ph = doc.internal.pageSize.getHeight();   // 210
+  const ml = 18;
+  const mr = 18;
+  const cw = pw - ml - mr; // 261
 
   let y = 0;
 
   // ==========================================================
-  // HEADER — Bande bleue avec logo texte
+  // HEADER — Dark background with brand bar
   // ==========================================================
-  const headerH = 38;
-  doc.setFillColor(...C.primary);
+  const headerH = 52;
+  doc.setFillColor(...B.dark);
   doc.rect(0, 0, pw, headerH, 'F');
 
-  // Logo text
-  doc.setTextColor(...C.white);
-  doc.setFontSize(22);
+  // Logo
+  if (data.logoBase64) {
+    try {
+      doc.addImage(data.logoBase64, 'JPEG', ml, 8, 14, 14);
+    } catch {
+      // Fallback: no logo
+    }
+  }
+
+  // Company name
+  const logoTextX = data.logoBase64 ? ml + 17 : ml;
+  doc.setTextColor(...B.white);
+  doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('BONZINI', ml, 16);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('TRADING SARL', ml + 50, 16);
-
-  // Title right-aligned
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('RELEVE DE COMPTE', pw - mr, 14, { align: 'right' });
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Document genere le ' + fmtDateTime(new Date()), pw - mr, 22, { align: 'right' });
-
-  // Thin accent line
-  doc.setFillColor(96, 165, 250); // Blue-400
-  doc.rect(0, headerH, pw, 1.5, 'F');
-
-  y = headerH + 10;
-
-  // ==========================================================
-  // CLIENT INFO + PERIOD (two columns)
-  // ==========================================================
-  const colLeft = ml;
-  const colRight = pw / 2 + 5;
-
-  // Left column — Client
+  doc.text('Bonzini', logoTextX, 15);
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.primary);
-  doc.text('TITULAIRE DU COMPTE', colLeft, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(255, 255, 255, 0.45);
+  doc.text('Paiements CEMAC → Chine', logoTextX, 20);
 
-  y += 5;
-  doc.setFontSize(11);
+  // Document title (right side, boxed)
+  const titleBoxW = 55;
+  const titleBoxH = 22;
+  const titleBoxX = pw - mr - titleBoxW;
+  doc.setFillColor(255, 255, 255, 0.06);
+  doc.setDrawColor(255, 255, 255, 0.08);
+  doc.roundedRect(titleBoxX, 6, titleBoxW, titleBoxH, 3, 3, 'FD');
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.dark);
-  doc.text(data.clientName, colLeft, y);
+  doc.setTextColor(255, 255, 255, 0.4);
+  doc.text('DOCUMENT', titleBoxX + 5, 12);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...B.white);
+  doc.text('Releve de compte', titleBoxX + 5, 19);
 
-  y += 5;
+  // Brand bar
+  drawBrandBar(doc, ml, 28, cw, 1.5);
+
+  // Client info (left) + Period (right)
+  const infoY = 34;
+
+  // Client label
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...B.gold);
+  doc.text('CLIENT', ml, infoY);
+
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...B.white);
+  doc.text(data.clientName, ml, infoY + 5.5);
+
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...C.text);
+  doc.setTextColor(255, 255, 255, 0.5);
+  let clientInfoY = infoY + 10.5;
   if (data.clientPhone) {
-    doc.text('Tel : ' + data.clientPhone, colLeft, y);
-    y += 4.5;
+    doc.text(data.clientPhone, ml, clientInfoY);
+    clientInfoY += 4;
   }
   if (data.clientCountry) {
-    doc.text('Pays : ' + data.clientCountry, colLeft, y);
-    y += 4.5;
+    let countryLine = data.clientCountry;
+    if (data.clientId) countryLine += ' · ' + data.clientId;
+    doc.text(countryLine, ml, clientInfoY);
   }
 
-  // Right column — Period
-  const yPeriod = headerH + 10;
-  doc.setFontSize(8);
+  // Period (right)
+  const periodX = pw - mr;
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.primary);
-  doc.text('PERIODE', colRight, yPeriod);
+  doc.setTextColor(...B.gold);
+  doc.text('PERIODE', periodX, infoY, { align: 'right' });
 
-  doc.setFontSize(9);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...B.white);
+  doc.text('Du ' + fmtDateLong(data.periodStart), periodX, infoY + 5.5, { align: 'right' });
+  doc.text('Au ' + fmtDateLong(data.periodEnd), periodX, infoY + 10.5, { align: 'right' });
+
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...C.text);
-  doc.text('Du ' + fmtDateLong(data.periodStart), colRight, yPeriod + 5);
-  doc.text('Au ' + fmtDateLong(data.periodEnd), colRight, yPeriod + 9.5);
+  doc.setTextColor(255, 255, 255, 0.35);
+  doc.text('Emis le ' + fmtDateTime(new Date()), periodX, infoY + 16, { align: 'right' });
 
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.primary);
-  doc.text('NOMBRE DE MOUVEMENTS', colRight, yPeriod + 17);
-  doc.setFontSize(11);
-  doc.setTextColor(...C.dark);
-  doc.text(String(data.operations.length), colRight, yPeriod + 22);
-
-  y = Math.max(y, yPeriod + 26) + 4;
-
-  // Separator
-  doc.setDrawColor(...C.border);
-  doc.setLineWidth(0.3);
-  doc.line(ml, y, pw - mr, y);
-  y += 6;
+  y = headerH;
 
   // ==========================================================
-  // BALANCE SUMMARY — 3 boxes
+  // SUMMARY — 3 boxes (Total dépôts, Total paiements, Solde)
   // ==========================================================
-  const boxW = (cw - 6) / 3; // 3 boxes with 3mm gap
-  const boxH = 20;
 
-  // Box 1: Solde initial
-  doc.setFillColor(...C.light);
-  doc.roundedRect(ml, y, boxW, boxH, 2, 2, 'F');
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.muted);
-  doc.text('SOLDE INITIAL', ml + 4, y + 6);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.dark);
-  doc.text(fmtXAF(data.initialBalance) + ' XAF', ml + 4, y + 14);
+  // Compute totals
+  let totalCredits = 0;
+  let totalDebits = 0;
+  let countCredits = 0;
+  let countDebits = 0;
+  let countRefunds = 0;
 
-  // Box 2: Solde final
-  const box2x = ml + boxW + 3;
-  doc.setFillColor(...C.primaryL);
-  doc.roundedRect(box2x, y, boxW, boxH, 2, 2, 'F');
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.primary);
-  doc.text('SOLDE FINAL', box2x + 4, y + 6);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.primary);
-  doc.text(fmtXAF(data.finalBalance) + ' XAF', box2x + 4, y + 14);
+  data.operations.forEach(op => {
+    const isCredit = isCreditOperation(op.operation_type, op.balance_before, op.balance_after);
+    const label = typeLabel(op.operation_type);
+    if (label === 'Remboursement') countRefunds++;
+    if (isCredit) {
+      totalCredits += op.amount_xaf;
+      countCredits++;
+    } else {
+      totalDebits += op.amount_xaf;
+      countDebits++;
+    }
+  });
 
-  // Box 3: Variation
-  const variation = data.finalBalance - data.initialBalance;
-  const box3x = ml + (boxW + 3) * 2;
-  const isPositive = variation >= 0;
-  doc.setFillColor(...(isPositive ? C.greenBg : C.redBg));
-  doc.roundedRect(box3x, y, boxW, boxH, 2, 2, 'F');
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...(isPositive ? C.green : C.red));
-  doc.text('VARIATION', box3x + 4, y + 6);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text((isPositive ? '+' : '') + fmtXAF(variation) + ' XAF', box3x + 4, y + 14);
+  const soldeFinal = data.operations.length > 0 ? data.finalBalance : data.initialBalance;
 
-  y += boxH + 8;
+  // 3 summary boxes
+  const boxW = cw / 3;
+  const boxH = 22;
+  const boxY = y;
+
+  const summaryItems = [
+    { label: 'TOTAL DEPOTS', value: '+' + fmtXAF(totalCredits), textColor: B.green, bgColor: B.greenBg, suffix: 'XAF' },
+    { label: 'TOTAL PAIEMENTS', value: '-' + fmtXAF(totalDebits), textColor: B.orange, bgColor: B.orangeLight, suffix: 'XAF' },
+    { label: 'SOLDE FINAL', value: fmtXAF(soldeFinal), textColor: B.violet, bgColor: B.violetLight, suffix: 'XAF' },
+  ];
+
+  summaryItems.forEach((item, i) => {
+    const bx = ml + i * boxW;
+    doc.setFillColor(...item.bgColor);
+    doc.rect(bx, boxY, boxW, boxH, 'F');
+    // Separator between boxes
+    if (i < 2) {
+      doc.setDrawColor(...B.border);
+      doc.setLineWidth(0.3);
+      doc.line(bx + boxW, boxY, bx + boxW, boxY + boxH);
+    }
+    // Label
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...B.muted);
+    doc.text(item.label, bx + boxW / 2, boxY + 7, { align: 'center' });
+    // Value
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...item.textColor);
+    doc.text(item.value, bx + boxW / 2, boxY + 15, { align: 'center' });
+    // Suffix
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...B.muted);
+    doc.text(item.suffix, bx + boxW / 2, boxY + 19.5, { align: 'center' });
+  });
+
+  // Border under summary
+  doc.setDrawColor(...B.border);
+  doc.setLineWidth(0.5);
+  doc.line(ml, boxY + boxH, pw - mr, boxY + boxH);
+
+  y = boxY + boxH + 6;
 
   // ==========================================================
   // MOVEMENTS TABLE
   // ==========================================================
-  doc.setFontSize(10);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.dark);
-  doc.text('DETAIL DES MOUVEMENTS', ml, y);
+  doc.setTextColor(...B.muted);
+  doc.text('DETAIL DES MOUVEMENTS (' + data.operations.length + ')', ml, y);
   y += 3;
 
   if (data.operations.length === 0) {
     y += 8;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'italic');
-    doc.setTextColor(...C.muted);
+    doc.setTextColor(...B.muted);
     doc.text('Aucun mouvement sur cette periode.', ml, y);
     y += 15;
   } else {
-    // Build table rows with running balance
-    const rows = data.operations.map((op, idx) => {
-      const isCredit = op.operation_type === 'deposit' ||
-        (op.operation_type === 'adjustment' && op.balance_after > op.balance_before);
-
+    // Build table rows
+    const rows = data.operations.map((op) => {
+      const isCredit = isCreditOperation(op.operation_type, op.balance_before, op.balance_after);
       const refId = op.id.slice(0, 8).toUpperCase();
       const motif = op.description || typeLabel(op.operation_type);
+      const label = typeLabel(op.operation_type);
 
       return [
         fmtDate(op.created_at),
         refId,
-        typeLabel(op.operation_type),
+        label,
         motif,
-        isCredit ? '' : fmtXAF(op.amount_xaf),      // Debit
-        isCredit ? fmtXAF(op.amount_xaf) : '',       // Credit
-        fmtXAF(op.balance_after),                     // Solde
+        isCredit ? '' : '-' + fmtXAF(op.amount_xaf),
+        isCredit ? '+' + fmtXAF(op.amount_xaf) : '',
+        fmtXAF(op.balance_after),
       ];
     });
+
+    // Footer row (totals)
+    const footRow = [
+      '',
+      '',
+      '',
+      'Totaux',
+      '-' + fmtXAF(totalDebits),
+      '+' + fmtXAF(totalCredits),
+      fmtXAF(soldeFinal),
+    ];
 
     autoTable(doc, {
       startY: y,
@@ -261,125 +371,150 @@ export function generateStatementPDF(data: StatementData): void {
         'Date',
         'Ref.',
         'Type',
-        'Motif / Description',
-        'Debit (XAF)',
-        'Credit (XAF)',
-        'Solde (XAF)',
+        'Motif',
+        'Debit',
+        'Credit',
+        'Solde',
       ]],
       body: rows,
+      foot: [footRow],
       theme: 'plain',
       styles: {
-        fontSize: 7.5,
-        cellPadding: { top: 2.5, right: 2, bottom: 2.5, left: 2 },
-        textColor: C.text,
-        lineColor: C.border,
+        fontSize: 8,
+        cellPadding: { top: 3, right: 3, bottom: 3, left: 3 },
+        textColor: B.text,
+        lineColor: B.border,
         lineWidth: 0.2,
       },
       headStyles: {
-        fillColor: C.primary,
-        textColor: C.white,
+        fillColor: B.dark,
+        textColor: [255, 255, 255, 0.6] as any,
         fontStyle: 'bold',
-        fontSize: 7.5,
+        fontSize: 7,
         halign: 'left',
       },
+      footStyles: {
+        fillColor: B.dark,
+        textColor: B.white,
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
       bodyStyles: {
-        fontSize: 7.5,
+        fontSize: 8,
       },
       columnStyles: {
-        0: { cellWidth: 22 },              // Date
-        1: { cellWidth: 18, font: 'courier' }, // Ref
-        2: { cellWidth: 20 },              // Type
-        3: { cellWidth: 'auto' },           // Motif
-        4: { cellWidth: 24, halign: 'right' }, // Debit
-        5: { cellWidth: 24, halign: 'right' }, // Credit
-        6: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }, // Solde
+        0: { cellWidth: 28 },                          // Date
+        1: { cellWidth: 22, font: 'courier' },         // Ref
+        2: { cellWidth: 30 },                          // Type
+        3: { cellWidth: 'auto' },                      // Motif
+        4: { cellWidth: 35, halign: 'right' },         // Debit
+        5: { cellWidth: 35, halign: 'right' },         // Credit
+        6: { cellWidth: 38, halign: 'right', fontStyle: 'bold' }, // Solde
       },
       alternateRowStyles: {
-        fillColor: [249, 250, 251],
+        fillColor: B.light,
       },
       margin: { left: ml, right: mr },
       didParseCell(hookData) {
-        if (hookData.section !== 'body') return;
-
-        // Color debit column red
-        if (hookData.column.index === 4 && hookData.cell.text[0]) {
-          hookData.cell.styles.textColor = C.red;
+        // Body styling
+        if (hookData.section === 'body') {
+          // Type column (2) — colored badge via text color + bg
+          if (hookData.column.index === 2) {
+            const label = hookData.cell.text[0];
+            const tc = TYPE_COLORS[label];
+            if (tc) {
+              hookData.cell.styles.textColor = tc.text;
+              hookData.cell.styles.fillColor = tc.bg;
+              hookData.cell.styles.fontStyle = 'bold';
+            }
+          }
+          // Debit column (4) — orange
+          if (hookData.column.index === 4 && hookData.cell.text[0]) {
+            hookData.cell.styles.textColor = B.orange;
+            hookData.cell.styles.fontStyle = 'bold';
+          }
+          // Credit column (5) — green
+          if (hookData.column.index === 5 && hookData.cell.text[0]) {
+            hookData.cell.styles.textColor = B.green;
+            hookData.cell.styles.fontStyle = 'bold';
+          }
+          // Solde column (6) — check if negative
+          if (hookData.column.index === 6) {
+            const val = hookData.cell.text[0];
+            if (val && val.startsWith('-')) {
+              hookData.cell.styles.textColor = B.orange;
+            }
+          }
+          // Date column — muted
+          if (hookData.column.index === 0) {
+            hookData.cell.styles.textColor = B.muted;
+          }
+          // Ref column — muted
+          if (hookData.column.index === 1) {
+            hookData.cell.styles.textColor = B.muted;
+          }
         }
-        // Color credit column green
-        if (hookData.column.index === 5 && hookData.cell.text[0]) {
-          hookData.cell.styles.textColor = C.green;
+
+        // Footer styling
+        if (hookData.section === 'foot') {
+          // Debit total — orange light
+          if (hookData.column.index === 4 && hookData.cell.text[0]) {
+            hookData.cell.styles.textColor = [255, 138, 101] as any; // #ff8a65
+          }
+          // Credit total — green light
+          if (hookData.column.index === 5 && hookData.cell.text[0]) {
+            hookData.cell.styles.textColor = [102, 187, 106] as any; // #66bb6a
+          }
+          // Motif — "Totaux" label
+          if (hookData.column.index === 3) {
+            hookData.cell.styles.fontStyle = 'bold';
+          }
         }
       },
     });
 
-    // Get Y after table
     y = (doc as any).lastAutoTable?.finalY ?? y + 20;
-    y += 8;
+    y += 6;
   }
 
   // ==========================================================
-  // TOTALS SUMMARY — Footer block
+  // STATS — Counters section
   // ==========================================================
-  // Compute totals
-  let totalDeposits = 0;
-  let totalPayments = 0;
-  let totalAdjustments = 0;
-  let countDeposits = 0;
-  let countPayments = 0;
-
-  data.operations.forEach(op => {
-    const isCredit = op.operation_type === 'deposit' ||
-      (op.operation_type === 'adjustment' && op.balance_after > op.balance_before);
-
-    if (op.operation_type === 'deposit') {
-      totalDeposits += op.amount_xaf;
-      countDeposits++;
-    } else if (op.operation_type === 'payment') {
-      totalPayments += op.amount_xaf;
-      countPayments++;
-    } else {
-      totalAdjustments += isCredit ? op.amount_xaf : -op.amount_xaf;
-    }
-  });
-
-  // Check if we need a new page for the summary
-  if (y + 55 > ph - 25) {
+  if (y + 30 > ph - 30) {
     doc.addPage();
     y = 20;
   }
 
-  // Summary box
-  const summaryX = pw / 2;
-  const summaryW = pw / 2 - mr;
+  const statsBoxW = cw;
+  const statsBoxH = 22;
+  doc.setFillColor(...B.light);
+  doc.setDrawColor(...B.border);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(ml, y, statsBoxW, statsBoxH, 4, 4, 'FD');
 
-  doc.setDrawColor(...C.primary);
-  doc.setLineWidth(0.5);
-  doc.line(summaryX, y, pw - mr, y);
-  y += 5;
-
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.primary);
-  doc.text('RECAPITULATIF', summaryX, y);
-  y += 6;
-
-  const summaryRows = [
-    ['Total depots (' + countDeposits + ')', fmtXAF(totalDeposits) + ' XAF', C.green],
-    ['Total paiements (' + countPayments + ')', fmtXAF(totalPayments) + ' XAF', C.red],
-    ['Solde final', fmtXAF(data.finalBalance) + ' XAF', C.primary],
+  const statsItems = [
+    { label: 'MOUVEMENTS', value: data.operations.length, color: B.violet },
+    { label: 'DEPOTS', value: countCredits, color: B.green },
+    { label: 'PAIEMENTS', value: countDebits, color: B.orange },
+    { label: 'REMBOURSEMENTS', value: countRefunds, color: B.blue },
   ];
 
-  summaryRows.forEach(([label, value, color]) => {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...C.text);
-    doc.text(label as string, summaryX, y);
-
+  const statsColW = statsBoxW / statsItems.length;
+  statsItems.forEach((stat, i) => {
+    const sx = ml + i * statsColW + statsColW / 2;
+    // Value
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...(color as [number, number, number]));
-    doc.text(value as string, pw - mr, y, { align: 'right' });
-    y += 5;
+    doc.setTextColor(...stat.color);
+    doc.text(String(stat.value), sx, y + 10, { align: 'center' });
+    // Label
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...B.muted);
+    doc.text(stat.label, sx, y + 16, { align: 'center' });
   });
+
+  y += statsBoxH + 6;
 
   // ==========================================================
   // FOOTER — on every page
@@ -388,23 +523,40 @@ export function generateStatementPDF(data: StatementData): void {
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
 
-    // Footer line
-    doc.setDrawColor(...C.border);
-    doc.setLineWidth(0.3);
-    doc.line(ml, ph - 14, pw - mr, ph - 14);
+    const footerY = ph - 20;
 
-    // Left: Legal mention
+    // Brand bar (centered, small)
+    const barW = 60;
+    const barX = (pw - barW) / 2;
+    drawBrandBar(doc, barX, footerY, barW, 1);
+
+    // Main text
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.muted);
+    doc.setTextColor(...B.muted);
     doc.text(
-      'Document genere automatiquement par Bonzini Trading SARL — ' + fmtDateLong(new Date()),
-      ml,
-      ph - 9,
+      'Document genere automatiquement par Bonzini — ' + fmtDateTime(new Date()),
+      pw / 2,
+      footerY + 5,
+      { align: 'center' },
+    );
+    doc.text(
+      'Ce releve est fourni a titre informatif · support@bonzinilabs.com',
+      pw / 2,
+      footerY + 9,
+      { align: 'center' },
     );
 
-    // Right: Page number
-    doc.text('Page ' + i + ' / ' + pages, pw - mr, ph - 9, { align: 'right' });
+    // bonzinilabs.com
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...B.muted);
+    doc.text('bonzinilabs.com', pw / 2, footerY + 14, { align: 'center' });
+
+    // Page number (right)
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page ' + i + ' / ' + pages, pw - mr, footerY + 14, { align: 'right' });
   }
 
   // ==========================================================

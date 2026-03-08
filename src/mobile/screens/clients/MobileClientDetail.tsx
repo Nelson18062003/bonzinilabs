@@ -5,7 +5,7 @@ import { useClient, useResetClientPassword, useClientLedger } from '@/hooks/useC
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
-import { generateStatementPDF, type StatementOperation } from '@/lib/generateStatementPDF';
+import { generateStatementPDF, loadLogoBase64, type StatementOperation } from '@/lib/generateStatementPDF';
 import { startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -71,9 +71,7 @@ export function MobileClientDetail() {
     return ledgerEntries.map(entry => ({
       id: entry.id,
       created_at: entry.createdAt.toISOString(),
-      operation_type: entry.entryType === 'DEPOSIT_VALIDATED' ? 'deposit'
-        : entry.entryType.startsWith('PAYMENT') ? 'payment'
-        : 'adjustment',
+      operation_type: entry.entryType,
       amount_xaf: entry.amountXAF,
       balance_before: entry.balanceBefore,
       balance_after: entry.balanceAfter,
@@ -129,7 +127,7 @@ export function MobileClientDetail() {
       const initialBalance = filtered.length > 0 ? filtered[0].balance_before : (client.walletBalance || 0);
       const finalBalance = filtered.length > 0 ? filtered[filtered.length - 1].balance_after : (client.walletBalance || 0);
 
-      await new Promise(r => setTimeout(r, 300));
+      const logoBase64 = await loadLogoBase64();
       generateStatementPDF({
         clientName: `${client.firstName} ${client.lastName}`,
         clientPhone: client.phone,
@@ -138,6 +136,7 @@ export function MobileClientDetail() {
         operations: filtered,
         initialBalance,
         finalBalance,
+        logoBase64,
       });
       setStatementOpen(false);
     } finally {
