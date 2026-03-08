@@ -118,8 +118,8 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
     <section style={{ minHeight: '100vh', background: C.bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', padding: '100px 24px 60px' }}>
       {/* Orbs */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', borderRadius: '50%', filter: 'blur(150px)', opacity: 0.2, background: `conic-gradient(from 180deg, ${C.violet}, ${C.gold}, ${C.orange}, ${C.violet})`, animation: 'lp-spin 20s linear infinite' }} />
-        <div style={{ position: 'absolute', bottom: '-30%', right: '-15%', width: '50%', height: '70%', borderRadius: '50%', filter: 'blur(140px)', opacity: 0.12, background: `radial-gradient(circle, ${C.gold}, transparent)`, animation: 'lp-pulse 6s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.18, background: `conic-gradient(from 180deg, ${C.violet}, ${C.gold}, ${C.orange}, ${C.violet})`, animation: 'lp-spin 20s linear infinite', willChange: 'transform', transform: 'translateZ(0)' }} />
+        <div style={{ position: 'absolute', bottom: '-30%', right: '-15%', width: '50%', height: '70%', borderRadius: '50%', filter: 'blur(70px)', opacity: 0.10, background: `radial-gradient(circle, ${C.gold}, transparent)`, animation: 'lp-pulse 6s ease-in-out infinite', willChange: 'transform', transform: 'translateZ(0)' }} />
       </div>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', position: 'relative', zIndex: 2, display: 'flex', gap: 60, alignItems: 'center', flexWrap: 'wrap' }}>
