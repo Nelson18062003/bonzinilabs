@@ -1,16 +1,13 @@
-import { Link } from 'react-router-dom';
-import { TrendingUp } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
+import { RateCard } from '@/components/rates/RateCard';
 import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useClientRates } from '@/hooks/useDailyRates';
-import { formatNumber } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
 
 const WalletPage = () => {
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
@@ -48,44 +45,19 @@ const WalletPage = () => {
         </div>
 
         {/* Current Rate Card */}
-        <Link to="/rates" className="block mb-6">
-          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 transition-colors">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-full bg-primary/10">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Taux du jour</p>
-                    <p className="text-xs text-muted-foreground">1M XAF =</p>
-                  </div>
-                </div>
-                <span className="text-xs text-primary font-medium">Voir +</span>
-              </div>
-              {rateLoading ? (
-                <Skeleton className="h-16 w-full" />
-              ) : clientRatesData?.activeRate ? (
-                <div className="grid grid-cols-2 gap-1.5">
-                  {[
-                    { label: 'Alipay', icon: '支', rate: clientRatesData.activeRate.rate_alipay, color: '#1677ff' },
-                    { label: 'WeChat', icon: '微', rate: clientRatesData.activeRate.rate_wechat, color: '#07c160' },
-                    { label: 'Virement', icon: '🏦', rate: clientRatesData.activeRate.rate_virement, color: '#8b5cf6' },
-                    { label: 'Cash', icon: '¥', rate: clientRatesData.activeRate.rate_cash, color: '#dc2626' },
-                  ].map(({ label, icon, rate, color }) => (
-                    <div key={label} className="flex items-center gap-1.5 px-2 py-1 rounded bg-background/50">
-                      <span className="text-xs font-bold" style={{ color }}>{icon}</span>
-                      <span className="text-[11px] text-muted-foreground flex-1">{label}</span>
-                      <span className="text-xs font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>¥{formatNumber(Math.round(rate))}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Non configuré</p>
-              )}
-            </CardContent>
-          </Card>
-        </Link>
+        <div className="mb-6">
+          <RateCard
+            rates={clientRatesData?.activeRate ? {
+              rate_cash: clientRatesData.activeRate.rate_cash,
+              rate_alipay: clientRatesData.activeRate.rate_alipay,
+              rate_wechat: clientRatesData.activeRate.rate_wechat,
+              rate_virement: clientRatesData.activeRate.rate_virement,
+            } : null}
+            effectiveAt={clientRatesData?.activeRate?.effective_at}
+            isLoading={rateLoading}
+            detailsHref="/rates"
+          />
+        </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
