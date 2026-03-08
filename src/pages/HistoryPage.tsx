@@ -28,17 +28,16 @@ const HistoryPage = () => {
   const { data: operations, isLoading } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
 
-  // Helper to determine if an operation is a debit
+  // Helper to determine if an operation is a debit (handles raw enum values + simplified types)
   const isDebitOperation = (op: WalletOperation): boolean => {
-    if (op.operation_type === 'payment') return true;
-    if (op.operation_type === 'deposit') return false;
-    // For adjustments: check balance change
+    const t = op.operation_type.toUpperCase();
+    // Explicit credits
+    if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'ADMIN_CREDIT' || t === 'PAYMENT_CANCELLED_REFUNDED') return false;
+    // Explicit debits
+    if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT' || t === 'DEPOSIT_REFUSED') return true;
+    // Fallback for adjustments or unknown
     if (op.balance_after < op.balance_before) return true;
     if (op.balance_after > op.balance_before) return false;
-    // Fallback: check description
-    const desc = (op.description ?? '').toLowerCase();
-    if (desc.startsWith('débit')) return true;
-    if (desc.startsWith('crédit')) return false;
     return op.amount_xaf < 0;
   };
 
@@ -63,28 +62,31 @@ const HistoryPage = () => {
 
   const getOperationIcon = (op: WalletOperation) => {
     const isDebit = isDebitOperation(op);
-    if (op.operation_type === 'deposit') {
+    const t = op.operation_type.toUpperCase();
+    if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'PAYMENT_CANCELLED_REFUNDED' || t === 'ADMIN_CREDIT') {
       return <ArrowDownLeft className="w-5 h-5 text-success" />;
     }
-    if (op.operation_type === 'payment') {
+    if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT') {
       return <ArrowUpRight className="w-5 h-5 text-destructive" />;
     }
-    // Adjustment
     return <RefreshCw className={`w-5 h-5 ${isDebit ? 'text-destructive' : 'text-success'}`} />;
   };
 
   const getOperationLabel = (op: WalletOperation): string => {
-    switch (op.operation_type) {
-      case 'deposit':
-        return 'Dépôt';
-      case 'payment':
-        return 'Paiement';
-      case 'adjustment': {
+    const t = op.operation_type.toUpperCase();
+    switch (t) {
+      case 'DEPOSIT': case 'DEPOSIT_VALIDATED': return 'Dépôt';
+      case 'DEPOSIT_REFUSED': return 'Dépôt refusé';
+      case 'PAYMENT': case 'PAYMENT_EXECUTED': return 'Paiement';
+      case 'PAYMENT_RESERVED': return 'Paiement réservé';
+      case 'PAYMENT_CANCELLED_REFUNDED': return 'Remboursement';
+      case 'ADMIN_CREDIT': return 'Crédit admin';
+      case 'ADMIN_DEBIT': return 'Débit admin';
+      case 'ADJUSTMENT': {
         const isDebit = isDebitOperation(op);
         return isDebit ? 'Ajustement Débit' : 'Ajustement Crédit';
       }
-      default:
-        return 'Opération';
+      default: return 'Opération';
     }
   };
 

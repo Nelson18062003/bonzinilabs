@@ -29,7 +29,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
-import { generateStatementPDF, StatementOperation } from '@/lib/generateStatementPDF';
+import { generateStatementPDF, isCreditOperation, typeLabel, loadLogoBase64, StatementOperation } from '@/lib/generateStatementPDF';
 import { formatXAF } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +48,13 @@ const OPERATION_TYPE_LABELS: Record<string, string> = {
   deposit: 'Dépôt',
   payment: 'Paiement',
   adjustment: 'Ajustement',
+  DEPOSIT_VALIDATED: 'Dépôt',
+  DEPOSIT_REFUSED: 'Dépôt refusé',
+  PAYMENT_EXECUTED: 'Paiement',
+  PAYMENT_RESERVED: 'Paiement réservé',
+  PAYMENT_CANCELLED_REFUNDED: 'Remboursement',
+  ADMIN_CREDIT: 'Crédit admin',
+  ADMIN_DEBIT: 'Débit admin',
 };
 
 export function ClientStatementModal({
@@ -125,18 +132,20 @@ export function ClientStatementModal({
     let adjustmentCount = 0;
 
     filteredOperations.forEach(op => {
-      const isCredit = op.operation_type === 'deposit' || 
-        (op.operation_type === 'adjustment' && op.balance_after > op.balance_before);
-      
+      const isCredit = isCreditOperation(op.operation_type, op.balance_before, op.balance_after);
+
       if (isCredit) {
         totalCredits += op.amount_xaf;
+        depositCount++;
       } else {
         totalDebits += op.amount_xaf;
+        paymentCount++;
       }
 
-      if (op.operation_type === 'deposit') depositCount++;
-      else if (op.operation_type === 'payment') paymentCount++;
-      else if (op.operation_type === 'adjustment') adjustmentCount++;
+      const label = typeLabel(op.operation_type);
+      if (label === 'Ajustement' || label === 'Credit admin' || label === 'Debit admin') {
+        adjustmentCount++;
+      }
     });
 
     return { totalCredits, totalDebits, depositCount, paymentCount, adjustmentCount };
@@ -168,15 +177,15 @@ export function ClientStatementModal({
 
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
-    
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      const logoBase64 = await loadLogoBase64();
+
       // Sort ascending for PDF
       const sortedOps = [...filteredOperations].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
-      
+
       generateStatementPDF({
         clientName,
         clientPhone,
@@ -185,8 +194,9 @@ export function ClientStatementModal({
         operations: sortedOps,
         initialBalance,
         finalBalance,
+        logoBase64,
       });
-      
+
       onOpenChange(false);
     } finally {
       setIsGenerating(false);
@@ -398,20 +408,22 @@ export function ClientStatementModal({
                 <ScrollArea className="h-48 border-t">
                   <div className="divide-y">
                     {filteredOperations.map((op) => {
-                      const isCredit = op.operation_type === 'deposit' || 
-                        (op.operation_type === 'adjustment' && op.balance_after > op.balance_before);
-                      
+                      const isCredit = isCreditOperation(op.operation_type, op.balance_before, op.balance_after);
+                      const opLabel = typeLabel(op.operation_type);
+                      const isCreditType = isCredit;
+                      const isRefund = opLabel === 'Remboursement';
+
                       return (
                         <div key={op.id} className="px-4 py-2 flex items-center justify-between text-sm">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={cn(
                                   "text-xs",
-                                  op.operation_type === 'deposit' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                  op.operation_type === 'payment' && "bg-blue-50 text-blue-700 border-blue-200",
-                                  op.operation_type === 'adjustment' && "bg-amber-50 text-amber-700 border-amber-200"
+                                  isCreditType && !isRefund && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                  !isCreditType && "bg-blue-50 text-blue-700 border-blue-200",
+                                  isRefund && "bg-amber-50 text-amber-700 border-amber-200"
                                 )}
                               >
                                 {OPERATION_TYPE_LABELS[op.operation_type] || op.operation_type}
