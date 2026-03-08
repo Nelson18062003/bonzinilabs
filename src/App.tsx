@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import LandingPage from "./pages/LandingPage";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -29,7 +30,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
-const LandingPage = lazy(() => import("./pages/LandingPage"));
+// LandingPage is eagerly loaded (first route, no lazy delay)
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
