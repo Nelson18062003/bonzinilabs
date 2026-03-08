@@ -7,13 +7,14 @@ import '../fonts';
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    fontFamily: 'NotoSansSC',
+    fontFamily: 'DM Sans',
     fontSize: 10,
     color: colors.text,
+    backgroundColor: colors.white,
   },
   // Summary page
   summaryHeader: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.violetDark,
     padding: 16,
     paddingBottom: 12,
     marginHorizontal: -30,
@@ -22,46 +23,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryTitle: {
-    fontSize: 20,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontSize: 18,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
     color: colors.white,
   },
   summarySubtitle: {
-    fontSize: 12,
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.white,
-    marginTop: 6,
-    opacity: 0.9,
+    marginTop: 4,
+    opacity: 0.8,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 30,
+    gap: 24,
     marginBottom: 16,
   },
   statBox: {
     alignItems: 'center',
-    backgroundColor: colors.bgBlue,
-    borderWidth: 2,
-    borderColor: colors.primary,
+    backgroundColor: colors.violetLight,
+    borderWidth: 1.5,
+    borderColor: colors.violet,
     borderRadius: 8,
     padding: 14,
     minWidth: 140,
   },
   statLabel: {
-    fontSize: 9,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontSize: 8,
+    fontFamily: 'DM Sans',
+    fontWeight: 600,
     color: colors.muted,
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   statValue: {
-    fontSize: 22,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
-    color: colors.primary,
+    fontSize: 20,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.violet,
+  },
+  sectionTitle: {
+    fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: 12,
+    marginBottom: 6,
   },
   // Table
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.violetDark,
     paddingVertical: 6,
     paddingHorizontal: 8,
     borderRadius: 4,
@@ -69,7 +87,8 @@ const styles = StyleSheet.create({
   },
   tableHeaderText: {
     fontSize: 8,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
     color: colors.white,
   },
   tableRow: {
@@ -80,10 +99,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   tableRowAlt: {
-    backgroundColor: colors.bgLight,
+    backgroundColor: colors.light,
   },
   tableCell: {
     fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.text,
   },
   colIndex: { width: 30 },
@@ -94,26 +115,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 8,
     paddingHorizontal: 8,
-    backgroundColor: colors.bgBlue,
+    backgroundColor: colors.violetLight,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.violet,
     borderRadius: 4,
     marginTop: 4,
   },
   totalLabel: {
     fontSize: 10,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
-    color: colors.primary,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
+    color: colors.violet,
     flex: 1,
   },
   totalValue: {
     fontSize: 10,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
-    color: colors.primary,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.violet,
   },
   // Detail page
   detailHeader: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.violetDark,
     padding: 14,
     marginHorizontal: -30,
     marginTop: -30,
@@ -123,37 +146,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailHeaderTitle: {
-    fontSize: 16,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontSize: 14,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
     color: colors.white,
   },
   detailHeaderRef: {
-    fontSize: 10,
+    fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.white,
-    opacity: 0.8,
+    opacity: 0.7,
   },
   amountBigBox: {
-    backgroundColor: colors.bgBlue,
-    borderWidth: 2,
-    borderColor: colors.primary,
+    backgroundColor: colors.violetLight,
+    borderWidth: 1.5,
+    borderColor: colors.violet,
     borderRadius: 8,
     padding: 20,
     alignItems: 'center',
     marginBottom: 16,
   },
   amountBigLabel: {
-    fontSize: 10,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 600,
     color: colors.muted,
     marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   amountBig: {
-    fontSize: 48,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
-    color: colors.primary,
+    fontSize: 44,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.violet,
   },
   amountBigUnit: {
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.muted,
     marginTop: 4,
   },
@@ -161,8 +193,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoTitle: {
-    fontSize: 11,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
     color: colors.text,
     marginBottom: 8,
     paddingBottom: 4,
@@ -175,12 +208,15 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.muted,
     width: 100,
   },
   infoValue: {
     fontSize: 11,
-    fontFamily: 'NotoSansSC', fontWeight: 700,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
     color: colors.text,
     flex: 1,
   },
@@ -195,22 +231,27 @@ const styles = StyleSheet.create({
   },
   qrLabel: {
     fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.muted,
     marginTop: 6,
   },
-  // Bank transfer detail - stacked layout with large font
+  // Bank transfer detail
   bankField: {
     marginBottom: 12,
   },
   bankLabel: {
-    fontSize: 30,
-    fontFamily: 'NotoSansSC',
+    fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 500,
     color: colors.muted,
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   bankValue: {
-    fontSize: 35,
-    fontFamily: 'NotoSansSC',
+    fontSize: 22,
+    fontFamily: 'DM Sans',
     fontWeight: 700,
     color: colors.text,
   },
@@ -236,36 +277,36 @@ interface BatchPaymentsPDFProps {
 
 export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProps) {
   const totalRMB = payments.reduce((sum, p) => sum + p.amount_rmb, 0);
+  const dateStr = (generatedAt || new Date()).toLocaleDateString('fr-FR');
 
   return (
     <Document>
-      {/* Page 1: Summary */}
+      {/* Page 1: Récapitulatif */}
       <Page size="A4" style={styles.page}>
         <View style={styles.summaryHeader}>
-          <Text style={styles.summaryTitle}>待处理付款 / PENDING PAYMENTS</Text>
-          <Text style={styles.summarySubtitle}>
-            生成日期 / Generated: {generatedAt ? generatedAt.toLocaleDateString('zh-CN') : new Date().toLocaleDateString('zh-CN')}
-          </Text>
+          <Text style={styles.summaryTitle}>PAIEMENTS EN ATTENTE</Text>
+          <Text style={styles.summarySubtitle}>Généré le {dateStr}</Text>
         </View>
 
-        {/* Stats */}
+        {/* Statistiques */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statLabel}>付款数量 / PAYMENT COUNT</Text>
+            <Text style={styles.statLabel}>Nombre de paiements</Text>
             <Text style={styles.statValue}>{payments.length}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statLabel}>总金额 / TOTAL AMOUNT (RMB)</Text>
-            <Text style={styles.statValue}>{formatRMB(totalRMB)}</Text>
+            <Text style={styles.statLabel}>Total (RMB)</Text>
+            <Text style={styles.statValue}>¥{formatRMB(totalRMB)}</Text>
           </View>
         </View>
 
-        {/* Table */}
+        {/* Tableau */}
+        <Text style={styles.sectionTitle}>Détail des paiements</Text>
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderText, styles.colIndex]}>#</Text>
-          <Text style={[styles.tableHeaderText, styles.colRef]}>参考编号 / Reference</Text>
-          <Text style={[styles.tableHeaderText, styles.colMethod]}>付款方式 / Method</Text>
-          <Text style={[styles.tableHeaderText, styles.colAmount]}>金额 / Amount (RMB)</Text>
+          <Text style={[styles.tableHeaderText, styles.colRef]}>Référence</Text>
+          <Text style={[styles.tableHeaderText, styles.colMethod]}>Mode</Text>
+          <Text style={[styles.tableHeaderText, styles.colAmount]}>Montant (RMB)</Text>
         </View>
 
         {payments.map((payment, index) => (
@@ -276,22 +317,22 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
             <Text style={[styles.tableCell, styles.colIndex]}>{index + 1}</Text>
             <Text style={[styles.tableCell, styles.colRef]}>{payment.reference}</Text>
             <Text style={[styles.tableCell, styles.colMethod]}>{getPaymentMethodLabel(payment.method)}</Text>
-            <Text style={[styles.tableCell, styles.colAmount, { fontFamily: 'NotoSansSC', fontWeight: 700 }]}>
+            <Text style={[styles.tableCell, styles.colAmount, { fontFamily: 'DM Sans', fontWeight: 700 }]}>
               {formatRMB(payment.amount_rmb)}
             </Text>
           </View>
         ))}
 
-        {/* Total row */}
+        {/* Ligne total */}
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>合计 / TOTAL</Text>
+          <Text style={styles.totalLabel}>TOTAL</Text>
           <Text style={styles.totalValue}>¥{formatRMB(totalRMB)}</Text>
         </View>
 
-        <PDFFooter confidential />
+        <PDFFooter />
       </Page>
 
-      {/* Detail pages: 1 per payment */}
+      {/* Pages détail : 1 par paiement */}
       {payments.map((payment, index) => (
         <Page key={payment.id} size="A4" style={styles.page}>
           {/* Header */}
@@ -302,74 +343,74 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
             <Text style={styles.detailHeaderRef}>{payment.reference}</Text>
           </View>
 
-          {/* Big amount */}
+          {/* Montant principal */}
           <View style={styles.amountBigBox}>
-            <Text style={styles.amountBigLabel}>发送金额 / AMOUNT TO SEND</Text>
+            <Text style={styles.amountBigLabel}>Montant à envoyer</Text>
             <Text style={styles.amountBig}>{formatRMB(payment.amount_rmb)}</Text>
-            <Text style={styles.amountBigUnit}>人民币 / RMB</Text>
+            <Text style={styles.amountBigUnit}>RMB (Yuan)</Text>
           </View>
 
-          {/* Method */}
+          {/* Mode de paiement */}
           <View style={styles.infoSection}>
             <Text style={styles.infoTitle}>{getPaymentMethodLabel(payment.method)}</Text>
 
-            {/* Bank transfer details - large stacked layout */}
+            {/* Virement bancaire — layout empilé grands caractères */}
             {payment.method === 'bank_transfer' && (
               <>
                 {payment.beneficiary_name && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>姓名 / Name</Text>
+                    <Text style={styles.bankLabel}>Nom / Bénéficiaire</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_name}</Text>
                   </View>
                 )}
                 {payment.beneficiary_bank_name && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>开户银行 / Bank</Text>
+                    <Text style={styles.bankLabel}>Banque</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_bank_name}</Text>
                   </View>
                 )}
                 {payment.beneficiary_bank_account && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>账号 / Account No.</Text>
+                    <Text style={styles.bankLabel}>Numéro de compte</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_bank_account}</Text>
                   </View>
                 )}
                 {payment.beneficiary_phone && (
                   <View style={styles.bankField}>
-                    <Text style={styles.bankLabel}>电话 / Phone</Text>
+                    <Text style={styles.bankLabel}>Téléphone</Text>
                     <Text style={styles.bankValue}>{payment.beneficiary_phone}</Text>
                   </View>
                 )}
               </>
             )}
 
-            {/* Alipay/WeChat details */}
+            {/* Alipay / WeChat */}
             {(payment.method === 'alipay' || payment.method === 'wechat') && (
               <>
                 {payment.beneficiary_qr_code_url ? (
                   <View style={styles.qrContainer}>
                     <Image src={payment.beneficiary_qr_code_url} style={styles.qrImage} />
                     <Text style={styles.qrLabel}>
-                      付款二维码 / {getPaymentMethodLabel(payment.method)} QR Code
+                      QR Code — {getPaymentMethodLabel(payment.method)}
                     </Text>
                   </View>
                 ) : (
                   <>
                     {payment.beneficiary_name && (
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>姓名 / Name</Text>
+                        <Text style={styles.infoLabel}>Nom</Text>
                         <Text style={styles.infoValue}>{payment.beneficiary_name}</Text>
                       </View>
                     )}
                     {payment.beneficiary_phone && (
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>电话 / Phone</Text>
+                        <Text style={styles.infoLabel}>Téléphone</Text>
                         <Text style={styles.infoValue}>{payment.beneficiary_phone}</Text>
                       </View>
                     )}
                     {payment.beneficiary_email && (
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>电子邮件 / Email</Text>
+                        <Text style={styles.infoLabel}>Email</Text>
                         <Text style={styles.infoValue}>{payment.beneficiary_email}</Text>
                       </View>
                     )}
@@ -379,7 +420,7 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
             )}
           </View>
 
-          <PDFFooter confidential />
+          <PDFFooter />
         </Page>
       ))}
     </Document>

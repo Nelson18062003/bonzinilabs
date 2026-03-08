@@ -1,32 +1,32 @@
 import { Font } from '@react-pdf/renderer';
 
 // DM Sans — police principale de la charte Bonzini
-// Fichiers TTF depuis Google Fonts (meilleure compatibilité avec @react-pdf)
+// Fichiers WOFF locaux servis depuis /public/fonts/ (fiable en génération PDF navigateur)
 Font.register({
   family: 'DM Sans',
   fonts: [
     {
-      src: 'https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZa4ET-DNl0.woff2',
+      src: '/fonts/dm-sans-latin-400-normal.woff',
       fontWeight: 400,
     },
     {
-      src: 'https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriI3q4ET-DNl0.woff2',
+      src: '/fonts/dm-sans-latin-500-normal.woff',
       fontWeight: 500,
     },
     {
-      src: 'https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZOoET-DNl0.woff2',
+      src: '/fonts/dm-sans-latin-600-normal.woff',
       fontWeight: 600,
     },
     {
-      src: 'https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZa4Ex-DNl0.woff2',
+      src: '/fonts/dm-sans-latin-700-normal.woff',
       fontWeight: 700,
     },
     {
-      src: 'https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZDvET-DNl0.woff2',
+      src: '/fonts/dm-sans-latin-800-normal.woff',
       fontWeight: 800,
     },
     {
-      src: 'https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZD_Ex-DNl0.woff2',
+      src: '/fonts/dm-sans-latin-900-normal.woff',
       fontWeight: 900,
     },
   ],
