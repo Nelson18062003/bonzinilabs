@@ -5,7 +5,8 @@ import { useClient, useResetClientPassword, useClientLedger } from '@/hooks/useC
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrency, formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
-import { ClientStatementModal } from '@/components/statement/ClientStatementModal';
+import { generateStatementPDF, type StatementOperation } from '@/lib/generateStatementPDF';
+import { startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Phone,
@@ -59,11 +60,13 @@ export function MobileClientDetail() {
   const { hasPermission } = useAdminAuth();
   const resetPasswordMutation = useResetClientPassword();
 
-  // Statement modal state
+  // Statement drawer state
   const [statementOpen, setStatementOpen] = useState(false);
+  const [statementPeriod, setStatementPeriod] = useState<'this_month' | 'last_month' | 'last_3_months' | 'this_year'>('this_month');
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { data: ledgerEntries } = useClientLedger(clientId || '');
 
-  const statementOperations = useMemo(() => {
+  const statementOperations: StatementOperation[] = useMemo(() => {
     if (!ledgerEntries) return [];
     return ledgerEntries.map(entry => ({
       id: entry.id,
@@ -77,6 +80,58 @@ export function MobileClientDetail() {
       description: entry.description,
     }));
   }, [ledgerEntries]);
+
+  const handleGenerateStatement = async () => {
+    if (!client) return;
+    setIsGeneratingPDF(true);
+    try {
+      const now = new Date();
+      let periodStart: Date, periodEnd: Date;
+      switch (statementPeriod) {
+        case 'last_month': {
+          const lm = subMonths(now, 1);
+          periodStart = startOfMonth(lm);
+          periodEnd = endOfMonth(lm);
+          break;
+        }
+        case 'last_3_months':
+          periodStart = startOfMonth(subMonths(now, 2));
+          periodEnd = endOfMonth(now);
+          break;
+        case 'this_year':
+          periodStart = new Date(now.getFullYear(), 0, 1);
+          periodEnd = new Date(now.getFullYear(), 11, 31);
+          break;
+        default:
+          periodStart = startOfMonth(now);
+          periodEnd = endOfMonth(now);
+      }
+
+      const filtered = statementOperations
+        .filter(op => {
+          const d = parseISO(op.created_at);
+          return isWithinInterval(d, { start: periodStart, end: periodEnd });
+        })
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      const initialBalance = filtered.length > 0 ? filtered[0].balance_before : (client.walletBalance || 0);
+      const finalBalance = filtered.length > 0 ? filtered[filtered.length - 1].balance_after : (client.walletBalance || 0);
+
+      await new Promise(r => setTimeout(r, 300));
+      generateStatementPDF({
+        clientName: `${client.firstName} ${client.lastName}`,
+        clientPhone: client.phone,
+        periodStart,
+        periodEnd,
+        operations: filtered,
+        initialBalance,
+        finalBalance,
+      });
+      setStatementOpen(false);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
@@ -428,17 +483,52 @@ export function MobileClientDetail() {
         </DrawerContent>
       </Drawer>
 
-      {/* Statement PDF Modal */}
-      {client && (
-        <ClientStatementModal
-          open={statementOpen}
-          onOpenChange={setStatementOpen}
-          clientName={`${client.firstName} ${client.lastName}`}
-          clientPhone={client.phone}
-          operations={statementOperations}
-          currentBalance={client.walletBalance || 0}
-        />
-      )}
+      {/* Statement PDF Drawer */}
+      <Drawer open={statementOpen} onOpenChange={setStatementOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Exporter relevé PDF</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Choisissez la période puis téléchargez le relevé.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: 'this_month', label: 'Ce mois' },
+                { value: 'last_month', label: 'Mois dernier' },
+                { value: 'last_3_months', label: '3 derniers mois' },
+                { value: 'this_year', label: 'Cette année' },
+              ] as const).map(p => (
+                <Button
+                  key={p.value}
+                  variant={statementPeriod === p.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatementPeriod(p.value)}
+                  className="w-full"
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              {statementOperations.length} opération{statementOperations.length > 1 ? 's' : ''} au total
+            </p>
+          </div>
+          <DrawerFooter>
+            <Button onClick={handleGenerateStatement} disabled={isGeneratingPDF}>
+              {isGeneratingPDF ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-2" />Génération...</>
+              ) : (
+                <><FileDown className="w-4 h-4 mr-2" />Télécharger PDF</>
+              )}
+            </Button>
+            <Button variant="outline" onClick={() => setStatementOpen(false)}>
+              Annuler
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

@@ -73,7 +73,7 @@ export function useClients(filters?: ClientFilters) {
       const { data: payments } = await supabaseAdmin
         .from('payments')
         .select('user_id, amount_xaf, status')
-        .in('status', ['completed', 'cash_completed'])
+        .eq('status', 'completed')
         .in('user_id', userIds);
 
       const paymentSums = new Map<string, number>();
@@ -139,7 +139,7 @@ export function useClient(userId: string) {
         .from('payments')
         .select('amount_xaf, status')
         .eq('user_id', userId)
-        .in('status', ['completed', 'cash_completed']);
+        .eq('status', 'completed');
 
       const totalPayments = clientPayments?.reduce((sum, p) => sum + p.amount_xaf, 0) || 0;
 
