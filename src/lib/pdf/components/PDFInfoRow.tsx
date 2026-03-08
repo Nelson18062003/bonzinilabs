@@ -4,33 +4,52 @@ import { colors } from '../styles';
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    marginBottom: 6,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   label: {
-    fontSize: 8,
+    fontSize: 11,
+    fontFamily: 'DM Sans',
+    fontWeight: 500,
     color: colors.muted,
-    width: 80,
+    flex: 1,
   },
   value: {
-    fontSize: 9,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
+    fontSize: 12,
+    fontFamily: 'DM Sans',
+    fontWeight: 600,
     color: colors.text,
+    textAlign: 'right',
     flex: 1,
+  },
+  valueBold: {
+    fontWeight: 700,
   },
 });
 
 interface PDFInfoRowProps {
   label: string;
   value: string | null | undefined;
-  labelWidth?: number;
+  bold?: boolean;
+  color?: string;
 }
 
-export function PDFInfoRow({ label, value, labelWidth }: PDFInfoRowProps) {
+export function PDFInfoRow({ label, value, bold, color }: PDFInfoRowProps) {
   return (
     <View style={styles.row}>
-      <Text style={[styles.label, labelWidth ? { width: labelWidth } : undefined]}>{label}</Text>
-      <Text style={styles.value}>{value || 'Non renseigné'}</Text>
+      <Text style={styles.label}>{label}</Text>
+      <Text
+        style={[
+          styles.value,
+          bold ? styles.valueBold : undefined,
+          color ? { color } : undefined,
+        ]}
+      >
+        {value || '—'}
+      </Text>
     </View>
   );
 }

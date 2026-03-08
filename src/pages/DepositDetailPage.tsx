@@ -323,10 +323,9 @@ const DepositDetailPage = () => {
         client_country: profile?.country || undefined,
         company_name: profile?.company_name || (deposit as any).profiles?.company_name,
       };
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
         <DepositReceiptPDF data={receiptData} />,
-        `Depot_${deposit.reference}_${dateStr}.pdf`,
+        `recu_depot_${deposit.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
       toast.success('Relevé téléchargé');
     } catch (error) {

@@ -6,64 +6,134 @@ import { PDFAmountBox } from '../components/PDFAmountBox';
 import { baseStyles, colors } from '../styles';
 import {
   formatXAF,
-  formatRMB,
   formatDate,
+  formatRateDisplay,
   getPaymentMethodLabel,
   getStatusLabel,
   getStatusColor,
+  getStatusBgColor,
 } from '../helpers';
 import '../fonts';
 
 const styles = StyleSheet.create({
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  statusText: {
-    fontSize: 10,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.white,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.text,
-    marginBottom: 8,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  section: {
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 14,
   },
-  qrCodeContainer: {
+  statusBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
-  qrCodeImage: {
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
+  },
+  statusText: {
+    fontSize: 11,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+  },
+  statusDate: {
+    fontSize: 11,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
+    color: colors.muted,
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  signatureContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: colors.light,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+  },
+  signatureSubtitle: {
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
+    color: colors.muted,
+    marginBottom: 10,
+  },
+  signatureImage: {
+    width: 220,
+    height: 100,
+    objectFit: 'contain',
+    marginBottom: 8,
+  },
+  signatureFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  signatureBy: {
+    fontSize: 9,
+    fontFamily: 'DM Sans',
+    color: colors.muted,
+  },
+  signatureByName: {
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
+    color: colors.text,
+  },
+  qrContainer: {
+    alignItems: 'center',
+    padding: 24,
+  },
+  qrTitle: {
+    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  qrBeneficiaryName: {
+    fontSize: 14,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
+    color: colors.text,
+    marginBottom: 12,
+  },
+  qrImage: {
     width: 300,
     height: 300,
     objectFit: 'contain',
   },
-  qrCodeLabel: {
+  qrCaption: {
     fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 400,
     color: colors.muted,
     marginTop: 8,
-    textAlign: 'center',
   },
-  proofPageContainer: {
+  proofContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   proofLabel: {
     fontSize: 10,
+    fontFamily: 'DM Sans',
     color: colors.muted,
     marginBottom: 12,
     textAlign: 'center',
@@ -74,31 +144,13 @@ const styles = StyleSheet.create({
     objectFit: 'contain',
   },
   pdfProofsContainer: {
-    padding: 20,
+    padding: 24,
   },
   pdfProofItem: {
-    marginBottom: 8,
     fontSize: 11,
+    fontFamily: 'DM Sans',
     color: colors.text,
-  },
-  signatureSection: {
-    marginBottom: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
-  },
-  signatureImage: {
-    width: 220,
-    height: 100,
-    objectFit: 'contain',
-    marginVertical: 8,
-  },
-  signatureLabel: {
-    fontSize: 9,
-    color: colors.muted,
-    marginTop: 4,
+    marginBottom: 8,
   },
 });
 
@@ -142,11 +194,26 @@ const isImageProof = (proof: AdminProofItem): boolean => {
   return type.startsWith('image/') || /\.(jpe?g|png|gif|webp)$/.test(name);
 };
 
+// Couleur associée au mode de paiement
+const getMethodColor = (method: string): string => {
+  const map: Record<string, string> = {
+    alipay: colors.alipay,
+    wechat: colors.wechat,
+    bank_transfer: colors.violet,
+    cash: colors.orange,
+  };
+  return map[method] || colors.text;
+};
+
 export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
+  const statusLabel = getStatusLabel(data.status);
   const statusColor = getStatusColor(data.status);
-  const rateDisplay = data.exchange_rate
-    ? `1 RMB = ${formatXAF(Math.round(1 / data.exchange_rate))} XAF`
-    : 'Non défini';
+  const statusBg = getStatusBgColor(data.status);
+  const dateDisplay = data.processed_at || data.created_at;
+
+  const rateDisplay = data.exchange_rate ? formatRateDisplay(data.exchange_rate) : 'Non défini';
+  const cnyDisplay = data.amount_rmb ? `\u00a5${formatXAF(Math.round(data.amount_rmb))}` : '';
+  const methodColor = getMethodColor(data.method);
 
   const hasQrCode = !!data.beneficiary_qr_code_url;
   const imageProofs = (data.adminProofs ?? []).filter(isImageProof);
@@ -155,119 +222,149 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
   return (
     <Document>
       <Page size="A4" style={baseStyles.page}>
-        <PDFHeader title="FICHE DE PAIEMENT" reference={data.reference} />
+        <PDFHeader type="paiement" reference={data.reference} />
 
-        {/* Status badge */}
-        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-          <Text style={styles.statusText}>{getStatusLabel(data.status)}</Text>
+        {/* Statut + date */}
+        <View style={styles.statusRow}>
+          <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+          </View>
+          <Text style={styles.statusDate}>{formatDate(dateDisplay)}</Text>
         </View>
 
-        {/* Amounts */}
+        {/* Bloc montant avec sous-infos CNY + taux */}
         <PDFAmountBox
-          label="MONTANTS"
-          amount={`${formatXAF(data.amount_xaf)} XAF`}
-          secondaryItems={[
-            { label: 'Montant envoyé', value: `¥${formatRMB(data.amount_rmb)}` },
-            { label: 'Taux de change', value: rateDisplay },
-          ]}
+          amount={formatXAF(data.amount_xaf)}
+          secondaryItems={
+            cnyDisplay
+              ? [
+                  { label: 'Montant envoyé', value: cnyDisplay },
+                  { label: 'Taux appliqué', value: rateDisplay },
+                ]
+              : undefined
+          }
         />
 
-        {/* Summary section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Récapitulatif</Text>
-          <PDFInfoRow label="Référence" value={data.reference} />
-          <PDFInfoRow label="Statut" value={getStatusLabel(data.status)} />
-          <PDFInfoRow label="Date de création" value={formatDate(data.created_at)} />
-          {data.processed_at && (
-            <PDFInfoRow label="Date traitement" value={formatDate(data.processed_at)} />
-          )}
-          <PDFInfoRow label="Mode de paiement" value={getPaymentMethodLabel(data.method)} />
-          <PDFInfoRow label="Taux de change" value={rateDisplay} />
-        </View>
+        {/* Section TRANSACTION */}
+        <Text style={styles.sectionTitle}>Transaction</Text>
+        <PDFInfoRow
+          label="Mode de paiement"
+          value={getPaymentMethodLabel(data.method)}
+          bold
+          color={methodColor}
+        />
+        <PDFInfoRow label="Date de création" value={formatDate(data.created_at)} />
+        {data.processed_at && (
+          <PDFInfoRow label="Date de traitement" value={formatDate(data.processed_at)} />
+        )}
 
-        {/* Client section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Client</Text>
-          <PDFInfoRow label="Nom" value={data.client_name} />
-          {data.client_phone && <PDFInfoRow label="Téléphone" value={data.client_phone} />}
-          {data.client_email && <PDFInfoRow label="E-mail" value={data.client_email} />}
-          {data.client_country && <PDFInfoRow label="Pays" value={data.client_country} />}
-        </View>
+        {/* Section CLIENT */}
+        <Text style={styles.sectionTitle}>Client</Text>
+        <PDFInfoRow label="Nom" value={data.client_name} bold />
+        {data.client_phone && <PDFInfoRow label="Téléphone" value={data.client_phone} />}
+        {data.client_email && <PDFInfoRow label="Email" value={data.client_email} />}
+        {data.client_country && <PDFInfoRow label="Pays" value={data.client_country} />}
 
-        {/* Beneficiary section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bénéficiaire</Text>
-          {data.beneficiary_name && <PDFInfoRow label="Nom" value={data.beneficiary_name} />}
-          {data.beneficiary_phone && <PDFInfoRow label="Téléphone" value={data.beneficiary_phone} />}
-          {data.beneficiary_email && <PDFInfoRow label="Email" value={data.beneficiary_email} />}
-          {data.beneficiary_bank_name && <PDFInfoRow label="Banque" value={data.beneficiary_bank_name} />}
-          {data.beneficiary_bank_account && <PDFInfoRow label="N° de compte" value={data.beneficiary_bank_account} />}
-          {!data.beneficiary_name && !data.beneficiary_phone && !data.beneficiary_email && !data.beneficiary_bank_name && (
-            <PDFInfoRow label="Info" value="Non renseigné" />
-          )}
-        </View>
+        {/* Section BÉNÉFICIAIRE — adaptatif selon le mode */}
+        {(data.beneficiary_name || data.beneficiary_phone || data.beneficiary_email ||
+          data.beneficiary_bank_name) && (
+          <>
+            <Text style={styles.sectionTitle}>Bénéficiaire</Text>
+            {data.beneficiary_name && (
+              <PDFInfoRow label="Nom" value={data.beneficiary_name} bold />
+            )}
 
-        {/* Signature section (cash payments) */}
+            {/* Alipay */}
+            {data.method === 'alipay' && data.beneficiary_email && (
+              <PDFInfoRow
+                label="Identifiant Alipay"
+                value={data.beneficiary_email}
+                color={colors.alipay}
+              />
+            )}
+
+            {/* WeChat */}
+            {data.method === 'wechat' && data.beneficiary_phone && (
+              <PDFInfoRow
+                label="Identifiant WeChat"
+                value={data.beneficiary_phone}
+                color={colors.wechat}
+              />
+            )}
+
+            {/* Virement bancaire */}
+            {data.method === 'bank_transfer' && (
+              <>
+                {data.beneficiary_bank_name && (
+                  <PDFInfoRow label="Banque" value={data.beneficiary_bank_name} />
+                )}
+                {data.beneficiary_bank_account && (
+                  <PDFInfoRow label="N° de compte" value={data.beneficiary_bank_account} />
+                )}
+                {data.beneficiary_email && (
+                  <PDFInfoRow label="Email" value={data.beneficiary_email} />
+                )}
+              </>
+            )}
+
+            {/* Cash */}
+            {data.method === 'cash' && data.beneficiary_phone && (
+              <PDFInfoRow label="Téléphone" value={data.beneficiary_phone} />
+            )}
+          </>
+        )}
+
+        {/* Signature (Cash uniquement) */}
         {data.cash_signature_url && (
-          <View style={styles.signatureSection}>
+          <View style={styles.signatureContainer}>
             <Text style={styles.sectionTitle}>Signature du bénéficiaire</Text>
-            <Image src={data.cash_signature_url} style={styles.signatureImage} />
-            {data.cash_signed_by_name && (
-              <PDFInfoRow label="Signé par" value={data.cash_signed_by_name} />
-            )}
-            {data.cash_signature_timestamp && (
-              <PDFInfoRow label="Date de signature" value={formatDate(data.cash_signature_timestamp)} />
-            )}
-            <Text style={styles.signatureLabel}>
-              Cette signature confirme la réception du paiement en espèces par le bénéficiaire.
+            <Text style={styles.signatureSubtitle}>
+              Confirme la réception du paiement en espèces
             </Text>
+            <Image src={data.cash_signature_url} style={styles.signatureImage} />
+            <View style={styles.signatureFooterRow}>
+              <Text style={styles.signatureBy}>
+                Signé par{' '}
+                <Text style={styles.signatureByName}>
+                  {data.cash_signed_by_name || data.beneficiary_name || '—'}
+                </Text>
+              </Text>
+              {data.cash_signature_timestamp && (
+                <Text style={styles.statusDate}>
+                  {formatDate(data.cash_signature_timestamp)}
+                </Text>
+              )}
+            </View>
           </View>
         )}
 
         <PDFFooter />
       </Page>
 
-      {/* Page 2: QR Code if present */}
+      {/* Page QR code bénéficiaire (Alipay / WeChat) */}
       {hasQrCode && (
         <Page size="A4" style={baseStyles.page}>
-          <PDFHeader title="QR CODE BÉNÉFICIAIRE" reference={data.reference} />
-          <View style={styles.qrCodeContainer}>
+          <PDFHeader type="paiement" reference={data.reference} />
+          <View style={styles.qrContainer}>
+            <Text style={styles.qrTitle}>QR Code Bénéficiaire</Text>
             {data.beneficiary_name && (
-              <Text style={{ fontSize: 14, fontFamily: 'NotoSansSC', fontWeight: 700, color: colors.text, marginBottom: 12 }}>
-                {data.beneficiary_name}
-              </Text>
+              <Text style={styles.qrBeneficiaryName}>{data.beneficiary_name}</Text>
             )}
-            <Image src={data.beneficiary_qr_code_url!} style={styles.qrCodeImage} />
-            <Text style={styles.qrCodeLabel}>
-              {getPaymentMethodLabel(data.method)} — ¥{formatRMB(data.amount_rmb)}
+            <Image src={data.beneficiary_qr_code_url!} style={styles.qrImage} />
+            <Text style={styles.qrCaption}>
+              {getPaymentMethodLabel(data.method)} — {cnyDisplay}
             </Text>
           </View>
           <PDFFooter />
         </Page>
       )}
 
-      {/* Cash Payment QR Code page */}
-      {data.cashPaymentQrDataUrl && (
-        <Page size="A4" style={baseStyles.page}>
-          <PDFHeader title="QR CODE DE PAIEMENT CASH" reference={data.reference} />
-          <View style={styles.qrCodeContainer}>
-            <Text style={{ fontSize: 14, fontFamily: 'NotoSansSC', fontWeight: 700, color: colors.text, marginBottom: 12 }}>
-              Présentez ce QR Code au bureau Bonzini
-            </Text>
-            <Image src={data.cashPaymentQrDataUrl} style={styles.qrCodeImage} />
-            <Text style={styles.qrCodeLabel}>
-              {data.reference} — ¥{formatRMB(data.amount_rmb)}
-            </Text>
-          </View>
-          <PDFFooter />
-        </Page>
-      )}
-
-      {/* Pages for each admin image proof */}
+      {/* Pages preuves images (1 page par preuve) */}
       {imageProofs.map((proof, index) => (
         <Page key={proof.file_url} size="A4" style={baseStyles.page}>
-          <PDFHeader title="PREUVE DE PAIEMENT" reference={data.reference} />
-          <View style={styles.proofPageContainer}>
+          <PDFHeader type="paiement" reference={data.reference} />
+          <View style={styles.proofContainer}>
             <Text style={styles.proofLabel}>
               Preuve {index + 1} / {imageProofs.length} — {formatDate(proof.created_at)}
             </Text>
@@ -277,10 +374,10 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
         </Page>
       ))}
 
-      {/* Page listing non-image proofs (PDFs) if any */}
+      {/* Page listant les preuves PDF si présentes */}
       {pdfProofs.length > 0 && (
         <Page size="A4" style={baseStyles.page}>
-          <PDFHeader title="PREUVES DE PAIEMENT" reference={data.reference} />
+          <PDFHeader type="paiement" reference={data.reference} />
           <View style={styles.pdfProofsContainer}>
             <Text style={[styles.proofLabel, { fontSize: 12, marginBottom: 16 }]}>
               Documents joints ({pdfProofs.length} fichier{pdfProofs.length > 1 ? 's' : ''}) :

@@ -86,10 +86,9 @@ export function CashReceiptDownloadButton({
         cash_signed_by_name: payment.cash_signed_by_name,
       };
 
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
         <PaymentReceiptPDF data={receiptData} />,
-        `Recu_Cash_${payment.reference}_${dateStr}.pdf`,
+        `recu_paiement_${payment.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
       toast.success('Reçu PDF téléchargé');
     } catch (error) {

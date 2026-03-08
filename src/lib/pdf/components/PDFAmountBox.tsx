@@ -3,60 +3,71 @@ import { colors } from '../styles';
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.bgBlue,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 6,
-    padding: 14,
-    marginBottom: 12,
+    backgroundColor: colors.light,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
     alignItems: 'center',
   },
-  label: {
-    fontSize: 10,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.muted,
-    marginBottom: 6,
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
   amount: {
-    fontSize: 28,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.primary,
+    fontSize: 32,
+    fontFamily: 'DM Sans',
+    fontWeight: 900,
+    color: colors.text,
+    letterSpacing: -1,
+  },
+  currency: {
+    fontSize: 14,
+    fontFamily: 'DM Sans',
+    fontWeight: 600,
+    color: colors.muted,
+    marginLeft: 6,
+    marginBottom: 4,
   },
   secondaryRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
-    marginTop: 8,
+    marginTop: 10,
   },
   secondaryItem: {
     alignItems: 'center',
+    marginHorizontal: 12,
   },
   secondaryLabel: {
-    fontSize: 8,
+    fontSize: 9,
+    fontFamily: 'DM Sans',
+    fontWeight: 600,
     color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   secondaryValue: {
-    fontSize: 12,
-    fontFamily: 'NotoSansSC',
-    fontWeight: 700,
-    color: colors.text,
-    marginTop: 2,
+    fontSize: 14,
+    fontFamily: 'DM Sans',
+    fontWeight: 800,
+    color: colors.violet,
   },
 });
 
 interface PDFAmountBoxProps {
-  label: string;
   amount: string;
   secondaryItems?: Array<{ label: string; value: string }>;
 }
 
-export function PDFAmountBox({ label, amount, secondaryItems }: PDFAmountBoxProps) {
+export function PDFAmountBox({ amount, secondaryItems }: PDFAmountBoxProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.amount}>{amount}</Text>
+      <View style={styles.amountRow}>
+        <Text style={styles.amount}>{amount}</Text>
+        <Text style={styles.currency}>XAF</Text>
+      </View>
       {secondaryItems && secondaryItems.length > 0 && (
         <View style={styles.secondaryRow}>
           {secondaryItems.map((item, i) => (

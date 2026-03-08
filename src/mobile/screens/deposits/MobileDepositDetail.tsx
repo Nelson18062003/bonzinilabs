@@ -240,6 +240,9 @@ export function MobileDepositDetail() {
     if (!deposit || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     try {
+      const clientName = deposit.profiles
+        ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
+        : 'Client';
       const receiptData: DepositReceiptData = {
         id: deposit.id,
         reference: deposit.reference,
@@ -251,16 +254,13 @@ export function MobileDepositDetail() {
         status: deposit.status,
         bank_name: deposit.bank_name,
         agency_name: deposit.agency_name,
-        client_name: deposit.profiles
-          ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
-          : 'Client',
+        client_name: clientName,
         client_phone: deposit.profiles?.phone,
         company_name: deposit.profiles?.company_name,
       };
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
         <DepositReceiptPDF data={receiptData} />,
-        `Depot_${deposit.reference}_${dateStr}.pdf`,
+        `recu_depot_${deposit.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
       toast.success('Relevé téléchargé');
     } catch (error) {
