@@ -466,7 +466,7 @@ export interface CreateClientData {
   firstName: string;
   lastName: string;
   company?: string;
-  gender: ClientGender;
+  gender?: ClientGender;
   whatsappNumber: string;
   email?: string;
   country: string;
