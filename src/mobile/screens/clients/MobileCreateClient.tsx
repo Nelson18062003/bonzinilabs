@@ -24,12 +24,57 @@ const t = {
   inputBg: '#f8f6fa',
 };
 
-const COUNTRY_CODES: { country: string; code: string }[] = [
-  { country: 'Cameroun', code: '+237' },
-  { country: 'Gabon', code: '+241' },
-  { country: 'Tchad', code: '+235' },
-  { country: 'RCA', code: '+236' },
-  { country: 'Congo', code: '+242' },
+const COUNTRY_CODES: { country: string; code: string; flag: string }[] = [
+  // ─── CEMAC (en premier) ───
+  { code: '+237', country: 'Cameroun', flag: '🇨🇲' },
+  { code: '+241', country: 'Gabon', flag: '🇬🇦' },
+  { code: '+235', country: 'Tchad', flag: '🇹🇩' },
+  { code: '+236', country: 'RCA', flag: '🇨🇫' },
+  { code: '+242', country: 'Congo', flag: '🇨🇬' },
+  { code: '+240', country: 'Guinée équatoriale', flag: '🇬🇶' },
+  // ─── Afrique de l'Ouest ───
+  { code: '+225', country: "Côte d'Ivoire", flag: '🇨🇮' },
+  { code: '+221', country: 'Sénégal', flag: '🇸🇳' },
+  { code: '+223', country: 'Mali', flag: '🇲🇱' },
+  { code: '+226', country: 'Burkina Faso', flag: '🇧🇫' },
+  { code: '+228', country: 'Togo', flag: '🇹🇬' },
+  { code: '+229', country: 'Bénin', flag: '🇧🇯' },
+  { code: '+227', country: 'Niger', flag: '🇳🇪' },
+  { code: '+224', country: 'Guinée', flag: '🇬🇳' },
+  { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+  { code: '+233', country: 'Ghana', flag: '🇬🇭' },
+  // ─── Afrique Centrale & Est ───
+  { code: '+243', country: 'RD Congo', flag: '🇨🇩' },
+  { code: '+250', country: 'Rwanda', flag: '🇷🇼' },
+  { code: '+257', country: 'Burundi', flag: '🇧🇮' },
+  { code: '+244', country: 'Angola', flag: '🇦🇴' },
+  // ─── Afrique du Nord ───
+  { code: '+212', country: 'Maroc', flag: '🇲🇦' },
+  { code: '+216', country: 'Tunisie', flag: '🇹🇳' },
+  { code: '+213', country: 'Algérie', flag: '🇩🇿' },
+  // ─── Reste de l'Afrique ───
+  { code: '+254', country: 'Kenya', flag: '🇰🇪' },
+  { code: '+255', country: 'Tanzanie', flag: '🇹🇿' },
+  { code: '+256', country: 'Ouganda', flag: '🇺🇬' },
+  { code: '+251', country: 'Éthiopie', flag: '🇪🇹' },
+  { code: '+27', country: 'Afrique du Sud', flag: '🇿🇦' },
+  // ─── Europe ───
+  { code: '+33', country: 'France', flag: '🇫🇷' },
+  { code: '+32', country: 'Belgique', flag: '🇧🇪' },
+  { code: '+41', country: 'Suisse', flag: '🇨🇭' },
+  { code: '+44', country: 'Royaume-Uni', flag: '🇬🇧' },
+  { code: '+49', country: 'Allemagne', flag: '🇩🇪' },
+  { code: '+34', country: 'Espagne', flag: '🇪🇸' },
+  { code: '+39', country: 'Italie', flag: '🇮🇹' },
+  { code: '+352', country: 'Luxembourg', flag: '🇱🇺' },
+  // ─── Amérique ───
+  { code: '+1', country: 'États-Unis / Canada', flag: '🇺🇸' },
+  // ─── Asie ───
+  { code: '+86', country: 'Chine', flag: '🇨🇳' },
+  { code: '+971', country: 'Émirats arabes unis', flag: '🇦🇪' },
+  { code: '+966', country: 'Arabie saoudite', flag: '🇸🇦' },
+  { code: '+90', country: 'Turquie', flag: '🇹🇷' },
+  { code: '+91', country: 'Inde', flag: '🇮🇳' },
 ];
 
 const STEPS = [
@@ -92,6 +137,7 @@ export function MobileCreateClient() {
     ville: '',
   });
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState('+237');
 
   // Success state
   const [tempPassword, setTempPassword] = useState('');
@@ -100,9 +146,6 @@ export function MobileCreateClient() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const set = (k: keyof FormData, v: string) => setForm(prev => ({ ...prev, [k]: v }));
-
-  // Country code derived from selected country (auto-sync)
-  const countryCode = COUNTRY_CODES.find(c => c.country === form.pays)?.code ?? '+237';
 
   // Validation per step
   const canNext =
@@ -369,16 +412,30 @@ export function MobileCreateClient() {
                 WhatsApp <span style={{ color: O }}>*</span>
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '14px 12px', borderRadius: 12,
-                  border: `1.5px solid ${t.border}`, background: t.inputBg,
-                  fontSize: 14, fontWeight: 600, color: t.text,
-                  flexShrink: 0, whiteSpace: 'nowrap',
-                }}>
-                  {countryCode}
-                  <span style={{ fontSize: 9, color: t.dim, marginLeft: 2 }}>▾</span>
-                </div>
+                <select
+                  value={countryCode}
+                  onChange={e => setCountryCode(e.target.value)}
+                  style={{
+                    padding: '14px 12px',
+                    borderRadius: 12,
+                    border: `1.5px solid ${t.border}`,
+                    background: t.inputBg,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: t.text,
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: 'pointer',
+                    minWidth: 100,
+                    flexShrink: 0,
+                    outline: 'none',
+                  }}
+                >
+                  {COUNTRY_CODES.map(c => (
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.code}
+                    </option>
+                  ))}
+                </select>
                 <input
                   style={{ ...inputStyle('phone'), flex: 1 }}
                   placeholder="6XX XXX XXX"
@@ -434,9 +491,65 @@ export function MobileCreateClient() {
                 onFocus={() => setFocusedField('pays')}
                 onBlur={() => setFocusedField(null)}
               >
-                {COUNTRY_CODES.map(c => (
-                  <option key={c.country} value={c.country}>{c.country}</option>
-                ))}
+                <optgroup label="Zone CEMAC">
+                  <option>Cameroun</option>
+                  <option>Gabon</option>
+                  <option>Tchad</option>
+                  <option>République centrafricaine</option>
+                  <option>Congo-Brazzaville</option>
+                  <option>Guinée équatoriale</option>
+                </optgroup>
+                <optgroup label="Afrique de l'Ouest">
+                  <option>Côte d'Ivoire</option>
+                  <option>Sénégal</option>
+                  <option>Mali</option>
+                  <option>Burkina Faso</option>
+                  <option>Togo</option>
+                  <option>Bénin</option>
+                  <option>Niger</option>
+                  <option>Guinée</option>
+                  <option>Nigeria</option>
+                  <option>Ghana</option>
+                </optgroup>
+                <optgroup label="Afrique Centrale &amp; Est">
+                  <option>RD Congo</option>
+                  <option>Rwanda</option>
+                  <option>Burundi</option>
+                  <option>Angola</option>
+                  <option>Kenya</option>
+                  <option>Tanzanie</option>
+                  <option>Ouganda</option>
+                  <option>Éthiopie</option>
+                </optgroup>
+                <optgroup label="Afrique du Nord">
+                  <option>Maroc</option>
+                  <option>Tunisie</option>
+                  <option>Algérie</option>
+                </optgroup>
+                <optgroup label="Afrique Australe">
+                  <option>Afrique du Sud</option>
+                </optgroup>
+                <optgroup label="Europe">
+                  <option>France</option>
+                  <option>Belgique</option>
+                  <option>Suisse</option>
+                  <option>Royaume-Uni</option>
+                  <option>Allemagne</option>
+                  <option>Espagne</option>
+                  <option>Italie</option>
+                  <option>Luxembourg</option>
+                </optgroup>
+                <optgroup label="Amérique">
+                  <option>États-Unis</option>
+                  <option>Canada</option>
+                </optgroup>
+                <optgroup label="Asie / Moyen-Orient">
+                  <option>Chine</option>
+                  <option>Émirats arabes unis</option>
+                  <option>Arabie saoudite</option>
+                  <option>Turquie</option>
+                  <option>Inde</option>
+                </optgroup>
               </select>
             </div>
 
