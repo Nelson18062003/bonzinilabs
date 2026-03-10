@@ -221,7 +221,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
       // Fetch admin names from user_roles for entries created by admins
       const adminIds = [...new Set(entries.map(e => e.created_by_admin_id).filter(Boolean))];
 
-      let adminNameMap = new Map<string, string>();
+      const adminNameMap = new Map<string, string>();
       if (adminIds.length > 0) {
         const { data: adminRoles } = await supabaseAdmin
           .from('user_roles')
@@ -268,7 +268,7 @@ export function useCreateClient() {
 
   return useMutation({
     mutationFn: async (data: CreateClientData): Promise<CreateClientResult> => {
-      const cleanedPhone = data.whatsappNumber.replace(/[\s\-\.\(\)]/g, '');
+      const cleanedPhone = data.whatsappNumber.replace(/[\s\-.()]/g, '');
 
       const { data: result, error } = await supabaseAdmin.rpc('admin_create_client', {
         p_first_name: data.firstName.trim(),

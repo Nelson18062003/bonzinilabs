@@ -49,10 +49,6 @@ export function MobileCreateAdmin() {
   const { hasPermission } = useAdminAuth();
   const createAdminMutation = useCreateAdmin();
 
-  if (!hasPermission('canManageUsers')) {
-    return <Navigate to="/m" replace />;
-  }
-
   // Form state
   const [step, setStep] = useState<Step>('personal');
   const [firstName, setFirstName] = useState('');
@@ -62,6 +58,10 @@ export function MobileCreateAdmin() {
   const [tempPassword, setTempPassword] = useState('');
   const [createdUserId, setCreatedUserId] = useState('');
   const [passwordCopied, setPasswordCopied] = useState(false);
+
+  if (!hasPermission('canManageUsers')) {
+    return <Navigate to="/m" replace />;
+  }
 
   // Validation
   const isPersonalValid = firstName.trim() && lastName.trim() && email.trim() && email.includes('@');

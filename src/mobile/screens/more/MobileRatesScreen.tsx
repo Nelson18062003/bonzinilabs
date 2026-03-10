@@ -223,6 +223,7 @@ export function MobileRatesScreen() {
     setFormDrawerOpen(true);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditRate = (rate: any) => {
     const rmbToXaf = Math.round(1 / rate.rate_xaf_to_rmb);
     setFormMode('edit');

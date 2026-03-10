@@ -20,6 +20,7 @@ const PERIODS: { key: ChartPeriod; label: string }[] = [
   { key: '1y', label: '1A' },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltipContent({ active, payload, label }: any) {
   if (!active || !payload?.[0]) return null;
   return (

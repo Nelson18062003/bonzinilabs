@@ -528,36 +528,43 @@ export function MobilePaymentDetail() {
         )}
 
         {/* Cash completed with signature */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
           <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium text-green-600">Paiement cash effectué</p>
+                {/* eslint-disable @typescript-eslint/no-explicit-any */}
                 {(payment as any).cash_signed_by_name && (
                   <p className="text-sm text-muted-foreground">
                     Signé par: {(payment as any).cash_signed_by_name}
                   </p>
                 )}
+                {/* eslint-enable @typescript-eslint/no-explicit-any */}
 
                 {/* Signature image */}
                 <div className="mt-3 p-3 bg-white rounded-xl border border-green-200 dark:border-green-800">
                   <p className="text-xs text-muted-foreground mb-2 font-medium">Signature du bénéficiaire</p>
+                  {/* eslint-disable @typescript-eslint/no-explicit-any */}
                   <img
                     src={(payment as any).cash_signature_url}
                     alt="Signature du bénéficiaire"
                     className="w-full max-w-xs h-auto rounded"
                     style={{ maxHeight: '120px', objectFit: 'contain' }}
                   />
+                  {/* eslint-enable @typescript-eslint/no-explicit-any */}
                 </div>
 
                 <div className="mt-3">
+                  {/* eslint-disable @typescript-eslint/no-explicit-any */}
                   <CashReceiptDownloadButton
                     payment={payment as any}
                     variant="outline"
                     size="sm"
                     label="Télécharger le reçu PDF"
                   />
+                  {/* eslint-enable @typescript-eslint/no-explicit-any */}
                 </div>
               </div>
             </div>

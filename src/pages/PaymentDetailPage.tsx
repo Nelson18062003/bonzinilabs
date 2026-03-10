@@ -247,6 +247,7 @@ export default function PaymentDetailPage() {
       setQrFile(null);
       setQrPreview(null);
       toast.success('Votre paiement est prêt à être traité par Bonzini');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err?.message || 'Impossible d\'enregistrer les informations');
     } finally {
@@ -284,9 +285,12 @@ export default function PaymentDetailPage() {
     if (!payment || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const clientName = clientProfile
         ? `${clientProfile.first_name} ${clientProfile.last_name}`
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         : (payment as any).profiles
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? `${(payment as any).profiles.first_name} ${(payment as any).profiles.last_name}`
           : 'Client';
 
@@ -307,6 +311,7 @@ export default function PaymentDetailPage() {
         method: payment.method,
         status: payment.status,
         client_name: clientName,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         client_phone: clientProfile?.phone || (payment as any).profiles?.phone,
         client_email: authUser?.email || undefined,
         client_country: clientProfile?.country || undefined,
@@ -780,12 +785,14 @@ export default function PaymentDetailPage() {
         )}
 
         {/* Cash completed with signature */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
           <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium text-green-600">Paiement cash effectué</p>
+                {/* eslint-disable @typescript-eslint/no-explicit-any */}
                 <p className="text-sm text-muted-foreground mt-1">
                   Signature enregistrée le {(payment as any).cash_signature_timestamp &&
                     format(new Date((payment as any).cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', { locale: fr })}
@@ -814,6 +821,7 @@ export default function PaymentDetailPage() {
                     size="sm"
                     label="Télécharger le reçu PDF"
                   />
+                  {/* eslint-enable @typescript-eslint/no-explicit-any */}
                 </div>
               </div>
             </div>

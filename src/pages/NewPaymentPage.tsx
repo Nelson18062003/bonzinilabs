@@ -580,6 +580,7 @@ const NewPaymentPage = () => {
         <button onClick={footer.onClick} disabled={footer.disabled}
           className={cn('w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
             footer.disabled ? 'bg-muted text-muted-foreground cursor-not-allowed'
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               : (footer as any).isSubmit ? 'bg-primary text-primary-foreground' : 'btn-primary-gradient')}>
           {createPayment.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
           {footer.label}

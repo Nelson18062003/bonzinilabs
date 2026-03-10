@@ -427,6 +427,7 @@ const NewDepositPage = () => {
           Comment souhaitez-vous déposer ?
         </p>
         {methodFamilies.map((family) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const IconComponent = (Icons as any)[family.icon] || Icons.Banknote;
           const isSelected = selectedFamily === family.family;
 

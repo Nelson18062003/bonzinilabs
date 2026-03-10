@@ -101,6 +101,7 @@ export function MobileClientDetail() {
           balanceAfter: entry.balanceAfter,
           description: entry.description,
           createdAt: entry.createdAt,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           isTest: (entry as any).isTest,
         }))
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());

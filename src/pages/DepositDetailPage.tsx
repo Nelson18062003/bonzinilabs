@@ -300,9 +300,12 @@ const DepositDetailPage = () => {
     if (!deposit || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const clientName = profile
         ? `${profile.first_name} ${profile.last_name}`
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         : (deposit as any).profiles
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? `${(deposit as any).profiles.first_name} ${(deposit as any).profiles.last_name}`
           : 'Client';
 
@@ -321,6 +324,7 @@ const DepositDetailPage = () => {
         client_phone: profile?.phone || deposit.client_phone || undefined,
         client_email: user?.email || undefined,
         client_country: profile?.country || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         company_name: profile?.company_name || (deposit as any).profiles?.company_name,
       };
       await downloadPDF(

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 const BeneficiariesPage = () => {
   // TODO: Implement beneficiaries table and useBeneficiaries hook when ready
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const beneficiaries: any[] = [];
 
   return (

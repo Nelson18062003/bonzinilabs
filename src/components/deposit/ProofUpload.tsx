@@ -80,6 +80,7 @@ export const ProofUpload = (props: Props) => {
     if (isMultiMode) {
       props.onFilesSelect(files);
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       props.onFileSelect(files[0] || (null as any));
     }
   };
