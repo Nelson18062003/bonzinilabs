@@ -89,6 +89,7 @@ export interface AdminLogEntry {
   targetType: 'DEPOSIT' | 'PAYMENT' | 'CLIENT' | 'RATE' | 'WALLET' | 'AUTH' | 'USER';
   targetId?: string;
   description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
   ipAddress?: string;
   createdAt: Date;

@@ -100,7 +100,7 @@ function Req() {
 // ═══════════════════════════════════════════════════════════════
 // COMPOSANT PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-export default function MobileNewPayment() {
+export function MobileNewPayment() {
   const navigate = useNavigate();
 
   // ── Data ─────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ export default function MobileNewPayment() {
     const benefPayload = skipBenef
       ? {}
       : {
-          beneficiary_name: autoName ?? benef.name || undefined,
+          beneficiary_name: autoName ?? (benef.name || undefined),
           beneficiary_phone: benef.phone || undefined,
           beneficiary_email: benef.email || undefined,
           beneficiary_bank_name: benef.bank || undefined,

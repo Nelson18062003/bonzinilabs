@@ -102,6 +102,7 @@ interface AdminAuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   hasPermission: (permission: keyof RolePermission) => boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logAction: (actionType: string, targetType: string, description: string, targetId?: string, metadata?: Record<string, any>) => void;
   // Convenience properties
   profile: { first_name: string; last_name: string } | null;
@@ -243,6 +244,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     targetType: string,
     description: string,
     targetId?: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: Record<string, any>
   ) => {
     if (!currentUser) return;

@@ -16,7 +16,7 @@ import { Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 const passwordSchema = z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères");
 
 function setMeta(name: string, content: string) {
-  let tag = document.querySelector(`meta[name=\"${name}\"]`) as HTMLMetaElement | null;
+  let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
   if (!tag) {
     tag = document.createElement("meta");
     tag.setAttribute("name", name);

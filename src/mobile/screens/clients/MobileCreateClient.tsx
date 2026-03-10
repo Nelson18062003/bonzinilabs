@@ -166,7 +166,7 @@ export function MobileCreateClient() {
   const handleCreateClient = async () => {
     try {
       // Build full phone number with country code, cleaned
-      const cleanPhone = `${countryCode}${form.phone.trim()}`.replace(/[\s\-\.\(\)]/g, '');
+      const cleanPhone = `${countryCode}${form.phone.trim()}`.replace(/[\s\-.()]/g, '');
 
       const result = await createClientMutation.mutateAsync({
         firstName: form.prenom.trim(),

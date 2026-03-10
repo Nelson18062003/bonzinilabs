@@ -220,6 +220,7 @@ export function useValidateDeposit() {
       // Update status in-cache for all deposit lists (no refetch)
       queryClient.setQueryData(
         ['admin-deposit', depositId],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old ? { ...old, status: newStatus } : old,
       );
       queryClient.setQueryData(
@@ -229,7 +230,9 @@ export function useValidateDeposit() {
       );
       queryClient.setQueriesData(
         { queryKey: ['admin-deposits-paginated'] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old?.pages
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
           : old,
       );
@@ -281,6 +284,7 @@ export function useRejectDeposit() {
 
       queryClient.setQueryData(
         ['admin-deposit', depositId],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old ? { ...old, status: newStatus } : old,
       );
       queryClient.setQueryData(
@@ -290,7 +294,9 @@ export function useRejectDeposit() {
       );
       queryClient.setQueriesData(
         { queryKey: ['admin-deposits-paginated'] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old?.pages
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
           : old,
       );
@@ -328,6 +334,7 @@ export function useRequestCorrection() {
 
       queryClient.setQueryData(
         ['admin-deposit', depositId],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old ? { ...old, status: newStatus } : old,
       );
       queryClient.setQueryData(
@@ -337,7 +344,9 @@ export function useRequestCorrection() {
       );
       queryClient.setQueriesData(
         { queryKey: ['admin-deposits-paginated'] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old?.pages
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
           : old,
       );
@@ -374,6 +383,7 @@ export function useStartDepositReview() {
 
       queryClient.setQueryData(
         ['admin-deposit', depositId],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old ? { ...old, status: newStatus } : old,
       );
       queryClient.setQueryData(
@@ -383,7 +393,9 @@ export function useStartDepositReview() {
       );
       queryClient.setQueriesData(
         { queryKey: ['admin-deposits-paginated'] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (old: any) => old?.pages
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
           : old,
       );

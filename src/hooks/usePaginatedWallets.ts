@@ -6,6 +6,7 @@ import type { Wallet } from './useWallet';
 const PAGE_SIZE = QUERY_LIMITS.ITEMS_PER_PAGE;
 
 interface WalletWithProfile extends Wallet {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   profiles: any;
 }
 

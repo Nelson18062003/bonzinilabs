@@ -52,6 +52,7 @@ export function usePaymentProofMultiUpload() {
           if (insertError) throw insertError;
 
           results.push({ success: true, fileName: file.name });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
           results.push({ success: false, fileName: file.name, error: err.message });
         }

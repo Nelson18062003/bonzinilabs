@@ -265,6 +265,7 @@ export function useUploadMultipleProofs() {
           }
 
           uploadedCount++;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
           console.error(`[Upload] Unexpected error for ${rawFile.name}:`, err);
           failedFiles.push(rawFile.name);

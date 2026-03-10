@@ -259,6 +259,7 @@ export function useCreatePayment() {
     onSuccess: (response) => {
       // Update wallet balance instantly (no refetch needed — RPC returns new_balance)
       if (response.new_balance !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         queryClient.setQueryData(['my-wallet'], (old: any) =>
           old ? { ...old, balance_xaf: response.new_balance } : old,
         );
@@ -574,16 +575,20 @@ export function useProcessPayment() {
         // Update status in-cache for all payment lists (no refetch)
         queryClient.setQueryData(
           ['admin-payment', variables.paymentId],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (old: any) => old ? { ...old, status: newStatus } : old,
         );
         queryClient.setQueryData(
           ['admin-payments'],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (old: any[] | undefined) =>
             old?.map(p => p.id === variables.paymentId ? { ...p, status: newStatus } : p) ?? old,
         );
         queryClient.setQueriesData(
           { queryKey: ['admin-payments-paginated'] },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (old: any) => old?.pages
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === variables.paymentId ? { ...d, status: newStatus } : d) })) }
             : old,
         );

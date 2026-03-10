@@ -182,7 +182,7 @@ export function MobileNewDeposit() {
         break;
       case 'bank':
       case 'agency':
-        familyRequiresSubMethod(selectedFamily!) ? goTo('submethod', 'back') : goTo('family', 'back');
+        if (familyRequiresSubMethod(selectedFamily!)) { goTo('submethod', 'back'); } else { goTo('family', 'back'); }
         break;
       case 'recap':
         handleRecapBack();
