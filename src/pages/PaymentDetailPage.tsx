@@ -371,7 +371,10 @@ export default function PaymentDetailPage() {
   const statusCfg = PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus]
     || { label: payment.status, color: 'bg-gray-100 text-gray-700' };
   const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
-  const exchangeRateXAFPerRMB = payment.exchange_rate ? Math.round(1 / payment.exchange_rate) : 0;
+  // Rétro-compatible: anciens paiements clients stockent en décimal (0.01153), admin en entier (11530)
+  const rateInt = payment.exchange_rate
+    ? (payment.exchange_rate < 1 ? Math.round(payment.exchange_rate * 1_000_000) : Math.round(payment.exchange_rate))
+    : 0;
 
   // Can edit beneficiary info when not yet processing/completed/rejected
   const canEditBeneficiary = ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
@@ -743,7 +746,7 @@ export default function PaymentDetailPage() {
               <TrendingUp className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <p className="font-medium">
-                  Taux appliqué : 1 RMB = {formatNumber(exchangeRateXAFPerRMB)} XAF
+                  Taux appliqué : 1M XAF = ¥{formatNumber(rateInt)}
                 </p>
                 <p className="text-muted-foreground mt-0.5">
                   ¥{formatNumber(payment.amount_rmb, 2)} = {formatNumber(payment.amount_xaf)} XAF
