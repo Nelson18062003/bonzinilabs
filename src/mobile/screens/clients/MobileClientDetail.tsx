@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
+import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
+import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
@@ -31,6 +33,7 @@ import {
   Pencil,
   Building2,
   MapPin,
+  Trash2,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { Button } from '@/components/ui/button';
@@ -117,6 +120,36 @@ export function MobileClientDetail() {
     });
     setEditOpen(false);
     refetch();
+  };
+
+  const deleteClientMutation = useAdminDeleteClient();
+
+  // Delete client drawer state
+  const [deleteDrawerOpen, setDeleteDrawerOpen] = useState(false);
+  const [deleteChecking, setDeleteChecking] = useState(false);
+
+  const handleDeleteCheck = async () => {
+    if (!client) return;
+    setDeleteChecking(true);
+    try {
+      if ((client.walletBalance || 0) > 0) {
+        toast.error(`Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)`);
+        return;
+      }
+      const { data: pending } = await supabaseAdmin
+        .from('payments')
+        .select('id')
+        .eq('user_id', client.id)
+        .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned'])
+        .limit(1);
+      if (pending && pending.length > 0) {
+        toast.error('Impossible de supprimer un client ayant des paiements en cours');
+        return;
+      }
+      setDeleteDrawerOpen(true);
+    } finally {
+      setDeleteChecking(false);
+    }
   };
 
   const openAdjustment = (type: AdjustmentType) => {
@@ -448,6 +481,26 @@ export function MobileClientDetail() {
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
           )}
+
+          {/* Delete Client */}
+          {canManageUsers && (
+            <button
+              onClick={handleDeleteCheck}
+              disabled={deleteChecking}
+              className="w-full flex items-center justify-between p-4 bg-destructive/5 rounded-xl border border-destructive/20 active:scale-[0.98] transition-transform disabled:opacity-50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  {deleteChecking ? <Loader2 className="w-5 h-5 text-destructive animate-spin" /> : <Trash2 className="w-5 h-5 text-destructive" />}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-destructive">Supprimer le client</p>
+                  <p className="text-xs text-muted-foreground">Suppression définitive et irréversible</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -500,6 +553,39 @@ export function MobileClientDetail() {
               Enregistrer
             </Button>
             <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Annuler
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Delete Client Confirmation Drawer */}
+      <Drawer open={deleteDrawerOpen} onOpenChange={setDeleteDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Supprimer le client
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4">
+            <p className="text-muted-foreground">
+              Voulez-vous vraiment supprimer{' '}
+              <strong>{client?.firstName} {client?.lastName}</strong> ?
+              Cette action est <strong>irréversible</strong> et supprimera toutes ses données
+              (historique de transactions, relevés, etc.).
+            </p>
+          </div>
+          <DrawerFooter>
+            <Button
+              variant="destructive"
+              onClick={() => client && deleteClientMutation.mutate(client.id)}
+              disabled={deleteClientMutation.isPending}
+            >
+              {deleteClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Confirmer la suppression
+            </Button>
+            <Button variant="outline" onClick={() => setDeleteDrawerOpen(false)}>
               Annuler
             </Button>
           </DrawerFooter>
