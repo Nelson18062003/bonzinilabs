@@ -158,6 +158,9 @@ export function useClient(userId: string) {
         lastName: client.last_name || '',
         phone: client.phone || '',
         email: client.email || '',
+        companyName: client.company_name || '',
+        country: client.country || '',
+        city: client.city || '',
         avatarUrl: client.avatar_url,
         createdAt: client.created_at,
         updatedAt: client.updated_at,
@@ -320,11 +323,15 @@ export function useUpdateClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { userId: string; firstName?: string; lastName?: string; phone?: string }) => {
+    mutationFn: async (data: { userId: string; firstName?: string; lastName?: string; phone?: string; email?: string; companyName?: string; country?: string; city?: string }) => {
       const updateData: Record<string, string> = {};
-      if (data.firstName) updateData.first_name = data.firstName;
-      if (data.lastName) updateData.last_name = data.lastName;
-      if (data.phone) updateData.phone = data.phone;
+      if (data.firstName !== undefined) updateData.first_name = data.firstName;
+      if (data.lastName !== undefined) updateData.last_name = data.lastName;
+      if (data.phone !== undefined) updateData.phone = data.phone;
+      if (data.email !== undefined) updateData.email = data.email;
+      if (data.companyName !== undefined) updateData.company_name = data.companyName;
+      if (data.country !== undefined) updateData.country = data.country;
+      if (data.city !== undefined) updateData.city = data.city;
 
       const { error } = await supabaseAdmin
         .from('clients')

@@ -170,10 +170,11 @@ export function MobileNewPayment() {
         (mode?.id !== 'virement' ||
           (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
 
+  const hasEnoughBalance = xaf <= clientBalance;
   const canNext =
     step === 1 ? !!client :
     step === 2 ? !!mode :
-    step === 3 ? xaf >= 10_000 :
+    step === 3 ? (xaf >= 10_000 && hasEnoughBalance) :
     step === 4 ? benef4Valid :
     true;
 
@@ -569,6 +570,25 @@ export function MobileNewPayment() {
                 </span>
               </div>
             </div>
+
+            {/* Alerte solde insuffisant */}
+            {xaf > 0 && !hasEnoughBalance && (
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '12px 14px', borderRadius: 12, marginBottom: 12,
+                  background: `${O}12`, border: `1.5px solid ${O}`,
+                }}
+              >
+                <span style={{ fontSize: 18 }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: O }}>Solde insuffisant</div>
+                  <div style={{ fontSize: 11, color: t.sub }}>
+                    Solde disponible : {fmt(clientBalance)} XAF
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Raccourcis */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>

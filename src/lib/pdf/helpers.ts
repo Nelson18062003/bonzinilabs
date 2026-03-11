@@ -21,11 +21,13 @@ export const formatDateShort = (date: Date | string): string => {
 };
 
 // Format du taux de change pour l'affichage dans les reçus.
-// exchange_rate est stocké en RMB/XAF (ex: 0.01153).
-// Affichage : "11 530 XAF/M" = 11 530 RMB pour 1 million de XAF.
+// Rétro-compatible : anciens paiements clients stockent en décimal (ex: 0.01153),
+// paiements admin en entier (ex: 11530). Les deux signifient "1M XAF = ¥11 530".
 export const formatRateDisplay = (exchangeRate: number): string => {
-  const value = Math.round(exchangeRate * 1_000_000);
-  return `${formatXAF(value)} XAF/M`;
+  const value = exchangeRate < 1
+    ? Math.round(exchangeRate * 1_000_000)
+    : Math.round(exchangeRate);
+  return `1M XAF = ¥${formatXAF(value)}`;
 };
 
 export const getDepositMethodLabel = (method: string): string => {

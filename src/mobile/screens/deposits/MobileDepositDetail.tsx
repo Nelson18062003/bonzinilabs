@@ -17,6 +17,7 @@ import {
   useStartDepositReview,
   useAdminUploadProofs,
   useAdminDeleteProof,
+  useDeleteDeposit,
 } from '@/hooks/useAdminDeposits';
 import {
   DEPOSIT_STATUS_LABELS,
@@ -89,6 +90,7 @@ export function MobileDepositDetail() {
   const startReview = useStartDepositReview();
   const uploadProofs = useAdminUploadProofs();
   const deleteProof = useAdminDeleteProof();
+  const deleteDeposit = useDeleteDeposit();
 
   // Validate modal state
   const [showValidateConfirm, setShowValidateConfirm] = useState(false);
@@ -114,6 +116,9 @@ export function MobileDepositDetail() {
   const [customDeleteReason, setCustomDeleteReason] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  // Delete deposit state
+  const [showDeleteDepositSheet, setShowDeleteDepositSheet] = useState(false);
 
   // Details expandable
   const [showDetails, setShowDetails] = useState(false);
@@ -656,6 +661,19 @@ export function MobileDepositDetail() {
         </div>
       </div>
 
+      {/* ── Delete Deposit Button (non-locked) ───────────────── */}
+      {!isLocked && (
+        <div className="px-4 pb-2">
+          <button
+            onClick={() => setShowDeleteDepositSheet(true)}
+            className="w-full h-11 rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer ce dépôt
+          </button>
+        </div>
+      )}
+
       {/* ── Glass Sticky Action Bar ──────────────────────────── */}
       {(canValidate || canReject || canStartReview) && (
         <div className="glass-action-bar bottom-16 space-y-2">
@@ -1103,6 +1121,46 @@ export function MobileDepositDetail() {
               >
                 {requestCorrection.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Demander la correction
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Deposit Bottom Sheet ────────────────────────── */}
+      {showDeleteDepositSheet && (
+        <div className="bottom-sheet-overlay" onClick={() => setShowDeleteDepositSheet(false)}>
+          <div
+            className="bottom-sheet-content p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              Supprimer ce dépôt ?
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Voulez-vous supprimer ce dépôt ? Toutes ses preuves seront supprimées.
+              Cette action est <strong>irréversible</strong>.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteDepositSheet(false)}
+                className="flex-1 h-12 rounded-xl border text-sm font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  if (!depositId) return;
+                  deleteDeposit.mutate({ depositId }, {
+                    onSuccess: () => navigate('/m/deposits'),
+                  });
+                }}
+                disabled={deleteDeposit.isPending}
+                className="flex-1 h-12 rounded-xl bg-red-600 text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {deleteDeposit.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Supprimer
               </button>
             </div>
           </div>

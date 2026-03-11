@@ -217,7 +217,7 @@ const NewPaymentPage = () => {
         : (snapshot?.name as string || undefined);
 
       const result = await createPayment.mutateAsync({
-        amount_xaf: amountXAF, amount_rmb: amountRMB, exchange_rate: rate, method: selectedMethod,
+        amount_xaf: amountXAF, amount_rmb: amountRMB, exchange_rate: Math.round(rate * 1_000_000), method: selectedMethod,
         beneficiary_name: legacyBenefName || undefined,
         beneficiary_phone: isCash ? (cashBenefType === 'self' ? profile?.phone || undefined : newBenefPhone || undefined) : (snapshot?.phone as string || undefined),
         beneficiary_email: snapshot?.email as string || undefined,
