@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient, useResetClientPassword, useClientLedger } from '@/hooks/useClientManagement';
+import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
 import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
@@ -28,6 +28,9 @@ import {
   Copy,
   Check,
   Loader2,
+  Pencil,
+  Building2,
+  MapPin,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { Button } from '@/components/ui/button';
@@ -78,6 +81,43 @@ export function MobileClientDetail() {
   const [passwordCopied, setPasswordCopied] = useState(false);
 
   const canManageUsers = hasPermission('canManageUsers');
+  const updateClientMutation = useUpdateClient();
+
+  // Edit client drawer state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: '', lastName: '', phone: '', email: '', companyName: '', country: '', city: '',
+  });
+
+  const openEdit = () => {
+    if (!client) return;
+    setEditForm({
+      firstName: client.firstName,
+      lastName: client.lastName,
+      phone: client.phone,
+      email: client.email,
+      companyName: client.companyName,
+      country: client.country,
+      city: client.city,
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!client) return;
+    await updateClientMutation.mutateAsync({
+      userId: client.id,
+      firstName: editForm.firstName.trim(),
+      lastName: editForm.lastName.trim(),
+      phone: editForm.phone.trim(),
+      email: editForm.email.trim(),
+      companyName: editForm.companyName.trim(),
+      country: editForm.country.trim(),
+      city: editForm.city.trim(),
+    });
+    setEditOpen(false);
+    refetch();
+  };
 
   const openAdjustment = (type: AdjustmentType) => {
     setAdjustmentType(type);
@@ -371,6 +411,25 @@ export function MobileClientDetail() {
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
 
+          {/* Edit Client */}
+          {canManageUsers && (
+            <button
+              onClick={openEdit}
+              className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Pencil className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">Modifier le profil</p>
+                  <p className="text-xs text-muted-foreground">Nom, téléphone, email, entreprise…</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
+
           {/* Reset Password */}
           {canManageUsers && (
             <button
@@ -404,6 +463,48 @@ export function MobileClientDetail() {
           setAdjustmentOpen(false);
         }}
       />
+
+      {/* Edit Client Drawer */}
+      <Drawer open={editOpen} onOpenChange={setEditOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-primary" />
+              Modifier le profil
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 space-y-3 overflow-y-auto max-h-[60vh]">
+            {[
+              { label: 'Prénom', key: 'firstName' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: 'Nom', key: 'lastName' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: 'Téléphone / WhatsApp', key: 'phone' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: 'Email', key: 'email' as const, icon: <Mail className="w-4 h-4" /> },
+              { label: 'Entreprise', key: 'companyName' as const, icon: <Building2 className="w-4 h-4" /> },
+              { label: 'Pays', key: 'country' as const, icon: <MapPin className="w-4 h-4" /> },
+              { label: 'Ville', key: 'city' as const, icon: <MapPin className="w-4 h-4" /> },
+            ].map(({ label, key }) => (
+              <div key={key}>
+                <label className="block text-sm font-bold mb-1">{label}</label>
+                <input
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                  value={editForm[key]}
+                  onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                  placeholder={label}
+                />
+              </div>
+            ))}
+          </div>
+          <DrawerFooter>
+            <Button onClick={handleSaveEdit} disabled={updateClientMutation.isPending}>
+              {updateClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Enregistrer
+            </Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Annuler
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {/* Reset Password Confirmation Drawer */}
       <Drawer open={resetDrawerOpen} onOpenChange={setResetDrawerOpen}>
