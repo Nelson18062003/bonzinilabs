@@ -16,6 +16,8 @@ import {
   useProcessPayment,
   useAdminUploadPaymentProof,
   useAdminUpdateBeneficiaryInfo,
+  useDeletePayment,
+  useDeletePaymentProof,
 } from '@/hooks/usePayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
 import {
@@ -63,6 +65,7 @@ import {
   Pencil,
   QrCode,
   ScanLine,
+  Trash2,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
@@ -94,6 +97,8 @@ export function MobilePaymentDetail() {
   const adminProofUpload = useAdminUploadPaymentProof();
   const instructionUpload = useAdminUploadPaymentInstruction();
   const adminUpdateBeneficiaryInfo = useAdminUpdateBeneficiaryInfo();
+  const deletePayment = useDeletePayment();
+  const deletePaymentProof = useDeletePaymentProof();
 
   const instructionProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'client' || p.uploaded_by_type === 'admin_instruction') ?? [], [proofs]);
   const adminProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type === 'admin') ?? [], [proofs]);
@@ -106,6 +111,8 @@ export function MobilePaymentDetail() {
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [isCompleteOpen, setIsCompleteOpen] = useState(false);
   const [selectedProof, setSelectedProof] = useState<string | null>(null);
+  const [isDeletePaymentOpen, setIsDeletePaymentOpen] = useState(false);
+  const [proofToDelete, setProofToDelete] = useState<string | null>(null);
 
   // Reject drawer state
   const [rejectionCategory, setRejectionCategory] = useState('');
@@ -698,12 +705,28 @@ export function MobilePaymentDetail() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
                 Preuves Bonzini ({adminProofs.length})
               </p>
-              <PaymentProofGallery
-                proofs={adminProofs}
-                title=""
-                emptyMessage=""
-                showUploadedBy={false}
-              />
+              {canProcess && !isLocked ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {adminProofs.map((proof) => (
+                    <div key={proof.id} className="relative">
+                      <img src={proof.file_url} alt="preuve" className="w-full aspect-square object-cover rounded-xl" />
+                      <button
+                        onClick={() => setProofToDelete(proof.id)}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive/80 flex items-center justify-center"
+                      >
+                        <Trash2 className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <PaymentProofGallery
+                  proofs={adminProofs}
+                  title=""
+                  emptyMessage=""
+                  showUploadedBy={false}
+                />
+              )}
             </div>
           )}
 
@@ -850,6 +873,19 @@ export function MobilePaymentDetail() {
           </Accordion>
         )}
       </div>
+
+      {/* ── Delete Payment Button (non-locked payments) ─────────── */}
+      {canProcess && !isLocked && (
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => setIsDeletePaymentOpen(true)}
+            className="w-full h-11 rounded-xl border border-destructive/30 text-destructive font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer ce paiement
+          </button>
+        </div>
+      )}
 
       {/* ── Sticky Bottom Action Bar ───────────────────────────── */}
       {showActions && (
@@ -1279,6 +1315,84 @@ export function MobilePaymentDetail() {
               </a>
             )}
           </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ── Delete Payment Drawer ──────────────────────────────── */}
+      <Drawer open={isDeletePaymentOpen} onOpenChange={setIsDeletePaymentOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Supprimer ce paiement
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4">
+            <p className="text-muted-foreground text-sm">
+              Voulez-vous vraiment supprimer ce paiement ?
+              Le solde du client sera recrédité si nécessaire.
+              Cette action est <strong>irréversible</strong>.
+            </p>
+          </div>
+          <DrawerFooter>
+            <button
+              onClick={() => {
+                if (!paymentId) return;
+                deletePayment.mutate(paymentId, {
+                  onSuccess: () => navigate('/m/payments'),
+                });
+              }}
+              disabled={deletePayment.isPending}
+              className="w-full h-12 rounded-xl bg-destructive text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {deletePayment.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Confirmer la suppression
+            </button>
+            <button
+              onClick={() => setIsDeletePaymentOpen(false)}
+              className="w-full h-12 rounded-xl border border-border font-medium text-sm"
+            >
+              Annuler
+            </button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ── Delete Proof Drawer ────────────────────────────────── */}
+      <Drawer open={!!proofToDelete} onOpenChange={(open) => { if (!open) setProofToDelete(null); }}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Supprimer cette preuve
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4">
+            <p className="text-muted-foreground text-sm">
+              Voulez-vous supprimer cette preuve de paiement ? Cette action est irréversible.
+            </p>
+          </div>
+          <DrawerFooter>
+            <button
+              onClick={() => {
+                if (!proofToDelete) return;
+                deletePaymentProof.mutate(proofToDelete, {
+                  onSuccess: () => setProofToDelete(null),
+                });
+              }}
+              disabled={deletePaymentProof.isPending}
+              className="w-full h-12 rounded-xl bg-destructive text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {deletePaymentProof.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Supprimer
+            </button>
+            <button
+              onClick={() => setProofToDelete(null)}
+              className="w-full h-12 rounded-xl border border-border font-medium text-sm"
+            >
+              Annuler
+            </button>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
 
