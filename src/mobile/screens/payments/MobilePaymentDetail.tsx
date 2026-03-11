@@ -16,9 +16,8 @@ import {
   useProcessPayment,
   useAdminUploadPaymentProof,
   useAdminUpdateBeneficiaryInfo,
-  useDeletePayment,
-  useDeletePaymentProof,
 } from '@/hooks/usePayments';
+import { useDeletePayment, useDeletePaymentProof } from '@/hooks/useAdminPayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
 import {
   PAYMENT_STATUS_CONFIG,
