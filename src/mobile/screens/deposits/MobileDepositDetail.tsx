@@ -62,6 +62,7 @@ import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { DepositReceiptPDF } from '@/lib/pdf/templates/DepositReceiptPDF';
 import type { DepositReceiptData } from '@/lib/pdf/templates/DepositReceiptPDF';
 import { toast } from 'sonner';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 // ── Status banner color map ─────────────────────────────────
 
@@ -79,6 +80,8 @@ const STATUS_BANNER_COLORS: Record<string, string> = {
 export function MobileDepositDetail() {
   const { depositId } = useParams<{ depositId: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAdminAuth();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
   const { data: deposit, isLoading } = useAdminDepositDetail(depositId);
   const { data: proofs } = useAdminDepositProofs(depositId);
   const { data: timeline } = useAdminDepositTimeline(depositId);
@@ -661,8 +664,9 @@ export function MobileDepositDetail() {
         </div>
       </div>
 
-      {/* ── Delete Deposit Button (non-locked) ───────────────── */}
-      {!isLocked && (
+      {/* ── Delete Deposit Button ─────────────────────────── */}
+      {/* Super admin can delete any deposit regardless of status */}
+      {(!isLocked || isSuperAdmin) && (
         <div className="px-4 pb-2">
           <button
             onClick={() => setShowDeleteDepositSheet(true)}

@@ -86,7 +86,8 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 export function MobilePaymentDetail() {
   const { paymentId } = useParams();
   const navigate = useNavigate();
-  const { hasPermission } = useAdminAuth();
+  const { hasPermission, currentUser } = useAdminAuth();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
   const { data: payment, isLoading } = useAdminPaymentDetail(paymentId);
   const { data: timeline } = useAdminPaymentTimeline(paymentId);
@@ -873,8 +874,9 @@ export function MobilePaymentDetail() {
         )}
       </div>
 
-      {/* ── Delete Payment Button (non-locked payments) ─────────── */}
-      {canProcess && !isLocked && (
+      {/* ── Delete Payment Button ────────────────────────────── */}
+      {/* Super admin can delete any payment regardless of status */}
+      {canProcess && (!isLocked || isSuperAdmin) && (
         <div className="px-4 pb-4">
           <button
             onClick={() => setIsDeletePaymentOpen(true)}
