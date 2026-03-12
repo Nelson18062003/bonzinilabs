@@ -1,6 +1,11 @@
 import { View, Text, StyleSheet } from '@react-pdf/renderer';
 import { colors } from '../styles';
 
+const CJK_REGEX = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/;
+
+const hasChinese = (str: string | null | undefined): boolean =>
+  !!str && CJK_REGEX.test(str);
+
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -25,6 +30,14 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     flex: 1,
   },
+  valueCjk: {
+    fontSize: 12,
+    fontFamily: 'Noto Sans SC',
+    fontWeight: 400,
+    color: colors.text,
+    textAlign: 'right',
+    flex: 1,
+  },
   valueBold: {
     fontWeight: 700,
   },
@@ -38,13 +51,16 @@ interface PDFInfoRowProps {
 }
 
 export function PDFInfoRow({ label, value, bold, color }: PDFInfoRowProps) {
+  const isCjk = hasChinese(value);
+  const valueStyle = isCjk ? styles.valueCjk : styles.value;
+
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
       <Text
         style={[
-          styles.value,
-          bold ? styles.valueBold : undefined,
+          valueStyle,
+          !isCjk && bold ? styles.valueBold : undefined,
           color ? { color } : undefined,
         ]}
       >
