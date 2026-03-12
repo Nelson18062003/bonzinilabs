@@ -1,5 +1,16 @@
 import { Font } from '@react-pdf/renderer';
 
+// Noto Sans SC — support des caractères chinois (CJK)
+Font.register({
+  family: 'Noto Sans SC',
+  fonts: [
+    {
+      src: '/fonts/noto-sans-sc-chinese-simplified-400-normal.woff',
+      fontWeight: 400,
+    },
+  ],
+});
+
 // DM Sans — police principale de la charte Bonzini
 // Fichiers WOFF locaux servis depuis /public/fonts/ (fiable en génération PDF navigateur)
 Font.register({
