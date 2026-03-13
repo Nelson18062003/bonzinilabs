@@ -114,7 +114,7 @@ const App = () => (
                 <Route path="/m" element={<MobileRouteWrapper><MobileDashboard /></MobileRouteWrapper>} />
                 <Route path="/m/deposits" element={<MobileRouteWrapper><MobileDepositsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewDeposit /></MobileRouteWrapper>} />
-                <Route path="/m/deposits/:depositId" element={<MobileRouteWrapper><MobileDepositDetail /></MobileRouteWrapper>} />
+                <Route path="/m/deposits/:depositId" element={<MobileRouteWrapper showTabBar={false}><MobileDepositDetail /></MobileRouteWrapper>} />
                 <Route path="/m/payments" element={<MobileRouteWrapper><MobilePaymentsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/payments/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewPayment /></MobileRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<MobileRouteWrapper><MobilePaymentDetail /></MobileRouteWrapper>} />
