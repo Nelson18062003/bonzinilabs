@@ -113,7 +113,7 @@ const App = () => (
                 <Route path="/m/login" element={<MobileRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></MobileRouteWrapper>} />
                 <Route path="/m" element={<MobileRouteWrapper><MobileDashboard /></MobileRouteWrapper>} />
                 <Route path="/m/deposits" element={<MobileRouteWrapper><MobileDepositsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/deposits/new" element={<MobileRouteWrapper><MobileNewDeposit /></MobileRouteWrapper>} />
+                <Route path="/m/deposits/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewDeposit /></MobileRouteWrapper>} />
                 <Route path="/m/deposits/:depositId" element={<MobileRouteWrapper><MobileDepositDetail /></MobileRouteWrapper>} />
                 <Route path="/m/payments" element={<MobileRouteWrapper><MobilePaymentsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/payments/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewPayment /></MobileRouteWrapper>} />
@@ -121,7 +121,7 @@ const App = () => (
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<MobileRouteWrapper><MobileBeneficiaryEdit /></MobileRouteWrapper>} />
                 <Route path="/m/clients" element={<MobileRouteWrapper><MobileClientsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/clients/new" element={<MobileRouteWrapper showTabBar={false}><MobileCreateClient /></MobileRouteWrapper>} />
-                <Route path="/m/clients/:clientId" element={<MobileRouteWrapper><MobileClientDetail /></MobileRouteWrapper>} />
+                <Route path="/m/clients/:clientId" element={<MobileRouteWrapper showTabBar={false}><MobileClientDetail /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<MobileRouteWrapper><MobileClientLedger /></MobileRouteWrapper>} />
                 <Route path="/m/more" element={<MobileRouteWrapper><MobileMoreScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/rates" element={<MobileRouteWrapper><MobileRatesScreen /></MobileRouteWrapper>} />
