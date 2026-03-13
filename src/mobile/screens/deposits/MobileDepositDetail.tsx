@@ -118,7 +118,9 @@ export function MobileDepositDetail() {
   const [deleteProofReason, setDeleteProofReason] = useState('');
   const [customDeleteReason, setCustomDeleteReason] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceFileRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
 
   // Delete deposit state
   const [showDeleteDepositSheet, setShowDeleteDepositSheet] = useState(false);
@@ -243,6 +245,26 @@ export function MobileDepositDetail() {
       },
     );
   }, [showDeleteProofSheet, depositId, deleteProofReason, customDeleteReason, deleteProof]);
+
+  const handleReplaceFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !replaceProofId || !depositId || !deposit) return;
+    const oldProofId = replaceProofId;
+    setReplaceProofId(null);
+    if (replaceFileRef.current) replaceFileRef.current.value = '';
+    uploadProofs.mutate(
+      { depositId, userId: deposit.user_id, files: [file], depositStatus: deposit.status },
+      {
+        onSuccess: () => {
+          deleteProof.mutate({
+            proofId: oldProofId,
+            depositId,
+            reason: 'Remplacée par une nouvelle version',
+          });
+        },
+      },
+    );
+  }, [replaceProofId, depositId, deposit, uploadProofs, deleteProof]);
 
   const handleDownloadReceipt = async () => {
     if (!deposit || isGeneratingPDF) return;
@@ -435,7 +457,7 @@ export function MobileDepositDetail() {
           )}
         </div>
 
-        {/* ── Proofs Section (horizontal scroll) ──────────────── */}
+        {/* ── Proofs Section ───────────────────────────────────── */}
         <div className="bg-card rounded-2xl p-4 border space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold flex items-center gap-2">
@@ -445,7 +467,7 @@ export function MobileDepositDetail() {
             {canAddProof && (
               <button
                 onClick={() => setShowUploadSheet(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium active:scale-95 transition-transform"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium active:scale-95 transition-transform text-emerald-500 bg-emerald-500/10"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Ajouter
@@ -464,66 +486,86 @@ export function MobileDepositDetail() {
           )}
 
           {hasProofs ? (
-            <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-              {proofs!.map((proof) => {
+            <div className="flex flex-col gap-3">
+              {proofs!.map((proof, idx) => {
                 const signedUrl = proof.signedUrl;
                 const isImage = proof.file_type?.startsWith('image/');
+                const isPdf = proof.file_type === 'application/pdf';
                 return (
-                  <div
-                    key={proof.id}
-                    className="proof-thumb flex-shrink-0 w-20 h-20 sm:w-28 sm:h-28"
-                  >
-                    {isImage && signedUrl ? (
-                      <img
-                        src={signedUrl}
-                        alt={proof.file_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
-                        <FileText className="w-7 h-7 text-muted-foreground" />
-                        <span className="text-[10px] sm:text-[9px] text-muted-foreground truncate w-full text-center">
-                          {proof.file_name}
-                        </span>
+                  <div key={proof.id} className="rounded-xl border border-border overflow-hidden">
+                    {/* Preview */}
+                    <div className={cn('relative w-full bg-muted', idx === 0 ? 'aspect-video' : 'aspect-[16/7]')}>
+                      {isImage && signedUrl ? (
+                        <img
+                          src={signedUrl}
+                          alt={proof.file_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : isPdf ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <FileText className="w-10 h-10 text-muted-foreground" />
+                          <span className="text-sm font-semibold text-muted-foreground">PDF</span>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <FileText className="w-10 h-10 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground truncate px-4 w-full text-center">
+                            {proof.file_name}
+                          </span>
+                        </div>
+                      )}
+                      {/* Filename overlay — top left */}
+                      <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium max-w-[55%] truncate">
+                        {proof.file_name}
                       </div>
-                    )}
-
-                    {/* Metadata badge */}
-                    <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] sm:text-[9px] px-1.5 py-0.5 rounded">
-                      {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
+                      {/* Uploader badge — top right */}
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                        {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
+                      </div>
                     </div>
 
-                    {/* Date badge */}
-                    <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] sm:text-[9px] px-1.5 py-0.5 rounded">
-                      {format(new Date(proof.uploaded_at), 'dd/MM HH:mm', { locale: fr })}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="absolute top-1 right-1 flex flex-col gap-1">
-                      {signedUrl && (
+                    {/* Action row */}
+                    <div className="flex gap-1.5 p-2 bg-muted/40">
+                      <button
+                        onClick={() => signedUrl && setViewingProof(signedUrl)}
+                        disabled={!signedUrl || !isImage}
+                        className="flex-1 h-8 rounded-lg border border-border text-[11px] font-medium text-muted-foreground flex items-center justify-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
+                      >
+                        <Eye className="w-3 h-3" />
+                        Agrandir
+                      </button>
+                      <a
+                        href={signedUrl ?? undefined}
+                        download={proof.file_name}
+                        className={cn(
+                          'flex-1 h-8 rounded-lg border border-border text-[11px] font-medium text-muted-foreground flex items-center justify-center gap-1',
+                          !signedUrl && 'pointer-events-none opacity-40',
+                        )}
+                      >
+                        <Download className="w-3 h-3" />
+                        Télécharger
+                      </a>
+                      {!isLocked && (
                         <>
                           <button
-                            onClick={() => setViewingProof(signedUrl)}
-                            className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                            onClick={() => {
+                              setReplaceProofId(proof.id);
+                              replaceFileRef.current?.click();
+                            }}
+                            disabled={uploadProofs.isPending}
+                            className="flex-1 h-8 rounded-lg border border-border text-[11px] font-medium text-muted-foreground flex items-center justify-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
                           >
-                            <Eye className="w-3 h-3 text-white" />
+                            <ArrowRight className="w-3 h-3" />
+                            Remplacer
                           </button>
-                          <a
-                            href={signedUrl}
-                            download={proof.file_name}
-                            className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                          <button
+                            onClick={() => setShowDeleteProofSheet(proof.id)}
+                            className="flex-1 h-8 rounded-lg border border-red-200 dark:border-red-900/50 text-[11px] font-medium text-red-500 flex items-center justify-center gap-1 active:scale-95 transition-transform"
                           >
-                            <Download className="w-3 h-3 text-white" />
-                          </a>
+                            <Trash2 className="w-3 h-3" />
+                            Supprimer
+                          </button>
                         </>
-                      )}
-                      {!isLocked && (
-                        <button
-                          onClick={() => setShowDeleteProofSheet(proof.id)}
-                          className="w-6 h-6 rounded-full bg-red-600/80 flex items-center justify-center"
-                        >
-                          <Trash2 className="w-3 h-3 text-white" />
-                        </button>
                       )}
                     </div>
                   </div>
@@ -531,9 +573,23 @@ export function MobileDepositDetail() {
               })}
             </div>
           ) : (
-            !canValidate && (
-              <p className="text-sm text-muted-foreground text-center py-4">Aucune preuve</p>
-            )
+            <div>
+              <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
+                <p className="text-sm font-semibold text-muted-foreground">Preuve manquante</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Le client doit envoyer un justificatif
+                </p>
+              </div>
+              {canAddProof && (
+                <button
+                  onClick={() => setShowUploadSheet(true)}
+                  className="w-full mt-2 h-10 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform text-emerald-500 border-emerald-500/30"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter une preuve
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -939,6 +995,15 @@ export function MobileDepositDetail() {
           </div>
         </div>
       )}
+
+      {/* Hidden file input for proof replacement */}
+      <input
+        ref={replaceFileRef}
+        type="file"
+        accept="image/jpeg,image/png,application/pdf"
+        onChange={handleReplaceFileSelect}
+        className="hidden"
+      />
 
       {/* ── Upload proof bottom sheet ──────────────────────────── */}
       {showUploadSheet && (
