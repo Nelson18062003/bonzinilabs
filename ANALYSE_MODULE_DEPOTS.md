@@ -1,1308 +1,1116 @@
-# ANALYSE COMPLÈTE — MODULE DÉPÔTS (Plateforme Bonzini)
+# Analyse complète du module Dépôts — Bonzini Platform (App Admin)
 
-> **Date** : 2026-03-13
-> **Auteur** : Analyse automatique du code source
-> **Objectif** : Documenter exhaustivement le module dépôts pour servir de base au redesign UI
-> **Version** : v2.0 (post-migrations 2026-03)
-
----
-
-## TABLE DES MATIÈRES
-
-1. [Schéma Base de Données](#1-schéma-base-de-données)
-2. [Fonctions RPC](#2-fonctions-rpc)
-3. [Cycle de Vie — Statuts et Transitions](#3-cycle-de-vie--statuts-et-transitions)
-4. [Méthodes de Dépôt](#4-méthodes-de-dépôt)
-5. [Gestion des Preuves](#5-gestion-des-preuves)
-6. [Composants UI Admin](#6-composants-ui-admin)
-7. [Composants UI Client](#7-composants-ui-client)
-8. [Connexions avec Autres Modules](#8-connexions-avec-autres-modules)
-9. [Problèmes et Incohérences Identifiés](#9-problèmes-et-incohérences-identifiés)
-10. [Comparaison avec le Module Paiements](#10-comparaison-avec-le-module-paiements)
-11. [Annexes](#11-annexes)
+**Date :** 13 mars 2026
+**Version :** 3.0 (rebuild exhaustif post-migrations 2026-03)
+**Objectif :** Document de référence pour le redesign complet du module dépôts
 
 ---
 
-## 1. Schéma Base de Données
+## Table des matières
 
-### 1.1 ENUMs
+1. [Vue d'ensemble](#1-vue-densemble)
+2. [Cycle de vie d'un dépôt](#2-cycle-de-vie-dun-dépôt)
+3. [Méthodes de dépôt](#3-méthodes-de-dépôt)
+4. [Fiche dépôt — MobileDepositDetail.tsx (1196 lignes)](#4-fiche-dépôt--mobiledeposit-detailtsx)
+5. [Formulaire de création — MobileNewDeposit.tsx (1001 lignes)](#5-formulaire-de-création--mobilenewdeposittsx)
+6. [Écran liste — MobileDepositsScreen.tsx (516 lignes)](#6-écran-liste--mobiledepositsscreentsx)
+7. [Preuves / justificatifs](#7-preuves--justificatifs)
+8. [Version client web](#8-version-client-web)
+9. [Connexions avec les autres modules](#9-connexions-avec-les-autres-modules)
+10. [Différences avec le module paiements](#10-différences-avec-le-module-paiements)
+11. [Problèmes et incohérences identifiés](#11-problèmes-et-incohérences-identifiés)
+12. [Annexes SQL](#12-annexes-sql)
 
-#### `deposit_status`
-Créé dans `20251212074146`, évolué par 3 migrations ultérieures :
+---
 
-| Valeur | Migration d'ajout | Label UI | Couleur UI |
+## 1. Vue d'ensemble
+
+### 1.1 Inventaire des fichiers (7 226 lignes)
+
+| Fichier | Lignes | Rôle |
+|---|---|---|
+| `src/types/deposit.ts` | 314 | Types TypeScript, enums, labels, couleurs, constantes |
+| `src/data/depositMethodsData.ts` | 247 | Données statiques : banques, agences, Mobile Money |
+| `src/lib/depositTimeline.ts` | 259 | Construction timeline, calcul SLA, mapping événements |
+| `src/hooks/useDeposits.ts` | 436 | Hooks client (create, proofs, cancel, resubmit) |
+| `src/hooks/usePaginatedDeposits.ts` | 108 | Infinite scroll admin avec filtres serveur |
+| `src/hooks/useAdminDeposits.ts` | 761 | Hooks admin (validate, reject, delete, create, upload) |
+| `src/components/deposit/DepositInstructions.tsx` | 350 | Composant instructions copier-coller (compact + full) |
+| `src/components/deposit/DepositTimelineDisplay.tsx` | 166 | Affichage visuel timeline avec icônes et connecteurs |
+| `src/lib/pdf/templates/DepositReceiptPDF.tsx` | 134 | Template reçu PDF dépôt |
+| `src/pages/DepositsPage.tsx` | 148 | Liste dépôts côté client web |
+| `src/pages/NewDepositPage.tsx` | 746 | Création dépôt client web (7 étapes) |
+| `src/pages/DepositDetailPage.tsx` | 844 | Fiche dépôt côté client web |
+| `src/mobile/screens/deposits/MobileDepositsScreen.tsx` | 516 | Liste dépôts admin (KPI + filtres + SLA) |
+| `src/mobile/screens/deposits/new-deposit/MobileNewDeposit.tsx` | 1001 | Création dépôt admin pour client (8 étapes) |
+| `src/mobile/screens/deposits/MobileDepositDetail.tsx` | 1196 | Fiche dépôt admin (command center complet) |
+| **TOTAL** | **7 226** | |
+
+### 1.2 Migrations SQL liées aux dépôts
+
+| Fichier | Date | Rôle |
+|---|---|---|
+| `20260131200000_rebuild_deposit_validation.sql` | 2026-01-31 | RPCs validate, reject, correction, review, stats, resubmit |
+| `20260213000000_enhanced_deposit_validation.sql` | 2026-02-13 | Colonnes confirmed_amount, rejection_category, admin_note ; soft-delete proofs |
+| `20260214000000_deposit_proofs_client_policies.sql` | 2026-02-14 | RLS policies preuves (SELECT/INSERT/UPDATE) |
+| `20260219300000_deposit_cancel_and_remove_rate_limit.sql` | 2026-02-19 | RPC cancel_client_deposit (client) |
+| `20260221500000_fix_deposit_rpcs_is_admin.sql` | 2026-02-21 | Fix appels is_admin() dans les RPCs |
+| `20260313000001_fix_delete_payment_and_add_delete_deposit.sql` | 2026-03-13 | RPC delete_deposit (super_admin uniquement) |
+| `20260313000002_fix_delete_cleanup_full.sql` | 2026-03-13 | Fix cleanup ledger_entries + notifications orphelines |
+
+### 1.3 Tables Supabase impliquées
+
+| Table | Rôle |
+|---|---|
+| `deposits` | Dépôt principal (statut, montant, méthode, métadonnées) |
+| `deposit_proofs` | Preuves uploadées (soft-delete, uploaded_by_type) |
+| `deposit_timeline_events` | Historique des événements du dépôt |
+| `wallets` | Solde client (crédité lors de la validation) |
+| `ledger_entries` | Relevé de compte (DEPOSIT_VALIDATED, DEPOSIT_REFUSED) |
+| `notifications` | Notifications client liées aux dépôts |
+| `admin_audit_logs` | Audit toutes actions admin sur les dépôts |
+| `clients` | Profil client (joint pour affichage nom, téléphone) |
+
+### 1.4 Schéma des relations
+
+```
+deposits
+  ├── deposit_proofs          (deposit_id FK, ON DELETE CASCADE)
+  ├── deposit_timeline_events (deposit_id FK)
+  ├── ledger_entries          (reference_id = deposit.id, SANS FK — polymorphique)
+  ├── notifications           (metadata->>'deposit_id', SANS FK)
+  └── admin_audit_logs        (target_id = deposit.id, target_type = 'deposit')
+
+wallets
+  └── ledger_entries          (wallet_id FK, crédité via validate_deposit)
+```
+
+### 1.5 Différence structurelle dépôt vs paiement
+
+- **Un dépôt crédite le wallet** du client ; un paiement le débite.
+- **Un dépôt n'a pas de bénéficiaire** externe : le client envoie de l'argent à Bonzini.
+- **Pas de taux de change** dans les dépôts : tout est en XAF uniquement.
+- **Les preuves sont soumises par le client** (preuve de virement, SMS mobile money) ; dans les paiements, les preuves sont soumises par l'admin (confirmation d'exécution).
+
+---
+
+## 2. Cycle de vie d'un dépôt
+
+### 2.1 Les 8 statuts possibles
+
+```typescript
+type DepositStatus =
+  | 'created'              // Dépôt créé, pas encore de preuve
+  | 'awaiting_proof'       // Statut fantôme — même comportement que 'created'
+  | 'proof_submitted'      // Client a uploadé au moins 1 preuve
+  | 'admin_review'         // Admin a démarré la vérification
+  | 'validated'            // Admin a validé — wallet crédité
+  | 'rejected'             // Admin a rejeté
+  | 'pending_correction'   // Admin a demandé une correction
+  | 'cancelled';           // Client a annulé
+```
+
+**Labels et couleurs UI :**
+
+| Statut | Label FR | Couleur |
+|---|---|---|
+| `created` | Demande créée | Gris |
+| `awaiting_proof` | En attente de preuve | Jaune |
+| `proof_submitted` | Preuve envoyée | Bleu |
+| `admin_review` | En vérification | Violet |
+| `validated` | Validé | Vert |
+| `rejected` | Rejeté | Rouge |
+| `pending_correction` | À corriger | Orange |
+| `cancelled` | Annulé | Gris |
+
+### 2.2 Diagramme de transition des statuts
+
+```
+              [CLIENT crée le dépôt]
+                        │
+            ┌───────────▼───────────┐
+            │   created             │
+            │  (awaiting_proof)     │◄── même comportement
+            └───────┬──────────┬───┘
+                    │upload    │cancel
+                    ▼          ▼
+        ┌────────────────┐  [cancelled] ◄── TERMINAL
+        │ proof_submitted │
+        └──┬──────────┬──┘
+           │start     │
+           │review    │correction?
+           ▼          ▼
+  ┌──────────────┐  [pending_correction]
+  │  admin_review │       │
+  └──────┬───────┘  (client resubmit)
+         │                │
+    ─────┴────────────────┘
+         │
+   ──────┴──────
+  │              │
+validate?     reject?
+  │                │
+  ▼                ▼
+[validated]    [rejected]
+  TERMINAL       TERMINAL
+```
+
+### 2.3 Transitions autorisées et acteurs
+
+| De → Vers | Déclencheur | Acteur | RPC / Méthode |
 |---|---|---|---|
-| `created` | 20251212074146 | Demande créée | Gris |
-| `awaiting_proof` | 20251212074146 | En attente de preuve | Jaune |
-| `proof_submitted` | 20251212074146 | Preuve envoyée | Bleu |
-| `admin_review` | 20251212074146 | En vérification | Violet |
-| `validated` | 20251212074146 | Validé | Vert |
-| `rejected` | 20251212074146 | Rejeté | Rouge |
-| `pending_correction` | 20260131000001 | À corriger | Orange |
-| `cancelled` | 20260219300000 | Annulé | Gris |
+| `created` → `proof_submitted` | Upload preuve | Client ou Admin | Direct DB update |
+| `created` → `cancelled` | Annulation | Client | `cancel_client_deposit` |
+| `awaiting_proof` → `proof_submitted` | Upload preuve | Client ou Admin | Direct DB update |
+| `proof_submitted` → `admin_review` | Démarrer vérif | Admin | `start_deposit_review` |
+| `proof_submitted` → `validated` | Valider | Admin | `validate_deposit` |
+| `proof_submitted` → `rejected` | Rejeter | Admin | `reject_deposit` |
+| `proof_submitted` → `pending_correction` | Demander correction | Admin | `request_deposit_correction` |
+| `admin_review` → `validated` | Valider | Admin | `validate_deposit` |
+| `admin_review` → `rejected` | Rejeter | Admin | `reject_deposit` |
+| `admin_review` → `pending_correction` | Demander correction | Admin | `request_deposit_correction` |
+| `pending_correction` → `proof_submitted` | Renvoyer | Client | `resubmit_deposit` |
 
-#### `deposit_method`
-Créé dans `20251212074146` — immuable depuis :
+> **Note :** `start_deposit_review` n'accepte que `proof_submitted` ou `pending_correction` comme état source (guard SQL).
 
-| Valeur DB | Label complet | Label court |
+### 2.4 Effets de bord de chaque transition
+
+| Transition | Wallet | Ledger | Timeline event | Notification client |
+|---|---|---|---|---|
+| Création | Aucun | Aucun | `created` | Aucune |
+| → `proof_submitted` (upload) | Aucun | Aucun | `proof_submitted` / `proof_added` | Aucune |
+| → `admin_review` | Aucun | Aucun | `admin_review` | Aucune |
+| → `validated` | **+amount_xaf** (crédit) | `DEPOSIT_VALIDATED` | `validated` + `wallet_credited` | ✓ `deposit_validated` |
+| → `rejected` | Aucun | `DEPOSIT_REFUSED` (marqueur) | `rejected` | ✓ `deposit_rejected` |
+| → `pending_correction` | Aucun | Aucun | `correction_requested` | ✓ `deposit_correction_requested` |
+| → `cancelled` | Aucun | Aucun | `cancelled` | Aucune |
+| Suppression dépôt validé | **-amount_xaf** (inversion) | Nettoyage (suppression) | — | Nettoyage notif |
+| Suppression dépôt non-validé | Aucun | Nettoyage (suppression) | — | Nettoyage notif |
+
+### 2.5 Ledger entries créées
+
+```typescript
+// Type enum (src/lib/ledger)
+'DEPOSIT_VALIDATED'  // Créé par validate_deposit — crédite le wallet
+'DEPOSIT_REFUSED'    // Créé par reject_deposit — marqueur informatif, aucun mouvement
+```
+
+Colonnes pertinentes dans `ledger_entries` :
+- `entry_type` : DEPOSIT_VALIDATED ou DEPOSIT_REFUSED
+- `amount_xaf` : montant du dépôt
+- `balance_before` / `balance_after` : solde avant/après
+- `reference_type` = `'deposit'`
+- `reference_id` = `deposit.id` (SANS FK — risque orphelins, corrigé en 20260313)
+
+### 2.6 États uploadables (preuves)
+
+```typescript
+// Client side
+const UPLOADABLE_STATUSES = ['created', 'awaiting_proof', 'pending_correction'];
+
+// Admin side (useAdminUploadProofs)
+const UPLOADABLE_STATES = ['created', 'awaiting_proof', 'pending_correction'];
+```
+
+Si upload réussit et statut dans `UPLOADABLE_STATES` → status avance automatiquement vers `proof_submitted`.
+
+Si toutes les preuves sont soft-deleted et statut non-terminal → status **revient à `created`**.
+
+---
+
+## 3. Méthodes de dépôt
+
+### 3.1 Hiérarchie familles → sous-méthodes → méthode DB
+
+```
+DepositMethodFamily       DepositSubMethod              DepositMethod (DB)
+─────────────────────     ──────────────────────        ──────────────────
+BANK                  ──► BANK_TRANSFER           ──►  bank_transfer
+                      ──► BANK_CASH_DEPOSIT        ──►  bank_cash
+AGENCY_BONZINI        ──► AGENCY_CASH              ──►  agency_cash
+ORANGE_MONEY          ──► OM_TRANSFER              ──►  om_transfer
+                      ──► OM_WITHDRAWAL             ──►  om_withdrawal
+MTN_MONEY             ──► MTN_TRANSFER             ──►  mtn_transfer
+                      ──► MTN_WITHDRAWAL            ──►  mtn_withdrawal
+WAVE                  ──► WAVE_TRANSFER             ──►  wave
+```
+
+### 3.2 Coordonnées statiques (src/data/depositMethodsData.ts)
+
+**Banques (4) — Titulaire : BONZINI TRADING SARL**
+
+| Banque | N° Compte | IBAN | SWIFT |
+|---|---|---|---|
+| Ecobank Cameroun | 30245039710 | CM21 10029... | ECOCMKAX |
+| CCA-BANK | 00280298901 | CM21 10039... | CCAMCMCX |
+| UBA Cameroun | 14011000141 | CM21 10033... | UNAFCMCX |
+| Afriland First Bank | 00000020611 | CM21 10005... | CCEICMCX |
+
+**Mobile Money :**
+
+| Opérateur | Numéro | Titulaire |
 |---|---|---|
-| `bank_transfer` | Virement bancaire | Virement |
-| `bank_cash` | Dépôt cash banque | Cash banque |
-| `agency_cash` | Cash agence Bonzini | Cash agence |
-| `om_transfer` | Orange Money – Transfert | Orange UV |
-| `om_withdrawal` | Orange Money – Retrait | Orange code |
-| `mtn_transfer` | MTN MoMo – Transfert | MTN Float |
-| `mtn_withdrawal` | MTN MoMo – Retrait | MTN code |
-| `wave` | Wave | Wave |
+| Orange Money | 6 96 10 38 64 | WONDER PHONE |
+| MTN Money | 6 52 23 68 56 | NGANGON SOH NELSON |
+| Wave | +237 691 000 003 | BONZINI TRADING |
 
----
+**Codes marchands :**
 
-### 1.2 Table `deposits`
+| Opérateur | Code |
+|---|---|
+| Orange Money | `#150*14*424393*696103864*MONTANT#` |
+| MTN | `*126*14*652236856*MONTANT#` |
 
-**Migration de création :** `20251212074146_3a54d3a0.sql`
-**Colonnes ajoutées ultérieurement :** `20260213000000_enhanced_deposit_validation.sql`
+> Limite transaction Mobile Money : **500 000 XAF** — alerte affichée si montant supérieur.
 
-```sql
-CREATE TABLE public.deposits (
-  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id          UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  reference        TEXT NOT NULL UNIQUE,                        -- ex: BZ-DP-2026-0042
-  amount_xaf       BIGINT NOT NULL CHECK (amount_xaf > 0),
-  method           deposit_method NOT NULL,
-  bank_name        TEXT,                                        -- si méthode bank_*
-  agency_name      TEXT,                                        -- si méthode agency_cash
-  client_phone     TEXT,                                        -- téléphone client déclaré
-  status           deposit_status NOT NULL DEFAULT 'created',
-  admin_comment    TEXT,                                        -- commentaire visible client
-  rejection_reason TEXT,                                        -- motif rejet/correction
-  validated_by     UUID REFERENCES auth.users(id),             -- admin qui a traité
-  validated_at     TIMESTAMPTZ,
+**Agences Bonzini (3) :**
 
-  -- Ajouts migration 20260213000000:
-  confirmed_amount_xaf  BIGINT,      -- montant réel si différent du déclaré
-  rejection_category    TEXT,        -- catégorie structurée du rejet
-  admin_internal_note   TEXT,        -- note interne (non visible client)
-
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
-
-**Contraintes :**
-- `CHECK (amount_xaf > 0)` — montant strictement positif
-- `UNIQUE (reference)` — référence de type `BZ-DP-YYYY-NNNN`
-
-**Trigger :**
-```sql
-CREATE TRIGGER update_deposits_updated_at
-  BEFORE UPDATE ON public.deposits
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-```
-
-**Indexes :**
-- Index primaire sur `id`
-- Index unique sur `reference`
-- Index `idx_performance_...` ajouté en `20260301210000` (non listé dans ce fichier)
-
----
-
-### 1.3 Table `deposit_proofs`
-
-**Migration de création :** `20251212074146`
-**Colonnes ajoutées :** `20260213000000`
-
-```sql
-CREATE TABLE public.deposit_proofs (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deposit_id   UUID REFERENCES public.deposits(id) ON DELETE CASCADE NOT NULL,
-  file_url     TEXT NOT NULL,    -- chemin complet: 'deposit-proofs/{user_id}/{depositId}/...'
-  file_name    TEXT NOT NULL,
-  file_type    TEXT,
-
-  -- Colonnes initiales:
-  uploaded_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-  -- Ajouts 20260213000000:
-  uploaded_by       UUID REFERENCES auth.users(id),
-  uploaded_by_type  VARCHAR(10) DEFAULT 'client'
-                    CHECK (uploaded_by_type IN ('client', 'admin')),
-  is_visible_to_client BOOLEAN DEFAULT TRUE,
-
-  -- Support soft-delete:
-  deleted_at   TIMESTAMPTZ,
-  deleted_by   UUID REFERENCES auth.users(id),
-  delete_reason TEXT
-);
-```
-
-**Indexes :**
-```sql
--- Index partiel sur les preuves actives (non supprimées)
-CREATE INDEX idx_deposit_proofs_active
-  ON public.deposit_proofs(deposit_id) WHERE deleted_at IS NULL;
-```
-
----
-
-### 1.4 Table `deposit_timeline_events`
-
-**Migration de création :** `20251212074146`
-
-```sql
-CREATE TABLE public.deposit_timeline_events (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deposit_id   UUID REFERENCES public.deposits(id) ON DELETE CASCADE NOT NULL,
-  event_type   TEXT NOT NULL,
-  description  TEXT NOT NULL,
-  performed_by UUID REFERENCES auth.users(id),
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
-
-**Types d'événements utilisés :**
-
-| event_type | Déclenché par | Description |
+| Agence | Adresse | Horaires |
 |---|---|---|
-| `created` | RPC `create_client_deposit` | Demande de dépôt créée |
-| `proof_submitted` | Hook upload client/admin | Preuve envoyée |
-| `proof_added` | Hook upload admin | Preuve(s) ajoutée(s) par l'admin |
-| `proof_deleted` | Hook soft-delete | Preuve supprimée par admin/client |
-| `admin_review` | RPC `start_deposit_review` | Vérification en cours |
-| `correction_requested` | RPC `request_deposit_correction` | Correction demandée |
-| `resubmitted` | RPC `resubmit_deposit` | Dépôt renvoyé après correction |
-| `validated` | RPC `validate_deposit` | Dépôt validé |
-| `wallet_credited` | RPC `validate_deposit` | Solde mis à jour avec +montant |
-| `rejected` | RPC `reject_deposit` | Dépôt refusé |
-| `cancelled` | RPC `cancel_client_deposit` | Dépôt annulé par le client |
+| Douala Bonapriso | Rue de la Joie | Lun-Ven 8h-18h, Sam 9h-14h |
+| Douala Bonamoussadi | Carrefour Maetur | Lun-Ven 8h-18h, Sam 9h-14h |
+| Yaoundé Centre | Avenue Kennedy | Lun-Ven 8h-18h, Sam 9h-13h |
 
----
+### 3.3 Champs DB remplis selon méthode
 
-### 1.5 RLS Policies
+| Méthode | `bank_name` | `agency_name` | `client_phone` |
+|---|---|---|---|
+| `bank_transfer` | Nom de la banque Bonzini | — | — |
+| `bank_cash` | Nom de la banque Bonzini | — | — |
+| `agency_cash` | — | Nom de l'agence | — |
+| `om_transfer` | — | — | Jamais rempli |
+| `om_withdrawal` | — | — | Jamais rempli |
+| `mtn_transfer` | — | — | Jamais rempli |
+| `mtn_withdrawal` | — | — | Jamais rempli |
+| `wave` | — | — | Jamais rempli |
 
-#### Table `deposits`
+### 3.4 Navigation dans le formulaire selon la famille
 
-| Policy | Opération | Condition |
+- **BANK** → `family` → `submethod` (transfer/cash) → `bank` → `recap`
+- **AGENCY_BONZINI** → `family` → `agency` → `recap` (pas de submethod)
+- **ORANGE_MONEY / MTN_MONEY** → `family` → `submethod` → `recap` (pas de bank)
+- **WAVE** → `family` → `recap` (direct, pas de submethod ni bank)
+
+### 3.5 Familles et sous-méthodes (descriptions)
+
+| Famille | Icône | Description |
 |---|---|---|
-| Users can view own deposits | SELECT | `auth.uid() = user_id` |
-| Users can create own deposits | INSERT | `auth.uid() = user_id` |
-| Admins can view all deposits | SELECT | `is_admin(auth.uid())` |
-| Admins can update deposits | UPDATE | `is_admin(auth.uid())` |
-
-#### Table `deposit_proofs`
-
-| Policy | Opération | Condition |
-|---|---|---|
-| Users can view own deposit proofs | SELECT | EXISTS dépôt de l'utilisateur |
-| Admins can view all deposit proofs | SELECT | `is_admin(auth.uid())` |
-| Users can upload proofs for own deposits | INSERT | EXISTS dépôt de l'utilisateur |
-| Users can update own deposit proofs | UPDATE | EXISTS dépôt de l'utilisateur |
-| Admins can update deposit proofs | UPDATE | `is_admin(auth.uid())` |
-
-#### Table `deposit_timeline_events`
-
-| Policy | Opération | Condition |
-|---|---|---|
-| Users can view own deposit timeline | SELECT | EXISTS dépôt de l'utilisateur |
-| Admins can view all timelines | SELECT | `is_admin(auth.uid())` |
-| System can insert timeline events | INSERT | `true` (permissif) |
+| BANK | Building2 | Virement ou dépôt cash en agence bancaire |
+| AGENCY_BONZINI | Store | Dépôt cash dans nos locaux |
+| ORANGE_MONEY | Smartphone | Transfert UV ou retrait code marchand |
+| MTN_MONEY | Smartphone | Transfert Float ou retrait code marchand |
+| WAVE | Waves | Transfert via Wave |
 
 ---
 
-## 2. Fonctions RPC
+## 4. Fiche dépôt — MobileDepositDetail.tsx
 
-### 2.1 `create_client_deposit` — Création d'un dépôt
+**Fichier :** `src/mobile/screens/deposits/MobileDepositDetail.tsx`
+**Lignes :** 1 196
+**Route :** `/m/deposits/:depositId`
 
-**Migration :** `20260105122508_bd590dc0.sql`
-**Appelé par :** clients (via `useCreateDeposit`) ET admins (via `useAdminCreateDeposit`)
+### 4.1 Hooks utilisés
 
-```sql
-FUNCTION public.create_client_deposit(
-  p_user_id    UUID,
-  p_amount_xaf NUMERIC,
-  p_method     deposit_method,
-  p_bank_name  TEXT DEFAULT NULL,
-  p_agency_name TEXT DEFAULT NULL,
-  p_client_phone TEXT DEFAULT NULL
-)
-RETURNS JSON
+**Queries :**
+- `useAdminDepositDetail(depositId)` — données dépôt + profil client
+- `useAdminDepositProofs(depositId)` — preuves avec signed URLs (cache 55 min)
+- `useAdminDepositTimeline(depositId)` — événements chronologiques
+- `useAdminWalletByUserId(deposit?.user_id)` — solde wallet client actuel
+
+**Mutations :**
+- `useValidateDeposit()` — valide et crédite le wallet
+- `useRejectDeposit()` — rejette avec catégorie + note admin
+- `useRequestCorrection()` — demande correction au client
+- `useStartDepositReview()` — passe en `admin_review`
+- `useAdminUploadProofs()` — upload preuves par admin
+- `useAdminDeleteProof()` — soft-delete preuve
+- `useDeleteDeposit()` — supprime le dépôt entier (super_admin)
+
+**Contexte :** `useAdminAuth()` → `currentUser.role` (pour `isSuperAdmin`)
+
+### 4.2 Variables de permission
+
+```typescript
+const isSuperAdmin = currentUser?.role === 'super_admin';
+const isLocked = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
+const canValidate = !isLocked;
+const canReject = !isLocked;
+const canStartReview = deposit.status === 'proof_submitted';
+const hasProofs = proofs && proofs.length > 0;
+const canAddProof = !isLocked;
 ```
 
-**Algorithme :**
-1. Génère une référence `BZ-DP-YYYY-NNNN` de manière atomique (lock table + retry jusqu'à 5 fois si collision)
-2. Insère le dépôt avec `status = 'created'`
-3. Insère un `deposit_timeline_events` de type `created`
-4. Retourne `{ success: true, deposit_id, reference }`
+### 4.3 Couleurs du banner de statut (gradient)
 
-**Retour erreur :** `{ success: false, error: '...' }`
+| Statut | Gradient |
+|---|---|
+| `created` | Gris |
+| `awaiting_proof` | Jaune |
+| `proof_submitted` | Bleu |
+| `admin_review` | Violet |
+| `pending_correction` | Orange |
+| `validated` | Vert |
+| `rejected` | Rouge |
+| `cancelled` | Gris |
 
-**Note :** N'avance PAS automatiquement vers `proof_submitted` même si des preuves sont passées — l'upload est géré côté client après la création.
+### 4.4 Sections affichées (ordre de rendu)
 
----
+1. **MobileHeader** — titre = référence du dépôt, bouton back
+2. **Status Banner** — gradient coloré, badge statut, icône cadenas si `isLocked`
+3. **Amount Hero** — montant XAF en grand, SLA dot (si non-terminal), date relative
+4. **Proof Strip** (scroll horizontal) — miniatures preuves + bouton delete (si `!isLocked`) + bouton "+" upload
+5. **Alerte "pas de preuve"** — si `!hasProofs && canValidate` (avertissement visuel non bloquant)
+6. **Client info** — avatar initiales, nom complet, téléphone
+7. **Wallet** — solde actuel du client
+8. **Details expandable** — méthode, banque/agence, montant déclaré, montant confirmé (si différent), date création, validé par/le
+9. **Timeline** — tous les événements avec icônes et dates
+10. **Bouton "Supprimer ce dépôt"** — visible uniquement si `isSuperAdmin`
+11. **Glass Sticky Action Bar** (sticky bottom) — visible si `canValidate || canReject || canStartReview`
 
-### 2.2 `validate_deposit` — Validation admin
+### 4.5 Boutons d'action et leurs conditions exactes
 
-**Version active :** `20260213000000_enhanced_deposit_validation.sql`
+| Bouton | Condition | Couleur | Action déclenchée |
+|---|---|---|---|
+| **Commencer la vérification** | `canStartReview` = `status === 'proof_submitted'` | Violet | `start_deposit_review` RPC |
+| **Valider** | `canValidate` = `!isLocked` | Vert | Ouvre modale validate |
+| **Rejeter** | `canReject` = `!isLocked` | Rouge outline | Ouvre sheet reject |
+| **Corriger** | `canValidate` (même condition) | Orange outline | Ouvre sheet correction |
+| **Ajouter preuve** | `canAddProof` = `!isLocked` | Icône "+" (proof strip) | Ouvre sheet upload |
+| **Supprimer preuve** | `!isLocked` (sur chaque preuve) | Rouge icône | Ouvre sheet delete proof |
+| **Télécharger reçu** | Toujours visible | Neutre | Génère PDF (react-pdf) |
+| **Supprimer dépôt** | `isSuperAdmin` (toujours, même si locked) | Rouge outline | Ouvre sheet delete deposit |
 
-```sql
-FUNCTION public.validate_deposit(
-  p_deposit_id      UUID,
-  p_admin_comment   TEXT DEFAULT NULL,
-  p_confirmed_amount BIGINT DEFAULT NULL,  -- montant réel si différent du déclaré
-  p_send_notification BOOLEAN DEFAULT TRUE
-)
-RETURNS JSONB
+> **Attention :** "Valider" est visible même si `!hasProofs` — seul un avertissement visuel s'affiche. Le SQL ne bloque pas dans la version actuelle des migrations.
+
+> **L'action bar (Valider/Rejeter/Corriger) disparaît** si `isLocked` = true (statuts `validated`, `rejected`, `cancelled`).
+
+### 4.6 Bottom Sheets / Modales
+
+**Validate (`showValidateConfirm`) :**
+```
+- Montant déclaré (lecture seule)
+- Champ "Montant confirmé (XAF)" — pré-rempli avec deposit.amount_xaf
+- Note si montant confirmé ≠ déclaré
+- Champ commentaire admin (optionnel)
+- Toggle "Envoyer notification au client" (défaut : ON)
+- Bouton "Valider"
 ```
 
-**Pré-requis :**
-- `is_admin(auth.uid())` — réservé admins
-- Statut ≠ `validated` et ≠ `rejected`
-- Au moins **1 preuve active** (`deleted_at IS NULL`) — OBLIGATOIRE
-
-**Algorithme :**
-1. Row lock `FOR UPDATE` sur le dépôt
-2. Récupère le nom client depuis `clients`
-3. Calcule le montant à créditer : `v_credit_amount = COALESCE(p_confirmed_amount, amount_xaf)`
-4. Crée le wallet si inexistant (`ON CONFLICT DO NOTHING`)
-5. Row lock `FOR UPDATE` sur le wallet
-6. Calcule `v_new_balance = wallet.balance_xaf + v_credit_amount`
-7. Met à jour `wallets.balance_xaf`
-8. Met à jour `deposits` : `status='validated'`, `confirmed_amount_xaf` (si différent du déclaré), `validated_by`, `validated_at`
-9. Insère dans `wallet_operations` (legacy)
-10. Insère dans `ledger_entries` type `DEPOSIT_VALIDATED`
-11. Insère 2 événements timeline : `validated` + `wallet_credited`
-12. Insère notification `deposit_validated` (si `p_send_notification = true`)
-13. Insère `admin_audit_logs`
-14. Retourne `{ success, amount_credited, old_balance, new_balance, reference }`
-
----
-
-### 2.3 `reject_deposit` — Rejet admin
-
-**Version active :** `20260213000000` (overload étendu), fixé par `20260221500000`
-
-```sql
-FUNCTION public.reject_deposit(
-  p_deposit_id         UUID,
-  p_reason             TEXT,                  -- OBLIGATOIRE
-  p_rejection_category TEXT DEFAULT NULL,     -- catégorie structurée
-  p_admin_note         TEXT DEFAULT NULL      -- note interne
-)
-RETURNS JSONB
+**Reject (`showRejectSheet`) :**
+```
+- Sélecteur catégorie parmi REJECTION_REASONS
+- Champ message visible par le client (obligatoire)
+- Champ note interne admin (optionnel)
+- Bouton "Confirmer le rejet" (désactivé si catégorie ou message vide)
 ```
 
-**Pré-requis :**
-- `is_admin(auth.uid())`
-- Raison non vide
-- Statut ≠ `validated` et ≠ `rejected`
-
-**Algorithme :**
-1. Row lock `FOR UPDATE` sur le dépôt
-2. Met à jour `deposits` : `status='rejected'`, `rejection_reason`, `rejection_category`, `admin_internal_note`, `validated_by`, `validated_at`
-3. Insère dans `ledger_entries` type `DEPOSIT_REFUSED` (informationnel, balance_before = balance_after)
-4. Insère événement timeline `rejected`
-5. Insère notification `deposit_rejected`
-6. Insère `admin_audit_logs`
-7. Retourne `{ success, reference }`
-
-**⚠️ Note :** Le rejet NE débite PAS le wallet (le wallet n'est jamais crédité avant validation).
-
----
-
-### 2.4 `request_deposit_correction` — Demande de correction
-
-**Version active :** `20260221500000` (fixe l'appel `is_admin`)
-
-```sql
-FUNCTION public.request_deposit_correction(
-  p_deposit_id UUID,
-  p_reason     TEXT   -- OBLIGATOIRE
-)
-RETURNS JSONB
+**Correction (`showCorrectionSheet`) :**
+```
+- Champ raison de correction (obligatoire)
+- Bouton "Demander correction"
 ```
 
-**Pré-requis :**
-- `is_admin(auth.uid())`
-- Raison non vide
-- Statut ≠ `validated` et ≠ `rejected`
-
-**Algorithme :**
-1. Met à jour `deposits` : `status='pending_correction'`, `rejection_reason=p_reason`
-2. Insère événement `correction_requested`
-3. Insère notification `deposit_correction_requested`
-4. Retourne `{ success, reference }`
-
----
-
-### 2.5 `start_deposit_review` — Prise en charge admin
-
-**Version active :** `20260221500000`
-
-```sql
-FUNCTION public.start_deposit_review(
-  p_deposit_id UUID
-)
-RETURNS JSONB
+**Upload preuves (`showUploadSheet`) :**
+```
+- Input file (multiple, image/* + application/pdf)
+- Preview fichiers sélectionnés
+- Bouton "Uploader"
 ```
 
-**Pré-requis :**
-- `is_admin(auth.uid())`
-- Statut DOIT être `proof_submitted` OU `pending_correction`
-
-**Algorithme :**
-1. Met à jour `deposits` : `status='admin_review'`
-2. Insère événement `admin_review`
-3. Retourne `{ success: true }`
-
----
-
-### 2.6 `resubmit_deposit` — Renvoi après correction (client)
-
-**Migration :** `20260131200000`
-
-```sql
-FUNCTION public.resubmit_deposit(
-  p_deposit_id UUID
-)
-RETURNS JSONB
+**Delete preuve (`showDeleteProofSheet`) :**
+```
+- Sélecteur raison parmi PROOF_DELETE_REASONS
+- Si "Autre" : champ texte libre
+- Bouton "Supprimer"
 ```
 
-**Pré-requis :**
-- `auth.uid() = deposit.user_id` (ownership)
-- Statut DOIT être `pending_correction`
-
-**Algorithme :**
-1. Met à jour `deposits` : `status='proof_submitted'`, `rejection_reason=NULL`
-2. Insère événement `resubmitted`
-3. Retourne `{ success: true }`
-
----
-
-### 2.7 `cancel_client_deposit` — Annulation (client)
-
-**Migration :** `20260219300000`
-
-```sql
-FUNCTION public.cancel_client_deposit(
-  p_deposit_id UUID
-)
-RETURNS JSONB
+**Delete dépôt (`showDeleteDepositSheet`) :**
+```
+- Warning : nom client + montant
+- Texte "Cette action est irréversible"
+- Bouton "Supprimer définitivement" (rouge)
 ```
 
-**Pré-requis :**
-- `auth.uid()` non NULL
-- `deposit.user_id = auth.uid()` (ownership)
-- Statut DOIT être dans `['created', 'awaiting_proof', 'proof_submitted']`
+### 4.7 Génération reçu PDF
 
-**Algorithme :**
-1. Row lock `FOR UPDATE` sur le dépôt
-2. Met à jour `deposits` : `status='cancelled'`
-3. Insère événement `cancelled`
-4. Retourne `{ success: true, reference, message }`
+Côté frontend uniquement via `@react-pdf/renderer` (pas de RPC).
 
-**⚠️ Note :** Aucune notification n'est envoyée à l'admin.
-
----
-
-### 2.8 `get_deposit_stats` — Statistiques admin
-
-**Version active :** `20260221500000`
-
-```sql
-FUNCTION public.get_deposit_stats()
-RETURNS JSONB
-```
-
-**Retourne :**
-```json
-{
-  "total": 150,
-  "awaiting_proof": 5,
-  "proof_submitted": 12,
-  "pending_correction": 3,
-  "admin_review": 4,
-  "validated": 110,
-  "rejected": 8,
-  "to_process": 16,
-  "today_validated": 6,
-  "today_amount": 4500000
+```typescript
+interface DepositReceiptData {
+  id, reference, created_at, validated_at?,
+  amount_xaf, confirmed_amount_xaf?,
+  method, status, bank_name?, agency_name?,
+  client_name, client_phone?, company_name?
 }
 ```
 
-- `to_process` = `proof_submitted` + `admin_review`
-- `today_validated` / `today_amount` = dépôts validés aujourd'hui (basé sur `validated_at`)
+**Sections du PDF :** Header (logo, titre, référence) → Badge statut + date → Box montant → Transaction (méthode, banque, dates) → Client (nom, téléphone, pays, société) → Footer
+
+### 4.8 Problèmes identifiés
+
+1. **Bouton Valider visible sans preuve** — avertissement visuel non bloquant, pas de validation UI stricte.
+2. **`confirmed_amount_xaf` non visible dans les détails** — uniquement visible dans la modale de validation. Après validation, si le montant confirmé diffère du déclaré, cela n'est pas évident sur la fiche.
+3. **Pas de navigation vers le profil client** — pas de lien depuis la fiche dépôt.
+4. **Action bar `bottom-16` peut chevaucher** le bouton Supprimer dépôt sur petits écrans.
+5. **Pas d'alerte en temps réel** (pas de subscription Supabase realtime) — l'admin ne voit pas les mises à jour si un autre admin valide en même temps.
 
 ---
 
-## 3. Cycle de Vie — Statuts et Transitions
+## 5. Formulaire de création — MobileNewDeposit.tsx
 
-### 3.1 Flux Standard (tous modes hors annulation)
+**Fichier :** `src/mobile/screens/deposits/new-deposit/MobileNewDeposit.tsx`
+**Lignes :** 1 001
+**Route :** `/m/deposits/new` ou `/m/deposits/new?clientId=xxx`
 
-```
-                 [created]
-                    │
-                    │ upload preuve (client ou admin)
-                    ▼
-            [proof_submitted] ◄────────────────────────────────┐
-                    │                                           │
-                    │ start_deposit_review                      │
-                    ▼                                           │
-            [admin_review]                                      │
-                    │                                           │
-          ┌─────────┼────────────────────┐                     │
-          │         │                    │                      │
-          ▼         ▼                    ▼                      │
-     [validated] [rejected]  [pending_correction]              │
-                                         │                      │
-                                         │ resubmit_deposit     │
-                                         └──────────────────────┘
-```
-
-### 3.2 Flux d'Annulation (client uniquement)
-
-```
-[created] ──► [cancelled]
-[awaiting_proof] ──► [cancelled]
-[proof_submitted] ──► [cancelled]
-```
-
-### 3.3 Table Complète des Transitions
-
-| De | Vers | Déclencheur | Acteur | Condition |
-|---|---|---|---|---|
-| (création) | `created` | `create_client_deposit` | Client ou Admin | — |
-| `created` | `proof_submitted` | Upload preuve | Client ou Admin | Statut IN uploadable states |
-| `awaiting_proof` | `proof_submitted` | Upload preuve | Client ou Admin | — |
-| `pending_correction` | `proof_submitted` | Upload preuve | Client ou Admin | — |
-| `proof_submitted` | `admin_review` | `start_deposit_review` | Admin | Status = proof_submitted ou pending_correction (RPC) |
-| `pending_correction` | `admin_review` | `start_deposit_review` | Admin | (Accepté par RPC, mais pas par l'UI — voir §9.6) |
-| `admin_review` | `validated` | `validate_deposit` | Admin | Au moins 1 preuve active |
-| `admin_review` | `rejected` | `reject_deposit` | Admin | Raison obligatoire |
-| `admin_review` | `pending_correction` | `request_deposit_correction` | Admin | Raison obligatoire |
-| `proof_submitted` | `validated` | `validate_deposit` | Admin | Au moins 1 preuve active |
-| `proof_submitted` | `rejected` | `reject_deposit` | Admin | — |
-| `proof_submitted` | `pending_correction` | `request_deposit_correction` | Admin | — |
-| `created` | `validated` | `validate_deposit` | Admin | ⚠️ Pas de guard statut (hors validated/rejected) |
-| `pending_correction` | `cancelled` | `cancel_client_deposit` | Client | ❌ Non autorisé (pas dans cancellable statuses) |
-| `created` | `cancelled` | `cancel_client_deposit` | Client | — |
-| `proof_submitted` | `proof_submitted` | `resubmit_deposit` | Client | Seulement depuis `pending_correction` |
-| `proof_submitted` → (delete all proofs) | `created` | Soft-delete preuve (aucune active restante) | Admin ou Client | Statut non-terminal |
-
-### 3.4 Statuts Terminaux
-
-Les statuts `validated`, `rejected`, `cancelled` sont des états terminaux :
-- `isLocked = ['validated', 'rejected', 'cancelled'].includes(status)` (composant détail)
-- SLA ne s'applique plus (retourne `null`)
-- Boutons d'action désactivés (sauf bouton supprimer pour super_admin)
-
-### 3.5 Effets de Bord par Transition
-
-| Transition | Wallet | Ledger | Timeline | Notification |
-|---|---|---|---|---|
-| `→ created` | aucun | aucun | `created` | — |
-| `→ proof_submitted` | aucun | aucun | `proof_submitted` ou `proof_added` | — |
-| `→ admin_review` | aucun | aucun | `admin_review` | — |
-| `→ validated` | +amount_xaf crédité | `DEPOSIT_VALIDATED` | `validated` + `wallet_credited` | `deposit_validated` |
-| `→ rejected` | aucun | `DEPOSIT_REFUSED` (info) | `rejected` | `deposit_rejected` |
-| `→ pending_correction` | aucun | aucun | `correction_requested` | `deposit_correction_requested` |
-| `→ resubmitted` | aucun | aucun | `resubmitted` | — |
-| `→ cancelled` | aucun | aucun | `cancelled` | — |
-
----
-
-## 4. Méthodes de Dépôt
-
-### 4.1 Hiérarchie UI : Famille → Sous-méthode → DB
-
-```
-BANK (Banque) ──── BANK_TRANSFER     ──► bank_transfer
-              └─── BANK_CASH_DEPOSIT ──► bank_cash
-
-ORANGE_MONEY ───── OM_TRANSFER       ──► om_transfer
-             └──── OM_WITHDRAWAL     ──► om_withdrawal
-
-MTN_MONEY ─────── MTN_TRANSFER       ──► mtn_transfer
-          └────── MTN_WITHDRAWAL     ──► mtn_withdrawal
-
-WAVE ──────────── WAVE_TRANSFER      ──► wave
-                  (pas de sous-méthode distincte)
-
-AGENCY_BONZINI ── AGENCY_CASH        ──► agency_cash
-                  (pas de choix de sous-méthode)
-```
-
-### 4.2 Champs Additionnels par Méthode
-
-| Méthode | `bank_name` | `agency_name` | Données supplémentaires |
-|---|---|---|---|
-| `bank_transfer` | Requis (banque) | — | IBAN, SWIFT, N° Compte (affichés dans le récapitulatif) |
-| `bank_cash` | Requis (banque) | — | N° Compte, Titulaire (affichés) |
-| `agency_cash` | — | Requis (agence) | Adresse, horaires (affichés) |
-| `om_transfer` | — | — | N° Orange Money (affiché), instructions USSD |
-| `om_withdrawal` | — | — | Code Marchand généré (`#150*...#`) |
-| `mtn_transfer` | — | — | N° MTN Float (affiché), instructions |
-| `mtn_withdrawal` | — | — | Code Marchand généré |
-| `wave` | — | — | N° Wave (affiché), instructions app |
-
-### 4.3 Banques Supportées
-
-| Code | Label |
-|---|---|
-| `ECOBANK` | Ecobank |
-| `CCA` | CCA Bank |
-| `UBA` | UBA |
-| `AFRILAND` | Afriland First Bank |
-| `OTHER` | Autre banque |
-
-### 4.4 Agences Bonzini
-
-| Code | Label | Adresse |
-|---|---|---|
-| `DOUALA_BONAPRISO` | Douala – Bonapriso | (défini dans `depositMethodsData.ts`) |
-| `DOUALA_BONAMOUSSADI` | Douala – Bonamoussadi | (défini dans `depositMethodsData.ts`) |
-| `YAOUNDE_CENTRE` | Yaoundé – Centre | (défini dans `depositMethodsData.ts`) |
-
-### 4.5 Timeline Method Family
-
-Le composant timeline adapte ses libellés selon la méthode :
-
-| Famille timeline | Méthodes | Libellé étape 1 | Libellé étape 2 |
-|---|---|---|---|
-| `standard` | bank_transfer, bank_cash, om_transfer, mtn_transfer, wave | "Dépôt déclaré" | "Preuve envoyée" |
-| `withdrawal` | om_withdrawal, mtn_withdrawal | "Retrait déclaré" | "Code fourni" |
-| `agency` | agency_cash | "Dépôt en agence" | "Reçu confirmé" |
-
-### 4.6 Limite Mobile Money
-
-Un avertissement s'affiche dans `MobileNewDeposit` si le montant dépasse `MOBILE_MONEY_TRANSACTION_LIMIT` (constante définie dans `depositMethodsData.ts`). Les méthodes bancaires ou Wave ne sont pas concernées.
-
----
-
-## 5. Gestion des Preuves
-
-### 5.1 Bucket Storage Supabase
-
-**Bucket :** `deposit-proofs`
-**Path pattern :** `{user_id}/{depositId}/{timestamp}-{random}.{ext}`
-**Durée URL signée :** 3600 secondes (1h)
-
-**Exemple de chemin stocké :**
-```
-deposit-proofs/550e8400-e29b-41d4-a716-446655440000/3fa85f64.../1741872000000-abc123.jpg
-```
-
-### 5.2 Upload — Client
-
-**Hook :** `useUploadProof` (1 fichier) / `useUploadMultipleProofs` (N fichiers)
-**Source :** `src/hooks/useDeposits.ts`
-
-**Flux :**
-1. `validateUploadFile(rawFile)` — validation taille/type
-2. `compressImage(rawFile)` — compression images
-3. Upload vers bucket `deposit-proofs`
-4. Insert dans `deposit_proofs` : `uploaded_by_type='client'`
-5. Lit le statut courant du dépôt
-6. Si statut IN `['created', 'awaiting_proof', 'pending_correction']` → `UPDATE deposits SET status='proof_submitted'`
-7. Insert `deposit_timeline_events` de type `proof_submitted`
-
-**Conditions d'upload côté UI :** non-locked (statut ≠ validated/rejected/cancelled)
-
-### 5.3 Upload — Admin
-
-**Hook :** `useAdminUploadProofs`
-**Source :** `src/hooks/useAdminDeposits.ts`
-
-**Flux :**
-1. `compressImage(rawFile)` — compression (⚠️ `validateUploadFile` NON appelé ici)
-2. Upload vers bucket `deposit-proofs`
-3. Insert dans `deposit_proofs` : `uploaded_by_type='admin'`, `uploaded_by=admin.id`
-4. Si statut IN `['created', 'awaiting_proof', 'pending_correction']` → `UPDATE deposits SET status='proof_submitted'`
-5. Insert `deposit_timeline_events` de type `proof_added`
-
-**Conditions d'upload côté UI :** `canAddProof = !isLocked`
-
-### 5.4 Upload à la Création Admin (MobileNewDeposit)
-
-Dans `useAdminCreateDeposit` :
-1. RPC `create_client_deposit` → obtient `deposit_id`
-2. Si `proofFiles` fournis → upload jusqu'à 5 fichiers
-3. Si au moins 1 upload réussi → `UPDATE deposits SET status='proof_submitted'`
-4. Insert `deposit_timeline_events` de type `proof_submitted`
-5. Insert `admin_audit_logs` : `create_deposit_for_client`
-
-### 5.5 Soft-Delete — Admin
-
-**Hook :** `useAdminDeleteProof`
-
-**Flux :**
-1. `UPDATE deposit_proofs SET deleted_at, deleted_by, delete_reason` (soft-delete)
-2. Compte les preuves actives restantes (`deleted_at IS NULL`)
-3. Si 0 preuves restantes ET statut ≠ terminal → `UPDATE deposits SET status='created'`
-4. Insert `deposit_timeline_events` de type `proof_deleted`
-5. Insert `admin_audit_logs` : `delete_deposit_proof`
-
-### 5.6 Soft-Delete — Client
-
-**Hook :** `useDeleteDepositProof`
-
-**Flux :**
-1. `UPDATE deposit_proofs SET deleted_at, deleted_by, delete_reason` (soft-delete)
-2. Si 0 preuves actives restantes ET statut ≠ terminal → `UPDATE deposits SET status='created'`
-3. Insert `deposit_timeline_events` de type `proof_deleted`
-
-### 5.7 Guard de Validation
-
-La RPC `validate_deposit` vérifie obligatoirement :
-```sql
-SELECT COUNT(*) FROM deposit_proofs
-WHERE deposit_id = p_deposit_id AND deleted_at IS NULL;
--- Si COUNT = 0 → RETURN error 'Aucune preuve - impossible de valider'
-```
-
-### 5.8 Raisons de Suppression Prédéfinies
-
-`PROOF_DELETE_REASONS` = `['Upload incorrect', 'Mauvais dépôt', 'Doublon', 'Image illisible', 'Autre']`
-
-### 5.9 Affichage dans la Galerie (MobileDepositDetail)
-
-Chaque thumb de preuve affiche :
-- **Image** si `file_type.startsWith('image/')` + URL signée disponible
-- **Icône document** sinon (PDF)
-- Badge `Admin` ou `Client` (en haut à gauche)
-- Badge date `dd/MM HH:mm` (en bas à gauche)
-- Bouton "Voir" (full screen) si URL signée disponible
-- Bouton "Télécharger" (lien `download`) si URL signée disponible
-- Bouton "Supprimer" (rouge) si `!isLocked`
-
----
-
-## 6. Composants UI Admin
-
-### 6.1 `MobileDepositDetail.tsx`
-
-**Fichier :** `src/mobile/screens/deposits/MobileDepositDetail.tsx`
-**Taille :** ~1400 lignes
-**Route :** `/m/deposits/:depositId`
-
-#### 6.1.1 Données chargées
-
-| Hook | Données | Cache |
-|---|---|---|
-| `useAdminDepositDetail` | Dépôt + profil client | staleTime: 10s |
-| `useAdminDepositProofs` | Preuves + signed URLs | staleTime: 55min |
-| `useAdminDepositTimeline` | Événements timeline | staleTime: default |
-| `useAdminWalletByUserId` | Solde actuel du client | — |
-
-#### 6.1.2 Variables Computées
+### 5.1 Les 8 étapes
 
 ```typescript
-isLocked       = ['validated', 'rejected', 'cancelled'].includes(status)
-canValidate    = !isLocked
-canReject      = !isLocked
-canStartReview = status === 'proof_submitted'   // ⚠️ exclut pending_correction
-canAddProof    = !isLocked
-isSuperAdmin   = currentUser?.role === 'super_admin'
-hasProofs      = proofs && proofs.length > 0
-slaLevel       = getDepositSlaLevel(created_at, status)  // fresh/aging/overdue/null
-amountDiffers  = confirmedAmount !== deposit.amount_xaf && confirmedAmount > 0
+type Step = 'client' | 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
 ```
 
-#### 6.1.3 Sections de la Page
+| Étape | Clé | Contenu | Navigation suivante |
+|---|---|---|---|
+| 1 | `client` | Recherche et sélection du client | → `amount` |
+| 2 | `amount` | Saisie montant XAF (min 1 000) | → `family` |
+| 3 | `family` | Sélection famille méthode (5 options) | → `submethod` / `agency` / `recap` |
+| 4 | `submethod` | Sous-méthode (BANK, OM, MTN uniquement) | → `bank` / `recap` |
+| 5 | `bank` | Sélection banque (BANK uniquement, 4 options) | → `recap` |
+| 6 | `agency` | Sélection agence (AGENCY_BONZINI uniquement, 3 options) | → `recap` |
+| 7 | `recap` | Récapitulatif + upload preuves + commentaire | → `creating` |
+| 8 | `creating` | Animation chargement | → `/m/deposits/:id` |
 
-1. **Status Banner** — gradient de couleur selon statut, badge statut, icône lock si terminal, SLA dot, date relative
-2. **Amount Hero Card** — montant déclaré, montant confirmé (si différent + barré), méthode, banque/agence, bouton "Télécharger le relevé" (PDF)
-3. **Client Info Card** — avatar initiales, nom, téléphone, company, solde actuel wallet, bouton navigation → fiche client `/m/clients/{user_id}`
-4. **Preuves** — titre + compteur, galerie horizontale (scroll), warning si aucune preuve + non-locked, bouton "Ajouter"
-5. **Détails du dépôt** (expandable) — référence (mono), méthode, banque, agence, date création, commentaire admin, motif rejet + catégorie, note interne admin
-6. **Timeline** — 4 steps (ou terminal), icônes état, dates formatées, connecteurs
-7. **Bouton Supprimer** — visible si `(!isLocked || isSuperAdmin)`
+### 5.2 Barre de progression
 
-#### 6.1.4 Action Bar (sticky, bottom)
+```
+3 barres horizontales colorées :
+Phase 0 [bleu si actif] : client → amount → family → submethod → bank → agency
+Phase 1 [bleu si actif] : recap
+Phase 2 [gris si actif] : creating
+```
 
-Visible si `canValidate || canReject || canStartReview` :
+### 5.3 Étape 1 — Sélection client
 
-| Bouton | Couleur | Condition d'affichage |
-|---|---|---|
-| "Commencer la vérification" | Violet | `canStartReview` (status = proof_submitted) |
-| "Rejeter" | Rouge border | `canValidate` (!isLocked) |
-| "Corriger" | Orange border | `canValidate` (!isLocked) |
-| "Valider" | Vert fond | `canValidate` (!isLocked) |
+- Recherche type-ahead sur nom + téléphone
+- Limite : 20 résultats affichés
+- Si `?clientId=xxx` : client pré-sélectionné, étape sautée directement à `amount`
+- Source : `useAllClients()` (table `clients`, ordre prénom ASC)
 
-**Layout :** "Commencer la vérification" seul en haut si applicable, puis ligne "Rejeter + Corriger" (50%/50%), puis "Valider" pleine largeur.
+### 5.4 Étape 2 — Montant
 
-#### 6.1.5 Bottom Sheets (modales)
+- Input numérique (`inputMode="numeric"`)
+- Animation count-up (`useCountUp`)
+- Presets : 100K, 500K, 1M, 2M XAF
+- Validation : montant ≥ 1 000 XAF
+- **Aucun maximum côté admin** (vs client web : max 50M XAF)
 
-**Sheet de Validation :**
-- Montant déclaré (lecture seule)
-- Input "Montant confirmé" (XAF, éditable — si différent = montant réel crédité)
-- Textarea "Commentaire admin" (visible client)
-- Toggle "Envoyer une notification" (défaut = ON)
-- Bouton "Confirmer la validation"
+### 5.5 Étape 3 — Famille
 
-**Sheet de Rejet :**
-- Sélection catégorie (dropdown `REJECTION_REASONS`)
-- Textarea "Message pour le client"
-- Textarea "Note interne admin" (non visible client)
-- Bouton "Confirmer le rejet" (désactivé si catégorie ou message vide)
+- 5 cards avec icône, label, description
+- Alerte orange si montant > 500 000 XAF (limite Mobile Money)
 
-**Sheet de Correction :**
-- Textarea raison (free-text)
-- Bouton "Envoyer la demande de correction"
+### 5.6 Étape 4 — Sous-méthode
 
-**Sheet d'Upload :**
-- Input file (accepte images + PDF)
-- Liste des fichiers sélectionnés
-- Bouton "Uploader les preuves"
+Affiché seulement pour BANK (transfer vs cash) et ORANGE_MONEY/MTN_MONEY (transfer vs withdrawal).
+WAVE et AGENCY_BONZINI sautent cette étape.
 
-**Sheet Suppression Preuve :**
-- Sélection raison (prédéfinie ou "Autre")
-- Si "Autre" → textarea texte libre
-- Bouton "Confirmer la suppression"
+### 5.7 Étape 5 — Banque
 
-**Sheet Suppression Dépôt :**
-- Message de confirmation
-- Bouton rouge "Supprimer définitivement"
+- 4 banques : Ecobank, CCA-BANK, UBA, Afriland
+- N'apparaît que pour BANK_TRANSFER et BANK_CASH_DEPOSIT
 
-#### 6.1.6 Raisons de Rejet Prédéfinies (`REJECTION_REASONS`)
+### 5.8 Étape 6 — Agence
 
-`['Montant incorrect', 'Preuve illisible', 'Référence absente', 'Mauvais compte bancaire', 'Document non conforme', 'Suspicion / incohérence', 'Autre']`
+- 3 agences avec adresse et horaires affichés
+- N'apparaît que pour AGENCY_BONZINI
+
+### 5.9 Étape 7 — Récapitulatif (sections)
+
+1. **Card résumé** — montant formaté + méthode sélectionnée
+2. **Card client** — avatar initiales + nom complet
+3. **Card coordonnées** — champs avec boutons copier-coller, valeurs monospace pour comptes/IBAN, code marchand si applicable avec bouton copie
+4. **Card montant à envoyer** — montant en couleur primaire
+5. **Card instructions** — liste numérotée (4 étapes)
+6. **Card preuves** — upload optionnel, `accept="image/*,application/pdf"`, max 5 fichiers, preview miniatures
+7. **Card commentaire admin** — textarea optionnel "Note interne..."
+8. **Notice de confirmation** — "Le dépôt sera créé... Les preuves seront téléchargées..." (texte adapté)
+9. **Bouton "Confirmer et créer le dépôt"**
+
+### 5.10 Soumission
+
+**RPC appelée :** `create_client_deposit`
+
+```typescript
+{
+  p_user_id: selectedClient.user_id,
+  p_amount_xaf: amountNum,
+  p_method: getDepositMethod(),   // résolu depuis selectedSubMethod
+  p_bank_name: selectedBank ? banks.find(b => b.bank === selectedBank)?.label : undefined,
+  p_agency_name: selectedAgency ? agencies.find(a => a.agency === selectedAgency)?.label : undefined,
+  p_client_phone: undefined       // toujours null dans le formulaire admin
+}
+```
+
+**Post-création si preuves :**
+1. Upload chaque fichier : `deposit-proofs/{userId}/{depositId}/{timestamp}-{random}.{ext}`
+2. Compresse avec `compressImage()` avant upload
+3. Insert dans `deposit_proofs` avec `uploaded_by_type = 'admin'`
+4. `UPDATE deposits SET status = 'proof_submitted'`
+5. Insert `deposit_timeline_events` (event_type `'proof_submitted'`)
+
+**Post-création :** `navigate('/m/deposits/{id}')` vers la fiche du dépôt créé.
+
+**En cas d'erreur RPC :** retour à l'étape `recap` (`goTo('recap', 'back')`).
+
+### 5.11 Problèmes identifiés
+
+1. **Pas de montant minimum admin** clairement défini (1 000 XAF) — différent du client web (50 000 XAF).
+2. **`client_phone` jamais rempli** dans le formulaire admin — champ DB toujours `null`.
+3. **`BankOption.OTHER`** défini dans `src/types/deposit.ts` mais absent de la liste dans `depositMethodsData.ts` — dead code.
+4. **Max 5 preuves** non expliqué à l'utilisateur dans l'UI.
+5. **Pas de sauvegarde de l'état** — si on navigue hors du formulaire en cours, tout est perdu.
 
 ---
 
-### 6.2 `MobileDepositsScreen.tsx`
+## 6. Écran liste — MobileDepositsScreen.tsx
 
 **Fichier :** `src/mobile/screens/deposits/MobileDepositsScreen.tsx`
-**Taille :** 517 lignes
+**Lignes :** 516
 **Route :** `/m/deposits`
 
-#### 6.2.1 KPI Cards (scroll horizontal)
+### 6.1 KPI Cards (scrollable horizontal, cliquables = filtre toggle)
 
-| Card | Couleur | Source stat | Cliquable → filtre |
+| Card | Couleur | Valeur source | Filtre déclenché |
 |---|---|---|---|
-| À traiter | Bleu | `stats.to_process` | `statusFilter = 'to_process'` |
-| À corriger | Orange | `stats.pending_correction` | `statusFilter = 'pending_correction'` |
-| Validés | Vert | `stats.validated` | `statusFilter = 'validated'` |
-| Aujourd'hui | Primary (si > 0) | `stats.today_validated` + `today_amount` | Non cliquable |
+| **À traiter** | Bleu | `stats.to_process` = `proof_submitted + admin_review` | `statusFilter = 'to_process'` |
+| **À corriger** | Orange | `stats.pending_correction` | `statusFilter = 'pending_correction'` |
+| **Validés** | Vert | `stats.validated` | `statusFilter = 'validated'` |
+| **Aujourd'hui** | Primary | `stats.today_validated` + montant | Pas de filtre |
 
-#### 6.2.2 Filtres Disponibles
+> KPI "Aujourd'hui" est **masqué si `today_validated === 0`**.
 
-**Chips statut (toujours visibles) :**
+### 6.2 Filtres statut (chips horizontaux)
 
-| Filtre | Statuts SQL mappés |
+| Chip | Statuts inclus dans la requête |
 |---|---|
-| Tous | (aucun filtre) |
-| À traiter | `proof_submitted` + `admin_review` |
+| Tous | (tous) |
+| À traiter | `proof_submitted` + `admin_review` (multi-status) |
 | À corriger | `pending_correction` |
 | Validés | `validated` |
 | Rejetés | `rejected` |
 | Annulés | `cancelled` |
 
-**Filtres avancés (panel toggle) :**
-- **Méthode** : Toutes méthodes + 8 méthodes individuelles (chips)
-- **Tri** : Plus récent ↓ (défaut), Plus ancien ↑, Montant ↓, Montant ↑ (chips)
-- **Période** : Date de (input date) → Date à (input date)
+> `created` et `awaiting_proof` sont absents des chips.
 
-**Recherche libre (barre)** :
-- Debounced
-- Appliquée côté client sur les items déjà chargés
-- Champs recherchés : `first_name + last_name`, `reference`, `phone`
+### 6.3 Filtres avancés (panneau toggle)
 
-#### 6.2.3 Liste des Dépôts
-
-**Pagination :** Infinite scroll (taille de page = `QUERY_LIMITS.ITEMS_PER_PAGE`)
-**Pull-to-refresh :** Oui
-
-**Chaque ligne affiche :**
-- Avatar initiales (2 lettres) + Nom complet
-- Référence + méthode + count preuves (icône trombone)
-- Montant (droite) + badge statut (couleur) + SLA dot + date relative
-
-**SLA dot** :
-- 🟢 `fresh` : < 2h (sla-fresh)
-- 🟡 `aging` : 2-8h (sla-aging)
-- 🔴 `overdue` : > 8h (sla-overdue, animé)
-- Absent pour les statuts terminaux
-
----
-
-### 6.3 `MobileNewDeposit.tsx`
-
-**Fichier :** `src/mobile/screens/deposits/new-deposit/MobileNewDeposit.tsx`
-**Taille :** 1001 lignes
-**Route :** `/m/deposits/new` ou `/m/deposits/new?clientId={id}`
-
-#### 6.3.1 Steps et Navigation
-
-```
-Steps disponibles: client | amount | family | submethod | bank | agency | recap | creating
-```
-
-| Step | Affiché si | Contenu |
+| Filtre | Type | Valeurs |
 |---|---|---|
-| `client` | Pas de `?clientId` | Recherche + liste clients |
-| `amount` | Toujours | Input montant + presets |
-| `family` | Toujours | Sélection famille méthode |
-| `submethod` | Famille avec plusieurs sous-méthodes (BANK, OM, MTN) | Sélection sous-méthode |
-| `bank` | Sous-méthode BANK_TRANSFER ou BANK_CASH_DEPOSIT | Sélection banque |
-| `agency` | Famille AGENCY_BONZINI | Sélection agence |
-| `recap` | Toujours | Récapitulatif + confirmation |
-| `creating` | Pendant création | Loader |
+| Méthode | Chips sélection unique | Toutes méthodes + 8 méthodes individuelles |
+| Tri | Chips sélection unique | Plus récent (défaut), Plus ancien, Montant ↓, Montant ↑ |
+| Période | Date pickers natifs | Date début + Date fin |
 
-**Navigation automatique :**
-- `AGENCY_BONZINI` → skip submethod → `agency`
-- `WAVE` → skip submethod → `recap`
-- `BANK` → `submethod` → si bank_transfer ou bank_cash → `bank` → `recap`
-- `ORANGE_MONEY` / `MTN_MONEY` → `submethod` → `recap` (pas de bank step)
+Badge compteur sur le bouton filtre (nombre de filtres avancés actifs, hors méthode "tous" et tri "newest").
 
-**Progress bar 3 phases :**
-- Phase 0 : Informations (steps client→agency)
-- Phase 1 : Récapitulatif
-- Phase 2 : Création
+### 6.4 Recherche
 
-#### 6.3.2 Détail de Chaque Step
+- **Champ texte** avec debounce
+- **Client-side** sur les données déjà chargées
+- Champs recherchés : `firstName + lastName`, `reference`, `phone`
 
-**Step `client` :**
-- Input recherche (nom / téléphone)
-- Liste max 20 résultats
-- Clic → sélection + passage à `amount`
-- Pré-sélection via URL `?clientId=xxx`
+### 6.5 Indicateurs SLA
 
-**Step `amount` :**
-- Input numérique (filtre non-chiffres)
-- Affichage formaté `formatXAF` avec animation `useCountUp`
-- Boutons presets : 100K, 500K, 1M, 2M
-- Bouton "Continuer" désactivé si `amount < 1000`
+Calculés via `getDepositSlaLevel(created_at, status)` :
 
-**Step `family` :**
-- 5 cartes cliquables (icône + label + description)
-- Avertissement si `amountNum > MOBILE_MONEY_TRANSACTION_LIMIT`
+| Niveau | Condition | Affichage |
+|---|---|---|
+| `fresh` | < 2h depuis `created_at` | Pastille verte (pulse) |
+| `aging` | 2h–8h | Pastille jaune |
+| `overdue` | > 8h | Pastille rouge animée |
+| `null` | Statut terminal | Pas de pastille |
 
-**Step `submethod` :**
-- Liste des sous-méthodes pour la famille sélectionnée
+### 6.6 Contenu d'une carte dépôt
 
-**Step `bank` :**
-- 5 cartes banques (Ecobank, CCA, UBA, Afriland, Autre)
+```
+[Avatar] Nom Client             Montant XAF
+         Référence              [Badge statut]
+         [Méthode] [📎 N]       [SLA dot] date relative
+```
 
-**Step `agency` :**
-- 3 cartes agences (adresse + horaires)
+### 6.7 Pagination
 
-**Step `recap` :**
-- Card récapitulatif : montant + méthode
-- Card client
-- Card "Coordonnées de dépôt" : champs copiables (icône copy → check), code marchand si OM/MTN withdrawal
-- Card "Instructions" : liste numérotée
-- Section "Preuves (optionnel)" : upload max 5 fichiers (images ou PDFs)
-- Section "Commentaire admin (optionnel)" : textarea
-- Notice de confirmation
-- Bouton "Confirmer et créer le dépôt"
+- `usePaginatedAdminDeposits(filterParams)` — infinite scroll
+- `PAGE_SIZE = 20` par page
+- Trigger : `InfiniteScrollTrigger` (intersection observer)
+- Pull-to-refresh via `PullToRefresh`
+- Skeleton pendant le chargement initial
 
-**Step `creating` :**
-- Loader animé (animate-deposit-pulse)
-
-#### 6.3.3 Logique de Création
+### 6.8 Requête backend
 
 ```typescript
-await createDeposit.mutateAsync({
-  user_id: selectedClient.user_id,
-  amount_xaf: amountNum,
-  method: getDepositMethod(),   // mapping SubMethod → DepositMethod
-  bank_name: ...,
-  agency_name: ...,
-  admin_comment: adminComment || undefined,
-  proofFiles: proofFiles.length > 0 ? proofFiles : undefined,
-});
-// → navigate(`/m/deposits/${result.id}`)
+interface DepositFilters {
+  status?: string;              // Un seul statut
+  statuses?: string[];          // Plusieurs statuts (to_process)
+  method?: string;
+  dateFrom?: string;            // ISO date
+  dateTo?: string;              // ISO date + T23:59:59.999Z
+  sortField?: 'created_at' | 'amount_xaf';
+  sortAscending?: boolean;
+}
 ```
 
----
+Pour chaque page : join parallèle avec `clients` (profils) + count de preuves non-deleted.
 
-## 7. Composants UI Client
+### 6.9 Problèmes identifiés
 
-### 7.1 Pages Client
-
-| Fichier | Route | Description |
-|---|---|---|
-| `src/pages/DepositsPage.tsx` | `/deposits` | Liste des dépôts du client |
-| `src/pages/NewDepositPage.tsx` | `/deposits/new` | Création dépôt (4 étapes) |
-| `src/pages/DepositDetailPage.tsx` | `/deposits/:id` | Détail d'un dépôt client |
-
-### 7.2 Hooks Client
-
-| Hook | Source | Description |
-|---|---|---|
-| `useMyDeposits` | `useDeposits.ts` | Liste des dépôts du client (50 derniers) |
-| `useDepositDetail` | `useDeposits.ts` | Détail d'un dépôt |
-| `useDepositProofs` | `useDeposits.ts` | Preuves avec signed URLs |
-| `useDepositTimeline` | `useDeposits.ts` | Événements timeline |
-| `useCreateDeposit` | `useDeposits.ts` | Création via RPC |
-| `useUploadProof` | `useDeposits.ts` | Upload 1 fichier |
-| `useUploadMultipleProofs` | `useDeposits.ts` | Upload multiple |
-| `useDeleteDepositProof` | `useDeposits.ts` | Soft-delete preuve |
-| `useCancelDeposit` | `useDeposits.ts` | Annulation dépôt |
-| `useResubmitDeposit` | `useDeposits.ts` | Renvoi après correction |
-
-### 7.3 Différences Client vs Admin
-
-| Aspect | Client | Admin |
-|---|---|---|
-| Client Supabase | `supabase` (client-auth) | `supabaseAdmin` (admin-auth) |
-| Peut créer | Oui (son propre dépôt) | Oui (pour n'importe quel client) |
-| Peut valider | ❌ | ✅ |
-| Peut rejeter | ❌ | ✅ |
-| Peut demander correction | ❌ | ✅ |
-| Peut annuler | ✅ (si statut cancellable) | ❌ (supprime au lieu) |
-| Peut réenvoyer | ✅ (depuis pending_correction) | ❌ |
-| Peut supprimer preuve | ✅ (soft-delete) | ✅ (soft-delete + audit) |
-| Peut télécharger PDF reçu | ✅ (depuis DepositDetailPage) | ✅ (depuis MobileDepositDetail) |
+1. **Recherche client-side uniquement** — les dépôts non encore chargés (page 2+) ne sont pas trouvables.
+2. **Filtres `created` et `awaiting_proof` absents** des chips statut.
+3. **Pas de compteur sur le chip "Annulés"**.
+4. **KPI "Aujourd'hui" disparaît** si aucune validation du jour — incohérence avec les autres KPIs.
+5. **Pas de tri par statut** dans les filtres avancés.
 
 ---
 
-## 8. Connexions avec Autres Modules
+## 7. Preuves / justificatifs
 
-### 8.1 Wallet
+### 7.1 Table deposit_proofs
 
-- **Crédité à :** validation uniquement (RPC `validate_deposit`)
-- **Montant crédité :** `COALESCE(confirmed_amount, declared_amount)`
-- **Guard :** `wallets.balance_xaf >= 0` (CHECK constraint — ne peut pas aller négatif)
-- **Jamais débité** dans le module dépôts (contrairement aux paiements)
-
-### 8.2 Ledger Entries
-
-| Type d'entrée | Déclenché par | Effet balance |
-|---|---|---|
-| `DEPOSIT_VALIDATED` | `validate_deposit` | `+amount_xaf` → wallet crédité |
-| `DEPOSIT_REFUSED` | `reject_deposit` | balance_before = balance_after (informatif) |
-
-### 8.3 Wallet Operations (legacy)
-
-`validate_deposit` crée toujours une entrée `wallet_operations` de type `'deposit'`. Cette table est normalement légacy (remplacée par `ledger_entries`) mais reste peuplée pour les dépôts.
-
-> ⚠️ Si `wallet_operations` a été droppée par la migration `20260221300000_drop_legacy_tables.sql`, cet INSERT échouera silencieusement (capturé par le bloc `EXCEPTION WHEN OTHERS`).
-
-### 8.4 Notifications
-
-| Type | Déclenché par | Message |
-|---|---|---|
-| `deposit_validated` | `validate_deposit` | "Votre dépôt de X XAF a été validé. Nouveau solde: Y XAF" |
-| `deposit_rejected` | `reject_deposit` | "Votre dépôt de X XAF a été refusé. Motif: ..." |
-| `deposit_correction_requested` | `request_deposit_correction` | "Veuillez corriger votre dépôt REF. Motif: ..." |
-
-### 8.5 Dashboard
-
-- `queryClient.invalidateQueries(['dashboard-stats'])` déclenché après :
-  - Validation d'un dépôt
-  - Création d'un dépôt (admin)
-- `get_dashboard_stats` (RPC séparé) inclut les stats de dépôts
-
-### 8.6 Fiche Client
-
-- `MobileDepositDetail` → bouton lien vers `/m/clients/{user_id}` (ExternalLink)
-- `MobileNewDeposit` → accessible depuis fiche client via `?clientId=xxx`
-- L'historique des dépôts du client est probablement affiché dans la fiche client
-
-### 8.7 PDF (Reçu de Dépôt)
-
-- **Template :** `src/lib/pdf/templates/DepositReceiptPDF.tsx`
-- **Téléchargement :** `downloadPDF()` (utilise `@react-pdf/renderer`)
-- **Données passées :** `DepositReceiptData` (id, reference, dates, amounts, method, bank/agency, client info)
-- **Nom de fichier :** `recu_depot_{reference}_{clientName}.pdf`
-
-### 8.8 Audit Logs
-
-Toutes les actions admin sont tracées dans `admin_audit_logs` :
-
-| Action | Données trackées |
-|---|---|
-| `validate_deposit` | reference, client, declared/confirmed amount, old/new balance, notification sent |
-| `reject_deposit` | reference, client, amount, category, reason, admin note |
-| `delete_deposit_proof` | deposit_id, proof_id, reason |
-| `create_deposit_for_client` | client_id, amount, method, proof count |
-
----
-
-## 9. Problèmes et Incohérences Identifiés
-
-### 9.1 ⚠️ Double Écriture `wallet_operations` Probablement Cassée
-
-**Problème :** La fonction `validate_deposit` (v20260213) insère toujours dans `wallet_operations` (table legacy) ET dans `ledger_entries`. La migration `20260221300000_drop_legacy_tables.sql` a possiblement droppé `wallet_operations`.
-
-**Impact :** Si la table est droppée, le bloc `EXCEPTION WHEN OTHERS` de la RPC capturera l'erreur silencieusement et retournera `{ success: false, error: SQLERRM }`. La validation échouera.
-
-**À vérifier :** Regarder si `wallet_operations` existe encore en base. Si non, retirer l'INSERT legacy de `validate_deposit`.
-
----
-
-### 9.2 ⚠️ Statut `awaiting_proof` — Fantôme Non Utilisable
-
-**Problème :** L'ENUM `deposit_status` contient `awaiting_proof` (migration initiale 20251212074146), mais :
-- Aucune RPC ne crée un dépôt avec ce statut
-- Aucune transition n'y amène
-- `STATUS_INDEX['awaiting_proof'] = 0` (traité comme `created` dans la timeline)
-- `get_deposit_stats` le regroupe avec `created` dans `awaiting_proof`
-- Il est dans `UPLOADABLE_STATES` / `v_cancellable_statuses` (protections redondantes)
-
-**Impact :** Confusion pour les développeurs. Si un dépôt se retrouve dans cet état (import manuel, migration ancienne), il ne se distingue pas de `created` à l'écran.
-
-**Recommandation :** Soit l'utiliser intentionnellement (créer une transition vers ce statut quand le client tarde à uploader), soit le déprécier formellement.
-
----
-
-### 9.3 ⚠️ `canStartReview` Trop Restrictif — Incohérence UI/RPC
-
-**Problème :** Dans `MobileDepositDetail.tsx` :
-```typescript
-const canStartReview = deposit.status === 'proof_submitted';
-```
-Mais la RPC `start_deposit_review` accepte aussi `pending_correction` comme statut source.
-
-**Impact :** Un dépôt en `pending_correction` (correction demandée mais pas encore resoumise par le client) ne peut pas passer en `admin_review` depuis l'UI admin. L'admin est bloqué.
-
-**Scénario problématique :** Admin demande une correction, puis change d'avis et veut reprendre la vérification directement → impossible via l'UI.
-
----
-
-### 9.4 ⚠️ `useDeleteDeposit` — Suppression Directe Sans RPC
-
-**Problème :** Le hook `useDeleteDeposit` fait des DELETE directs sur `deposit_proofs`, `deposit_timeline_events`, et `deposits` via `supabaseAdmin` sans passer par un RPC sécurisé.
-
-**Impact :**
-- Pas de vérification de statut côté DB (un admin normal pourrait appeler l'API directement et supprimer un dépôt `validated`)
-- Pas d'entrée dans `admin_audit_logs`
-- L'UI protège via `(!isLocked || isSuperAdmin)` mais c'est une protection côté client uniquement
-
-**Risque :** Suppression accidentelle d'un dépôt validé si la logique UI est contournée.
-
----
-
-### 9.5 ⚠️ `useAdminUploadProofs` — Pas de `validateUploadFile`
-
-**Problème :** Dans `useAdminCreateDeposit`, `validateUploadFile` est appelé. Dans `useAdminUploadProofs` (upload depuis le détail), **il ne l'est pas**.
-
-**Impact :** Un admin peut uploader des fichiers de grande taille ou de types non autorisés depuis la page de détail, mais pas depuis la création.
-
----
-
-### 9.6 ⚠️ Race Condition sur Avancement de Statut à l'Upload
-
-**Problème :** L'avancement de statut `→ proof_submitted` lors d'un upload se fait via une séquence non-atomique dans les hooks TypeScript :
-1. Upload Storage
-2. Insert deposit_proofs
-3. SELECT status
-4. IF uploadable → UPDATE status
-
-Si deux admins uploadent simultanément, les deux lisent le même statut et mettent à jour indépendamment → doublons possibles dans la timeline.
-
-**Recommandation :** Encapsuler dans un RPC transactionnel `submit_deposit_proof`.
-
----
-
-### 9.7 ⚠️ `cancel_client_deposit` — Pas de Notification Admin
-
-**Problème :** Quand un client annule son dépôt, aucune notification n'est envoyée à l'équipe admin. Si un admin était en train de préparer la validation, il peut ne pas voir immédiatement le changement de statut.
-
-**Impact :** Faible si l'UI se met à jour en temps réel, mais pas de push notification admin.
-
----
-
-### 9.8 ⚠️ `validate_deposit` Appelle `is_admin(v_admin_id)` mais `reject_deposit` (v20260221500000) aussi — Cohérence Partielle
-
-**Constaté :** La migration `20260221500000_fix_deposit_rpcs_is_admin.sql` corrige les 4 RPCs qui appelaient `is_admin()` sans paramètre. La version en `20260213000000` utilise déjà `is_admin(v_admin_id)`. Il y a eu une période d'incohérence entre ces migrations, résolue.
-
-**État actuel :** Cohérent. Toutes les RPCs appellent `is_admin(v_admin_id)` correctement.
-
----
-
-### 9.9 ⚠️ Confirmed Amount Non Vérifié Côté SQL
-
-**Problème :** `validate_deposit` accepte n'importe quelle valeur pour `p_confirmed_amount` sans vérifier que c'est > 0 ou dans une plage raisonnable par rapport au montant déclaré.
-
-**Scénario :** Un admin peut confirmer un montant de `1` XAF pour un dépôt de 10M XAF → le client n'est crédité que de 1 XAF.
-
-**Recommandation :** Ajouter une vérification `p_confirmed_amount > 0` et optionnellement un garde sur l'écart max par rapport au montant déclaré.
-
----
-
-### 9.10 ℹ️ Statut `awaiting_proof` Visible dans `get_deposit_stats`
-
-`get_deposit_stats` inclut :
 ```sql
-'awaiting_proof', COUNT(*) FILTER (WHERE status IN ('created', 'awaiting_proof'))
+deposit_proofs (
+  id                   UUID PRIMARY KEY,
+  deposit_id           UUID REFERENCES deposits(id) ON DELETE CASCADE,
+  file_url             TEXT NOT NULL,         -- 'deposit-proofs/{userId}/{depositId}/...'
+  file_name            TEXT NOT NULL,
+  file_type            TEXT,                  -- MIME type
+  uploaded_at          TIMESTAMPTZ DEFAULT NOW(),
+  uploaded_by          UUID REFERENCES auth.users(id),
+  uploaded_by_type     VARCHAR(10) CHECK (IN ('client', 'admin')),
+  is_visible_to_client BOOLEAN DEFAULT TRUE,  -- Jamais utilisé dans l'UI
+  deleted_at           TIMESTAMPTZ,           -- Soft-delete
+  deleted_by           UUID REFERENCES auth.users(id),
+  delete_reason        TEXT
+);
+
+-- Index partiel sur les preuves actives
+CREATE INDEX idx_deposit_proofs_active
+  ON deposit_proofs(deposit_id) WHERE deleted_at IS NULL;
 ```
 
-Cette agrégation retourne `awaiting_proof = (created + awaiting_proof)`. Trompeuse car on s'attend à un comptage du statut spécifique.
+### 7.2 Bucket Supabase Storage
+
+**Nom :** `deposit-proofs`
+
+**Path pattern :**
+```
+{user_id}/{deposit_id}/{timestamp}-{random}.{ext}
+
+Exemple :
+abc123/def456/1741863600000-x7k3m.jpg
+abc123/def456/1741863601234-p9r2n.pdf
+```
+
+**Stocké dans DB comme :** `deposit-proofs/{path}` (avec préfixe bucket)
+
+**Signed URLs :** `createSignedUrl(path, 3600)` — validité **1 heure**
+
+**Cache React Query :** `staleTime: 55 min` pour éviter re-génération à chaque navigation.
+
+### 7.3 Quand peut-on uploader
+
+**Client :**
+- Statuts autorisés : `created`, `awaiting_proof`, `pending_correction`
+- Upload avance automatiquement vers `proof_submitted`
+
+**Admin :**
+- Mêmes statuts pour avance automatique
+- Si `proof_submitted` ou `admin_review` : upload accepté **sans** changer le statut
+
+### 7.4 Soft-delete admin (`useAdminDeleteProof`)
+
+1. `UPDATE deposit_proofs SET deleted_at, deleted_by, delete_reason`
+2. Compte les preuves actives restantes
+3. Si 0 preuves et statut non-terminal → `UPDATE deposits SET status = 'created'`
+4. `INSERT deposit_timeline_events` (event `'proof_deleted'`)
+5. `INSERT admin_audit_logs`
+
+**Raisons de suppression disponibles :**
+- Upload incorrect
+- Mauvais dépôt
+- Doublon
+- Image illisible
+- Autre (+ champ texte libre)
+
+### 7.5 Formats acceptés
+
+```
+accept="image/*,application/pdf"
+```
+
+Compression auto via `compressImage()` avant upload (côté admin uniquement).
+
+### 7.6 Nettoyage storage lors de la suppression d'un dépôt
+
+```typescript
+// useAdminDeposits.ts - useDeleteDeposit
+// AVANT l'appel RPC :
+const { data: proofs } = await supabaseAdmin.from('deposit_proofs').select('file_url').eq('deposit_id', depositId);
+for (const proof of proofs) {
+  const path = proof.file_url.split('/deposit-proofs/')[1];
+  await supabaseAdmin.storage.from('deposit-proofs').remove([path]);
+}
+// PUIS appel RPC delete_deposit
+```
+
+### 7.7 Problèmes identifiés
+
+1. **`is_visible_to_client`** présent en DB et dans les types mais jamais conditionne l'affichage.
+2. **Pas de limite de taille** fichier clairement documentée dans l'UI.
+3. **Nettoyage storage manuel** — si appel direct RPC (ex: Studio), les fichiers restent.
+4. **Pas d'aperçu PDF** dans la proof strip — icône générique.
 
 ---
 
-## 10. Comparaison avec le Module Paiements
+## 8. Version client web
 
-### 10.1 Différences Architecturales
+### 8.1 DepositsPage.tsx — `/deposits` (148 lignes)
 
-| Aspect | Module Dépôts | Module Paiements |
+**Rôle :** Liste des dépôts du client connecté
+
+**Affichage :**
+- 50 dépôts récents, ordre `created_at DESC`
+- Méthode (icône), date relative, badge statut coloré, montant XAF
+- FAB "+" → création (`/deposits/new`)
+
+**Mapping couleurs statut :**
+```typescript
+{ validated: 'success', rejected: 'error',
+  pending_correction: 'info', admin_review: 'processing',
+  proof_submitted: 'info' }
+```
+
+### 8.2 NewDepositPage.tsx — `/deposits/new` (746 lignes)
+
+**Rôle :** Création dépôt par le client (7 étapes)
+
+**Étapes :** `amount` → `family` → `submethod` → `bank` → `agency` → `recap` → `creating`
+
+**Différences vs formulaire admin :**
+| Aspect | Client web | Admin mobile |
 |---|---|---|
-| **Wallet** | Crédité à la validation | Débité à la création |
-| **Statuts** | 8 statuts (dont pending_correction, cancelled) | 8 statuts (dont cash_pending, cash_scanned) |
-| **Preuves** | Upload client + admin, soft-delete | Upload client + admin, RPC delete |
-| **Création** | Client ou admin, RPC `create_client_deposit` | Client ou admin, RPC `create_payment` |
-| **Bénéficiaire** | Pas de bénéficiaire | Bénéficiaire requis (table `beneficiaries`) |
-| **Taux de change** | Non applicable | `daily_rates` + calcul CNY |
-| **Cash** | `agency_cash` (Bonzini agency) | `cash` method avec QR code + signature |
-| **Correction** | `pending_correction` + `resubmit` | N/A |
-| **Annulation** | Client peut annuler | N/A |
-| **Ledger validation** | `DEPOSIT_VALIDATED` | `PAYMENT_EXECUTED` |
-| **Ledger rejet** | `DEPOSIT_REFUSED` | `PAYMENT_CANCELLED_REFUNDED` |
+| Étape client | Absente (auto) | Présente (step 1) |
+| Montant min | 50 000 XAF | 1 000 XAF |
+| Montant max | 50 000 000 XAF | Aucun |
+| Presets | 100K, 500K, 1M | 100K, 500K, 1M, 2M |
+| Upload preuves | Non (après création) | Optionnel à la création |
+| Commentaire admin | Non | Optionnel |
 
-### 10.2 Similitudes
+### 8.3 DepositDetailPage.tsx — `/deposits/:depositId` (844 lignes)
 
-- Même stack : React + TanStack Query + Supabase + TypeScript
-- Même pattern hooks : `useAdminXxx` (supabaseAdmin) vs `useXxx` (supabase client)
-- Même soft-delete sur les preuves
-- Même audit logs `admin_audit_logs`
-- Même système de notifications
-- Même PDF receipt (`@react-pdf/renderer`)
-- Même infinite scroll (`usePaginatedXxx`)
-- Même pattern SLA (`getDepositSlaLevel` vs `getPaymentSlaLevel`)
+**Rôle :** Fiche dépôt côté client
 
-### 10.3 Ce qui Existe dans Paiements mais Pas dans Dépôts
+**Sections :**
+1. Hero : montant animé, badge statut, référence copiable
+2. Alertes contextuelles : countdown, notice rejet, notice correction, notice annulation
+3. Détails : méthode, banque, agence, montant, statut, date
+4. Instructions de dépôt (mode compact)
+5. Strip preuves scrollable avec boutons delete
+6. Zone upload preuve
+7. Timeline compacte
+8. Bouton reçu PDF
+9. Bouton annuler (si non-terminal)
 
-- Bénéficiaires sauvegardés (table `beneficiaries`)
-- Flow cash avec QR code + signature
-- Rate is custom (taux forcé)
-- Commentaire visible client distinct du commentaire admin
-- Restriction d'annulation plus granulaire par rôle
-
-### 10.4 Ce qui Existe dans Dépôts mais Pas dans Paiements
-
-- Statut `pending_correction` + workflow de correction/resoumission
-- Montant confirmé différent du montant déclaré
-- Catégorie de rejet structurée
-- Note interne admin séparée
-- Annulation par le client
-- Familles de méthodes + sous-méthodes (hiérarchie UI)
-- SLA indicator dans la liste (absent de la liste paiements)
+**Conditions client :**
+```typescript
+canUploadProof = ['created', 'awaiting_proof', 'pending_correction'].includes(status)
+canDeleteProofs = !['validated', 'rejected', 'cancelled'].includes(status)
+canCancel = ['created', 'awaiting_proof', 'proof_submitted'].includes(status)
+isTerminal = ['validated', 'wallet_credited', 'rejected', 'cancelled'].includes(status)
+```
 
 ---
 
-## 11. Annexes
+## 9. Connexions avec les autres modules
 
-### 11.1 Liste des Fichiers Critiques
+### 9.1 Dashboard → Dépôts
 
-| Fichier | Rôle |
+- `get_deposit_stats()` alimente les KPI cards du dashboard admin
+- Navigation directe `/m/deposits` depuis le dashboard
+- `['dashboard-stats']` invalidé après validation/création dépôt
+
+### 9.2 Fiche client → Création dépôt
+
+```typescript
+navigate('/m/deposits/new?clientId=' + client.user_id)
+```
+
+L'étape de sélection client est sautée, client pré-sélectionné.
+
+### 9.3 Wallet — Impact d'une validation
+
+```sql
+-- validate_deposit RPC (FOR UPDATE sur les deux tables)
+UPDATE wallets
+SET balance_xaf = balance_xaf + v_deposit.amount_xaf,
+    updated_at = now()
+WHERE user_id = v_deposit.user_id;
+```
+
+Crédit **immédiat et atomique** à la validation.
+
+Inversion lors de la suppression d'un dépôt validé :
+```sql
+UPDATE wallets
+SET balance_xaf = GREATEST(0, balance_xaf - v_deposit.amount_xaf)
+```
+
+### 9.4 Ledger entries
+
+| Événement | `entry_type` | `reference_type` | Mouvement wallet |
+|---|---|---|---|
+| Validation | `DEPOSIT_VALIDATED` | `'deposit'` | +amount_xaf |
+| Rejet | `DEPOSIT_REFUSED` | `'deposit'` | Aucun |
+
+> **Sans FK contrainte** sur `ledger_entries.reference_id` → orphelins possibles.
+> **Corrigé** par la migration `20260313000002` qui nettoie lors des suppressions.
+
+### 9.5 Notifications
+
+| Événement | `type` | Metadata |
+|---|---|---|
+| Validation | `deposit_validated` | `deposit_id`, `reference`, `amount_xaf`, `new_balance`, `method` |
+| Rejet | `deposit_rejected` | `deposit_id`, `reference`, `amount_xaf`, `reason` |
+| Correction | `deposit_correction_requested` | `deposit_id`, `reference`, `reason` |
+
+Nettoyées lors de la suppression d'un dépôt (migration `20260313000002`).
+
+### 9.6 Reçu PDF
+
+**Composant :** `src/lib/pdf/templates/DepositReceiptPDF.tsx`
+
+Sections : Header → Statut + date → Montant (avec note si confirmé ≠ déclaré) → Transaction (méthode, dates) → Client → Footer
+
+---
+
+## 10. Différences avec le module paiements
+
+### 10.1 Tableau comparatif
+
+| Aspect | Dépôts | Paiements |
+|---|---|---|
+| **Effet wallet** | Crédite (+amount_xaf) | Débite (-amount_xaf) |
+| **Devise** | XAF uniquement | XAF → CNY (taux de change) |
+| **Bénéficiaire** | Aucun | Requis |
+| **Taux de change** | Aucun | `daily_rates` + `rate_adjustments` |
+| **Statuts** | 8 | 8 (différents) |
+| **Statuts terminaux** | validated, rejected, cancelled | completed, rejected |
+| **Méthodes** | 8 (mobile money, banque, agence) | 4 (alipay, wechat, bank, cash) |
+| **Mobile Money** | Oui | Non |
+| **QR Code** | Non | Oui (Alipay, WeChat) |
+| **Preuves uploadées par** | Client (preuve virement) | Admin (confirmation) |
+| **Soft-delete preuves** | Oui | Oui |
+| **SLA tracking** | Oui (8h overdue) | Non |
+| **Annulation client** | Oui | Non |
+| **Correction demandable** | Oui | Non |
+| **Super admin delete** | Oui | Oui |
+| **Timeline steps** | 4 + 3 branches terminales | 4 + 2 branches terminales |
+
+### 10.2 Composants partagés vs spécifiques
+
+| Composant | Dépôts | Paiements |
+|---|---|---|
+| `DepositTimelineDisplay.tsx` | ✓ | ✗ |
+| `DepositInstructions.tsx` | ✓ | ✗ |
+| `DepositReceiptPDF.tsx` | ✓ | ✗ |
+| `PaymentReceiptPDF.tsx` | ✗ | ✓ |
+| `MobileHeader` | ✓ | ✓ |
+| `PullToRefresh` | ✓ | ✓ |
+| `InfiniteScrollTrigger` | ✓ | ✓ |
+| `StepTransition` | ✓ | ✓ |
+
+### 10.3 Incohérences structurelles identifiées
+
+1. **Upload preuve** : dépôts = client uploade EN PREMIER ; paiements = admin uploade APRÈS exécution.
+2. **`wallet_operations` (legacy)** : migrations initiales dépôts (`20260131`) écrivent dans `wallet_operations`, paiements écrivent dans `ledger_entries` — double système.
+3. **Correction** : uniquement pour dépôts. Les paiements sont directement rejetés.
+4. **Statut `pending_correction` reuse `rejection_reason`** — le champ `rejection_reason` est utilisé pour stocker la raison de correction, pas seulement les raisons de rejet.
+
+---
+
+## 11. Problèmes et incohérences identifiés
+
+### 11.1 Bugs critiques (🔴)
+
+| # | Description | Localisation |
+|---|---|---|
+| **B1** | `wallet_operations` toujours alimentée par `validate_deposit` (migration 20260131) mais les paiements n'y écrivent plus — deux systèmes de trace simultanés | `20260131200000_rebuild_deposit_validation.sql:91-113` |
+| **B2** | Pas de FK sur `ledger_entries.reference_id` → orphelins possibles sans cleanup (corrigé partiellement par 20260313000002) | `20260210100000_ledger_entries.sql:29` |
+| **B3** | Nettoyage storage manuel côté frontend avant RPC `delete_deposit` — si la RPC est appelée directement (Studio/API), les fichiers storage restent | `useAdminDeposits.ts:621-635` |
+
+### 11.2 Incohérences logiques (🟡)
+
+| # | Description | Localisation |
+|---|---|---|
+| **I1** | `awaiting_proof` = statut fantôme, même comportement que `created`, jamais atteint naturellement via le backend | `src/types/deposit.ts:19` |
+| **I2** | `is_visible_to_client` présent en DB et dans les types mais jamais utilisé dans l'UI | `src/types/deposit.ts:149` |
+| **I3** | `confirmed_amount_xaf` non affiché dans les détails de la fiche admin si différent du montant déclaré | `MobileDepositDetail.tsx section details` |
+| **I4** | SLA calculé depuis `created_at`, pas depuis la date de soumission de la preuve — un dépôt créé il y a 10h mais preuve soumise il y a 5 min sera "overdue" | `src/lib/depositTimeline.ts` |
+| **I5** | Montant minimum différent : client web = 50 000 XAF, admin = 1 000 XAF, non documenté ni visible | `NewDepositPage.tsx` vs `MobileNewDeposit.tsx:540` |
+| **I6** | `BankOption.OTHER` défini dans les types mais absent de la liste `banks` dans les données statiques | `src/types/deposit.ts:51` |
+| **I7** | `pending_correction` reuse `rejection_reason` pour stocker le motif de correction | `20260131200000:382-387` |
+
+### 11.3 Problèmes UI/UX (🟠)
+
+| # | Description | Localisation |
+|---|---|---|
+| **U1** | Bouton "Valider" visible même sans preuve — seul un avertissement non bloquant | `MobileDepositDetail.tsx:457-465` |
+| **U2** | Pas de lien vers le profil client depuis la fiche dépôt | `MobileDepositDetail.tsx` |
+| **U3** | Recherche client-side uniquement sur la liste — items non chargés non cherchables | `MobileDepositsScreen.tsx:137-149` |
+| **U4** | Filtres `created` et `awaiting_proof` absents des chips statut | `MobileDepositsScreen.tsx:34-41` |
+| **U5** | KPI "Aujourd'hui" disparaît si `today_validated === 0` — incohérence visuelle | `MobileDepositsScreen.tsx:246` |
+| **U6** | Pas d'aperçu PDF dans la proof strip — icône générique | `MobileDepositDetail.tsx` |
+| **U7** | Action bar sticky `bottom-16` peut chevaucher le bouton Supprimer | `MobileDepositDetail.tsx:682` |
+
+### 11.4 Code mort
+
+| # | Description |
 |---|---|
-| `src/hooks/useDeposits.ts` | Hooks client (create, upload, cancel, resubmit, delete proof) |
-| `src/hooks/useAdminDeposits.ts` | Hooks admin (validate, reject, correct, review, upload, delete) |
-| `src/hooks/usePaginatedDeposits.ts` | Pagination infinie pour la liste admin |
-| `src/lib/depositTimeline.ts` | Construction des steps de timeline, SLA |
-| `src/types/deposit.ts` | Types TS, labels, couleurs, constantes |
-| `src/data/depositMethodsData.ts` | Données méthodes (banques, agences, infos comptes) |
-| `src/mobile/screens/deposits/MobileDepositDetail.tsx` | Fiche dépôt admin (détail + actions) |
-| `src/mobile/screens/deposits/MobileDepositsScreen.tsx` | Liste dépôts admin (filtres, KPIs, liste) |
-| `src/mobile/screens/deposits/new-deposit/MobileNewDeposit.tsx` | Création dépôt admin (multi-step) |
-| `src/pages/DepositDetailPage.tsx` | Fiche dépôt client (web) |
-| `src/pages/NewDepositPage.tsx` | Création dépôt client (web) |
-| `src/pages/DepositsPage.tsx` | Liste dépôts client (web) |
-| `src/lib/pdf/templates/DepositReceiptPDF.tsx` | Template PDF reçu dépôt |
-| `supabase/migrations/20251212074146_*.sql` | Schema initial (tables, ENUMs, RPCs v1) |
-| `supabase/migrations/20260105122508_*.sql` | RPC `create_client_deposit` atomique |
-| `supabase/migrations/20260131000001_*.sql` | Ajout statut `pending_correction` |
-| `supabase/migrations/20260131200000_*.sql` | RPCs validate/reject/correction/review v2 |
-| `supabase/migrations/20260213000000_*.sql` | Enhanced validation (confirmed amount, soft-delete proofs) |
-| `supabase/migrations/20260214000000_*.sql` | RLS policies deposit_proofs |
-| `supabase/migrations/20260219300000_*.sql` | Suppression rate limit + ajout `cancelled` + RPC cancel |
-| `supabase/migrations/20260221500000_*.sql` | Fix is_admin() dans toutes les RPCs dépôts |
+| **D1** | `client_phone` dans les types de mutation — jamais rempli dans les formulaires admin |
+| **D2** | `BankOption.OTHER` défini mais inutilisé |
+| **D3** | `is_visible_to_client` en DB mais jamais conditionne l'affichage |
+| **D4** | `awaiting_proof` dans `TIMELINE_STEP_LABELS` — jamais atteint naturellement |
 
 ---
 
-### 11.2 Schéma SQL Complet — Table `deposits` (État Final)
+## 12. Annexes SQL
+
+### 12.1 Table deposits (colonnes complètes)
 
 ```sql
 CREATE TABLE public.deposits (
-  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id              UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  reference            TEXT NOT NULL UNIQUE,
-  amount_xaf           BIGINT NOT NULL CHECK (amount_xaf > 0),
-  method               deposit_method NOT NULL,
-  bank_name            TEXT,
-  agency_name          TEXT,
-  client_phone         TEXT,
-  status               deposit_status NOT NULL DEFAULT 'created',
-  admin_comment        TEXT,
-  rejection_reason     TEXT,
-  validated_by         UUID REFERENCES auth.users(id),
-  validated_at         TIMESTAMPTZ,
-  -- Ajouts 20260213000000:
-  confirmed_amount_xaf BIGINT,
-  rejection_category   TEXT,
-  admin_internal_note  TEXT,
-  -- Timestamps:
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id               UUID NOT NULL REFERENCES auth.users(id),
+  reference             TEXT NOT NULL UNIQUE,
+  amount_xaf            BIGINT NOT NULL CHECK (amount_xaf > 0),
+  method                TEXT NOT NULL,           -- DepositMethod enum
+  bank_name             TEXT,
+  agency_name           TEXT,
+  client_phone          TEXT,
+  status                TEXT NOT NULL DEFAULT 'created',
+  admin_comment         TEXT,
+  rejection_reason      TEXT,                    -- aussi utilisé pour pending_correction
+  confirmed_amount_xaf  BIGINT,                  -- Ajout 20260213
+  rejection_category    TEXT,                    -- Ajout 20260213
+  admin_internal_note   TEXT,                    -- Ajout 20260213
+  validated_by          UUID REFERENCES auth.users(id),
+  validated_at          TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
----
-
-### 11.3 Schéma SQL Complet — Table `deposit_proofs` (État Final)
+### 12.2 Table deposit_proofs (colonnes complètes)
 
 ```sql
 CREATE TABLE public.deposit_proofs (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deposit_id           UUID REFERENCES public.deposits(id) ON DELETE CASCADE NOT NULL,
+  deposit_id           UUID NOT NULL REFERENCES deposits(id) ON DELETE CASCADE,
   file_url             TEXT NOT NULL,
   file_name            TEXT NOT NULL,
   file_type            TEXT,
-  uploaded_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  -- Ajouts 20260213000000:
-  uploaded_by          UUID REFERENCES auth.users(id),
-  uploaded_by_type     VARCHAR(10) DEFAULT 'client'
-                       CHECK (uploaded_by_type IN ('client', 'admin')),
-  is_visible_to_client BOOLEAN DEFAULT TRUE,
-  deleted_at           TIMESTAMPTZ,
+  uploaded_at          TIMESTAMPTZ DEFAULT NOW(),
+  uploaded_by          UUID REFERENCES auth.users(id),       -- Ajout 20260213
+  uploaded_by_type     VARCHAR(10) CHECK (uploaded_by_type IN ('client', 'admin')),
+  is_visible_to_client BOOLEAN DEFAULT TRUE,                 -- Ajout 20260213 (non utilisé)
+  deleted_at           TIMESTAMPTZ,                          -- Soft-delete
   deleted_by           UUID REFERENCES auth.users(id),
   delete_reason        TEXT
 );
 
 CREATE INDEX idx_deposit_proofs_active
-  ON public.deposit_proofs(deposit_id) WHERE deleted_at IS NULL;
+  ON deposit_proofs(deposit_id) WHERE deleted_at IS NULL;
+```
+
+### 12.3 Toutes les RPCs liées aux dépôts
+
+| Fonction | Signature complète | Rôle | Acteur |
+|---|---|---|---|
+| `create_client_deposit` | `(p_user_id, p_amount_xaf, p_method, p_bank_name?, p_agency_name?, p_client_phone?)` | Crée un dépôt | Client ou Admin |
+| `validate_deposit` | `(p_deposit_id, p_admin_comment?, p_confirmed_amount?, p_send_notification?)` | Valide + crédite wallet | Admin |
+| `reject_deposit` | `(p_deposit_id, p_reason, p_rejection_category?, p_admin_note?)` | Rejette avec raison | Admin |
+| `request_deposit_correction` | `(p_deposit_id, p_reason)` | Demande correction client | Admin |
+| `start_deposit_review` | `(p_deposit_id)` | Passe en `admin_review` | Admin |
+| `resubmit_deposit` | `(p_deposit_id)` | Client renvoie après correction | Client |
+| `cancel_client_deposit` | `(p_deposit_id)` | Client annule le dépôt | Client |
+| `get_deposit_stats` | `()` | Stats agrégées (totaux par statut) | Admin |
+| `delete_deposit` | `(p_deposit_id)` | Supprime + cleanup complet | Super Admin |
+
+### 12.4 Politiques RLS principales
+
+**Table `deposits` :**
+- SELECT : `user_id = auth.uid()` OU `is_admin(auth.uid())`
+- INSERT/UPDATE/DELETE : via RPCs (SECURITY DEFINER uniquement)
+
+**Table `deposit_proofs` :**
+- SELECT : Client voit ses preuves (via deposit_id joint à user_id) ; Admin voit tout
+- INSERT : Client sur ses propres dépôts
+- UPDATE : Client peut soft-delete ses preuves ; Admin peut tout modifier
+
+**Table `ledger_entries` :**
+- SELECT : `user_id = auth.uid()` OU `is_admin(auth.uid())`
+- INSERT : Admin uniquement
+
+### 12.5 get_deposit_stats() — valeurs retournées
+
+```typescript
+interface DepositStats {
+  total: number;              // Tous les dépôts
+  awaiting_proof: number;     // created + awaiting_proof
+  proof_submitted: number;
+  pending_correction: number;
+  admin_review: number;
+  validated: number;
+  rejected: number;
+  to_process: number;         // proof_submitted + admin_review
+  today_validated: number;    // Validés aujourd'hui
+  today_amount: number;       // Somme validée aujourd'hui
+}
+```
+
+### 12.6 Liste exhaustive des fichiers
+
+**Frontend (src/) :**
+```
+src/types/deposit.ts                                                314
+src/data/depositMethodsData.ts                                      247
+src/lib/depositTimeline.ts                                          259
+src/hooks/useDeposits.ts                                            436
+src/hooks/usePaginatedDeposits.ts                                   108
+src/hooks/useAdminDeposits.ts                                       761
+src/components/deposit/DepositInstructions.tsx                      350
+src/components/deposit/DepositTimelineDisplay.tsx                   166
+src/lib/pdf/templates/DepositReceiptPDF.tsx                         134
+src/pages/DepositsPage.tsx                                          148
+src/pages/NewDepositPage.tsx                                        746
+src/pages/DepositDetailPage.tsx                                     844
+src/mobile/screens/deposits/MobileDepositsScreen.tsx                516
+src/mobile/screens/deposits/new-deposit/MobileNewDeposit.tsx       1001
+src/mobile/screens/deposits/MobileDepositDetail.tsx                1196
+────────────────────────────────────────────────────────────────────────
+TOTAL FRONTEND                                                      7226
+```
+
+**Migrations (supabase/migrations/) :**
+```
+20260131200000_rebuild_deposit_validation.sql                       592
+20260213000000_enhanced_deposit_validation.sql                      390
+20260214000000_deposit_proofs_client_policies.sql                    55
+20260219300000_deposit_cancel_and_remove_rate_limit.sql             102
+20260221500000_fix_deposit_rpcs_is_admin.sql                        302
+20260313000001_fix_delete_payment_and_add_delete_deposit.sql        208
+20260313000002_fix_delete_cleanup_full.sql                          196
+────────────────────────────────────────────────────────────────────────
+TOTAL MIGRATIONS                                                    1845
 ```
 
 ---
 
-### 11.4 Référence Complète des RPCs
-
-| RPC | Acteur | Paramètres clés | Retour |
-|---|---|---|---|
-| `create_client_deposit` | Client + Admin | user_id, amount_xaf, method, bank_name, agency_name | `{success, deposit_id, reference}` |
-| `validate_deposit` | Admin | deposit_id, admin_comment, confirmed_amount, send_notification | `{success, amount_credited, old_balance, new_balance, reference}` |
-| `reject_deposit` | Admin | deposit_id, reason (req.), rejection_category, admin_note | `{success, reference}` |
-| `request_deposit_correction` | Admin | deposit_id, reason (req.) | `{success, reference}` |
-| `start_deposit_review` | Admin | deposit_id | `{success}` |
-| `resubmit_deposit` | Client | deposit_id | `{success}` |
-| `cancel_client_deposit` | Client | deposit_id | `{success, reference, message}` |
-| `get_deposit_stats` | Admin | — | `{total, awaiting_proof, proof_submitted, ..., to_process, today_*}` |
-
----
-
-### 11.5 Réponses aux Questions Clés du Cahier des Charges
-
-**Q1 : Quels sont les statuts possibles et les transitions ?**
-> Voir §3. Il existe 8 statuts : `created`, `awaiting_proof` (fantôme), `proof_submitted`, `admin_review`, `pending_correction`, `validated`, `rejected`, `cancelled`. Statuts terminaux : validated, rejected, cancelled.
-
-**Q2 : Quand le wallet client est-il crédité ?**
-> Uniquement lors de la validation admin (`validate_deposit`). Le wallet n'est jamais débité dans le module dépôts. Le montant crédité = `confirmed_amount` si fourni, sinon `amount_xaf`.
-
-**Q3 : Quels boutons apparaissent dans l'écran détail selon le statut ?**
-> Voir §6.1.4. La règle principale : `isLocked = [validated, rejected, cancelled]`. Si non-locked → tous les boutons d'action. Si locked → seul le bouton "Supprimer" reste pour les super_admins.
-
-**Q4 : Combien d'étapes compte le formulaire de création et quels champs ?**
-> 6 étapes (+ loader) : client → amount → family → submethod (si applicable) → bank ou agency (si applicable) → recap. Les champs requis minimum sont client + montant + famille méthode. Bank/agency selon méthode.
-
-**Q5 : Quels sont les filtres disponibles sur l'écran liste ?**
-> Voir §6.2.2. Chips de statut (6), filtres avancés (méthode + tri + période), barre de recherche libre (nom/référence/téléphone).
-
-**Q6 : Comment sont gérées les preuves ?**
-> Voir §5. Upload client ou admin → bucket `deposit-proofs/{user_id}/{depositId}/`. Soft-delete (deleted_at) avec reversion automatique du statut si aucune preuve restante. Guard de validation obligatoire (au moins 1 preuve active).
-
-**Q7 : Quels sont les problèmes actuels ?**
-> Voir §9. 10 problèmes identifiés, les plus critiques : double écriture wallet_operations probablement cassée (§9.1), canStartReview trop restrictif (§9.3), useDeleteDeposit sans protection DB (§9.4), race condition sur l'upload (§9.6).
-
-**Q8 : En quoi ce module diffère-t-il du module paiements ?**
-> Voir §10. Principales différences : sens du flux (crédit vs débit), pas de bénéficiaire, pas de taux de change, workflow correction/resoumission, annulation client possible, méthodes hiérarchisées (famille + sous-méthode).
+*Document généré par analyse statique complète du code source — Bonzini Platform — 13 mars 2026*
