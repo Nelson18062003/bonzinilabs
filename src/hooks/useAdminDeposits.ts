@@ -619,6 +619,7 @@ export function useDeleteDeposit() {
 
   return useMutation({
     mutationFn: async ({ depositId }: { depositId: string }) => {
+      // Clean up storage files before deleting via RPC
       const { data: proofs } = await supabaseAdmin
         .from('deposit_proofs')
         .select('file_url')
@@ -633,13 +634,19 @@ export function useDeleteDeposit() {
         }
       }
 
-      await supabaseAdmin.from('deposit_proofs').delete().eq('deposit_id', depositId);
-      await supabaseAdmin.from('deposit_timeline_events').delete().eq('deposit_id', depositId);
+      // Use RPC (SECURITY DEFINER) — handles RLS, super_admin check, wallet reversal and audit log
+      const { data, error } = await supabaseAdmin.rpc('delete_deposit', {
+        p_deposit_id: depositId,
+      });
 
-      const { error } = await supabaseAdmin.from('deposits').delete().eq('id', depositId);
       if (error) throw error;
 
-      return { success: true };
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la suppression');
+      }
+
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });

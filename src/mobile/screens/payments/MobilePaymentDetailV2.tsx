@@ -422,7 +422,7 @@ export function MobilePaymentDetail() {
   const canStartProcessing   = canProcess && ['ready_for_payment', 'cash_scanned'].includes(payment.status);
   const canComplete          = canProcess && payment.status === 'processing';
   const canReject            = canProcess && !['completed', 'rejected'].includes(payment.status);
-  const canDelete            = canProcess && (!isLocked || isSuperAdmin);
+  const canDelete            = isSuperAdmin;
   const canEditBeneficiary   = canProcess && !isLocked &&
     ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
   const canAddProof          = canProcess && !isLocked;

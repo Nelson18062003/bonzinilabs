@@ -666,7 +666,7 @@ export function MobileDepositDetail() {
 
       {/* ── Delete Deposit Button ─────────────────────────── */}
       {/* Super admin can delete any deposit regardless of status */}
-      {(!isLocked || isSuperAdmin) && (
+      {isSuperAdmin && (
         <div className="px-4 pb-2">
           <button
             onClick={() => setShowDeleteDepositSheet(true)}
