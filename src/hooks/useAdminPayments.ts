@@ -140,6 +140,21 @@ export function useDeletePayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
+      // Clean up storage files before deleting via RPC
+      const { data: proofs } = await supabaseAdmin
+        .from('payment_proofs')
+        .select('file_url')
+        .eq('payment_id', paymentId);
+
+      if (proofs && proofs.length > 0) {
+        for (const proof of proofs) {
+          const path = proof.file_url.split('/payment-proofs/')[1];
+          if (path) {
+            await supabaseAdmin.storage.from('payment-proofs').remove([path]);
+          }
+        }
+      }
+
       const { data, error } = await supabaseAdmin.rpc('delete_payment', {
         p_payment_id: paymentId,
       });
