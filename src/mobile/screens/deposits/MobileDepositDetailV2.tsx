@@ -193,7 +193,9 @@ export function MobileDepositDetailV2() {
   const [deleteProofReason, setDeleteProofReason] = useState('');
   const [customDeleteReason, setCustomDeleteReason] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceFileRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
 
   // Delete deposit state
   const [showDeleteDepositSheet, setShowDeleteDepositSheet] = useState(false);
@@ -309,6 +311,26 @@ export function MobileDepositDetailV2() {
       },
     );
   }, [showDeleteProofSheet, depositId, deleteProofReason, customDeleteReason, deleteProof]);
+
+  const handleReplaceFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !replaceProofId || !depositId || !deposit) return;
+    const oldProofId = replaceProofId;
+    setReplaceProofId(null);
+    if (replaceFileRef.current) replaceFileRef.current.value = '';
+    uploadProofs.mutate(
+      { depositId, userId: deposit.user_id, files: [file], depositStatus: deposit.status },
+      {
+        onSuccess: () => {
+          deleteProof.mutate({
+            proofId: oldProofId,
+            depositId,
+            reason: 'Remplacée par une nouvelle version',
+          });
+        },
+      },
+    );
+  }, [replaceProofId, depositId, deposit, uploadProofs, deleteProof]);
 
   const handleDownloadReceipt = async () => {
     if (!deposit || isGeneratingPDF) return;
@@ -562,7 +584,7 @@ export function MobileDepositDetailV2() {
             border: `1px solid ${t.border}`,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontSize: 12, fontWeight: 800, color: t.text }}>
               Preuves ({proofs?.length || 0})
             </span>
@@ -570,145 +592,192 @@ export function MobileDepositDetailV2() {
               <button
                 onClick={() => setShowUploadSheet(true)}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: GR,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
+                  fontSize: 11, fontWeight: 700, color: GR,
+                  background: `${GR}15`, border: 'none', cursor: 'pointer',
                   fontFamily: "'DM Sans', sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  padding: '4px 8px', borderRadius: 6,
                 }}
               >
-                <Plus style={{ width: 12, height: 12 }} />
+                <Plus style={{ width: 11, height: 11 }} />
                 Ajouter
               </button>
             )}
           </div>
 
+          {/* Input caché pour remplacement */}
+          <input
+            ref={replaceFileRef}
+            type="file"
+            accept="image/jpeg,image/png,application/pdf"
+            onChange={handleReplaceFileSelect}
+            style={{ display: 'none' }}
+          />
+
           {!hasProofs ? (
-            <div
-              style={{
-                padding: 14,
-                borderRadius: 8,
-                textAlign: 'center',
-                border: `2px dashed ${GOLD}25`,
-                background: `${GOLD}03`,
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 700, color: GOLD }}>Preuve manquante</div>
+            <div>
+              <div
+                style={{
+                  padding: 16, borderRadius: 10, textAlign: 'center',
+                  border: `2px dashed ${t.border}`,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.sub }}>Preuve manquante</div>
+                <div style={{ fontSize: 11, color: t.dim, marginTop: 2 }}>
+                  Le client doit envoyer un justificatif
+                </div>
+              </div>
+              {canAddProof && (
+                <button
+                  onClick={() => setShowUploadSheet(true)}
+                  style={{
+                    width: '100%', marginTop: 8, padding: '8px 0', borderRadius: 8,
+                    background: 'none', border: `1px solid ${GR}40`,
+                    fontSize: 12, fontWeight: 700, color: GR, cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif",
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  }}
+                >
+                  <Plus style={{ width: 13, height: 13 }} />
+                  Ajouter une preuve
+                </button>
+              )}
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              {proofs!.map((proof) => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {proofs!.map((proof, idx) => {
                 const signedUrl = proof.signedUrl;
                 const isImage = proof.file_type?.startsWith('image/');
+                const isPdf = proof.file_type === 'application/pdf';
                 return (
                   <div
                     key={proof.id}
                     style={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 8,
-                      background: 'linear-gradient(135deg, #e8eef6, #f0ecf8)',
+                      borderRadius: 10,
                       border: `1px solid ${t.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 9,
-                      color: t.dim,
-                      position: 'relative',
-                      flexShrink: 0,
                       overflow: 'hidden',
                     }}
                   >
-                    {isImage && signedUrl ? (
-                      <img
-                        src={signedUrl}
-                        alt={proof.file_name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 4 }}>
-                        <FileText style={{ width: 22, height: 22, color: t.dim }} />
-                        <span style={{ fontSize: 8, color: t.dim, textAlign: 'center', overflow: 'hidden', maxWidth: 60 }}>
-                          {proof.file_name}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Date badge */}
+                    {/* Preview */}
                     <div
                       style={{
-                        position: 'absolute',
-                        bottom: 2,
-                        left: 2,
-                        background: 'rgba(0,0,0,0.55)',
-                        color: '#fff',
-                        fontSize: 8,
-                        padding: '1px 4px',
-                        borderRadius: 3,
+                        position: 'relative',
+                        width: '100%',
+                        aspectRatio: idx === 0 ? '16/9' : '16/7',
+                        background: '#eee',
                       }}
                     >
-                      {format(new Date(proof.uploaded_at), 'dd/MM HH:mm', { locale: fr })}
+                      {isImage && signedUrl ? (
+                        <img
+                          src={signedUrl}
+                          alt={proof.file_name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : isPdf ? (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f5f5f5' }}>
+                          <FileText style={{ width: 32, height: 32, color: t.dim }} />
+                          <span style={{ fontSize: 11, fontWeight: 700, color: t.sub }}>PDF</span>
+                        </div>
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f5f5f5' }}>
+                          <FileText style={{ width: 32, height: 32, color: t.dim }} />
+                          <span style={{ fontSize: 10, color: t.dim, textAlign: 'center', padding: '0 16px' }}>{proof.file_name}</span>
+                        </div>
+                      )}
+                      {/* Overlay nom fichier — haut gauche */}
+                      <div
+                        style={{
+                          position: 'absolute', top: 6, left: 6,
+                          background: 'rgba(0,0,0,0.6)', color: '#fff',
+                          fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                          fontWeight: 600, maxWidth: '55%',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {proof.file_name}
+                      </div>
+                      {/* Badge uploader — haut droite */}
+                      <div
+                        style={{
+                          position: 'absolute', top: 6, right: 6,
+                          background: 'rgba(0,0,0,0.6)', color: '#fff',
+                          fontSize: 10, padding: '2px 6px', borderRadius: 4, fontWeight: 600,
+                        }}
+                      >
+                        {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
+                      </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div style={{ position: 'absolute', top: 2, right: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {signedUrl && (
+                    {/* Boutons d'action */}
+                    <div
+                      style={{
+                        display: 'flex', gap: 6, padding: '8px 8px',
+                        background: `${t.bg}`,
+                      }}
+                    >
+                      <button
+                        onClick={() => signedUrl && isImage && setViewingProof(signedUrl)}
+                        disabled={!signedUrl || !isImage}
+                        style={{
+                          flex: 1, height: 30, borderRadius: 6,
+                          border: `1px solid ${t.border}`, background: 'none',
+                          fontSize: 10, fontWeight: 600, color: t.sub, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                          fontFamily: "'DM Sans', sans-serif",
+                          opacity: (!signedUrl || !isImage) ? 0.4 : 1,
+                        }}
+                      >
+                        <Eye style={{ width: 11, height: 11 }} />
+                        Agrandir
+                      </button>
+                      <a
+                        href={signedUrl ?? undefined}
+                        download={proof.file_name}
+                        style={{
+                          flex: 1, height: 30, borderRadius: 6,
+                          border: `1px solid ${t.border}`, background: 'none',
+                          fontSize: 10, fontWeight: 600, color: t.sub,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                          fontFamily: "'DM Sans', sans-serif",
+                          textDecoration: 'none',
+                          opacity: !signedUrl ? 0.4 : 1,
+                          pointerEvents: !signedUrl ? 'none' : 'auto',
+                        }}
+                      >
+                        <Download style={{ width: 11, height: 11 }} />
+                        Télécharger
+                      </a>
+                      {!isLocked && (
                         <>
                           <button
-                            onClick={() => setViewingProof(signedUrl)}
+                            onClick={() => { setReplaceProofId(proof.id); replaceFileRef.current?.click(); }}
+                            disabled={uploadProofs.isPending}
                             style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              background: 'rgba(0,0,0,0.55)',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
+                              flex: 1, height: 30, borderRadius: 6,
+                              border: `1px solid ${t.border}`, background: 'none',
+                              fontSize: 10, fontWeight: 600, color: t.sub, cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                              fontFamily: "'DM Sans', sans-serif",
+                              opacity: uploadProofs.isPending ? 0.4 : 1,
                             }}
                           >
-                            <Eye style={{ width: 9, height: 9, color: '#fff' }} />
+                            <ArrowRight style={{ width: 11, height: 11 }} />
+                            Remplacer
                           </button>
-                          <a
-                            href={signedUrl}
-                            download={proof.file_name}
+                          <button
+                            onClick={() => setShowDeleteProofSheet(proof.id)}
                             style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              background: 'rgba(0,0,0,0.55)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
+                              flex: 1, height: 30, borderRadius: 6,
+                              border: `1px solid ${RED}30`, background: 'none',
+                              fontSize: 10, fontWeight: 600, color: RED, cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                              fontFamily: "'DM Sans', sans-serif",
                             }}
                           >
-                            <Download style={{ width: 9, height: 9, color: '#fff' }} />
-                          </a>
+                            <Trash2 style={{ width: 11, height: 11 }} />
+                            Supprimer
+                          </button>
                         </>
-                      )}
-                      {!isLocked && (
-                        <button
-                          onClick={() => setShowDeleteProofSheet(proof.id)}
-                          style={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            background: `${RED}CC`,
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <X style={{ width: 9, height: 9, color: '#fff' }} />
-                        </button>
                       )}
                     </div>
                   </div>
