@@ -840,7 +840,7 @@ export function MobileDepositDetailV2() {
         <div
           style={{
             position: 'fixed',
-            bottom: 56,
+            bottom: 0,
             left: 0,
             right: 0,
             background: t.card,
