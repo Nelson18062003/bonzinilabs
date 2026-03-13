@@ -318,7 +318,7 @@ export function MobileDepositDetail() {
   const bannerColor = STATUS_BANNER_COLORS[deposit.status] || STATUS_BANNER_COLORS.created;
 
   return (
-    <div className="flex flex-col min-h-full pb-36 sm:pb-40">
+    <div className="flex flex-col min-h-full">
       <MobileHeader title={deposit.reference} showBack />
 
       <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
@@ -662,72 +662,73 @@ export function MobileDepositDetail() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* ── Delete Deposit Button ─────────────────────────── */}
-      {/* Super admin can delete any deposit regardless of status */}
-      {isSuperAdmin && (
-        <div className="px-4 pb-2">
-          <button
-            onClick={() => setShowDeleteDepositSheet(true)}
-            className="w-full h-11 rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-          >
-            <Trash2 className="w-4 h-4" />
-            Supprimer ce dépôt
-          </button>
-        </div>
-      )}
-
-      {/* ── Glass Sticky Action Bar ──────────────────────────── */}
-      {(canValidate || canReject || canStartReview) && (
-        <div className="glass-action-bar bottom-0 space-y-2">
-          {canStartReview && (
-            <button
-              onClick={handleStartReview}
-              disabled={startReview.isPending}
-              className="w-full h-12 rounded-xl bg-purple-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
-            >
-              {startReview.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-              Commencer la vérification
-            </button>
-          )}
-
-          {canValidate && (
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowRejectSheet(true)}
-                  className="flex-1 h-12 rounded-xl border-2 border-red-500 text-red-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Rejeter
-                </button>
-                <button
-                  onClick={() => setShowCorrectionSheet(true)}
-                  className="flex-1 h-12 rounded-xl border-2 border-orange-500 text-orange-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  Corriger
-                </button>
-              </div>
+        {/* ── Action Buttons ───────────────────────────────────── */}
+        {(canValidate || canReject || canStartReview) && (
+          <div className="space-y-2">
+            {canStartReview && (
               <button
-                onClick={() => {
-                  setConfirmedAmount(deposit.amount_xaf.toString());
-                  setShowValidateConfirm(true);
-                }}
-                className="w-full h-12 rounded-xl bg-green-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                onClick={handleStartReview}
+                disabled={startReview.isPending}
+                className="w-full h-12 rounded-xl bg-purple-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
               >
-                <CheckCircle className="w-4 h-4" />
-                Valider
+                {startReview.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                Commencer la vérification
               </button>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+
+            {canValidate && (
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    setConfirmedAmount(deposit.amount_xaf.toString());
+                    setShowValidateConfirm(true);
+                  }}
+                  className="w-full h-12 rounded-xl bg-green-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Valider le dépôt
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowRejectSheet(true)}
+                    className="flex-1 h-12 rounded-xl border-2 border-red-500 text-red-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Rejeter
+                  </button>
+                  <button
+                    onClick={() => setShowCorrectionSheet(true)}
+                    className="flex-1 h-12 rounded-xl border-2 border-orange-500 text-orange-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    Corriger
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Delete Deposit Button ─────────────────────────── */}
+        {isSuperAdmin && (
+          <div>
+            <button
+              onClick={() => setShowDeleteDepositSheet(true)}
+              className="w-full h-11 rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            >
+              <Trash2 className="w-4 h-4" />
+              Supprimer ce dépôt
+            </button>
+          </div>
+        )}
+
+        <div className="pb-5" />
+      </div>
 
       {/* ── Validate confirmation bottom sheet ─────────────────── */}
       {showValidateConfirm && (
