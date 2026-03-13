@@ -60,8 +60,8 @@ const CLIENTS = [
 const BANKS = [
   { k: "ecobank", l: "Ecobank Cameroun", account: "30245039710", iban: "CM21 10029 80882 30245039710 53", swift: "ECOCMKAX" },
   { k: "cca", l: "CCA-BANK Cameroun", account: "00280298901", iban: "CM21 10039 18444 00280298901 57", swift: "CCAMCMCX" },
-  { k: "uba", l: "UBA Cameroun", account: "14011000141", iban: "CM21 10033...", swift: "UNAFCMCX" },
-  { k: "afriland", l: "Afriland First Bank", account: "00000020611", iban: "CM21 10005...", swift: "CCEICMCX" },
+  { k: "uba", l: "UBA Cameroun", account: "14011000141", iban: "CM21 10033…", swift: "UNAFCMCX" },
+  { k: "afriland", l: "Afriland First Bank", account: "00000020611", iban: "CM21 10005…", swift: "CCEICMCX" },
 ];
 
 const AGENCIES = [
@@ -314,12 +314,52 @@ export default function App() {
           <div style={{ padding: "12px 14px", borderRadius: 12, background: t.card, border: `1px solid ${t.border}`, marginBottom: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800 }}>Preuves ({d.proofs})</span>
-              {!isLocked && <button style={{ fontSize: 10, fontWeight: 700, color: GR, background: "none", border: "none", cursor: "pointer" }}>+ Ajouter</button>}
+              {!isLocked && <button onClick={() => { const nd = {...d, proofs: d.proofs + 1}; setSelectedDeposit(nd); }} style={{ fontSize: 10, fontWeight: 700, color: GR, background: "none", border: "none", cursor: "pointer" }}>+ Ajouter</button>}
             </div>
             {d.proofs === 0 ? (
-              <div style={{ padding: "14px", borderRadius: 8, textAlign: "center", border: `2px dashed ${G}25`, background: `${G}03` }}><div style={{ fontSize: 12, fontWeight: 700, color: G }}>Preuve manquante</div></div>
+              <div>
+                <div style={{ padding: "16px", borderRadius: 8, textAlign: "center", border: `2px dashed ${G}25`, background: `${G}03` }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: G }}>Preuve manquante</div>
+                  <div style={{ fontSize: 11, color: t.sub, marginTop: 2 }}>Le client doit envoyer un justificatif</div>
+                </div>
+                {!isLocked && (
+                  <button onClick={() => { setSelectedDeposit({...d, proofs: 1}); }} style={{ width: "100%", padding: "10px", borderRadius: 8, background: "none", border: `1px solid ${GR}20`, fontSize: 12, fontWeight: 700, color: GR, cursor: "pointer", marginTop: 6 }}>+ Ajouter une preuve</button>
+                )}
+              </div>
             ) : (
-              <div style={{ display: "flex", gap: 6 }}>{Array.from({ length: d.proofs }).map((_, i) => (<div key={i} style={{ width: 70, height: 70, borderRadius: 8, background: "linear-gradient(135deg, #e8eef6, #f0ecf8)", border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: t.dim, position: "relative" }}>IMG{!isLocked && <div style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: RED, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#fff", cursor: "pointer" }}>×</div>}</div>))}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {Array.from({ length: d.proofs }).map((_, idx) => (
+                  <div key={idx} style={{ borderRadius: 8, border: `1px solid ${t.border}`, overflow: "hidden" }}>
+                    {/* Preview image */}
+                    <div style={{ width: "100%", aspectRatio: idx === 0 ? "16/9" : "16/7", background: `linear-gradient(135deg, ${idx % 2 === 0 ? "#e8eef6" : "#eef0f8"}, #f0ecf8)`, position: "relative" }}>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: "55%", background: "rgba(255,255,255,0.8)", borderRadius: 6, padding: "6px 8px" }}>
+                          <div style={{ fontSize: 7, fontWeight: 700, color: FAMILIES[info?.family]?.color, textTransform: "uppercase" }}>{info?.short}</div>
+                          <div style={{ fontSize: 12, fontWeight: 900, marginTop: 1 }}>{fmt(d.amount)} XAF</div>
+                          <div style={{ fontSize: 8, color: t.sub }}>{d.client}</div>
+                        </div>
+                      </div>
+                      <div style={{ position: "absolute", top: 4, left: 4, padding: "2px 5px", borderRadius: 3, background: "rgba(255,255,255,0.85)", fontSize: 8, fontWeight: 700, color: t.sub }}>
+                        {idx === 0 ? "preuve_momo.jpg · 245 Ko" : `preuve_${idx + 1}.jpg · 180 Ko`}
+                      </div>
+                      <div style={{ position: "absolute", top: 4, right: 4, padding: "2px 5px", borderRadius: 3, background: "rgba(255,255,255,0.85)", fontSize: 8, fontWeight: 700, color: t.dim }}>
+                        {idx === 0 ? "Client" : "Admin"}
+                      </div>
+                    </div>
+
+                    {/* Actions sous le preview */}
+                    <div style={{ display: "flex", gap: 4, padding: "6px 8px", background: t.bg }}>
+                      <button style={{ padding: "3px 6px", borderRadius: 4, background: "none", border: `1px solid ${t.border}`, fontSize: 9, fontWeight: 600, color: t.sub, cursor: "pointer" }}>Agrandir</button>
+                      <button style={{ padding: "3px 6px", borderRadius: 4, background: "none", border: `1px solid ${t.border}`, fontSize: 9, fontWeight: 600, color: t.sub, cursor: "pointer" }}>Télécharger</button>
+                      {!isLocked && <>
+                        <span style={{ flex: 1 }} />
+                        <button style={{ padding: "3px 6px", borderRadius: 4, background: "none", border: `1px solid ${t.border}`, fontSize: 9, fontWeight: 600, color: t.sub, cursor: "pointer" }}>Remplacer</button>
+                        <button onClick={() => { if (d.proofs > 0) setSelectedDeposit({...d, proofs: d.proofs - 1}); }} style={{ padding: "3px 6px", borderRadius: 4, background: "none", border: `1px solid ${RED}12`, fontSize: 9, fontWeight: 600, color: RED, cursor: "pointer" }}>Supprimer</button>
+                      </>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
           <div style={{ padding: "10px 14px", borderRadius: 10, background: t.card, border: `1px solid ${t.border}`, marginBottom: 8 }}>
