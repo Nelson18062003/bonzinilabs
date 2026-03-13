@@ -431,7 +431,7 @@ export function MobileDepositDetailV2() {
         background: t.bg,
         fontFamily: "'DM Sans', sans-serif",
         color: t.text,
-        paddingBottom: 120,
+        paddingBottom: 20,
       }}
     >
       <style>{`
@@ -833,27 +833,18 @@ export function MobileDepositDetailV2() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* ── Boutons fixes en bas ────────────────────────── */}
-      {(canValidate || canReject || canStartReview || isSuperAdmin) && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: t.card,
-            borderTop: `1px solid ${t.border}`,
-            padding: '10px 20px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            zIndex: 40,
-            maxWidth: 480,
-            margin: '0 auto',
-          }}
-        >
+        {/* ── Boutons d'action (scrollable) ───────────────── */}
+        {(canValidate || canReject || canStartReview || isSuperAdmin) && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              paddingTop: 4,
+              paddingBottom: 20,
+            }}
+          >
           {canStartReview && (
             <button
               onClick={handleStartReview}
@@ -966,8 +957,9 @@ export function MobileDepositDetailV2() {
               Supprimer
             </button>
           )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* ── Modale validation ───────────────────────────── */}
       {showValidateConfirm && (
