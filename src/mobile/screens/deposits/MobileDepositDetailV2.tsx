@@ -752,6 +752,124 @@ export function MobileDepositDetailV2() {
                 </span>
               </div>
             ))}
+
+          {/* ── Boutons d'action dans la card ───────────────── */}
+          {(canValidate || canReject || canStartReview || isSuperAdmin) && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {canStartReview && (
+                <button
+                  onClick={handleStartReview}
+                  disabled={startReview.isPending}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    background: V,
+                    border: 'none',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#fff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    fontFamily: "'DM Sans', sans-serif",
+                    opacity: startReview.isPending ? 0.6 : 1,
+                  }}
+                >
+                  {startReview.isPending && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
+                  Commencer la vérification
+                </button>
+              )}
+
+              {canValidate && (
+                <>
+                  <button
+                    onClick={() => {
+                      setConfirmedAmount(deposit.amount_xaf.toString());
+                      setShowValidateConfirm(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      background: GR,
+                      border: 'none',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#fff',
+                      cursor: 'pointer',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    Valider le dépôt
+                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => setShowRejectSheet(true)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        background: 'none',
+                        border: `1px solid ${RED}30`,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: RED,
+                        cursor: 'pointer',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      Rejeter
+                    </button>
+                    <button
+                      onClick={() => setShowCorrectionSheet(true)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        background: 'none',
+                        border: `1px solid ${O}30`,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: O,
+                        cursor: 'pointer',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      Corriger
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setShowDeleteDepositSheet(true)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    background: 'none',
+                    border: `1px solid ${t.border}`,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: t.dim,
+                    cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Trash2 style={{ width: 11, height: 11 }} />
+                  Supprimer
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Section suivi collapsible */}
@@ -834,131 +952,6 @@ export function MobileDepositDetailV2() {
           )}
         </div>
 
-        {/* ── Boutons d'action (scrollable) ───────────────── */}
-        {(canValidate || canReject || canStartReview || isSuperAdmin) && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              paddingTop: 4,
-              paddingBottom: 20,
-            }}
-          >
-          {canStartReview && (
-            <button
-              onClick={handleStartReview}
-              disabled={startReview.isPending}
-              style={{
-                width: '100%',
-                padding: 13,
-                borderRadius: 10,
-                background: V,
-                border: 'none',
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#fff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                fontFamily: "'DM Sans', sans-serif",
-                opacity: startReview.isPending ? 0.6 : 1,
-              }}
-            >
-              {startReview.isPending && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
-              Commencer la vérification
-            </button>
-          )}
-
-          {canValidate && (
-            <>
-              <button
-                onClick={() => {
-                  setConfirmedAmount(deposit.amount_xaf.toString());
-                  setShowValidateConfirm(true);
-                }}
-                style={{
-                  width: '100%',
-                  padding: 13,
-                  borderRadius: 10,
-                  background: GR,
-                  border: 'none',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Valider le dépôt
-              </button>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  onClick={() => setShowRejectSheet(true)}
-                  style={{
-                    flex: 1,
-                    padding: 11,
-                    borderRadius: 10,
-                    background: 'none',
-                    border: `1px solid ${RED}20`,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: RED,
-                    cursor: 'pointer',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Rejeter
-                </button>
-                <button
-                  onClick={() => setShowCorrectionSheet(true)}
-                  style={{
-                    flex: 1,
-                    padding: 11,
-                    borderRadius: 10,
-                    background: 'none',
-                    border: `1px solid ${O}20`,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: O,
-                    cursor: 'pointer',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Corriger
-                </button>
-              </div>
-            </>
-          )}
-
-          {isSuperAdmin && (
-            <button
-              onClick={() => setShowDeleteDepositSheet(true)}
-              style={{
-                width: '100%',
-                padding: 11,
-                borderRadius: 10,
-                background: 'none',
-                border: `1px solid ${t.border}`,
-                fontSize: 11,
-                fontWeight: 600,
-                color: t.dim,
-                cursor: 'pointer',
-                fontFamily: "'DM Sans', sans-serif",
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-              }}
-            >
-              <Trash2 style={{ width: 12, height: 12 }} />
-              Supprimer
-            </button>
-          )}
-          </div>
-        )}
       </div>
 
       {/* ── Modale validation ───────────────────────────── */}
