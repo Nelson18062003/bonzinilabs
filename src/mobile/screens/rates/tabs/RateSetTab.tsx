@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
 import { useCreateDailyRates } from '@/hooks/useDailyRates';
+import { RateFlyer } from '@/mobile/components/rates/RateFlyer';
+import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
 
 interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
@@ -23,6 +25,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [customDate, setCustomDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [customHour, setCustomHour] = useState(new Date().getHours());
   const [customMin, setCustomMin] = useState(0);
+  const [flyerDark, setFlyerDark] = useState(true);
+  const [exportingPNG, setExportingPNG] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const flyerExportRef = useRef<HTMLDivElement>(null);
 
   const createRates = useCreateDailyRates();
 
@@ -264,6 +270,93 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           'Appliquer les nouveaux taux'
         )}
       </Button>
+
+      {/* ── FLYER DU JOUR ── */}
+      <div className="mt-2 rounded-[18px] border border-border/60 overflow-hidden" style={{ background: 'linear-gradient(135deg,#f8f0ff,#eef2ff)' }}>
+        {/* Header */}
+        <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+          <div>
+            <div className="text-[14px] font-extrabold text-foreground">Flyer du jour</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Taux actuels — prêt à partager</div>
+          </div>
+          {/* Dark / Light toggle */}
+          <div className="flex gap-1.5">
+            {(['dark', 'light'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFlyerDark(t === 'dark')}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-0 transition-colors"
+                style={{
+                  background: (t === 'dark') === flyerDark ? '#7c3aed' : 'rgba(0,0,0,0.06)',
+                  color: (t === 'dark') === flyerDark ? '#fff' : 'rgba(0,0,0,0.4)',
+                }}
+              >
+                {t === 'dark' ? 'Dark' : 'Light'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Miniature preview */}
+        <div className="px-4 pb-3 overflow-hidden flex justify-center">
+          <div style={{ transform: 'scale(0.42)', transformOrigin: 'top center', height: 440 * 0.42, pointerEvents: 'none' }}>
+            <RateFlyer
+              rates={{
+                alipay: parseInt(rates.alipay) || currentRate?.rate_alipay || 0,
+                wechat: parseInt(rates.wechat) || currentRate?.rate_wechat || 0,
+                bank: parseInt(rates.virement) || currentRate?.rate_virement || 0,
+                cash: parseInt(rates.cash) || currentRate?.rate_cash || 0,
+              }}
+              dark={flyerDark}
+            />
+          </div>
+        </div>
+
+        {/* Export buttons */}
+        <div className="px-4 pb-4 flex gap-2.5">
+          <button
+            onClick={async () => {
+              if (!flyerExportRef.current || exportingPNG) return;
+              setExportingPNG(true);
+              try { await downloadFlyerPNG(flyerExportRef.current); }
+              finally { setExportingPNG(false); }
+            }}
+            className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
+            style={{ background: '#7c3aed', color: '#fff', opacity: exportingPNG ? 0.6 : 1 }}
+          >
+            {exportingPNG ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
+            PNG
+          </button>
+          <button
+            onClick={async () => {
+              if (!flyerExportRef.current || exportingPDF) return;
+              setExportingPDF(true);
+              try { await downloadFlyerPDF(flyerExportRef.current); }
+              finally { setExportingPDF(false); }
+            }}
+            className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
+            style={{ background: '#f3a745', color: '#fff', opacity: exportingPDF ? 0.6 : 1 }}
+          >
+            {exportingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+            PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Flyer caché à pleine taille pour l'export */}
+      <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none', zIndex: -1 }}>
+        <div ref={flyerExportRef}>
+          <RateFlyer
+            rates={{
+              alipay: parseInt(rates.alipay) || currentRate?.rate_alipay || 0,
+              wechat: parseInt(rates.wechat) || currentRate?.rate_wechat || 0,
+              bank: parseInt(rates.virement) || currentRate?.rate_virement || 0,
+              cash: parseInt(rates.cash) || currentRate?.rate_cash || 0,
+            }}
+            dark={flyerDark}
+          />
+        </div>
+      </div>
     </div>
   );
 }
