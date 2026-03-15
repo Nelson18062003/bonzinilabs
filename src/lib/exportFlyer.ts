@@ -8,7 +8,13 @@ function fileName(ext: string): string {
   return `bonzini-rate-${d}.${ext}`;
 }
 
+async function waitForFonts(): Promise<void> {
+  await document.fonts.ready;
+  await new Promise((r) => setTimeout(r, 400));
+}
+
 export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
+  await waitForFonts();
   const canvas = await html2canvas(element, {
     scale: FLYER_SCALE,
     useCORS: true,
@@ -25,6 +31,7 @@ export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
 }
 
 export async function downloadFlyerPDF(element: HTMLElement): Promise<void> {
+  await waitForFonts();
   const canvas = await html2canvas(element, {
     scale: FLYER_SCALE,
     useCORS: true,
