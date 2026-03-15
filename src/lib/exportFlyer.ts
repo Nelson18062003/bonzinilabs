@@ -10,46 +10,56 @@ function fileName(ext: string): string {
 
 async function waitForFonts(): Promise<void> {
   await document.fonts.ready;
-  // Extra delay to ensure Google Fonts are fully rendered
   await new Promise((r) => setTimeout(r, 600));
 }
 
-async function captureElement(element: HTMLElement): Promise<HTMLCanvasElement> {
-  // The element lives inside a hidden wrapper (opacity:0, z-index:-1).
-  // html2canvas skips elements with z-index < 0, so we temporarily reveal
-  // the wrapper before capturing.
-  const wrapper = element.parentElement as HTMLElement;
+async function capture(element: HTMLElement): Promise<HTMLCanvasElement> {
+  // Cloner l'élément dans un wrapper propre directement sur document.body,
+  // sans aucun parent avec z-index / opacity / position problématiques.
+  // C'est la seule façon fiable de faire fonctionner html2canvas.
+  const w = element.offsetWidth || 440;
+  const h = element.scrollHeight || element.offsetHeight;
 
-  const savedOpacity = wrapper.style.opacity;
-  const savedZIndex = wrapper.style.zIndex;
+  const tmpWrapper = document.createElement('div');
+  tmpWrapper.style.cssText = [
+    'position:fixed',
+    'top:0',
+    'left:0',
+    `width:${w}px`,
+    'z-index:99999',
+    'pointer-events:none',
+    'overflow:visible',
+  ].join(';');
 
-  wrapper.style.opacity = '1';
-  wrapper.style.zIndex = '9999';
+  const clone = element.cloneNode(true) as HTMLElement;
+  tmpWrapper.appendChild(clone);
+  document.body.appendChild(tmpWrapper);
 
-  // Wait two animation frames so the browser actually paints the element
+  // Laisser le browser peindre le clone
   await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
+  const cloneH = clone.offsetHeight || h;
+
   try {
-    return await html2canvas(element, {
+    return await html2canvas(clone, {
       scale: FLYER_SCALE,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#050208',
       logging: false,
-      width: element.offsetWidth,
-      height: element.offsetHeight,
-      windowWidth: element.offsetWidth,
-      windowHeight: element.offsetHeight,
+      width: w,
+      height: cloneH,
+      windowWidth: w,
+      windowHeight: cloneH,
     });
   } finally {
-    wrapper.style.opacity = savedOpacity;
-    wrapper.style.zIndex = savedZIndex;
+    document.body.removeChild(tmpWrapper);
   }
 }
 
 export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
   await waitForFonts();
-  const canvas = await captureElement(element);
+  const canvas = await capture(element);
 
   const dataUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');
@@ -60,7 +70,7 @@ export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
 
 export async function downloadFlyerPDF(element: HTMLElement): Promise<void> {
   await waitForFonts();
-  const canvas = await captureElement(element);
+  const canvas = await capture(element);
 
   const dataUrl = canvas.toDataURL('image/png');
   const w = canvas.width;
