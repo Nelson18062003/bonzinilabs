@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Building2, Banknote } from 'lucide-react';
 
 interface RateFlyerProps {
   rates: {
@@ -33,11 +34,39 @@ export function RateFlyer({ rates, dark = true }: RateFlyerProps) {
   const V = '#A947FE', G = '#F3A745';
 
   const rateCards = [
-    { method: 'Alipay',        sub: '支付宝',   icon: '支', bg: '#1677ff', rate: rates.alipay },
-    { method: 'WeChat Pay',    sub: '微信支付', icon: '微', bg: '#07c160', rate: rates.wechat },
-    { method: 'Bank Transfer', sub: '银行转账', icon: 'B',  bg: V,         rate: rates.bank   },
-    { method: 'Cash',          sub: '现金',     icon: '¥',  bg: '#dc2626', rate: rates.cash   },
+    { method: 'Alipay',        sub: '支付宝',   type: 'alipay'  as const, rate: rates.alipay },
+    { method: 'WeChat Pay',    sub: '微信支付', type: 'wechat'  as const, rate: rates.wechat },
+    { method: 'Bank Transfer', sub: '银行转账', type: 'bank'    as const, rate: rates.bank   },
+    { method: 'Cash',          sub: '现金',     type: 'cash'    as const, rate: rates.cash   },
   ];
+
+  function MethodIcon({ type, size = 42 }: { type: 'alipay' | 'wechat' | 'bank' | 'cash'; size?: number }) {
+    const r = size / 2;
+    const base: React.CSSProperties = {
+      width: size, height: size, borderRadius: 11, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    };
+    if (type === 'alipay') return (
+      <div style={{ ...base, background: 'linear-gradient(135deg,#1677FF,#0958d9)' }}>
+        <span style={{ fontFamily: "'Noto Sans SC',sans-serif", fontSize: r * 0.9, fontWeight: 700, color: '#fff', lineHeight: 1 }}>支</span>
+      </div>
+    );
+    if (type === 'wechat') return (
+      <div style={{ ...base, background: 'linear-gradient(135deg,#07C160,#06ae56)' }}>
+        <span style={{ fontFamily: "'Noto Sans SC',sans-serif", fontSize: r * 0.9, fontWeight: 700, color: '#fff', lineHeight: 1 }}>微</span>
+      </div>
+    );
+    if (type === 'bank') return (
+      <div style={{ ...base, background: 'linear-gradient(135deg,#475569,#1e293b)' }}>
+        <Building2 color="#fff" width={r * 0.9} height={r * 0.9} strokeWidth={2} />
+      </div>
+    );
+    return (
+      <div style={{ ...base, background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}>
+        <Banknote color="#fff" width={r * 0.9} height={r * 0.9} strokeWidth={2} />
+      </div>
+    );
+  }
 
   const c = dark ? {
     pageBg: '#050208',
@@ -127,9 +156,7 @@ export function RateFlyer({ rates, dark = true }: RateFlyerProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {rateCards.map((r, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', borderRadius: 16, background: c.cardBg, border: `1px solid ${c.cardBd}` }}>
-                <div style={{ width: 42, height: 42, borderRadius: 11, background: r.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#fff', boxShadow: `0 4px 16px ${r.bg}30`, flexShrink: 0 }}>
-                  {r.icon}
-                </div>
+                <MethodIcon type={r.type} size={42} />
                 <div style={{ flex: 1, marginLeft: 12 }}>
                   <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: dark ? 'rgba(255,255,255,0.75)' : c.text }}>{r.method}</div>
                   <div style={{ fontFamily: "'Noto Sans SC',sans-serif", fontSize: 10, color: c.dim, marginTop: 1 }}>{r.sub}</div>
