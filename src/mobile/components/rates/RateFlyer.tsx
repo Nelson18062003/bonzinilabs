@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Building2, Banknote } from 'lucide-react';
+import { Landmark } from 'lucide-react';
 
 interface RateFlyerProps {
   rates: {
@@ -57,13 +57,13 @@ export function RateFlyer({ rates, dark = true }: RateFlyerProps) {
       </div>
     );
     if (type === 'bank') return (
-      <div style={{ ...base, background: 'linear-gradient(135deg,#475569,#1e293b)' }}>
-        <Building2 color="#fff" width={r * 0.9} height={r * 0.9} strokeWidth={2} />
+      <div style={{ ...base, background: 'linear-gradient(135deg,#7c3aed,#5b21b6)' }}>
+        <Landmark color="#fff" width={r * 0.9} height={r * 0.9} strokeWidth={2} />
       </div>
     );
     return (
       <div style={{ ...base, background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}>
-        <Banknote color="#fff" width={r * 0.9} height={r * 0.9} strokeWidth={2} />
+        <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: r * 0.9, fontWeight: 700, color: '#fff', lineHeight: 1 }}>¥</span>
       </div>
     );
   }
