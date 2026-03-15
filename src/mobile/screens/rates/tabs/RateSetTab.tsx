@@ -299,7 +299,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
         {/* Miniature preview */}
         <div className="px-4 pb-3 overflow-hidden flex justify-center">
-          <div style={{ transform: 'scale(0.42)', transformOrigin: 'top center', height: 440 * 0.42, pointerEvents: 'none' }}>
+          <div style={{ transform: 'scale(0.42)', transformOrigin: 'top center', height: 900 * 0.42, pointerEvents: 'none' }}>
             <RateFlyer
               rates={{
                 alipay: parseInt(rates.alipay) || currentRate?.rate_alipay || 0,
