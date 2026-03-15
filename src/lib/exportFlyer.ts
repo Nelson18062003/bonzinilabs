@@ -13,15 +13,25 @@ async function waitForFonts(): Promise<void> {
   await new Promise((r) => setTimeout(r, 400));
 }
 
-export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
-  await waitForFonts();
-  const canvas = await html2canvas(element, {
+async function captureElement(element: HTMLElement) {
+  return html2canvas(element, {
     scale: FLYER_SCALE,
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#050208',
     logging: false,
+    width: element.offsetWidth,
+    height: element.offsetHeight,
+    windowWidth: element.offsetWidth,
+    windowHeight: element.offsetHeight,
+    x: 0,
+    y: 0,
   });
+}
+
+export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
+  await waitForFonts();
+  const canvas = await captureElement(element);
 
   const dataUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');
@@ -32,13 +42,7 @@ export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
 
 export async function downloadFlyerPDF(element: HTMLElement): Promise<void> {
   await waitForFonts();
-  const canvas = await html2canvas(element, {
-    scale: FLYER_SCALE,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: '#050208',
-    logging: false,
-  });
+  const canvas = await captureElement(element);
 
   const dataUrl = canvas.toDataURL('image/png');
   const w = canvas.width;
