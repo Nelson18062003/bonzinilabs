@@ -35,7 +35,7 @@ export function RateFlyer({ rates, dark = true }: RateFlyerProps) {
   const rateCards = [
     { method: 'Alipay',        sub: '支付宝',   icon: '支', bg: '#1677ff', rate: rates.alipay },
     { method: 'WeChat Pay',    sub: '微信支付', icon: '微', bg: '#07c160', rate: rates.wechat },
-    { method: 'Bank Transfer', sub: '银行转账', icon: '🏦', bg: V,         rate: rates.bank   },
+    { method: 'Bank Transfer', sub: '银行转账', icon: 'B',  bg: V,         rate: rates.bank   },
     { method: 'Cash',          sub: '现金',     icon: '¥',  bg: '#dc2626', rate: rates.cash   },
   ];
 
@@ -92,7 +92,7 @@ export function RateFlyer({ rates, dark = true }: RateFlyerProps) {
               </svg>
               <div>
                 <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: c.text }}>Bonzini</div>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 8, fontWeight: 600, color: G, letterSpacing: 2, textTransform: 'uppercase' }}>Daily Rate · 每日汇率</div>
+                <div style={{ fontFamily: "'DM Sans','Noto Sans SC',sans-serif", fontSize: 8, fontWeight: 600, color: G, letterSpacing: 2, textTransform: 'uppercase' }}>Daily Rate · 每日汇率</div>
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -103,7 +103,7 @@ export function RateFlyer({ rates, dark = true }: RateFlyerProps) {
 
           {/* TIME — compact single line */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14, padding: '6px 0' }}>
-            <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: 600, color: c.dim, letterSpacing: 1 }}>广州</span>
+            <span style={{ fontFamily: "'Noto Sans SC',sans-serif", fontSize: 10, fontWeight: 600, color: c.dim, letterSpacing: 1 }}>广州</span>
             <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 22, fontWeight: 900, color: c.text, letterSpacing: '-1px' }}>
               {h}<span style={{ color: G }}>:</span>{m}
             </span>
