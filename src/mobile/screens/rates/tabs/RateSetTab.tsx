@@ -345,7 +345,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
       {/* Flyer caché à pleine taille pour l'export — opacity:0 dans le viewport pour que html2canvas rende correctement */}
       <div style={{ position: 'fixed', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-        <div ref={flyerExportRef}>
+        <div ref={flyerExportRef} style={{ width: 440 }}>
           <RateFlyer
             rates={{
               alipay: parseInt(rates.alipay) || currentRate?.rate_alipay || 0,

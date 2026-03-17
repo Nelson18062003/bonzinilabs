@@ -14,41 +14,31 @@ async function waitForFonts(): Promise<void> {
 }
 
 async function capture(element: HTMLElement): Promise<HTMLCanvasElement> {
-  // Rendre le parent temporairement visible hors-écran pour que html2canvas
-  // ait un layout correct (opacity:0 / z-index:-1 faussent les mesures).
-  const parent = element.parentElement as HTMLElement | null;
-  const originalParentStyle = parent?.getAttribute('style') ?? '';
-
-  if (parent) {
-    parent.style.cssText =
-      'position:fixed;top:0;left:-10000px;z-index:99999;pointer-events:none;';
-  }
-
-  // Laisser le browser recalculer le layout
-  await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  const w = element.offsetWidth || 440;
+  const w = 440;
   const h = element.scrollHeight || element.offsetHeight || 900;
 
-  try {
-    return await html2canvas(element, {
-      scale: FLYER_SCALE,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#050208',
-      logging: false,
-      width: w,
-      height: h,
-      scrollX: 10000, // compense le left:-10000px
-      scrollY: 0,
-      windowWidth: w,
-      windowHeight: h,
-    });
-  } finally {
-    if (parent) {
-      parent.setAttribute('style', originalParentStyle);
-    }
-  }
+  return await html2canvas(element, {
+    scale: FLYER_SCALE,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#050208',
+    logging: false,
+    width: w,
+    height: h,
+    windowWidth: w,
+    windowHeight: h,
+    // onclone rend l'élément visible dans la copie clonée uniquement,
+    // sans modifier le DOM réel ni provoquer de flash à l'écran.
+    // Ceci est nécessaire car opacity:0 / z-index:-1 faussent les mesures
+    // de html2canvas, et scrollX ne compense pas les éléments position:fixed.
+    onclone: (_clonedDoc: Document, clonedElement: HTMLElement) => {
+      const clonedParent = clonedElement.parentElement;
+      if (clonedParent) {
+        clonedParent.style.cssText =
+          'position:static;opacity:1;z-index:auto;pointer-events:none;width:440px;';
+      }
+    },
+  });
 }
 
 export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
