@@ -344,7 +344,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       </div>
 
       {/* Flyer caché à pleine taille pour l'export — opacity:0 dans le viewport pour que html2canvas rende correctement */}
-      <div style={{ position: 'fixed', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+      <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }}>
         <div ref={flyerExportRef} style={{ width: 440 }}>
           <RateFlyer
             rates={{
