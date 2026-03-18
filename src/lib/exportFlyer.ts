@@ -21,7 +21,19 @@ function fileName(ext: string): string {
   return `bonzini-rate-${new Date().toISOString().slice(0, 10)}.${ext}`;
 }
 
-function triggerDownload(blob: Blob, name: string): void {
+async function triggerDownload(blob: Blob, name: string): Promise<void> {
+  // Web Share API — works natively on iOS Safari 15+ and Android Chrome.
+  // Shows the system share sheet so the user can save to Photos, WhatsApp, etc.
+  const canShare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+  if (canShare) {
+    const file = new File([blob], name, { type: blob.type });
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Taux du jour — Bonzini' });
+      return;
+    }
+  }
+
+  // Desktop fallback: anchor click (works on Chrome, Firefox, Safari desktop).
   const url = URL.createObjectURL(blob);
   const a   = document.createElement('a');
   a.href     = url;
@@ -105,7 +117,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 export async function downloadFlyerPNG(rates: FlyerRates, dark: boolean): Promise<void> {
   const svg  = await fetchFlyer(rates, dark);
   const blob = await svgToBlob(svg, 2);
-  triggerDownload(blob, fileName('png'));
+  await triggerDownload(blob, fileName('png'));
 }
 
 export async function downloadFlyerPDF(rates: FlyerRates, dark: boolean): Promise<void> {
@@ -119,6 +131,5 @@ export async function downloadFlyerPDF(rates: FlyerRates, dark: boolean): Promis
   const pdf     = new jsPDF({ orientation: 'portrait', unit: 'px', format: [w, h] });
   pdf.addImage(dataUrl, 'PNG', 0, 0, w, h);
 
-  // pdf.output('blob') + URL.createObjectURL works on iOS and Android.
-  triggerDownload(pdf.output('blob'), fileName('pdf'));
+  await triggerDownload(pdf.output('blob'), fileName('pdf'));
 }
