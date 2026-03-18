@@ -22,19 +22,20 @@ function fileName(ext: string): string {
 }
 
 async function triggerDownload(blob: Blob, name: string): Promise<void> {
-  // Web Share API — works natively on iOS Safari 15+ and Android Chrome.
-  // Shows the system share sheet so the user can save to Photos, WhatsApp, etc.
-  const canShare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
-  if (canShare) {
-    const file = new File([blob], name, { type: blob.type });
-    if (navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Taux du jour — Bonzini' });
-      return;
-    }
+  const url = URL.createObjectURL(blob);
+
+  // iOS Safari ignores <a download> for blob URLs entirely — no download happens.
+  // Instead open in a new tab: Safari shows the image/PDF with its native toolbar
+  // where the user can tap the share button → "Save Image" / "Save to Files".
+  // No proactive share sheet, no popup.
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isIOS) {
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return;
   }
 
-  // Desktop fallback: anchor click (works on Chrome, Firefox, Safari desktop).
-  const url = URL.createObjectURL(blob);
+  // Android + desktop: anchor click triggers a direct file download.
   const a   = document.createElement('a');
   a.href     = url;
   a.download = name;
@@ -116,16 +117,16 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 export async function downloadFlyerPNG(rates: FlyerRates, dark: boolean): Promise<void> {
   const svg  = await fetchFlyer(rates, dark);
-  const blob = await svgToBlob(svg, 2);
+  const blob = await svgToBlob(svg, 4);
   await triggerDownload(blob, fileName('png'));
 }
 
 export async function downloadFlyerPDF(rates: FlyerRates, dark: boolean): Promise<void> {
   const svg     = await fetchFlyer(rates, dark);
-  const pngBlob = await svgToBlob(svg, 2);
+  const pngBlob = await svgToBlob(svg, 4);
 
-  const w = Math.round(parseFloat(svg.match(/width="([^"]+)"/)?.[1]  ?? '440') * 2);
-  const h = Math.round(parseFloat(svg.match(/height="([^"]+)"/)?.[1] ?? '870') * 2);
+  const w = Math.round(parseFloat(svg.match(/width="([^"]+)"/)?.[1]  ?? '440') * 4);
+  const h = Math.round(parseFloat(svg.match(/height="([^"]+)"/)?.[1] ?? '870') * 4);
 
   const dataUrl = await blobToDataUrl(pngBlob);
   const pdf     = new jsPDF({ orientation: 'portrait', unit: 'px', format: [w, h] });
