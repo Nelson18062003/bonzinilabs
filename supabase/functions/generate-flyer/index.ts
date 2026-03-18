@@ -39,16 +39,18 @@ function h(
 // ── Font loading (cached per Deno isolate) ─────────────────────────────────
 // Fonts are fetched once from the @fontsource CDN and kept in memory.
 // Cold start: ~1-3 s. Warm: instant.
+// Satori 0.10.x uses opentype.js internally which does NOT support WOFF2.
+// Use WOFF (not WOFF2) — supported by opentype.js.
 const FONTS_CDN = "https://cdn.jsdelivr.net/npm";
 const FONT_URLS: Record<string, string> = {
-  "syne-800": `${FONTS_CDN}/@fontsource/syne@5.0.8/files/syne-latin-800-normal.woff2`,
-  "dm-400": `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-400-normal.woff2`,
-  "dm-600": `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-600-normal.woff2`,
-  "dm-700": `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-700-normal.woff2`,
-  "dm-800": `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-800-normal.woff2`,
-  "dm-900": `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-900-normal.woff2`,
-  "noto-400": `${FONTS_CDN}/@fontsource/noto-sans-sc@5.0.12/files/noto-sans-sc-chinese-simplified-400-normal.woff2`,
-  "noto-700": `${FONTS_CDN}/@fontsource/noto-sans-sc@5.0.12/files/noto-sans-sc-chinese-simplified-700-normal.woff2`,
+  "syne-800": `${FONTS_CDN}/@fontsource/syne@5.0.8/files/syne-latin-800-normal.woff`,
+  "dm-400":   `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-400-normal.woff`,
+  "dm-600":   `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-600-normal.woff`,
+  "dm-700":   `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-700-normal.woff`,
+  "dm-800":   `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-800-normal.woff`,
+  "dm-900":   `${FONTS_CDN}/@fontsource/dm-sans@5.0.18/files/dm-sans-latin-900-normal.woff`,
+  "noto-400": `${FONTS_CDN}/@fontsource/noto-sans-sc@5.0.12/files/noto-sans-sc-chinese-simplified-400-normal.woff`,
+  "noto-700": `${FONTS_CDN}/@fontsource/noto-sans-sc@5.0.12/files/noto-sans-sc-chinese-simplified-700-normal.woff`,
 };
 
 type FontDef = { name: string; data: ArrayBuffer; weight: number; style: "normal" };
