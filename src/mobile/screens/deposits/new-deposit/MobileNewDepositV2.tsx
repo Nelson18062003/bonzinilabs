@@ -281,7 +281,7 @@ export function MobileNewDepositV2() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setProofFiles((prev) => [...prev, ...files].slice(0, 5));
+    setProofFiles((prev) => [...prev, ...files]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -1281,7 +1281,7 @@ export function MobileNewDepositV2() {
                     }}
                   >
                     <Upload style={{ width: 20, height: 20, color: t.dim }} />
-                    <p style={{ fontSize: 11, color: t.sub, margin: 0 }}>Photos ou PDFs (max 5)</p>
+                    <p style={{ fontSize: 11, color: t.sub, margin: 0 }}>Photos ou PDFs</p>
                   </div>
                 </label>
                 {proofFiles.length > 0 && (

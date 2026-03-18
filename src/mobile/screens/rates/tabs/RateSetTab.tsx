@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
 import { useCreateDailyRates } from '@/hooks/useDailyRates';
 import { RateFlyer } from '@/mobile/components/rates/RateFlyer';
-import { downloadFlyerPNG, downloadFlyerPDF, warmupFlyerFonts } from '@/lib/exportFlyer';
+import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
 
 interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
@@ -28,17 +28,16 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [flyerDark, setFlyerDark] = useState(true);
   const [exportingPNG, setExportingPNG] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
-  const flyerExportRef = useRef<HTMLDivElement>(null);
 
   const createRates = useCreateDailyRates();
 
-  // Pre-fetch and cache Google Fonts as base64 as soon as the hidden flyer
-  // renders, so the first PNG/PDF export doesn't stall on a network round-trip.
-  useEffect(() => {
-    if (flyerExportRef.current) {
-      warmupFlyerFonts(flyerExportRef.current);
-    }
-  }, []);
+  // Helper: build the rates object passed to the Edge Function
+  const flyerRates = () => ({
+    alipay: parseInt(rates.alipay)   || currentRate?.rate_alipay   || 0,
+    wechat: parseInt(rates.wechat)   || currentRate?.rate_wechat   || 0,
+    bank:   parseInt(rates.virement) || currentRate?.rate_virement || 0,
+    cash:   parseInt(rates.cash)     || currentRate?.rate_cash     || 0,
+  });
 
   const getEffectiveAt = (): string => {
     const now = new Date();
@@ -324,9 +323,9 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         <div className="px-4 pb-4 flex gap-2.5">
           <button
             onClick={async () => {
-              if (!flyerExportRef.current || exportingPNG) return;
+              if (exportingPNG) return;
               setExportingPNG(true);
-              try { await downloadFlyerPNG(flyerExportRef.current); }
+              try { await downloadFlyerPNG(flyerRates(), flyerDark); }
               finally { setExportingPNG(false); }
             }}
             className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
@@ -337,9 +336,9 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           </button>
           <button
             onClick={async () => {
-              if (!flyerExportRef.current || exportingPDF) return;
+              if (exportingPDF) return;
               setExportingPDF(true);
-              try { await downloadFlyerPDF(flyerExportRef.current); }
+              try { await downloadFlyerPDF(flyerRates(), flyerDark); }
               finally { setExportingPDF(false); }
             }}
             className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
@@ -351,20 +350,6 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         </div>
       </div>
 
-      {/* Flyer caché à pleine taille pour l'export — opacity:0 dans le viewport pour que html2canvas rende correctement */}
-      <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }}>
-        <div ref={flyerExportRef} style={{ width: 440 }}>
-          <RateFlyer
-            rates={{
-              alipay: parseInt(rates.alipay) || currentRate?.rate_alipay || 0,
-              wechat: parseInt(rates.wechat) || currentRate?.rate_wechat || 0,
-              bank: parseInt(rates.virement) || currentRate?.rate_virement || 0,
-              cash: parseInt(rates.cash) || currentRate?.rate_cash || 0,
-            }}
-            dark={flyerDark}
-          />
-        </div>
-      </div>
     </div>
   );
 }

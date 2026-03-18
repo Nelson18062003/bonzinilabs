@@ -1,82 +1,124 @@
-import { toPng, getFontEmbedCSS } from 'html-to-image';
+// exportFlyer.ts — server-side rendering via Supabase Edge Function
+//
+// Architecture:
+//   Client sends rates → Edge Function (Satori) → SVG with text-as-paths
+//   Client draws SVG on native canvas → PNG blob → download
+//
+// Why this beats html-to-image on Android:
+//   • No DOM cloning, no font base64-encoding in-browser (was causing OOM crashes)
+//   • Native <img>+canvas.drawImage() of an SVG is hardware-accelerated
+//   • SVG text converted to vector paths server-side: zero font loading on device
 import { jsPDF } from 'jspdf';
 
-const FLYER_SCALE = 2; // 440px × 2 = 880px (full HD — was 2.45, 33% less pixels to compute)
+export interface FlyerRates {
+  alipay: number;
+  wechat: number;
+  bank:   number;
+  cash:   number;
+}
 
 function fileName(ext: string): string {
-  const d = new Date().toISOString().slice(0, 10);
-  return `bonzini-rate-${d}.${ext}`;
+  return `bonzini-rate-${new Date().toISOString().slice(0, 10)}.${ext}`;
 }
 
-// Font CSS is cached after the first call so subsequent exports are instant
-let _fontEmbedCSS: string | null = null;
-
-/**
- * Pre-fetches and caches the Google Fonts as base64 so the first export
- * doesn't have to wait for a network round-trip.
- * Call this once when the flyer section becomes visible.
- */
-export async function warmupFlyerFonts(element: HTMLElement): Promise<void> {
-  if (_fontEmbedCSS) return;
-  await document.fonts.ready;
-  _fontEmbedCSS = await getFontEmbedCSS(element);
-}
-
-async function capture(element: HTMLElement): Promise<string> {
-  await document.fonts.ready;
-
-  const h = element.scrollHeight || element.offsetHeight || 900;
-
-  return await toPng(element, {
-    pixelRatio: FLYER_SCALE,
-    width: 440,
-    height: h,
-    backgroundColor: '#050208',
-    // Pass cached font CSS so html-to-image skips the network re-fetch
-    ...((_fontEmbedCSS != null) && { fontEmbedCSS: _fontEmbedCSS }),
-  });
-}
-
-function dataUrlToBlob(dataUrl: string): Blob {
-  const [header, data] = dataUrl.split(',');
-  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/png';
-  const binary = atob(data);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
-}
-
-/**
- * Triggers a file download that works on all browsers, including iOS Safari.
- * Using URL.createObjectURL avoids the async gesture-chain issue that breaks
- * link.click() with a large dataUrl on mobile browsers.
- */
 function triggerDownload(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = name;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export async function downloadFlyerPNG(element: HTMLElement): Promise<void> {
-  const dataUrl = await capture(element);
-  triggerDownload(dataUrlToBlob(dataUrl), fileName('png'));
+// ── Edge Function call ────────────────────────────────────────────────────
+async function fetchFlyer(rates: FlyerRates, dark: boolean): Promise<string> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const apiKey      = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/generate-flyer`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey':        apiKey,
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ rates, dark }),
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(`generate-flyer: ${res.status} — ${msg}`);
+  }
+
+  return res.text(); // SVG string
 }
 
-export async function downloadFlyerPDF(element: HTMLElement): Promise<void> {
-  const dataUrl = await capture(element);
-  const w = Math.round(440 * FLYER_SCALE);
-  const h = Math.round((element.scrollHeight || element.offsetHeight || 900) * FLYER_SCALE);
+// ── SVG → PNG blob (native browser, no libraries) ────────────────────────
+// The SVG from Satori has all text as vector paths, so no font loading is
+// needed. The <img>+canvas approach is hardware-accelerated on all browsers.
+function svgToBlob(svg: string, scale = 2): Promise<Blob> {
+  // Parse the SVG dimensions so we size the canvas correctly.
+  const w = parseFloat(svg.match(/width="([^"]+)"/)?.[1]  ?? '440');
+  const h = parseFloat(svg.match(/height="([^"]+)"/)?.[1] ?? '870');
 
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [w, h] });
+  return new Promise<Blob>((resolve, reject) => {
+    const blob  = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url   = URL.createObjectURL(blob);
+    const img   = new Image();
+
+    img.onload = () => {
+      const canvas  = document.createElement('canvas');
+      canvas.width  = w * scale;
+      canvas.height = h * scale;
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('canvas.toBlob returned null'))),
+        'image/png',
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('SVG image failed to load'));
+    };
+
+    img.src = url;
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader  = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// ── Public API ────────────────────────────────────────────────────────────
+
+export async function downloadFlyerPNG(rates: FlyerRates, dark: boolean): Promise<void> {
+  const svg  = await fetchFlyer(rates, dark);
+  const blob = await svgToBlob(svg, 2);
+  triggerDownload(blob, fileName('png'));
+}
+
+export async function downloadFlyerPDF(rates: FlyerRates, dark: boolean): Promise<void> {
+  const svg     = await fetchFlyer(rates, dark);
+  const pngBlob = await svgToBlob(svg, 2);
+
+  const w = Math.round(parseFloat(svg.match(/width="([^"]+)"/)?.[1]  ?? '440') * 2);
+  const h = Math.round(parseFloat(svg.match(/height="([^"]+)"/)?.[1] ?? '870') * 2);
+
+  const dataUrl = await blobToDataUrl(pngBlob);
+  const pdf     = new jsPDF({ orientation: 'portrait', unit: 'px', format: [w, h] });
   pdf.addImage(dataUrl, 'PNG', 0, 0, w, h);
 
-  // pdf.save() uses the same broken link.click() pattern on mobile.
-  // pdf.output('blob') + URL.createObjectURL works everywhere.
-  const blob = pdf.output('blob');
-  triggerDownload(blob, fileName('pdf'));
+  // pdf.output('blob') + URL.createObjectURL works on iOS and Android.
+  triggerDownload(pdf.output('blob'), fileName('pdf'));
 }

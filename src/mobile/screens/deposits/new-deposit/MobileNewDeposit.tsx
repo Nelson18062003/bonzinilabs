@@ -212,7 +212,7 @@ export function MobileNewDeposit() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setProofFiles((prev) => [...prev, ...files].slice(0, 5));
+    setProofFiles((prev) => [...prev, ...files]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -875,7 +875,7 @@ export function MobileNewDeposit() {
               />
               <div className="border-2 border-dashed border-border/40 hover:border-primary/30 rounded-xl py-6 flex flex-col items-center gap-2 transition-colors">
                 <Upload className="w-6 h-6 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Photos ou PDFs (max 5)</p>
+                <p className="text-xs text-muted-foreground">Photos ou PDFs</p>
               </div>
             </label>
 
