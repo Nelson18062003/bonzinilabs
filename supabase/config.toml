@@ -1,1 +1,7 @@
 project_id = "fmhsohrgbznqmcvqktjw"
+
+# generate-flyer serves public rate data — no auth needed.
+# Without verify_jwt = false, Supabase rejects the CORS OPTIONS preflight
+# with a 401 before the function code is even reached.
+[functions.generate-flyer]
+verify_jwt = false
