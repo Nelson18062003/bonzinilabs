@@ -460,7 +460,7 @@ export function useAdminCreateDeposit() {
             }
 
             const storedPath = `deposit-proofs/${filePath}`;
-            await supabaseAdmin.from('deposit_proofs').insert({
+            const { error: insertError } = await supabaseAdmin.from('deposit_proofs').insert({
               deposit_id: depositId,
               file_url: storedPath,
               file_name: file.name,
@@ -468,6 +468,14 @@ export function useAdminCreateDeposit() {
               uploaded_by: admin.id,
               uploaded_by_type: 'admin' as const,
             });
+
+            if (insertError) {
+              console.error(`[Create] DB insert failed for ${file.name}:`, insertError.message);
+              // Remove the orphaned storage file
+              await supabaseAdmin.storage.from('deposit-proofs').remove([filePath]);
+              continue;
+            }
+
             proofUploadCount++;
           } catch (err) {
             console.error(`[Create] Proof error for ${rawFile.name}:`, err);

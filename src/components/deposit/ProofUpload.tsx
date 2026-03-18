@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const MAX_FILES = 5;
+// No hard limit on the number of proof files
 
 interface FileWithPreview {
   file: File;
@@ -87,8 +87,7 @@ export const ProofUpload = (props: Props) => {
 
   const handleFilesChange = (newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
-    const remaining = MAX_FILES - filesWithPreview.length;
-    const filesToAdd = fileArray.slice(0, remaining);
+    const filesToAdd = fileArray;
 
     const newFilesWithPreview: FileWithPreview[] = filesToAdd.map((file) => ({
       file,
@@ -141,7 +140,7 @@ export const ProofUpload = (props: Props) => {
   };
 
   const hasFiles = filesWithPreview.length > 0;
-  const atLimit = filesWithPreview.length >= MAX_FILES;
+  const atLimit = false; // No file limit
 
   return (
     <div className="space-y-4">
@@ -175,7 +174,7 @@ export const ProofUpload = (props: Props) => {
                 Glissez vos fichiers ici
               </p>
               <p className="text-xs text-muted-foreground">
-                ou cliquez pour parcourir (max {MAX_FILES} fichiers)
+                ou cliquez pour parcourir
               </p>
             </>
           ) : (
@@ -222,7 +221,7 @@ export const ProofUpload = (props: Props) => {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Formats acceptés : JPG, PNG, PDF &bull; Max 10 MB par fichier &bull; Max {MAX_FILES} fichiers
+        Formats acceptés : JPG, PNG, PDF &bull; Max 10 MB par fichier
       </p>
 
       <input
