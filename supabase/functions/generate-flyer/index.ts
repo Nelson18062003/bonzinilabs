@@ -130,8 +130,8 @@ function buildElement(rates: Rates, isDark: boolean): El {
     h("polygon", { points: "12 2 20 7 4 7" }),
   );
 
-  // Largeur de chaque carte : (2150 - 2×110 - 44) / 2 = 943px
-  const CARD_W = 943;
+  // Largeur de chaque carte : (2150 - 2×110 - 32) / 2 = 949px
+  const CARD_W = 949;
 
   const rateCards = rateData.map((r) =>
     h("div", {
@@ -140,7 +140,7 @@ function buildElement(rates: Rates, isDark: boolean): El {
         backgroundColor: cardBg,
         border: `2px solid ${cardBorder}`,
         borderRadius: 36,
-        padding: 58,
+        padding: 44,
         display: "flex",
         flexDirection: "column",
         position: "relative",
@@ -182,7 +182,7 @@ function buildElement(rates: Rates, isDark: boolean): El {
     h("div", { style: { height: 14, background: "linear-gradient(90deg,#A947FE,#F3A745,#FE560D)", flexShrink: 0 } }),
 
     // Header
-    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "60px 110px 44px", flexShrink: 0 } },
+    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "50px 110px 36px", flexShrink: 0 } },
       h("div", { style: { display: "flex", flexDirection: "column" } },
         h("div", { style: { fontFamily: "DM Sans", fontWeight: 900, fontSize: 96, color: textMain, letterSpacing: -3, lineHeight: 1 } }, "Bonzini"),
         h("div", { style: { fontFamily: "DM Sans", fontWeight: 400, fontSize: 32, color: sub, letterSpacing: 5 } }, "PAYMENT PLATFORM"),
@@ -195,7 +195,7 @@ function buildElement(rates: Rates, isDark: boolean): El {
     h("div", { style: { height: 3, margin: "0 80px", background: "linear-gradient(90deg,transparent,rgba(169,71,254,.6) 25%,rgba(243,167,69,.6) 75%,transparent)", borderRadius: 2, flexShrink: 0 } }),
 
     // Zone date + heure Guangzhou
-    h("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "56px 110px 44px", gap: 60, flexShrink: 0 } },
+    h("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "42px 110px 30px", gap: 60, flexShrink: 0 } },
       h("div", { style: { flex: 1, display: "flex", flexDirection: "column" } },
         h("div", { style: { fontFamily: "Noto Sans SC", fontWeight: 500, fontSize: 52, color: sub, lineHeight: 1.35 } }, cnDate),
         h("div", { style: { fontFamily: "DM Sans", fontWeight: 700, fontSize: 72, color: textMain, letterSpacing: -1, lineHeight: 1.25 } }, enDate),
@@ -209,7 +209,7 @@ function buildElement(rates: Rates, isDark: boolean): El {
     ),
 
     // Héro 1 000 000 XAF
-    h("div", { style: { padding: "6px 110px 44px", display: "flex", flexDirection: "column", flexShrink: 0 } },
+    h("div", { style: { padding: "6px 110px 26px", display: "flex", flexDirection: "column", flexShrink: 0 } },
       h("div", { style: { display: "flex", alignItems: "baseline", gap: 0, marginBottom: 8 } },
         h("span", { style: { fontFamily: "DM Sans", fontWeight: 400, fontSize: 58, color: sub } }, "Pour\u00a0"),
         h("span", { style: { fontFamily: "Noto Sans SC", fontSize: 46, color: sub, opacity: 0.7 } }, "\u5151\u6362"),
@@ -231,7 +231,7 @@ function buildElement(rates: Rates, isDark: boolean): El {
     ),
 
     // Grille 2×2 des taux (flex wrap)
-    h("div", { style: { display: "flex", flexWrap: "wrap", gap: 44, padding: "6px 110px 50px", flexShrink: 0 } },
+    h("div", { style: { display: "flex", flexWrap: "wrap", gap: 32, padding: "6px 110px 30px", flexShrink: 0 } },
       ...rateCards,
     ),
 
