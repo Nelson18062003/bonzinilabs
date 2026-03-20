@@ -304,17 +304,15 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           </div>
         </div>
 
-        {/* Miniature preview */}
+        {/* Miniature preview — flyer naturel 2150×2560, réduit à ~0.172 pour tenir sur mobile */}
         <div className="px-4 pb-3 overflow-hidden flex justify-center">
-          <div style={{ transform: 'scale(0.42)', transformOrigin: 'top center', height: 900 * 0.42, pointerEvents: 'none' }}>
+          <div style={{ transform: 'scale(0.172)', transformOrigin: 'top center', height: Math.round(2560 * 0.172), pointerEvents: 'none' }}>
             <RateFlyer
-              rates={{
-                alipay: parseInt(rates.alipay) || currentRate?.rate_alipay || 0,
-                wechat: parseInt(rates.wechat) || currentRate?.rate_wechat || 0,
-                bank: parseInt(rates.virement) || currentRate?.rate_virement || 0,
-                cash: parseInt(rates.cash) || currentRate?.rate_cash || 0,
-              }}
-              dark={flyerDark}
+              alipay={parseInt(rates.alipay) || currentRate?.rate_alipay || 0}
+              wechat={parseInt(rates.wechat) || currentRate?.rate_wechat || 0}
+              bank={parseInt(rates.virement) || currentRate?.rate_virement || 0}
+              cash={parseInt(rates.cash) || currentRate?.rate_cash || 0}
+              theme={flyerDark ? 'dark' : 'light'}
             />
           </div>
         </div>
