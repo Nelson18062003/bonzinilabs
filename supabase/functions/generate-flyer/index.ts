@@ -83,9 +83,10 @@ async function getFonts(): Promise<FontDef[]> {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-// Formatage fr-FR : 11530 → "11 530", 1000000 → "1 000 000"
+// Formatage : 11530 → "11 530" — espace ordinaire (U+0020), supporté par DM Sans.
+// toLocaleString('fr-FR') produit U+202F (espace fine insécable) absent de DM Sans → boîte cassée.
 function fmt(n: number): string {
-  return n.toLocaleString("fr-FR");
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
 // ── Constructeur du layout Satori ──────────────────────────────────────────
@@ -220,7 +221,12 @@ function buildElement(rates: Rates, isDark: boolean): El {
         h("span", { style: { fontFamily: "DM Sans", fontWeight: 900, fontSize: 180, lineHeight: 0.9, color: textMain, opacity: 0.25 } }, "\u00a0"),
         h("span", { style: { fontFamily: "DM Sans", fontWeight: 900, fontSize: 240, letterSpacing: -4, lineHeight: 0.9, color: textMain } }, "000"),
         h("span", { style: { fontFamily: "DM Sans", fontWeight: 800, fontSize: 88, color: "#F3A745", alignSelf: "flex-end", marginBottom: 22, letterSpacing: 2, marginLeft: 24 } }, "XAF"),
-        h("span", { style: { fontFamily: "DM Sans", fontWeight: 300, fontSize: 170, color: "#A947FE", opacity: 0.5, lineHeight: 1, marginBottom: 6, marginLeft: 16 } }, "\u2192"),
+        // Flèche → en SVG inline — évite la dépendance à un glyphe absent de DM Sans
+        h("svg", { width: 130, height: 170, viewBox: "0 0 130 170", fill: "none", style: { alignSelf: "flex-end", marginBottom: 10, marginLeft: 16, opacity: 0.5 } },
+          h("line", { x1: "10", y1: "85", x2: "110", y2: "85", stroke: "#A947FE", strokeWidth: "18", strokeLinecap: "round" }),
+          h("line", { x1: "110", y1: "85", x2: "68", y2: "38", stroke: "#A947FE", strokeWidth: "18", strokeLinecap: "round" }),
+          h("line", { x1: "110", y1: "85", x2: "68", y2: "132", stroke: "#A947FE", strokeWidth: "18", strokeLinecap: "round" }),
+        ),
       ),
     ),
 
