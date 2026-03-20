@@ -3,7 +3,18 @@
 // Le client reçoit un vrai fichier PNG — aucune conversion DOM côté navigateur.
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import satori from "npm:satori@0.10.11";
-import { Resvg } from "npm:@resvg/resvg-wasm@2.6.0";
+import { Resvg, initWasm } from "npm:@resvg/resvg-wasm@2.6.0";
+
+// Initialise le WASM une seule fois par isolate Deno (cold start ~1s, warm = 0ms)
+let wasmReady: Promise<void> | null = null;
+function ensureWasm(): Promise<void> {
+  if (!wasmReady) {
+    wasmReady = initWasm(
+      fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.0/index_bg.wasm")
+    );
+  }
+  return wasmReady;
+}
 
 const CORS = {
   "Access-Control-Allow-Origin":  "*",
@@ -295,7 +306,8 @@ serve(async (req) => {
     // Étape 1 : Satori génère le SVG (texte converti en chemins vectoriels)
     const svg = await satori(element, { width: 2150, height: 2560, fonts });
 
-    // Étape 2 : Resvg convertit le SVG en PNG
+    // Étape 2 : Resvg convertit le SVG en PNG (initWasm obligatoire)
+    await ensureWasm();
     const resvg     = new Resvg(svg, { fitTo: { mode: "width", value: 2150 } });
     const pngBuffer = resvg.render().asPng();
 
