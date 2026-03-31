@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface AdminCreatePaymentData {
   user_id: string;
@@ -35,12 +36,12 @@ export function useAdminCreatePayment() {
       
       if (data.qr_code_files && data.qr_code_files.length > 0) {
         // Upload the first QR code as the main beneficiary QR
-        const file = data.qr_code_files[0];
-        const filePath = `qr-codes/${data.user_id}/${Date.now()}_${file.name}`;
-        
+        const compressed = await compressImage(data.qr_code_files[0]);
+        const filePath = `qr-codes/${data.user_id}/${Date.now()}_${compressed.name}`;
+
         const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
-          .upload(filePath, file);
+          .upload(filePath, compressed);
 
         if (uploadError) throw uploadError;
 
@@ -97,24 +98,23 @@ export function useAdminCreatePayment() {
         const { data: { user } } = await supabaseAdmin.auth.getUser();
         
         for (let i = 1; i < data.qr_code_files.length; i++) {
-          const file = data.qr_code_files[i];
-          const filePath = `admin/${response.payment_id}/${Date.now()}_${file.name}`;
-          
+          const compressed = await compressImage(data.qr_code_files[i]);
+          const filePath = `admin/${response.payment_id}/${Date.now()}_${compressed.name}`;
+
           const { error: uploadError } = await supabaseAdmin.storage
             .from('payment-proofs')
-            .upload(filePath, file);
+            .upload(filePath, compressed);
 
           if (!uploadError) {
-            // Store the file path for later signed URL generation
             const storedPath = `payment-proofs/${filePath}`;
 
             await supabaseAdmin.from('payment_proofs').insert([{
               payment_id: response.payment_id!,
               uploaded_by: user?.id || '',
               uploaded_by_type: 'admin',
-              file_name: file.name,
+              file_name: compressed.name,
               file_url: storedPath,
-              file_type: file.type,
+              file_type: compressed.type,
               description: 'QR Code de paiement',
             }]);
           }
@@ -235,15 +235,15 @@ export function useAdminUpdateBeneficiaryInfo() {
       
       // Upload QR code if provided
       if (qrCodeFile) {
-        const filePath = `qr-codes/${paymentId}/${Date.now()}_${qrCodeFile.name}`;
-        
+        const compressed = await compressImage(qrCodeFile);
+        const filePath = `qr-codes/${paymentId}/${Date.now()}_${compressed.name}`;
+
         const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
-          .upload(filePath, qrCodeFile);
+          .upload(filePath, compressed);
 
         if (uploadError) throw uploadError;
 
-        // Store the file path for later signed URL generation
         qrCodeUrl = `payment-proofs/${filePath}`;
       }
 

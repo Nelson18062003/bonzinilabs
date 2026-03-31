@@ -9,6 +9,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminPaymentDetail, useAdminUpdateBeneficiaryInfo } from '@/hooks/usePayments';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 import { Loader2, QrCode, X, CheckCircle } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
@@ -74,10 +75,11 @@ export function MobileBeneficiaryEdit() {
 
       if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
         setIsUploadingQr(true);
-        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
+        const compressed = await compressImage(qrFile);
+        const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
-          .upload(filePath, qrFile, { upsert: true });
+          .upload(filePath, compressed, { upsert: true });
         if (uploadError) throw uploadError;
         qrUrl = `payment-proofs/${filePath}`;
       }
