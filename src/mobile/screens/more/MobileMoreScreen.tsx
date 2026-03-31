@@ -8,6 +8,7 @@ import {
   History,
   Bell,
   UserCog,
+  Users,
   LogOut,
   ChevronRight,
   Settings,
@@ -88,6 +89,12 @@ export function MobileMoreScreen() {
 
         {/* Menu Items */}
         <div className="divide-y divide-border">
+          <MenuItem
+            icon={Users}
+            label="Clients"
+            description="Gestion des clients"
+            onClick={() => navigate('/m/clients')}
+          />
           <MenuItem
             icon={TrendingUp}
             label="Taux de change"
