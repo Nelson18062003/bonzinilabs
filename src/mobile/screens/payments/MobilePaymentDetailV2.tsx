@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/imageCompression';
 import {
   useAdminPaymentDetail,
   useAdminPaymentTimeline,
@@ -219,10 +220,11 @@ export function MobilePaymentDetail() {
 
       if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
         setIsUploadingQr(true);
-        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
+        const compressed = await compressImage(qrFile);
+        const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
-          .upload(filePath, qrFile, { upsert: true });
+          .upload(filePath, compressed, { upsert: true });
         if (uploadError) throw uploadError;
         qrUrl = `payment-proofs/${filePath}`;
       }
@@ -733,10 +735,11 @@ export function MobilePaymentDetail() {
                       if (!file || !paymentId) return;
                       setIsUploadingQr(true);
                       try {
-                        const filePath = `beneficiary/${paymentId}/${Date.now()}_${file.name}`;
+                        const compressed = await compressImage(file);
+                        const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
                         const { error } = await supabaseAdmin.storage
                           .from('payment-proofs')
-                          .upload(filePath, file, { upsert: true });
+                          .upload(filePath, compressed, { upsert: true });
                         if (error) throw error;
                         const qrUrl = `payment-proofs/${filePath}`;
                         await adminUpdateBeneficiaryInfo.mutateAsync({

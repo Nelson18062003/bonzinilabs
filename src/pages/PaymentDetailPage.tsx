@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/imageCompression';
 import { PaymentProofUpload } from '@/components/payment/PaymentProofUpload';
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
 import { CashQRCode } from '@/components/cash/CashQRCode';
@@ -218,10 +219,11 @@ export default function PaymentDetailPage() {
       if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
         setIsUploadingQr(true);
 
-        const filePath = `beneficiary/${paymentId}/${Date.now()}_${qrFile.name}`;
+        const compressed = await compressImage(qrFile);
+        const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(filePath, qrFile, { upsert: true });
+          .upload(filePath, compressed, { upsert: true });
 
         if (uploadError) throw uploadError;
 

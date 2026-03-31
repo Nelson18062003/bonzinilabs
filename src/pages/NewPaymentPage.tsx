@@ -31,6 +31,8 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 
 type Step = 'method' | 'amount' | 'beneficiary' | 'confirm';
 type Currency = 'XAF' | 'RMB';
@@ -190,9 +192,14 @@ const NewPaymentPage = () => {
 
       let qrCodeUrl: string | undefined;
       if (qrCodeFile) {
-        const filePath = `qr-codes/${Date.now()}_${qrCodeFile.name}`;
-        const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(filePath, qrCodeFile);
-        if (!uploadError) qrCodeUrl = `payment-proofs/${filePath}`;
+        const compressed = await compressImage(qrCodeFile);
+        const filePath = `qr-codes/${Date.now()}_${compressed.name}`;
+        const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(filePath, compressed);
+        if (uploadError) {
+          toast.error('Erreur lors de l\'upload du QR code. Veuillez réessayer.');
+          return;
+        }
+        qrCodeUrl = `payment-proofs/${filePath}`;
       }
 
       if (!skipBeneficiary && !selectedBeneficiary && newBenefName) {

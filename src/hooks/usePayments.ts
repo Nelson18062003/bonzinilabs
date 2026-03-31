@@ -3,6 +3,7 @@ import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { validateUploadFile } from '@/lib/utils';
+import { compressImage } from '@/lib/imageCompression';
 
 // Cache configuration for performance
 const STALE_TIME = 30 * 1000; // 30 seconds
@@ -323,16 +324,22 @@ export function useUpdateBeneficiaryInfo() {
         );
       }
 
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from('payments')
         .update({
           ...beneficiaryInfo,
           status: hasValidInfo ? 'ready_for_payment' : 'waiting_beneficiary_info',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', paymentId);
+        .eq('id', paymentId)
+        .select('id', { count: 'exact', head: true });
 
       if (error) throw error;
+
+      // Supabase returns count=0 when RLS blocks the update (no error, just 0 rows)
+      if (count === 0) {
+        throw new Error('Impossible de modifier ce paiement. Il est peut-être déjà en cours de traitement.');
+      }
 
       // Always add timeline event when beneficiary info is modified
       const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -377,24 +384,24 @@ export function useUploadPaymentProof() {
       description?: string 
     }) => {
       validateUploadFile(file);
-      const filePath = `${paymentId}/${Date.now()}_${file.name}`;
+      const compressed = await compressImage(file);
+      const filePath = `${paymentId}/${Date.now()}_${compressed.name}`;
 
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
-        .upload(filePath, file);
+        .upload(filePath, compressed);
 
       if (uploadError) throw uploadError;
 
-      // Store the file path for later signed URL generation
       const storedPath = `payment-proofs/${filePath}`;
 
       const { error } = await supabase.from('payment_proofs').insert({
         payment_id: paymentId,
         uploaded_by: user?.id,
         uploaded_by_type: 'client',
-        file_name: file.name,
+        file_name: compressed.name,
         file_url: storedPath,
-        file_type: file.type,
+        file_type: compressed.type,
         description,
       });
 
@@ -623,15 +630,15 @@ export function useAdminUploadPaymentProof() {
       file: File; 
       description?: string 
     }) => {
-      const filePath = `admin/${paymentId}/${Date.now()}_${file.name}`;
+      const compressed = await compressImage(file);
+      const filePath = `admin/${paymentId}/${Date.now()}_${compressed.name}`;
 
       const { error: uploadError } = await supabaseAdmin.storage
         .from('payment-proofs')
-        .upload(filePath, file);
+        .upload(filePath, compressed);
 
       if (uploadError) throw uploadError;
 
-      // Store the file path for later signed URL generation
       const storedPath = `payment-proofs/${filePath}`;
 
       const { data: { user } } = await supabaseAdmin.auth.getUser();
@@ -640,9 +647,9 @@ export function useAdminUploadPaymentProof() {
         payment_id: paymentId,
         uploaded_by: user?.id,
         uploaded_by_type: 'admin',
-        file_name: file.name,
+        file_name: compressed.name,
         file_url: storedPath,
-        file_type: file.type,
+        file_type: compressed.type,
         description,
       });
 

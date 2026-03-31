@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface Beneficiary {
   id: string;
@@ -89,10 +90,11 @@ export function useCreateBeneficiary() {
       let qrCodeUrl: string | null = null;
 
       if (data.qr_code_file) {
-        const filePath = `beneficiary-qr/${user!.id}/${Date.now()}_${data.qr_code_file.name}`;
+        const compressed = await compressImage(data.qr_code_file);
+        const filePath = `beneficiary-qr/${user!.id}/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(filePath, data.qr_code_file);
+          .upload(filePath, compressed);
         if (uploadError) throw uploadError;
         qrCodeUrl = `payment-proofs/${filePath}`;
       }
@@ -146,10 +148,11 @@ export function useUpdateBeneficiary() {
 
       if (qrCodeFile) {
         const { data: { user } } = await supabase.auth.getUser();
-        const filePath = `beneficiary-qr/${user!.id}/${Date.now()}_${qrCodeFile.name}`;
+        const compressed = await compressImage(qrCodeFile);
+        const filePath = `beneficiary-qr/${user!.id}/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(filePath, qrCodeFile);
+          .upload(filePath, compressed);
         if (uploadError) throw uploadError;
         updateData.qr_code_url = `payment-proofs/${filePath}`;
       }
@@ -223,10 +226,11 @@ export function useAdminCreateBeneficiary() {
       let qrCodeUrl: string | null = null;
 
       if (data.qr_code_file) {
-        const filePath = `beneficiary-qr/${data.client_id}/${Date.now()}_${data.qr_code_file.name}`;
+        const compressed = await compressImage(data.qr_code_file);
+        const filePath = `beneficiary-qr/${data.client_id}/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabaseAdmin.storage
           .from('payment-proofs')
-          .upload(filePath, data.qr_code_file);
+          .upload(filePath, compressed);
         if (uploadError) throw uploadError;
         qrCodeUrl = `payment-proofs/${filePath}`;
       }

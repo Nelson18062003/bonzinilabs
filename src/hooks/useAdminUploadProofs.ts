@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
+import { compressImage } from '@/lib/imageCompression';
 
 export function useAdminUploadProofs() {
   const queryClient = useQueryClient();
@@ -13,11 +14,11 @@ export function useAdminUploadProofs() {
 
       const uploadedProofs = [];
 
-      for (const file of files) {
-        // Upload file to storage
+      for (const rawFile of files) {
+        const file = await compressImage(rawFile);
         const fileExt = file.name.split('.').pop();
         const filePath = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabaseAdmin.storage
           .from('deposit-proofs')
           .upload(filePath, file);
