@@ -205,16 +205,16 @@ export const waveAccount: MobileMoneyInfo = {
 
 export const omMerchantInfo: MerchantInfo = {
   accountName: 'WONDER PHONE',
-  merchantCode: '#150*14*424393*696103864*MONTANT#',
+  merchantCode: '#150*14*515318*696103864*MONTANT#',
 };
 
 export const mtnMerchantInfo: MerchantInfo = {
   accountName: 'NGANGON SOH NELSON',
-  merchantCode: '*126*14*652236856*MONTANT#',
+  merchantCode: '*126*14*652236856*MONTANT#', 
 };
 
-// Max 500 000 XAF per mobile money transaction
-export const MOBILE_MONEY_TRANSACTION_LIMIT = 500_000;
+// Max 5 000 000 XAF per mobile money transaction
+export const MOBILE_MONEY_TRANSACTION_LIMIT = 5_000_000;
 
 // ── Helpers ──────────────────────────────────────────────────
 
