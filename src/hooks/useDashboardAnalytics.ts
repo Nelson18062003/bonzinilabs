@@ -777,3 +777,390 @@ export function useNetFlowStats(days: number = 7) {
     },
   });
 }
+
+// ── 14. Total Clients Count ────────────────────────────────
+
+export interface TotalClientsStats {
+  total: number;
+  active: number;    // status = 'active'
+  inactive: number;  // other statuses
+  kycVerified: number;
+}
+
+export function useTotalClientsStats() {
+  return useQuery({
+    queryKey: ['analytics-total-clients'],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { data: clients, error } = await supabaseAdmin
+        .from('clients')
+        .select('status, kyc_verified');
+
+      if (error) throw error;
+
+      let total = 0;
+      let active = 0;
+      let inactive = 0;
+      let kycVerified = 0;
+
+      for (const c of clients || []) {
+        total++;
+        if (c.status === 'active') active++;
+        else inactive++;
+        if (c.kyc_verified) kycVerified++;
+      }
+
+      return { total, active, inactive, kycVerified } satisfies TotalClientsStats;
+    },
+  });
+}
+
+// ── 15. Client Registration Source (Admin vs Self-registered) ──
+
+export interface RegistrationSourceStats {
+  adminCreated: number;
+  selfRegistered: number;
+  adminCreatedPct: number;
+  selfRegisteredPct: number;
+  /** Monthly breakdown for chart */
+  monthly: Array<{
+    month: string;
+    adminCreated: number;
+    selfRegistered: number;
+  }>;
+}
+
+export function useRegistrationSourceStats(months: number = 6) {
+  return useQuery({
+    queryKey: ['analytics-registration-source', months],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const since = monthsAgo(months);
+      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+      // Get all clients
+      const { data: clients, error: clientsErr } = await supabaseAdmin
+        .from('clients')
+        .select('user_id, created_at')
+        .gte('created_at', since);
+
+      if (clientsErr) throw clientsErr;
+
+      // Get admin-created client IDs from audit logs
+      const { data: auditLogs, error: auditErr } = await supabaseAdmin
+        .from('admin_audit_logs')
+        .select('target_id, created_at')
+        .eq('action_type', 'create_client')
+        .gte('created_at', since);
+
+      if (auditErr) throw auditErr;
+
+      const adminCreatedIds = new Set(
+        (auditLogs || []).map(log => log.target_id).filter(Boolean)
+      );
+
+      // Global counts
+      let adminCreated = 0;
+      let selfRegistered = 0;
+
+      // Monthly buckets
+      const buckets = new Map<string, { adminCreated: number; selfRegistered: number }>();
+      for (let i = months - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        buckets.set(key, { adminCreated: 0, selfRegistered: 0 });
+      }
+
+      for (const client of clients || []) {
+        const isAdmin = adminCreatedIds.has(client.user_id);
+        if (isAdmin) adminCreated++;
+        else selfRegistered++;
+
+        const d = new Date(client.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const bucket = buckets.get(key);
+        if (bucket) {
+          if (isAdmin) bucket.adminCreated++;
+          else bucket.selfRegistered++;
+        }
+      }
+
+      const total = adminCreated + selfRegistered;
+
+      const monthly = [];
+      for (const [key, vals] of buckets) {
+        const [, m] = key.split('-');
+        monthly.push({
+          month: monthNames[parseInt(m) - 1],
+          adminCreated: vals.adminCreated,
+          selfRegistered: vals.selfRegistered,
+        });
+      }
+
+      return {
+        adminCreated,
+        selfRegistered,
+        adminCreatedPct: total > 0 ? Math.round((adminCreated / total) * 100) : 0,
+        selfRegisteredPct: total > 0 ? Math.round((selfRegistered / total) * 100) : 0,
+        monthly,
+      } satisfies RegistrationSourceStats;
+    },
+  });
+}
+
+// ── 16. Deposit Volume Report (day / week / month) ─────────
+
+export type PeriodGranularity = 'day' | 'week' | 'month';
+
+export interface VolumeReportPoint {
+  label: string;
+  volume: number;
+  count: number;
+  avgAmount: number;
+}
+
+export interface VolumeReportData {
+  points: VolumeReportPoint[];
+  totalVolume: number;
+  totalCount: number;
+  avgAmount: number;
+  trend: number; // % vs previous equivalent period
+  peakLabel: string;
+  peakVolume: number;
+}
+
+function getWeekNumber(d: Date): number {
+  const oneJan = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d.getTime() - oneJan.getTime()) / 86400000 + oneJan.getDay() + 1) / 7);
+}
+
+function buildBucketConfig(granularity: PeriodGranularity) {
+  const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+  if (granularity === 'day') {
+    // Last 14 days — label: "Lun 24 Mar"
+    const keys: Array<{ key: string; label: string }> = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      keys.push({ key, label: `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}` });
+    }
+    const since = daysAgo(28); // fetch 28 days for trend comparison
+    const getKey = (dateStr: string) => new Date(dateStr).toISOString().split('T')[0];
+    return { keys, since, getKey, prevDays: 14 };
+  }
+
+  if (granularity === 'week') {
+    // Last 8 weeks — label: "10–16 Mar" or "24 Fév–2 Mar"
+    const keys: Array<{ key: string; label: string }> = [];
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - i * 7);
+      // Align to Monday
+      const dayOfWeek = weekStart.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      weekStart.setDate(weekStart.getDate() + mondayOffset);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const wn = getWeekNumber(weekStart);
+      const key = `${weekStart.getFullYear()}-W${String(wn).padStart(2, '0')}`;
+
+      let label: string;
+      if (weekStart.getMonth() === weekEnd.getMonth()) {
+        label = `${weekStart.getDate()}–${weekEnd.getDate()} ${monthNames[weekStart.getMonth()]}`;
+      } else {
+        label = `${weekStart.getDate()} ${monthNames[weekStart.getMonth()]}–${weekEnd.getDate()} ${monthNames[weekEnd.getMonth()]}`;
+      }
+      keys.push({ key, label });
+    }
+    const since = daysAgo(16 * 7); // 16 weeks for trend
+    const getKey = (dateStr: string) => {
+      const d = new Date(dateStr);
+      const wn = getWeekNumber(d);
+      return `${d.getFullYear()}-W${String(wn).padStart(2, '0')}`;
+    };
+    return { keys, since, getKey, prevDays: 8 * 7 };
+  }
+
+  // month — label: "Mar 2026"
+  const keys: Array<{ key: string; label: string }> = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    keys.push({ key, label: `${monthNames[d.getMonth()]} ${d.getFullYear()}` });
+  }
+  const since = monthsAgo(12); // 12 months for trend
+  const getKey = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+  return { keys, since, getKey, prevDays: 180 };
+}
+
+export function useDepositVolumeReport(granularity: PeriodGranularity = 'day') {
+  return useQuery({
+    queryKey: ['analytics-deposit-volume-report', granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const config = buildBucketConfig(granularity);
+
+      const { data: deposits, error } = await supabaseAdmin
+        .from('deposits')
+        .select('amount_xaf, created_at, status')
+        .eq('status', 'validated')
+        .gte('created_at', config.since);
+
+      if (error) throw error;
+
+      // Build current period buckets
+      const currentKeys = new Set(config.keys.map(k => k.key));
+      const buckets = new Map<string, { volume: number; count: number }>();
+      for (const k of config.keys) {
+        buckets.set(k.key, { volume: 0, count: 0 });
+      }
+
+      let prevVolume = 0;
+      let prevCount = 0;
+
+      for (const d of deposits || []) {
+        const key = config.getKey(d.created_at);
+        const amount = d.amount_xaf || 0;
+
+        if (currentKeys.has(key)) {
+          const bucket = buckets.get(key);
+          if (bucket) {
+            bucket.volume += amount;
+            bucket.count += 1;
+          }
+        } else {
+          // Previous period for trend calculation
+          prevVolume += amount;
+          prevCount += 1;
+        }
+      }
+
+      let totalVolume = 0;
+      let totalCount = 0;
+      let peakLabel = '';
+      let peakVolume = 0;
+
+      const points: VolumeReportPoint[] = config.keys.map(k => {
+        const b = buckets.get(k.key)!;
+        totalVolume += b.volume;
+        totalCount += b.count;
+        if (b.volume > peakVolume) {
+          peakVolume = b.volume;
+          peakLabel = k.label;
+        }
+        return {
+          label: k.label,
+          volume: b.volume,
+          count: b.count,
+          avgAmount: b.count > 0 ? Math.round(b.volume / b.count) : 0,
+        };
+      });
+
+      const trend = prevVolume > 0
+        ? Math.round(((totalVolume - prevVolume) / prevVolume) * 100)
+        : 0;
+
+      return {
+        points,
+        totalVolume,
+        totalCount,
+        avgAmount: totalCount > 0 ? Math.round(totalVolume / totalCount) : 0,
+        trend,
+        peakLabel,
+        peakVolume,
+      } satisfies VolumeReportData;
+    },
+  });
+}
+
+// ── 17. Payment Volume Report (day / week / month) ─────────
+
+export function usePaymentVolumeReport(granularity: PeriodGranularity = 'day') {
+  return useQuery({
+    queryKey: ['analytics-payment-volume-report', granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const config = buildBucketConfig(granularity);
+
+      const { data: payments, error } = await supabaseAdmin
+        .from('payments')
+        .select('amount_xaf, amount_rmb, created_at, method')
+        .eq('status', 'completed')
+        .gte('created_at', config.since);
+
+      if (error) throw error;
+
+      const currentKeys = new Set(config.keys.map(k => k.key));
+      const buckets = new Map<string, { volume: number; volumeRMB: number; count: number }>();
+      for (const k of config.keys) {
+        buckets.set(k.key, { volume: 0, volumeRMB: 0, count: 0 });
+      }
+
+      let prevVolume = 0;
+
+      for (const p of payments || []) {
+        const key = config.getKey(p.created_at);
+        const amountXAF = p.amount_xaf || 0;
+        const amountRMB = p.amount_rmb || 0;
+
+        if (currentKeys.has(key)) {
+          const bucket = buckets.get(key);
+          if (bucket) {
+            bucket.volume += amountXAF;
+            bucket.volumeRMB += amountRMB;
+            bucket.count += 1;
+          }
+        } else {
+          prevVolume += amountXAF;
+        }
+      }
+
+      let totalVolume = 0;
+      let totalCount = 0;
+      let totalRMB = 0;
+      let peakLabel = '';
+      let peakVolume = 0;
+
+      const points: VolumeReportPoint[] = config.keys.map(k => {
+        const b = buckets.get(k.key)!;
+        totalVolume += b.volume;
+        totalRMB += b.volumeRMB;
+        totalCount += b.count;
+        if (b.volume > peakVolume) {
+          peakVolume = b.volume;
+          peakLabel = k.label;
+        }
+        return {
+          label: k.label,
+          volume: b.volume,
+          count: b.count,
+          avgAmount: b.count > 0 ? Math.round(b.volume / b.count) : 0,
+        };
+      });
+
+      const trend = prevVolume > 0
+        ? Math.round(((totalVolume - prevVolume) / prevVolume) * 100)
+        : 0;
+
+      return {
+        points,
+        totalVolume,
+        totalCount,
+        avgAmount: totalCount > 0 ? Math.round(totalVolume / totalCount) : 0,
+        trend,
+        peakLabel,
+        peakVolume,
+      } satisfies VolumeReportData;
+    },
+  });
+}
