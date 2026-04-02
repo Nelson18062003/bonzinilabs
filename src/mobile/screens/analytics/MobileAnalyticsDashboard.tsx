@@ -5,9 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { useDashboardStats } from '@/hooks/useAdminData';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
-import { usePaymentStats } from '@/hooks/usePaginatedPayments';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import {
   useFinancialFlowData,
@@ -22,6 +20,11 @@ import {
   useRateHistoryData,
   useDashboardAlerts,
   useNetFlowStats,
+  useTotalClientsStats,
+  useRegistrationSourceStats,
+  useDepositVolumeReport,
+  usePaymentVolumeReport,
+  type PeriodGranularity,
 } from '@/hooks/useDashboardAnalytics';
 import { formatXAF, formatCompact, formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -180,27 +183,31 @@ function ProgressBar({ label, value, color }: { label: string; value: number; co
 // ════════════════════════════════════════════════════════════
 
 function OverviewSection() {
-  const { data: stats } = useDashboardStats();
+  const { data: netFlow } = useNetFlowStats(7);
+  const { data: clientStats } = useTotalClientsStats();
   const { data: depositStats } = useDepositStats();
-  const { data: paymentStats } = usePaymentStats();
   const { data: rate } = useActiveDailyRate();
-
-  const pendingTotal = (depositStats?.to_process || 0) + (paymentStats?.toProcess || 0) + (paymentStats?.inProgress || 0);
 
   return (
     <section className="space-y-2.5">
       <SectionHeader icon={BarChart3} title="Vue d'ensemble" subtitle="KPIs principaux — Temps réel" />
       <div className="flex gap-2.5">
-        <StatCard icon={Wallet} label="Solde plateforme" value={formatCompact(stats?.totalWalletBalance || 0)} sub="XAF" color="hsl(258,100%,60%)" />
-        <StatCard icon={Activity} label="Volume 7j" value={formatCompact(stats?.weekVolume || 0)} sub="XAF" color="hsl(36,100%,55%)" />
+        <StatCard icon={ArrowDownToLine} label="Dépôts 7j" value={formatCompact(netFlow?.totalIn || 0)} sub="XAF" color="hsl(142,76%,36%)" />
+        <StatCard icon={ArrowUpFromLine} label="Paiements 7j" value={formatCompact(netFlow?.totalOut || 0)} sub="XAF" color="hsl(0,84%,60%)" />
       </div>
       <div className="flex gap-2.5">
-        <StatCard icon={ArrowDownToLine} label="Dépôts aujourd'hui" value={formatCompact(depositStats?.today_amount || 0)} sub={`${depositStats?.today_validated || 0} opérations`} color="hsl(142,76%,36%)" />
-        <StatCard icon={ArrowUpFromLine} label="Paiements aujourd'hui" value={formatCompact(stats?.todayPaymentsAmount || 0)} sub={`${paymentStats?.today_completed || 0} opérations`} color="hsl(16,100%,55%)" />
+        <StatCard
+          icon={netFlow && netFlow.netFlow >= 0 ? TrendingUp : TrendingDown}
+          label="Flux net"
+          value={`${netFlow && netFlow.netFlow >= 0 ? '+' : ''}${formatCompact(netFlow?.netFlow || 0)}`}
+          sub="XAF"
+          color={netFlow && netFlow.netFlow >= 0 ? 'hsl(142,76%,36%)' : 'hsl(0,84%,60%)'}
+        />
+        <StatCard icon={Users} label="Clients total" value={String(clientStats?.total || 0)} sub={`${clientStats?.active || 0} actifs`} color="#3b82f6" />
       </div>
       <div className="admin-card rounded-2xl p-3.5 flex items-center">
         <div className="flex-1 text-center">
-          <p className="text-base font-extrabold" style={{ color: 'hsl(258,100%,60%)' }}>{stats?.activeClients || 0}</p>
+          <p className="text-base font-extrabold" style={{ color: 'hsl(258,100%,60%)' }}>{clientStats?.active || 0}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Clients actifs</p>
         </div>
         <div className="w-px h-7 bg-border" />
@@ -209,11 +216,6 @@ function OverviewSection() {
             {depositStats ? `${Math.round((depositStats.validated / Math.max(depositStats.total, 1)) * 100)}%` : '—'}
           </p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Taux validation</p>
-        </div>
-        <div className="w-px h-7 bg-border" />
-        <div className="flex-1 text-center">
-          <p className="text-base font-extrabold" style={{ color: 'hsl(16,100%,55%)' }}>{pendingTotal}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">En attente</p>
         </div>
         <div className="w-px h-7 bg-border" />
         <div className="flex-1 text-center">
@@ -662,6 +664,317 @@ function AlertsSection() {
 }
 
 // ════════════════════════════════════════════════════════════
+// SHARED — Volume Tooltip + Period Selector
+// ════════════════════════════════════════════════════════════
+
+function VolumeTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; payload?: { count?: number; avgAmount?: number } }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0];
+  return (
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
+      <p className="font-semibold text-foreground mb-1">{label}</p>
+      <p className="flex items-center gap-1.5">
+        <span className="text-muted-foreground">Volume:</span>
+        <span className="font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatXAF(d.value)} XAF</span>
+      </p>
+      {d.payload?.count !== undefined && (
+        <p className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-muted-foreground">Opérations:</span>
+          <span className="font-bold">{d.payload.count}</span>
+        </p>
+      )}
+      {d.payload?.avgAmount !== undefined && d.payload.avgAmount > 0 && (
+        <p className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-muted-foreground">Moy.:</span>
+          <span className="font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCompact(d.payload.avgAmount)} XAF</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PeriodSelector({ value, onChange }: { value: PeriodGranularity; onChange: (v: PeriodGranularity) => void }) {
+  const options: { key: PeriodGranularity; label: string }[] = [
+    { key: 'day', label: 'Jour' },
+    { key: 'week', label: 'Semaine' },
+    { key: 'month', label: 'Mois' },
+  ];
+  return (
+    <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
+      {options.map(o => (
+        <button key={o.key} onClick={() => onChange(o.key)} className={cn(
+          'px-2 py-1 rounded-md text-[11px] font-semibold transition-all',
+          value === o.key ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground',
+        )}>{o.label}</button>
+      ))}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// SECTION 2b — Rapport volume dépôts
+// ════════════════════════════════════════════════════════════
+
+function DepositVolumeReportSection() {
+  const [granularity, setGranularity] = useState<PeriodGranularity>('day');
+  const { data: report } = useDepositVolumeReport(granularity);
+
+  const dateRange = useMemo(() => {
+    if (!report?.points || report.points.length === 0) return '';
+    return `${report.points[0].label} → ${report.points[report.points.length - 1].label}`;
+  }, [report]);
+
+  return (
+    <section className="space-y-2.5">
+      <div className="flex items-start justify-between">
+        <SectionHeader icon={ArrowDownToLine} title="Rapport dépôts" subtitle="Volume par période" />
+        <PeriodSelector value={granularity} onChange={setGranularity} />
+      </div>
+
+      {dateRange && (
+        <div className="text-[10px] font-medium text-green-600 dark:text-green-400 bg-green-500/10 rounded-lg px-3 py-1.5">
+          {dateRange}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <div className="admin-card rounded-2xl p-3 flex-1 text-center">
+          <p className="text-[9px] text-muted-foreground">Volume total</p>
+          <p className="text-base font-extrabold mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCompact(report?.totalVolume || 0)}</p>
+          <p className="text-[9px] text-muted-foreground">XAF</p>
+        </div>
+        <div className="admin-card rounded-2xl p-3 flex-1 text-center">
+          <p className="text-[9px] text-muted-foreground">Opérations</p>
+          <p className="text-base font-extrabold mt-1">{report?.totalCount || 0}</p>
+          <p className="text-[9px] text-muted-foreground">dépôts</p>
+        </div>
+        <div className="admin-card rounded-2xl p-3 flex-1 text-center">
+          <p className="text-[9px] text-muted-foreground">Montant moy.</p>
+          <p className="text-base font-extrabold mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCompact(report?.avgAmount || 0)}</p>
+          <p className="text-[9px] text-muted-foreground">XAF</p>
+        </div>
+      </div>
+
+      <div className="admin-card rounded-2xl p-3 pb-1">
+        {report && report.points.length > 0 ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={report.points} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(142,76%,36%)" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="hsl(142,76%,36%)" stopOpacity={0.4} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtAxisXAF} width={50} />
+              <Tooltip content={<VolumeTooltip />} />
+              <Bar dataKey="volume" name="Dépôts" fill="url(#gradGreen)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-[200px] text-xs text-muted-foreground">Chargement...</div>
+        )}
+      </div>
+
+      {report && (
+        <div className="admin-card rounded-2xl p-3.5 flex items-center">
+          <div className="flex-1">
+            <p className="text-[9px] text-muted-foreground">Pic le plus haut</p>
+            <p className="text-sm font-extrabold text-green-600 dark:text-green-400 mt-0.5" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCompact(report.peakVolume)} XAF</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5">{report.peakLabel}</p>
+          </div>
+          <div className="w-px h-8 bg-border mx-3" />
+          <div className="flex-1 text-right">
+            <p className="text-[9px] text-muted-foreground">Tendance</p>
+            <div className={cn('flex items-center justify-end gap-1 mt-0.5 text-sm font-extrabold', report.trend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500')}>
+              {report.trend >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              {report.trend >= 0 ? '+' : ''}{report.trend}%
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-0.5">vs période préc.</p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// SECTION 4b — Rapport volume paiements
+// ════════════════════════════════════════════════════════════
+
+function PaymentVolumeReportSection() {
+  const [granularity, setGranularity] = useState<PeriodGranularity>('day');
+  const { data: report } = usePaymentVolumeReport(granularity);
+
+  const dateRange = useMemo(() => {
+    if (!report?.points || report.points.length === 0) return '';
+    return `${report.points[0].label} → ${report.points[report.points.length - 1].label}`;
+  }, [report]);
+
+  return (
+    <section className="space-y-2.5">
+      <div className="flex items-start justify-between">
+        <SectionHeader icon={ArrowUpFromLine} title="Rapport paiements" subtitle="Volume par période" />
+        <PeriodSelector value={granularity} onChange={setGranularity} />
+      </div>
+
+      {dateRange && (
+        <div className="text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-500/10 rounded-lg px-3 py-1.5">
+          {dateRange}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <div className="admin-card rounded-2xl p-3 flex-1 text-center">
+          <p className="text-[9px] text-muted-foreground">Volume total</p>
+          <p className="text-base font-extrabold mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCompact(report?.totalVolume || 0)}</p>
+          <p className="text-[9px] text-muted-foreground">XAF</p>
+        </div>
+        <div className="admin-card rounded-2xl p-3 flex-1 text-center">
+          <p className="text-[9px] text-muted-foreground">Paiements</p>
+          <p className="text-base font-extrabold mt-1">{report?.totalCount || 0}</p>
+          <p className="text-[9px] text-muted-foreground">envoyés</p>
+        </div>
+        <div className="admin-card rounded-2xl p-3 flex-1 text-center">
+          <p className="text-[9px] text-muted-foreground">Montant moy.</p>
+          <p className="text-base font-extrabold mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCompact(report?.avgAmount || 0)}</p>
+          <p className="text-[9px] text-muted-foreground">XAF</p>
+        </div>
+      </div>
+
+      <div className="admin-card rounded-2xl p-3 pb-1">
+        {report && report.points.length > 0 ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={report.points} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(16,100%,55%)" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="hsl(16,100%,55%)" stopOpacity={0.4} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtAxisXAF} width={50} />
+              <Tooltip content={<VolumeTooltip />} />
+              <Bar dataKey="volume" name="Paiements" fill="url(#gradOrange)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-[200px] text-xs text-muted-foreground">Chargement...</div>
+        )}
+      </div>
+
+      {report && (
+        <div className="admin-card rounded-2xl p-3.5 flex items-center">
+          <div className="flex-1">
+            <p className="text-[9px] text-muted-foreground">Pic le plus haut</p>
+            <p className="text-sm font-extrabold" style={{ color: 'hsl(16,100%,55%)', fontVariantNumeric: 'tabular-nums' }}>{formatCompact(report.peakVolume)} XAF</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5">{report.peakLabel}</p>
+          </div>
+          <div className="w-px h-8 bg-border mx-3" />
+          <div className="flex-1 text-right">
+            <p className="text-[9px] text-muted-foreground">Tendance</p>
+            <div className={cn('flex items-center justify-end gap-1 mt-0.5 text-sm font-extrabold', report.trend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500')}>
+              {report.trend >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              {report.trend >= 0 ? '+' : ''}{report.trend}%
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-0.5">vs période préc.</p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// SECTION 6b — Statistiques utilisateurs
+// ════════════════════════════════════════════════════════════
+
+function UserStatsSection() {
+  const { data: clientStats } = useTotalClientsStats();
+  const { data: regStats } = useRegistrationSourceStats(6);
+
+  return (
+    <section className="space-y-2.5">
+      <SectionHeader icon={Users} title="Statistiques utilisateurs" subtitle="Inscriptions et provenance" />
+
+      <div className="admin-card rounded-2xl p-3.5">
+        <div className="flex gap-3">
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-extrabold" style={{ color: 'hsl(258,100%,60%)' }}>{clientStats?.total || 0}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Total clients</p>
+          </div>
+          <div className="w-px bg-border" />
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-extrabold text-green-600 dark:text-green-400">{clientStats?.active || 0}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Actifs</p>
+          </div>
+          <div className="w-px bg-border" />
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-extrabold text-muted-foreground">{clientStats?.inactive || 0}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Inactifs</p>
+          </div>
+          <div className="w-px bg-border" />
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-extrabold" style={{ color: 'hsl(36,100%,55%)' }}>{clientStats?.kycVerified || 0}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">KYC vérifié</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-card rounded-2xl p-3 pb-1">
+        <p className="text-[11px] font-semibold text-muted-foreground mb-2 px-0.5">Source d'inscription (6 mois)</p>
+        {regStats && regStats.monthly.length > 0 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={regStats.monthly} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={30} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ borderRadius: 10, border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: 12 }}
+                formatter={(value: number, name: string) => [value, name === 'adminCreated' ? 'Créés par admin' : 'Auto-inscrits']}
+              />
+              <Bar dataKey="adminCreated" name="adminCreated" fill="#8b5cf6" stackId="reg" radius={[0, 0, 0, 0]} maxBarSize={20} />
+              <Bar dataKey="selfRegistered" name="selfRegistered" fill="#f59e0b" stackId="reg" radius={[4, 4, 0, 0]} maxBarSize={20} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-[180px] text-xs text-muted-foreground">Chargement...</div>
+        )}
+        <div className="flex justify-center gap-5 py-2 text-[10px]">
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: '#8b5cf6' }} /> Créés par admin</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: '#f59e0b' }} /> Auto-inscrits</span>
+        </div>
+      </div>
+
+      <div className="flex gap-2.5">
+        <div className="admin-card rounded-2xl p-3.5 flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#8b5cf618' }}>
+              <Shield className="w-3.5 h-3.5" style={{ color: '#8b5cf6' }} />
+            </div>
+            <p className="text-[10px] text-muted-foreground">Créés par admin</p>
+          </div>
+          <p className="text-xl font-extrabold" style={{ color: '#8b5cf6' }}>{regStats?.adminCreatedPct || 0}%</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{regStats?.adminCreated || 0} clients</p>
+        </div>
+        <div className="admin-card rounded-2xl p-3.5 flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#f59e0b18' }}>
+              <Users className="w-3.5 h-3.5" style={{ color: '#f59e0b' }} />
+            </div>
+            <p className="text-[10px] text-muted-foreground">Auto-inscrits</p>
+          </div>
+          <p className="text-xl font-extrabold" style={{ color: '#f59e0b' }}>{regStats?.selfRegisteredPct || 0}%</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{regStats?.selfRegistered || 0} clients</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
 // MAIN — MobileAnalyticsDashboard
 // ════════════════════════════════════════════════════════════
 
@@ -717,13 +1030,18 @@ export function MobileAnalyticsDashboard() {
             <>
               <div className="animate-slide-up" style={{ animationDelay: '100ms', animationFillMode: 'both' }}><OverviewSection /></div>
               <div className="animate-slide-up" style={{ animationDelay: '150ms', animationFillMode: 'both' }}><FinancialFlowSection /></div>
+              <div className="animate-slide-up" style={{ animationDelay: '180ms', animationFillMode: 'both' }}><DepositVolumeReportSection /></div>
               <div className="animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}><DepositAnalysisSection /></div>
               <div className="animate-slide-up" style={{ animationDelay: '250ms', animationFillMode: 'both' }}><PaymentAnalysisSection /></div>
+              <div className="animate-slide-up" style={{ animationDelay: '280ms', animationFillMode: 'both' }}><PaymentVolumeReportSection /></div>
               <div className="animate-slide-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}><RateHistorySection /></div>
             </>
           )}
           {(activeTab === 'all' || activeTab === 'clients') && (
-            <div className="animate-slide-up" style={{ animationDelay: activeTab === 'all' ? '350ms' : '100ms', animationFillMode: 'both' }}><ClientInsightsSection /></div>
+            <>
+              <div className="animate-slide-up" style={{ animationDelay: activeTab === 'all' ? '350ms' : '100ms', animationFillMode: 'both' }}><ClientInsightsSection /></div>
+              <div className="animate-slide-up" style={{ animationDelay: activeTab === 'all' ? '380ms' : '130ms', animationFillMode: 'both' }}><UserStatsSection /></div>
+            </>
           )}
           {(activeTab === 'all' || activeTab === 'ops') && (
             <>
