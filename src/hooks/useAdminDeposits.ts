@@ -191,18 +191,15 @@ export function useValidateDeposit() {
     mutationFn: async ({
       depositId,
       adminComment,
-      confirmedAmount,
       sendNotification,
     }: {
       depositId: string;
       adminComment?: string;
-      confirmedAmount?: number;
       sendNotification?: boolean;
     }) => {
       const { data, error } = await supabaseAdmin.rpc('validate_deposit', {
         p_deposit_id: depositId,
         p_admin_comment: adminComment || null,
-        p_confirmed_amount: confirmedAmount ?? null,
         p_send_notification: sendNotification ?? true,
       });
 
@@ -304,56 +301,6 @@ export function useRejectDeposit() {
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       toast.error('Dépôt rejeté');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-export function useRequestCorrection() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ depositId, reason }: { depositId: string; reason: string }) => {
-      const { data, error } = await supabaseAdmin.rpc('request_deposit_correction', {
-        p_deposit_id: depositId,
-        p_reason: reason,
-      });
-
-      if (error) throw error;
-
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) throw new Error(result.error || 'Erreur');
-
-      return result;
-    },
-    onSuccess: (_, variables) => {
-      const { depositId } = variables;
-      const newStatus = 'pending_correction';
-
-      queryClient.setQueryData(
-        ['admin-deposit', depositId],
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (old: any) => old ? { ...old, status: newStatus } : old,
-      );
-      queryClient.setQueryData(
-        ['admin-deposits'],
-        (old: DepositWithProfile[] | undefined) =>
-          old?.map(d => d.id === depositId ? { ...d, status: newStatus } : d) ?? old,
-      );
-      queryClient.setQueriesData(
-        { queryKey: ['admin-deposits-paginated'] },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (old: any) => old?.pages
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map((d: any) => d.id === depositId ? { ...d, status: newStatus } : d) })) }
-          : old,
-      );
-
-      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      toast.success('Demande de correction envoyée');
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -483,16 +430,7 @@ export function useAdminCreateDeposit() {
         }
 
         if (proofUploadCount > 0) {
-          await supabaseAdmin.from('deposits')
-            .update({ status: 'proof_submitted' })
-            .eq('id', depositId);
-
-          await supabaseAdmin.from('deposit_timeline_events').insert({
-            deposit_id: depositId,
-            event_type: 'proof_submitted',
-            description: `${proofUploadCount} preuve(s) ajoutée(s) par l'admin`,
-            performed_by: admin.id,
-          });
+          await supabaseAdmin.rpc('submit_deposit_proof', { p_deposit_id: depositId });
         }
       }
 
@@ -582,21 +520,9 @@ export function useAdminUploadProofs() {
         throw new Error(`Échec de l'upload: ${failedFiles.join(', ')}`);
       }
 
-      // Advance to proof_submitted if in an uploadable state
-      const UPLOADABLE_STATES = ['created', 'awaiting_proof', 'pending_correction'];
-      if (uploadedCount > 0 && UPLOADABLE_STATES.includes(depositStatus || '')) {
-        await supabaseAdmin.from('deposits')
-          .update({ status: 'proof_submitted', updated_at: new Date().toISOString() })
-          .eq('id', depositId);
-      }
-
+      // Advance to proof_submitted via server-side RPC
       if (uploadedCount > 0) {
-        await supabaseAdmin.from('deposit_timeline_events').insert({
-          deposit_id: depositId,
-          event_type: 'proof_added',
-          description: `${uploadedCount} preuve(s) ajoutée(s) par l'admin`,
-          performed_by: admin.id,
-        });
+        await supabaseAdmin.rpc('submit_deposit_proof', { p_deposit_id: depositId });
       }
 
       return { success: true, uploadedCount, failedFiles };
@@ -622,28 +548,17 @@ export function useAdminUploadProofs() {
   });
 }
 
+/** @deprecated Use useCancelDeposit instead — delete erases ledger history */
 export function useDeleteDeposit() {
+  return useCancelDeposit();
+}
+
+export function useCancelDeposit() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ depositId }: { depositId: string }) => {
-      // Clean up storage files before deleting via RPC
-      const { data: proofs } = await supabaseAdmin
-        .from('deposit_proofs')
-        .select('file_url')
-        .eq('deposit_id', depositId);
-
-      if (proofs && proofs.length > 0) {
-        for (const proof of proofs) {
-          const path = proof.file_url.split('/deposit-proofs/')[1];
-          if (path) {
-            await supabaseAdmin.storage.from('deposit-proofs').remove([path]);
-          }
-        }
-      }
-
-      // Use RPC (SECURITY DEFINER) — handles RLS, super_admin check, wallet reversal and audit log
-      const { data, error } = await supabaseAdmin.rpc('delete_deposit', {
+      const { data, error } = await supabaseAdmin.rpc('cancel_deposit', {
         p_deposit_id: depositId,
       });
 
@@ -651,7 +566,7 @@ export function useDeleteDeposit() {
 
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur lors de la suppression');
+        throw new Error(result.error || "Erreur lors de l'annulation");
       }
 
       return result;
@@ -659,7 +574,9 @@ export function useDeleteDeposit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      toast.success('Dépôt supprimé');
+      queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
+      queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
+      toast.success('Dépôt annulé');
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -704,19 +621,9 @@ export function useAdminDeleteProof() {
         .eq('deposit_id', depositId)
         .is('deleted_at', null);
 
-      // If no proofs remain and deposit is not in a terminal state, revert to created
+      // If no proofs remain, revert to created via server-side RPC
       if (count === 0) {
-        const { data: deposit } = await supabaseAdmin
-          .from('deposits')
-          .select('status')
-          .eq('id', depositId)
-          .maybeSingle();
-
-        if (deposit && !['validated', 'rejected', 'cancelled'].includes(deposit.status)) {
-          await supabaseAdmin.from('deposits')
-            .update({ status: 'created', updated_at: new Date().toISOString() })
-            .eq('id', depositId);
-        }
+        await supabaseAdmin.rpc('revert_deposit_to_created', { p_deposit_id: depositId });
       }
 
       // Timeline event

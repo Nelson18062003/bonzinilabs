@@ -324,33 +324,28 @@ export function useUpdateBeneficiaryInfo() {
         );
       }
 
-      const { error, count } = await supabase
-        .from('payments')
-        .update({
-          ...beneficiaryInfo,
-          status: hasValidInfo ? 'ready_for_payment' : 'waiting_beneficiary_info',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', paymentId)
-        .select('id', { count: 'exact', head: true });
-
-      if (error) throw error;
-
-      // Supabase returns count=0 when RLS blocks the update (no error, just 0 rows)
-      if (count === 0) {
-        throw new Error('Impossible de modifier ce paiement. Il est peut-être déjà en cours de traitement.');
-      }
-
-      // Always add timeline event when beneficiary info is modified
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      await supabase.from('payment_timeline_events').insert({
-        payment_id: paymentId,
-        event_type: hasValidInfo ? 'info_provided' : 'info_updated',
-        description: infoDescription,
-        performed_by: userId,
+      // Update beneficiary info via server-side RPC (handles status transition)
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('update_payment_beneficiary', {
+        p_payment_id: paymentId,
+        p_beneficiary_name: beneficiaryInfo.beneficiary_name || null,
+        p_beneficiary_phone: beneficiaryInfo.beneficiary_phone || null,
+        p_beneficiary_email: beneficiaryInfo.beneficiary_email || null,
+        p_beneficiary_qr_code_url: beneficiaryInfo.beneficiary_qr_code_url || null,
+        p_beneficiary_bank_name: beneficiaryInfo.beneficiary_bank_name || null,
+        p_beneficiary_bank_account: beneficiaryInfo.beneficiary_bank_account || null,
+        p_beneficiary_notes: beneficiaryInfo.beneficiary_notes || null,
       });
 
-      return { hasValidInfo };
+      if (rpcError) throw rpcError;
+
+      const result = rpcResult as { success: boolean; error?: string; status?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour');
+      }
+
+      // Timeline event is handled by the RPC
+
+      return { hasValidInfo: result.status === 'ready_for_payment' };
     },
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['payment', variables.paymentId] });

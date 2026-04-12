@@ -22,7 +22,8 @@ export type DepositStatus =
   | 'validated'
   | 'rejected'
   | 'pending_correction'
-  | 'cancelled';
+  | 'cancelled'
+  | 'cancelled_by_admin';
 
 // ---------- UI-level method hierarchy ----------
 
@@ -225,6 +226,7 @@ export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
   rejected: 'Rejeté',
   pending_correction: 'À corriger',
   cancelled: 'Annulé',
+  cancelled_by_admin: 'Annulé (admin)',
 };
 
 export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
@@ -258,6 +260,7 @@ export const DEPOSIT_STATUS_COLORS: Record<DepositStatus, string> = {
   validated: 'bg-green-500/10 text-green-600 dark:text-green-400',
   rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
   cancelled: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+  cancelled_by_admin: 'bg-red-500/10 text-red-600 dark:text-red-400',
 };
 
 // ---------- Timeline method families ----------

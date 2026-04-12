@@ -53,27 +53,25 @@ export function fmtDateLong(iso: string): string {
 /** Returns false for operations that must be excluded from the statement. */
 export function shouldIncludeWalletOp(op: RawWalletOp): boolean {
   const t = op.operation_type.toUpperCase();
-  // Refuse deposits: no balance impact
+  // Refused deposits: no balance impact — exclude
   if (t === 'DEPOSIT_REFUSED') return false;
-  // Reservation debit: shown only when payment is executed (PAYMENT_EXECUTED)
-  if (t === 'PAYMENT_RESERVED') return false;
-  // Refund of a rejected payment: rejected payments never appear in the statement
-  if (t === 'PAYMENT_CANCELLED_REFUNDED') return false;
+  // Payment executed: informational only, no balance change (debit already at RESERVED) — exclude
+  if (t === 'PAYMENT_EXECUTED') return false;
   // Test operations
   if (op.is_test) return false;
+  // PAYMENT_RESERVED = real debit, PAYMENT_CANCELLED_REFUNDED = real refund — include both
   return true;
 }
 
 export function shouldIncludeLedgerEntry(entry: RawLedgerEntry): boolean {
   const t = entry.entryType.toUpperCase();
-  // Refused deposits: no balance impact
+  // Refused deposits: no balance impact — exclude
   if (t === 'DEPOSIT_REFUSED') return false;
-  // Reservation debit: shown only when payment is executed (PAYMENT_EXECUTED)
-  if (t === 'PAYMENT_RESERVED') return false;
-  // Refund of a rejected payment: rejected payments never appear in the statement
-  if (t === 'PAYMENT_CANCELLED_REFUNDED') return false;
+  // Payment executed: informational only, no balance change (debit already at RESERVED) — exclude
+  if (t === 'PAYMENT_EXECUTED') return false;
   // Test operations
   if (entry.isTest) return false;
+  // PAYMENT_RESERVED = real debit, PAYMENT_CANCELLED_REFUNDED = real refund — include both
   return true;
 }
 

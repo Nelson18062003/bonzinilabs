@@ -16,7 +16,6 @@ import {
   useDepositDetail,
   useDepositProofs,
   useDepositTimeline,
-  useResubmitDeposit,
   useUploadMultipleProofs,
   useDeleteDepositProof,
   useCancelDeposit,
@@ -158,7 +157,6 @@ const DepositDetailPage = () => {
   const { data: profile } = useMyProfile();
   const { user } = useAuth();
   const uploadProofs = useUploadMultipleProofs();
-  const resubmitDeposit = useResubmitDeposit();
   const deleteProof = useDeleteDepositProof();
   const cancelDeposit = useCancelDeposit();
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -244,21 +242,10 @@ const DepositDetailPage = () => {
   };
 
   const IconComponent = getMethodIcon();
-  const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof' || deposit.status === 'pending_correction';
-  const isPendingCorrection = deposit.status === 'pending_correction';
-  const canDeleteProofs = !['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof';
+  const canDeleteProofs = !['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
   const canCancel = ['created', 'awaiting_proof', 'proof_submitted'].includes(deposit.status);
-  const isTerminal = ['validated', 'wallet_credited', 'rejected', 'cancelled'].includes(deposit.status);
-
-  const handleResubmit = async () => {
-    if (!depositId || !uploadedProofs.length) return;
-    // 1. D'abord resubmit (change status pending_correction → proof_submitted, clear rejection_reason)
-    await resubmitDeposit.mutateAsync({ depositId });
-    // 2. Puis upload les preuves (le statut est déjà proof_submitted, l'upload ne le re-set pas)
-    await uploadProofs.mutateAsync({ depositId, files: uploadedProofs });
-    setUploadedProofs([]);
-    setUploadKey(k => k + 1);
-  };
+  const isTerminal = ['validated', 'wallet_credited', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -417,18 +404,20 @@ const DepositDetailPage = () => {
                 <Copy className="w-4 h-4 text-muted-foreground" />
               )}
             </button>
-            <button
-              onClick={handleDownloadReceipt}
-              disabled={isGeneratingPDF}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              title="Télécharger le relevé"
-            >
-              {isGeneratingPDF ? (
-                <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-              ) : (
-                <FileDown className="w-4 h-4 text-muted-foreground" />
-              )}
-            </button>
+            {isTerminal && (
+              <button
+                onClick={handleDownloadReceipt}
+                disabled={isGeneratingPDF}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                title="Télécharger le relevé"
+              >
+                {isGeneratingPDF ? (
+                  <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -455,27 +444,6 @@ const DepositDetailPage = () => {
               <div>
                 <p className="font-semibold text-sm text-destructive">Dépôt rejeté</p>
                 <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Correction notice */}
-        {isPendingCorrection && deposit.rejection_reason && (
-          <div
-            className="revolut-alert-warning animate-slide-up"
-            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
-          >
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="font-semibold text-sm text-amber-600 dark:text-amber-400">
-                  Correction demandée
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
-                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-                  Veuillez uploader une nouvelle preuve corrigée ci-dessous.
-                </p>
               </div>
             </div>
           </div>
@@ -635,8 +603,8 @@ const DepositDetailPage = () => {
               key={uploadKey}
               onFilesSelect={handleProofsUpload}
               selectedFiles={uploadedProofs}
-              onConfirm={isPendingCorrection ? handleResubmit : handleConfirmProofs}
-              isSubmitting={uploadProofs.isPending || resubmitDeposit.isPending}
+              onConfirm={handleConfirmProofs}
+              isSubmitting={uploadProofs.isPending}
             />
           </div>
         )}

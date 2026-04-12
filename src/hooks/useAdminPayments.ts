@@ -134,28 +134,17 @@ export function useAdminCreatePayment() {
   });
 }
 
-// Delete a payment (admin only)
+/** @deprecated Use useCancelPayment instead — delete erases ledger history */
 export function useDeletePayment() {
+  return useCancelPayment();
+}
+
+export function useCancelPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      // Clean up storage files before deleting via RPC
-      const { data: proofs } = await supabaseAdmin
-        .from('payment_proofs')
-        .select('file_url')
-        .eq('payment_id', paymentId);
-
-      if (proofs && proofs.length > 0) {
-        for (const proof of proofs) {
-          const path = proof.file_url.split('/payment-proofs/')[1];
-          if (path) {
-            await supabaseAdmin.storage.from('payment-proofs').remove([path]);
-          }
-        }
-      }
-
-      const { data, error } = await supabaseAdmin.rpc('delete_payment', {
+      const { data, error } = await supabaseAdmin.rpc('cancel_payment', {
         p_payment_id: paymentId,
       });
 
@@ -163,7 +152,7 @@ export function useDeletePayment() {
 
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur lors de la suppression');
+        throw new Error(result.error || "Erreur lors de l'annulation");
       }
 
       return result;
@@ -171,7 +160,8 @@ export function useDeletePayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
-      toast.success('Paiement supprimé');
+      queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
+      toast.success('Paiement annulé');
     },
     onError: (error: Error) => {
       toast.error(error.message);

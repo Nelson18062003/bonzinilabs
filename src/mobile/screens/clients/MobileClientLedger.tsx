@@ -22,7 +22,7 @@ import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 const FILTER_OPTIONS: { value: LedgerEntryType | 'all'; label: string }[] = [
   { value: 'all', label: 'Tous' },
   { value: 'DEPOSIT_VALIDATED', label: 'Dépôts' },
-  { value: 'PAYMENT_EXECUTED', label: 'Paiements' },
+  { value: 'PAYMENT_RESERVED', label: 'Paiements' },
   { value: 'ADMIN_CREDIT', label: 'Crédits' },
   { value: 'ADMIN_DEBIT', label: 'Débits' },
 ];
@@ -34,6 +34,7 @@ const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, {
   amountColor: string;
   prefix: string;
   label: string;
+  isInformational?: boolean;
 }> = {
   DEPOSIT_VALIDATED: {
     icon: ArrowDownCircle,
@@ -50,6 +51,7 @@ const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, {
     amountColor: 'text-gray-500 dark:text-gray-400',
     prefix: '',
     label: 'Dépôt refusé',
+    isInformational: true,
   },
   PAYMENT_RESERVED: {
     icon: Clock,
@@ -66,6 +68,7 @@ const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, {
     amountColor: 'text-red-600 dark:text-red-400',
     prefix: '-',
     label: 'Paiement exécuté',
+    isInformational: true,
   },
   PAYMENT_CANCELLED_REFUNDED: {
     icon: RefreshCw,
@@ -169,6 +172,11 @@ export function MobileClientLedger() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="font-medium text-sm">{config.label}</p>
+                          {config.isInformational && (
+                            <p className="text-[11px] italic text-muted-foreground/70">
+                              (informatif — aucun impact sur le solde)
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground line-clamp-2">
                             {entry.description}
                           </p>

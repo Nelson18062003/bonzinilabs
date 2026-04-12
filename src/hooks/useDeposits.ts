@@ -187,23 +187,8 @@ export function useUploadProof() {
       });
       if (proofError) throw proofError;
 
-      // Guard: only advance status if in an uploadable state
-      const UPLOADABLE_STATUSES = ['created', 'awaiting_proof', 'pending_correction'];
-      const { data: current } = await supabase
-        .from('deposits').select('status').eq('id', depositId).single();
-
-      if (current && UPLOADABLE_STATUSES.includes(current.status)) {
-        await supabase.from('deposits')
-          .update({ status: 'proof_submitted' as DepositStatus })
-          .eq('id', depositId);
-      }
-
-      await supabase.from('deposit_timeline_events').insert({
-        deposit_id: depositId,
-        event_type: 'proof_submitted',
-        description: 'Preuve de dépôt envoyée',
-        performed_by: user.id,
-      });
+      // Advance status to proof_submitted via server-side RPC
+      await supabase.rpc('submit_deposit_proof', { p_deposit_id: depositId });
 
       return { success: true };
     },
@@ -277,23 +262,8 @@ export function useUploadMultipleProofs() {
       }
 
       if (uploadedCount > 0) {
-        // Guard: only advance status if in an uploadable state
-        const UPLOADABLE_STATUSES = ['created', 'awaiting_proof', 'pending_correction'];
-        const { data: current } = await supabase
-          .from('deposits').select('status').eq('id', depositId).single();
-
-        if (current && UPLOADABLE_STATUSES.includes(current.status)) {
-          await supabase.from('deposits')
-            .update({ status: 'proof_submitted' as DepositStatus })
-            .eq('id', depositId);
-        }
-
-        await supabase.from('deposit_timeline_events').insert({
-          deposit_id: depositId,
-          event_type: 'proof_submitted',
-          description: `${uploadedCount} preuve(s) envoyée(s)`,
-          performed_by: user.id,
-        });
+        // Advance status to proof_submitted via server-side RPC
+        await supabase.rpc('submit_deposit_proof', { p_deposit_id: depositId });
       }
 
       return { uploadedCount, failedFiles };
@@ -352,14 +322,8 @@ export function useDeleteDepositProof() {
         .is('deleted_at', null);
 
       if (count === 0) {
-        const { data: currentDeposit } = await supabase
-          .from('deposits').select('status').eq('id', depositId).single();
-
-        if (currentDeposit && !['validated', 'rejected', 'cancelled'].includes(currentDeposit.status)) {
-          await supabase.from('deposits')
-            .update({ status: 'created' as DepositStatus })
-            .eq('id', depositId);
-        }
+        // Revert to created via server-side RPC (validates status guards)
+        await supabase.rpc('revert_deposit_to_created', { p_deposit_id: depositId });
       }
 
       // Timeline event for traceability
@@ -410,27 +374,3 @@ export function useCancelDeposit() {
   });
 }
 
-export function useResubmitDeposit() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ depositId }: { depositId: string }) => {
-      const { data, error } = await supabase.rpc('resubmit_deposit', {
-        p_deposit_id: depositId,
-      });
-      if (error) throw error;
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) throw new Error(result.error || 'Erreur');
-      return result;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
-      queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
-      queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
-      toast.success('Dépôt renvoyé avec succès');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}

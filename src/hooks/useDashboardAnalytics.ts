@@ -497,7 +497,7 @@ export function useDepositStatusBreakdown() {
         supabaseAdmin
           .from('deposits')
           .select('id', { count: 'exact', head: true })
-          .in('status', ['proof_submitted', 'admin_review', 'awaiting_proof', 'pending_correction'])
+          .in('status', ['proof_submitted', 'admin_review'])
           .gte('created_at', since),
       ]);
 

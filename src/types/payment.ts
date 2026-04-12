@@ -21,6 +21,7 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   rejected: 'Rejeté',
   cash_pending: 'Cash att.',
   cash_scanned: 'Cash scanné',
+  cancelled_by_admin: 'Annulé (admin)',
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
@@ -32,6 +33,7 @@ export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
   rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
   cash_pending: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   cash_scanned: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
+  cancelled_by_admin: 'bg-red-500/10 text-red-600 dark:text-red-400',
 };
 
 // Extended status config for detail screen (includes label + color together)
@@ -44,6 +46,7 @@ export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; color
   processing: { label: 'En cours', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' },
   completed: { label: 'Effectué', color: 'bg-green-500/10 text-green-600 dark:text-green-400' },
   rejected: { label: 'Refusé', color: 'bg-red-500/10 text-red-600 dark:text-red-400' },
+  cancelled_by_admin: { label: 'Annulé (admin)', color: 'bg-red-500/10 text-red-600 dark:text-red-400' },
 };
 
 // ---------- Method configuration ----------

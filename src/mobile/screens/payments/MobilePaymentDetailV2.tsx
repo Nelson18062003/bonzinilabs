@@ -1260,7 +1260,7 @@ export function MobilePaymentDetail() {
                   fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer',
                 }}
               >
-                Supprimer
+                Annuler ce paiement
               </button>
             )}
           </div>
@@ -1410,20 +1410,19 @@ export function MobilePaymentDetail() {
         </DrawerContent>
       </Drawer>
 
-      {/* ── Delete Payment Drawer ────────────────────────── */}
+      {/* ── Cancel Payment Drawer ────────────────────────── */}
       <Drawer open={isDeletePaymentOpen} onOpenChange={setIsDeletePaymentOpen}>
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="w-5 h-5" />
-              Supprimer ce paiement
+              Annuler ce paiement
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4">
             <p className="text-muted-foreground text-sm">
-              Voulez-vous vraiment supprimer ce paiement ?
-              Le solde du client sera recrédité si nécessaire.
-              Cette action est <strong>irréversible</strong>.
+              Voulez-vous vraiment annuler ce paiement ?
+              Le paiement sera marqué comme annulé et le solde du client sera recrédité si nécessaire.
             </p>
           </div>
           <DrawerFooter>
@@ -1438,10 +1437,10 @@ export function MobilePaymentDetail() {
               className="w-full h-12 rounded-xl bg-destructive text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {deletePayment.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              Confirmer la suppression
+              Confirmer l'annulation
             </button>
             <button onClick={() => setIsDeletePaymentOpen(false)} className="w-full h-12 rounded-xl border border-border font-medium text-sm">
-              Annuler
+              Retour
             </button>
           </DrawerFooter>
         </DrawerContent>

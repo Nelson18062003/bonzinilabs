@@ -34,7 +34,7 @@ export function AgentCashPaymentDetail() {
   };
 
   const isPaid = payment?.status === 'completed';
-  const isPending = payment?.status === 'processing';
+  const isPending = payment?.status === 'processing' || payment?.status === 'ready_for_payment';
   const isCashScanned = payment?.status === 'cash_scanned' || payment?.status === 'cash_pending';
 
   const handleProceedToPayment = async () => {

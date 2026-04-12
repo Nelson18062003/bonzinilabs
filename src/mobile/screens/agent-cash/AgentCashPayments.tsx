@@ -145,13 +145,15 @@ export function AgentCashPayments() {
                         ? 'bg-green-500/10 text-green-600'
                         : (payment.status === 'cash_scanned' || payment.status === 'cash_pending')
                           ? 'bg-blue-500/10 text-blue-600'
-                          : 'bg-amber-500/10 text-amber-600',
+                          : (payment.status === 'ready_for_payment' || payment.status === 'processing')
+                            ? 'bg-amber-500/10 text-amber-600'
+                            : 'bg-amber-500/10 text-amber-600',
                     )}>
                       {payment.status === 'completed'
                         ? t('status_paid')
                         : (payment.status === 'cash_scanned' || payment.status === 'cash_pending')
                           ? (t('status_scanned') || 'Scanné')
-                          : t('status_to_pay')}
+                          : t('status_to_pay') /* covers ready_for_payment + processing */}
                     </span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>

@@ -13,7 +13,6 @@ import {
   useAdminWalletByUserId,
   useValidateDeposit,
   useRejectDeposit,
-  useRequestCorrection,
   useStartDepositReview,
   useAdminUploadProofs,
   useAdminDeleteProof,
@@ -89,7 +88,7 @@ export function MobileDepositDetail() {
 
   const validateDeposit = useValidateDeposit();
   const rejectDeposit = useRejectDeposit();
-  const requestCorrection = useRequestCorrection();
+  // requestCorrection removed — correction flow suppressed
   const startReview = useStartDepositReview();
   const uploadProofs = useAdminUploadProofs();
   const deleteProof = useAdminDeleteProof();
@@ -107,9 +106,7 @@ export function MobileDepositDetail() {
   const [clientMessage, setClientMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
 
-  // Correction modal state
-  const [showCorrectionSheet, setShowCorrectionSheet] = useState(false);
-  const [correctionReason, setCorrectionReason] = useState('');
+  // Correction modal removed — correction flow suppressed
 
   // Proof management state (signed URLs now come from the proofs query directly)
   const [viewingProof, setViewingProof] = useState<string | null>(null);
@@ -183,22 +180,6 @@ export function MobileDepositDetail() {
     if (!depositId) return;
     startReview.mutate({ depositId });
   }, [depositId, startReview]);
-
-  const handleRequestCorrection = useCallback(() => {
-    if (!depositId || !correctionReason.trim()) return;
-    requestCorrection.mutate(
-      {
-        depositId,
-        reason: correctionReason,
-      },
-      {
-        onSuccess: () => {
-          setShowCorrectionSheet(false);
-          setCorrectionReason('');
-        },
-      },
-    );
-  }, [depositId, correctionReason, requestCorrection]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -757,13 +738,7 @@ export function MobileDepositDetail() {
                     <XCircle className="w-4 h-4" />
                     Rejeter
                   </button>
-                  <button
-                    onClick={() => setShowCorrectionSheet(true)}
-                    className="flex-1 h-12 rounded-xl border-2 border-orange-500 text-orange-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-                  >
-                    <AlertTriangle className="w-4 h-4" />
-                    Corriger
-                  </button>
+                  {/* Correction button removed — soit on valide, soit on refuse */}
                 </div>
               </div>
             )}
@@ -778,7 +753,7 @@ export function MobileDepositDetail() {
               className="w-full h-11 rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             >
               <Trash2 className="w-4 h-4" />
-              Supprimer ce dépôt
+              Annuler ce dépôt
             </button>
           </div>
         )}
@@ -1143,59 +1118,7 @@ export function MobileDepositDetail() {
         </div>
       )}
 
-      {/* ── Correction request bottom sheet ─────────────────────── */}
-      {showCorrectionSheet && (
-        <div className="bottom-sheet-overlay" onClick={() => setShowCorrectionSheet(false)}>
-          <div
-            className="bottom-sheet-content p-6 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-              Demander une correction
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Le client sera notifié et pourra renvoyer une preuve corrigée.
-            </p>
-
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Motif de la correction <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={correctionReason}
-                onChange={(e) => setCorrectionReason(e.target.value)}
-                className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
-                rows={3}
-                placeholder="Expliquez au client ce qu'il faut corriger..."
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Ce message sera visible par le client
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowCorrectionSheet(false);
-                  setCorrectionReason('');
-                }}
-                className="flex-1 h-12 rounded-xl border text-sm font-medium"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleRequestCorrection}
-                disabled={requestCorrection.isPending || !correctionReason.trim()}
-                className="flex-1 h-12 rounded-xl bg-orange-600 text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {requestCorrection.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Demander la correction
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Correction modal removed — correction flow suppressed */}
 
       {/* ── Delete Deposit Bottom Sheet ────────────────────────── */}
       {showDeleteDepositSheet && (
@@ -1206,11 +1129,11 @@ export function MobileDepositDetail() {
           >
             <h3 className="text-lg font-bold flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-500" />
-              Supprimer ce dépôt ?
+              Annuler ce dépôt ?
             </h3>
             <p className="text-sm text-muted-foreground">
-              Voulez-vous supprimer ce dépôt ? Toutes ses preuves seront supprimées.
-              Cette action est <strong>irréversible</strong>.
+              Voulez-vous annuler ce dépôt ? Le dépôt sera marqué comme annulé
+              et le solde sera ajusté si nécessaire.
             </p>
             <div className="flex gap-3">
               <button
@@ -1230,7 +1153,7 @@ export function MobileDepositDetail() {
                 className="flex-1 h-12 rounded-xl bg-red-600 text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {deleteDeposit.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Supprimer
+                Confirmer l'annulation
               </button>
             </div>
           </div>

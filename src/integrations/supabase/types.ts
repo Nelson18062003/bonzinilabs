@@ -14,10 +14,34 @@ export type Database = {
   }
   public: {
     Tables: {
+      _trigger_debug_log: {
+        Row: {
+          created_at: string | null
+          id: number
+          msg: string | null
+          op: string | null
+          tbl: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          msg?: string | null
+          op?: string | null
+          tbl?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          msg?: string | null
+          op?: string | null
+          tbl?: string | null
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action_type: string
-          admin_user_id: string
+          admin_user_id: string | null
           created_at: string
           details: Json | null
           id: string
@@ -26,7 +50,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
-          admin_user_id: string
+          admin_user_id?: string | null
           created_at?: string
           details?: Json | null
           id?: string
@@ -35,12 +59,30 @@ export type Database = {
         }
         Update: {
           action_type?: string
-          admin_user_id?: string
+          admin_user_id?: string | null
           created_at?: string
           details?: Json | null
           id?: string
           target_id?: string | null
           target_type?: string
+        }
+        Relationships: []
+      }
+      bot_config: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: number
         }
         Relationships: []
       }
@@ -122,6 +164,42 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+        }
+        Relationships: []
+      }
+      daily_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          is_active: boolean
+          rate_alipay: number
+          rate_cash: number
+          rate_virement: number
+          rate_wechat: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          rate_alipay: number
+          rate_cash: number
+          rate_virement: number
+          rate_wechat: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          rate_alipay?: number
+          rate_cash?: number
+          rate_virement?: number
+          rate_wechat?: number
         }
         Relationships: []
       }
@@ -273,42 +351,6 @@ export type Database = {
           user_id?: string
           validated_at?: string | null
           validated_by?: string | null
-        }
-        Relationships: []
-      }
-      daily_rates: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          effective_at: string
-          id: string
-          is_active: boolean
-          rate_alipay: number
-          rate_cash: number
-          rate_virement: number
-          rate_wechat: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          effective_at?: string
-          id?: string
-          is_active?: boolean
-          rate_alipay: number
-          rate_cash: number
-          rate_virement: number
-          rate_wechat: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          effective_at?: string
-          id?: string
-          is_active?: boolean
-          rate_alipay?: number
-          rate_cash?: number
-          rate_virement?: number
-          rate_wechat?: number
         }
         Relationships: []
       }
@@ -507,42 +549,6 @@ export type Database = {
           },
         ]
       }
-      rate_adjustments: {
-        Row: {
-          id: string
-          is_reference: boolean
-          key: string
-          label: string
-          percentage: number
-          sort_order: number
-          type: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          id?: string
-          is_reference?: boolean
-          key: string
-          label: string
-          percentage?: number
-          sort_order?: number
-          type: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          id?: string
-          is_reference?: boolean
-          key?: string
-          label?: string
-          percentage?: number
-          sort_order?: number
-          type?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       payments: {
         Row: {
           admin_comment: string | null
@@ -657,6 +663,90 @@ export type Database = {
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      rate_adjustments: {
+        Row: {
+          id: string
+          is_reference: boolean
+          key: string
+          label: string
+          percentage: number
+          sort_order: number
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          is_reference?: boolean
+          key: string
+          label: string
+          percentage?: number
+          sort_order?: number
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          is_reference?: boolean
+          key?: string
+          label?: string
+          percentage?: number
+          sort_order?: number
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      rate_snapshots: {
+        Row: {
+          bonzini_rate: number
+          cny_bid_adjusted: number
+          cny_bid_binance: number
+          cny_merchants_count: number
+          created_at: string | null
+          gain_per_million: number
+          id: number
+          margin_pct: number
+          market_rate: number
+          otc_spread: number
+          usdt_per_1m_xaf: number
+          xaf_ask: number
+          xaf_merchants_count: number
+        }
+        Insert: {
+          bonzini_rate: number
+          cny_bid_adjusted: number
+          cny_bid_binance: number
+          cny_merchants_count: number
+          created_at?: string | null
+          gain_per_million: number
+          id?: never
+          margin_pct: number
+          market_rate: number
+          otc_spread?: number
+          usdt_per_1m_xaf: number
+          xaf_ask: number
+          xaf_merchants_count: number
+        }
+        Update: {
+          bonzini_rate?: number
+          cny_bid_adjusted?: number
+          cny_bid_binance?: number
+          cny_merchants_count?: number
+          created_at?: string | null
+          gain_per_million?: number
+          id?: never
+          margin_pct?: number
+          market_rate?: number
+          otc_spread?: number
+          usdt_per_1m_xaf?: number
+          xaf_ask?: number
+          xaf_merchants_count?: number
         }
         Relationships: []
       }
@@ -779,31 +869,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      calculate_final_rate: {
-        Args: {
-          p_payment_method: string
-          p_country_key: string
-          p_amount_xaf: number
-        }
-        Returns: Json
-      }
-      create_daily_rates: {
-        Args: {
-          p_rate_cash: number
-          p_rate_alipay: number
-          p_rate_wechat: number
-          p_rate_virement: number
-          p_effective_at?: string
-        }
-        Returns: Json
-      }
-      update_rate_adjustment: {
-        Args: {
-          p_adjustment_id: string
-          p_percentage: number
-        }
-        Returns: Json
-      }
       add_exchange_rate: {
         Args: { p_effective_at?: string; p_rate_xaf_to_rmb: number }
         Returns: Json
@@ -872,7 +937,34 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_update_payment_beneficiary: {
+        Args: {
+          p_beneficiary_bank_account?: string
+          p_beneficiary_bank_name?: string
+          p_beneficiary_email?: string
+          p_beneficiary_name?: string
+          p_beneficiary_notes?: string
+          p_beneficiary_phone?: string
+          p_beneficiary_qr_code_url?: string
+          p_payment_id: string
+        }
+        Returns: Json
+      }
+      calculate_final_rate: {
+        Args: {
+          p_amount_xaf: number
+          p_country_key: string
+          p_payment_method: string
+        }
+        Returns: Json
+      }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
+      cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
+      cancel_payment: { Args: { p_payment_id: string }; Returns: Json }
+      check_wallet_reconciliation: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       confirm_cash_payment: {
         Args: {
           p_payment_id: string
@@ -911,6 +1003,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_daily_rates: {
+        Args: {
+          p_effective_at?: string
+          p_rate_alipay: number
+          p_rate_cash: number
+          p_rate_virement: number
+          p_rate_wechat: number
+        }
+        Returns: Json
+      }
       create_payment: {
         Args: {
           p_amount_rmb: number
@@ -942,7 +1044,6 @@ export type Database = {
         Returns: Json
       }
       delete_exchange_rate: { Args: { p_rate_id: string }; Returns: Json }
-      delete_payment: { Args: { p_payment_id: string }; Returns: Json }
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
       generate_deposit_reference: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
@@ -970,6 +1071,7 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      get_dashboard_stats: { Args: never; Returns: Json }
       get_deposit_stats: { Args: never; Returns: Json }
       get_rate_usage_count: { Args: { p_rate_id: string }; Returns: number }
       has_role: {
@@ -986,22 +1088,24 @@ export type Database = {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
         Returns: Json
       }
-      reject_deposit: {
-        Args: {
-          p_admin_note?: string
-          p_deposit_id: string
-          p_reason: string
-          p_rejection_category?: string
-        }
+      reject_deposit:
+        | { Args: { p_deposit_id: string; p_reason: string }; Returns: Json }
+        | {
+            Args: {
+              p_admin_note?: string
+              p_deposit_id: string
+              p_reason: string
+              p_rejection_category?: string
+            }
+            Returns: Json
+          }
+      revert_deposit_to_created: {
+        Args: { p_deposit_id: string }
         Returns: Json
       }
-      request_deposit_correction: {
-        Args: { p_deposit_id: string; p_reason: string }
-        Returns: Json
-      }
-      resubmit_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
+      submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
       toggle_admin_status: {
         Args: { p_disabled: boolean; p_target_user_id: string }
         Returns: Json
@@ -1030,15 +1134,41 @@ export type Database = {
         }
         Returns: Json
       }
-      validate_deposit: {
+      update_payment_beneficiary: {
         Args: {
-          p_admin_comment?: string
-          p_confirmed_amount?: number
-          p_deposit_id: string
-          p_send_notification?: boolean
+          p_beneficiary_bank_account?: string
+          p_beneficiary_bank_name?: string
+          p_beneficiary_email?: string
+          p_beneficiary_name?: string
+          p_beneficiary_notes?: string
+          p_beneficiary_phone?: string
+          p_beneficiary_qr_code_url?: string
+          p_payment_id: string
         }
         Returns: Json
       }
+      update_rate_adjustment: {
+        Args: { p_adjustment_id: string; p_percentage: number }
+        Returns: Json
+      }
+      validate_deposit:
+        | {
+            Args: {
+              p_admin_comment?: string
+              p_confirmed_amount?: number
+              p_deposit_id: string
+              p_send_notification?: boolean
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_admin_comment?: string
+              p_deposit_id: string
+              p_send_notification?: boolean
+            }
+            Returns: Json
+          }
     }
     Enums: {
       app_role:
@@ -1065,6 +1195,7 @@ export type Database = {
         | "rejected"
         | "pending_correction"
         | "cancelled"
+        | "cancelled_by_admin"
       ledger_entry_type:
         | "DEPOSIT_VALIDATED"
         | "DEPOSIT_REFUSED"
@@ -1083,6 +1214,7 @@ export type Database = {
         | "rejected"
         | "cash_pending"
         | "cash_scanned"
+        | "cancelled_by_admin"
       wallet_operation_type: "deposit" | "payment" | "adjustment"
     }
     CompositeTypes: {
@@ -1237,6 +1369,7 @@ export const Constants = {
         "rejected",
         "pending_correction",
         "cancelled",
+        "cancelled_by_admin",
       ],
       ledger_entry_type: [
         "DEPOSIT_VALIDATED",
@@ -1257,6 +1390,7 @@ export const Constants = {
         "rejected",
         "cash_pending",
         "cash_scanned",
+        "cancelled_by_admin",
       ],
       wallet_operation_type: ["deposit", "payment", "adjustment"],
     },
