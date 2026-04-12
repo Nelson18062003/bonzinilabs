@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
+import { UtmParams } from '@/hooks/useUtmTracking';
 
 export interface SignUpData {
   email: string;
@@ -14,6 +15,7 @@ export interface SignUpData {
   neighborhood?: string;
   city?: string;
   country?: string;
+  utm?: UtmParams;
 }
 
 interface AuthContextType {
@@ -69,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           first_name: data.firstName,
           last_name: data.lastName,
           phone: data.phone,
+          ...(data.utm?.utm_source   ? { utm_source:   data.utm.utm_source   } : {}),
+          ...(data.utm?.utm_medium   ? { utm_medium:   data.utm.utm_medium   } : {}),
+          ...(data.utm?.utm_campaign ? { utm_campaign: data.utm.utm_campaign } : {}),
+          ...(data.utm?.utm_content  ? { utm_content:  data.utm.utm_content  } : {}),
+          ...(data.utm?.utm_term     ? { utm_term:     data.utm.utm_term     } : {}),
         }
       }
     });
@@ -92,6 +99,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           neighborhood: data.neighborhood || null,
           city: data.city || null,
           country: data.country || null,
+          utm_source:   data.utm?.utm_source   ?? null,
+          utm_medium:   data.utm?.utm_medium   ?? null,
+          utm_campaign: data.utm?.utm_campaign ?? null,
+          utm_content:  data.utm?.utm_content  ?? null,
+          utm_term:     data.utm?.utm_term     ?? null,
         })
         .eq('user_id', authData.user.id);
 

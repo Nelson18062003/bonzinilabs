@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, SignUpData } from '@/contexts/AuthContext';
+import { track } from '@vercel/analytics';
+import { getStoredUtm, clearStoredUtm } from '@/hooks/useUtmTracking';
 import { LoginBackground } from '@/components/auth/LoginBackground';
 import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
@@ -306,6 +308,8 @@ export default function AuthPage() {
 
     setIsSubmitting(true);
 
+    const utm = getStoredUtm();
+
     const signUpData: SignUpData = {
       email,
       password,
@@ -318,6 +322,7 @@ export default function AuthPage() {
       neighborhood: neighborhood || undefined,
       city: city || undefined,
       country,
+      utm: utm ?? undefined,
     };
 
     const { error } = await signUp(signUpData);
@@ -331,6 +336,13 @@ export default function AuthPage() {
       }
       return;
     }
+
+    track('signup_completed', {
+      utm_source:   utm?.utm_source   ?? 'direct',
+      utm_medium:   utm?.utm_medium   ?? 'none',
+      utm_campaign: utm?.utm_campaign ?? 'none',
+    });
+    clearStoredUtm();
 
     setSignupSuccess(true);
   };

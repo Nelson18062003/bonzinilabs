@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import LandingPage from "./pages/LandingPage";
+import { useCaptureUtm } from "@/hooks/useUtmTracking";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -77,6 +78,11 @@ function PageLoader() {
   );
 }
 
+function UtmCapture() {
+  useCaptureUtm();
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -86,6 +92,7 @@ const App = () => (
           <Sonner position="top-center" />
           <Analytics />
           <BrowserRouter>
+            <UtmCapture />
             <AuthProvider>
               <Suspense fallback={<PageLoader />}>
               <Routes>

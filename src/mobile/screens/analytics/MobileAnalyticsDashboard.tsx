@@ -24,6 +24,7 @@ import {
   useRegistrationSourceStats,
   useDepositVolumeReport,
   usePaymentVolumeReport,
+  useUtmSourceStats,
   type PeriodGranularity,
 } from '@/hooks/useDashboardAnalytics';
 import { formatXAF, formatCompact, formatNumber } from '@/lib/formatters';
@@ -894,6 +895,7 @@ function PaymentVolumeReportSection() {
 function UserStatsSection() {
   const { data: clientStats } = useTotalClientsStats();
   const { data: regStats } = useRegistrationSourceStats(6);
+  const { data: utmStats } = useUtmSourceStats();
 
   return (
     <section className="space-y-2.5">
@@ -970,6 +972,29 @@ function UserStatsSection() {
           <p className="text-[10px] text-muted-foreground mt-0.5">{regStats?.selfRegistered || 0} clients</p>
         </div>
       </div>
+
+      {utmStats && utmStats.rows.length > 0 && (
+        <div className="admin-card rounded-2xl p-3.5">
+          <p className="text-[11px] font-semibold text-muted-foreground mb-3 px-0.5">Source UTM des inscriptions</p>
+          {utmStats.rows.map(({ source, count, pct }) => (
+            <div key={source} className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] w-24 truncate font-medium capitalize">{source}</span>
+              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${pct}%`, background: 'hsl(258,100%,60%)' }}
+                />
+              </div>
+              <span className="text-[11px] text-muted-foreground w-16 text-right">
+                {count} ({pct}%)
+              </span>
+            </div>
+          ))}
+          <p className="text-[10px] text-muted-foreground mt-1 text-right">
+            {utmStats.total} inscription{utmStats.total > 1 ? 's' : ''} tracée{utmStats.total > 1 ? 's' : ''}
+          </p>
+        </div>
+      )}
     </section>
   );
 }
