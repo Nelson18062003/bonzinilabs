@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView, animate } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { track } from '@vercel/analytics';
+import { getStoredUtm } from '@/hooks/useUtmTracking';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const C = {
@@ -442,7 +444,16 @@ export default function LandingPage() {
       .then(({ data }) => { if (data?.rate_alipay) setAlipayRate(data.rate_alipay); });
   }, []);
 
-  const onCTA = () => navigate('/auth');
+  const onCTA = () => {
+    const utm = getStoredUtm();
+    track('cta_clicked', {
+      utm_source:   utm?.utm_source   ?? 'direct',
+      utm_medium:   utm?.utm_medium   ?? 'none',
+      utm_campaign: utm?.utm_campaign ?? 'none',
+      page_section: 'landing',
+    });
+    navigate('/auth?mode=signup');
+  };
 
   return (
     <div style={{ background: C.bg, overflowX: 'hidden' }}>

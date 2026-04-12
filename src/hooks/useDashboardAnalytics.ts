@@ -1164,3 +1164,43 @@ export function usePaymentVolumeReport(granularity: PeriodGranularity = 'day') {
     },
   });
 }
+
+// ─── UTM Source Stats ─────────────────────────────────────────────────────────
+
+export interface UtmSourceStats {
+  rows: Array<{ source: string; count: number; pct: number }>;
+  total: number;
+}
+
+export function useUtmSourceStats() {
+  return useQuery({
+    queryKey: ['analytics-utm-source'],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('clients')
+        .select('utm_source')
+        .not('utm_source', 'is', null);
+
+      if (error) throw error;
+
+      const counts = new Map<string, number>();
+      for (const row of data || []) {
+        const src = row.utm_source ?? 'direct';
+        counts.set(src, (counts.get(src) ?? 0) + 1);
+      }
+
+      const total = [...counts.values()].reduce((a, b) => a + b, 0);
+      const rows = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([source, count]) => ({
+          source,
+          count,
+          pct: total > 0 ? Math.round((count / total) * 100) : 0,
+        }));
+
+      return { rows, total } satisfies UtmSourceStats;
+    },
+  });
+}
