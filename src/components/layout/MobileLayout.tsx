@@ -3,6 +3,7 @@ import { BottomNav } from './BottomNav';
 import { ClientHeader } from './ClientHeader';
 import { ClientSidebar } from './ClientSidebar';
 import { AnimatedPage } from '@/components/transitions/AnimatedPage';
+import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -11,6 +12,8 @@ interface MobileLayoutProps {
 }
 
 export const MobileLayout = ({ children, showNav = true, showHeader = true }: MobileLayoutProps) => {
+  useNotificationRealtime();
+
   return (
     <div className="min-h-[100dvh] bg-background flex">
       {/* Desktop Sidebar */}
