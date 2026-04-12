@@ -169,6 +169,9 @@ export function useClient(userId: string) {
         totalDeposits,
         totalPayments,
         status: 'ACTIVE' as const,
+        utmSource:   client.utm_source   || null,
+        utmMedium:   client.utm_medium   || null,
+        utmCampaign: client.utm_campaign || null,
         lastLedgerEntry: lastLedgerEntry ? {
           id: lastLedgerEntry.id,
           walletId: lastLedgerEntry.wallet_id,
