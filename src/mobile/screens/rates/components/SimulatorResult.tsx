@@ -1,4 +1,5 @@
 import { PAYMENT_METHODS, COUNTRIES, TIERS } from '@/types/rates';
+import type { InputCurrency } from '@/types/rates';
 
 interface SimulatorResultProps {
   amountXAF: number;
@@ -10,6 +11,8 @@ interface SimulatorResultProps {
   finalRate: number;
   methodKey: string;
   countryKey: string;
+  inputCurrency?: InputCurrency;
+  inputAmount?: number;
 }
 
 export function SimulatorResult({
@@ -22,6 +25,8 @@ export function SimulatorResult({
   finalRate,
   methodKey,
   countryKey,
+  inputCurrency = 'xaf',
+  inputAmount,
 }: SimulatorResultProps) {
   const method = PAYMENT_METHODS.find((p) => p.key === methodKey);
   const country = COUNTRIES.find((c) => c.key === countryKey);
@@ -36,11 +41,21 @@ export function SimulatorResult({
         Resultat de la simulation
       </div>
 
+      {/* CNY input badge — shown only when the admin typed in CNY */}
+      {inputCurrency === 'cny' && inputAmount != null && (
+        <div className="flex items-center justify-between bg-white/[0.08] rounded-lg px-3 py-2 mb-2">
+          <span className="text-[11px] text-white/40 uppercase tracking-wide">Saisie CNY</span>
+          <span className="text-sm font-bold text-amber-400">
+            {inputAmount.toLocaleString('fr-FR')} CNY
+          </span>
+        </div>
+      )}
+
       {/* XAF sent */}
       <div className="flex justify-between items-center p-3 bg-white/[0.08] rounded-xl mb-2">
         <div>
           <div className="text-[11px] text-white/40 uppercase tracking-wide">
-            Vous envoyez
+            {inputCurrency === 'cny' ? 'Equivalent XAF' : 'Vous envoyez'}
           </div>
           <div className="text-[22px] font-extrabold">
             {amountXAF.toLocaleString('fr-FR')}
