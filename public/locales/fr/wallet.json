@@ -1,0 +1,31 @@
+{
+  "title": "Wallet",
+  "available_balance": "Solde disponible",
+  "balance_unavailable": "Solde indisponible momentanément",
+  "balance_retry": "Veuillez réessayer dans quelques instants",
+  "hide_balance": "Masquer le solde",
+  "show_balance": "Afficher le solde",
+
+  "greeting_morning": "Bonjour",
+  "greeting_afternoon": "Bon après-midi",
+  "greeting_evening": "Bonsoir",
+  "greeting_welcome": "Bienvenue",
+  "greeting_welcome_bonzini": "👋 Bienvenue chez Bonzini",
+  "greeting_with_name": "{{greeting}}, {{name}} !",
+  "greeting_fallback": "Bienvenue, {{name}} 👋",
+  "trust_message": "Votre argent est en sécurité chez Bonzini.",
+
+  "quick_actions": {
+    "deposit": "Déposer",
+    "pay": "Payer",
+    "beneficiaries": "Bénéficiaires",
+    "activity": "Activité"
+  },
+
+  "recent_operations": "Dernières opérations",
+  "see_all": "Voir tout",
+  "no_operations": "Aucune opération",
+
+  "exchange_rate": "Taux de change",
+  "rate_detail": "Détails du taux"
+}

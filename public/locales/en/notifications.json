@@ -1,0 +1,7 @@
+{
+  "title": "Notifications",
+  "mark_all_read": "Mark all read",
+  "no_notifications": "No notifications yet",
+  "no_notifications_hint": "You will be notified when your deposits are validated",
+  "loading_error": "Error loading notifications"
+}

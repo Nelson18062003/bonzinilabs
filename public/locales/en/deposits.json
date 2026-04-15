@@ -1,0 +1,43 @@
+{
+  "title": "My Deposits",
+  "subtitle": "History and tracking",
+  "new_deposit": "Make a deposit",
+  "no_deposits": "No deposits yet",
+  "loading_error": "Error loading deposits",
+
+  "detail_title": "Deposit details",
+  "reference": "Reference",
+  "amount": "Amount",
+  "method": "Deposit method",
+  "status": "Status",
+  "created_at": "Created on",
+  "updated_at": "Updated on",
+
+  "proof": "Proof document",
+  "proof_upload": "Upload your proof",
+  "proof_submitted": "Proof submitted",
+  "proof_required": "A proof document is required",
+
+  "form": {
+    "title": "New deposit",
+    "subtitle": "Choose your deposit method",
+    "amount_label": "Amount to deposit",
+    "amount_placeholder": "e.g. 200,000",
+    "amount_min_error": "Minimum amount is 1,000 XAF",
+    "amount_max_error": "Maximum amount is 50,000,000 XAF",
+    "amount_invalid": "Invalid amount",
+    "method_label": "Deposit method",
+    "choose_method": "Choose deposit method",
+    "deposit_created": "Deposit created successfully",
+    "deposit_error": "Error creating deposit",
+    "confirm_deposit": "Confirm deposit"
+  },
+
+  "bank": {
+    "title": "Bank transfer",
+    "account_name": "Account name",
+    "account_number": "Account number",
+    "bank_name": "Bank",
+    "instructions": "Make the transfer and upload the receipt"
+  }
+}

@@ -6,6 +6,7 @@ import { useMyProfile } from '@/hooks/useProfile';
 import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   generateClientStatement,
   buildMovementFromWalletOp,
@@ -33,18 +35,21 @@ const HistoryPage = () => {
   const { data: wallet } = useMyWallet();
   const { data: operations, isLoading } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
+  const { t, i18n } = useTranslation('history');
+  const dateLocale = i18n.language?.startsWith('fr') ? fr : enUS;
 
-  // Helper to determine if an operation is a debit
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _wallet = wallet;
+
   const isDebitOperation = (op: WalletOperation): boolean => {
-    const t = op.operation_type.toUpperCase();
-    if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'ADMIN_CREDIT' || t === 'PAYMENT_CANCELLED_REFUNDED') return false;
-    if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT' || t === 'DEPOSIT_REFUSED') return true;
+    const type = op.operation_type.toUpperCase();
+    if (type === 'DEPOSIT' || type === 'DEPOSIT_VALIDATED' || type === 'ADMIN_CREDIT' || type === 'PAYMENT_CANCELLED_REFUNDED') return false;
+    if (type === 'PAYMENT' || type === 'PAYMENT_EXECUTED' || type === 'PAYMENT_RESERVED' || type === 'ADMIN_DEBIT' || type === 'DEPOSIT_REFUSED') return true;
     if (op.balance_after < op.balance_before) return true;
     if (op.balance_after > op.balance_before) return false;
     return op.amount_xaf < 0;
   };
 
-  // Filter operations
   const filteredOperations = (operations || []).filter(op => {
     if (filter === 'all') return true;
     const isDebit = isDebitOperation(op);
@@ -53,7 +58,6 @@ const HistoryPage = () => {
     return true;
   });
 
-  // Group by date
   const groupedOperations = filteredOperations.reduce((groups, op) => {
     const date = format(new Date(op.created_at), 'yyyy-MM-dd');
     if (!groups[date]) groups[date] = [];
@@ -63,37 +67,37 @@ const HistoryPage = () => {
 
   const getOperationIcon = (op: WalletOperation) => {
     const isDebit = isDebitOperation(op);
-    const t = op.operation_type.toUpperCase();
-    if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'PAYMENT_CANCELLED_REFUNDED' || t === 'ADMIN_CREDIT') {
+    const type = op.operation_type.toUpperCase();
+    if (type === 'DEPOSIT' || type === 'DEPOSIT_VALIDATED' || type === 'PAYMENT_CANCELLED_REFUNDED' || type === 'ADMIN_CREDIT') {
       return <ArrowDownLeft className="w-5 h-5 text-success" />;
     }
-    if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT') {
+    if (type === 'PAYMENT' || type === 'PAYMENT_EXECUTED' || type === 'PAYMENT_RESERVED' || type === 'ADMIN_DEBIT') {
       return <ArrowUpRight className="w-5 h-5 text-destructive" />;
     }
     return <RefreshCw className={`w-5 h-5 ${isDebit ? 'text-destructive' : 'text-success'}`} />;
   };
 
   const getOperationLabel = (op: WalletOperation): string => {
-    const t = op.operation_type.toUpperCase();
-    switch (t) {
-      case 'DEPOSIT': case 'DEPOSIT_VALIDATED': return 'Dépôt';
-      case 'DEPOSIT_REFUSED': return 'Dépôt refusé';
-      case 'PAYMENT': case 'PAYMENT_EXECUTED': return 'Paiement';
-      case 'PAYMENT_RESERVED': return 'Paiement réservé';
-      case 'PAYMENT_CANCELLED_REFUNDED': return 'Remboursement';
-      case 'ADMIN_CREDIT': return 'Crédit admin';
-      case 'ADMIN_DEBIT': return 'Débit admin';
+    const type = op.operation_type.toUpperCase();
+    switch (type) {
+      case 'DEPOSIT': case 'DEPOSIT_VALIDATED': return t('operation_type.deposit');
+      case 'DEPOSIT_REFUSED': return t('operation_type.deposit_refused');
+      case 'PAYMENT': case 'PAYMENT_EXECUTED': return t('operation_type.payment');
+      case 'PAYMENT_RESERVED': return t('operation_type.payment_reserved');
+      case 'PAYMENT_CANCELLED_REFUNDED': return t('operation_type.payment_refunded');
+      case 'ADMIN_CREDIT': return t('operation_type.admin_credit');
+      case 'ADMIN_DEBIT': return t('operation_type.admin_debit');
       case 'ADJUSTMENT': {
         const isDebit = isDebitOperation(op);
-        return isDebit ? 'Ajustement Débit' : 'Ajustement Crédit';
+        return isDebit ? t('operation_type.adjustment_debit') : t('operation_type.adjustment_credit');
       }
-      default: return 'Opération';
+      default: return t('operation_type.default');
     }
   };
 
   const handleDownloadStatement = async () => {
     if (!operations?.length) {
-      toast.error('Aucun mouvement à exporter');
+      toast.error(t('no_movements_to_export'));
       return;
     }
     setIsGenerating(true);
@@ -111,24 +115,30 @@ const HistoryPage = () => {
         movements,
         periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
         periodTo: fmtDateLong(new Date().toISOString()),
-        generatedAt: new Date().toLocaleString('fr-FR', {
+        generatedAt: new Date().toLocaleString(i18n.language || 'fr', {
           day: 'numeric', month: 'long', year: 'numeric',
           hour: '2-digit', minute: '2-digit',
         }),
       });
     } catch (err) {
       console.error('Error generating statement:', err);
-      toast.error('Erreur lors de la génération du relevé');
+      toast.error(t('statement_error'));
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const filterItems: { value: FilterType; labelKey: string }[] = [
+    { value: 'all', labelKey: 'filter.all' },
+    { value: 'credits', labelKey: 'filter.credits' },
+    { value: 'debits', labelKey: 'filter.debits' },
+  ];
+
   return (
     <MobileLayout>
       <PageHeader
-        title="Historique"
-        subtitle="Tous vos mouvements"
+        title={t('title')}
+        subtitle={t('subtitle')}
         rightElement={
           <Button
             variant="outline"
@@ -142,21 +152,17 @@ const HistoryPage = () => {
             ) : (
               <FileDown className="h-4 w-4" />
             )}
-            Relevé
+            {t('download_statement')}
           </Button>
         }
       />
 
       {/* Filters */}
       <div className="pl-4 pr-0 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
-        {[
-          { value: 'all',     label: 'Tout'    },
-          { value: 'credits', label: 'Crédits' },
-          { value: 'debits',  label: 'Débits'  },
-        ].map((f) => (
+        {filterItems.map((f) => (
           <button
             key={f.value}
-            onClick={() => setFilter(f.value as FilterType)}
+            onClick={() => setFilter(f.value)}
             className={cn(
               'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
               filter === f.value
@@ -164,7 +170,7 @@ const HistoryPage = () => {
                 : 'bg-secondary text-muted-foreground hover:text-foreground'
             )}
           >
-            {f.label}
+            {t(f.labelKey)}
           </button>
         ))}
       </div>
@@ -180,7 +186,7 @@ const HistoryPage = () => {
           Object.entries(groupedOperations).map(([date, ops]) => (
             <div key={date} className="animate-slide-up">
               <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-                {format(new Date(date), 'EEEE d MMMM', { locale: fr })}
+                {format(new Date(date), 'EEEE d MMMM', { locale: dateLocale })}
               </h3>
 
               <div className="space-y-2">
@@ -227,7 +233,7 @@ const HistoryPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Filter className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucune opération trouvée</p>
+            <p className="text-muted-foreground">{t('no_operations')}</p>
           </div>
         )}
       </div>

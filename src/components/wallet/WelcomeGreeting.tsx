@@ -1,4 +1,5 @@
 import { useGreeting } from '@/hooks/useGreeting';
+import { useTranslation } from 'react-i18next';
 
 interface WelcomeGreetingProps {
   firstName?: string | null;
@@ -9,17 +10,6 @@ interface WelcomeGreetingProps {
   showTrustMessage?: boolean;
 }
 
-/**
- * Personalized welcome greeting component
- *
- * Features:
- * - Time-based greeting (Bonjour/Bon après-midi/Bonsoir)
- * - Personalized with user's name
- * - Graceful fallbacks for missing/invalid names
- * - Optional trust/context subtitle
- * - Responsive and accessible
- * - Smooth fade-in animation
- */
 export const WelcomeGreeting = ({
   firstName,
   lastName,
@@ -27,8 +17,9 @@ export const WelcomeGreeting = ({
   showTrustMessage = false,
 }: WelcomeGreetingProps) => {
   const { greeting } = useGreeting({ firstName, lastName });
+  const { t } = useTranslation('wallet');
 
-  const displaySubtitle = subtitle || (showTrustMessage ? 'Votre argent est en sécurité chez Bonzini.' : null);
+  const displaySubtitle = subtitle || (showTrustMessage ? t('trust_message') : null);
 
   return (
     <div className="animate-fade-in">

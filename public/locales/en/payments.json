@@ -1,0 +1,69 @@
+{
+  "title": "My Payments",
+  "subtitle": "Transfers to China",
+  "new_payment": "New payment",
+  "no_payments": "No payments yet",
+
+  "detail_title": "Payment details",
+  "reference": "Reference",
+  "amount_xaf": "Amount XAF",
+  "amount_rmb": "Amount CNY",
+  "method": "Method",
+  "status": "Status",
+  "created_at": "Created on",
+  "updated_at": "Updated on",
+
+  "beneficiary": "Beneficiary",
+  "beneficiary_name": "Beneficiary name",
+  "beneficiary_name_required": "Beneficiary name is required",
+  "beneficiary_account": "Beneficiary account",
+  "beneficiary_alipay": "Alipay account",
+  "beneficiary_wechat": "WeChat account",
+  "beneficiary_bank": "Bank account",
+  "beneficiary_info": "Beneficiary information",
+
+  "proof": "Payment proof",
+  "proof_upload": "Upload proof",
+  "proof_submitted": "Proof submitted",
+  "proof_required": "A payment proof is required",
+
+  "form": {
+    "title": "New payment",
+    "subtitle": "Pay a supplier in China",
+    "step_amount": "Amount",
+    "step_method": "Method",
+    "step_beneficiary": "Beneficiary",
+    "step_review": "Summary",
+    "amount_label": "Amount to pay",
+    "amount_placeholder": "e.g. 500,000",
+    "amount_min_error": "Minimum amount is 1,000 XAF",
+    "amount_max_error": "Maximum amount is 50,000,000 XAF",
+    "amount_invalid": "Invalid amount",
+    "method_label": "Payment method",
+    "choose_method": "Choose payment method",
+    "review_title": "Summary",
+    "confirm_payment": "Confirm payment",
+    "insufficient_balance": "Insufficient balance",
+    "insufficient_balance_desc": "Your balance is insufficient for this payment.",
+    "payment_created": "Payment created successfully",
+    "payment_error": "Error creating payment"
+  },
+
+  "status_labels": {
+    "created": "Created",
+    "waiting_beneficiary_info": "Pending",
+    "ready_for_payment": "Ready",
+    "cash_pending": "QR generated",
+    "cash_scanned": "Scanned",
+    "processing": "Processing",
+    "completed": "Completed",
+    "rejected": "Rejected"
+  },
+
+  "success_screen": {
+    "title": "Payment sent!",
+    "subtitle": "Your payment request has been submitted.",
+    "new_payment": "New payment",
+    "view_detail": "View details"
+  }
+}

@@ -9,27 +9,31 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-const statusConfig: Record<string, { label: string; color: string }> = {
-  created: { label: 'Créé', color: 'bg-blue-500' },
-  waiting_beneficiary_info: { label: 'En attente', color: 'bg-yellow-500' },
-  ready_for_payment: { label: 'Prêt', color: 'bg-purple-500' },
-  cash_pending: { label: 'QR généré', color: 'bg-cyan-500' },
-  cash_scanned: { label: 'Scanné', color: 'bg-orange-500' },
-  processing: { label: 'En cours', color: 'bg-orange-500' },
-  completed: { label: 'Effectué', color: 'bg-green-500' },
-  rejected: { label: 'Refusé', color: 'bg-red-500' },
-};
+import { enUS } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 const PaymentsPage = () => {
   const navigate = useNavigate();
   const { data: payments, isLoading } = useMyPayments();
+  const { t, i18n } = useTranslation('payments');
+  const dateLocale = i18n.language?.startsWith('fr') ? fr : enUS;
+
+  const statusConfig: Record<string, { labelKey: string; color: string }> = {
+    created: { labelKey: 'status_labels.created', color: 'bg-blue-500' },
+    waiting_beneficiary_info: { labelKey: 'status_labels.waiting_beneficiary_info', color: 'bg-yellow-500' },
+    ready_for_payment: { labelKey: 'status_labels.ready_for_payment', color: 'bg-purple-500' },
+    cash_pending: { labelKey: 'status_labels.cash_pending', color: 'bg-cyan-500' },
+    cash_scanned: { labelKey: 'status_labels.cash_scanned', color: 'bg-orange-500' },
+    processing: { labelKey: 'status_labels.processing', color: 'bg-orange-500' },
+    completed: { labelKey: 'status_labels.completed', color: 'bg-green-500' },
+    rejected: { labelKey: 'status_labels.rejected', color: 'bg-red-500' },
+  };
 
   return (
     <MobileLayout>
-      <PageHeader 
-        title="Mes Paiements" 
-        subtitle="Envois vers la Chine"
+      <PageHeader
+        title={t('title')}
+        subtitle={t('subtitle')}
         rightElement={
           <button
             onClick={() => navigate('/payments/new')}
@@ -39,7 +43,7 @@ const PaymentsPage = () => {
           </button>
         }
       />
-      
+
       <div className="px-4 py-4 space-y-3">
         {isLoading ? (
           [1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
@@ -58,12 +62,12 @@ const PaymentsPage = () => {
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{payment.reference}</span>
                       <Badge className={`${status?.color} text-white text-xs`}>
-                        {status?.label}
+                        {status ? t(status.labelKey) : payment.status}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-sm text-muted-foreground">
-                        {format(new Date(payment.created_at), 'dd MMM yyyy', { locale: fr })}
+                        {format(new Date(payment.created_at), 'dd MMM yyyy', { locale: dateLocale })}
                       </span>
                       <span className="font-semibold">{formatXAF(payment.amount_xaf)} XAF</span>
                     </div>
@@ -81,12 +85,12 @@ const PaymentsPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Send className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucun paiement pour le moment</p>
+            <p className="text-muted-foreground">{t('no_payments')}</p>
             <button
               onClick={() => navigate('/payments/new')}
               className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium"
             >
-              Nouveau paiement
+              {t('new_payment')}
             </button>
           </div>
         )}

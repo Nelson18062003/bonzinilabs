@@ -1,0 +1,27 @@
+{
+  "title": "Profil",
+  "edit_profile": "Modifier le profil",
+  "logout": "Se déconnecter",
+  "logout_success": "Déconnexion réussie",
+  "app_version": "Bonzini v1.0.0 • Fait avec 💜 au Cameroun",
+
+  "menu": {
+    "notifications": "Notifications",
+    "notifications_desc": "Gérer vos alertes",
+    "security": "Sécurité",
+    "security_desc": "Mot de passe, 2FA",
+    "devices": "Appareils connectés",
+    "devices_desc": "2 appareils",
+    "language": "Langue",
+    "language_desc": "Français",
+    "documents": "Documents",
+    "documents_desc": "KYC, Pièces justificatives",
+    "help": "Aide & Support",
+    "help_desc": "FAQ, Contact"
+  },
+
+  "appearance": {
+    "title": "Apparence",
+    "subtitle": "Thème de l'application"
+  }
+}

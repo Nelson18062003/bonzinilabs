@@ -11,6 +11,7 @@ import {
 } from '@/hooks/useNotifications';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import {
   Bell,
   CheckCircle,
@@ -22,36 +23,32 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
   const { data: notifications, isLoading, error } = useMyNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
+  const { t, i18n } = useTranslation('notifications');
+  const dateLocale = i18n.language?.startsWith('fr') ? fr : enUS;
 
   const hasUnread = notifications?.some((n) => !n.is_read);
 
   const getIcon = (type: string) => {
     const style = getNotificationStyle(type as Notification['type']);
     switch (style.icon) {
-      case 'check-circle':
-        return CheckCircle;
-      case 'x-circle':
-        return XCircle;
-      case 'alert-circle':
-        return AlertCircle;
-      default:
-        return Bell;
+      case 'check-circle': return CheckCircle;
+      case 'x-circle': return XCircle;
+      case 'alert-circle': return AlertCircle;
+      default: return Bell;
     }
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if not already
     if (!notification.is_read) {
       await markAsRead.mutateAsync(notification.id);
     }
-
-    // Navigate to related page
     const path = getNotificationPath(notification);
     navigate(path);
   };
@@ -63,7 +60,7 @@ const NotificationsPage = () => {
   if (isLoading) {
     return (
       <MobileLayout showNav={false}>
-        <PageHeader title="Notifications" showBack />
+        <PageHeader title={t('title')} showBack />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -74,9 +71,9 @@ const NotificationsPage = () => {
   if (error) {
     return (
       <MobileLayout showNav={false}>
-        <PageHeader title="Notifications" showBack />
+        <PageHeader title={t('title')} showBack />
         <div className="px-4 py-12 text-center">
-          <p className="text-destructive">Erreur lors du chargement des notifications</p>
+          <p className="text-destructive">{t('loading_error')}</p>
         </div>
       </MobileLayout>
     );
@@ -85,7 +82,7 @@ const NotificationsPage = () => {
   return (
     <MobileLayout showNav={false}>
       <PageHeader
-        title="Notifications"
+        title={t('title')}
         showBack
         rightElement={
           hasUnread ? (
@@ -97,7 +94,7 @@ const NotificationsPage = () => {
               className="text-primary"
             >
               <CheckCheck className="w-4 h-4 mr-1" />
-              Tout lire
+              {t('mark_all_read')}
             </Button>
           ) : undefined
         }
@@ -147,7 +144,7 @@ const NotificationsPage = () => {
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
                           {format(new Date(notification.created_at), "dd MMM yyyy 'à' HH:mm", {
-                            locale: fr,
+                            locale: dateLocale,
                           })}
                         </p>
                       </div>
@@ -156,7 +153,6 @@ const NotificationsPage = () => {
                   </div>
                 </div>
 
-                {/* Unread indicator */}
                 {!notification.is_read && (
                   <div className="absolute top-3 right-3 w-2 h-2 bg-primary rounded-full" />
                 )}
@@ -168,9 +164,9 @@ const NotificationsPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Bell className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucune notification pour le moment</p>
+            <p className="text-muted-foreground">{t('no_notifications')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Vous serez notifié lorsque vos dépôts seront validés
+              {t('no_notifications_hint')}
             </p>
           </div>
         )}

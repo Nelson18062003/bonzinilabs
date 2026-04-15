@@ -1,6 +1,7 @@
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { formatXAF, formatCurrencyRMB, convertXAFtoRMB } from '@/lib/formatters';
+import { useTranslation } from 'react-i18next';
 
 interface BalanceCardProps {
   balanceXAF: number;
@@ -14,6 +15,7 @@ interface BalanceCardProps {
 
 export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(true);
+  const { t } = useTranslation('wallet');
   const currentRate = rateXafToRmb ?? 11765 / 1_000_000;
   const balanceRMB = convertXAFtoRMB(balanceXAF, currentRate);
 
@@ -24,10 +26,10 @@ export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }
         <div className="flex flex-col items-center justify-center py-4">
           <RefreshCw className="w-8 h-8 text-primary-foreground/50 mb-2" />
           <p className="text-primary-foreground/70 text-sm text-center">
-            Solde indisponible momentanément
+            {t('balance_unavailable')}
           </p>
           <p className="text-primary-foreground/50 text-xs mt-1">
-            Veuillez réessayer dans quelques instants
+            {t('balance_retry')}
           </p>
         </div>
       </div>
@@ -39,7 +41,7 @@ export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }
       {/* Header with label and toggle */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-primary-foreground/80 text-sm font-medium">Solde disponible</span>
+          <span className="text-primary-foreground/80 text-sm font-medium">{t('available_balance')}</span>
           {isRefreshing && (
             <RefreshCw className="w-3 h-3 text-primary-foreground/60 animate-spin" />
           )}
@@ -47,7 +49,7 @@ export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }
         <button
           onClick={() => setShowBalance(!showBalance)}
           className="w-11 h-11 flex items-center justify-center rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors"
-          aria-label={showBalance ? "Masquer le solde" : "Afficher le solde"}
+          aria-label={showBalance ? t('hide_balance') : t('show_balance')}
         >
           {showBalance ? (
             <EyeOff className="w-4 h-4 text-primary-foreground/80" />

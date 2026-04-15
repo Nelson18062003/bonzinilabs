@@ -1,0 +1,16 @@
+{
+  "title": "Exchange rates",
+  "subtitle": "Current rates XAF → CNY",
+  "current_rate": "Current rate",
+  "rate_detail": "Rate details",
+  "effective_since": "Effective since",
+  "method_alipay": "Alipay",
+  "method_wechat": "WeChat Pay",
+  "method_bank": "Wire Transfer",
+  "method_cash": "Cash",
+  "converter_title": "Calculate",
+  "converter_from": "You send",
+  "converter_to": "Your supplier receives",
+  "trend_title": "Rate trend",
+  "no_rate": "No rate available"
+}

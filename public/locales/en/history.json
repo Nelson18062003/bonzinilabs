@@ -1,0 +1,27 @@
+{
+  "title": "History",
+  "subtitle": "All your transactions",
+  "download_statement": "Statement",
+  "no_operations": "No transactions found",
+  "statement_error": "Error generating statement",
+  "no_movements_to_export": "No transactions to export",
+
+  "filter": {
+    "all": "All",
+    "credits": "Credits",
+    "debits": "Debits"
+  },
+
+  "operation_type": {
+    "deposit": "Deposit",
+    "deposit_refused": "Deposit refused",
+    "payment": "Payment",
+    "payment_reserved": "Payment reserved",
+    "payment_refunded": "Refund",
+    "admin_credit": "Admin credit",
+    "admin_debit": "Admin debit",
+    "adjustment_credit": "Credit adjustment",
+    "adjustment_debit": "Debit adjustment",
+    "default": "Transaction"
+  }
+}

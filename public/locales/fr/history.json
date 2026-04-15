@@ -1,0 +1,27 @@
+{
+  "title": "Historique",
+  "subtitle": "Tous vos mouvements",
+  "download_statement": "Relevé",
+  "no_operations": "Aucune opération trouvée",
+  "statement_error": "Erreur lors de la génération du relevé",
+  "no_movements_to_export": "Aucun mouvement à exporter",
+
+  "filter": {
+    "all": "Tout",
+    "credits": "Crédits",
+    "debits": "Débits"
+  },
+
+  "operation_type": {
+    "deposit": "Dépôt",
+    "deposit_refused": "Dépôt refusé",
+    "payment": "Paiement",
+    "payment_reserved": "Paiement réservé",
+    "payment_refunded": "Remboursement",
+    "admin_credit": "Crédit admin",
+    "admin_debit": "Débit admin",
+    "adjustment_credit": "Ajustement Crédit",
+    "adjustment_debit": "Ajustement Débit",
+    "default": "Opération"
+  }
+}

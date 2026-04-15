@@ -1,0 +1,43 @@
+{
+  "title": "Mes Dépôts",
+  "subtitle": "Historique et suivi",
+  "new_deposit": "Faire un dépôt",
+  "no_deposits": "Aucun dépôt pour le moment",
+  "loading_error": "Erreur lors du chargement des dépôts",
+
+  "detail_title": "Détail du dépôt",
+  "reference": "Référence",
+  "amount": "Montant",
+  "method": "Mode de dépôt",
+  "status": "Statut",
+  "created_at": "Créé le",
+  "updated_at": "Mis à jour le",
+
+  "proof": "Justificatif",
+  "proof_upload": "Uploader votre justificatif",
+  "proof_submitted": "Justificatif soumis",
+  "proof_required": "Un justificatif est requis",
+
+  "form": {
+    "title": "Nouveau dépôt",
+    "subtitle": "Choisissez votre méthode de dépôt",
+    "amount_label": "Montant à déposer",
+    "amount_placeholder": "Ex: 200 000",
+    "amount_min_error": "Le montant minimum est de 1 000 XAF",
+    "amount_max_error": "Le montant maximum est de 50 000 000 XAF",
+    "amount_invalid": "Montant invalide",
+    "method_label": "Mode de dépôt",
+    "choose_method": "Choisir le mode de dépôt",
+    "deposit_created": "Dépôt créé avec succès",
+    "deposit_error": "Erreur lors de la création du dépôt",
+    "confirm_deposit": "Confirmer le dépôt"
+  },
+
+  "bank": {
+    "title": "Virement bancaire",
+    "account_name": "Nom du compte",
+    "account_number": "Numéro de compte",
+    "bank_name": "Banque",
+    "instructions": "Effectuez le virement et uploadez le reçu"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Taux de change",
+  "subtitle": "Taux actuels XAF → CNY",
+  "current_rate": "Taux actuel",
+  "rate_detail": "Détail des taux",
+  "effective_since": "En vigueur depuis",
+  "method_alipay": "Alipay",
+  "method_wechat": "WeChat Pay",
+  "method_bank": "Virement",
+  "method_cash": "Cash",
+  "converter_title": "Calculer",
+  "converter_from": "Vous envoyez",
+  "converter_to": "Votre fournisseur reçoit",
+  "trend_title": "Évolution du taux",
+  "no_rate": "Aucun taux disponible"
+}

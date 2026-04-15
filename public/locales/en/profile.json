@@ -1,0 +1,27 @@
+{
+  "title": "Profile",
+  "edit_profile": "Edit profile",
+  "logout": "Sign out",
+  "logout_success": "Signed out successfully",
+  "app_version": "Bonzini v1.0.0 • Made with 💜 in Cameroon",
+
+  "menu": {
+    "notifications": "Notifications",
+    "notifications_desc": "Manage your alerts",
+    "security": "Security",
+    "security_desc": "Password, 2FA",
+    "devices": "Connected devices",
+    "devices_desc": "2 devices",
+    "language": "Language",
+    "language_desc": "English",
+    "documents": "Documents",
+    "documents_desc": "KYC, Supporting documents",
+    "help": "Help & Support",
+    "help_desc": "FAQ, Contact"
+  },
+
+  "appearance": {
+    "title": "Appearance",
+    "subtitle": "Application theme"
+  }
+}

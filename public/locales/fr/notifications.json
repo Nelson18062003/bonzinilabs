@@ -1,0 +1,7 @@
+{
+  "title": "Notifications",
+  "mark_all_read": "Tout lire",
+  "no_notifications": "Aucune notification pour le moment",
+  "no_notifications_hint": "Vous serez notifié lorsque vos dépôts seront validés",
+  "loading_error": "Erreur lors du chargement des notifications"
+}

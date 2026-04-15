@@ -1,0 +1,69 @@
+{
+  "title": "Mes Paiements",
+  "subtitle": "Envois vers la Chine",
+  "new_payment": "Nouveau paiement",
+  "no_payments": "Aucun paiement pour le moment",
+
+  "detail_title": "Détail du paiement",
+  "reference": "Référence",
+  "amount_xaf": "Montant XAF",
+  "amount_rmb": "Montant CNY",
+  "method": "Méthode",
+  "status": "Statut",
+  "created_at": "Créé le",
+  "updated_at": "Mis à jour le",
+
+  "beneficiary": "Bénéficiaire",
+  "beneficiary_name": "Nom du bénéficiaire",
+  "beneficiary_name_required": "Le nom du bénéficiaire est requis",
+  "beneficiary_account": "Compte bénéficiaire",
+  "beneficiary_alipay": "Compte Alipay",
+  "beneficiary_wechat": "Compte WeChat",
+  "beneficiary_bank": "Compte bancaire",
+  "beneficiary_info": "Informations du bénéficiaire",
+
+  "proof": "Preuve de paiement",
+  "proof_upload": "Uploader la preuve",
+  "proof_submitted": "Preuve soumise",
+  "proof_required": "Une preuve de paiement est requise",
+
+  "form": {
+    "title": "Nouveau paiement",
+    "subtitle": "Payer un fournisseur en Chine",
+    "step_amount": "Montant",
+    "step_method": "Méthode",
+    "step_beneficiary": "Bénéficiaire",
+    "step_review": "Récapitulatif",
+    "amount_label": "Montant à payer",
+    "amount_placeholder": "Ex: 500 000",
+    "amount_min_error": "Le montant minimum est de 1 000 XAF",
+    "amount_max_error": "Le montant maximum est de 50 000 000 XAF",
+    "amount_invalid": "Montant invalide",
+    "method_label": "Mode de paiement",
+    "choose_method": "Choisir le mode de paiement",
+    "review_title": "Récapitulatif",
+    "confirm_payment": "Confirmer le paiement",
+    "insufficient_balance": "Solde insuffisant",
+    "insufficient_balance_desc": "Votre solde est insuffisant pour effectuer ce paiement.",
+    "payment_created": "Paiement créé avec succès",
+    "payment_error": "Erreur lors de la création du paiement"
+  },
+
+  "status_labels": {
+    "created": "Créé",
+    "waiting_beneficiary_info": "En attente",
+    "ready_for_payment": "Prêt",
+    "cash_pending": "QR généré",
+    "cash_scanned": "Scanné",
+    "processing": "En cours",
+    "completed": "Effectué",
+    "rejected": "Refusé"
+  },
+
+  "success_screen": {
+    "title": "Paiement envoyé !",
+    "subtitle": "Votre demande de paiement a été transmise.",
+    "new_payment": "Nouveau paiement",
+    "view_detail": "Voir la fiche"
+  }
+}
