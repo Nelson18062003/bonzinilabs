@@ -58,3 +58,41 @@ export function getTierKey(amountXAF: number): 't1' | 't2' | 't3' {
   if (amountXAF >= 400_000) return 't2';
   return 't1';
 }
+
+/**
+ * Convert a CNY amount to XAF using a 2-iteration approach.
+ *
+ * The tier (and therefore the final rate) depends on the XAF amount, creating
+ * a circular dependency when the input is in CNY. A single approximation using
+ * the t3 reference rate (1M XAF) can assign the wrong tier near boundaries.
+ * A second iteration with the tier from the first estimate converges correctly
+ * in virtually all cases.
+ *
+ * @param amountCNY       - Input amount in CNY
+ * @param baseRate        - Base rate for the payment method (CNY per 1M XAF)
+ * @param countryPct      - Country adjustment percentage
+ * @param tierAdjustments - Array of tier adjustments with key and percentage
+ * @returns Estimated amount in XAF (integer, rounded)
+ */
+export function convertCNYtoXAF(
+  amountCNY: number,
+  baseRate: number,
+  countryPct: number,
+  tierAdjustments: { key: string; percentage: number }[]
+): number {
+  if (amountCNY <= 0) return 0;
+
+  // Iteration 1: estimate using t3 reference rate (1M XAF)
+  const { finalRate: refRate } = calculateFinalRate(baseRate, countryPct, 1_000_000, tierAdjustments);
+  const ratePerUnit1 = refRate / 1_000_000;
+  if (ratePerUnit1 <= 0) return 0;
+
+  const xafEstimate1 = amountCNY / ratePerUnit1;
+
+  // Iteration 2: refine using the correct tier from the first estimate
+  const { finalRate: refinedRate } = calculateFinalRate(baseRate, countryPct, xafEstimate1, tierAdjustments);
+  const ratePerUnit2 = refinedRate / 1_000_000;
+  if (ratePerUnit2 <= 0) return 0;
+
+  return Math.round(amountCNY / ratePerUnit2);
+}

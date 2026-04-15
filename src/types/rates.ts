@@ -60,3 +60,5 @@ export const TIERS = [
 ] as const;
 
 export const MIN_AMOUNT_XAF = 10_000;
+
+export type InputCurrency = 'xaf' | 'cny';
