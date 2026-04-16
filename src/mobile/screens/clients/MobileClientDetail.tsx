@@ -472,8 +472,8 @@ export function MobileClientDetail() {
                   <Pencil className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="font-medium">Modifier le profil</p>
-                  <p className="text-xs text-muted-foreground">Nom, téléphone, email, entreprise…</p>
+                  <p className="font-medium">{t('editProfile', { defaultValue: 'Modifier le profil' })}</p>
+                  <p className="text-xs text-muted-foreground">{t('namePhoneEmailCompany', { defaultValue: 'Nom, téléphone, email, entreprise…' })}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -491,8 +491,8 @@ export function MobileClientDetail() {
                   <Key className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="text-left">
-                  <p className="font-medium">Réinitialiser mot de passe</p>
-                  <p className="text-xs text-muted-foreground">Générer un nouveau mot de passe</p>
+                  <p className="font-medium">{t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}</p>
+                  <p className="text-xs text-muted-foreground">{t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' })}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -511,8 +511,8 @@ export function MobileClientDetail() {
                   {deleteChecking ? <Loader2 className="w-5 h-5 text-destructive animate-spin" /> : <Trash2 className="w-5 h-5 text-destructive" />}
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-destructive">Supprimer le client</p>
-                  <p className="text-xs text-muted-foreground">Suppression définitive et irréversible</p>
+                  <p className="font-medium text-destructive">{t('deleteClient', { defaultValue: 'Supprimer le client' })}</p>
+                  <p className="text-xs text-muted-foreground">{t('permanentDeletion', { defaultValue: 'Suppression définitive et irréversible' })}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
