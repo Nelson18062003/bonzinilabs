@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
@@ -1006,6 +1007,7 @@ function UserStatsSection() {
 type FilterTab = 'all' | 'finance' | 'clients' | 'ops';
 
 export function MobileAnalyticsDashboard() {
+  const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const queryClient = useQueryClient();
 
@@ -1019,9 +1021,9 @@ export function MobileAnalyticsDashboard() {
   }, [queryClient]);
 
   const tabs: { key: FilterTab; label: string }[] = [
-    { key: 'all', label: 'Tout' },
+    { key: 'all', label: t('allTab', { defaultValue: 'Tout' }) },
     { key: 'finance', label: 'Finance' },
-    { key: 'clients', label: 'Clients' },
+    { key: 'clients', label: t('clients', { defaultValue: 'Clients' }) },
     { key: 'ops', label: 'Ops' },
   ];
 
@@ -1032,7 +1034,7 @@ export function MobileAnalyticsDashboard() {
         <div className="flex items-start justify-between mb-3 animate-slide-up" style={{ animationFillMode: 'both' }}>
           <div>
             <h1 className="text-xl font-bold">Dashboard</h1>
-            <p className="text-[11px] text-muted-foreground">Rapports et indicateurs clés</p>
+            <p className="text-[11px] text-muted-foreground">{t('reportsAndKPIs', { defaultValue: 'Rapports et indicateurs clés' })}</p>
           </div>
           <button onClick={handleRefresh} className="w-8 h-8 rounded-lg border border-border bg-background flex items-center justify-center active:scale-95 transition-transform">
             <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />

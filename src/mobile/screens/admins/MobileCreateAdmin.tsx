@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCreateAdmin } from '@/hooks/useAdminManagement';
@@ -21,18 +22,21 @@ import { Label } from '@/components/ui/label';
 
 type Step = 'personal' | 'role' | 'confirm' | 'success';
 
-const MANAGEABLE_ROLES: { role: AppRole; description: string }[] = [
+const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefault: string }[] = [
   {
     role: 'super_admin',
-    description: 'Accès complet à toutes les fonctionnalités, gestion des admins',
+    descriptionKey: 'roleSuperAdminDesc',
+    descriptionDefault: 'Accès complet à toutes les fonctionnalités, gestion des admins',
   },
   {
     role: 'ops',
-    description: 'Opérations: dépôts, paiements, taux de change',
+    descriptionKey: 'roleOpsDesc',
+    descriptionDefault: 'Opérations: dépôts, paiements, taux de change',
   },
   {
     role: 'cash_agent',
-    description: 'Gestion des paiements cash uniquement',
+    descriptionKey: 'roleCashAgentDesc',
+    descriptionDefault: 'Gestion des paiements cash uniquement',
   },
 ];
 
@@ -45,6 +49,7 @@ const ROLE_BADGE_COLORS: Record<AppRole, string> = {
 };
 
 export function MobileCreateAdmin() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
   const createAdminMutation = useCreateAdmin();
@@ -115,7 +120,7 @@ export function MobileCreateAdmin() {
   return (
     <div className="flex flex-col min-h-screen">
       <MobileHeader
-        title="Nouvel admin"
+        title={t('newAdmin', { defaultValue: 'Nouvel admin' })}
         showBack
         backTo="/m/more/admins"
       />
@@ -135,15 +140,15 @@ export function MobileCreateAdmin() {
         {step === 'personal' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold">Informations personnelles</h2>
+              <h2 className="text-xl font-semibold">{t('personalInfo', { defaultValue: 'Informations personnelles' })}</h2>
               <p className="text-muted-foreground mt-1">
-                Entrez les informations de base du nouvel administrateur
+                {t('enterNewAdminInfo', { defaultValue: 'Entrez les informations de base du nouvel administrateur' })}
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="firstName">Prénom *</Label>
+                <Label htmlFor="firstName">{t('firstName', { defaultValue: 'Prénom' })} *</Label>
                 <Input
                   id="firstName"
                   value={firstName}
@@ -154,7 +159,7 @@ export function MobileCreateAdmin() {
               </div>
 
               <div>
-                <Label htmlFor="lastName">Nom *</Label>
+                <Label htmlFor="lastName">{t('lastName', { defaultValue: 'Nom' })} *</Label>
                 <Input
                   id="lastName"
                   value={lastName}
@@ -183,9 +188,9 @@ export function MobileCreateAdmin() {
         {step === 'role' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold">Sélection du rôle</h2>
+              <h2 className="text-xl font-semibold">{t('roleSelection', { defaultValue: 'Sélection du rôle' })}</h2>
               <p className="text-muted-foreground mt-1">
-                Choisissez le rôle à attribuer à cet administrateur
+                {t('chooseRoleForAdmin', { defaultValue: 'Choisissez le rôle à attribuer à cet administrateur' })}
               </p>
             </div>
 
@@ -218,7 +223,7 @@ export function MobileCreateAdmin() {
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        {item.description}
+                        {t(item.descriptionKey, { defaultValue: item.descriptionDefault })}
                       </p>
                     </div>
                   </div>
@@ -232,9 +237,9 @@ export function MobileCreateAdmin() {
         {step === 'confirm' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold">Confirmation</h2>
+              <h2 className="text-xl font-semibold">{t('confirmation', { defaultValue: 'Confirmation' })}</h2>
               <p className="text-muted-foreground mt-1">
-                Vérifiez les informations avant de créer l'administrateur
+                {t('verifyBeforeCreating', { defaultValue: "Vérifiez les informations avant de créer l'administrateur" })}
               </p>
             </div>
 
@@ -264,7 +269,7 @@ export function MobileCreateAdmin() {
                 <div className="flex items-center gap-3">
                   <User className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Nom complet</p>
+                    <p className="text-sm text-muted-foreground">{t('fullName', { defaultValue: 'Nom complet' })}</p>
                     <p className="font-medium">{firstName} {lastName}</p>
                   </div>
                 </div>
@@ -280,7 +285,7 @@ export function MobileCreateAdmin() {
                 <div className="flex items-center gap-3">
                   <Shield className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Rôle</p>
+                    <p className="text-sm text-muted-foreground">{t('role', { defaultValue: 'Rôle' })}</p>
                     <p className="font-medium">{ADMIN_ROLE_LABELS[selectedRole]}</p>
                   </div>
                 </div>
@@ -304,7 +309,7 @@ export function MobileCreateAdmin() {
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8 text-green-600" />
               </div>
-              <h2 className="text-xl font-semibold">Admin créé avec succès</h2>
+              <h2 className="text-xl font-semibold">{t('adminCreatedSuccess', { defaultValue: 'Admin créé avec succès' })}</h2>
               <p className="text-muted-foreground mt-1">
                 {firstName} {lastName} peut maintenant se connecter
               </p>
@@ -313,7 +318,7 @@ export function MobileCreateAdmin() {
             <div className="bg-card rounded-xl border border-border p-4 space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Mot de passe temporaire
+                  {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
                 </p>
                 <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
                   <code className="text-lg font-mono">{tempPassword}</code>
@@ -344,14 +349,14 @@ export function MobileCreateAdmin() {
                 className="w-full"
                 onClick={() => navigate(`/m/more/admins/${createdUserId}`)}
               >
-                Voir le profil admin
+                {t('viewAdminProfile', { defaultValue: 'Voir le profil admin' })}
               </Button>
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => navigate('/m/more/admins')}
               >
-                Retour à la liste
+                {t('backToList', { defaultValue: 'Retour à la liste' })}
               </Button>
             </div>
           </div>
@@ -369,7 +374,7 @@ export function MobileCreateAdmin() {
                 onClick={handleBack}
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
-                Retour
+                {t('back', { defaultValue: 'Retour' })}
               </Button>
             )}
 
@@ -382,12 +387,12 @@ export function MobileCreateAdmin() {
                 {createAdminMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Création...
+                    {t('creating', { defaultValue: 'Création...' })}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Créer l'admin
+                    {t('createAdmin', { defaultValue: "Créer l'admin" })}
                   </>
                 )}
               </Button>
@@ -400,7 +405,7 @@ export function MobileCreateAdmin() {
                   (step === 'role' && !isRoleValid)
                 }
               >
-                Continuer
+                {t('continue', { defaultValue: 'Continuer' })}
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             )}
