@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { toast } from "sonner";
 
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 
-const passwordSchema = z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères");
+const passwordSchema = z.string().min(6);
 
 function setMeta(name: string, content: string) {
   let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
@@ -37,6 +38,7 @@ function setCanonical(href: string) {
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const { updatePassword } = useAuth();
 
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -71,18 +73,18 @@ export default function ResetPasswordPage() {
     setError(null);
 
     if (!hasSession) {
-      setError("Lien de réinitialisation invalide ou expiré.");
+      setError(t('resetPassword.linkExpired', { defaultValue: 'Lien de réinitialisation invalide ou expiré.' }));
       return;
     }
 
     const pw = passwordSchema.safeParse(password);
     if (!pw.success) {
-      setError(pw.error.errors[0].message);
+      setError(t('validation.passwordMin'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+      setError(t('validation.passwordMismatch'));
       return;
     }
 
@@ -91,11 +93,11 @@ export default function ResetPasswordPage() {
     setIsSubmitting(false);
 
     if (updateError) {
-      setError(updateError.message || "Erreur lors de la réinitialisation.");
+      setError(updateError.message || t('validation.loginError'));
       return;
     }
 
-    toast.success("Mot de passe mis à jour.");
+    toast.success(t('toast.passwordUpdated'));
     navigate("/wallet", { replace: true });
   };
 
@@ -112,11 +114,11 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Réinitialiser le mot de passe</CardTitle>
+            <CardTitle>{t('resetPassword.title')}</CardTitle>
             <CardDescription>
               {hasSession
-                ? "Choisissez un nouveau mot de passe pour votre compte."
-                : "Votre lien de réinitialisation n'est plus valide."}
+                ? t('resetPassword.subtitle')
+                : t('resetPassword.linkExpired', { defaultValue: 'Votre lien de réinitialisation n\'est plus valide.' })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -125,11 +127,11 @@ export default function ResetPasswordPage() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Lien invalide ou expiré. Veuillez refaire « Mot de passe oublié ».
+                    {t('resetPassword.linkExpired', { defaultValue: 'Lien invalide ou expiré. Veuillez refaire « Mot de passe oublié ».' })}
                   </AlertDescription>
                 </Alert>
                 <Button className="w-full" onClick={() => navigate("/auth", { replace: true })}>
-                  Retour à la connexion
+                  {t('forgotPassword.signIn')}
                 </Button>
               </div>
             ) : (
@@ -142,7 +144,7 @@ export default function ResetPasswordPage() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Nouveau mot de passe</Label>
+                  <Label htmlFor="password">{t('resetPassword.newPassword')}</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -171,7 +173,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                  <Label htmlFor="confirmPassword">{t('resetPassword.confirmPassword')}</Label>
                   <Input
                     id="confirmPassword"
                     type={showPassword ? "text" : "password"}
@@ -187,10 +189,10 @@ export default function ResetPasswordPage() {
                   {isSubmitting ? (
                     <span className="inline-flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Mise à jour...
+                      {t('resetPassword.reset')}...
                     </span>
                   ) : (
-                    "Mettre à jour"
+                    t('resetPassword.reset')
                   )}
                 </Button>
 
@@ -201,7 +203,7 @@ export default function ResetPasswordPage() {
                   disabled={isSubmitting}
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Retour
+                  {t('common:back')}
                 </button>
               </form>
             )}

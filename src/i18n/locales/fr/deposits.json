@@ -1,0 +1,235 @@
+{
+  "title": "Mes D\u00e9p\u00f4ts",
+  "subtitle": "Historique et suivi",
+  "newDeposit": "Faire un d\u00e9p\u00f4t",
+  "noDeposits": "Aucun d\u00e9p\u00f4t pour le moment",
+  "loadError": "Erreur lors du chargement des d\u00e9p\u00f4ts",
+  "status": {
+    "created": "Demande cr\u00e9\u00e9e",
+    "awaiting_proof": "En attente de preuve",
+    "proof_submitted": "Preuve envoy\u00e9e",
+    "admin_review": "En v\u00e9rification",
+    "validated": "Valid\u00e9",
+    "rejected": "Rejet\u00e9",
+    "pending_correction": "\u00c0 corriger",
+    "cancelled": "Annul\u00e9",
+    "cancelled_by_admin": "Annul\u00e9 (admin)"
+  },
+  "method": {
+    "bank_transfer": "Virement bancaire",
+    "bank_cash": "D\u00e9p\u00f4t cash banque",
+    "agency_cash": "Cash agence Bonzini",
+    "om_transfer": "Orange Money \u2013 Transfert",
+    "om_withdrawal": "Orange Money \u2013 Retrait",
+    "mtn_transfer": "MTN MoMo \u2013 Transfert",
+    "mtn_withdrawal": "MTN MoMo \u2013 Retrait",
+    "wave": "Wave"
+  },
+  "methodShort": {
+    "bank_transfer": "Virement",
+    "bank_cash": "Cash banque",
+    "agency_cash": "Cash agence",
+    "om_transfer": "Orange UV",
+    "om_withdrawal": "Orange code",
+    "mtn_transfer": "MTN Float",
+    "mtn_withdrawal": "MTN code",
+    "wave": "Wave"
+  },
+  "timeline": {
+    "standard": {
+      "created": {
+        "label": "D\u00e9p\u00f4t d\u00e9clar\u00e9",
+        "description": "Votre d\u00e9p\u00f4t a \u00e9t\u00e9 enregistr\u00e9"
+      },
+      "proof_submitted": {
+        "label": "Preuve envoy\u00e9e",
+        "description": "En attente de v\u00e9rification"
+      },
+      "admin_review": {
+        "label": "En v\u00e9rification",
+        "description": "L'\u00e9quipe Bonzini v\u00e9rifie votre d\u00e9p\u00f4t"
+      },
+      "validated": {
+        "label": "Valid\u00e9 \u2014 Solde cr\u00e9dit\u00e9",
+        "description": "Votre wallet a \u00e9t\u00e9 cr\u00e9dit\u00e9"
+      }
+    },
+    "withdrawal": {
+      "created": {
+        "label": "Retrait d\u00e9clar\u00e9",
+        "description": "Votre retrait a \u00e9t\u00e9 enregistr\u00e9"
+      },
+      "proof_submitted": {
+        "label": "Code fourni",
+        "description": "Code de retrait transmis"
+      },
+      "admin_review": {
+        "label": "En v\u00e9rification",
+        "description": "L'\u00e9quipe Bonzini v\u00e9rifie le retrait"
+      },
+      "validated": {
+        "label": "Valid\u00e9 \u2014 Solde cr\u00e9dit\u00e9",
+        "description": "Votre wallet a \u00e9t\u00e9 cr\u00e9dit\u00e9"
+      }
+    },
+    "agency": {
+      "created": {
+        "label": "D\u00e9p\u00f4t en agence",
+        "description": "D\u00e9p\u00f4t d\u00e9clar\u00e9 en agence Bonzini"
+      },
+      "proof_submitted": {
+        "label": "Re\u00e7u confirm\u00e9",
+        "description": "Re\u00e7u de l'agence enregistr\u00e9"
+      },
+      "admin_review": {
+        "label": "En v\u00e9rification",
+        "description": "Validation en cours"
+      },
+      "validated": {
+        "label": "Valid\u00e9 \u2014 Solde cr\u00e9dit\u00e9",
+        "description": "Votre wallet a \u00e9t\u00e9 cr\u00e9dit\u00e9"
+      }
+    }
+  },
+  "rejectionReasons": {
+    "incorrectAmount": "Montant incorrect",
+    "illegibleProof": "Preuve illisible",
+    "missingReference": "R\u00e9f\u00e9rence absente",
+    "wrongBankAccount": "Mauvais compte bancaire",
+    "nonCompliantDocument": "Document non conforme",
+    "suspicion": "Suspicion / incoh\u00e9rence",
+    "other": "Autre"
+  },
+  "proofDeleteReasons": {
+    "incorrectUpload": "Upload incorrect",
+    "wrongDeposit": "Mauvais d\u00e9p\u00f4t",
+    "duplicate": "Doublon",
+    "illegibleImage": "Image illisible",
+    "other": "Autre"
+  },
+  "instructions": {
+    "title": "Instructions de d\u00e9p\u00f4t",
+    "copyAll": "Tout copier",
+    "copied": "Copi\u00e9",
+    "copySuccess": "Copi\u00e9 !",
+    "copyError": "Erreur lors de la copie",
+    "merchantCode": "Code Marchand",
+    "stepsToFollow": "\u00c9tapes \u00e0 suivre",
+    "bankTransfer": "Virement bancaire",
+    "bankCash": "D\u00e9p\u00f4t cash en banque",
+    "omTransfer": "Transfert Orange UV vers Bonzini",
+    "omWithdrawal": "Retrait Orange Money (code marchand)",
+    "mtnTransfer": "Transfert MTN Float vers Bonzini",
+    "mtnWithdrawal": "Retrait MoMo (code marchand)",
+    "agencyCash": "D\u00e9p\u00f4t en agence Bonzini",
+    "wave": "Transfert Wave",
+    "fields": {
+      "bank": "Banque",
+      "holder": "Titulaire",
+      "accountNumber": "N\u00b0 Compte",
+      "iban": "IBAN",
+      "swift": "Code SWIFT",
+      "reference": "R\u00e9f\u00e9rence",
+      "operator": "Op\u00e9rateur",
+      "number": "Num\u00e9ro",
+      "agency": "Agence",
+      "address": "Adresse",
+      "hours": "Horaires",
+      "waveNumber": "Num\u00e9ro Wave",
+      "amount": "Montant"
+    },
+    "steps": {
+      "bankTransfer": [
+        "Connectez-vous \u00e0 votre application bancaire ou rendez-vous en agence",
+        "Effectuez un virement vers le compte ci-dessus",
+        "Indiquez la r\u00e9f\u00e9rence: {{reference}}",
+        "Conservez le re\u00e7u et t\u00e9l\u00e9chargez-le ici"
+      ],
+      "bankCash": [
+        "Rendez-vous dans une agence {{bankName}}",
+        "Effectuez un d\u00e9p\u00f4t cash sur le compte ci-dessus",
+        "Indiquez la r\u00e9f\u00e9rence: {{reference}}",
+        "Conservez le bordereau et t\u00e9l\u00e9chargez-le ici"
+      ],
+      "omTransfer": [
+        "Composez #150*1*1#",
+        "Entrez le num\u00e9ro: {{phone}}",
+        "Saisissez le montant: {{amount}} XAF",
+        "Confirmez avec votre code PIN",
+        "Prenez une capture d'\u00e9cran du SMS de confirmation"
+      ],
+      "omWithdrawal": [
+        "Sur votre t\u00e9l\u00e9phone, tapez le code marchand affich\u00e9 ci-dessous",
+        "Remplacez MONTANT par le montant \u00e0 envoyer",
+        "Validez avec votre code PIN Orange Money",
+        "Prenez une capture d'\u00e9cran du SMS de confirmation"
+      ],
+      "mtnTransfer": [
+        "Depuis votre compte MTN Float entreprise",
+        "Effectuez un transfert vers: {{phone}}",
+        "Saisissez le montant: {{amount}} XAF",
+        "Confirmez avec votre code PIN",
+        "Prenez une capture d'\u00e9cran de la confirmation"
+      ],
+      "mtnWithdrawal": [
+        "Sur votre t\u00e9l\u00e9phone, tapez le code marchand affich\u00e9 ci-dessous",
+        "Remplacez MONTANT par le montant \u00e0 envoyer",
+        "Validez avec votre code PIN MTN Mobile Money",
+        "Prenez une capture d'\u00e9cran du SMS de confirmation"
+      ],
+      "agencyCash": [
+        "Rendez-vous \u00e0 l'agence {{agencyName}}",
+        "Pr\u00e9sentez votre pi\u00e8ce d'identit\u00e9",
+        "Mentionnez la r\u00e9f\u00e9rence: {{reference}}",
+        "Effectuez votre d\u00e9p\u00f4t en esp\u00e8ces",
+        "Conservez votre re\u00e7u"
+      ],
+      "wave": [
+        "Ouvrez l'application Wave",
+        "S\u00e9lectionnez \"Envoyer\"",
+        "Entrez le num\u00e9ro: {{phone}}",
+        "Saisissez le montant: {{amount}} XAF",
+        "Confirmez le transfert"
+      ]
+    },
+    "notes": {
+      "omWithdrawalLimit": "Limite: 500 000 XAF par transaction",
+      "mtnWithdrawalLimit": "Limite: 500 000 XAF par transaction"
+    }
+  },
+  "proof": {
+    "title": "Joindre les preuves de d\u00e9p\u00f4t",
+    "dragFiles": "Glissez vos fichiers ici",
+    "orClick": "ou cliquez pour parcourir",
+    "addMore": "Ajouter d'autres preuves",
+    "camera": "Appareil photo",
+    "gallery": "Galerie",
+    "acceptedFormats": "Formats accept\u00e9s : JPG, PNG, PDF \u2022 Max 10 MB par fichier",
+    "filesSelected": "{{count}} fichier s\u00e9lectionn\u00e9",
+    "filesSelected_plural": "{{count}} fichiers s\u00e9lectionn\u00e9s",
+    "removeAll": "Tout supprimer",
+    "sending": "Envoi en cours...",
+    "confirmSend": "Confirmer l'envoi ({{count}} preuve)",
+    "confirmSend_plural": "Confirmer l'envoi ({{count}} preuves)",
+    "attestation": "En confirmant, vous attestez que ces preuves correspondent bien \u00e0 ce d\u00e9p\u00f4t.",
+    "confirmTitle": "Confirmer l'envoi des preuves",
+    "confirmDescription": "Vous allez envoyer {{count}} preuve de d\u00e9p\u00f4t. Cette action d\u00e9clenchera la v\u00e9rification par notre \u00e9quipe.",
+    "confirmDescription_plural": "Vous allez envoyer {{count}} preuves de d\u00e9p\u00f4t. Cette action d\u00e9clenchera la v\u00e9rification par notre \u00e9quipe.",
+    "previewTitle": "Aper\u00e7u de la preuve",
+    "previewAlt": "Aper\u00e7u"
+  },
+  "countdown": {
+    "expired": "D\u00e9lai d\u00e9pass\u00e9",
+    "remaining": "D\u00e9lai restant",
+    "expiredBanner": "Delai depasse",
+    "remainingBanner": "Delai restant",
+    "expiredMessage": "Le d\u00e9lai recommand\u00e9 est d\u00e9pass\u00e9, mais vous pouvez toujours envoyer votre preuve",
+    "criticalWarning": "Attention: d\u00e9lai presque \u00e9coul\u00e9 !",
+    "warningMessage": "Pensez \u00e0 envoyer votre preuve rapidement",
+    "normalMessage": "Effectuez le d\u00e9p\u00f4t et envoyez la preuve",
+    "expiredBannerMessage": "Le delai recommande est depasse, mais vous pouvez toujours envoyer votre preuve",
+    "criticalBannerWarning": "Attention: delai presque ecoule !",
+    "warningBannerMessage": "Pensez a envoyer votre preuve rapidement",
+    "normalBannerMessage": "Effectuez le depot et envoyez la preuve"
+  }
+}

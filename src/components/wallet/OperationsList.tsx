@@ -1,4 +1,5 @@
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { WalletOperation } from '@/hooks/useWallet';
 import { formatXAF } from '@/lib/formatters';
 import { format, parseISO } from 'date-fns';
@@ -9,6 +10,7 @@ interface OperationsListProps {
 }
 
 export const OperationsList = ({ operations }: OperationsListProps) => {
+  const { t } = useTranslation('client');
   const getOperationType = (op: WalletOperation): 'CREDIT' | 'DEBIT' => {
     return op.operation_type === 'deposit' ? 'CREDIT' : 'DEBIT';
   };
@@ -16,9 +18,9 @@ export const OperationsList = ({ operations }: OperationsListProps) => {
   return (
     <div className="space-y-2 animate-slide-up" style={{ animationDelay: '200ms' }}>
       <div className="flex items-center justify-between px-1 mb-3">
-        <h3 className="text-sm font-semibold text-foreground">Dernières opérations</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t('wallet.recentOperations')}</h3>
         <button className="text-xs font-medium text-primary hover:underline">
-          Voir tout
+          {t('wallet.viewAll')}
         </button>
       </div>
       
@@ -46,7 +48,7 @@ export const OperationsList = ({ operations }: OperationsListProps) => {
               </div>
               
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{op.description || 'Opération'}</p>
+                <p className="font-medium text-foreground truncate">{op.description || t('wallet.operation')}</p>
                 <p className="text-xs text-muted-foreground">
                   {format(date, 'dd MMM, HH:mm', { locale: fr })}
                 </p>

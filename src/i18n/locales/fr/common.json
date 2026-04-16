@@ -32,5 +32,13 @@
     "minutesAgo": "Il y a {{count}} min",
     "hoursAgo": "Il y a {{count}}h",
     "daysAgo": "Il y a {{count}}j"
+  },
+  "errorBoundary": {
+    "title": "Oops! Une erreur est survenue",
+    "description": "Ne vous inqui\u00e9tez pas, vos donn\u00e9es sont en s\u00e9curit\u00e9. Essayez de rafra\u00eechir la page.",
+    "contactSupport": "Si le probl\u00e8me persiste, veuillez contacter le support technique.",
+    "retry": "R\u00e9essayer",
+    "refreshPage": "Rafra\u00eechir la page",
+    "featureLoadError": "Impossible de charger cette section"
   }
 }

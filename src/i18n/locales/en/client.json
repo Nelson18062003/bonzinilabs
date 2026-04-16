@@ -1,0 +1,80 @@
+{
+  "wallet": {
+    "availableBalance": "Available balance",
+    "hideBalance": "Hide balance",
+    "showBalance": "Show balance",
+    "balanceUnavailable": "Balance temporarily unavailable",
+    "retryLater": "Please try again in a moment",
+    "recentOperations": "Recent operations",
+    "viewAll": "View all",
+    "operation": "Operation"
+  },
+  "quickActions": {
+    "deposit": "Deposit",
+    "pay": "Pay",
+    "beneficiaries": "Beneficiaries",
+    "activity": "Activity"
+  },
+  "history": {
+    "title": "History",
+    "subtitle": "All your transactions",
+    "statement": "Statement",
+    "filterAll": "All",
+    "filterCredits": "Credits",
+    "filterDebits": "Debits",
+    "noOperations": "No operations found",
+    "noMovements": "No movements to export",
+    "statementError": "Error generating statement",
+    "operationLabels": {
+      "deposit": "Deposit",
+      "depositRefused": "Deposit refused",
+      "payment": "Payment",
+      "paymentReserved": "Payment reserved",
+      "refund": "Refund",
+      "adminCredit": "Admin credit",
+      "adminDebit": "Admin debit",
+      "adjustmentDebit": "Debit adjustment",
+      "adjustmentCredit": "Credit adjustment",
+      "operation": "Operation"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "logoutSuccess": "Logged out successfully",
+    "notifications": "Notifications",
+    "notificationsDesc": "Manage your alerts",
+    "security": "Security",
+    "securityDesc": "Password, 2FA",
+    "devices": "Connected devices",
+    "devicesDesc": "2 devices",
+    "language": "Language",
+    "languageDesc": "English",
+    "documents": "Documents",
+    "documentsDesc": "KYC, Supporting documents",
+    "helpSupport": "Help & Support",
+    "helpSupportDesc": "FAQ, Contact",
+    "appearance": "Appearance",
+    "appearanceDesc": "App theme",
+    "logout": "Log out",
+    "version": "Bonzini v1.0.0 \u2022 Made with \ud83d\udc9c in Cameroon",
+    "comingSoon": "Feature coming soon"
+  },
+  "beneficiaries": {
+    "title": "Beneficiaries",
+    "subtitle": "Your recipients in China",
+    "noBeneficiary": "No beneficiaries",
+    "comingSoon": "Beneficiaries feature coming soon"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "loadError": "Error loading notifications",
+    "noNotifications": "No notifications yet",
+    "noNotificationsHint": "You'll be notified when your deposits are validated"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Page not found",
+    "backHome": "Return to Home"
+  }
+}

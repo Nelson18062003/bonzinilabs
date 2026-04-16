@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -39,19 +40,8 @@ type Currency = 'XAF' | 'RMB';
 type PaymentMethodType = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
 type IdentificationType = 'qr' | 'id' | 'email' | 'phone';
 
-const STEPS: { key: Step; label: string }[] = [
-  { key: 'method', label: 'Mode' },
-  { key: 'amount', label: 'Montant' },
-  { key: 'beneficiary', label: 'Bénéf.' },
-  { key: 'confirm', label: 'Résumé' },
-];
-
-const paymentMethods: { id: PaymentMethodType; label: string; description: string }[] = [
-  { id: 'alipay', label: 'Alipay', description: 'Paiement via Alipay' },
-  { id: 'wechat', label: 'WeChat Pay', description: 'Paiement via WeChat' },
-  { id: 'bank_transfer', label: 'Virement bancaire', description: 'Transfert vers compte bancaire' },
-  { id: 'cash', label: 'Cash', description: 'Retrait au bureau Bonzini' },
-];
+const STEP_KEYS: Step[] = ['method', 'amount', 'beneficiary', 'confirm'];
+const PAYMENT_METHOD_IDS: PaymentMethodType[] = ['alipay', 'wechat', 'bank_transfer', 'cash'];
 
 function toRateKey(method: PaymentMethodType | null): PaymentMethodKey {
   if (method === 'bank_transfer') return 'virement';
@@ -75,12 +65,24 @@ const QUICK_XAF = [100000, 250000, 500000, 1000000];
 const QUICK_RMB = [1000, 2500, 5000, 10000];
 
 const NewPaymentPage = () => {
+  const { t } = useTranslation('payments');
   const navigate = useNavigate();
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
   const { data: clientRatesData } = useClientRates();
   const { data: profile } = useMyProfile();
   const createPayment = useCreatePayment();
   const createBeneficiary = useCreateBeneficiary();
+
+  const STEPS: { key: Step; label: string }[] = STEP_KEYS.map((key) => ({
+    key,
+    label: t(`form.steps.${key}`),
+  }));
+
+  const paymentMethods: { id: PaymentMethodType; label: string; description: string }[] = PAYMENT_METHOD_IDS.map((id) => ({
+    id,
+    label: t(`form.methods.${id}.label`),
+    description: t(`form.methods.${id}.desc`),
+  }));
 
   const [step, setStep] = useState<Step>('method');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -196,7 +198,7 @@ const NewPaymentPage = () => {
         const filePath = `qr-codes/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(filePath, compressed);
         if (uploadError) {
-          toast.error('Erreur lors de l\'upload du QR code. Veuillez réessayer.');
+          toast.error(t('form.qrUploadError'));
           return;
         }
         qrCodeUrl = `payment-proofs/${filePath}`;
@@ -263,7 +265,7 @@ const NewPaymentPage = () => {
   // ── Step 1: Method ──
   const renderMethodStep = () => (
     <div className="animate-fade-in space-y-4">
-      <p className="text-sm text-muted-foreground mb-4">Comment votre bénéficiaire souhaite recevoir ?</p>
+      <p className="text-sm text-muted-foreground mb-4">{t('form.howToReceive')}</p>
       {paymentMethods.map((method) => (
         <PaymentMethodCard
           key={method.id}
@@ -282,7 +284,7 @@ const NewPaymentPage = () => {
     <div className="animate-fade-in space-y-6">
       {showRate && (
         <div className="card-glass p-4 text-center">
-          <p className="text-sm text-muted-foreground mb-1">Taux appliqué</p>
+          <p className="text-sm text-muted-foreground mb-1">{t('form.rateApplied')}</p>
           <p className="text-lg font-bold text-foreground">1 000 000 XAF = ¥{formatRMB(1000000 * rate)}</p>
         </div>
       )}

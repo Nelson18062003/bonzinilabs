@@ -2,8 +2,10 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const BeneficiariesPage = () => {
+  const { t } = useTranslation('client');
   // TODO: Implement beneficiaries table and useBeneficiaries hook when ready
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const beneficiaries: any[] = [];
@@ -11,28 +13,28 @@ const BeneficiariesPage = () => {
   return (
     <MobileLayout>
       <PageHeader
-        title="Bénéficiaires"
-        subtitle="Vos destinataires en Chine"
+        title={t('beneficiaries.title')}
+        subtitle={t('beneficiaries.subtitle')}
         showBack
         rightElement={
           <button
-            onClick={() => toast.info('Fonctionnalité bientôt disponible')}
+            onClick={() => toast.info(t('profile.comingSoon'))}
             className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-purple"
           >
             <Plus className="w-5 h-5" />
           </button>
         }
       />
-      
+
       <div className="px-4 py-4 space-y-3">
         {beneficiaries.length === 0 && (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <User className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground mb-4">Aucun bénéficiaire</p>
+            <p className="text-muted-foreground mb-4">{t('beneficiaries.noBeneficiary')}</p>
             <p className="text-sm text-muted-foreground">
-              La fonctionnalité bénéficiaires sera bientôt disponible
+              {t('beneficiaries.comingSoon')}
             </p>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import {
   useMyNotifications,
   useMarkNotificationAsRead,
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('client');
   const { data: notifications, isLoading, error } = useMyNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
@@ -63,7 +65,7 @@ const NotificationsPage = () => {
   if (isLoading) {
     return (
       <MobileLayout showNav={false}>
-        <PageHeader title="Notifications" showBack />
+        <PageHeader title={t('notifications.title')} showBack />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -74,9 +76,9 @@ const NotificationsPage = () => {
   if (error) {
     return (
       <MobileLayout showNav={false}>
-        <PageHeader title="Notifications" showBack />
+        <PageHeader title={t('notifications.title')} showBack />
         <div className="px-4 py-12 text-center">
-          <p className="text-destructive">Erreur lors du chargement des notifications</p>
+          <p className="text-destructive">{t('notifications.loadError')}</p>
         </div>
       </MobileLayout>
     );
@@ -97,7 +99,7 @@ const NotificationsPage = () => {
               className="text-primary"
             >
               <CheckCheck className="w-4 h-4 mr-1" />
-              Tout lire
+              {t('notifications.markAllRead')}
             </Button>
           ) : undefined
         }
@@ -168,9 +170,9 @@ const NotificationsPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Bell className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucune notification pour le moment</p>
+            <p className="text-muted-foreground">{t('notifications.noNotifications')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Vous serez notifié lorsque vos dépôts seront validés
+              {t('notifications.noNotificationsHint')}
             </p>
           </div>
         )}

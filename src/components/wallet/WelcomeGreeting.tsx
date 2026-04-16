@@ -1,4 +1,5 @@
 import { useGreeting } from '@/hooks/useGreeting';
+import { useTranslation } from 'react-i18next';
 
 interface WelcomeGreetingProps {
   firstName?: string | null;
@@ -27,8 +28,9 @@ export const WelcomeGreeting = ({
   showTrustMessage = false,
 }: WelcomeGreetingProps) => {
   const { greeting } = useGreeting({ firstName, lastName });
+  const { t } = useTranslation('client');
 
-  const displaySubtitle = subtitle || (showTrustMessage ? 'Votre argent est en sécurité chez Bonzini.' : null);
+  const displaySubtitle = subtitle || (showTrustMessage ? t('welcomeGreeting.trustMessage') : null);
 
   return (
     <div className="animate-fade-in">

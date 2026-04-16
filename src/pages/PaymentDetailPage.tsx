@@ -4,6 +4,7 @@
 // Hero amount with payment method logo, beneficiary section
 // with copyable fields, consolidated proofs, collapsible timeline.
 // ============================================================
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -92,6 +93,7 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 };
 
 export default function PaymentDetailPage() {
+  const { t } = useTranslation('payments');
   const { paymentId } = useParams();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -178,7 +180,7 @@ export default function PaymentDetailPage() {
       if (!hasQr && !hasPhone && !hasEmail) {
         return {
           valid: false,
-          message: 'Veuillez fournir au moins un QR code, un numéro de téléphone ou un email'
+          message: t('detail.validation.atLeastOneContact')
         };
       }
       return { valid: true };
@@ -187,13 +189,13 @@ export default function PaymentDetailPage() {
     if (payment.method === 'bank_transfer') {
       // Required: name, bank, account
       if (!beneficiaryForm.beneficiary_name.trim()) {
-        return { valid: false, message: 'Le nom du bénéficiaire est requis' };
+        return { valid: false, message: t('detail.validation.nameRequired') };
       }
       if (!beneficiaryForm.beneficiary_bank_name.trim()) {
-        return { valid: false, message: 'Le nom de la banque est requis' };
+        return { valid: false, message: t('detail.validation.bankNameRequired') };
       }
       if (!beneficiaryForm.beneficiary_bank_account.trim()) {
-        return { valid: false, message: 'Le numéro de compte est requis' };
+        return { valid: false, message: t('detail.validation.bankAccountRequired') };
       }
       return { valid: true };
     }
@@ -248,10 +250,10 @@ export default function PaymentDetailPage() {
       setIsEditDialogOpen(false);
       setQrFile(null);
       setQrPreview(null);
-      toast.success('Votre paiement est prêt à être traité par Bonzini');
+      toast.success(t('detail.toast.beneficiarySaved'));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      toast.error(err?.message || 'Impossible d\'enregistrer les informations');
+      toast.error(err?.message || t('detail.toast.saveFailed'));
     } finally {
       setIsUploadingQr(false);
     }
@@ -260,7 +262,7 @@ export default function PaymentDetailPage() {
   // Handle "complete later" action
   const handleCompleteLater = () => {
     setIsEditDialogOpen(false);
-    toast.info('Vous pourrez compléter les informations plus tard');
+    toast.info(t('detail.toast.completeLater'));
   };
 
   // Capture QR SVG from DOM and convert to data URL for PDF
@@ -335,10 +337,10 @@ export default function PaymentDetailPage() {
         <PaymentReceiptPDF data={receiptData} />,
         `recu_paiement_${payment.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
-      toast.success('Relevé téléchargé');
+      toast.success(t('detail.toast.receiptDownloaded'));
     } catch (error) {
       console.error('Error generating payment PDF:', error);
-      toast.error('Erreur lors de la génération du PDF');
+      toast.error(t('detail.toast.receiptError'));
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -361,9 +363,9 @@ export default function PaymentDetailPage() {
     return (
       <MobileLayout>
         <div className="p-4 text-center">
-          <p className="text-muted-foreground">Paiement non trouvé</p>
+          <p className="text-muted-foreground">{t('detail.notFound')}</p>
           <Button onClick={() => navigate('/payments')} className="mt-4">
-            Retour aux paiements
+            {t('detail.backToPayments')}
           </Button>
         </div>
       </MobileLayout>
@@ -409,7 +411,7 @@ export default function PaymentDetailPage() {
         <div className="space-y-4">
           <div className="bg-muted/50 rounded-lg p-3 mb-4">
             <p className="text-sm text-muted-foreground">
-              Fournissez <strong>au moins un</strong> des éléments suivants pour que Bonzini puisse effectuer le paiement.
+              {t('detail.form.provideAtLeastOne')}
             </p>
           </div>
 
@@ -432,26 +434,26 @@ export default function PaymentDetailPage() {
                 <div className="flex flex-col items-center gap-2">
                   <img
                     src={qrPreview}
-                    alt="Aperçu QR code"
+                    alt={t('detail.form.qrPreview')}
                     className="w-32 h-32 rounded-lg border object-cover"
                   />
-                  <span className="text-xs text-muted-foreground">Cliquez pour remplacer</span>
+                  <span className="text-xs text-muted-foreground">{t('detail.form.clickToReplace')}</span>
                 </div>
               ) : beneficiaryForm.beneficiary_qr_code_url ? (
                 <div className="flex flex-col items-center gap-2">
                   <img
                     src={beneficiaryForm.beneficiary_qr_code_url}
-                    alt="QR code bénéficiaire"
+                    alt={t('detail.form.qrBeneficiary')}
                     className="w-32 h-32 rounded-lg border object-cover"
                     loading="lazy"
                   />
-                  <span className="text-xs text-muted-foreground">Cliquez pour remplacer</span>
+                  <span className="text-xs text-muted-foreground">{t('detail.form.clickToReplace')}</span>
                 </div>
               ) : (
                 <>
                   <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm font-medium">Ajouter le QR code</p>
-                  <p className="text-xs text-muted-foreground">du bénéficiaire</p>
+                  <p className="text-sm font-medium">{t('detail.form.addQrCode')}</p>
+                  <p className="text-xs text-muted-foreground">{t('detail.form.ofBeneficiary')}</p>
                 </>
               )}
             </div>
@@ -469,7 +471,7 @@ export default function PaymentDetailPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">ou</span>
+              <span className="bg-background px-2 text-muted-foreground">{t('detail.form.or')}</span>
             </div>
           </div>
 
@@ -477,7 +479,7 @@ export default function PaymentDetailPage() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Phone className="w-4 h-4" />
-              Numéro de téléphone
+              {t('detail.form.phoneNumber')}
             </Label>
             <Input
               value={beneficiaryForm.beneficiary_phone}
@@ -492,7 +494,7 @@ export default function PaymentDetailPage() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
-              Email (optionnel)
+              {t('detail.form.emailOptional')}
             </Label>
             <Input
               type="email"
@@ -508,14 +510,14 @@ export default function PaymentDetailPage() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              Nom du bénéficiaire (optionnel)
+              {t('detail.form.beneficiaryNameOptional')}
             </Label>
             <Input
               value={beneficiaryForm.beneficiary_name}
               onChange={(e) =>
                 setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
               }
-              placeholder="Nom complet"
+              placeholder={t('detail.form.fullName')}
             />
           </div>
         </div>
@@ -527,21 +529,21 @@ export default function PaymentDetailPage() {
         <div className="space-y-4">
           <div className="bg-muted/50 rounded-lg p-3 mb-4">
             <p className="text-sm text-muted-foreground">
-              Veuillez fournir les informations bancaires complètes du bénéficiaire.
+              {t('detail.form.provideBankInfo')}
             </p>
           </div>
 
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              Nom du bénéficiaire *
+              {t('detail.form.beneficiaryNameRequired')}
             </Label>
             <Input
               value={beneficiaryForm.beneficiary_name}
               onChange={(e) =>
                 setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
               }
-              placeholder="Nom complet du titulaire du compte"
+              placeholder={t('detail.form.accountHolderName')}
               required
             />
           </div>
@@ -549,7 +551,7 @@ export default function PaymentDetailPage() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Nom de la banque *
+              {t('detail.form.bankNameRequired')}
             </Label>
             <Input
               value={beneficiaryForm.beneficiary_bank_name}
@@ -564,14 +566,14 @@ export default function PaymentDetailPage() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
-              Numéro de compte *
+              {t('detail.form.accountNumberRequired')}
             </Label>
             <Input
               value={beneficiaryForm.beneficiary_bank_account}
               onChange={(e) =>
                 setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_account: e.target.value }))
               }
-              placeholder="Numéro de compte bancaire"
+              placeholder={t('detail.form.bankAccountNumber')}
               required
             />
           </div>
@@ -579,14 +581,14 @@ export default function PaymentDetailPage() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Commentaire (optionnel)
+              {t('detail.form.commentOptional')}
             </Label>
             <Textarea
               value={beneficiaryForm.beneficiary_notes}
               onChange={(e) =>
                 setBeneficiaryForm((prev) => ({ ...prev, beneficiary_notes: e.target.value }))
               }
-              placeholder="Instructions supplémentaires..."
+              placeholder={t('detail.form.additionalInstructions')}
               rows={3}
             />
           </div>
@@ -598,9 +600,9 @@ export default function PaymentDetailPage() {
     return (
       <div className="text-center py-6">
         <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-        <p className="font-medium">Aucune information requise</p>
+        <p className="font-medium">{t('detail.form.noInfoRequired')}</p>
         <p className="text-sm text-muted-foreground mt-2">
-          Pour les paiements Cash, un QR code sera généré automatiquement par Bonzini.
+          {t('detail.form.cashQrAutoGenerated')}
         </p>
       </div>
     );
@@ -612,9 +614,9 @@ export default function PaymentDetailPage() {
       return (
         <div className="text-center py-4">
           <Banknote className="w-8 h-8 text-primary mx-auto mb-2" />
-          <p className="text-sm font-medium">Paiement Cash</p>
+          <p className="text-sm font-medium">{t('detail.cashPayment')}</p>
           <p className="text-xs text-muted-foreground">
-            Un QR code sera généré par Bonzini lors du traitement
+            {t('detail.cashQrWillBeGenerated')}
           </p>
           {payment.cash_qr_code && (
             <div className="mt-3">
@@ -633,13 +635,13 @@ export default function PaymentDetailPage() {
       return (
         <div className="text-center py-6">
           <AlertCircle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
-          <p className="font-medium">Informations manquantes</p>
+          <p className="font-medium">{t('detail.missingInfo')}</p>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
-            Ajoutez les informations du bénéficiaire pour que Bonzini puisse effectuer le paiement.
+            {t('detail.addBeneficiaryPrompt')}
           </p>
           {canEditBeneficiary && (
             <Button onClick={() => setIsEditDialogOpen(true)}>
-              Ajouter les informations
+              {t('detail.addInfo')}
             </Button>
           )}
         </div>
@@ -657,10 +659,10 @@ export default function PaymentDetailPage() {
             >
               <img
                 src={payment.beneficiary_qr_code_url}
-                alt="QR Code bénéficiaire"
+                alt={t('detail.form.qrBeneficiary')}
                 className="w-[200px] h-[200px] rounded-xl border-2 border-border object-contain bg-white"
               />
-              <p className="text-xs text-primary mt-2 text-center">Appuyer pour agrandir</p>
+              <p className="text-xs text-primary mt-2 text-center">{t('detail.tapToEnlarge')}</p>
             </button>
           </div>
         )}
@@ -668,23 +670,23 @@ export default function PaymentDetailPage() {
         {/* Copyable fields */}
         <div className="space-y-2.5 text-sm">
           {payment.beneficiary_name && (
-            <CopyableField label="Nom" value={payment.beneficiary_name} copyLabel="Nom bénéficiaire" />
+            <CopyableField label={t('detail.fields.name')} value={payment.beneficiary_name} copyLabel={t('detail.fields.beneficiaryName')} />
           )}
           {payment.beneficiary_phone && (
-            <CopyableField label="Téléphone" value={payment.beneficiary_phone} copyLabel="Téléphone bénéficiaire" />
+            <CopyableField label={t('detail.fields.phone')} value={payment.beneficiary_phone} copyLabel={t('detail.fields.beneficiaryPhone')} />
           )}
           {payment.beneficiary_email && (
-            <CopyableField label="Email" value={payment.beneficiary_email} copyLabel="Email bénéficiaire" />
+            <CopyableField label={t('detail.fields.email')} value={payment.beneficiary_email} copyLabel={t('detail.fields.beneficiaryEmail')} />
           )}
           {payment.beneficiary_bank_name && (
-            <CopyableField label="Banque" value={payment.beneficiary_bank_name} copyLabel="Banque" />
+            <CopyableField label={t('detail.fields.bank')} value={payment.beneficiary_bank_name} copyLabel={t('detail.fields.bank')} />
           )}
           {payment.beneficiary_bank_account && (
-            <CopyableField label="N° de compte" value={payment.beneficiary_bank_account} copyLabel="N° de compte" />
+            <CopyableField label={t('detail.fields.accountNumber')} value={payment.beneficiary_bank_account} copyLabel={t('detail.fields.accountNumber')} />
           )}
           {payment.beneficiary_notes && (
             <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-1">Notes</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('detail.fields.notes')}</p>
               <p className="text-sm">{payment.beneficiary_notes}</p>
             </div>
           )}
@@ -722,7 +724,7 @@ export default function PaymentDetailPage() {
               onClick={handleDownloadReceipt}
               disabled={isGeneratingPDF}
               className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform disabled:opacity-50"
-              aria-label="Télécharger le relevé"
+              aria-label={t('detail.downloadReceipt')}
             >
               {isGeneratingPDF ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -748,7 +750,7 @@ export default function PaymentDetailPage() {
               <TrendingUp className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <p className="font-medium">
-                  Taux appliqué : 1M XAF = ¥{formatNumber(rateInt)}
+                  {t('detail.rateApplied')} : 1M XAF = ¥{formatNumber(rateInt)}
                 </p>
                 <p className="text-muted-foreground mt-0.5">
                   ¥{formatNumber(payment.amount_rmb, 2)} = {formatNumber(payment.amount_xaf)} XAF
@@ -759,8 +761,8 @@ export default function PaymentDetailPage() {
 
           {/* Date info */}
           <p className="text-xs text-muted-foreground mt-3">
-            Créé {formatRelativeDate(payment.created_at)} · {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
-            {isLocked && ' · Verrouillé'}
+            {t('detail.createdAt')} {formatRelativeDate(payment.created_at)} · {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
+            {isLocked && ` · ${t('detail.locked')}`}
           </p>
         </div>
 
@@ -780,9 +782,9 @@ export default function PaymentDetailPage() {
             <div className="flex items-start gap-3">
               <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
               <div>
-                <p className="font-medium text-orange-600">QR Code scanné au bureau</p>
+                <p className="font-medium text-orange-600">{t('detail.qrScannedAtOffice')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Votre paiement est en cours de traitement au bureau Bonzini Guangzhou.
+                  {t('detail.processingAtOffice')}
                 </p>
               </div>
             </div>
@@ -796,24 +798,24 @@ export default function PaymentDetailPage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-green-600">Paiement cash effectué</p>
+                <p className="font-medium text-green-600">{t('detail.cashPaymentCompleted')}</p>
                 {/* eslint-disable @typescript-eslint/no-explicit-any */}
                 <p className="text-sm text-muted-foreground mt-1">
-                  Signature enregistrée le {(payment as any).cash_signature_timestamp &&
+                  {t('detail.signatureRecordedOn')} {(payment as any).cash_signature_timestamp &&
                     format(new Date((payment as any).cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', { locale: fr })}
                 </p>
                 {(payment as any).cash_signed_by_name && (
                   <p className="text-sm text-muted-foreground">
-                    Signé par: {(payment as any).cash_signed_by_name}
+                    {t('detail.signedBy')}: {(payment as any).cash_signed_by_name}
                   </p>
                 )}
 
                 {/* Signature image */}
                 <div className="mt-3 p-3 bg-white rounded-xl border border-green-200 dark:border-green-800">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">Signature du bénéficiaire</p>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">{t('detail.beneficiarySignature')}</p>
                   <img
                     src={(payment as any).cash_signature_url}
-                    alt="Signature du bénéficiaire"
+                    alt={t('detail.beneficiarySignature')}
                     className="w-full max-w-xs h-auto rounded"
                     style={{ maxHeight: '120px', objectFit: 'contain' }}
                   />
@@ -824,7 +826,7 @@ export default function PaymentDetailPage() {
                     payment={payment as any}
                     variant="outline"
                     size="sm"
-                    label="Télécharger le reçu PDF"
+                    label={t('detail.downloadReceiptPDF')}
                   />
                   {/* eslint-enable @typescript-eslint/no-explicit-any */}
                 </div>
@@ -838,12 +840,12 @@ export default function PaymentDetailPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold flex items-center gap-2">
               <User className="w-4 h-4" />
-              Bénéficiaire
+              {t('detail.beneficiary')}
             </h3>
             {isLocked ? (
               <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                 <Lock className="w-3 h-3" />
-                Verrouillé
+                {t('detail.locked')}
               </span>
             ) : canEditBeneficiary && hasBeneficiaryInfo && payment.method !== 'cash' ? (
               <button
@@ -851,7 +853,7 @@ export default function PaymentDetailPage() {
                 className="text-xs font-medium text-primary active:scale-95 transition-transform flex items-center gap-1"
               >
                 <Edit2 className="w-3.5 h-3.5" />
-                Modifier
+                {t('detail.edit')}
               </button>
             ) : null}
           </div>
@@ -865,9 +867,9 @@ export default function PaymentDetailPage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
               <div>
-                <p className="font-medium text-primary">Votre paiement est prêt à être traité</p>
+                <p className="font-medium text-primary">{t('detail.readyForProcessing')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Bonzini va procéder au paiement dans les meilleurs délais.
+                  {t('detail.bonziniWillProcess')}
                 </p>
               </div>
             </div>
@@ -876,16 +878,16 @@ export default function PaymentDetailPage() {
 
         {/* ── Documents Section (consolidated proofs) ──────────── */}
         <div className="bg-card rounded-2xl p-5 border border-border">
-          <h3 className="text-base font-semibold mb-4">Documents</h3>
+          <h3 className="text-base font-semibold mb-4">{t('detail.documents')}</h3>
 
           {/* Admin proofs (Bonzini proof of payment) */}
           {adminProofs.length > 0 && (
             <div className="mb-4">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Preuves Bonzini ({adminProofs.length})
+                {t('detail.bonziniProofs', { count: adminProofs.length })}
               </p>
               <p className="text-xs text-muted-foreground mb-3">
-                Ces documents confirment que le paiement a été exécuté.
+                {t('detail.bonziniProofsDescription')}
               </p>
               <PaymentProofGallery
                 proofs={adminProofs}
@@ -900,10 +902,10 @@ export default function PaymentDetailPage() {
           {clientProofs.length > 0 && (
             <div className={cn(adminProofs.length > 0 && "mt-4 pt-4 border-t border-border")}>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Mes instructions ({clientProofs.length})
+                {t('detail.myInstructions', { count: clientProofs.length })}
               </p>
               <p className="text-xs text-muted-foreground mb-3">
-                Ces documents indiquent à Bonzini où et comment effectuer le paiement.
+                {t('detail.myInstructionsDescription')}
               </p>
               <PaymentProofGallery
                 proofs={clientProofs}
@@ -914,7 +916,7 @@ export default function PaymentDetailPage() {
               {isLocked && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Lock className="w-3.5 h-3.5" />
-                  Les modifications ne sont plus possibles
+                  {t('detail.noMoreModifications')}
                 </div>
               )}
             </div>
@@ -937,14 +939,14 @@ export default function PaymentDetailPage() {
 
           {/* Empty state */}
           {adminProofs.length === 0 && clientProofs.length === 0 && !canUploadInstructions && (
-            <p className="text-sm text-muted-foreground text-center py-3">Aucun document</p>
+            <p className="text-sm text-muted-foreground text-center py-3">{t('detail.noDocuments')}</p>
           )}
         </div>
 
         {/* ── Rejection reason ──────────────────────────────────── */}
         {payment.status === 'rejected' && payment.rejection_reason && (
           <div className="bg-red-50 dark:bg-red-950/30 rounded-2xl p-5 border border-red-200 dark:border-red-800">
-            <p className="text-sm font-semibold text-red-800 dark:text-red-400 mb-1">Raison du refus</p>
+            <p className="text-sm font-semibold text-red-800 dark:text-red-400 mb-1">{t('detail.rejectionReason')}</p>
             <p className="text-sm text-red-700 dark:text-red-300">{payment.rejection_reason}</p>
           </div>
         )}
@@ -952,7 +954,7 @@ export default function PaymentDetailPage() {
         {/* ── Bonzini message ──────────────────────────────────── */}
         {payment.client_visible_comment && (
           <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
-            <p className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">Message de Bonzini</p>
+            <p className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">{t('detail.bonziniMessage')}</p>
             <p className="text-sm text-green-700 dark:text-green-300">{payment.client_visible_comment}</p>
           </div>
         )}
@@ -964,7 +966,7 @@ export default function PaymentDetailPage() {
               <AccordionTrigger className="px-5 py-4 hover:no-underline">
                 <span className="flex items-center gap-2 font-semibold text-base">
                   <Clock className="w-4 h-4" />
-                  Historique & Détails
+                  {t('detail.historyAndDetails')}
                 </span>
               </AccordionTrigger>
               <AccordionContent className="px-5 pb-5">
@@ -972,22 +974,22 @@ export default function PaymentDetailPage() {
                   {/* Secondary info grid */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-muted-foreground text-xs">Référence</p>
+                      <p className="text-muted-foreground text-xs">{t('detail.reference')}</p>
                       <p className="font-mono text-xs mt-0.5">{payment.reference}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Méthode</p>
+                      <p className="text-muted-foreground text-xs">{t('detail.method')}</p>
                       <p className="font-medium text-xs mt-0.5">{methodLabel}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Créé le</p>
+                      <p className="text-muted-foreground text-xs">{t('detail.createdOn')}</p>
                       <p className="text-xs mt-0.5">
                         {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
                       </p>
                     </div>
                     {payment.processed_at && (
                       <div>
-                        <p className="text-muted-foreground text-xs">Traité le</p>
+                        <p className="text-muted-foreground text-xs">{t('detail.processedOn')}</p>
                         <p className="text-xs mt-0.5">
                           {format(new Date(payment.processed_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
                         </p>
@@ -1018,7 +1020,7 @@ export default function PaymentDetailPage() {
       <Drawer open={!!selectedProof} onOpenChange={() => setSelectedProof(null)}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
-            <DrawerTitle>QR Code bénéficiaire</DrawerTitle>
+            <DrawerTitle>{t('detail.qrCodeBeneficiary')}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-4 space-y-3">
             {payment.beneficiary_name && (
@@ -1038,7 +1040,7 @@ export default function PaymentDetailPage() {
                 className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-border font-medium text-sm active:scale-[0.98] transition-transform"
               >
                 <Download className="w-4 h-4" />
-                Télécharger le QR Code
+                {t('detail.downloadQrCode')}
               </a>
             )}
           </div>
@@ -1050,13 +1052,13 @@ export default function PaymentDetailPage() {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {hasBeneficiaryInfo ? 'Modifier' : 'Ajouter'} les informations du bénéficiaire
+              {hasBeneficiaryInfo ? t('detail.dialog.editTitle') : t('detail.dialog.addTitle')}
             </DialogTitle>
             <DialogDescription>
-              {payment.method === 'alipay' && 'Fournissez les informations Alipay du bénéficiaire'}
-              {payment.method === 'wechat' && 'Fournissez les informations WeChat du bénéficiaire'}
-              {payment.method === 'bank_transfer' && 'Fournissez les informations bancaires du bénéficiaire'}
-              {payment.method === 'cash' && 'Aucune information requise pour le paiement Cash'}
+              {payment.method === 'alipay' && t('detail.dialog.alipayDescription')}
+              {payment.method === 'wechat' && t('detail.dialog.wechatDescription')}
+              {payment.method === 'bank_transfer' && t('detail.dialog.bankTransferDescription')}
+              {payment.method === 'cash' && t('detail.dialog.cashDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1071,7 +1073,7 @@ export default function PaymentDetailPage() {
                 onClick={handleCompleteLater}
                 className="w-full sm:w-auto"
               >
-                Je compléterai plus tard
+                {t('detail.dialog.completeLater')}
               </Button>
             )}
             {payment.method !== 'cash' && (
@@ -1083,12 +1085,12 @@ export default function PaymentDetailPage() {
                 {(updateBeneficiaryInfo.isPending || isUploadingQr) && (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 )}
-                Enregistrer
+                {t('detail.dialog.save')}
               </Button>
             )}
             {payment.method === 'cash' && (
               <Button onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
-                Fermer
+                {t('detail.dialog.close')}
               </Button>
             )}
           </DialogFooter>

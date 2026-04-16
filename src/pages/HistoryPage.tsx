@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useMyWallet, useMyWalletOperations, WalletOperation } from '@/hooks/useWallet';
@@ -28,6 +29,7 @@ import {
 type FilterType = 'all' | 'credits' | 'debits';
 
 const HistoryPage = () => {
+  const { t } = useTranslation('client');
   const [filter, setFilter] = useState<FilterType>('all');
   const [isGenerating, setIsGenerating] = useState(false);
   const { data: wallet } = useMyWallet();
@@ -74,26 +76,26 @@ const HistoryPage = () => {
   };
 
   const getOperationLabel = (op: WalletOperation): string => {
-    const t = op.operation_type.toUpperCase();
-    switch (t) {
-      case 'DEPOSIT': case 'DEPOSIT_VALIDATED': return 'Dépôt';
-      case 'DEPOSIT_REFUSED': return 'Dépôt refusé';
-      case 'PAYMENT': case 'PAYMENT_EXECUTED': return 'Paiement';
-      case 'PAYMENT_RESERVED': return 'Paiement réservé';
-      case 'PAYMENT_CANCELLED_REFUNDED': return 'Remboursement';
-      case 'ADMIN_CREDIT': return 'Crédit admin';
-      case 'ADMIN_DEBIT': return 'Débit admin';
+    const opType = op.operation_type.toUpperCase();
+    switch (opType) {
+      case 'DEPOSIT': case 'DEPOSIT_VALIDATED': return t('history.operationLabels.deposit');
+      case 'DEPOSIT_REFUSED': return t('history.operationLabels.depositRefused');
+      case 'PAYMENT': case 'PAYMENT_EXECUTED': return t('history.operationLabels.payment');
+      case 'PAYMENT_RESERVED': return t('history.operationLabels.paymentReserved');
+      case 'PAYMENT_CANCELLED_REFUNDED': return t('history.operationLabels.refund');
+      case 'ADMIN_CREDIT': return t('history.operationLabels.adminCredit');
+      case 'ADMIN_DEBIT': return t('history.operationLabels.adminDebit');
       case 'ADJUSTMENT': {
         const isDebit = isDebitOperation(op);
-        return isDebit ? 'Ajustement Débit' : 'Ajustement Crédit';
+        return isDebit ? t('history.operationLabels.adjustmentDebit') : t('history.operationLabels.adjustmentCredit');
       }
-      default: return 'Opération';
+      default: return t('history.operationLabels.operation');
     }
   };
 
   const handleDownloadStatement = async () => {
     if (!operations?.length) {
-      toast.error('Aucun mouvement à exporter');
+      toast.error(t('history.noMovements'));
       return;
     }
     setIsGenerating(true);
@@ -118,7 +120,7 @@ const HistoryPage = () => {
       });
     } catch (err) {
       console.error('Error generating statement:', err);
-      toast.error('Erreur lors de la génération du relevé');
+      toast.error(t('history.statementError'));
     } finally {
       setIsGenerating(false);
     }
@@ -127,8 +129,8 @@ const HistoryPage = () => {
   return (
     <MobileLayout>
       <PageHeader
-        title="Historique"
-        subtitle="Tous vos mouvements"
+        title={t('history.title')}
+        subtitle={t('history.subtitle')}
         rightElement={
           <Button
             variant="outline"
@@ -142,7 +144,7 @@ const HistoryPage = () => {
             ) : (
               <FileDown className="h-4 w-4" />
             )}
-            Relevé
+            {t('history.statement')}
           </Button>
         }
       />
@@ -150,9 +152,9 @@ const HistoryPage = () => {
       {/* Filters */}
       <div className="pl-4 pr-0 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
         {[
-          { value: 'all',     label: 'Tout'    },
-          { value: 'credits', label: 'Crédits' },
-          { value: 'debits',  label: 'Débits'  },
+          { value: 'all',     label: t('history.filterAll')    },
+          { value: 'credits', label: t('history.filterCredits') },
+          { value: 'debits',  label: t('history.filterDebits')  },
         ].map((f) => (
           <button
             key={f.value}
@@ -227,7 +229,7 @@ const HistoryPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Filter className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucune opération trouvée</p>
+            <p className="text-muted-foreground">{t('history.noOperations')}</p>
           </div>
         )}
       </div>

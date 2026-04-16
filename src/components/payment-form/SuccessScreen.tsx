@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { formatXAF, formatRMB } from '@/lib/formatters';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 
@@ -15,13 +16,6 @@ interface SuccessScreenProps {
   onGoBack?: () => void;
 }
 
-const METHOD_LABELS: Record<PaymentMethod, string> = {
-  alipay: 'Alipay',
-  wechat: 'WeChat Pay',
-  bank_transfer: 'Virement bancaire',
-  cash: 'Cash',
-};
-
 export function SuccessScreen({
   variant,
   amountXAF,
@@ -32,6 +26,15 @@ export function SuccessScreen({
   onViewPayment,
   onGoBack,
 }: SuccessScreenProps) {
+  const { t } = useTranslation('payments');
+
+  const METHOD_LABELS: Record<PaymentMethod, string> = {
+    alipay: t('method.alipay'),
+    wechat: t('method.wechat'),
+    bank_transfer: t('method.bank_transfer_full'),
+    cash: t('method.cash'),
+  };
+
   if (variant === 'admin') {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6">
@@ -42,7 +45,7 @@ export function SuccessScreen({
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold mb-2">Paiement créé</h1>
+        <h1 className="text-2xl font-bold mb-2">{t('success.paymentCreated')}</h1>
 
         <div className="flex items-center gap-2 mb-2">
           <PaymentMethodLogo method={method} size={28} />
@@ -52,7 +55,7 @@ export function SuccessScreen({
         <p className="text-3xl font-bold text-primary mb-1">¥{formatRMB(amountRMB)}</p>
         <p className="text-sm text-muted-foreground mb-1">{formatXAF(amountXAF)} XAF</p>
         {clientName && (
-          <p className="text-sm text-muted-foreground">pour {clientName}</p>
+          <p className="text-sm text-muted-foreground">{t('success.forClient', { name: clientName })}</p>
         )}
 
         <div className="w-full max-w-xs mt-8 space-y-3">
@@ -60,13 +63,13 @@ export function SuccessScreen({
             onClick={onNewPayment}
             className="w-full h-12 rounded-xl border border-border font-medium transition-colors hover:bg-muted"
           >
-            Nouveau paiement
+            {t('success.newPayment')}
           </button>
           <button
             onClick={onViewPayment}
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-medium"
           >
-            Voir la fiche
+            {t('success.viewSheet')}
           </button>
         </div>
       </div>
@@ -82,31 +85,31 @@ export function SuccessScreen({
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold mb-2">Paiement créé !</h2>
-      <p className="text-muted-foreground mb-4">Votre demande a été enregistrée</p>
+      <h2 className="text-2xl font-bold mb-2">{t('success.paymentCreatedClient')}</h2>
+      <p className="text-muted-foreground mb-4">{t('success.requestRecorded')}</p>
 
       <p className="text-3xl font-bold text-primary mb-1">¥{formatRMB(amountRMB)}</p>
-      <p className="text-sm text-muted-foreground mb-8">{formatXAF(amountXAF)} XAF débités</p>
+      <p className="text-sm text-muted-foreground mb-8">{t('success.xafDebited', { amount: formatXAF(amountXAF) })}</p>
 
       <div className="w-full space-y-3">
         <button
           onClick={onViewPayment}
           className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold"
         >
-          Voir le paiement
+          {t('success.viewPayment')}
         </button>
         <button
           onClick={onNewPayment}
           className="w-full py-3 bg-secondary text-foreground font-medium rounded-xl"
         >
-          Mes paiements
+          {t('success.myPayments')}
         </button>
         {onGoBack && (
           <button
             onClick={onGoBack}
             className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
           >
-            Retour à l'accueil
+            {t('success.backToHome')}
           </button>
         )}
       </div>

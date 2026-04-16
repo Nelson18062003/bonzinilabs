@@ -8,6 +8,9 @@ import frLanding from './locales/fr/landing.json';
 import frAuth from './locales/fr/auth.json';
 import frFormatters from './locales/fr/formatters.json';
 import frAgent from './locales/fr/agent.json';
+import frClient from './locales/fr/client.json';
+import frPayments from './locales/fr/payments.json';
+import frDeposits from './locales/fr/deposits.json';
 
 // English
 import enCommon from './locales/en/common.json';
@@ -15,6 +18,9 @@ import enLanding from './locales/en/landing.json';
 import enAuth from './locales/en/auth.json';
 import enFormatters from './locales/en/formatters.json';
 import enAgent from './locales/en/agent.json';
+import enClient from './locales/en/client.json';
+import enPayments from './locales/en/payments.json';
+import enDeposits from './locales/en/deposits.json';
 
 // Chinese
 import zhCommon from './locales/zh/common.json';
@@ -22,6 +28,9 @@ import zhLanding from './locales/zh/landing.json';
 import zhAuth from './locales/zh/auth.json';
 import zhFormatters from './locales/zh/formatters.json';
 import zhAgent from './locales/zh/agent.json';
+import zhClient from './locales/zh/client.json';
+import zhPayments from './locales/zh/payments.json';
+import zhDeposits from './locales/zh/deposits.json';
 
 export const supportedLanguages = ['fr', 'en', 'zh'] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
@@ -43,18 +52,46 @@ export function getCurrentLocale(): string {
   return localeMap[(i18n.language as SupportedLanguage) ?? 'fr'] ?? 'fr-FR';
 }
 
+/** Get a date-fns locale object for the current language */
+export async function getDateFnsLocale() {
+  const lang = (i18n.language?.slice(0, 2) ?? 'fr') as SupportedLanguage;
+  switch (lang) {
+    case 'en': {
+      const { enUS } = await import('date-fns/locale');
+      return enUS;
+    }
+    case 'zh': {
+      const { zhCN } = await import('date-fns/locale');
+      return zhCN;
+    }
+    default: {
+      const { fr } = await import('date-fns/locale');
+      return fr;
+    }
+  }
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      fr: { common: frCommon, landing: frLanding, auth: frAuth, formatters: frFormatters, agent: frAgent },
-      en: { common: enCommon, landing: enLanding, auth: enAuth, formatters: enFormatters, agent: enAgent },
-      zh: { common: zhCommon, landing: zhLanding, auth: zhAuth, formatters: zhFormatters, agent: zhAgent },
+      fr: {
+        common: frCommon, landing: frLanding, auth: frAuth, formatters: frFormatters,
+        agent: frAgent, client: frClient, payments: frPayments, deposits: frDeposits,
+      },
+      en: {
+        common: enCommon, landing: enLanding, auth: enAuth, formatters: enFormatters,
+        agent: enAgent, client: enClient, payments: enPayments, deposits: enDeposits,
+      },
+      zh: {
+        common: zhCommon, landing: zhLanding, auth: zhAuth, formatters: zhFormatters,
+        agent: zhAgent, client: zhClient, payments: zhPayments, deposits: zhDeposits,
+      },
     },
     fallbackLng: 'fr',
     defaultNS: 'common',
-    ns: ['common', 'landing', 'auth', 'formatters', 'agent'],
+    ns: ['common', 'landing', 'auth', 'formatters', 'agent', 'client', 'payments', 'deposits'],
     interpolation: {
       escapeValue: false, // React already escapes
     },

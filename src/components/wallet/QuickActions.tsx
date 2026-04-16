@@ -1,15 +1,17 @@
 import { ArrowDownToLine, Send, History, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-const actions = [
-  { icon: ArrowDownToLine, label: 'Déposer', to: '/deposits/new', color: 'bg-success/10 text-success' },
-  { icon: Send, label: 'Payer', to: '/payments/new', color: 'bg-primary/10 text-primary' },
-  { icon: QrCode, label: 'Bénéficiaires', to: '/beneficiaries', color: 'bg-warning/10 text-warning' },
-  { icon: History, label: 'Activité', to: '/history', color: 'bg-accent text-accent-foreground' },
-];
+import { useTranslation } from 'react-i18next';
 
 export const QuickActions = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('client');
+
+  const actions = [
+    { icon: ArrowDownToLine, label: t('quickActions.deposit'), to: '/deposits/new', color: 'bg-success/10 text-success' },
+    { icon: Send, label: t('quickActions.pay'), to: '/payments/new', color: 'bg-primary/10 text-primary' },
+    { icon: QrCode, label: t('quickActions.beneficiaries'), to: '/beneficiaries', color: 'bg-warning/10 text-warning' },
+    { icon: History, label: t('quickActions.activity'), to: '/history', color: 'bg-accent text-accent-foreground' },
+  ];
 
   return (
     <div className="grid grid-cols-4 gap-2 animate-slide-up" style={{ animationDelay: '100ms' }}>
