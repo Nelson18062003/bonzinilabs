@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import {
   Search,
@@ -25,6 +26,7 @@ import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 
 export function MobileProofsScreen() {
+  const { t } = useTranslation('common');
   const { data: proofs, isLoading, refetch } = useAdminProofs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
@@ -60,7 +62,7 @@ export function MobileProofsScreen() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <MobileHeader title="Justificatifs" backTo="/m/more" showBack />
+      <MobileHeader title={t('proofs', { defaultValue: 'Justificatifs' })} backTo="/m/more" showBack />
 
       <PullToRefresh onRefresh={refetch} className="flex-1 overflow-y-auto">
         {/* Stats */}

@@ -158,7 +158,7 @@ export function MobileHistoryScreen() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <History className="w-6 h-6 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucun log trouvé</p>
+            <p className="text-muted-foreground">{t('noLogsFound', { defaultValue: 'Aucun log trouvé' })}</p>
           </div>
         )}
       </PullToRefresh>
