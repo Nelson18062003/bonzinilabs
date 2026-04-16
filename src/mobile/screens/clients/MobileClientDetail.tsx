@@ -357,7 +357,7 @@ export function MobileClientDetail() {
               onClick={() => openAdjustment('CREDIT')}
             >
               <Plus className="w-4 h-4 mr-1" />
-              Crédit
+              {t('credit', { defaultValue: 'Crédit' })}
             </Button>
             <Button
               variant="outline"
@@ -366,7 +366,7 @@ export function MobileClientDetail() {
               onClick={() => openAdjustment('DEBIT')}
             >
               <Minus className="w-4 h-4 mr-1" />
-              Débit
+              {t('debitLabel', { defaultValue: 'Débit' })}
             </Button>
           </div>
         </div>
@@ -383,7 +383,7 @@ export function MobileClientDetail() {
               {formatXAF(client.totalDeposits || 0)}{' '}
               <span className="text-sm font-medium">XAF</span>
             </p>
-            <p className="text-xs text-muted-foreground">Total dépôts</p>
+            <p className="text-xs text-muted-foreground">{t('totalDeposits', { defaultValue: 'Total dépôts' })}</p>
           </div>
 
           <div className="bg-card rounded-xl p-4 border border-border">
@@ -396,7 +396,7 @@ export function MobileClientDetail() {
               {formatXAF(client.totalPayments || 0)}{' '}
               <span className="text-sm font-medium">XAF</span>
             </p>
-            <p className="text-xs text-muted-foreground">Total paiements</p>
+            <p className="text-xs text-muted-foreground">{t('totalPayments', { defaultValue: 'Total paiements' })}</p>
           </div>
         </div>
 
@@ -411,8 +411,8 @@ export function MobileClientDetail() {
                 <History className="w-5 h-5 text-primary" />
               </div>
               <div className="text-left">
-                <p className="font-medium">Historique mouvements</p>
-                <p className="text-xs text-muted-foreground">Voir le ledger complet</p>
+                <p className="font-medium">{t('movementHistory', { defaultValue: 'Historique mouvements' })}</p>
+                <p className="text-xs text-muted-foreground">{t('viewFullLedger', { defaultValue: 'Voir le ledger complet' })}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
