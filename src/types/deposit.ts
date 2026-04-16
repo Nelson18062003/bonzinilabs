@@ -215,8 +215,16 @@ export const SUB_METHOD_TO_DB_METHOD: Record<DepositSubMethod, DepositMethod> = 
   WAVE_TRANSFER: 'wave',
 };
 
-// ---------- Display labels ----------
+// ---------- Display labels (i18n-aware) ----------
 
+import i18n from '@/i18n';
+
+/** Get translated deposit status label */
+export function getDepositStatusLabel(status: DepositStatus): string {
+  return i18n.t(`status.${status}`, { ns: 'deposits', defaultValue: status });
+}
+
+/** Static labels for non-reactive contexts (e.g. column defs). Use getDepositStatusLabel() in components. */
 export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
   created: 'Demande créée',
   awaiting_proof: 'En attente de preuve',
@@ -229,6 +237,11 @@ export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
   cancelled_by_admin: 'Annulé (admin)',
 };
 
+/** Get translated deposit method label */
+export function getDepositMethodLabel(method: DepositMethod): string {
+  return i18n.t(`method.${method}`, { ns: 'deposits', defaultValue: method });
+}
+
 export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
   bank_transfer: 'Virement bancaire',
   bank_cash: 'Dépôt cash banque',
@@ -239,6 +252,11 @@ export const DEPOSIT_METHOD_LABELS: Record<DepositMethod, string> = {
   mtn_withdrawal: 'MTN MoMo – Retrait',
   wave: 'Wave',
 };
+
+/** Get translated short deposit method label */
+export function getDepositMethodLabelShort(method: DepositMethod): string {
+  return i18n.t(`methodShort.${method}`, { ns: 'deposits', defaultValue: method });
+}
 
 export const DEPOSIT_METHOD_LABELS_SHORT: Record<DepositMethod, string> = {
   bank_transfer: 'Virement',
@@ -275,6 +293,31 @@ export function getTimelineMethodFamily(method: string): TimelineMethodFamily {
 
 export const TIMELINE_STEP_KEYS = ['created', 'proof_submitted', 'admin_review', 'validated'] as const;
 
+/** Get timeline step labels (i18n-aware). Falls back to French defaults. */
+export function getTimelineStepLabels(): Record<TimelineMethodFamily, Record<string, { label: string; description: string }>> {
+  return {
+    standard: {
+      created: { label: i18n.t('timeline.standard.created.label', { ns: 'deposits' }), description: i18n.t('timeline.standard.created.description', { ns: 'deposits' }) },
+      proof_submitted: { label: i18n.t('timeline.standard.proof_submitted.label', { ns: 'deposits' }), description: i18n.t('timeline.standard.proof_submitted.description', { ns: 'deposits' }) },
+      admin_review: { label: i18n.t('timeline.standard.admin_review.label', { ns: 'deposits' }), description: i18n.t('timeline.standard.admin_review.description', { ns: 'deposits' }) },
+      validated: { label: i18n.t('timeline.standard.validated.label', { ns: 'deposits' }), description: i18n.t('timeline.standard.validated.description', { ns: 'deposits' }) },
+    },
+    withdrawal: {
+      created: { label: i18n.t('timeline.withdrawal.created.label', { ns: 'deposits' }), description: i18n.t('timeline.withdrawal.created.description', { ns: 'deposits' }) },
+      proof_submitted: { label: i18n.t('timeline.withdrawal.proof_submitted.label', { ns: 'deposits' }), description: i18n.t('timeline.withdrawal.proof_submitted.description', { ns: 'deposits' }) },
+      admin_review: { label: i18n.t('timeline.withdrawal.admin_review.label', { ns: 'deposits' }), description: i18n.t('timeline.withdrawal.admin_review.description', { ns: 'deposits' }) },
+      validated: { label: i18n.t('timeline.withdrawal.validated.label', { ns: 'deposits' }), description: i18n.t('timeline.withdrawal.validated.description', { ns: 'deposits' }) },
+    },
+    agency: {
+      created: { label: i18n.t('timeline.agency.created.label', { ns: 'deposits' }), description: i18n.t('timeline.agency.created.description', { ns: 'deposits' }) },
+      proof_submitted: { label: i18n.t('timeline.agency.proof_submitted.label', { ns: 'deposits' }), description: i18n.t('timeline.agency.proof_submitted.description', { ns: 'deposits' }) },
+      admin_review: { label: i18n.t('timeline.agency.admin_review.label', { ns: 'deposits' }), description: i18n.t('timeline.agency.admin_review.description', { ns: 'deposits' }) },
+      validated: { label: i18n.t('timeline.agency.validated.label', { ns: 'deposits' }), description: i18n.t('timeline.agency.validated.description', { ns: 'deposits' }) },
+    },
+  };
+}
+
+/** @deprecated Use getTimelineStepLabels() for i18n support */
 export const TIMELINE_STEP_LABELS: Record<TimelineMethodFamily, Record<string, { label: string; description: string }>> = {
   standard: {
     created: { label: 'Dépôt déclaré', description: 'Votre dépôt a été enregistré' },

@@ -505,11 +505,11 @@ const NewDepositPage = () => {
           className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour
+          {t('new.back')}
         </button>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Choisissez votre banque
+          {t('new.chooseBank')}
         </p>
 
         {banks.map((bank) => (
@@ -539,11 +539,11 @@ const NewDepositPage = () => {
           className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour
+          {t('new.back')}
         </button>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Choisissez une agence
+          {t('new.chooseAgency')}
         </p>
 
         {agencies.map((agency) => (
@@ -582,13 +582,13 @@ const NewDepositPage = () => {
             className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour
+            {t('new.back')}
           </button>
 
           {/* Summary card */}
           <div className="card-elevated p-4 bg-primary/5 border-primary/20">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">Montant à déposer</span>
+              <span className="text-sm text-muted-foreground">{t('new.amountToDeposit')}</span>
               <span
                 className="font-bold text-lg text-foreground"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -597,7 +597,7 @@ const NewDepositPage = () => {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Méthode</span>
+              <span className="text-sm text-muted-foreground">{t('detail.method')}</span>
               <span className="text-sm font-medium text-foreground">{info.title}</span>
             </div>
           </div>
@@ -606,7 +606,7 @@ const NewDepositPage = () => {
           <div className="card-elevated p-4 space-y-1">
             <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
               <Info className="w-4 h-4 text-primary" />
-              Coordonnées de dépôt
+              {t('new.recap.depositCoordinates')}
             </p>
 
             {info.fields.map((field) => (
@@ -632,7 +632,7 @@ const NewDepositPage = () => {
             {/* Merchant code for withdrawals */}
             {info.merchantCode && (
               <div className="py-3 border-b border-border/50">
-                <span className="text-sm text-muted-foreground block mb-2">Code Marchand</span>
+                <span className="text-sm text-muted-foreground block mb-2">{t('new.recap.merchantCode')}</span>
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
                   <span className="font-bold text-foreground font-mono text-sm break-all">{info.merchantCode}</span>
                   <button onClick={() => handleCopy(info.merchantCode!, 'merchant')} className="flex-shrink-0 ml-2">
@@ -647,7 +647,7 @@ const NewDepositPage = () => {
 
             {/* Amount row */}
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Montant à envoyer</span>
+              <span className="text-sm text-muted-foreground">{t('new.recap.amountToSend')}</span>
               <span className="font-bold text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {formatXAF(parseInt(amount))} XAF
               </span>
@@ -656,7 +656,7 @@ const NewDepositPage = () => {
 
           {/* Instructions */}
           <div className="card-elevated p-4">
-            <p className="text-sm font-semibold text-foreground mb-4">Instructions</p>
+            <p className="text-sm font-semibold text-foreground mb-4">{t('new.recap.instructions')}</p>
             <ol className="space-y-3">
               {info.instructions.map((instruction, index) => (
                 <li key={index} className="flex gap-3">
@@ -672,7 +672,7 @@ const NewDepositPage = () => {
           {/* Confirmation notice */}
           <div className="rounded-xl border-l-4 border-primary bg-primary/5 px-4 py-3">
             <p className="text-xs text-primary leading-relaxed">
-              En confirmant, votre demande de dépôt sera enregistrée. Vous pourrez ensuite télécharger vos justificatifs.
+              {t('new.recap.confirmNotice')}
             </p>
           </div>
 
@@ -692,7 +692,7 @@ const NewDepositPage = () => {
             ) : (
               <ShieldCheck className="w-5 h-5" />
             )}
-            Je confirme ma demande de dépôt
+            {t('new.recap.confirmButton')}
           </button>
         </div>
       </StepTransition>
@@ -704,20 +704,20 @@ const NewDepositPage = () => {
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-deposit-pulse">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
-      <p className="font-semibold text-foreground mt-6">Création du dépôt...</p>
-      <p className="text-sm text-muted-foreground mt-2">Un instant</p>
+      <p className="font-semibold text-foreground mt-6">{t('new.creating')}</p>
+      <p className="text-sm text-muted-foreground mt-2">{t('new.pleaseWait')}</p>
     </div>
   );
 
   const getStepTitle = () => {
     const titles: Record<Step, string> = {
-      amount: 'Nouveau dépôt',
-      family: 'Méthode de dépôt',
-      submethod: 'Type d\'opération',
-      bank: 'Choix de la banque',
-      agency: 'Choix de l\'agence',
-      recap: 'Récapitulatif',
-      creating: 'Création...',
+      amount: t('new.steps.amount'),
+      family: t('new.steps.family'),
+      submethod: t('new.steps.submethod'),
+      bank: t('new.steps.bank'),
+      agency: t('new.steps.agency'),
+      recap: t('new.steps.recap'),
+      creating: t('new.steps.creating'),
     };
     return titles[step];
   };

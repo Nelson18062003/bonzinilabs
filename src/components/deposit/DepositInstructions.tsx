@@ -234,18 +234,18 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground flex items-center gap-2">
             <Info className="w-5 h-5 text-primary" />
-            Instructions de dépôt
+            {t('instructions.title')}
           </h3>
           <Button variant="ghost" size="sm" onClick={copyAllInfo} className="text-xs">
             {copiedField === 'all' ? (
               <>
                 <Check className="w-4 h-4 mr-1 text-success" />
-                Copié
+                {t('instructions.copied')}
               </>
             ) : (
               <>
                 <Copy className="w-4 h-4 mr-1" />
-                Tout copier
+                {t('instructions.copyAll')}
               </>
             )}
           </Button>
@@ -273,7 +273,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
 
         {info.merchantCode && (
           <div className="py-3 border-b border-border/50">
-            <span className="text-sm text-muted-foreground block mb-2">Code Marchand</span>
+            <span className="text-sm text-muted-foreground block mb-2">{t('instructions.merchantCode')}</span>
             <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
               <span className="font-bold text-foreground font-mono text-sm break-all">
                 {info.merchantCode}
@@ -286,7 +286,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
 
       {/* Step-by-step instructions */}
       <Card className="p-4">
-        <p className="text-sm font-semibold text-foreground mb-4">Étapes à suivre</p>
+        <p className="text-sm font-semibold text-foreground mb-4">{t('instructions.stepsToFollow')}</p>
         <ol className="space-y-3">
           {info.instructions.map((instruction, index) => (
             <li key={index} className="flex gap-3">

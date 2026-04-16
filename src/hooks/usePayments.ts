@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { validateUploadFile } from '@/lib/utils';
 import { compressImage } from '@/lib/imageCompression';
+import i18n from '@/i18n';
 
 // Cache configuration for performance
 const STALE_TIME = 30 * 1000; // 30 seconds
@@ -240,7 +241,7 @@ export function useCreatePayment() {
       const response = result as { success: boolean; error?: string; payment_id?: string; reference?: string; new_balance?: number };
 
       if (!response.success) {
-        throw new Error(response.error || 'Erreur lors de la création du paiement');
+        throw new Error(response.error || i18n.t('hooks.createPayment.error', { ns: 'common', defaultValue: 'Erreur lors de la création du paiement' }));
       }
 
       // Update beneficiary system fields separately (migration pending)
@@ -270,7 +271,7 @@ export function useCreatePayment() {
       if (response.new_balance === undefined) {
         queryClient.invalidateQueries({ queryKey: ['my-wallet'] });
       }
-      toast.success('Paiement créé avec succès');
+      toast.success(i18n.t('hooks.createPayment.success', { ns: 'common', defaultValue: 'Paiement créé avec succès' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -293,7 +294,7 @@ export function useUpdateBeneficiaryInfo() {
     }) => {
       // Determine if we have sufficient info based on payment method
       let hasValidInfo = false;
-      let infoDescription = 'Informations du bénéficiaire mises à jour';
+      let infoDescription = i18n.t('hooks.updateBeneficiary.infoUpdated', { ns: 'common', defaultValue: 'Informations du bénéficiaire mises à jour' });
 
       if (paymentMethod === 'alipay' || paymentMethod === 'wechat') {
         // For Alipay/WeChat: QR code OR (phone/email)
@@ -302,9 +303,9 @@ export function useUpdateBeneficiaryInfo() {
         hasValidInfo = hasQr || hasContact;
 
         if (hasQr) {
-          infoDescription = `QR Code ${paymentMethod === 'alipay' ? 'Alipay' : 'WeChat'} ajouté`;
+          infoDescription = i18n.t('hooks.updateBeneficiary.qrAdded', { ns: 'common', defaultValue: `QR Code ${paymentMethod === 'alipay' ? 'Alipay' : 'WeChat'} ajouté`, method: paymentMethod === 'alipay' ? 'Alipay' : 'WeChat' });
         } else if (hasContact) {
-          infoDescription = 'Coordonnées de paiement ajoutées';
+          infoDescription = i18n.t('hooks.updateBeneficiary.contactAdded', { ns: 'common', defaultValue: 'Coordonnées de paiement ajoutées' });
         }
       } else if (paymentMethod === 'bank_transfer') {
         // For bank transfer: name + bank + account required
@@ -313,7 +314,7 @@ export function useUpdateBeneficiaryInfo() {
           beneficiaryInfo.beneficiary_bank_name &&
           beneficiaryInfo.beneficiary_bank_account
         );
-        infoDescription = 'Coordonnées bancaires ajoutées';
+        infoDescription = i18n.t('hooks.updateBeneficiary.bankAdded', { ns: 'common', defaultValue: 'Coordonnées bancaires ajoutées' });
       } else {
         // Fallback: any info is considered sufficient
         hasValidInfo = !!(
@@ -340,7 +341,7 @@ export function useUpdateBeneficiaryInfo() {
 
       const result = rpcResult as { success: boolean; error?: string; status?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur lors de la mise à jour');
+        throw new Error(result.error || i18n.t('hooks.updateBeneficiary.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour' }));
       }
 
       // Timeline event is handled by the RPC
@@ -353,9 +354,9 @@ export function useUpdateBeneficiaryInfo() {
       queryClient.invalidateQueries({ queryKey: ['my-payments'] });
 
       if (result.hasValidInfo) {
-        toast.success('Informations enregistrées - Paiement prêt à être traité');
+        toast.success(i18n.t('hooks.updateBeneficiary.readySuccess', { ns: 'common', defaultValue: 'Informations enregistrées - Paiement prêt à être traité' }));
       } else {
-        toast.info('Informations partiellement enregistrées');
+        toast.info(i18n.t('hooks.updateBeneficiary.partialSuccess', { ns: 'common', defaultValue: 'Informations partiellement enregistrées' }));
       }
     },
     onError: (error: Error) => {
@@ -404,7 +405,7 @@ export function useUploadPaymentProof() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['payment-proofs', variables.paymentId] });
-      toast.success('Preuve téléchargée');
+      toast.success(i18n.t('hooks.uploadProof.success', { ns: 'common', defaultValue: 'Preuve téléchargée' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -449,7 +450,7 @@ export function useAdminUpdateBeneficiaryInfo() {
 
       const rpcResult = result as { success: boolean; error?: string };
       if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la mise à jour');
+        throw new Error(rpcResult?.error || i18n.t('hooks.adminUpdateBeneficiary.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour' }));
       }
 
       return rpcResult;
@@ -457,10 +458,10 @@ export function useAdminUpdateBeneficiaryInfo() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
-      toast.success('Infos bénéficiaire mises à jour');
+      toast.success(i18n.t('hooks.adminUpdateBeneficiary.success', { ns: 'common', defaultValue: 'Infos bénéficiaire mises à jour' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+      toast.error(error.message || i18n.t('hooks.adminUpdateBeneficiary.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour' }));
     },
   });
 }
@@ -560,7 +561,7 @@ export function useProcessPayment() {
       
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur lors du traitement');
+        throw new Error(result.error || i18n.t('hooks.processPayment.error', { ns: 'common', defaultValue: 'Erreur lors du traitement' }));
       }
 
       return result;
@@ -600,9 +601,9 @@ export function useProcessPayment() {
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
 
       const messages = {
-        start_processing: 'Paiement en cours de traitement',
-        complete: 'Paiement marqué comme effectué',
-        reject: 'Paiement refusé',
+        start_processing: i18n.t('hooks.processPayment.startProcessing', { ns: 'common', defaultValue: 'Paiement en cours de traitement' }),
+        complete: i18n.t('hooks.processPayment.complete', { ns: 'common', defaultValue: 'Paiement marqué comme effectué' }),
+        reject: i18n.t('hooks.processPayment.reject', { ns: 'common', defaultValue: 'Paiement refusé' }),
       };
       toast.success(messages[variables.action]);
     },
@@ -663,7 +664,7 @@ export function useAdminUploadPaymentProof() {
       queryClient.invalidateQueries({ queryKey: ['admin-payment-proofs', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
-      toast.success('Preuve téléchargée');
+      toast.success(i18n.t('hooks.uploadProof.success', { ns: 'common', defaultValue: 'Preuve téléchargée' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);

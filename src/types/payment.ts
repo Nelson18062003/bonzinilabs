@@ -10,7 +10,14 @@ import type { Database } from '@/integrations/supabase/types';
 export type PaymentStatus = Database['public']['Enums']['payment_status'];
 export type PaymentMethod = Database['public']['Enums']['payment_method'];
 
-// ---------- Display labels ----------
+// ---------- Display labels (i18n-aware) ----------
+
+import i18n from '@/i18n';
+
+/** Get translated payment status label */
+export function getPaymentStatusLabelI18n(status: PaymentStatus): string {
+  return i18n.t(`statusLabels.${status}`, { ns: 'payments', defaultValue: status });
+}
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   created: 'Créé',

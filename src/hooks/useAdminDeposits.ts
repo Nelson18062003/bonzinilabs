@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
 import { validateUploadFile } from '@/lib/utils';
+import i18n from '@/i18n';
 import type {
   DepositWithProfile,
   DepositProof,
@@ -206,7 +207,7 @@ export function useValidateDeposit() {
       if (error) throw error;
 
       const result = data as { success: boolean; error?: string; new_balance?: number; amount_credited?: number };
-      if (!result.success) throw new Error(result.error || 'Validation échouée');
+      if (!result.success) throw new Error(result.error || i18n.t('hooks.validateDeposit.error', { ns: 'common', defaultValue: 'Validation échouée' }));
 
       return result;
     },
@@ -238,7 +239,7 @@ export function useValidateDeposit() {
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success(`Dépôt validé ! Wallet crédité de ${formatCurrency(data.amount_credited || 0)}`);
+      toast.success(i18n.t('hooks.validateDeposit.success', { ns: 'common', defaultValue: `Dépôt validé ! Wallet crédité de ${formatCurrency(data.amount_credited || 0)}`, amount: formatCurrency(data.amount_credited || 0) }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -271,7 +272,7 @@ export function useRejectDeposit() {
       if (error) throw error;
 
       const result = data as { success: boolean; error?: string };
-      if (!result.success) throw new Error(result.error || 'Rejet échoué');
+      if (!result.success) throw new Error(result.error || i18n.t('hooks.rejectDeposit.error', { ns: 'common', defaultValue: 'Rejet échoué' }));
 
       return result;
     },
@@ -300,7 +301,7 @@ export function useRejectDeposit() {
 
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      toast.error('Dépôt rejeté');
+      toast.error(i18n.t('hooks.rejectDeposit.success', { ns: 'common', defaultValue: 'Dépôt rejeté' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -320,7 +321,7 @@ export function useStartDepositReview() {
       if (error) throw error;
 
       const result = data as { success: boolean; error?: string };
-      if (!result.success) throw new Error(result.error || 'Erreur');
+      if (!result.success) throw new Error(result.error || i18n.t('hooks.startReview.error', { ns: 'common', defaultValue: 'Erreur' }));
 
       return result;
     },
@@ -364,7 +365,7 @@ export function useAdminCreateDeposit() {
   return useMutation({
     mutationFn: async (data: AdminCreateDepositData) => {
       const admin = await getAdminUser();
-      if (!admin) throw new Error('Vous devez être connecté');
+      if (!admin) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       const { data: result, error } = await supabaseAdmin.rpc('create_client_deposit', {
         p_user_id: data.user_id,
@@ -378,7 +379,7 @@ export function useAdminCreateDeposit() {
       if (error) throw error;
 
       const response = result as { success: boolean; error?: string; deposit_id?: string; reference?: string };
-      if (!response.success) throw new Error(response.error || 'Erreur lors de la création');
+      if (!response.success) throw new Error(response.error || i18n.t('hooks.adminCreateDeposit.error', { ns: 'common', defaultValue: 'Erreur lors de la création' }));
 
       const depositId = response.deposit_id!;
 
@@ -453,7 +454,7 @@ export function useAdminCreateDeposit() {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Dépôt créé avec succès');
+      toast.success(i18n.t('hooks.adminCreateDeposit.success', { ns: 'common', defaultValue: 'Dépôt créé avec succès' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -472,7 +473,7 @@ export function useAdminUploadProofs() {
       depositStatus?: string;
     }) => {
       const admin = await getAdminUser();
-      if (!admin) throw new Error('Vous devez être connecté');
+      if (!admin) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       let uploadedCount = 0;
       const failedFiles: string[] = [];
@@ -517,7 +518,7 @@ export function useAdminUploadProofs() {
       }
 
       if (uploadedCount === 0 && failedFiles.length > 0) {
-        throw new Error(`Échec de l'upload: ${failedFiles.join(', ')}`);
+        throw new Error(i18n.t('hooks.uploadMultiple.allFailed', { ns: 'common', defaultValue: `Échec de l'upload: ${failedFiles.join(', ')}`, files: failedFiles.join(', ') }));
       }
 
       // Advance to proof_submitted via server-side RPC
