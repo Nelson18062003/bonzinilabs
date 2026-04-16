@@ -427,8 +427,8 @@ export function MobileClientDetail() {
                 <ArrowDownCircle className="w-5 h-5 text-green-500" />
               </div>
               <div className="text-left">
-                <p className="font-medium">Déclarer un dépôt</p>
-                <p className="text-xs text-muted-foreground">Créer un nouveau dépôt</p>
+                <p className="font-medium">{t('declareDeposit', { defaultValue: 'Déclarer un dépôt' })}</p>
+                <p className="text-xs text-muted-foreground">{t('createNewDeposit', { defaultValue: 'Créer un nouveau dépôt' })}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -449,12 +449,12 @@ export function MobileClientDetail() {
               </div>
               <div className="text-left">
                 <p className="font-medium">
-                  {isStatementGenerating ? 'Génération en cours…' : 'Exporter relevé PDF'}
+                  {isStatementGenerating ? t('generatingStatement', { defaultValue: 'Génération en cours…' }) : t('exportPDFStatement', { defaultValue: 'Exporter relevé PDF' })}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {ledgerEntries?.length
-                    ? `${ledgerEntries.length} opération${ledgerEntries.length > 1 ? 's' : ''}`
-                    : 'Télécharger l\'historique'}
+                    ? `${ledgerEntries.length} ${t('operations', { defaultValue: 'opération', count: ledgerEntries.length })}${ledgerEntries.length > 1 ? 's' : ''}`
+                    : t('downloadHistory', { defaultValue: "Télécharger l'historique" })}
                 </p>
               </div>
             </div>
