@@ -256,7 +256,7 @@ export function MobileClientDetail() {
 
   return (
     <div className="flex flex-col min-h-screen pb-4">
-      <MobileHeader title="Fiche client" showBack backTo="/m/clients" />
+      <MobileHeader title={t('clientProfile', { defaultValue: 'Fiche client' })} showBack backTo="/m/clients" />
 
       <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* Profile Card */}
@@ -275,7 +275,7 @@ export function MobileClientDetail() {
                   'px-2 py-0.5 rounded text-[10px] font-medium',
                   STATUS_BADGE_STYLES[client.status]
                 )}>
-                  {STATUS_LABELS[client.status]}
+                  {t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status })}
                 </span>
               </div>
 
@@ -291,12 +291,12 @@ export function MobileClientDetail() {
 
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
                 <Mail className="w-3.5 h-3.5" />
-                {client.email || 'Non renseigné'}
+                {client.email || t('notProvided', { defaultValue: 'Non renseigné' })}
               </div>
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
                 <Calendar className="w-3 h-3" />
-                Client depuis {formatDate(client.createdAt)}
+                {t('clientSince', { defaultValue: 'Client depuis' })} {formatDate(client.createdAt)}
               </div>
 
               {client.utmSource && (

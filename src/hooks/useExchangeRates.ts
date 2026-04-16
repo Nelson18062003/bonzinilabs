@@ -128,9 +128,9 @@ export function useAddExchangeRate() {
       
       const result = data as { success: boolean; error?: string; rate_id?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(result.error || i18n.t('hooks.exchangeRates.unknownError', { ns: 'common', defaultValue: 'Erreur inconnue' }));
       }
-      
+
       return result;
     },
     onSuccess: () => {
@@ -139,10 +139,10 @@ export function useAddExchangeRate() {
       queryClient.invalidateQueries({ queryKey: ['current-exchange-rate'] });
       queryClient.invalidateQueries({ queryKey: ['exchange-rate'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Taux de change ajouté');
+      toast.success(i18n.t('hooks.exchangeRates.added', { ns: 'common', defaultValue: 'Taux de change ajouté' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de l\'ajout du taux');
+      toast.error(error.message || i18n.t('hooks.exchangeRates.addError', { ns: 'common', defaultValue: "Erreur lors de l'ajout du taux" }));
     },
   });
 }
@@ -173,9 +173,9 @@ export function useUpdateExchangeRate() {
       
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(result.error || i18n.t('hooks.exchangeRates.unknownError', { ns: 'common', defaultValue: 'Erreur inconnue' }));
       }
-      
+
       return result;
     },
     onSuccess: () => {
@@ -183,10 +183,10 @@ export function useUpdateExchangeRate() {
       queryClient.invalidateQueries({ queryKey: ['exchange-rates-chart'] });
       queryClient.invalidateQueries({ queryKey: ['current-exchange-rate'] });
       queryClient.invalidateQueries({ queryKey: ['exchange-rate'] });
-      toast.success('Taux de change modifié');
+      toast.success(i18n.t('hooks.exchangeRates.updated', { ns: 'common', defaultValue: 'Taux de change modifié' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la modification du taux');
+      toast.error(error.message || i18n.t('hooks.exchangeRates.updateError', { ns: 'common', defaultValue: 'Erreur lors de la modification du taux' }));
     },
   });
 }
