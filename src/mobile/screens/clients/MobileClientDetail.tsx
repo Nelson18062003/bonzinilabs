@@ -540,18 +540,18 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Pencil className="w-5 h-5 text-primary" />
-              Modifier le profil
+              {t('editProfile', { defaultValue: 'Modifier le profil' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 space-y-3 overflow-y-auto max-h-[60vh]">
             {[
-              { label: 'Prénom', key: 'firstName' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: 'Nom', key: 'lastName' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: 'Téléphone / WhatsApp', key: 'phone' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: 'Email', key: 'email' as const, icon: <Mail className="w-4 h-4" /> },
-              { label: 'Entreprise', key: 'companyName' as const, icon: <Building2 className="w-4 h-4" /> },
-              { label: 'Pays', key: 'country' as const, icon: <MapPin className="w-4 h-4" /> },
-              { label: 'Ville', key: 'city' as const, icon: <MapPin className="w-4 h-4" /> },
+              { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: t('phoneWhatsApp', { defaultValue: 'Téléphone / WhatsApp' }), key: 'phone' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const, icon: <Mail className="w-4 h-4" /> },
+              { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const, icon: <Building2 className="w-4 h-4" /> },
+              { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const, icon: <MapPin className="w-4 h-4" /> },
+              { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const, icon: <MapPin className="w-4 h-4" /> },
             ].map(({ label, key }) => (
               <div key={key}>
                 <label className="block text-sm font-bold mb-1">{label}</label>
@@ -567,10 +567,10 @@ export function MobileClientDetail() {
           <DrawerFooter>
             <Button onClick={handleSaveEdit} disabled={updateClientMutation.isPending}>
               {updateClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Enregistrer
+              {t('save', { defaultValue: 'Enregistrer' })}
             </Button>
             <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -582,7 +582,7 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="w-5 h-5" />
-              Supprimer le client
+              {t('deleteClient', { defaultValue: 'Supprimer le client' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4">
@@ -600,10 +600,10 @@ export function MobileClientDetail() {
               disabled={deleteClientMutation.isPending}
             >
               {deleteClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Confirmer la suppression
+              {t('confirmDeletion', { defaultValue: 'Confirmer la suppression' })}
             </Button>
             <Button variant="outline" onClick={() => setDeleteDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
