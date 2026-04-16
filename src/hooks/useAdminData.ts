@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 
 // Cache configuration for performance
 const STALE_TIME = 30 * 1000; // 30 seconds
@@ -355,10 +356,10 @@ export function useAddExchangeRate() {
       queryClient.invalidateQueries({ queryKey: ['exchange-rates'] });
       queryClient.invalidateQueries({ queryKey: ['exchange-rate'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Taux de change mis à jour');
+      toast.success(i18n.t('hooks.addExchangeRate.success', { ns: 'common', defaultValue: 'Taux de change mis à jour' }));
     },
     onError: (error) => {
-      toast.error('Erreur lors de la mise à jour du taux');
+      toast.error(i18n.t('hooks.addExchangeRate.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour du taux' }));
       console.error(error);
     },
   });

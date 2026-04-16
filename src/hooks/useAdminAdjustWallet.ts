@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
+import i18n from '@/i18n';
 
 export type AdjustmentType = 'credit' | 'debit';
 
@@ -35,7 +36,7 @@ export function useAdminAdjustWallet() {
       };
 
       if (!typedResult.success) {
-        throw new Error(typedResult.error || 'Ajustement échoué');
+        throw new Error(typedResult.error || i18n.t('hooks.adjustWallet.error', { ns: 'common', defaultValue: 'Ajustement échoué' }));
       }
 
       return typedResult;
@@ -47,13 +48,15 @@ export function useAdminAdjustWallet() {
       queryClient.invalidateQueries({ queryKey: ['wallet-operations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-client', variables.userId] });
       
-      const typeLabel = variables.adjustmentType === 'credit' ? 'Crédit' : 'Débit';
-      toast.success(`${typeLabel} effectué avec succès`, {
-        description: `Nouveau solde: ${formatCurrency(data.new_balance || 0)}`,
+      const typeLabel = variables.adjustmentType === 'credit'
+        ? i18n.t('hooks.adjustWallet.credit', { ns: 'common', defaultValue: 'Crédit' })
+        : i18n.t('hooks.adjustWallet.debit', { ns: 'common', defaultValue: 'Débit' });
+      toast.success(i18n.t('hooks.adjustWallet.success', { ns: 'common', defaultValue: `${typeLabel} effectué avec succès`, type: typeLabel }), {
+        description: i18n.t('hooks.adjustWallet.newBalance', { ns: 'common', defaultValue: `Nouveau solde: ${formatCurrency(data.new_balance || 0)}`, balance: formatCurrency(data.new_balance || 0) }),
       });
     },
     onError: (error) => {
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(i18n.t('hooks.adjustWallet.errorPrefix', { ns: 'common', defaultValue: `Erreur: ${error.message}`, message: error.message }));
     },
   });
 }

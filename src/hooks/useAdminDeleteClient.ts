@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import i18n from '@/i18n';
 
 export function useAdminDeleteClient() {
   const queryClient = useQueryClient();
@@ -18,7 +19,7 @@ export function useAdminDeleteClient() {
       const result = data as { success: boolean; error?: string; message?: string };
 
       if (!result.success) {
-        throw new Error(result.error || 'Échec de la suppression');
+        throw new Error(result.error || i18n.t('hooks.deleteClient.error', { ns: 'common', defaultValue: 'Échec de la suppression' }));
       }
 
       return result;
@@ -27,11 +28,11 @@ export function useAdminDeleteClient() {
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       queryClient.invalidateQueries({ queryKey: ['admin-wallets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Client supprimé avec succès');
+      toast.success(i18n.t('hooks.deleteClient.success', { ns: 'common', defaultValue: 'Client supprimé avec succès' }));
       navigate('/admin/clients', { replace: true });
     },
     onError: (error) => {
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(i18n.t('hooks.deleteClient.errorPrefix', { ns: 'common', defaultValue: `Erreur: ${error.message}`, message: error.message }));
     },
   });
 }

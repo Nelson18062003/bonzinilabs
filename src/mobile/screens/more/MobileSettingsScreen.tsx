@@ -18,14 +18,14 @@ export function MobileSettingsScreen() {
           <div className="flex items-center gap-2 mb-3">
             <Palette className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Apparence
+              {t('appearance', { defaultValue: 'Apparence' })}
             </h3>
           </div>
           <div className="bg-card rounded-xl border border-border p-4">
-            <p className="text-sm font-medium mb-3">Thème de l'application</p>
+            <p className="text-sm font-medium mb-3">{t('appTheme', { defaultValue: "Thème de l'application" })}</p>
             <ThemeToggle />
             <p className="text-xs text-muted-foreground mt-3">
-              Le mode Système s'adapte automatiquement aux préférences de votre appareil.
+              {t('systemModeNote', { defaultValue: "Le mode Système s'adapte automatiquement aux préférences de votre appareil." })}
             </p>
           </div>
         </section>
@@ -35,18 +35,18 @@ export function MobileSettingsScreen() {
           <div className="flex items-center gap-2 mb-3">
             <Monitor className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Compte
+              {t('account', { defaultValue: 'Compte' })}
             </h3>
           </div>
           <div className="bg-card rounded-xl border border-border divide-y divide-border">
             <div className="p-4">
-              <p className="text-xs text-muted-foreground">Nom</p>
+              <p className="text-xs text-muted-foreground">{t('name', { defaultValue: 'Nom' })}</p>
               <p className="text-sm font-medium mt-0.5">
                 {profile?.first_name} {profile?.last_name}
               </p>
             </div>
             <div className="p-4">
-              <p className="text-xs text-muted-foreground">Rôle</p>
+              <p className="text-xs text-muted-foreground">{t('role', { defaultValue: 'Rôle' })}</p>
               <p className="text-sm font-medium mt-0.5 capitalize">
                 {profile?.role?.replace('_', ' ') || 'Admin'}
               </p>
@@ -59,7 +59,7 @@ export function MobileSettingsScreen() {
           <div className="flex items-center gap-2 mb-3">
             <Info className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              À propos
+              {t('about', { defaultValue: 'À propos' })}
             </h3>
           </div>
           <div className="bg-card rounded-xl border border-border divide-y divide-border">

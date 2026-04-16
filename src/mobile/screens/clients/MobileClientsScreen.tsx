@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClients } from '@/hooks/useClientManagement';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -12,12 +13,14 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { ClientStatus } from '@/types/admin';
 
-const STATUS_FILTERS: { value: ClientStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Tous' },
-  { value: 'ACTIVE', label: 'Actifs' },
-  { value: 'INACTIVE', label: 'Inactifs' },
-  { value: 'SUSPENDED', label: 'Suspendus' },
-  { value: 'PENDING_KYC', label: 'KYC' },
+// Filter labels are static since they're defined outside the component.
+// For i18n, we re-create them inside the component.
+const STATUS_FILTER_KEYS: { value: ClientStatus | 'all'; labelKey: string; defaultLabel: string }[] = [
+  { value: 'all', labelKey: 'all', defaultLabel: 'Tous' },
+  { value: 'ACTIVE', labelKey: 'activeUsers', defaultLabel: 'Actifs' },
+  { value: 'INACTIVE', labelKey: 'inactiveUsers', defaultLabel: 'Inactifs' },
+  { value: 'SUSPENDED', labelKey: 'suspended', defaultLabel: 'Suspendus' },
+  { value: 'PENDING_KYC', labelKey: 'kyc', defaultLabel: 'KYC' },
 ];
 
 const STATUS_BADGE_STYLES: Record<ClientStatus, string> = {
@@ -28,10 +31,13 @@ const STATUS_BADGE_STYLES: Record<ClientStatus, string> = {
 };
 
 export function MobileClientsScreen() {
+  const { t } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery);
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
   const navigate = useNavigate();
+
+  const STATUS_FILTERS = STATUS_FILTER_KEYS.map(f => ({ value: f.value, label: t(f.labelKey, { defaultValue: f.defaultLabel }) }));
 
   const { data: clients, isLoading, refetch } = useClients({
     search: debouncedSearch || undefined,
@@ -46,7 +52,7 @@ export function MobileClientsScreen() {
 
   return (
     <div className="flex flex-col min-h-full pb-20">
-      <MobileHeader title="Clients" />
+      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} />
 
       <PullToRefresh onRefresh={refetch} className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 overflow-y-auto">
         {/* Search */}
@@ -54,7 +60,7 @@ export function MobileClientsScreen() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher par nom, téléphone..."
+            placeholder={t('searchByNamePhone', { defaultValue: 'Rechercher par nom, téléphone...' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"

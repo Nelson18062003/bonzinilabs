@@ -19,7 +19,7 @@ export function useAdminPaymentProofMultiUpload() {
       description?: string 
     }) => {
       const { data: { user } } = await supabaseAdmin.auth.getUser();
-      if (!user) throw new Error('Non authentifié');
+      if (!user) throw new Error(i18n.t('hooks.auth.notAuthenticated', { ns: 'common', defaultValue: 'Non authentifié' }));
 
       const results = [];
       
@@ -78,14 +78,14 @@ export function useAdminPaymentProofMultiUpload() {
       const failCount = results.filter(r => !r.success).length;
       
       if (successCount > 0 && failCount === 0) {
-        toast.success(successCount > 1 
-          ? `${successCount} preuves téléchargées` 
-          : 'Preuve téléchargée'
+        toast.success(successCount > 1
+          ? i18n.t('hooks.adminProofMultiUpload.successMultiple', { ns: 'common', defaultValue: `${successCount} preuves téléchargées`, count: successCount })
+          : i18n.t('hooks.uploadProof.success', { ns: 'common', defaultValue: 'Preuve téléchargée' })
         );
       } else if (successCount > 0 && failCount > 0) {
-        toast.warning(`${successCount} réussie(s), ${failCount} échec(s)`);
+        toast.warning(i18n.t('hooks.adminProofMultiUpload.partialSuccess', { ns: 'common', defaultValue: `${successCount} réussie(s), ${failCount} échec(s)`, successCount, failCount }));
       } else {
-        toast.error('Échec du téléchargement');
+        toast.error(i18n.t('hooks.adminProofMultiUpload.allFailed', { ns: 'common', defaultValue: 'Échec du téléchargement' }));
       }
     },
     onError: (error: Error) => {
