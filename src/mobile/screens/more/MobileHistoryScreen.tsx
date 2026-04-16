@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import {
   Search,
@@ -25,6 +26,7 @@ const FILTERS = [
 ];
 
 export function MobileHistoryScreen() {
+  const { t } = useTranslation('common');
   const { data: logs, isLoading, refetch } = useAdminAuditLogs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);

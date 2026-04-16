@@ -666,7 +666,7 @@ export function MobileClientDetail() {
             </p>
           </div>
           <DrawerFooter>
-            <Button onClick={() => setPasswordResultDrawerOpen(false)}>Fermer</Button>
+            <Button onClick={() => setPasswordResultDrawerOpen(false)}>{t('close', { defaultValue: 'Fermer' })}</Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

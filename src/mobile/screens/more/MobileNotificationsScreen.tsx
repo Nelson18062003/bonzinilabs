@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import type { AdminNotificationType } from '@/hooks/useAdminNotifications';
@@ -51,6 +52,7 @@ function formatRelativeDate(dateStr: string) {
 }
 
 export function MobileNotificationsScreen() {
+  const { t } = useTranslation('common');
   const { data: notifications, isLoading, refetch } = useAdminNotifications();
   const navigate = useNavigate();
 
@@ -130,9 +132,9 @@ export function MobileNotificationsScreen() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Bell className="w-6 h-6 text-muted-foreground" />
             </div>
-            <p className="font-medium text-muted-foreground">Tout est à jour</p>
+            <p className="font-medium text-muted-foreground">{t('allUpToDate', { defaultValue: 'Tout est à jour' })}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Aucun élément en attente d'action
+              {t('noPendingItems', { defaultValue: "Aucun élément en attente d'action" })}
             </p>
           </div>
         )}

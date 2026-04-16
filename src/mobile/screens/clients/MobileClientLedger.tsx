@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useClientLedger } from '@/hooks/useClientManagement';
@@ -97,6 +98,7 @@ const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, {
 };
 
 export function MobileClientLedger() {
+  const { t } = useTranslation('common');
   const { clientId } = useParams();
   const [filter, setFilter] = useState<LedgerEntryType | 'all'>('all');
 
@@ -115,7 +117,7 @@ export function MobileClientLedger() {
   return (
     <div className="flex flex-col min-h-screen">
       <MobileHeader
-        title="Historique"
+        title={t('history', { defaultValue: 'Historique' })}
         showBack
         backTo={`/m/clients/${clientId}`}
       />
@@ -130,7 +132,7 @@ export function MobileClientLedger() {
                   {client.firstName} {client.lastName}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Solde actuel: {formatCurrency(client.walletBalance || 0)}
+                  {t('currentBalance', { defaultValue: 'Solde actuel' })}: {formatCurrency(client.walletBalance || 0)}
                 </p>
               </div>
             </div>
@@ -188,7 +190,7 @@ export function MobileClientLedger() {
 
                       <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                         <span>{formatDate(entry.createdAt)}</span>
-                        <span>Solde: {formatCurrency(entry.balanceAfter)}</span>
+                        <span>{t('balance', { defaultValue: 'Solde' })}: {formatCurrency(entry.balanceAfter)}</span>
                       </div>
 
                       {entry.createdByAdminName && (
@@ -205,7 +207,7 @@ export function MobileClientLedger() {
         ) : (
           <MobileEmptyState
             icon={Clock}
-            title={filter === 'all' ? 'Aucun mouvement enregistré' : 'Aucun mouvement de ce type'}
+            title={filter === 'all' ? t('noMovementsRecorded', { defaultValue: 'Aucun mouvement enregistré' }) : t('noMovementsOfType', { defaultValue: 'Aucun mouvement de ce type' })}
           />
         )}
       </PullToRefresh>
