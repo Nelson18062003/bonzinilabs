@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "howItWorks": "How it works",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "cta": "Send a payment"
+  },
+  "hero": {
+    "badge": "We handle payments. You handle business.",
+    "title1": "Your supplier is",
+    "titleHighlight": "paid",
+    "title2": "before",
+    "title3": "tonight",
+    "subtitle": "Alipay, WeChat, bank transfer or cash. You send in CFA francs, your supplier receives in yuan. With the <strong>proof in your pocket</strong>.",
+    "ctaPrimary": "Send a payment",
+    "ctaSecondary": "View rates",
+    "simulator": {
+      "title": "Payment simulator",
+      "youSend": "YOU SEND",
+      "supplierReceives": "SUPPLIER RECEIVES",
+      "rate": "Rate: 1M XAF = \u00a5{{rate}}",
+      "instant": "Instant"
+    }
+  },
+  "ticker": {
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "bankTransfer": "Bank transfer",
+    "cashRMB": "Cash RMB",
+    "cameroon": "Cameroon",
+    "gabon": "Gabon",
+    "chad": "Chad",
+    "car": "CAR",
+    "congo": "Congo",
+    "instantPayment": "Instant payment",
+    "bestRate": "Best rate",
+    "noCard": "No card needed"
+  },
+  "stats": {
+    "countries": { "suffix": " countries", "label": "CEMAC zone covered" },
+    "methods": { "suffix": " methods", "label": "Accepted payment methods" },
+    "time": { "suffix": " min", "prefix": "<", "label": "Average processing time" },
+    "fees": { "suffix": " fees", "label": "Hidden. Never." }
+  },
+  "howItWorks": {
+    "sectionLabel": "How it works",
+    "title": "Four steps.",
+    "subtitle": "Five minutes.",
+    "steps": [
+      { "num": "01", "title": "Choose", "desc": "Alipay, WeChat, bank transfer or cash. Based on your supplier's preference." },
+      { "num": "02", "title": "Amount", "desc": "In XAF or yuan. The instant rate is displayed, optimized by volume." },
+      { "num": "03", "title": "Beneficiary", "desc": "QR code, ID or bank details. Saved for next time." },
+      { "num": "04", "title": "Instant", "desc": "Your supplier receives the funds immediately. Payment proof in the app." }
+    ]
+  },
+  "methods": {
+    "sectionLabel": "Payment methods",
+    "title": "The method your supplier prefers",
+    "alipay": {
+      "name": "Alipay",
+      "tag": "Most popular",
+      "desc": "QR code or ID. Instant payment to any Alipay account in China."
+    },
+    "wechat": {
+      "name": "WeChat Pay",
+      "tag": "Fast",
+      "desc": "Through the WeChat ecosystem. Ideal for suppliers who use WeChat daily."
+    },
+    "bankTransfer": {
+      "name": "Bank Transfer",
+      "tag": "Large amounts",
+      "desc": "Directly to your supplier's bank account. For large orders."
+    },
+    "cash": {
+      "name": "Cash",
+      "tag": "On site",
+      "desc": "Cash delivery with receipt signature. For suppliers who prefer cash."
+    }
+  },
+  "faq": {
+    "sectionLabel": "FAQ",
+    "title": "Your questions",
+    "items": [
+      { "q": "Are payments really instant?", "a": "Yes. Alipay and WeChat payments are processed in minutes. Bank transfers usually take a few hours. Cash is immediate." },
+      { "q": "What is the minimum amount?", "a": "10,000 XAF per transaction. No maximum, but larger amounts get a better rate." },
+      { "q": "How is the rate calculated?", "a": "The base rate depends on the payment method. An adjustment applies based on your country. The higher the amount, the better the rate." },
+      { "q": "How does my supplier know they've been paid?", "a": "You receive payment proof in the app: screenshot for Alipay/WeChat, confirmation for transfers, signature for cash." },
+      { "q": "Are there hidden fees?", "a": "None. The displayed rate is the final rate. Zero additional commission, zero surprises." },
+      { "q": "In which countries is Bonzini available?", "a": "Cameroon, Gabon, Chad, Central African Republic and Congo." }
+    ]
+  },
+  "cta": {
+    "title": "Your suppliers are waiting",
+    "subtitle": "Every minute counts in business. Send your first payment now.",
+    "button": "Get started"
+  },
+  "footer": {
+    "tagline": "Instant payments to China for CEMAC zone importers.",
+    "product": "Product",
+    "company": "Company",
+    "support": "Support",
+    "links": {
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "faq": "FAQ",
+      "security": "Security",
+      "about": "About",
+      "contact": "Contact",
+      "legal": "Legal notice",
+      "terms": "Terms",
+      "whatsapp": "WhatsApp",
+      "emailSupport": "Email",
+      "helpCenter": "Help center"
+    },
+    "copyright": "\u00a9 2026 Bonzini. All rights reserved."
+  }
+}

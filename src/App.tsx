@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import "./i18n"; // Initialize i18n before anything renders
 import LandingPage from "./pages/LandingPage";
 import { useCaptureUtm } from "@/hooks/useUtmTracking";
 import { ThemeProvider } from "next-themes";

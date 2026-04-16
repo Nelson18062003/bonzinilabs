@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth, SignUpData } from '@/contexts/AuthContext';
 import { track } from '@vercel/analytics';
 import { getStoredUtm, clearStoredUtm } from '@/hooks/useUtmTracking';
@@ -9,6 +10,7 @@ import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { PhoneCountryInput, COUNTRIES } from '@/components/auth/PhoneCountryInput';
 import { BonziniLogo } from '@/components/BonziniLogo';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -30,16 +32,18 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-const emailSchema = z.string().email('Email invalide');
-const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
-const nameSchema = z.string().min(1, 'Ce champ est obligatoire');
-const phoneSchema = z.string().min(8, 'Numéro de téléphone invalide');
+// Schemas use basic validation — translated messages are applied at usage sites
+const emailSchema = z.string().email();
+const passwordSchema = z.string().min(6);
+const nameSchema = z.string().min(1);
+const phoneSchema = z.string().min(8);
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'reset-password';
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation('auth');
   const { signIn, signUp, resetPassword, updatePassword, isLoading: authLoading, user } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('login');
@@ -144,7 +148,7 @@ export default function AuthPage() {
     e.preventDefault();
     setEmailError('');
     if (!isEmailValid) {
-      setEmailError('Veuillez entrer un email valide');
+      setEmailError(t('validation.enterValidEmail'));
       return;
     }
     setDirection('forward');
@@ -158,7 +162,7 @@ export default function AuthPage() {
 
     const pwdResult = passwordSchema.safeParse(password);
     if (!pwdResult.success) {
-      setPasswordError(pwdResult.error.errors[0].message);
+      setPasswordError(t('validation.passwordMin'));
       return;
     }
 
@@ -168,14 +172,14 @@ export default function AuthPage() {
 
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        setPasswordError('Email ou mot de passe incorrect');
+        setPasswordError(t('validation.incorrectCredentials'));
       } else {
-        setPasswordError(error.message || 'Erreur lors de la connexion');
+        setPasswordError(error.message || t('validation.loginError'));
       }
       return;
     }
 
-    toast.success('Bienvenue !');
+    toast.success(t('toast.welcome'));
     setIsFadingOut(true);
     setTimeout(() => navigate('/wallet'), 300);
   };
@@ -187,7 +191,7 @@ export default function AuthPage() {
 
     const result = emailSchema.safeParse(email);
     if (!result.success) {
-      setEmailError(result.error.errors[0].message);
+      setEmailError(t('validation.invalidEmail'));
       return;
     }
 
@@ -196,11 +200,11 @@ export default function AuthPage() {
     setIsSubmitting(false);
 
     if (error) {
-      toast.error("Erreur lors de l'envoi de l'email de réinitialisation");
+      toast.error(t('toast.resetEmailError'));
       return;
     }
 
-    toast.success('Un email de réinitialisation a été envoyé à votre adresse');
+    toast.success(t('toast.resetEmailSent'));
     switchMode('login');
   };
 
@@ -211,12 +215,12 @@ export default function AuthPage() {
 
     const pwdResult = passwordSchema.safeParse(password);
     if (!pwdResult.success) {
-      setPasswordError(pwdResult.error.errors[0].message);
+      setPasswordError(t('validation.passwordMin'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setPasswordError('Les mots de passe ne correspondent pas');
+      setPasswordError(t('validation.passwordMismatch'));
       return;
     }
 
@@ -225,11 +229,11 @@ export default function AuthPage() {
     setIsSubmitting(false);
 
     if (error) {
-      setPasswordError(error.message || 'Erreur lors de la réinitialisation');
+      setPasswordError(error.message || t('validation.loginError'));
       return;
     }
 
-    toast.success('Mot de passe mis à jour avec succès');
+    toast.success(t('toast.passwordUpdated'));
     navigate('/wallet');
   };
 
@@ -246,15 +250,15 @@ export default function AuthPage() {
       setFirstNameError('');
       setLastNameError('');
       const fnResult = nameSchema.safeParse(firstName);
-      if (!fnResult.success) { setFirstNameError('Le prénom est obligatoire'); return; }
+      if (!fnResult.success) { setFirstNameError(t('validation.firstNameRequired')); return; }
       const lnResult = nameSchema.safeParse(lastName);
-      if (!lnResult.success) { setLastNameError('Le nom est obligatoire'); return; }
+      if (!lnResult.success) { setLastNameError(t('validation.lastNameRequired')); return; }
     } else if (signupStep === 1) {
       setCountryError('');
       setPhoneError('');
-      if (!country) { setCountryError('Le pays est obligatoire'); return; }
+      if (!country) { setCountryError(t('validation.countryRequired')); return; }
       const phoneResult = phoneSchema.safeParse(phone);
-      if (!phoneResult.success) { setPhoneError(phoneResult.error.errors[0].message); return; }
+      if (!phoneResult.success) { setPhoneError(t('validation.invalidPhone')); return; }
     }
     advanceSignupStep();
   };
@@ -268,41 +272,41 @@ export default function AuthPage() {
     // Validate
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
-      setEmailError(emailResult.error.errors[0].message);
+      setEmailError(t('validation.invalidEmail'));
       return;
     }
 
     const pwdResult = passwordSchema.safeParse(password);
     if (!pwdResult.success) {
-      setPasswordError(pwdResult.error.errors[0].message);
+      setPasswordError(t('validation.passwordMin'));
       return;
     }
 
     const fnResult = nameSchema.safeParse(firstName);
     if (!fnResult.success) {
-      toast.error('Le prénom est obligatoire');
+      toast.error(t('validation.firstNameRequired'));
       return;
     }
 
     const lnResult = nameSchema.safeParse(lastName);
     if (!lnResult.success) {
-      toast.error('Le nom est obligatoire');
+      toast.error(t('validation.lastNameRequired'));
       return;
     }
 
     const phoneResult = phoneSchema.safeParse(phone);
     if (!phoneResult.success) {
-      toast.error(phoneResult.error.errors[0].message);
+      toast.error(t('validation.invalidPhone'));
       return;
     }
 
     if (!country) {
-      toast.error('Le pays est obligatoire');
+      toast.error(t('validation.countryRequired'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setPasswordError('Les mots de passe ne correspondent pas');
+      setPasswordError(t('validation.passwordMismatch'));
       return;
     }
 
@@ -330,9 +334,9 @@ export default function AuthPage() {
 
     if (error) {
       if (error.message.includes('already registered')) {
-        toast.error('Cet email est déjà utilisé');
+        toast.error(t('validation.emailAlreadyUsed'));
       } else {
-        toast.error(error.message || "Erreur lors de l'inscription");
+        toast.error(error.message || t('validation.signupError'));
       }
       return;
     }
@@ -359,6 +363,9 @@ export default function AuthPage() {
   if (mode === 'login') {
     return (
       <LoginBackground className={cn(isFadingOut && 'animate-fade-out')}>
+        <div className="absolute top-6 right-4 z-20">
+          <LanguageSwitcher />
+        </div>
         <div className="flex-1 flex flex-col justify-center px-6 py-12">
           {/* Back button (step 1 only) */}
           {loginStep === 1 && (
@@ -389,9 +396,9 @@ export default function AuthPage() {
                   className="text-center mb-8 animate-slide-up"
                   style={{ animationDelay: '80ms', animationFillMode: 'both' }}
                 >
-                  <h1 className="text-2xl font-bold mb-1">Connexion</h1>
+                  <h1 className="text-2xl font-bold mb-1">{t('login.title')}</h1>
                   <p className="text-muted-foreground text-sm">
-                    Connectez-vous à votre compte
+                    {t('login.subtitle')}
                   </p>
                 </div>
 
@@ -402,7 +409,7 @@ export default function AuthPage() {
                   <PremiumInput
                     id="client-email"
                     type="email"
-                    label="Adresse email"
+                    label={t('login.emailLabel')}
                     value={email}
                     onChange={(val) => {
                       setEmail(val);
@@ -430,14 +437,14 @@ export default function AuthPage() {
                     disabled={!email}
                     className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Continuer
+                    {t('login.continue')}
                   </button>
                 </div>
               </form>
             ) : (
               <form onSubmit={handleLogin} className="max-w-sm mx-auto w-full">
                 <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold mb-1">Bonjour,</h1>
+                  <h1 className="text-2xl font-bold mb-1">{t('login.greeting')}</h1>
                   <p className="text-muted-foreground text-sm">{maskEmail(email)}</p>
                 </div>
 
@@ -445,7 +452,7 @@ export default function AuthPage() {
                   <PremiumInput
                     id="client-password"
                     type={showPassword ? 'text' : 'password'}
-                    label="Mot de passe"
+                    label={t('login.passwordLabel')}
                     value={password}
                     onChange={(val) => {
                       setPassword(val);
@@ -481,7 +488,7 @@ export default function AuthPage() {
                     onClick={() => switchMode('forgot-password')}
                     className="text-sm text-primary hover:underline"
                   >
-                    Mot de passe oublié ?
+                    {t('login.forgotPassword')}
                   </button>
                 </div>
 
@@ -495,10 +502,10 @@ export default function AuthPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Connexion...
+                      {t('login.signingIn')}
                     </>
                   ) : (
-                    'Se connecter'
+                    t('login.signIn')
                   )}
                 </button>
               </form>
@@ -511,7 +518,7 @@ export default function AuthPage() {
           <div className="max-w-sm mx-auto">
             <div className="relative flex items-center gap-3 mb-4">
               <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">ou</span>
+              <span className="text-xs text-muted-foreground">{t('common:or')}</span>
               <Separator className="flex-1" />
             </div>
             <Button
@@ -520,10 +527,10 @@ export default function AuthPage() {
               onClick={() => switchMode('signup')}
               className="w-full h-12 rounded-xl text-sm font-semibold"
             >
-              Créer mon compte gratuit
+              {t('login.createAccount')}
             </Button>
             <p className="text-center text-xs text-muted-foreground mt-3">
-              Rejoignez 500+ importateurs qui font confiance à Bonzini
+              {t('login.socialProof')}
             </p>
           </div>
         </div>
@@ -552,9 +559,9 @@ export default function AuthPage() {
 
           <form onSubmit={handleForgotPassword} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-1">Mot de passe oublié</h1>
+              <h1 className="text-2xl font-bold mb-1">{t('forgotPassword.title')}</h1>
               <p className="text-muted-foreground text-sm">
-                Entrez votre email pour recevoir un lien de réinitialisation
+                {t('forgotPassword.subtitle')}
               </p>
             </div>
 
@@ -562,7 +569,7 @@ export default function AuthPage() {
               <PremiumInput
                 id="forgot-email"
                 type="email"
-                label="Adresse email"
+                label={t('login.emailLabel')}
                 value={email}
                 onChange={(val) => {
                   setEmail(val);
@@ -584,7 +591,7 @@ export default function AuthPage() {
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                'Envoyer le lien'
+                t('forgotPassword.sendLink')
               )}
             </button>
           </form>
@@ -592,13 +599,13 @@ export default function AuthPage() {
 
         <div className="p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Vous vous souvenez ?{' '}
+            {t('forgotPassword.remember')}{' '}
             <button
               type="button"
               onClick={() => switchMode('login')}
               className="text-primary hover:underline font-medium"
             >
-              Se connecter
+              {t('forgotPassword.signIn')}
             </button>
           </p>
         </div>
@@ -620,9 +627,9 @@ export default function AuthPage() {
 
           <form onSubmit={handleResetPassword} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-1">Nouveau mot de passe</h1>
+              <h1 className="text-2xl font-bold mb-1">{t('resetPassword.title')}</h1>
               <p className="text-muted-foreground text-sm">
-                Choisissez un nouveau mot de passe sécurisé
+                {t('resetPassword.subtitle')}
               </p>
             </div>
 
@@ -630,7 +637,7 @@ export default function AuthPage() {
               <PremiumInput
                 id="reset-password"
                 type={showPassword ? 'text' : 'password'}
-                label="Nouveau mot de passe"
+                label={t('resetPassword.newPassword')}
                 value={password}
                 onChange={(val) => {
                   setPassword(val);
@@ -654,7 +661,7 @@ export default function AuthPage() {
               <PremiumInput
                 id="reset-confirm"
                 type={showPassword ? 'text' : 'password'}
-                label="Confirmer le mot de passe"
+                label={t('resetPassword.confirmPassword')}
                 value={confirmPassword}
                 onChange={setConfirmPassword}
                 icon={<Lock className="w-5 h-5" />}
@@ -671,7 +678,7 @@ export default function AuthPage() {
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                'Réinitialiser'
+                t('resetPassword.reset')
               )}
             </button>
           </form>
@@ -691,15 +698,15 @@ export default function AuthPage() {
               <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-12 h-12 text-emerald-500" />
               </div>
-              <h1 className="text-2xl font-bold mb-3">Compte créé avec succès !</h1>
+              <h1 className="text-2xl font-bold mb-3">{t('signup.success.title')}</h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-xs mx-auto">
-                Votre compte a été créé. Vous pouvez maintenant vous connecter et commencer à utiliser Bonzini.
+                {t('signup.success.subtitle')}
               </p>
               <button
                 onClick={() => switchMode('login')}
                 className="btn-primary-gradient h-12 px-8 rounded-xl flex items-center justify-center gap-2 mx-auto"
               >
-                Se connecter
+                {t('signup.success.signIn')}
               </button>
             </div>
           </div>
@@ -709,11 +716,11 @@ export default function AuthPage() {
 
     // ── Step configuration ──
     const stepConfig = [
-      { title: 'Votre identité', subtitle: 'Comment vous appelle-t-on ?', emoji: '👋' },
-      { title: 'Vos coordonnées', subtitle: 'Comment vous joindre ?', emoji: '📱' },
-      { title: 'Votre entreprise', subtitle: 'Activité professionnelle (optionnel)', emoji: '🏢' },
-      { title: 'Votre adresse', subtitle: 'Où êtes-vous basé ? (optionnel)', emoji: '📍' },
-      { title: 'Vos identifiants', subtitle: 'Email et mot de passe de connexion', emoji: '🔐' },
+      { title: t('signup.identity.title'), subtitle: t('signup.identity.subtitle'), emoji: '\ud83d\udc4b' },
+      { title: t('signup.contact.title'), subtitle: t('signup.contact.subtitle'), emoji: '\ud83d\udcf1' },
+      { title: t('signup.business.title'), subtitle: t('signup.business.subtitle'), emoji: '\ud83c\udfe2' },
+      { title: t('signup.address.title'), subtitle: t('signup.address.subtitle'), emoji: '\ud83d\udccd' },
+      { title: t('signup.credentials.title'), subtitle: t('signup.credentials.subtitle'), emoji: '\ud83d\udd10' },
     ];
     const currentStepConfig = stepConfig[signupStep];
 
@@ -759,7 +766,7 @@ export default function AuthPage() {
                 <form onSubmit={handleSignupStepNext} className="space-y-4">
                   <PremiumInput
                     id="signup-firstName"
-                    label="Prénom *"
+                    label={t('signup.firstName')}
                     value={firstName}
                     onChange={(val) => { setFirstName(val); setFirstNameError(''); }}
                     icon={<User className="w-4 h-4" />}
@@ -770,7 +777,7 @@ export default function AuthPage() {
                   />
                   <PremiumInput
                     id="signup-lastName"
-                    label="Nom *"
+                    label={t('signup.lastName')}
                     value={lastName}
                     onChange={(val) => { setLastName(val); setLastNameError(''); }}
                     icon={<User className="w-4 h-4" />}
@@ -782,7 +789,7 @@ export default function AuthPage() {
                     type="submit"
                     className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
                   >
-                    Continuer
+                    {t('common:continue')}
                   </button>
                 </form>
               )}
@@ -794,7 +801,7 @@ export default function AuthPage() {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1.5">
                       <Globe className="w-4 h-4" />
-                      Pays *
+                      {t('signup.country')}
                     </label>
                     <select
                       value={country}
@@ -806,7 +813,7 @@ export default function AuthPage() {
                         countryError ? 'border-destructive ring-2 ring-destructive/20' : 'border-border',
                       )}
                     >
-                      <option value="">Sélectionnez votre pays</option>
+                      <option value="">{t('signup.selectCountry')}</option>
                       {COUNTRIES.map(c => (
                         <option key={`${c.dialCode}-${c.name}`} value={c.name}>
                           {c.flag} {c.name}
@@ -831,7 +838,7 @@ export default function AuthPage() {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
                       <Calendar className="w-4 h-4" />
-                      Date de naissance (optionnel)
+                      {t('signup.dateOfBirth')}
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                       <select
@@ -840,7 +847,7 @@ export default function AuthPage() {
                         disabled={isSubmitting}
                         className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
                       >
-                        <option value="">Jour</option>
+                        <option value="">{t('signup.day')}</option>
                         {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
                           <option key={d} value={String(d)}>{d}</option>
                         ))}
@@ -851,8 +858,8 @@ export default function AuthPage() {
                         disabled={isSubmitting}
                         className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
                       >
-                        <option value="">Mois</option>
-                        {['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'].map((m, i) => (
+                        <option value="">{t('signup.month')}</option>
+                        {(t('signup.months', { returnObjects: true }) as string[]).map((m, i) => (
                           <option key={i} value={String(i + 1)}>{m}</option>
                         ))}
                       </select>
@@ -862,7 +869,7 @@ export default function AuthPage() {
                         disabled={isSubmitting}
                         className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
                       >
-                        <option value="">Année</option>
+                        <option value="">{t('signup.year')}</option>
                         {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 16 - i).map(y => (
                           <option key={y} value={String(y)}>{y}</option>
                         ))}
@@ -874,7 +881,7 @@ export default function AuthPage() {
                     type="submit"
                     className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
                   >
-                    Continuer
+                    {t('common:continue')}
                   </button>
                 </form>
               )}
@@ -884,7 +891,7 @@ export default function AuthPage() {
                 <form onSubmit={handleSignupStepNext} className="space-y-4">
                   <PremiumInput
                     id="signup-company"
-                    label="Nom de l'entreprise"
+                    label={t('signup.companyName')}
                     value={companyName}
                     onChange={setCompanyName}
                     icon={<Building className="w-4 h-4" />}
@@ -893,7 +900,7 @@ export default function AuthPage() {
                   />
                   <PremiumInput
                     id="signup-sector"
-                    label="Secteur d'activité"
+                    label={t('signup.activitySector')}
                     value={activitySector}
                     onChange={setActivitySector}
                     icon={<Briefcase className="w-4 h-4" />}
@@ -903,14 +910,14 @@ export default function AuthPage() {
                     type="submit"
                     className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
                   >
-                    Continuer
+                    {t('common:continue')}
                   </button>
                   <button
                     type="button"
                     onClick={advanceSignupStep}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
                   >
-                    Passer cette étape →
+                    {t('signup.skipStep')}
                   </button>
                 </form>
               )}
@@ -920,7 +927,7 @@ export default function AuthPage() {
                 <form onSubmit={handleSignupStepNext} className="space-y-4">
                   <PremiumInput
                     id="signup-neighborhood"
-                    label="Quartier"
+                    label={t('signup.neighborhood')}
                     value={neighborhood}
                     onChange={setNeighborhood}
                     icon={<MapPin className="w-4 h-4" />}
@@ -929,7 +936,7 @@ export default function AuthPage() {
                   />
                   <PremiumInput
                     id="signup-city"
-                    label="Ville"
+                    label={t('signup.city')}
                     value={city}
                     onChange={setCity}
                     icon={<MapPin className="w-4 h-4" />}
@@ -939,14 +946,14 @@ export default function AuthPage() {
                     type="submit"
                     className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
                   >
-                    Continuer
+                    {t('common:continue')}
                   </button>
                   <button
                     type="button"
                     onClick={advanceSignupStep}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
                   >
-                    Passer cette étape →
+                    {t('signup.skipStep')}
                   </button>
                 </form>
               )}
@@ -957,7 +964,7 @@ export default function AuthPage() {
                   <PremiumInput
                     id="signup-email"
                     type="email"
-                    label="Email *"
+                    label={t('signup.emailLabel')}
                     value={email}
                     onChange={(val) => { setEmail(val); setEmailError(''); }}
                     icon={<Mail className="w-4 h-4" />}
@@ -970,7 +977,7 @@ export default function AuthPage() {
                   <PremiumInput
                     id="signup-password"
                     type={showPassword ? 'text' : 'password'}
-                    label="Mot de passe *"
+                    label={t('signup.passwordLabel')}
                     value={password}
                     onChange={(val) => { setPassword(val); setPasswordError(''); }}
                     icon={<Lock className="w-4 h-4" />}
@@ -991,7 +998,7 @@ export default function AuthPage() {
                   <PremiumInput
                     id="signup-confirm"
                     type={showPassword ? 'text' : 'password'}
-                    label="Confirmer le mot de passe *"
+                    label={t('signup.confirmPasswordLabel')}
                     value={confirmPassword}
                     onChange={setConfirmPassword}
                     icon={<Lock className="w-4 h-4" />}
@@ -1007,10 +1014,10 @@ export default function AuthPage() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Création...
+                        {t('signup.creating')}
                       </>
                     ) : (
-                      'Créer mon compte'
+                      t('signup.createAccount')
                     )}
                   </button>
                 </form>
@@ -1023,13 +1030,13 @@ export default function AuthPage() {
         {/* Footer signup — "Déjà client ?" avec Button link shadcn/ui */}
         <div className="px-6 pb-6 pt-2 text-center flex-shrink-0">
           <p className="text-sm text-muted-foreground">
-            Déjà client ?{' '}
+            {t('signup.alreadyClient')}{' '}
             <Button
               variant="link"
               onClick={() => switchMode('login')}
               className="text-primary font-semibold p-0 h-auto"
             >
-              Connectez-vous
+              {t('signup.signIn')}
             </Button>
           </p>
         </div>

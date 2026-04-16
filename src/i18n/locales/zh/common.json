@@ -1,0 +1,36 @@
+{
+  "loading": "\u52a0\u8f7d\u4e2d...",
+  "error": "\u9519\u8bef",
+  "success": "\u6210\u529f",
+  "cancel": "\u53d6\u6d88",
+  "confirm": "\u786e\u8ba4",
+  "save": "\u4fdd\u5b58",
+  "delete": "\u5220\u9664",
+  "edit": "\u7f16\u8f91",
+  "back": "\u8fd4\u56de",
+  "next": "\u4e0b\u4e00\u6b65",
+  "continue": "\u7ee7\u7eed",
+  "close": "\u5173\u95ed",
+  "search": "\u641c\u7d22",
+  "or": "\u6216",
+  "yes": "\u662f",
+  "no": "\u5426",
+  "amount": "\u91d1\u989d",
+  "date": "\u65e5\u671f",
+  "status": "\u72b6\u6001",
+  "phone": "\u7535\u8bdd",
+  "email": "\u90ae\u7bb1",
+  "name": "\u59d3\u540d",
+  "download": "\u4e0b\u8f7d",
+  "currency": {
+    "xaf": "XAF",
+    "rmb": "\u4eba\u6c11\u5e01",
+    "cny": "CNY"
+  },
+  "relativeTime": {
+    "justNow": "\u521a\u521a",
+    "minutesAgo": "{{count}}\u5206\u949f\u524d",
+    "hoursAgo": "{{count}}\u5c0f\u65f6\u524d",
+    "daysAgo": "{{count}}\u5929\u524d"
+  }
+}

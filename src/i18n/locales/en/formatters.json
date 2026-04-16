@@ -1,0 +1,37 @@
+{
+  "depositStatus": {
+    "created": "Created",
+    "awaiting_proof": "Awaiting proof",
+    "proof_submitted": "Proof submitted",
+    "admin_review": "Under review",
+    "validated": "Validated",
+    "rejected": "Rejected",
+    "SUBMITTED": "Submitted",
+    "PROOF_UPLOADED": "Proof uploaded",
+    "UNDER_VERIFICATION": "Under review",
+    "VALIDATED": "Validated",
+    "REJECTED": "Rejected"
+  },
+  "paymentStatus": {
+    "SUBMITTED": "Submitted",
+    "INFO_RECEIVED": "Info received",
+    "PROCESSING": "Processing",
+    "COMPLETED": "Completed",
+    "PROOF_AVAILABLE": "Proof available",
+    "CANCELLED": "Cancelled"
+  },
+  "method": {
+    "bank_transfer": "Bank transfer",
+    "bank_cash": "Bank cash deposit",
+    "agency_cash": "Bonzini agency",
+    "om_transfer": "Orange Money (transfer)",
+    "om_withdrawal": "Orange Money (withdrawal)",
+    "mtn_transfer": "MTN Money (transfer)",
+    "mtn_withdrawal": "MTN Money (withdrawal)",
+    "wave": "Wave",
+    "ALIPAY": "Alipay",
+    "WECHAT": "WeChat",
+    "BANK_TRANSFER": "Bank transfer",
+    "CASH_COUNTER": "Cash counter"
+  }
+}

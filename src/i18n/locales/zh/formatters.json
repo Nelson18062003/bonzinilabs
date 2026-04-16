@@ -1,0 +1,37 @@
+{
+  "depositStatus": {
+    "created": "\u5df2\u521b\u5efa",
+    "awaiting_proof": "\u7b49\u5f85\u51ed\u8bc1",
+    "proof_submitted": "\u51ed\u8bc1\u5df2\u63d0\u4ea4",
+    "admin_review": "\u5ba1\u6838\u4e2d",
+    "validated": "\u5df2\u9a8c\u8bc1",
+    "rejected": "\u5df2\u62d2\u7edd",
+    "SUBMITTED": "\u5df2\u63d0\u4ea4",
+    "PROOF_UPLOADED": "\u51ed\u8bc1\u5df2\u4e0a\u4f20",
+    "UNDER_VERIFICATION": "\u5ba1\u6838\u4e2d",
+    "VALIDATED": "\u5df2\u9a8c\u8bc1",
+    "REJECTED": "\u5df2\u62d2\u7edd"
+  },
+  "paymentStatus": {
+    "SUBMITTED": "\u5df2\u63d0\u4ea4",
+    "INFO_RECEIVED": "\u4fe1\u606f\u5df2\u6536\u5230",
+    "PROCESSING": "\u5904\u7406\u4e2d",
+    "COMPLETED": "\u5df2\u5b8c\u6210",
+    "PROOF_AVAILABLE": "\u51ed\u8bc1\u53ef\u7528",
+    "CANCELLED": "\u5df2\u53d6\u6d88"
+  },
+  "method": {
+    "bank_transfer": "\u94f6\u884c\u8f6c\u8d26",
+    "bank_cash": "\u94f6\u884c\u73b0\u91d1\u5b58\u6b3e",
+    "agency_cash": "Bonzini\u4ee3\u7406",
+    "om_transfer": "Orange Money\uff08\u8f6c\u8d26\uff09",
+    "om_withdrawal": "Orange Money\uff08\u53d6\u6b3e\uff09",
+    "mtn_transfer": "MTN Money\uff08\u8f6c\u8d26\uff09",
+    "mtn_withdrawal": "MTN Money\uff08\u53d6\u6b3e\uff09",
+    "wave": "Wave",
+    "ALIPAY": "\u652f\u4ed8\u5b9d",
+    "WECHAT": "\u5fae\u4fe1",
+    "BANK_TRANSFER": "\u94f6\u884c\u8f6c\u8d26",
+    "CASH_COUNTER": "\u73b0\u91d1\u67dc\u53f0"
+  }
+}

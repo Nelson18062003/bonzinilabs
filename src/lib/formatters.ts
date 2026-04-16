@@ -1,6 +1,10 @@
-// Currency formatting
+import i18n, { t } from 'i18next';
+import { getCurrentLocale } from '@/i18n';
+
+// ── Currency formatting ─────────────────────────────────────────────────────
 export function formatCurrency(amountXAF: number): string {
-  return new Intl.NumberFormat('fr-FR', {
+  const locale = getCurrentLocale();
+  return new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -8,39 +12,40 @@ export function formatCurrency(amountXAF: number): string {
 }
 
 export function formatXAF(amount: number): string {
-  return new Intl.NumberFormat('fr-FR').format(amount);
+  return new Intl.NumberFormat(getCurrentLocale()).format(amount);
 }
 
 export function formatRMB(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat(getCurrentLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
 }
 
 export function formatCurrencyRMB(amountRMB: number): string {
-  return '¥ ' + new Intl.NumberFormat('fr-FR', {
+  return '¥ ' + new Intl.NumberFormat(getCurrentLocale(), {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amountRMB);
 }
 
-// Date formatting
+// ── Date formatting ─────────────────────────────────────────────────────────
 export function formatDate(date: string | Date, format: 'short' | 'long' | 'datetime' = 'short'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
+  const locale = getCurrentLocale();
   if (format === 'datetime') {
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   if (format === 'long') {
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
   }
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDateShort(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat(getCurrentLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -55,17 +60,17 @@ export function formatRelativeDate(date: string | Date): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "À l'instant";
-  if (diffMins < 60) return `Il y a ${diffMins} min`;
-  if (diffHours < 24) return `Il y a ${diffHours}h`;
-  if (diffDays < 7) return `Il y a ${diffDays}j`;
-  
+  if (diffMins < 1) return t('relativeTime.justNow', { ns: 'common' });
+  if (diffMins < 60) return t('relativeTime.minutesAgo', { ns: 'common', count: diffMins });
+  if (diffHours < 24) return t('relativeTime.hoursAgo', { ns: 'common', count: diffHours });
+  if (diffDays < 7) return t('relativeTime.daysAgo', { ns: 'common', count: diffDays });
+
   return formatDateShort(d);
 }
 
-// Number formatting (no currency suffix)
+// ── Number formatting ───────────────────────────────────────────────────────
 export function formatNumber(value: number, decimals: number = 0): string {
-  return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat(getCurrentLocale(), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
@@ -78,7 +83,7 @@ export function formatCompact(amount: number): string {
   return formatNumber(amount);
 }
 
-// Exchange rate display: "1 RMB = 86 XAF" or "1 XAF = 0,01167 RMB"
+// Exchange rate display
 export function formatRateXAFPerRMB(rate: number): string {
   return `${formatNumber(Math.round(rate))} XAF`;
 }
@@ -87,7 +92,7 @@ export function formatRateCNY(value: number): string {
   return `${formatNumber(Math.round(value))} CNY`;
 }
 
-// Convert XAF to RMB
+// ── Conversions ─────────────────────────────────────────────────────────────
 export function convertXAFtoRMB(amountXAF: number, rate: number = 0.01167): number {
   return Math.round(amountXAF * rate * 100) / 100;
 }
@@ -96,51 +101,22 @@ export function convertRMBtoXAF(amountRMB: number, rate: number = 85.69): number
   return Math.round(amountRMB * rate);
 }
 
-// Status labels
+// ── Status & Method labels (i18n) ───────────────────────────────────────────
 export function getDepositStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    created: 'Créé',
-    awaiting_proof: 'En attente de preuve',
-    proof_submitted: 'Preuve envoyée',
-    admin_review: 'En vérification',
-    validated: 'Validé',
-    rejected: 'Rejeté',
-    // Legacy uppercase
-    SUBMITTED: 'Soumis',
-    PROOF_UPLOADED: 'Preuve envoyée',
-    UNDER_VERIFICATION: 'En vérification',
-    VALIDATED: 'Validé',
-    REJECTED: 'Rejeté',
-  };
-  return labels[status] || status;
+  const key = `depositStatus.${status}`;
+  const translated = i18n.t(key, { ns: 'formatters' });
+  // If i18next returns the key itself, fall back to raw status
+  return translated === key ? status : translated;
 }
 
 export function getPaymentStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    SUBMITTED: 'Soumis',
-    INFO_RECEIVED: 'Infos reçues',
-    PROCESSING: 'En cours',
-    COMPLETED: 'Effectué',
-    PROOF_AVAILABLE: 'Preuve dispo',
-    CANCELLED: 'Annulé',
-  };
-  return labels[status] || status;
+  const key = `paymentStatus.${status}`;
+  const translated = i18n.t(key, { ns: 'formatters' });
+  return translated === key ? status : translated;
 }
 
 export function getMethodLabel(method: string): string {
-  const labels: Record<string, string> = {
-    bank_transfer: 'Virement bancaire',
-    bank_cash: 'Dépôt cash banque',
-    agency_cash: 'Agence Bonzini',
-    om_transfer: 'Orange Money (transfert)',
-    om_withdrawal: 'Orange Money (retrait)',
-    mtn_transfer: 'MTN Money (transfert)',
-    mtn_withdrawal: 'MTN Money (retrait)',
-    wave: 'Wave',
-    ALIPAY: 'Alipay',
-    WECHAT: 'WeChat',
-    BANK_TRANSFER: 'Virement',
-    CASH_COUNTER: 'Cash Counter',
-  };
-  return labels[method] || method;
+  const key = `method.${method}`;
+  const translated = i18n.t(key, { ns: 'formatters' });
+  return translated === key ? method : translated;
 }

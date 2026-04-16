@@ -1,0 +1,36 @@
+{
+  "loading": "Chargement...",
+  "error": "Erreur",
+  "success": "Succ\u00e8s",
+  "cancel": "Annuler",
+  "confirm": "Confirmer",
+  "save": "Enregistrer",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "back": "Retour",
+  "next": "Suivant",
+  "continue": "Continuer",
+  "close": "Fermer",
+  "search": "Rechercher",
+  "or": "ou",
+  "yes": "Oui",
+  "no": "Non",
+  "amount": "Montant",
+  "date": "Date",
+  "status": "Statut",
+  "phone": "T\u00e9l\u00e9phone",
+  "email": "Email",
+  "name": "Nom",
+  "download": "T\u00e9l\u00e9charger",
+  "currency": {
+    "xaf": "XAF",
+    "rmb": "RMB",
+    "cny": "CNY"
+  },
+  "relativeTime": {
+    "justNow": "\u00c0 l'instant",
+    "minutesAgo": "Il y a {{count}} min",
+    "hoursAgo": "Il y a {{count}}h",
+    "daysAgo": "Il y a {{count}}j"
+  }
+}
