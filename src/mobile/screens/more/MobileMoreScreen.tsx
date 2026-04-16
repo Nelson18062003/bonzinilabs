@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -138,8 +139,12 @@ export function MobileMoreScreen() {
           />
         </div>
 
-        {/* Theme Quick Toggle */}
-        <div className="px-4 py-3 border-t border-border">
+        {/* Language & Theme Quick Toggles */}
+        <div className="px-4 py-3 border-t border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{t('language', { defaultValue: 'Langue' })}</span>
+            <LanguageSwitcher />
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t('theme', { defaultValue: 'Thème' })}</span>
             <ThemeToggleCompact />
