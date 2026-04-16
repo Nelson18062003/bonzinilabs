@@ -14,6 +14,8 @@ import type {
 
 // ── Level 1: Method families ─────────────────────────────────
 
+// NOTE: These labels/descriptions are used as i18n defaultValues.
+// They serve as fallback French text when no translation key is found.
 export const methodFamilies: MethodFamilyInfo[] = [
   {
     family: 'BANK',

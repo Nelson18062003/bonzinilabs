@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
@@ -31,6 +32,7 @@ import {
 } from 'lucide-react';
 
 export function MobileDashboard() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentUser } = useAdminAuth();
@@ -138,7 +140,7 @@ export function MobileDashboard() {
           className="card-glass p-4 sm:p-5 rounded-2xl border border-primary/20 animate-kpi-entrance"
           style={{ animationDelay: '50ms', animationFillMode: 'both' }}
         >
-          <p className="text-sm text-muted-foreground">Solde plateforme</p>
+          <p className="text-sm text-muted-foreground">{t('platformBalance', { defaultValue: 'Solde plateforme' })}</p>
           <p
             className="text-2xl sm:text-3xl font-bold tracking-tight mt-1"
             style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -157,7 +159,7 @@ export function MobileDashboard() {
           {/* Sub-indicators */}
           <div className="flex items-start gap-2 sm:gap-4 mt-3 sm:mt-4 pt-3 border-t border-border/50">
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-muted-foreground">Dépôts aujourd'hui</p>
+              <p className="text-[11px] text-muted-foreground">{t('depositsToday', { defaultValue: "Dépôts aujourd'hui" })}</p>
               <p
                 className="text-sm font-semibold text-green-600 dark:text-green-400"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -166,7 +168,7 @@ export function MobileDashboard() {
               </p>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-muted-foreground">Paiements aujourd'hui</p>
+              <p className="text-[11px] text-muted-foreground">{t('paymentsToday', { defaultValue: "Paiements aujourd'hui" })}</p>
               <p
                 className="text-sm font-semibold text-red-500 dark:text-red-400"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -201,7 +203,7 @@ export function MobileDashboard() {
                   <span className="text-sm font-bold text-white">{pendingDepositCount}</span>
                 </div>
                 <p className="text-sm font-semibold text-orange-700 dark:text-orange-300 text-left">
-                  dépôt{pendingDepositCount > 1 ? 's' : ''} à valider
+                  {t('depositsToValidate', { defaultValue: 'dépôt(s) à valider', count: pendingDepositCount })}
                 </p>
                 <ChevronRight className="w-4 h-4 text-orange-600 dark:text-orange-400 ml-auto flex-shrink-0" />
               </button>
@@ -215,7 +217,7 @@ export function MobileDashboard() {
                   <span className="text-sm font-bold text-white">{pendingPaymentCount}</span>
                 </div>
                 <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 text-left">
-                  paiement{pendingPaymentCount > 1 ? 's' : ''} en attente
+                  {t('paymentsPending', { defaultValue: 'paiement(s) en attente', count: pendingPaymentCount })}
                 </p>
                 <ChevronRight className="w-4 h-4 text-purple-600 dark:text-purple-400 ml-auto flex-shrink-0" />
               </button>
@@ -229,10 +231,10 @@ export function MobileDashboard() {
           style={{ animationDelay: '150ms', animationFillMode: 'both' }}
         >
           {[
-            { icon: Plus, label: 'Dépôt', to: '/m/deposits/new', bg: 'bg-green-500/10', color: 'text-green-600 dark:text-green-400' },
-            { icon: Send, label: 'Paiement', to: '/m/payments/new', bg: 'bg-blue-500/10', color: 'text-blue-600 dark:text-blue-400' },
-            { icon: Users, label: 'Clients', to: '/m/clients', bg: 'bg-indigo-500/10', color: 'text-indigo-600 dark:text-indigo-400' },
-            { icon: BarChart3, label: 'Historique', to: '/m/more/history', bg: 'bg-amber-500/10', color: 'text-amber-600 dark:text-amber-400' },
+            { icon: Plus, label: t('deposit', { defaultValue: 'Dépôt' }), to: '/m/deposits/new', bg: 'bg-green-500/10', color: 'text-green-600 dark:text-green-400' },
+            { icon: Send, label: t('payment', { defaultValue: 'Paiement' }), to: '/m/payments/new', bg: 'bg-blue-500/10', color: 'text-blue-600 dark:text-blue-400' },
+            { icon: Users, label: t('clients', { defaultValue: 'Clients' }), to: '/m/clients', bg: 'bg-indigo-500/10', color: 'text-indigo-600 dark:text-indigo-400' },
+            { icon: BarChart3, label: t('history', { defaultValue: 'Historique' }), to: '/m/more/history', bg: 'bg-amber-500/10', color: 'text-amber-600 dark:text-amber-400' },
           ].map(({ icon: Icon, label, to, bg, color }) => (
             <button
               key={to}
@@ -267,12 +269,12 @@ export function MobileDashboard() {
             style={{ animationDelay: '250ms', animationFillMode: 'both' }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Activité récente</h3>
+              <h3 className="font-semibold">{t('recentActivity', { defaultValue: 'Activité récente' })}</h3>
               <button
                 onClick={() => navigate('/m/deposits')}
                 className="text-sm text-primary font-medium flex items-center gap-1"
               >
-                Voir tous
+                {t('viewAll', { defaultValue: 'Voir tous' })}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -338,9 +340,9 @@ export function MobileDashboard() {
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Bienvenue sur Bonzini</h3>
+              <h3 className="font-semibold text-lg">{t('welcomeToBonzini', { defaultValue: 'Bienvenue sur Bonzini' })}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Commencez par créer vos premiers clients et configurer le taux de change.
+                {t('welcomeMessage', { defaultValue: 'Commencez par créer vos premiers clients et configurer le taux de change.' })}
               </p>
             </div>
             <div className="flex gap-2 justify-center pt-2">
@@ -348,13 +350,13 @@ export function MobileDashboard() {
                 onClick={() => navigate('/m/clients/new')}
                 className="btn-primary-gradient text-sm py-2 px-4"
               >
-                Créer un client
+                {t('createClient', { defaultValue: 'Créer un client' })}
               </button>
               <button
                 onClick={() => navigate('/m/more/rates')}
                 className="px-4 py-2 rounded-lg border border-border text-sm font-medium active:scale-[0.98] transition-transform"
               >
-                Taux de change
+                {t('exchangeRate', { defaultValue: 'Taux de change' })}
               </button>
             </div>
           </div>

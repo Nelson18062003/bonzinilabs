@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "howItWorks": "Fonctionnement",
+    "pricing": "Tarifs",
+    "faq": "FAQ",
+    "cta": "Envoyer un paiement"
+  },
+  "hero": {
+    "badge": "Le paiement, c'est nous. Le business, c'est vous.",
+    "title1": "Votre fournisseur est",
+    "titleHighlight": "pay\u00e9",
+    "title2": "avant",
+    "title3": "ce soir",
+    "subtitle": "Alipay, WeChat, virement ou cash. Vous envoyez en francs CFA, votre fournisseur re\u00e7oit en yuan. Avec la <strong>preuve dans votre poche</strong>.",
+    "ctaPrimary": "Envoyer un paiement",
+    "ctaSecondary": "Voir les taux",
+    "simulator": {
+      "title": "Simulateur de paiement",
+      "youSend": "VOUS ENVOYEZ",
+      "supplierReceives": "FOURNISSEUR RE\u00c7OIT",
+      "rate": "Taux: 1M XAF = \u00a5{{rate}}",
+      "instant": "Instantan\u00e9"
+    }
+  },
+  "ticker": {
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "bankTransfer": "Virement bancaire",
+    "cashRMB": "Cash RMB",
+    "cameroon": "Cameroun",
+    "gabon": "Gabon",
+    "chad": "Tchad",
+    "car": "RCA",
+    "congo": "Congo",
+    "instantPayment": "Paiement instantan\u00e9",
+    "bestRate": "Meilleur taux",
+    "noCard": "Sans carte"
+  },
+  "stats": {
+    "countries": { "suffix": " pays", "label": "Zone CEMAC couverte" },
+    "methods": { "suffix": " modes", "label": "De paiement accept\u00e9s" },
+    "time": { "suffix": " min", "prefix": "<", "label": "Temps de traitement moyen" },
+    "fees": { "suffix": " frais", "label": "Cach\u00e9s. Jamais." }
+  },
+  "howItWorks": {
+    "sectionLabel": "Fonctionnement",
+    "title": "Quatre \u00e9tapes.",
+    "subtitle": "Cinq minutes.",
+    "steps": [
+      { "num": "01", "title": "Choisissez", "desc": "Alipay, WeChat, virement ou cash. Selon la pr\u00e9f\u00e9rence de votre fournisseur." },
+      { "num": "02", "title": "Montant", "desc": "En XAF ou en yuan. Le taux instantan\u00e9 s'affiche, optimis\u00e9 selon le volume." },
+      { "num": "03", "title": "B\u00e9n\u00e9ficiaire", "desc": "QR code, identifiant ou coordonn\u00e9es bancaires. Sauvegard\u00e9 pour la prochaine fois." },
+      { "num": "04", "title": "Instantan\u00e9", "desc": "Votre fournisseur re\u00e7oit les fonds imm\u00e9diatement. Preuve de paiement dans l'app." }
+    ]
+  },
+  "methods": {
+    "sectionLabel": "Modes de paiement",
+    "title": "Le mode que votre fournisseur pr\u00e9f\u00e8re",
+    "alipay": {
+      "name": "Alipay",
+      "tag": "Le plus populaire",
+      "desc": "QR code ou identifiant. Paiement instantan\u00e9 vers n'importe quel compte Alipay en Chine."
+    },
+    "wechat": {
+      "name": "WeChat Pay",
+      "tag": "Rapide",
+      "desc": "Via l'\u00e9cosyst\u00e8me WeChat. Id\u00e9al pour les fournisseurs qui utilisent WeChat au quotidien."
+    },
+    "bankTransfer": {
+      "name": "Virement",
+      "tag": "Gros montants",
+      "desc": "Directement sur le compte bancaire de votre fournisseur. Pour les commandes importantes."
+    },
+    "cash": {
+      "name": "Cash",
+      "tag": "Sur place",
+      "desc": "Remise en esp\u00e8ces avec signature de r\u00e9ception. Pour les fournisseurs qui pr\u00e9f\u00e8rent le cash."
+    }
+  },
+  "faq": {
+    "sectionLabel": "FAQ",
+    "title": "Vos questions",
+    "items": [
+      { "q": "Les paiements sont-ils vraiment instantan\u00e9s ?", "a": "Oui. Les paiements Alipay et WeChat sont trait\u00e9s en quelques minutes. Les virements bancaires prennent g\u00e9n\u00e9ralement quelques heures. Le cash est imm\u00e9diat." },
+      { "q": "Quel est le montant minimum ?", "a": "10 000 XAF par transaction. Pas de maximum, mais les gros montants b\u00e9n\u00e9ficient d'un meilleur taux." },
+      { "q": "Comment le taux est-il calcul\u00e9 ?", "a": "Le taux de base d\u00e9pend du mode de paiement. Un ajustement s'applique selon votre pays. Plus le montant est \u00e9lev\u00e9, meilleur est le taux." },
+      { "q": "Comment mon fournisseur sait-il qu'il a \u00e9t\u00e9 pay\u00e9 ?", "a": "Vous recevez une preuve de paiement dans l'application : capture d'\u00e9cran pour Alipay/WeChat, confirmation pour les virements, signature pour le cash." },
+      { "q": "Y a-t-il des frais cach\u00e9s ?", "a": "Aucun. Le taux affich\u00e9 est le taux final. Z\u00e9ro commission suppl\u00e9mentaire, z\u00e9ro surprise." },
+      { "q": "Dans quels pays est disponible Bonzini ?", "a": "Cameroun, Gabon, Tchad, R\u00e9publique centrafricaine et Congo." }
+    ]
+  },
+  "cta": {
+    "title": "Vos fournisseurs attendent",
+    "subtitle": "Chaque minute compte dans le commerce. Envoyez votre premier paiement maintenant.",
+    "button": "Commencer maintenant"
+  },
+  "footer": {
+    "tagline": "Paiements instantan\u00e9s vers la Chine pour les importateurs de la zone CEMAC.",
+    "product": "Produit",
+    "company": "Entreprise",
+    "support": "Support",
+    "links": {
+      "howItWorks": "Fonctionnement",
+      "pricing": "Tarifs",
+      "faq": "FAQ",
+      "security": "S\u00e9curit\u00e9",
+      "about": "\u00c0 propos",
+      "contact": "Contact",
+      "legal": "Mentions l\u00e9gales",
+      "terms": "CGU",
+      "whatsapp": "WhatsApp",
+      "emailSupport": "Email",
+      "helpCenter": "Centre d'aide"
+    },
+    "copyright": "\u00a9 2026 Bonzini. Tous droits r\u00e9serv\u00e9s."
+  }
+}

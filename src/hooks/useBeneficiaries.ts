@@ -3,6 +3,7 @@ import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
+import i18n from '@/i18n';
 
 export interface Beneficiary {
   id: string;
@@ -122,10 +123,10 @@ export function useCreateBeneficiary() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-beneficiaries'] });
-      toast.success('Bénéficiaire ajouté');
+      toast.success(i18n.t('hooks.createBeneficiary.success', { ns: 'common', defaultValue: 'Bénéficiaire ajouté' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de l\'ajout');
+      toast.error(error.message || i18n.t('hooks.createBeneficiary.error', { ns: 'common', defaultValue: "Erreur lors de l'ajout" }));
     },
   });
 }
@@ -166,7 +167,7 @@ export function useUpdateBeneficiary() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-beneficiaries'] });
-      toast.success('Bénéficiaire mis à jour');
+      toast.success(i18n.t('hooks.updateBeneficiary.success', { ns: 'common', defaultValue: 'Bénéficiaire mis à jour' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -258,10 +259,10 @@ export function useAdminCreateBeneficiary() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-client-beneficiaries'] });
-      toast.success('Bénéficiaire ajouté');
+      toast.success(i18n.t('hooks.createBeneficiary.success', { ns: 'common', defaultValue: 'Bénéficiaire ajouté' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de l\'ajout');
+      toast.error(error.message || i18n.t('hooks.createBeneficiary.error', { ns: 'common', defaultValue: "Erreur lors de l'ajout" }));
     },
   });
 }

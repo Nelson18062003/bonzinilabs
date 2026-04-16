@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Plus, Send, ChevronRight } from 'lucide-react';
@@ -10,26 +11,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  created: { label: 'Créé', color: 'bg-blue-500' },
-  waiting_beneficiary_info: { label: 'En attente', color: 'bg-yellow-500' },
-  ready_for_payment: { label: 'Prêt', color: 'bg-purple-500' },
-  cash_pending: { label: 'QR généré', color: 'bg-cyan-500' },
-  cash_scanned: { label: 'Scanné', color: 'bg-orange-500' },
-  processing: { label: 'En cours', color: 'bg-orange-500' },
-  completed: { label: 'Effectué', color: 'bg-green-500' },
-  rejected: { label: 'Refusé', color: 'bg-red-500' },
+const statusColors: Record<string, string> = {
+  created: 'bg-blue-500',
+  waiting_beneficiary_info: 'bg-yellow-500',
+  ready_for_payment: 'bg-purple-500',
+  cash_pending: 'bg-cyan-500',
+  cash_scanned: 'bg-orange-500',
+  processing: 'bg-orange-500',
+  completed: 'bg-green-500',
+  rejected: 'bg-red-500',
 };
 
 const PaymentsPage = () => {
+  const { t } = useTranslation('payments');
   const navigate = useNavigate();
   const { data: payments, isLoading } = useMyPayments();
 
   return (
     <MobileLayout>
-      <PageHeader 
-        title="Mes Paiements" 
-        subtitle="Envois vers la Chine"
+      <PageHeader
+        title={t('title')}
+        subtitle={t('subtitle')}
         rightElement={
           <button
             onClick={() => navigate('/payments/new')}
@@ -45,7 +47,7 @@ const PaymentsPage = () => {
           [1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
         ) : payments && payments.length > 0 ? (
           payments.map((payment) => {
-            const status = statusConfig[payment.status];
+            const color = statusColors[payment.status];
             return (
               <div
                 key={payment.id}
@@ -57,8 +59,8 @@ const PaymentsPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{payment.reference}</span>
-                      <Badge className={`${status?.color} text-white text-xs`}>
-                        {status?.label}
+                      <Badge className={`${color} text-white text-xs`}>
+                        {t(`status.${payment.status}`)}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mt-1">
@@ -81,12 +83,12 @@ const PaymentsPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Send className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucun paiement pour le moment</p>
+            <p className="text-muted-foreground">{t('noPayments')}</p>
             <button
               onClick={() => navigate('/payments/new')}
               className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium"
             >
-              Nouveau paiement
+              {t('newPayment')}
             </button>
           </div>
         )}

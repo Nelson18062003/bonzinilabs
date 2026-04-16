@@ -4,6 +4,7 @@
 // premium list rows, smart filters, infinite scroll
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -80,6 +81,7 @@ function SlaDot({ level }: { level: SlaLevel }) {
 // ── Main component ──────────────────────────────────────────
 
 export function MobilePaymentsScreen() {
+  const { t } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [sortKey, setSortKey] = useState('newest');
@@ -197,7 +199,7 @@ export function MobilePaymentsScreen() {
       if (error) throw error;
 
       if (!payments || payments.length === 0) {
-        toast.error('Aucun paiement en cours à exporter');
+        toast.error(t('noPaymentsToExport', { defaultValue: 'Aucun paiement en cours à exporter' }));
         return;
       }
 
@@ -232,10 +234,10 @@ export function MobilePaymentsScreen() {
         <BatchPaymentsPDF payments={entries} generatedAt={new Date()} />,
         `Paiements_en_cours_${dateStr}.pdf`,
       );
-      toast.success(`Export de ${entries.length} paiement(s) téléchargé`);
+      toast.success(t('exportDownloaded', { defaultValue: `Export de ${entries.length} paiement(s) téléchargé`, count: entries.length }));
     } catch (error) {
       console.error('Error exporting batch payments:', error);
-      toast.error('Erreur lors de l\'export');
+      toast.error(t('exportError', { defaultValue: "Erreur lors de l'export" }));
     } finally {
       setIsExporting(false);
     }
@@ -246,7 +248,7 @@ export function MobilePaymentsScreen() {
   return (
     <div className="flex flex-col min-h-full">
       <MobileHeader
-        title="Paiements"
+        title={t('payments', { defaultValue: 'Paiements' })}
         rightElement={
           <div className="flex items-center gap-2">
             <button
@@ -352,7 +354,7 @@ export function MobilePaymentsScreen() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Nom, téléphone ou référence..."
+              placeholder={t('searchNamePhoneRef', { defaultValue: 'Nom, téléphone ou référence...' })}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -587,7 +589,7 @@ export function MobilePaymentsScreen() {
         ) : (
           <MobileEmptyState
             icon={CreditCard}
-            title="Aucun paiement trouvé"
+            title={t('noPaymentFound', { defaultValue: 'Aucun paiement trouvé' })}
             description={statusFilter !== 'all' || activeFilterCount > 0 ? 'Essayez de modifier vos filtres' : 'Les paiements apparaîtront ici'}
           />
         )}

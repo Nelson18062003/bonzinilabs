@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
+import i18n from '@/i18n';
 
 export interface AdminCreatePaymentData {
   user_id: string;
@@ -78,7 +79,7 @@ export function useAdminCreatePayment() {
       };
 
       if (!response.success) {
-        throw new Error(response.error || 'Erreur lors de la création du paiement');
+        throw new Error(response.error || i18n.t('hooks.createPayment.error', { ns: 'common', defaultValue: 'Erreur lors de la création du paiement' }));
       }
 
       // Update beneficiary system fields separately (migration pending)
@@ -126,7 +127,7 @@ export function useAdminCreatePayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
-      toast.success('Paiement créé avec succès');
+      toast.success(i18n.t('hooks.createPayment.success', { ns: 'common', defaultValue: 'Paiement créé avec succès' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -152,7 +153,7 @@ export function useCancelPayment() {
 
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || "Erreur lors de l'annulation");
+        throw new Error(result.error || i18n.t('hooks.cancelPayment.error', { ns: 'common', defaultValue: "Erreur lors de l'annulation" }));
       }
 
       return result;
@@ -161,7 +162,7 @@ export function useCancelPayment() {
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
       queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
-      toast.success('Paiement annulé');
+      toast.success(i18n.t('hooks.cancelPayment.success', { ns: 'common', defaultValue: 'Paiement annulé' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -183,7 +184,7 @@ export function useDeletePaymentProof() {
 
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur lors de la suppression');
+        throw new Error(result.error || i18n.t('hooks.deleteProof.error', { ns: 'common', defaultValue: 'Erreur lors de la suppression' }));
       }
 
       return result;
@@ -191,7 +192,7 @@ export function useDeletePaymentProof() {
     onSuccess: (_) => {
       queryClient.invalidateQueries({ queryKey: ['payment-proofs'] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline'] });
-      toast.success('Preuve supprimée');
+      toast.success(i18n.t('hooks.deleteProof.success', { ns: 'common', defaultValue: 'Preuve supprimée' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -286,7 +287,7 @@ export function useAdminUpdateBeneficiaryInfo() {
       queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-      toast.success('Informations mises à jour');
+      toast.success(i18n.t('hooks.adminUpdateBeneficiary.infoUpdated', { ns: 'common', defaultValue: 'Informations mises à jour' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);

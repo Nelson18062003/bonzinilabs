@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 
 interface ScanCashPaymentResult {
   success: boolean;
@@ -41,9 +42,9 @@ export function useScanCashPayment() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-        toast.success('QR Code scanné avec succès');
+        toast.success(i18n.t('hooks.scanCashPayment.success', { ns: 'common', defaultValue: 'QR Code scanné avec succès' }));
       } else {
-        toast.error(result.error || 'Erreur lors du scan');
+        toast.error(result.error || i18n.t('hooks.scanCashPayment.error', { ns: 'common', defaultValue: 'Erreur lors du scan' }));
       }
     },
     onError: (error: Error) => {
@@ -94,9 +95,9 @@ export function useConfirmCashPayment() {
         queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
         queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
         queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
-        toast.success('Paiement cash confirmé avec succès');
+        toast.success(i18n.t('hooks.confirmCashPayment.success', { ns: 'common', defaultValue: 'Paiement cash confirmé avec succès' }));
       } else {
-        toast.error(result.error || 'Erreur lors de la confirmation');
+        toast.error(result.error || i18n.t('hooks.confirmCashPayment.error', { ns: 'common', defaultValue: 'Erreur lors de la confirmation' }));
       }
     },
     onError: (error: Error) => {

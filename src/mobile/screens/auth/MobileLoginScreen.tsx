@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { BonziniLogo } from '@/components/BonziniLogo';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 const emailSchema = z.string().email();
 
 export function MobileLoginScreen() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { login, isLoading: authLoading } = useAdminAuth();
 
@@ -40,7 +42,7 @@ export function MobileLoginScreen() {
     e.preventDefault();
     setEmailError('');
     if (!isEmailValid) {
-      setEmailError('Veuillez entrer un email valide');
+      setEmailError(t('invalidEmail', { defaultValue: 'Veuillez entrer un email valide' }));
       return;
     }
     setDirection('forward');
@@ -55,14 +57,14 @@ export function MobileLoginScreen() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        toast.success('Connexion réussie');
+        toast.success(t('loginSuccess', { defaultValue: 'Connexion réussie' }));
         setIsFadingOut(true);
         setTimeout(() => navigate('/m'), 300);
       } else {
-        setError(result.error || 'Identifiants incorrects');
+        setError(result.error || t('invalidCredentials', { defaultValue: 'Identifiants incorrects' }));
       }
     } catch {
-      setError('Une erreur est survenue');
+      setError(t('errorOccurred', { defaultValue: 'Une erreur est survenue' }));
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +116,7 @@ export function MobileLoginScreen() {
               >
                 <h1 className="text-2xl font-bold mb-1">Administration</h1>
                 <p className="text-muted-foreground text-sm">
-                  Entrez votre adresse email pour continuer
+                  {t('enterEmailToContinue', { defaultValue: 'Entrez votre adresse email pour continuer' })}
                 </p>
               </div>
 
@@ -126,7 +128,7 @@ export function MobileLoginScreen() {
                 <PremiumInput
                   id="admin-email"
                   type="email"
-                  label="Adresse email"
+                  label={t('emailAddress', { defaultValue: 'Adresse email' })}
                   value={email}
                   onChange={(val) => {
                     setEmail(val);
@@ -156,7 +158,7 @@ export function MobileLoginScreen() {
                   disabled={!email}
                   className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continuer
+                  {t('continue', { defaultValue: 'Continuer' })}
                 </button>
               </div>
             </form>
@@ -164,7 +166,7 @@ export function MobileLoginScreen() {
             <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto w-full">
               {/* Greeting */}
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-1">Bonjour,</h1>
+                <h1 className="text-2xl font-bold mb-1">{t('hello', { defaultValue: 'Bonjour,' })}</h1>
                 <p className="text-muted-foreground text-sm">
                   {maskEmail(email)}
                 </p>
@@ -175,7 +177,7 @@ export function MobileLoginScreen() {
                 <PremiumInput
                   id="admin-password"
                   type={showPassword ? 'text' : 'password'}
-                  label="Mot de passe"
+                  label={t('password', { defaultValue: 'Mot de passe' })}
                   value={password}
                   onChange={(val) => {
                     setPassword(val);
@@ -217,10 +219,10 @@ export function MobileLoginScreen() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Connexion...
+                    {t('connecting', { defaultValue: 'Connexion...' })}
                   </>
                 ) : (
-                  'Se connecter'
+                  t('signIn', { defaultValue: 'Se connecter' })
                 )}
               </button>
             </form>

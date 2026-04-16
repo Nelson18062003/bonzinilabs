@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 import { subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
 import type { DailyRate, RateAdjustment, CalculationResult } from '@/types/rates';
 
@@ -105,7 +106,7 @@ export function useCreateDailyRates() {
 
       const result = data as { success: boolean; error?: string; rate_id?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(result.error || i18n.t('hooks.createDailyRates.unknownError', { ns: 'common', defaultValue: 'Erreur inconnue' }));
       }
 
       return result;
@@ -113,10 +114,10 @@ export function useCreateDailyRates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
       queryClient.invalidateQueries({ queryKey: ['client-rates'] });
-      toast.success('Nouveaux taux appliqués');
+      toast.success(i18n.t('hooks.createDailyRates.success', { ns: 'common', defaultValue: 'Nouveaux taux appliqués' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de l\'application des taux');
+      toast.error(error.message || i18n.t('hooks.createDailyRates.error', { ns: 'common', defaultValue: "Erreur lors de l'application des taux" }));
     },
   });
 }
@@ -155,7 +156,7 @@ export function useUpdateRateAdjustment() {
 
       const result = data as { success: boolean; error?: string; key?: string; percentage?: number };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(result.error || i18n.t('hooks.updateRateAdjustment.unknownError', { ns: 'common', defaultValue: 'Erreur inconnue' }));
       }
 
       return result;
@@ -163,10 +164,10 @@ export function useUpdateRateAdjustment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rate-adjustments'] });
       queryClient.invalidateQueries({ queryKey: ['client-rates'] });
-      toast.success('Ajustement mis à jour');
+      toast.success(i18n.t('hooks.updateRateAdjustment.success', { ns: 'common', defaultValue: 'Ajustement mis à jour' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+      toast.error(error.message || i18n.t('hooks.updateRateAdjustment.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour' }));
     },
   });
 }
@@ -247,7 +248,7 @@ export function useCalculateRate() {
 
       const result = data as CalculationResult;
       if (!result.success) {
-        throw new Error(result.error || 'Erreur de calcul');
+        throw new Error(result.error || i18n.t('hooks.calculateRate.error', { ns: 'common', defaultValue: 'Erreur de calcul' }));
       }
 
       return result;

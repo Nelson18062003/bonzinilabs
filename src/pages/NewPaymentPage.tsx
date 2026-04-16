@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -39,19 +40,8 @@ type Currency = 'XAF' | 'RMB';
 type PaymentMethodType = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
 type IdentificationType = 'qr' | 'id' | 'email' | 'phone';
 
-const STEPS: { key: Step; label: string }[] = [
-  { key: 'method', label: 'Mode' },
-  { key: 'amount', label: 'Montant' },
-  { key: 'beneficiary', label: 'Bénéf.' },
-  { key: 'confirm', label: 'Résumé' },
-];
-
-const paymentMethods: { id: PaymentMethodType; label: string; description: string }[] = [
-  { id: 'alipay', label: 'Alipay', description: 'Paiement via Alipay' },
-  { id: 'wechat', label: 'WeChat Pay', description: 'Paiement via WeChat' },
-  { id: 'bank_transfer', label: 'Virement bancaire', description: 'Transfert vers compte bancaire' },
-  { id: 'cash', label: 'Cash', description: 'Retrait au bureau Bonzini' },
-];
+const STEP_KEYS: Step[] = ['method', 'amount', 'beneficiary', 'confirm'];
+const PAYMENT_METHOD_IDS: PaymentMethodType[] = ['alipay', 'wechat', 'bank_transfer', 'cash'];
 
 function toRateKey(method: PaymentMethodType | null): PaymentMethodKey {
   if (method === 'bank_transfer') return 'virement';
@@ -75,12 +65,24 @@ const QUICK_XAF = [100000, 250000, 500000, 1000000];
 const QUICK_RMB = [1000, 2500, 5000, 10000];
 
 const NewPaymentPage = () => {
+  const { t } = useTranslation('payments');
   const navigate = useNavigate();
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
   const { data: clientRatesData } = useClientRates();
   const { data: profile } = useMyProfile();
   const createPayment = useCreatePayment();
   const createBeneficiary = useCreateBeneficiary();
+
+  const STEPS: { key: Step; label: string }[] = STEP_KEYS.map((key) => ({
+    key,
+    label: t(`form.steps.${key}`),
+  }));
+
+  const paymentMethods: { id: PaymentMethodType; label: string; description: string }[] = PAYMENT_METHOD_IDS.map((id) => ({
+    id,
+    label: t(`form.methods.${id}.label`),
+    description: t(`form.methods.${id}.desc`),
+  }));
 
   const [step, setStep] = useState<Step>('method');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -196,7 +198,7 @@ const NewPaymentPage = () => {
         const filePath = `qr-codes/${Date.now()}_${compressed.name}`;
         const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(filePath, compressed);
         if (uploadError) {
-          toast.error('Erreur lors de l\'upload du QR code. Veuillez réessayer.');
+          toast.error(t('form.qrUploadError'));
           return;
         }
         qrCodeUrl = `payment-proofs/${filePath}`;
@@ -263,7 +265,7 @@ const NewPaymentPage = () => {
   // ── Step 1: Method ──
   const renderMethodStep = () => (
     <div className="animate-fade-in space-y-4">
-      <p className="text-sm text-muted-foreground mb-4">Comment votre bénéficiaire souhaite recevoir ?</p>
+      <p className="text-sm text-muted-foreground mb-4">{t('form.howToReceive')}</p>
       {paymentMethods.map((method) => (
         <PaymentMethodCard
           key={method.id}
@@ -282,23 +284,23 @@ const NewPaymentPage = () => {
     <div className="animate-fade-in space-y-6">
       {showRate && (
         <div className="card-glass p-4 text-center">
-          <p className="text-sm text-muted-foreground mb-1">Taux appliqué</p>
+          <p className="text-sm text-muted-foreground mb-1">{t('form.rateApplied')}</p>
           <p className="text-lg font-bold text-foreground">1 000 000 XAF = ¥{formatRMB(1000000 * rate)}</p>
         </div>
       )}
 
       <Tabs value={currency} onValueChange={(v) => { setCurrency(v as Currency); setInputAmount(''); }}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="XAF">Par XAF</TabsTrigger>
-          <TabsTrigger value="RMB">Par RMB</TabsTrigger>
+          <TabsTrigger value="XAF">{t('form.byXAF')}</TabsTrigger>
+          <TabsTrigger value="RMB">{t('form.byRMB')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="card-primary p-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-primary-foreground/70 text-sm">{currency === 'XAF' ? 'Vous envoyez' : 'Bénéficiaire reçoit'}</span>
+          <span className="text-primary-foreground/70 text-sm">{currency === 'XAF' ? t('form.youSend') : t('form.supplierReceives')}</span>
           {!walletLoading && wallet && (
-            <span className="text-primary-foreground/70 text-sm">Solde: {formatXAF(wallet.balance_xaf)} XAF</span>
+            <span className="text-primary-foreground/70 text-sm">{t('form.balance')}: {formatXAF(wallet.balance_xaf)} XAF</span>
           )}
         </div>
         <div className="flex items-center justify-center gap-2 mb-4">
@@ -311,7 +313,7 @@ const NewPaymentPage = () => {
           <ArrowRightLeft className="w-5 h-5 text-primary-foreground/50" />
         </div>
         <div className="text-center">
-          <span className="text-primary-foreground/70 text-sm">{currency === 'XAF' ? 'Bénéficiaire reçoit' : 'Montant débité'}</span>
+          <span className="text-primary-foreground/70 text-sm">{currency === 'XAF' ? t('form.supplierReceives') : t('form.amountDebited')}</span>
           <p className="text-3xl font-bold text-primary-foreground mt-1">
             {currency === 'XAF'
               ? `¥${formatRMB(amountRMB)}`
@@ -334,8 +336,8 @@ const NewPaymentPage = () => {
         <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <div className="flex-1">
-            <span>Solde insuffisant.</span>
-            <button onClick={() => navigate('/deposits/new')} className="ml-1 underline font-medium">Ajouter de l'argent</button>
+            <span>{t('form.insufficientBalance')}</span>
+            <button onClick={() => navigate('/deposits/new')} className="ml-1 underline font-medium">{t('form.addFunds')}</button>
           </div>
         </div>
       )}
@@ -351,19 +353,19 @@ const NewPaymentPage = () => {
     return (
       <div className="animate-fade-in space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">{isCash ? 'Qui va récupérer le cash ?' : 'Informations du bénéficiaire'}</h2>
+          <h2 className="text-lg font-semibold">{isCash ? t('form.beneficiary.whoPicks') : t('form.beneficiary.title')}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {isCash ? 'Cette personne devra présenter le QR Code au bureau Bonzini.' : 'Sélectionnez un bénéficiaire existant ou créez-en un nouveau.'}
+            {isCash ? t('form.beneficiary.mustPresentQr') : t('form.beneficiary.selectOrCreate')}
           </p>
         </div>
 
         <div className="flex gap-1 bg-muted rounded-lg p-1">
           <button onClick={() => setBeneficiaryTab('existing')}
             className={cn('flex-1 h-9 rounded-md text-sm font-medium transition-colors',
-              beneficiaryTab === 'existing' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}>Existant</button>
+              beneficiaryTab === 'existing' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}>{t('form.beneficiary.existing')}</button>
           <button onClick={() => setBeneficiaryTab('new')}
             className={cn('flex-1 h-9 rounded-md text-sm font-medium transition-colors',
-              beneficiaryTab === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}>Nouveau</button>
+              beneficiaryTab === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}>{t('form.beneficiary.new')}</button>
         </div>
 
         {beneficiaryTab === 'existing' ? (
@@ -371,8 +373,8 @@ const NewPaymentPage = () => {
             {!existingBeneficiaries || existingBeneficiaries.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <User className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Aucun bénéficiaire enregistré</p>
-                <button onClick={() => setBeneficiaryTab('new')} className="mt-2 text-sm text-primary font-medium">Créer un nouveau</button>
+                <p className="text-sm">{t('form.beneficiary.noneRegistered')}</p>
+                <button onClick={() => setBeneficiaryTab('new')} className="mt-2 text-sm text-primary font-medium">{t('form.beneficiary.createNew')}</button>
               </div>
             ) : existingBeneficiaries.map((b) => (
               <button key={b.id} onClick={() => setSelectedBeneficiary(selectedBeneficiary?.id === b.id ? null : b)}
@@ -399,7 +401,7 @@ const NewPaymentPage = () => {
                       cashBenefType === 'self' ? 'border-[#dc2626] bg-red-50/50' : 'border-border hover:border-primary/50')}>
                     <User className="w-5 h-5 text-muted-foreground" />
                     <div className="flex-1 text-left">
-                      <p className="font-medium">Moi-même</p>
+                      <p className="font-medium">{t('form.beneficiary.myself')}</p>
                       {profile && <p className="text-xs text-muted-foreground">{profile.first_name} {profile.last_name}</p>}
                     </div>
                   </button>
@@ -407,18 +409,18 @@ const NewPaymentPage = () => {
                     className={cn('w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all',
                       cashBenefType === 'other' ? 'border-[#dc2626] bg-red-50/50' : 'border-border hover:border-primary/50')}>
                     <User className="w-5 h-5 text-muted-foreground" />
-                    <div className="text-left"><p className="font-medium">Une autre personne</p><p className="text-xs text-muted-foreground">Indiquez ses coordonnées</p></div>
+                    <div className="text-left"><p className="font-medium">{t('form.beneficiary.anotherPerson')}</p><p className="text-xs text-muted-foreground">{t('form.beneficiary.provideDetails')}</p></div>
                   </button>
                 </div>
                 {cashBenefType === 'other' && (
                   <div className="space-y-3 p-4 rounded-xl bg-muted/50">
-                    <div><label className="text-sm font-medium mb-1 block">Nom complet *</label>
-                      <input type="text" value={newBenefName} onChange={(e) => setNewBenefName(e.target.value)} placeholder="Nom du bénéficiaire"
+                    <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.fullNameRequired')}</label>
+                      <input type="text" value={newBenefName} onChange={(e) => setNewBenefName(e.target.value)} placeholder={t('form.beneficiaryName')}
                         className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-                    <div><label className="text-sm font-medium mb-1 block">Téléphone *</label>
+                    <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.phoneRequired')}</label>
                       <input type="tel" value={newBenefPhone} onChange={(e) => setNewBenefPhone(e.target.value)} placeholder="+86..."
                         className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-                    <div><label className="text-sm font-medium mb-1 block">Email (optionnel)</label>
+                    <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.emailOptional')}</label>
                       <input type="email" value={newBenefEmail} onChange={(e) => setNewBenefEmail(e.target.value)} placeholder="email@exemple.com"
                         className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
                   </div>
@@ -439,26 +441,26 @@ const NewPaymentPage = () => {
                     <label className="block w-full h-24 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleQrFileChange} className="hidden" />
                       <div className="h-full flex flex-col items-center justify-center gap-2">
-                        <Upload className="w-6 h-6 text-muted-foreground" /><p className="text-sm text-muted-foreground">Ajouter le QR code</p>
+                        <Upload className="w-6 h-6 text-muted-foreground" /><p className="text-sm text-muted-foreground">{t('form.beneficiary.addQrCode')}</p>
                       </div>
                     </label>
                   )}
                 </div>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Ou renseignez les infos</span></div>
+                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">{t('form.beneficiary.orProvideInfo')}</span></div>
                 </div>
-                <div><label className="text-sm font-medium mb-1 block">Nom du bénéficiaire</label>
-                  <input type="text" value={newBenefName} onChange={(e) => setNewBenefName(e.target.value)} placeholder="Nom complet"
+                <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiaryName')}</label>
+                  <input type="text" value={newBenefName} onChange={(e) => setNewBenefName(e.target.value)} placeholder={t('form.beneficiary.fullName')}
                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Type d'identification</label>
+                  <label className="text-sm font-medium mb-2 block">{t('form.beneficiary.idType')}</label>
                   <div className="grid grid-cols-4 gap-2">
                     {([
-                      { key: 'qr' as const, icon: QrCode, label: 'QR' },
-                      { key: 'id' as const, icon: CreditCard, label: 'ID' },
-                      { key: 'email' as const, icon: Mail, label: 'Email' },
-                      { key: 'phone' as const, icon: Phone, label: 'Tél.' },
+                      { key: 'qr' as const, icon: QrCode, label: t('form.beneficiary.idTypes.qr') },
+                      { key: 'id' as const, icon: CreditCard, label: t('form.beneficiary.idTypes.id') },
+                      { key: 'email' as const, icon: Mail, label: t('form.beneficiary.idTypes.email') },
+                      { key: 'phone' as const, icon: Phone, label: t('form.beneficiary.idTypes.phone') },
                     ]).map((t) => (
                       <button key={t.key} onClick={() => setNewBenefIdType(t.key)}
                         className={cn('flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-colors',
@@ -470,10 +472,10 @@ const NewPaymentPage = () => {
                 </div>
                 {newBenefIdType !== 'qr' && (
                   <div><label className="text-sm font-medium mb-1 block">
-                    {newBenefIdType === 'id' ? 'Identifiant' : newBenefIdType === 'email' ? 'Email' : 'Téléphone'}</label>
+                    {newBenefIdType === 'id' ? t('form.beneficiaryId') : newBenefIdType === 'email' ? 'Email' : t('form.beneficiary.phoneLabel')}</label>
                     <input type={newBenefIdType === 'email' ? 'email' : newBenefIdType === 'phone' ? 'tel' : 'text'}
                       value={newBenefIdentifier} onChange={(e) => setNewBenefIdentifier(e.target.value)}
-                      placeholder={newBenefIdType === 'id' ? 'ID Alipay/WeChat' : newBenefIdType === 'email' ? 'email@exemple.com' : '+86...'}
+                      placeholder={newBenefIdType === 'id' ? t('form.beneficiary.alipayWechatId') : newBenefIdType === 'email' ? 'email@exemple.com' : '+86...'}
                       className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
                 )}
               </>
@@ -481,17 +483,17 @@ const NewPaymentPage = () => {
 
             {isBankTransfer && (
               <>
-                <div><label className="text-sm font-medium mb-1 block">Nom du bénéficiaire *</label>
-                  <input type="text" value={newBenefName} onChange={(e) => setNewBenefName(e.target.value)} placeholder="Nom complet"
+                <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.nameRequired')}</label>
+                  <input type="text" value={newBenefName} onChange={(e) => setNewBenefName(e.target.value)} placeholder={t('form.beneficiary.fullName')}
                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-                <div><label className="text-sm font-medium mb-1 block">Banque *</label>
-                  <input type="text" value={newBenefBankName} onChange={(e) => setNewBenefBankName(e.target.value)} placeholder="Nom de la banque"
+                <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.bankRequired')}</label>
+                  <input type="text" value={newBenefBankName} onChange={(e) => setNewBenefBankName(e.target.value)} placeholder={t('form.beneficiary.bankName')}
                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-                <div><label className="text-sm font-medium mb-1 block">Numéro de compte *</label>
-                  <input type="text" value={newBenefBankAccount} onChange={(e) => setNewBenefBankAccount(e.target.value)} placeholder="Numéro de compte"
+                <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.accountRequired')}</label>
+                  <input type="text" value={newBenefBankAccount} onChange={(e) => setNewBenefBankAccount(e.target.value)} placeholder={t('form.beneficiary.accountNumber')}
                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-                <div><label className="text-sm font-medium mb-1 block">Infos complémentaires</label>
-                  <input type="text" value={newBenefBankExtra} onChange={(e) => setNewBenefBankExtra(e.target.value)} placeholder="SWIFT, agence, etc."
+                <div><label className="text-sm font-medium mb-1 block">{t('form.beneficiary.additionalInfo')}</label>
+                  <input type="text" value={newBenefBankExtra} onChange={(e) => setNewBenefBankExtra(e.target.value)} placeholder={t('form.beneficiary.swiftAgency')}
                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary" /></div>
               </>
             )}
@@ -501,7 +503,7 @@ const NewPaymentPage = () => {
         {!isCash && (
           <button onClick={() => { setSkipBeneficiary(true); setStep('confirm'); }}
             className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors">
-            Ajouter plus tard
+            {t('form.beneficiary.addLater')}
           </button>
         )}
       </div>
@@ -518,50 +520,50 @@ const NewPaymentPage = () => {
       <div className="animate-fade-in space-y-6">
         <div className="card-elevated p-6 text-center">
           <div className="flex justify-center mb-4"><PaymentMethodLogo method={selectedMethod || 'alipay'} size={64} /></div>
-          <p className="text-sm text-muted-foreground">Vous envoyez</p>
+          <p className="text-sm text-muted-foreground">{t('form.youSend')}</p>
           <p className="text-3xl font-bold text-foreground mb-1">¥{formatRMB(amountRMB)}</p>
           <p className="text-sm text-muted-foreground">({formatXAF(amountXAF)} XAF)</p>
         </div>
 
         <div className="card-elevated p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Méthode</span><span className="font-medium">{methodInfo?.label}</span>
+            <span className="text-muted-foreground">{t('form.confirm.method')}</span><span className="font-medium">{methodInfo?.label}</span>
           </div>
           {showRate && (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Taux</span><span className="font-medium">1M XAF = ¥{formatRMB(1000000 * rate)}</span>
+              <span className="text-muted-foreground">{t('form.rate')}</span><span className="font-medium">1M XAF = ¥{formatRMB(1000000 * rate)}</span>
             </div>
           )}
           {benefSnapshot?.name && (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Bénéficiaire</span><span className="font-medium">{benefSnapshot.name as string}</span>
+              <span className="text-muted-foreground">{t('form.confirm.beneficiary')}</span><span className="font-medium">{benefSnapshot.name as string}</span>
             </div>
           )}
           <div className="flex items-center justify-between pt-3 border-t border-border">
-            <span className="font-semibold">Montant débité</span><span className="font-bold">{formatXAF(amountXAF)} XAF</span>
+            <span className="font-semibold">{t('form.confirm.amountDebited')}</span><span className="font-bold">{formatXAF(amountXAF)} XAF</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Nouveau solde</span><span className="font-medium">{formatXAF(balanceAfter)} XAF</span>
+            <span className="text-muted-foreground">{t('form.confirm.newBalance')}</span><span className="font-medium">{formatXAF(balanceAfter)} XAF</span>
           </div>
         </div>
 
         {!hasBenef && selectedMethod !== 'cash' && (
           <div className="flex items-center gap-2 p-3 rounded-xl bg-yellow-500/10 text-yellow-600 text-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>Vous pourrez ajouter les informations du bénéficiaire après la création.</span>
+            <span>{t('form.confirm.beneficiaryLater')}</span>
           </div>
         )}
-        <p className="text-xs text-center text-muted-foreground">En confirmant, {formatXAF(amountXAF)} XAF seront débités de votre solde.</p>
+        <p className="text-xs text-center text-muted-foreground">{t('form.confirm.debitNotice', { amount: `${formatXAF(amountXAF)} XAF` })}</p>
       </div>
     );
   };
 
   const getFooterButton = () => {
     switch (step) {
-      case 'method': return { label: 'Continuer', disabled: !selectedMethod, onClick: () => setStep('amount') };
-      case 'amount': return { label: 'Continuer', disabled: !isValidAmount || !hasEnoughBalance, onClick: () => setStep('beneficiary') };
-      case 'beneficiary': return { label: 'Continuer', disabled: false, onClick: () => { setSkipBeneficiary(false); setStep('confirm'); } };
-      case 'confirm': return { label: createPayment.isPending ? 'Création...' : 'Confirmer le paiement', disabled: createPayment.isPending, onClick: handleSubmit, isSubmit: true };
+      case 'method': return { label: t('form.continue'), disabled: !selectedMethod, onClick: () => setStep('amount') };
+      case 'amount': return { label: t('form.continue'), disabled: !isValidAmount || !hasEnoughBalance, onClick: () => setStep('beneficiary') };
+      case 'beneficiary': return { label: t('form.continue'), disabled: false, onClick: () => { setSkipBeneficiary(false); setStep('confirm'); } };
+      case 'confirm': return { label: createPayment.isPending ? t('form.submitting') : t('form.submit'), disabled: createPayment.isPending, onClick: handleSubmit, isSubmit: true };
     }
   };
 
@@ -569,7 +571,7 @@ const NewPaymentPage = () => {
 
   return (
     <MobileLayout showNav={false}>
-      <PageHeader title="Nouveau paiement" showBack
+      <PageHeader title={t('newPayment')} showBack
         onBack={() => { const idx = currentStepIndex; if (idx > 0) setStep(STEPS[idx - 1].key); else navigate('/payments'); }} />
 
       <div className="px-4 py-2">

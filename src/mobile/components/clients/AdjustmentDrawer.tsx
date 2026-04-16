@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateAdjustment } from '@/hooks/useClientManagement';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export function AdjustmentDrawer({
   currentBalance,
   onSuccess,
 }: AdjustmentDrawerProps) {
+  const { t } = useTranslation('common');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
 
@@ -90,12 +92,12 @@ export function AdjustmentDrawer({
             {isDebit ? (
               <>
                 <MinusCircle className="w-5 h-5 text-red-500" />
-                Débit manuel
+                {t('manualDebit', { defaultValue: 'Débit manuel' })}
               </>
             ) : (
               <>
                 <PlusCircle className="w-5 h-5 text-green-500" />
-                Crédit manuel
+                {t('manualCredit', { defaultValue: 'Crédit manuel' })}
               </>
             )}
           </DrawerTitle>
@@ -104,13 +106,13 @@ export function AdjustmentDrawer({
         <div className="px-4 pb-4 space-y-4">
           {/* Current Balance */}
           <div className="bg-muted rounded-lg p-3">
-            <p className="text-sm text-muted-foreground">Solde actuel</p>
+            <p className="text-sm text-muted-foreground">{t('currentBalance', { defaultValue: 'Solde actuel' })}</p>
             <p className="text-xl font-bold">{formatCurrency(currentBalance)}</p>
           </div>
 
           {/* Amount Input */}
           <div>
-            <Label htmlFor="amount">Montant (XAF) *</Label>
+            <Label htmlFor="amount">{t('amountXAF', { defaultValue: 'Montant (XAF)' })} *</Label>
             <div className="relative mt-1.5">
               <Input
                 id="amount"
@@ -140,11 +142,11 @@ export function AdjustmentDrawer({
                 {isInsufficientBalance ? (
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
-                    Solde insuffisant
+                    {t('insufficientBalance', { defaultValue: 'Solde insuffisant' })}
                   </div>
                 ) : (
                   <span>
-                    Nouveau solde: {formatCurrency(currentBalance - amountNumber)}
+                    {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance - amountNumber)}
                   </span>
                 )}
               </div>
@@ -152,23 +154,23 @@ export function AdjustmentDrawer({
 
             {!isDebit && amountNumber > 0 && (
               <p className="mt-2 text-sm text-muted-foreground">
-                Nouveau solde: {formatCurrency(currentBalance + amountNumber)}
+                {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance + amountNumber)}
               </p>
             )}
           </div>
 
           {/* Reason Input */}
           <div>
-            <Label htmlFor="reason">Motif *</Label>
+            <Label htmlFor="reason">{t('reason', { defaultValue: 'Motif' })} *</Label>
             <Textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Décrivez la raison de cet ajustement..."
+              placeholder={t('adjustmentReasonPlaceholder', { defaultValue: 'Décrivez la raison de cet ajustement...' })}
               className="mt-1.5 min-h-[100px]"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Le motif sera enregistré dans l'historique et visible par le client.
+              {t('reasonRecordedNote', { defaultValue: "Le motif sera enregistré dans l'historique et visible par le client." })}
             </p>
           </div>
 
@@ -176,7 +178,7 @@ export function AdjustmentDrawer({
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-amber-800">
-              Cette action sera enregistrée avec votre nom et ne peut pas être annulée.
+              {t('actionCannotBeUndone', { defaultValue: 'Cette action sera enregistrée avec votre nom et ne peut pas être annulée.' })}
             </p>
           </div>
         </div>
@@ -195,16 +197,16 @@ export function AdjustmentDrawer({
             {createAdjustmentMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Traitement...
+                {t('processing', { defaultValue: 'Traitement...' })}
               </>
             ) : (
               <>
-                {isDebit ? 'Débiter' : 'Créditer'} {amountNumber > 0 && formatCurrency(amountNumber)}
+                {isDebit ? t('debit', { defaultValue: 'Débiter' }) : t('credit', { defaultValue: 'Créditer' })} {amountNumber > 0 && formatCurrency(amountNumber)}
               </>
             )}
           </Button>
           <Button variant="outline" onClick={handleClose}>
-            Annuler
+            {t('cancel', { defaultValue: 'Annuler' })}
           </Button>
         </DrawerFooter>
       </DrawerContent>

@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   ChevronRight,
@@ -18,60 +19,56 @@ import {
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
   const { data: profile, isLoading } = useMyProfile();
   const navigate = useNavigate();
+  const { t } = useTranslation('client');
 
   const handleLogout = async () => {
     await signOut();
-    toast.success('Déconnexion réussie');
+    toast.success(t('profile.logoutSuccess'));
     navigate('/auth', { replace: true });
   };
 
   const menuItems = [
     {
       icon: Bell,
-      label: 'Notifications',
-      description: 'Gérer vos alertes',
+      label: t('profile.notifications'),
+      description: t('profile.notificationsDesc'),
       onClick: () => navigate('/notifications')
     },
     {
       icon: Shield,
-      label: 'Sécurité',
-      description: 'Mot de passe, 2FA',
-      onClick: () => toast.info('Fonctionnalité bientôt disponible')
+      label: t('profile.security'),
+      description: t('profile.securityDesc'),
+      onClick: () => toast.info(t('profile.comingSoon'))
     },
     {
       icon: Smartphone,
-      label: 'Appareils connectés',
-      description: '2 appareils',
-      onClick: () => toast.info('Fonctionnalité bientôt disponible')
-    },
-    {
-      icon: Globe,
-      label: 'Langue',
-      description: 'Français',
-      onClick: () => toast.info('Fonctionnalité bientôt disponible')
+      label: t('profile.devices'),
+      description: t('profile.devicesDesc'),
+      onClick: () => toast.info(t('profile.comingSoon'))
     },
     {
       icon: FileText,
-      label: 'Documents',
-      description: 'KYC, Pièces justificatives',
-      onClick: () => toast.info('Fonctionnalité bientôt disponible')
+      label: t('profile.documents'),
+      description: t('profile.documentsDesc'),
+      onClick: () => toast.info(t('profile.comingSoon'))
     },
     {
       icon: HelpCircle,
-      label: 'Aide & Support',
-      description: 'FAQ, Contact',
-      onClick: () => toast.info('Fonctionnalité bientôt disponible')
+      label: t('profile.helpSupport'),
+      description: t('profile.helpSupportDesc'),
+      onClick: () => toast.info(t('profile.comingSoon'))
     },
   ];
 
   return (
     <MobileLayout>
-      <PageHeader title="Profil" />
+      <PageHeader title={t('profile.title')} />
       
       <div className="px-4 py-4">
         {/* Profile Card */}
@@ -124,15 +121,30 @@ const ProfilePage = () => {
           ))}
         </div>
         
-        {/* Theme Section */}
+        {/* Language Section */}
         <div className="mt-6 p-4 bg-card rounded-2xl border border-border/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                <Globe className="w-5 h-5 text-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{t('profile.language')}</p>
+              </div>
+            </div>
+            <LanguageSwitcher />
+          </div>
+        </div>
+
+        {/* Theme Section */}
+        <div className="mt-4 p-4 bg-card rounded-2xl border border-border/30">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
               <Palette className="w-5 h-5 text-foreground" />
             </div>
             <div>
-              <p className="font-medium text-foreground">Apparence</p>
-              <p className="text-xs text-muted-foreground">Thème de l'application</p>
+              <p className="font-medium text-foreground">{t('profile.appearance')}</p>
+              <p className="text-xs text-muted-foreground">{t('profile.appearanceDesc')}</p>
             </div>
           </div>
           <ThemeToggle />
@@ -147,12 +159,12 @@ const ProfilePage = () => {
           <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
             <LogOut className="w-5 h-5 text-destructive" />
           </div>
-          <span className="font-medium text-destructive">Se déconnecter</span>
+          <span className="font-medium text-destructive">{t('profile.logout')}</span>
         </button>
         
         {/* App Version */}
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Bonzini v1.0.0 • Fait avec 💜 au Cameroun
+          {t('profile.version')}
         </p>
       </div>
     </MobileLayout>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCreateClient } from '@/hooks/useClientManagement';
 import { Loader2, Check, Copy } from 'lucide-react';
@@ -14,7 +15,7 @@ const G = '#F3A745'; // gold
 const O = '#FE560D'; // orange
 const GR = '#34d399'; // green
 
-const t = {
+const theme = {
   bg: '#f8f6fa',
   card: '#ffffff',
   text: '#1a1028',
@@ -99,18 +100,18 @@ const baseInputStyle: React.CSSProperties = {
   borderRadius: 12,
   fontSize: 17,
   fontWeight: 600,
-  color: t.text,
+  color: theme.text,
   fontFamily: "'DM Sans', sans-serif",
   outline: 'none',
   boxSizing: 'border-box',
   transition: 'border-color 0.2s',
-  background: t.inputBg,
+  background: theme.inputBg,
 };
 
 const labelStyle: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 700,
-  color: t.text,
+  color: theme.text,
   marginBottom: 6,
   display: 'block',
 };
@@ -118,11 +119,12 @@ const labelStyle: React.CSSProperties = {
 const optStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 500,
-  color: t.dim,
+  color: theme.dim,
   marginLeft: 4,
 };
 
 export function MobileCreateClient() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const createClientMutation = useCreateClient();
 
@@ -196,7 +198,7 @@ export function MobileCreateClient() {
 
   const inputStyle = (fieldName: string): React.CSSProperties => ({
     ...baseInputStyle,
-    border: `1.5px solid ${focusedField === fieldName ? V : t.border}`,
+    border: `1.5px solid ${focusedField === fieldName ? V : theme.border}`,
   });
 
   // ── ÉCRAN SUCCÈS ──────────────────────────────────────────
@@ -204,8 +206,8 @@ export function MobileCreateClient() {
     return (
       <div style={{
         height: '100dvh', display: 'flex', flexDirection: 'column',
-        background: t.bg, maxWidth: 560, margin: '0 auto',
-        fontFamily: "'DM Sans', sans-serif", color: t.text, overflow: 'hidden',
+        background: theme.bg, maxWidth: 560, margin: '0 auto',
+        fontFamily: "'DM Sans', sans-serif", color: theme.text, overflow: 'hidden',
       }}>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
@@ -220,36 +222,36 @@ export function MobileCreateClient() {
             }}>
               <Check size={32} color={GR} />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>Client créé avec succès</div>
-            <div style={{ fontSize: 14, color: t.sub, marginTop: 4 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: theme.text }}>{t('clientCreatedSuccess', { defaultValue: 'Client créé avec succès' })}</div>
+            <div style={{ fontSize: 14, color: theme.sub, marginTop: 4 }}>
               {form.prenom} {form.nom} peut maintenant se connecter
             </div>
           </div>
 
           {/* Mot de passe temporaire */}
           <div style={{
-            background: t.card, border: `1px solid ${t.border}`,
+            background: theme.card, border: `1px solid ${theme.border}`,
             borderRadius: 14, padding: 16, marginBottom: 16,
           }}>
-            <div style={{ fontSize: 13, color: t.sub, marginBottom: 8 }}>Mot de passe temporaire</div>
+            <div style={{ fontSize: 13, color: theme.sub, marginBottom: 8 }}>{t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}</div>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: t.bg, borderRadius: 10, padding: '14px 16px',
+              background: theme.bg, borderRadius: 10, padding: '14px 16px',
             }}>
-              <code style={{ fontSize: 18, fontWeight: 700, color: t.text, letterSpacing: '0.04em' }}>
+              <code style={{ fontSize: 18, fontWeight: 700, color: theme.text, letterSpacing: '0.04em' }}>
                 {tempPassword}
               </code>
               <button
                 onClick={handleCopyPassword}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
               >
-                {passwordCopied ? <Check size={20} color={GR} /> : <Copy size={20} color={t.sub} />}
+                {passwordCopied ? <Check size={20} color={GR} /> : <Copy size={20} color={theme.sub} />}
               </button>
             </div>
             <div style={{
               marginTop: 10, padding: '10px 12px', borderRadius: 10,
               background: `${G}10`, border: `1px solid ${G}20`,
-              fontSize: 12, color: t.sub, lineHeight: 1.5,
+              fontSize: 12, color: theme.sub, lineHeight: 1.5,
             }}>
               Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.
             </div>
@@ -266,18 +268,18 @@ export function MobileCreateClient() {
                 cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
               }}
             >
-              Voir la fiche client
+              {t('viewClientProfile', { defaultValue: 'Voir la fiche client' })}
             </button>
             <button
               onClick={() => navigate('/m/clients')}
               style={{
                 padding: '17px 0', borderRadius: 12,
-                background: 'none', border: `1px solid ${t.border}`,
-                fontSize: 15, fontWeight: 700, color: t.sub,
+                background: 'none', border: `1px solid ${theme.border}`,
+                fontSize: 15, fontWeight: 700, color: theme.sub,
                 cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
               }}
             >
-              Retour à la liste
+              {t('backToList', { defaultValue: 'Retour à la liste' })}
             </button>
           </div>
         </div>
@@ -289,25 +291,25 @@ export function MobileCreateClient() {
   return (
     <div style={{
       height: '100dvh', display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', background: t.bg, maxWidth: 560, margin: '0 auto',
-      fontFamily: "'DM Sans', sans-serif", color: t.text,
+      overflow: 'hidden', background: theme.bg, maxWidth: 560, margin: '0 auto',
+      fontFamily: "'DM Sans', sans-serif", color: theme.text,
     }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
       {/* HEADER — fixe, ne scroll pas */}
       <div style={{
-        flexShrink: 0, background: t.card,
-        borderBottom: `1px solid ${t.border}`,
+        flexShrink: 0, background: theme.card,
+        borderBottom: `1px solid ${theme.border}`,
         padding: '14px 20px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
           <span
             onClick={() => navigate('/m/clients')}
-            style={{ fontSize: 22, color: t.sub, cursor: 'pointer', marginRight: 14, fontWeight: 300 }}
+            style={{ fontSize: 22, color: theme.sub, cursor: 'pointer', marginRight: 14, fontWeight: 300 }}
           >
             ‹
           </span>
-          <span style={{ fontSize: 15, fontWeight: 800, color: t.text }}>Nouveau client</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: theme.text }}>{t('newClient', { defaultValue: 'Nouveau client' })}</span>
         </div>
 
         {/* Barre de progression 3 segments */}
@@ -316,13 +318,13 @@ export function MobileCreateClient() {
             <div key={s.num} style={{ flex: 1 }}>
               <div style={{
                 height: 3, borderRadius: 2,
-                background: step >= s.num ? V : t.border,
+                background: step >= s.num ? V : theme.border,
                 transition: 'background 0.3s',
               }} />
               <div style={{
                 fontSize: 10,
                 fontWeight: step === s.num ? 800 : 500,
-                color: step === s.num ? V : t.dim,
+                color: step === s.num ? V : theme.dim,
                 marginTop: 5, textAlign: 'center',
               }}>
                 {s.num}. {s.label}
@@ -342,11 +344,11 @@ export function MobileCreateClient() {
         {/* ── ÉTAPE 1 : IDENTITÉ ─────────────────────────── */}
         {step === 1 && (
           <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: t.text, marginBottom: 4 }}>
-              Qui est votre client ?
+            <div style={{ fontSize: 24, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
+              {t('whoIsYourClient', { defaultValue: 'Qui est votre client ?' })}
             </div>
-            <div style={{ fontSize: 14, color: t.sub, marginBottom: 28, lineHeight: 1.4 }}>
-              Prénom, nom et entreprise
+            <div style={{ fontSize: 14, color: theme.sub, marginBottom: 28, lineHeight: 1.4 }}>
+              {t('firstNameLastNameCompany', { defaultValue: 'Prénom, nom et entreprise' })}
             </div>
 
             <div style={{ marginBottom: 22 }}>
@@ -399,11 +401,11 @@ export function MobileCreateClient() {
         {/* ── ÉTAPE 2 : CONTACT ──────────────────────────── */}
         {step === 2 && (
           <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: t.text, marginBottom: 4 }}>
-              Comment le joindre ?
+            <div style={{ fontSize: 24, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
+              {t('howToReachClient', { defaultValue: 'Comment le joindre ?' })}
             </div>
-            <div style={{ fontSize: 14, color: t.sub, marginBottom: 28, lineHeight: 1.4 }}>
-              WhatsApp, email et localisation
+            <div style={{ fontSize: 14, color: theme.sub, marginBottom: 28, lineHeight: 1.4 }}>
+              {t('whatsappEmailLocation', { defaultValue: 'WhatsApp, email et localisation' })}
             </div>
 
             {/* WhatsApp avec sélecteur de code pays */}
@@ -418,11 +420,11 @@ export function MobileCreateClient() {
                   style={{
                     padding: '14px 12px',
                     borderRadius: 12,
-                    border: `1.5px solid ${t.border}`,
-                    background: t.inputBg,
+                    border: `1.5px solid ${theme.border}`,
+                    background: theme.inputBg,
                     fontSize: 15,
                     fontWeight: 600,
-                    color: t.text,
+                    color: theme.text,
                     fontFamily: "'DM Sans', sans-serif",
                     cursor: 'pointer',
                     minWidth: 100,
@@ -447,7 +449,7 @@ export function MobileCreateClient() {
                   inputMode="numeric"
                 />
               </div>
-              <div style={{ fontSize: 11, color: t.dim, marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: theme.dim, marginTop: 4 }}>
                 Le client recevra son mot de passe par WhatsApp
               </div>
             </div>
@@ -573,22 +575,22 @@ export function MobileCreateClient() {
         {/* ── ÉTAPE 3 : VÉRIFICATION ─────────────────────── */}
         {step === 3 && (
           <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: t.text, marginBottom: 4 }}>
-              Tout est correct ?
+            <div style={{ fontSize: 24, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
+              {t('everythingCorrect', { defaultValue: 'Tout est correct ?' })}
             </div>
-            <div style={{ fontSize: 14, color: t.sub, marginBottom: 28, lineHeight: 1.4 }}>
-              Vérifiez avant de créer le compte
+            <div style={{ fontSize: 14, color: theme.sub, marginBottom: 28, lineHeight: 1.4 }}>
+              {t('verifyBeforeCreatingAccount', { defaultValue: 'Vérifiez avant de créer le compte' })}
             </div>
 
             <div style={{
               padding: '20px 16px', borderRadius: 14,
-              background: t.card, border: `1px solid ${t.border}`,
+              background: theme.card, border: `1px solid ${theme.border}`,
             }}>
               {/* Initiales + nom complet */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 marginBottom: 16, paddingBottom: 16,
-                borderBottom: `1px solid ${t.border}`,
+                borderBottom: `1px solid ${theme.border}`,
               }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: 12,
@@ -599,11 +601,11 @@ export function MobileCreateClient() {
                   {(form.prenom[0] ?? '').toUpperCase()}{(form.nom[0] ?? '').toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: t.text }}>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: theme.text }}>
                     {form.prenom} {form.nom}
                   </div>
                   {form.entreprise && (
-                    <div style={{ fontSize: 12, color: t.sub, marginTop: 1 }}>{form.entreprise}</div>
+                    <div style={{ fontSize: 12, color: theme.sub, marginTop: 1 }}>{form.entreprise}</div>
                   )}
                 </div>
               </div>
@@ -622,10 +624,10 @@ export function MobileCreateClient() {
                   <div key={i} style={{
                     display: 'flex', justifyContent: 'space-between',
                     padding: '10px 0',
-                    borderBottom: i < arr.length - 1 ? `1px solid ${t.border}` : 'none',
+                    borderBottom: i < arr.length - 1 ? `1px solid ${theme.border}` : 'none',
                   }}>
-                    <span style={{ fontSize: 13, color: t.sub }}>{row.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{row.value}</span>
+                    <span style={{ fontSize: 13, color: theme.sub }}>{row.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: theme.text }}>{row.value}</span>
                   </div>
                 ))}
             </div>
@@ -634,7 +636,7 @@ export function MobileCreateClient() {
             <div style={{
               marginTop: 12, padding: '12px 14px', borderRadius: 12,
               background: `${G}08`, border: `1px solid ${G}18`,
-              fontSize: 12, color: t.sub, lineHeight: 1.5,
+              fontSize: 12, color: theme.sub, lineHeight: 1.5,
             }}>
               Un mot de passe temporaire sera envoyé au client par WhatsApp. Il devra le changer lors de sa première connexion.
             </div>
@@ -645,7 +647,7 @@ export function MobileCreateClient() {
       {/* FOOTER — boutons TOUJOURS visibles, jamais cachés */}
       <div style={{
         flexShrink: 0, padding: '12px 20px 20px',
-        background: t.card, borderTop: `1px solid ${t.border}`,
+        background: theme.card, borderTop: `1px solid ${theme.border}`,
         display: 'flex', gap: 10,
       }}>
         {/* Bouton Retour — absent à l'étape 1 */}
@@ -654,12 +656,12 @@ export function MobileCreateClient() {
             onClick={handleBack}
             style={{
               flex: 1, padding: '17px 0', borderRadius: 12,
-              background: 'none', border: `1px solid ${t.border}`,
-              fontSize: 15, fontWeight: 700, color: t.sub,
+              background: 'none', border: `1px solid ${theme.border}`,
+              fontSize: 15, fontWeight: 700, color: theme.sub,
               cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            Retour
+            {t('back', { defaultValue: 'Retour' })}
           </button>
         )}
 
@@ -670,10 +672,10 @@ export function MobileCreateClient() {
           style={{
             flex: step === 1 ? 1 : 1.5,
             padding: '17px 0', borderRadius: 12,
-            background: canNext && !createClientMutation.isPending ? V : t.border,
+            background: canNext && !createClientMutation.isPending ? V : theme.border,
             border: 'none',
             fontSize: 16, fontWeight: 800,
-            color: canNext && !createClientMutation.isPending ? '#fff' : t.dim,
+            color: canNext && !createClientMutation.isPending ? '#fff' : theme.dim,
             cursor: canNext && !createClientMutation.isPending ? 'pointer' : 'not-allowed',
             fontFamily: "'DM Sans', sans-serif",
             transition: 'background 0.2s',
@@ -683,12 +685,12 @@ export function MobileCreateClient() {
           {createClientMutation.isPending ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              Création...
+              {t('creating', { defaultValue: 'Création...' })}
             </>
           ) : step === 3 ? (
-            'Créer le client'
+            t('createTheClient', { defaultValue: 'Créer le client' })
           ) : (
-            `Continuer (${step}/3)`
+            `${t('continue', { defaultValue: 'Continuer' })} (${step}/3)`
           )}
         </button>
       </div>

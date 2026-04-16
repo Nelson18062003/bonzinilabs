@@ -1,0 +1,37 @@
+{
+  "depositStatus": {
+    "created": "Cr\u00e9\u00e9",
+    "awaiting_proof": "En attente de preuve",
+    "proof_submitted": "Preuve envoy\u00e9e",
+    "admin_review": "En v\u00e9rification",
+    "validated": "Valid\u00e9",
+    "rejected": "Rejet\u00e9",
+    "SUBMITTED": "Soumis",
+    "PROOF_UPLOADED": "Preuve envoy\u00e9e",
+    "UNDER_VERIFICATION": "En v\u00e9rification",
+    "VALIDATED": "Valid\u00e9",
+    "REJECTED": "Rejet\u00e9"
+  },
+  "paymentStatus": {
+    "SUBMITTED": "Soumis",
+    "INFO_RECEIVED": "Infos re\u00e7ues",
+    "PROCESSING": "En cours",
+    "COMPLETED": "Effectu\u00e9",
+    "PROOF_AVAILABLE": "Preuve dispo",
+    "CANCELLED": "Annul\u00e9"
+  },
+  "method": {
+    "bank_transfer": "Virement bancaire",
+    "bank_cash": "D\u00e9p\u00f4t cash banque",
+    "agency_cash": "Agence Bonzini",
+    "om_transfer": "Orange Money (transfert)",
+    "om_withdrawal": "Orange Money (retrait)",
+    "mtn_transfer": "MTN Money (transfert)",
+    "mtn_withdrawal": "MTN Money (retrait)",
+    "wave": "Wave",
+    "ALIPAY": "Alipay",
+    "WECHAT": "WeChat",
+    "BANK_TRANSFER": "Virement",
+    "CASH_COUNTER": "Cash Counter"
+  }
+}

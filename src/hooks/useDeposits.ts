@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
+import i18n from '@/i18n';
 import type {
   Deposit,
   DepositProofWithUrl,
@@ -130,7 +131,7 @@ export function useCreateDeposit() {
   return useMutation({
     mutationFn: async (data: CreateDepositData) => {
       const user = await getCurrentUser();
-      if (!user) throw new Error('Vous devez être connecté');
+      if (!user) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       const { data: result, error } = await supabase.rpc('create_client_deposit', {
         p_user_id: user.id,
@@ -144,7 +145,7 @@ export function useCreateDeposit() {
       if (error) throw error;
 
       const response = result as { success: boolean; error?: string; deposit_id?: string; reference?: string };
-      if (!response.success) throw new Error(response.error || 'Erreur lors de la création du dépôt');
+      if (!response.success) throw new Error(response.error || i18n.t('hooks.createDeposit.error', { ns: 'common', defaultValue: 'Erreur lors de la création du dépôt' }));
 
       return { id: response.deposit_id, reference: response.reference };
     },
@@ -163,7 +164,7 @@ export function useUploadProof() {
   return useMutation({
     mutationFn: async ({ depositId, file: rawFile }: { depositId: string; file: File }) => {
       const user = await getCurrentUser();
-      if (!user) throw new Error('Vous devez être connecté');
+      if (!user) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       validateUploadFile(rawFile);
       const file = await compressImage(rawFile);
@@ -197,7 +198,7 @@ export function useUploadProof() {
       queryClient.invalidateQueries({ queryKey: ['deposit-proofs', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
-      toast.success('Preuve envoyée avec succès');
+      toast.success(i18n.t('hooks.uploadProof.sentSuccess', { ns: 'common', defaultValue: 'Preuve envoyée avec succès' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -211,7 +212,7 @@ export function useUploadMultipleProofs() {
   return useMutation({
     mutationFn: async ({ depositId, files }: { depositId: string; files: File[] }) => {
       const user = await getCurrentUser();
-      if (!user) throw new Error('Vous devez être connecté');
+      if (!user) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       let uploadedCount = 0;
       const failedFiles: string[] = [];
@@ -258,7 +259,7 @@ export function useUploadMultipleProofs() {
       }
 
       if (uploadedCount === 0 && failedFiles.length > 0) {
-        throw new Error(`Échec de l'upload: ${failedFiles.join(', ')}`);
+        throw new Error(i18n.t('hooks.uploadMultiple.allFailed', { ns: 'common', defaultValue: `Échec de l'upload: ${failedFiles.join(', ')}`, files: failedFiles.join(', ') }));
       }
 
       if (uploadedCount > 0) {
@@ -275,9 +276,9 @@ export function useUploadMultipleProofs() {
       queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
 
       if (data.failedFiles.length > 0 && data.uploadedCount > 0) {
-        toast.warning(`${data.uploadedCount} preuve(s) envoyée(s), ${data.failedFiles.length} échec(s)`);
+        toast.warning(i18n.t('hooks.uploadMultiple.partialSuccess', { ns: 'common', defaultValue: `${data.uploadedCount} preuve(s) envoyée(s), ${data.failedFiles.length} échec(s)`, successCount: data.uploadedCount, failCount: data.failedFiles.length }));
       } else {
-        toast.success(`${data.uploadedCount} preuve(s) envoyée(s) avec succès`);
+        toast.success(i18n.t('hooks.uploadMultiple.success', { ns: 'common', defaultValue: `${data.uploadedCount} preuve(s) envoyée(s) avec succès`, count: data.uploadedCount }));
       }
     },
     onError: (error: Error) => {
@@ -300,7 +301,7 @@ export function useDeleteDepositProof() {
       reason: string;
     }) => {
       const user = await getCurrentUser();
-      if (!user) throw new Error('Vous devez être connecté');
+      if (!user) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       // Soft-delete: set deleted_at, deleted_by, delete_reason
       const { error } = await supabase
@@ -341,7 +342,7 @@ export function useDeleteDepositProof() {
       queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
-      toast.success('Preuve supprimée');
+      toast.success(i18n.t('hooks.deleteProof.success', { ns: 'common', defaultValue: 'Preuve supprimée' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -359,14 +360,14 @@ export function useCancelDeposit() {
       });
       if (error) throw error;
       const result = data as { success: boolean; error?: string; reference?: string };
-      if (!result.success) throw new Error(result.error || 'Erreur lors de l\'annulation');
+      if (!result.success) throw new Error(result.error || i18n.t('hooks.cancelDeposit.error', { ns: 'common', defaultValue: "Erreur lors de l'annulation" }));
       return result;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['my-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
-      toast.success('Dépôt annulé avec succès');
+      toast.success(i18n.t('hooks.cancelDeposit.success', { ns: 'common', defaultValue: 'Dépôt annulé avec succès' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);

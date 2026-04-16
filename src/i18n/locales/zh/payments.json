@@ -1,0 +1,98 @@
+{
+  "title": "\u6211\u7684\u4ed8\u6b3e",
+  "subtitle": "\u5411\u4e2d\u56fd\u8f6c\u8d26",
+  "newPayment": "\u65b0\u4ed8\u6b3e",
+  "noPayments": "\u6682\u65e0\u4ed8\u6b3e\u8bb0\u5f55",
+  "status": {
+    "created": "\u5df2\u521b\u5efa",
+    "waiting_beneficiary_info": "\u7b49\u5f85\u4e2d",
+    "ready_for_payment": "\u5c31\u7eea",
+    "cash_pending": "\u5df2\u751f\u6210QR",
+    "cash_scanned": "\u5df2\u626b\u63cf",
+    "processing": "\u5904\u7406\u4e2d",
+    "completed": "\u5df2\u5b8c\u6210",
+    "rejected": "\u5df2\u62d2\u7edd",
+    "cancelled_by_admin": "\u5df2\u53d6\u6d88\uff08\u7ba1\u7406\u5458\uff09"
+  },
+  "statusConfig": {
+    "created": "\u5df2\u521b\u5efa",
+    "waiting_beneficiary_info": "\u7b49\u5f85\u4fe1\u606f",
+    "ready_for_payment": "\u51c6\u5907\u4ed8\u6b3e",
+    "cash_pending": "\u5df2\u751f\u6210QR",
+    "cash_scanned": "\u5df2\u626b\u63cf",
+    "processing": "\u5904\u7406\u4e2d",
+    "completed": "\u5df2\u5b8c\u6210",
+    "rejected": "\u5df2\u62d2\u7edd",
+    "cancelled_by_admin": "\u5df2\u53d6\u6d88\uff08\u7ba1\u7406\u5458\uff09"
+  },
+  "statusLabels": {
+    "created": "\u5df2\u521b\u5efa",
+    "waiting_beneficiary_info": "\u4fe1\u606f\u5f85\u5b9a",
+    "ready_for_payment": "\u5c31\u7eea",
+    "processing": "\u5904\u7406\u4e2d",
+    "completed": "\u5df2\u5b8c\u6210",
+    "rejected": "\u5df2\u62d2\u7edd",
+    "cash_pending": "\u73b0\u91d1\u5f85\u5b9a",
+    "cash_scanned": "\u73b0\u91d1\u5df2\u626b",
+    "cancelled_by_admin": "\u5df2\u53d6\u6d88\uff08\u7ba1\u7406\u5458\uff09"
+  },
+  "method": {
+    "alipay": "\u652f\u4ed8\u5b9d",
+    "wechat": "\u5fae\u4fe1\u652f\u4ed8",
+    "bank_transfer": "\u94f6\u884c\u8f6c\u8d26",
+    "cash": "\u73b0\u91d1"
+  },
+  "form": {
+    "steps": {
+      "method": "\u65b9\u5f0f",
+      "amount": "\u91d1\u989d",
+      "beneficiary": "\u6536\u6b3e\u4eba",
+      "confirm": "\u6458\u8981"
+    },
+    "methods": {
+      "alipay": { "label": "\u652f\u4ed8\u5b9d", "desc": "\u901a\u8fc7\u652f\u4ed8\u5b9d\u4ed8\u6b3e" },
+      "wechat": { "label": "\u5fae\u4fe1\u652f\u4ed8", "desc": "\u901a\u8fc7\u5fae\u4fe1\u4ed8\u6b3e" },
+      "bank_transfer": { "label": "\u94f6\u884c\u8f6c\u8d26", "desc": "\u8f6c\u8d26\u5230\u94f6\u884c\u8d26\u6237" },
+      "cash": { "label": "\u73b0\u91d1", "desc": "\u5728Bonzini\u529e\u516c\u5ba4\u9886\u53d6" }
+    },
+    "chooseMethod": "\u9009\u62e9\u4ed8\u6b3e\u65b9\u5f0f",
+    "enterAmount": "\u8f93\u5165\u91d1\u989d",
+    "youSend": "\u60a8\u53d1\u9001",
+    "supplierReceives": "\u4f9b\u5e94\u5546\u6536\u5230",
+    "rate": "\u6c47\u7387",
+    "balance": "\u4f59\u989d",
+    "insufficientBalance": "\u4f59\u989d\u4e0d\u8db3",
+    "amountTooHigh": "\u91d1\u989d\u4e0d\u80fd\u8d85\u8fc750,000,000 XAF",
+    "beneficiaryTitle": "\u6536\u6b3e\u4eba\u4fe1\u606f",
+    "beneficiaryName": "\u6536\u6b3e\u4eba\u59d3\u540d",
+    "beneficiaryId": "\u6807\u8bc6\u7b26",
+    "summary": "\u6458\u8981",
+    "submit": "\u786e\u8ba4\u4ed8\u6b3e",
+    "submitting": "\u53d1\u9001\u4e2d...",
+    "success": "\u4ed8\u6b3e\u521b\u5efa\u6210\u529f",
+    "error": "\u521b\u5efa\u4ed8\u6b3e\u65f6\u51fa\u9519"
+  },
+  "detail": {
+    "title": "\u4ed8\u6b3e\u8be6\u60c5",
+    "beneficiaryInfo": "\u6536\u6b3e\u4eba\u4fe1\u606f",
+    "timeline": "\u65f6\u95f4\u7ebf",
+    "proofs": "\u4ed8\u6b3e\u51ed\u8bc1",
+    "noProofs": "\u6682\u65e0\u51ed\u8bc1",
+    "uploadProof": "\u6dfb\u52a0\u51ed\u8bc1",
+    "reference": "\u53c2\u8003\u53f7",
+    "amountXAF": "\u91d1\u989d XAF",
+    "amountRMB": "\u91d1\u989d RMB",
+    "exchangeRate": "\u6c47\u7387",
+    "createdAt": "\u521b\u5efa\u4e8e"
+  },
+  "rejectionReasons": {
+    "beneficiaryNotFound": "\u6536\u6b3e\u4eba\u672a\u627e\u5230",
+    "incorrectBankAccount": "\u94f6\u884c\u8d26\u6237\u4e0d\u6b63\u786e",
+    "expiredQR": "QR\u7801\u5df2\u8fc7\u671f\u6216\u65e0\u6548",
+    "incorrectAmount": "\u91d1\u989d\u4e0d\u6b63\u786e",
+    "incompleteInfo": "\u4fe1\u606f\u4e0d\u5b8c\u6574",
+    "beneficiaryRefused": "\u6536\u6b3e\u4eba\u62d2\u7edd",
+    "technicalIssue": "\u6280\u672f\u95ee\u9898",
+    "other": "\u5176\u4ed6"
+  }
+}

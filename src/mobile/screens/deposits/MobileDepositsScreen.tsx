@@ -4,6 +4,7 @@
 // premium list rows, smart filters, infinite scroll
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
@@ -75,6 +76,7 @@ function SlaDot({ level }: { level: SlaLevel }) {
 // ── Main component ──────────────────────────────────────────
 
 export function MobileDepositsScreen() {
+  const { t } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [sortKey, setSortKey] = useState('newest');
@@ -183,7 +185,7 @@ export function MobileDepositsScreen() {
   return (
     <div className="flex flex-col min-h-full">
       <MobileHeader
-        title="Dépôts"
+        title={t('deposits', { defaultValue: 'Dépôts' })}
         rightElement={
           <button
             onClick={() => navigate('/m/deposits/new')}
@@ -261,7 +263,7 @@ export function MobileDepositsScreen() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Nom, téléphone ou référence..."
+              placeholder={t('searchNamePhoneRef', { defaultValue: 'Nom, téléphone ou référence...' })}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -506,8 +508,8 @@ export function MobileDepositsScreen() {
         ) : (
           <MobileEmptyState
             icon={FileText}
-            title="Aucun dépôt trouvé"
-            description={statusFilter !== 'all' || activeFilterCount > 0 ? 'Essayez de modifier vos filtres' : 'Les dépôts apparaîtront ici'}
+            title={t('noDepositFound', { defaultValue: 'Aucun dépôt trouvé' })}
+            description={statusFilter !== 'all' || activeFilterCount > 0 ? t('tryModifyingFilters', { defaultValue: 'Essayez de modifier vos filtres' }) : t('depositsWillAppearHere', { defaultValue: 'Les dépôts apparaîtront ici' })}
           />
         )}
       </PullToRefresh>

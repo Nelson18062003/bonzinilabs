@@ -1,0 +1,90 @@
+{
+  "wallet": {
+    "availableBalance": "Solde disponible",
+    "hideBalance": "Masquer le solde",
+    "showBalance": "Afficher le solde",
+    "balanceUnavailable": "Solde indisponible momentan\u00e9ment",
+    "retryLater": "Veuillez r\u00e9essayer dans quelques instants",
+    "recentOperations": "Derni\u00e8res op\u00e9rations",
+    "viewAll": "Voir tout",
+    "operation": "Op\u00e9ration"
+  },
+  "quickActions": {
+    "deposit": "D\u00e9poser",
+    "pay": "Payer",
+    "beneficiaries": "B\u00e9n\u00e9ficiaires",
+    "activity": "Activit\u00e9"
+  },
+  "history": {
+    "title": "Historique",
+    "subtitle": "Tous vos mouvements",
+    "statement": "Relev\u00e9",
+    "filterAll": "Tout",
+    "filterCredits": "Cr\u00e9dits",
+    "filterDebits": "D\u00e9bits",
+    "noOperations": "Aucune op\u00e9ration trouv\u00e9e",
+    "noMovements": "Aucun mouvement \u00e0 exporter",
+    "statementError": "Erreur lors de la g\u00e9n\u00e9ration du relev\u00e9",
+    "operationLabels": {
+      "deposit": "D\u00e9p\u00f4t",
+      "depositRefused": "D\u00e9p\u00f4t refus\u00e9",
+      "payment": "Paiement",
+      "paymentReserved": "Paiement r\u00e9serv\u00e9",
+      "refund": "Remboursement",
+      "adminCredit": "Cr\u00e9dit admin",
+      "adminDebit": "D\u00e9bit admin",
+      "adjustmentDebit": "Ajustement D\u00e9bit",
+      "adjustmentCredit": "Ajustement Cr\u00e9dit",
+      "operation": "Op\u00e9ration"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "logoutSuccess": "D\u00e9connexion r\u00e9ussie",
+    "notifications": "Notifications",
+    "notificationsDesc": "G\u00e9rer vos alertes",
+    "security": "S\u00e9curit\u00e9",
+    "securityDesc": "Mot de passe, 2FA",
+    "devices": "Appareils connect\u00e9s",
+    "devicesDesc": "2 appareils",
+    "language": "Langue",
+    "languageDesc": "Fran\u00e7ais",
+    "documents": "Documents",
+    "documentsDesc": "KYC, Pi\u00e8ces justificatives",
+    "helpSupport": "Aide & Support",
+    "helpSupportDesc": "FAQ, Contact",
+    "appearance": "Apparence",
+    "appearanceDesc": "Th\u00e8me de l'application",
+    "logout": "Se d\u00e9connecter",
+    "version": "Bonzini v1.0.0 \u2022 Fait avec \ud83d\udc9c au Cameroun",
+    "comingSoon": "Fonctionnalit\u00e9 bient\u00f4t disponible"
+  },
+  "beneficiaries": {
+    "title": "B\u00e9n\u00e9ficiaires",
+    "subtitle": "Vos destinataires en Chine",
+    "noBeneficiary": "Aucun b\u00e9n\u00e9ficiaire",
+    "comingSoon": "La fonctionnalit\u00e9 b\u00e9n\u00e9ficiaires sera bient\u00f4t disponible"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Tout lire",
+    "loadError": "Erreur lors du chargement des notifications",
+    "noNotifications": "Aucune notification pour le moment",
+    "noNotificationsHint": "Vous serez notifi\u00e9 lorsque vos d\u00e9p\u00f4ts seront valid\u00e9s"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oups ! Page introuvable",
+    "backHome": "Retour \u00e0 l'accueil"
+  },
+  "welcomeGreeting": {
+    "trustMessage": "Votre argent est en s\u00e9curit\u00e9 chez Bonzini."
+  },
+  "nav": {
+    "wallet": "Wallet",
+    "deposits": "D\u00e9p\u00f4ts",
+    "payments": "Paiements",
+    "history": "Historique",
+    "profile": "Profil"
+  }
+}

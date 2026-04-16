@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import i18next from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -86,10 +87,10 @@ export class ErrorBoundary extends Component<Props, State> {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-destructive" />
-                <CardTitle>Oops! Une erreur est survenue</CardTitle>
+                <CardTitle>{i18next.t('errorBoundary.title', { ns: 'common' })}</CardTitle>
               </div>
               <CardDescription>
-                Ne vous inquiétez pas, vos données sont en sécurité. Essayez de rafraîchir la page.
+                {i18next.t('errorBoundary.description', { ns: 'common' })}
               </CardDescription>
             </CardHeader>
 
@@ -109,7 +110,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {!this.state.error && (
                 <p className="text-sm text-muted-foreground">
-                  Si le problème persiste, veuillez contacter le support technique.
+                  {i18next.t('errorBoundary.contactSupport', { ns: 'common' })}
                 </p>
               )}
             </CardContent>
@@ -117,10 +118,10 @@ export class ErrorBoundary extends Component<Props, State> {
             <CardFooter className="flex gap-2">
               <Button onClick={this.handleReset} variant="outline">
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Réessayer
+                {i18next.t('errorBoundary.retry', { ns: 'common' })}
               </Button>
               <Button onClick={() => window.location.reload()} variant="default">
-                Rafraîchir la page
+                {i18next.t('errorBoundary.refreshPage', { ns: 'common' })}
               </Button>
             </CardFooter>
           </Card>
@@ -174,9 +175,9 @@ export class FeatureErrorBoundary extends Component<Props, State> {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex-1 space-y-2">
-              <p className="text-sm font-medium">Impossible de charger cette section</p>
+              <p className="text-sm font-medium">{i18next.t('errorBoundary.featureLoadError', { ns: 'common' })}</p>
               <Button onClick={this.handleReset} size="sm" variant="outline">
-                Réessayer
+                {i18next.t('errorBoundary.retry', { ns: 'common' })}
               </Button>
             </div>
           </div>

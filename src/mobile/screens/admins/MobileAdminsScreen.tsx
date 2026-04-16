@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminUsers } from '@/hooks/useAdminData';
 import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole, type AdminStatus } from '@/contexts/AdminAuthContext';
@@ -25,6 +26,7 @@ const ROLE_BADGE_COLORS: Record<AppRole, string> = {
 };
 
 export function MobileAdminsScreen() {
+  const { t } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
@@ -54,21 +56,21 @@ export function MobileAdminsScreen() {
   });
 
   const roleOptions: { value: RoleFilter; label: string }[] = [
-    { value: 'all', label: 'Tous' },
+    { value: 'all', label: t('all', { defaultValue: 'Tous' }) },
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'ops', label: 'Ops' },
     { value: 'cash_agent', label: 'Agent Cash' },
   ];
 
   const statusOptions: { value: StatusFilter; label: string }[] = [
-    { value: 'all', label: 'Tous' },
-    { value: 'ACTIVE', label: 'Actifs' },
-    { value: 'DISABLED', label: 'Désactivés' },
+    { value: 'all', label: t('all', { defaultValue: 'Tous' }) },
+    { value: 'ACTIVE', label: t('activeUsers', { defaultValue: 'Actifs' }) },
+    { value: 'DISABLED', label: t('disabledUsers', { defaultValue: 'Désactivés' }) },
   ];
 
   return (
     <div className="flex flex-col min-h-full">
-      <MobileHeader title="Administrateurs" showBack />
+      <MobileHeader title={t('administrators', { defaultValue: 'Administrateurs' })} showBack />
 
       <PullToRefresh onRefresh={refetch} className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
         {/* Search */}
@@ -76,7 +78,7 @@ export function MobileAdminsScreen() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher un admin..."
+            placeholder={t('searchAdmin', { defaultValue: 'Rechercher un admin...' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -131,7 +133,7 @@ export function MobileAdminsScreen() {
                         {admin.firstName} {admin.lastName}
                       </p>
                       {admin.id === currentUser?.id && (
-                        <span className="text-xs text-muted-foreground">(vous)</span>
+                        <span className="text-xs text-muted-foreground">({t('you', { defaultValue: 'vous' })})</span>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
@@ -163,7 +165,7 @@ export function MobileAdminsScreen() {
             ))}
           </div>
         ) : (
-          <MobileEmptyState icon={UserCog} title="Aucun admin trouvé" />
+          <MobileEmptyState icon={UserCog} title={t('noAdminFound', { defaultValue: 'Aucun admin trouvé' })} />
         )}
       </PullToRefresh>
 

@@ -1,0 +1,74 @@
+{
+  "title": "My Deposits",
+  "subtitle": "History and tracking",
+  "newDeposit": "Make a deposit",
+  "noDeposits": "No deposits yet",
+  "loadError": "Error loading deposits",
+  "status": {
+    "created": "Request created",
+    "awaiting_proof": "Awaiting proof",
+    "proof_submitted": "Proof submitted",
+    "admin_review": "Under review",
+    "validated": "Validated",
+    "rejected": "Rejected",
+    "pending_correction": "To correct",
+    "cancelled": "Cancelled",
+    "cancelled_by_admin": "Cancelled (admin)"
+  },
+  "method": {
+    "bank_transfer": "Bank transfer",
+    "bank_cash": "Bank cash deposit",
+    "agency_cash": "Bonzini agency cash",
+    "om_transfer": "Orange Money \u2013 Transfer",
+    "om_withdrawal": "Orange Money \u2013 Withdrawal",
+    "mtn_transfer": "MTN MoMo \u2013 Transfer",
+    "mtn_withdrawal": "MTN MoMo \u2013 Withdrawal",
+    "wave": "Wave"
+  },
+  "methodShort": {
+    "bank_transfer": "Transfer",
+    "bank_cash": "Bank cash",
+    "agency_cash": "Agency cash",
+    "om_transfer": "Orange UV",
+    "om_withdrawal": "Orange code",
+    "mtn_transfer": "MTN Float",
+    "mtn_withdrawal": "MTN code",
+    "wave": "Wave"
+  },
+  "timeline": {
+    "standard": {
+      "created": { "label": "Deposit declared", "description": "Your deposit has been registered" },
+      "proof_submitted": { "label": "Proof sent", "description": "Waiting for verification" },
+      "admin_review": { "label": "Under review", "description": "Bonzini team is verifying your deposit" },
+      "validated": { "label": "Validated \u2014 Balance credited", "description": "Your wallet has been credited" }
+    },
+    "withdrawal": {
+      "created": { "label": "Withdrawal declared", "description": "Your withdrawal has been registered" },
+      "proof_submitted": { "label": "Code provided", "description": "Withdrawal code transmitted" },
+      "admin_review": { "label": "Under review", "description": "Bonzini team is verifying the withdrawal" },
+      "validated": { "label": "Validated \u2014 Balance credited", "description": "Your wallet has been credited" }
+    },
+    "agency": {
+      "created": { "label": "Agency deposit", "description": "Deposit declared at Bonzini agency" },
+      "proof_submitted": { "label": "Receipt confirmed", "description": "Agency receipt registered" },
+      "admin_review": { "label": "Under review", "description": "Validation in progress" },
+      "validated": { "label": "Validated \u2014 Balance credited", "description": "Your wallet has been credited" }
+    }
+  },
+  "rejectionReasons": {
+    "incorrectAmount": "Incorrect amount",
+    "illegibleProof": "Illegible proof",
+    "missingReference": "Missing reference",
+    "wrongBankAccount": "Wrong bank account",
+    "nonCompliantDocument": "Non-compliant document",
+    "suspicion": "Suspicion / inconsistency",
+    "other": "Other"
+  },
+  "proofDeleteReasons": {
+    "incorrectUpload": "Incorrect upload",
+    "wrongDeposit": "Wrong deposit",
+    "duplicate": "Duplicate",
+    "illegibleImage": "Illegible image",
+    "other": "Other"
+  }
+}

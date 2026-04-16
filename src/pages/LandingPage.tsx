@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { motion, useInView, animate } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { track } from '@vercel/analytics';
 import { getStoredUtm } from '@/hooks/useUtmTracking';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const C = {
@@ -54,6 +56,7 @@ function Counter({ end, suffix = '', prefix = '' }: { end: number; suffix?: stri
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 function Nav({ onCTA }: { onCTA: () => void }) {
+  const { t } = useTranslation('landing');
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
@@ -61,6 +64,12 @@ function Nav({ onCTA }: { onCTA: () => void }) {
     window.addEventListener('scroll', h);
     return () => window.removeEventListener('scroll', h);
   }, []);
+
+  const navItems = [
+    { key: 'howItWorks', anchor: 'fonctionnement' },
+    { key: 'pricing', anchor: 'tarifs' },
+    { key: 'faq', anchor: 'faq' },
+  ] as const;
 
   return (
     <nav style={{
@@ -77,27 +86,31 @@ function Nav({ onCTA }: { onCTA: () => void }) {
         </div>
         {/* Desktop */}
         <div className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
-          {['Fonctionnement', 'Tarifs', 'FAQ'].map(t => (
-            <a key={t} href={`#${t.toLowerCase()}`} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none' }}>{t}</a>
+          {navItems.map(item => (
+            <a key={item.key} href={`#${item.anchor}`} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none' }}>{t(`nav.${item.key}`)}</a>
           ))}
+          <LanguageSwitcher />
           <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13, color: '#fff', background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, border: 'none', padding: '10px 22px', borderRadius: 50, cursor: 'pointer' }}>
-            Envoyer un paiement
+            {t('nav.cta')}
           </button>
         </div>
         {/* Mobile hamburger */}
-        <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8 }}>
-          {menuOpen
-            ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>}
-        </button>
+        <div className="md:hidden" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <LanguageSwitcher />
+          <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8 }}>
+            {menuOpen
+              ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>}
+          </button>
+        </div>
       </div>
       {menuOpen && (
         <div style={{ background: `${C.surface}f5`, backdropFilter: 'blur(20px)', borderTop: `1px solid ${C.dim}`, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {['Fonctionnement', 'Tarifs', 'FAQ'].map(t => (
-            <a key={t} href={`#${t.toLowerCase()}`} onClick={() => setMenuOpen(false)} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none', padding: '8px 0' }}>{t}</a>
+          {navItems.map(item => (
+            <a key={item.key} href={`#${item.anchor}`} onClick={() => setMenuOpen(false)} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none', padding: '8px 0' }}>{t(`nav.${item.key}`)}</a>
           ))}
           <button onClick={() => { setMenuOpen(false); onCTA(); }} style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13, color: '#fff', background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, border: 'none', padding: '12px 24px', borderRadius: 50, cursor: 'pointer' }}>
-            Envoyer un paiement
+            {t('nav.cta')}
           </button>
         </div>
       )}
@@ -107,14 +120,15 @@ function Nav({ onCTA }: { onCTA: () => void }) {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
+  const { t } = useTranslation('landing');
   const [ok, setOk] = useState(false);
   const [xafKey, setXafKey] = useState('500K');
   const amountMap: Record<string, number> = { '100K': 100000, '500K': 500000, '1M': 1000000, '5M': 5000000 };
   const displayMap: Record<string, string> = { '100K': '100 000', '500K': '500 000', '1M': '1 000 000', '5M': '5 000 000' };
   const cny = Math.round(amountMap[xafKey] * rate / 1_000_000);
 
-  useEffect(() => { const t = setTimeout(() => setOk(true), 200); return () => clearTimeout(t); }, []);
-  const t = (delay: number) => ({ opacity: ok ? 1 : 0, transform: ok ? 'none' : 'translateY(30px)', transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${delay}s` });
+  useEffect(() => { const timer = setTimeout(() => setOk(true), 200); return () => clearTimeout(timer); }, []);
+  const anim = (delay: number) => ({ opacity: ok ? 1 : 0, transform: ok ? 'none' : 'translateY(30px)', transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${delay}s` });
 
   return (
     <section style={{ minHeight: '100vh', background: C.bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', padding: '100px 24px 60px' }}>
@@ -127,46 +141,46 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
       <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', position: 'relative', zIndex: 2, display: 'flex', gap: 60, alignItems: 'center', flexWrap: 'wrap' }}>
         {/* Left */}
         <div style={{ flex: 1, minWidth: 300 }}>
-          <div style={t(0.1)}>
+          <div style={anim(0.1)}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `linear-gradient(135deg, ${C.violet}15, ${C.gold}10)`, border: `1px solid ${C.violet}20`, borderRadius: 50, padding: '7px 16px', marginBottom: 28 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 12px #4ade80' }} />
-              <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.violetGlow }}>Le paiement, c'est nous. Le business, c'est vous.</span>
+              <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.violetGlow }}>{t('hero.badge')}</span>
             </div>
           </div>
 
-          <h1 style={{ ...t(0.25), fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(38px, 6.5vw, 68px)', lineHeight: 0.98, color: '#fff', letterSpacing: '-3px', margin: '0 0 24px' }}>
-            Votre fournisseur est{' '}
-            <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.orange})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>payé</span>
-            {' '}avant{' '}
+          <h1 style={{ ...anim(0.25), fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(38px, 6.5vw, 68px)', lineHeight: 0.98, color: '#fff', letterSpacing: '-3px', margin: '0 0 24px' }}>
+            {t('hero.title1')}{' '}
+            <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.orange})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('hero.titleHighlight')}</span>
+            {' '}{t('hero.title2')}{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
               <svg width="100%" height="8" viewBox="0 0 200 8" style={{ position: 'absolute', bottom: -4, left: 0 }}>
                 <path d="M0 4 Q50 0 100 4 Q150 8 200 4" stroke={C.gold} strokeWidth="3" fill="none" strokeLinecap="round" />
               </svg>
-              ce soir
+              {t('hero.title3')}
             </span>
           </h1>
 
-          <p style={{ ...t(0.45), fontFamily: F.body, fontSize: 18, color: C.muted, lineHeight: 1.65, margin: '0 0 36px', maxWidth: 440 }}>
-            Alipay, WeChat, virement ou cash. Vous envoyez en francs CFA, votre fournisseur reçoit en yuan. Avec la <strong style={{ color: '#fff' }}>preuve dans votre poche</strong>.
+          <p style={{ ...anim(0.45), fontFamily: F.body, fontSize: 18, color: C.muted, lineHeight: 1.65, margin: '0 0 36px', maxWidth: 440 }}>
+            <Trans i18nKey="hero.subtitle" ns="landing" components={{ strong: <strong style={{ color: '#fff' }} /> }} />
           </p>
 
-          <div style={{ ...t(0.6), display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ ...anim(0.6), display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 800, fontSize: 16, background: C.violet, color: '#fff', border: 'none', padding: '16px 32px', borderRadius: 14, cursor: 'pointer', boxShadow: `0 0 40px ${C.violet}40` }}>
-              Envoyer un paiement
+              {t('hero.ctaPrimary')}
             </button>
             <button style={{ fontFamily: F.body, fontWeight: 600, fontSize: 15, background: 'transparent', color: C.muted, border: `1px solid ${C.dim}`, padding: '16px 28px', borderRadius: 14, cursor: 'pointer' }}>
-              Voir les taux
+              {t('hero.ctaSecondary')}
             </button>
           </div>
         </div>
 
         {/* Simulator */}
-        <div style={{ ...t(0.5), width: 360, flexShrink: 0, transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}>
+        <div style={{ ...anim(0.5), width: 360, flexShrink: 0, transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}>
           <div style={{ background: `linear-gradient(160deg, ${C.surfaceLight}, ${C.surface})`, borderRadius: 24, padding: 28, border: `1px solid ${C.dim}`, boxShadow: `0 20px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)` }}>
-            <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Simulateur de paiement</div>
+            <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>{t('hero.simulator.title')}</div>
 
             <div style={{ background: C.bg, borderRadius: 14, padding: '16px 18px', border: `1px solid ${C.dim}`, marginBottom: 10 }}>
-              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>VOUS ENVOYEZ</div>
+              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>{t('hero.simulator.youSend')}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>{displayMap[xafKey]}</span>
                 <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, background: `${C.gold}15`, color: C.gold, padding: '5px 12px', borderRadius: 8 }}>XAF</span>
@@ -178,7 +192,7 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
             </div>
 
             <div style={{ background: C.bg, borderRadius: 14, padding: '16px 18px', border: `1px solid ${C.dim}`, marginTop: 10 }}>
-              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>FOURNISSEUR REÇOIT</div>
+              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>{t('hero.simulator.supplierReceives')}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: C.gold, letterSpacing: '-1px' }}>¥{cny.toLocaleString('fr-FR')}</span>
                 <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, background: `${C.alipay}15`, color: C.alipay, padding: '5px 12px', borderRadius: 8 }}>支 Alipay</span>
@@ -186,10 +200,10 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontFamily: F.body, fontSize: 11, color: C.muted }}>
-              <span>Taux: 1M XAF = ¥{rate.toLocaleString('fr-FR')}</span>
+              <span>{t('hero.simulator.rate', { rate: rate.toLocaleString('fr-FR') })}</span>
               <span style={{ color: '#4ade80', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />
-                Instantané
+                {t('hero.simulator.instant')}
               </span>
             </div>
 
@@ -214,13 +228,15 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
 
 // ─── Ticker ───────────────────────────────────────────────────────────────────
 function Ticker() {
-  const items = ['Alipay', 'WeChat Pay', 'Virement bancaire', 'Cash RMB', 'Cameroun', 'Gabon', 'Tchad', 'RCA', 'Congo', 'Paiement instantané', 'Meilleur taux', 'Sans carte'];
+  const { t } = useTranslation('landing');
+  const tickerKeys = ['alipay', 'wechat', 'bankTransfer', 'cashRMB', 'cameroon', 'gabon', 'chad', 'car', 'congo', 'instantPayment', 'bestRate', 'noCard'] as const;
+  const items = tickerKeys.map(k => t(`ticker.${k}`));
   return (
     <div style={{ overflow: 'hidden', background: C.violet, padding: '14px 0' }}>
       <div style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap', animation: 'lp-ticker 30s linear infinite' }}>
-        {[...items, ...items, ...items].map((t, i) => (
+        {[...items, ...items, ...items].map((label, i) => (
           <span key={i} style={{ fontFamily: F.display, fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />{t}
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />{label}
           </span>
         ))}
       </div>
@@ -230,11 +246,12 @@ function Ticker() {
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 function Stats() {
+  const { t } = useTranslation('landing');
   const stats = [
-    { end: 5, suffix: ' pays', label: 'Zone CEMAC couverte' },
-    { end: 4, suffix: ' modes', label: 'De paiement acceptés' },
-    { end: 5, suffix: ' min', prefix: '<', label: 'Temps de traitement moyen' },
-    { end: 0, suffix: ' frais', label: 'Cachés. Jamais.' },
+    { end: 5, suffix: t('stats.countries.suffix'), label: t('stats.countries.label') },
+    { end: 4, suffix: t('stats.methods.suffix'), label: t('stats.methods.label') },
+    { end: 5, suffix: t('stats.time.suffix'), prefix: t('stats.time.prefix'), label: t('stats.time.label') },
+    { end: 0, suffix: t('stats.fees.suffix'), label: t('stats.fees.label') },
   ];
   return (
     <section style={{ padding: '80px 24px', background: C.bg }}>
@@ -258,20 +275,16 @@ function Stats() {
 
 // ─── How it works ─────────────────────────────────────────────────────────────
 function HowItWorks() {
-  const steps = [
-    { num: '01', title: 'Choisissez', desc: "Alipay, WeChat, virement ou cash. Selon la préférence de votre fournisseur." },
-    { num: '02', title: 'Montant', desc: "En XAF ou en yuan. Le taux instantané s'affiche, optimisé selon le volume." },
-    { num: '03', title: 'Bénéficiaire', desc: "QR code, identifiant ou coordonnées bancaires. Sauvegardé pour la prochaine fois." },
-    { num: '04', title: 'Instantané', desc: "Votre fournisseur reçoit les fonds immédiatement. Preuve de paiement dans l'app." },
-  ];
+  const { t } = useTranslation('landing');
+  const steps = (t('howItWorks.steps', { returnObjects: true }) as Array<{ num: string; title: string; desc: string }>);
   return (
     <section id="fonctionnement" style={{ padding: '100px 24px', background: C.bg }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Reveal>
           <div style={{ marginBottom: 64 }}>
-            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.violet, textTransform: 'uppercase', letterSpacing: 3 }}>Fonctionnement</span>
+            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.violet, textTransform: 'uppercase', letterSpacing: 3 }}>{t('howItWorks.sectionLabel')}</span>
             <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-2px' }}>
-              Quatre étapes.<br /><span style={{ color: C.muted }}>Cinq minutes.</span>
+              {t('howItWorks.title')}<br /><span style={{ color: C.muted }}>{t('howItWorks.subtitle')}</span>
             </h2>
           </div>
         </Reveal>
@@ -296,34 +309,35 @@ function HowItWorks() {
 
 // ─── Methods ──────────────────────────────────────────────────────────────────
 function Methods() {
+  const { t } = useTranslation('landing');
   const methods = [
-    { icon: '支', name: 'Alipay', color: C.alipay, tag: 'Le plus populaire', desc: "QR code ou identifiant. Paiement instantané vers n'importe quel compte Alipay en Chine." },
-    { icon: '微', name: 'WeChat Pay', color: C.wechat, tag: 'Rapide', desc: "Via l'écosystème WeChat. Idéal pour les fournisseurs qui utilisent WeChat au quotidien." },
-    { icon: '🏦', name: 'Virement', color: C.violet, tag: 'Gros montants', desc: "Directement sur le compte bancaire de votre fournisseur. Pour les commandes importantes." },
-    { icon: '¥', name: 'Cash', color: C.orange, tag: 'Sur place', desc: "Remise en espèces avec signature de réception. Pour les fournisseurs qui préfèrent le cash." },
-  ];
+    { icon: '支', key: 'alipay', color: C.alipay },
+    { icon: '微', key: 'wechat', color: C.wechat },
+    { icon: '🏦', key: 'bankTransfer', color: C.violet },
+    { icon: '¥', key: 'cash', color: C.orange },
+  ] as const;
   return (
     <section style={{ padding: '100px 24px', background: C.surface }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: 3 }}>Modes de paiement</span>
-            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(28px, 4.5vw, 48px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-2px' }}>Le mode que votre fournisseur préfère</h2>
+            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: 3 }}>{t('methods.sectionLabel')}</span>
+            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(28px, 4.5vw, 48px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-2px' }}>{t('methods.title')}</h2>
           </div>
         </Reveal>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
           {methods.map((m, i) => (
-            <Reveal key={m.name} delay={i * 0.1}>
+            <Reveal key={m.key} delay={i * 0.1}>
               <div style={{ padding: 32, borderRadius: 20, background: C.bg, border: `1px solid ${C.dim}`, cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)', position: 'relative', overflow: 'hidden' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = `${m.color}40`; e.currentTarget.style.transform = 'translateY(-6px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = C.dim; e.currentTarget.style.transform = 'none'; }}>
                 <div style={{ position: 'absolute', bottom: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: `${m.color}06` }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: `${m.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: m.color, fontWeight: 700 }}>{m.icon}</div>
-                  <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, color: m.color, background: `${m.color}12`, padding: '4px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{m.tag}</span>
+                  <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, color: m.color, background: `${m.color}12`, padding: '4px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t(`methods.${m.key}.tag`)}</span>
                 </div>
-                <h3 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 22, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>{m.name}</h3>
-                <p style={{ fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
+                <h3 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 22, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>{t(`methods.${m.key}.name`)}</h3>
+                <p style={{ fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>{t(`methods.${m.key}.desc`)}</p>
               </div>
             </Reveal>
           ))}
@@ -335,22 +349,16 @@ function Methods() {
 
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 function FAQ() {
+  const { t } = useTranslation('landing');
   const [open, setOpen] = useState<number | null>(null);
-  const faqs = [
-    { q: 'Les paiements sont-ils vraiment instantanés ?', a: 'Oui. Les paiements Alipay et WeChat sont traités en quelques minutes. Les virements bancaires prennent généralement quelques heures. Le cash est immédiat.' },
-    { q: 'Quel est le montant minimum ?', a: '10 000 XAF par transaction. Pas de maximum, mais les gros montants bénéficient d\'un meilleur taux.' },
-    { q: 'Comment le taux est-il calculé ?', a: 'Le taux de base dépend du mode de paiement. Un ajustement s\'applique selon votre pays. Plus le montant est élevé, meilleur est le taux.' },
-    { q: 'Comment mon fournisseur sait-il qu\'il a été payé ?', a: 'Vous recevez une preuve de paiement dans l\'application : capture d\'écran pour Alipay/WeChat, confirmation pour les virements, signature pour le cash.' },
-    { q: 'Y a-t-il des frais cachés ?', a: 'Aucun. Le taux affiché est le taux final. Zéro commission supplémentaire, zéro surprise.' },
-    { q: 'Dans quels pays est disponible Bonzini ?', a: 'Cameroun, Gabon, Tchad, République centrafricaine et Congo.' },
-  ];
+  const faqs = t('faq.items', { returnObjects: true }) as Array<{ q: string; a: string }>;
   return (
     <section id="faq" style={{ padding: '100px 24px', background: C.bg }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.violet, textTransform: 'uppercase', letterSpacing: 3 }}>FAQ</span>
-            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(28px, 4vw, 40px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-1.5px' }}>Vos questions</h2>
+            <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.violet, textTransform: 'uppercase', letterSpacing: 3 }}>{t('faq.sectionLabel')}</span>
+            <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(28px, 4vw, 40px)', color: '#fff', margin: '10px 0 0', letterSpacing: '-1.5px' }}>{t('faq.title')}</h2>
           </div>
         </Reveal>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -375,6 +383,7 @@ function FAQ() {
 
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 function CTASection({ onCTA }: { onCTA: () => void }) {
+  const { t } = useTranslation('landing');
   return (
     <section style={{ padding: '120px 24px', position: 'relative', overflow: 'hidden', background: `radial-gradient(ellipse 70% 50% at 50% 50%, ${C.surfaceLight}, ${C.bg})` }}>
       <div style={{ position: 'absolute', top: '50%', left: '50%', width: 500, height: 500, transform: 'translate(-50%, -50%)', borderRadius: '50%', border: `1px solid ${C.dim}`, opacity: 0.3, pointerEvents: 'none' }} />
@@ -382,10 +391,10 @@ function CTASection({ onCTA }: { onCTA: () => void }) {
       <Reveal>
         <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 2 }}>
           <Logo size={52} />
-          <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)', color: '#fff', margin: '28px 0 16px', letterSpacing: '-2px' }}>Vos fournisseurs attendent</h2>
-          <p style={{ fontFamily: F.body, fontSize: 17, color: C.muted, lineHeight: 1.65, margin: '0 0 36px' }}>Chaque minute compte dans le commerce. Envoyez votre premier paiement maintenant.</p>
+          <h2 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)', color: '#fff', margin: '28px 0 16px', letterSpacing: '-2px' }}>{t('cta.title')}</h2>
+          <p style={{ fontFamily: F.body, fontSize: 17, color: C.muted, lineHeight: 1.65, margin: '0 0 36px' }}>{t('cta.subtitle')}</p>
           <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 800, fontSize: 17, background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, color: '#fff', border: 'none', padding: '20px 48px', borderRadius: 50, cursor: 'pointer', boxShadow: `0 0 60px ${C.violet}40` }}>
-            Commencer maintenant
+            {t('cta.button')}
           </button>
         </div>
       </Reveal>
@@ -395,10 +404,25 @@ function CTASection({ onCTA }: { onCTA: () => void }) {
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
+  const { t } = useTranslation('landing');
   const cols = [
-    { t: 'Produit', l: ['Fonctionnement', 'Tarifs', 'FAQ', 'Sécurité'] },
-    { t: 'Entreprise', l: ['À propos', 'Contact', 'Mentions légales', 'CGU'] },
-    { t: 'Support', l: ['WhatsApp', 'Email', "Centre d'aide"] },
+    { title: t('footer.product'), links: [
+      { key: 'howItWorks', label: t('footer.links.howItWorks') },
+      { key: 'pricing', label: t('footer.links.pricing') },
+      { key: 'faq', label: t('footer.links.faq') },
+      { key: 'security', label: t('footer.links.security') },
+    ]},
+    { title: t('footer.company'), links: [
+      { key: 'about', label: t('footer.links.about') },
+      { key: 'contact', label: t('footer.links.contact') },
+      { key: 'legal', label: t('footer.links.legal') },
+      { key: 'terms', label: t('footer.links.terms') },
+    ]},
+    { title: t('footer.support'), links: [
+      { key: 'whatsapp', label: t('footer.links.whatsapp') },
+      { key: 'emailSupport', label: t('footer.links.emailSupport') },
+      { key: 'helpCenter', label: t('footer.links.helpCenter') },
+    ]},
   ];
   return (
     <footer style={{ padding: '56px 24px 28px', background: C.bg, borderTop: `1px solid ${C.dim}` }}>
@@ -409,12 +433,12 @@ function Footer() {
               <Logo size={24} />
               <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 17, color: '#fff' }}>Bonzini</span>
             </div>
-            <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, opacity: 0.6 }}>Paiements instantanés vers la Chine pour les importateurs de la zone CEMAC.</p>
+            <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, opacity: 0.6 }}>{t('footer.tagline')}</p>
           </div>
           {cols.map(col => (
-            <div key={col.t}>
-              <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 11, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.t}</h4>
-              {col.l.map(l => <a key={l} href="#" style={{ display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' }}>{l}</a>)}
+            <div key={col.title}>
+              <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 11, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.title}</h4>
+              {col.links.map(l => <a key={l.key} href="#" style={{ display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' }}>{l.label}</a>)}
             </div>
           ))}
         </div>
@@ -423,7 +447,7 @@ function Footer() {
           <div style={{ flex: 3, background: C.violet }} />
           <div style={{ flex: 2, background: C.orange }} />
         </div>
-        <div style={{ fontFamily: F.body, fontSize: 12, color: C.dim, textAlign: 'center' }}>&copy; 2026 Bonzini. Tous droits réservés.</div>
+        <div style={{ fontFamily: F.body, fontSize: 12, color: C.dim, textAlign: 'center' }}>{t('footer.copyright')}</div>
       </div>
     </footer>
   );

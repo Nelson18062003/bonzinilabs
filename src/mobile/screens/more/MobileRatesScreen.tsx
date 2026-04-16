@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { parseISO, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -46,6 +47,7 @@ import { formatNumber, formatCompact, formatCurrencyRMB, formatRelativeDate } fr
 import { toast } from 'sonner';
 
 export function MobileRatesScreen() {
+  const { t } = useTranslation('common');
   const queryClient = useQueryClient();
 
   // ── UI State ──
@@ -255,14 +257,14 @@ export function MobileRatesScreen() {
     try {
       if (formMode === 'create') {
         await addRate.mutateAsync({ rateRmbToXaf: computedRateRmbToXaf, effectiveAt });
-        toast.success('Taux créé');
+        toast.success(t('rateCreated', { defaultValue: 'Taux créé' }));
       } else if (editingRate) {
         await updateRate.mutateAsync({
           rateId: editingRate.id,
           rateRmbToXaf: computedRateRmbToXaf,
           effectiveAt,
         });
-        toast.success('Taux modifié');
+        toast.success(t('rateModified', { defaultValue: 'Taux modifié' }));
       }
       setFormDrawerOpen(false);
       setEditingRate(null);
@@ -275,7 +277,7 @@ export function MobileRatesScreen() {
     if (rateToDelete) {
       try {
         await deleteRate.mutateAsync(rateToDelete);
-        toast.success('Taux supprimé');
+        toast.success(t('rateDeleted', { defaultValue: 'Taux supprimé' }));
       } catch {
         // Error handled by mutation
       }
@@ -342,7 +344,7 @@ export function MobileRatesScreen() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <MobileHeader title="Taux de change" backTo="/m/more" showBack />
+        <MobileHeader title={t('exchangeRate', { defaultValue: 'Taux de change' })} backTo="/m/more" showBack />
         <div className="flex-1 px-4 py-4 space-y-5">
           <div className="card-glass p-5 animate-pulse">
             <div className="h-3 w-16 bg-muted-foreground/10 rounded mb-4" />
@@ -370,7 +372,7 @@ export function MobileRatesScreen() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <MobileHeader
-        title="Taux de change"
+        title={t('exchangeRate', { defaultValue: 'Taux de change' })}
         backTo="/m/more"
         showBack
         rightElement={
@@ -491,7 +493,7 @@ export function MobileRatesScreen() {
             {/* Input field — "Vous envoyez" */}
             <div className="space-y-1.5">
               <p className="text-xs text-muted-foreground/60 uppercase tracking-wider">
-                Vous envoyez
+                {t('youSend', { defaultValue: 'Vous envoyez' })}
               </p>
               <div className="flex items-baseline gap-2">
                 <input
@@ -548,7 +550,7 @@ export function MobileRatesScreen() {
             {/* Output — "Vous recevez" */}
             <div className="space-y-1.5">
               <p className="text-xs text-muted-foreground/60 uppercase tracking-wider">
-                Vous recevez
+                {t('youReceive', { defaultValue: 'Vous recevez' })}
               </p>
               <div className="flex items-baseline gap-2">
                 <p
@@ -589,7 +591,7 @@ export function MobileRatesScreen() {
 
             {/* Trust line */}
             <p className="text-xs text-muted-foreground/60 text-center mt-4 italic">
-              Taux appliqué au moment du paiement
+              {t('rateAppliedAtPayment', { defaultValue: 'Taux appliqué au moment du paiement' })}
             </p>
           </div>
 
@@ -600,7 +602,7 @@ export function MobileRatesScreen() {
             className="card-glass p-4 animate-slide-up"
             style={{ animationDelay: '140ms', animationFillMode: 'both' }}
           >
-            <p className="text-sm font-semibold mb-3">Tendance du taux</p>
+            <p className="text-sm font-semibold mb-3">{t('rateTrend', { defaultValue: 'Tendance du taux' })}</p>
             <ResponsiveRateChart
               data={chartData}
               activePeriod={dateFilter}
@@ -624,9 +626,9 @@ export function MobileRatesScreen() {
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Suivez les taux en temps réel</p>
+                <p className="text-sm font-medium">{t('followRatesRealtime', { defaultValue: 'Suivez les taux en temps réel' })}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Les taux sont mis à jour chaque matin pour vous offrir le meilleur cours.
+                  {t('ratesUpdatedDaily', { defaultValue: 'Les taux sont mis à jour chaque matin pour vous offrir le meilleur cours.' })}
                 </p>
               </div>
             </div>
@@ -636,7 +638,7 @@ export function MobileRatesScreen() {
               E. RATE HISTORY
               ═══════════════════════════════════════════════ */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Historique des taux</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('rateHistory', { defaultValue: 'Historique des taux' })}</h3>
 
             {ratesWithVariation.length > 0 ? (
               <div className="space-y-2">
@@ -695,7 +697,7 @@ export function MobileRatesScreen() {
                     </DrawerTrigger>
                     <DrawerContent>
                       <DrawerHeader>
-                        <DrawerTitle>Détails du taux</DrawerTitle>
+                        <DrawerTitle>{t('rateDetails', { defaultValue: 'Détails du taux' })}</DrawerTitle>
                       </DrawerHeader>
                       <div className="px-4 pb-4 space-y-4">
                         <div className="p-4 rounded-xl bg-muted/50">
@@ -741,14 +743,14 @@ export function MobileRatesScreen() {
                           className="flex-1 h-12 rounded-xl border border-border flex items-center justify-center gap-2 font-medium"
                         >
                           <Pencil className="w-4 h-4" />
-                          Modifier
+                          {t('edit', { defaultValue: 'Modifier' })}
                         </button>
                         <button
                           onClick={() => handleDeleteClick(rate.id)}
                           className="flex-1 h-12 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center gap-2 font-medium"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Supprimer
+                          {t('delete', { defaultValue: 'Supprimer' })}
                         </button>
                       </DrawerFooter>
                     </DrawerContent>
@@ -757,7 +759,7 @@ export function MobileRatesScreen() {
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground text-sm">
-                Aucun taux pour cette période
+                {t('noRatesForPeriod', { defaultValue: 'Aucun taux pour cette période' })}
               </div>
             )}
           </div>
@@ -770,7 +772,7 @@ export function MobileRatesScreen() {
           {/* ── En-tête fixe ── */}
           <DrawerHeader className="flex-shrink-0 pb-2 border-b border-border/20">
             <DrawerTitle>
-              {formMode === 'create' ? 'Nouveau taux de change' : 'Modifier le taux'}
+              {formMode === 'create' ? t('newExchangeRate', { defaultValue: 'Nouveau taux de change' }) : t('editRate', { defaultValue: 'Modifier le taux' })}
             </DrawerTitle>
           </DrawerHeader>
 
@@ -1022,12 +1024,12 @@ export function MobileRatesScreen() {
               {addRate.isPending || updateRate.isPending ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Enregistrement...
+                  {t('saving', { defaultValue: 'Enregistrement...' })}
                 </>
               ) : formMode === 'create' ? (
-                'Appliquer le nouveau taux'
+                t('applyNewRate', { defaultValue: 'Appliquer le nouveau taux' })
               ) : (
-                'Enregistrer les modifications'
+                t('saveChanges', { defaultValue: 'Enregistrer les modifications' })
               )}
             </button>
           </div>
@@ -1038,7 +1040,7 @@ export function MobileRatesScreen() {
       <Drawer open={deleteDrawerOpen} onOpenChange={setDeleteDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Supprimer ce taux ?</DrawerTitle>
+            <DrawerTitle>{t('deleteRateConfirm', { defaultValue: 'Supprimer ce taux ?' })}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-4">
             {rateUsage?.isUsed ? (
@@ -1055,7 +1057,7 @@ export function MobileRatesScreen() {
           <DrawerFooter className="flex-row gap-3">
             <DrawerClose asChild>
               <button className="flex-1 h-12 rounded-xl border border-border font-medium">
-                Annuler
+                {t('cancel', { defaultValue: 'Annuler' })}
               </button>
             </DrawerClose>
             <button
@@ -1063,7 +1065,7 @@ export function MobileRatesScreen() {
               disabled={rateUsage?.isUsed || deleteRate.isPending}
               className="flex-1 h-12 rounded-xl bg-destructive text-destructive-foreground font-medium disabled:opacity-50"
             >
-              {deleteRate.isPending ? 'Suppression...' : 'Supprimer'}
+              {deleteRate.isPending ? t('deleting', { defaultValue: 'Suppression...' }) : t('delete', { defaultValue: 'Supprimer' })}
             </button>
           </DrawerFooter>
         </DrawerContent>

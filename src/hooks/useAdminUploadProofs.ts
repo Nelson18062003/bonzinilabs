@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
 import { compressImage } from '@/lib/imageCompression';
+import i18n from '@/i18n';
 
 export function useAdminUploadProofs() {
   const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export function useAdminUploadProofs() {
   return useMutation({
     mutationFn: async ({ depositId, files }: { depositId: string; files: File[] }) => {
       const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser();
-      if (authError || !user) throw new Error('Non authentifié');
+      if (authError || !user) throw new Error(i18n.t('hooks.auth.notAuthenticated', { ns: 'common', defaultValue: 'Non authentifié' }));
 
       const uploadedProofs = [];
 
@@ -67,10 +68,10 @@ export function useAdminUploadProofs() {
       queryClient.invalidateQueries({ queryKey: ['deposit', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-proofs', variables.depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-timeline', variables.depositId] });
-      toast.success(`${data.count} preuve${data.count > 1 ? 's' : ''} ajoutée${data.count > 1 ? 's' : ''}`);
+      toast.success(i18n.t('hooks.adminUploadProofsDeposit.success', { ns: 'common', defaultValue: `${data.count} preuve${data.count > 1 ? 's' : ''} ajoutée${data.count > 1 ? 's' : ''}`, count: data.count }));
     },
     onError: (error) => {
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(i18n.t('hooks.adminUploadProofsDeposit.errorPrefix', { ns: 'common', defaultValue: `Erreur: ${error.message}`, message: error.message }));
     },
   });
 }

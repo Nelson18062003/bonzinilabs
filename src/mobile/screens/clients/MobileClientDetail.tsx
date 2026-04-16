@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
@@ -56,14 +57,16 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
   PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE:      'Actif',
-  INACTIVE:    'Inactif',
-  SUSPENDED:   'Suspendu',
-  PENDING_KYC: 'KYC en attente',
+// Status labels are resolved via i18n inside the component
+const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> = {
+  ACTIVE:      { key: 'active', defaultValue: 'Actif' },
+  INACTIVE:    { key: 'inactive', defaultValue: 'Inactif' },
+  SUSPENDED:   { key: 'suspendedStatus', defaultValue: 'Suspendu' },
+  PENDING_KYC: { key: 'kycPending', defaultValue: 'KYC en attente' },
 };
 
 export function MobileClientDetail() {
+  const { t } = useTranslation('common');
   const { clientId } = useParams();
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId || '');
@@ -134,7 +137,7 @@ export function MobileClientDetail() {
     setDeleteChecking(true);
     try {
       if ((client.walletBalance || 0) > 0) {
-        toast.error(`Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)`);
+        toast.error(t('cannotDeleteClientPositiveBalance', { defaultValue: `Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)` }));
         return;
       }
       const { data: pending } = await supabaseAdmin
@@ -144,7 +147,7 @@ export function MobileClientDetail() {
         .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned'])
         .limit(1);
       if (pending && pending.length > 0) {
-        toast.error('Impossible de supprimer un client ayant des paiements en cours');
+        toast.error(t('cannotDeleteClientPendingPayments', { defaultValue: 'Impossible de supprimer un client ayant des paiements en cours' }));
         return;
       }
       setDeleteDrawerOpen(true);
@@ -161,7 +164,7 @@ export function MobileClientDetail() {
   const handleDownloadStatement = async () => {
     if (!client) return;
     if (!ledgerEntries?.length) {
-      toast.error('Aucun mouvement à exporter');
+      toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
       return;
     }
     setIsStatementGenerating(true);
@@ -207,7 +210,7 @@ export function MobileClientDetail() {
       });
     } catch (err) {
       console.error('Error generating statement:', err);
-      toast.error('Erreur lors de la génération du relevé');
+      toast.error(t('statementGenerationError', { defaultValue: 'Erreur lors de la génération du relevé' }));
     } finally {
       setIsStatementGenerating(false);
     }
@@ -232,7 +235,7 @@ export function MobileClientDetail() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Détail client" showBack backTo="/m/clients" />
+        <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
         <SkeletonClientDetail />
       </div>
     );
@@ -241,9 +244,9 @@ export function MobileClientDetail() {
   if (!client) {
     return (
       <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Détail client" showBack backTo="/m/clients" />
+        <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
         <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-muted-foreground">Client non trouvé</p>
+          <p className="text-muted-foreground">{t('clientNotFound', { defaultValue: 'Client non trouvé' })}</p>
         </div>
       </div>
     );
@@ -253,7 +256,7 @@ export function MobileClientDetail() {
 
   return (
     <div className="flex flex-col min-h-screen pb-4">
-      <MobileHeader title="Fiche client" showBack backTo="/m/clients" />
+      <MobileHeader title={t('clientProfile', { defaultValue: 'Fiche client' })} showBack backTo="/m/clients" />
 
       <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* Profile Card */}
@@ -272,7 +275,7 @@ export function MobileClientDetail() {
                   'px-2 py-0.5 rounded text-[10px] font-medium',
                   STATUS_BADGE_STYLES[client.status]
                 )}>
-                  {STATUS_LABELS[client.status]}
+                  {t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status })}
                 </span>
               </div>
 
@@ -288,12 +291,12 @@ export function MobileClientDetail() {
 
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
                 <Mail className="w-3.5 h-3.5" />
-                {client.email || 'Non renseigné'}
+                {client.email || t('notProvided', { defaultValue: 'Non renseigné' })}
               </div>
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
                 <Calendar className="w-3 h-3" />
-                Client depuis {formatDate(client.createdAt)}
+                {t('clientSince', { defaultValue: 'Client depuis' })} {formatDate(client.createdAt)}
               </div>
 
               {client.utmSource && (
@@ -319,13 +322,13 @@ export function MobileClientDetail() {
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Solde disponible</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
             </div>
             <button
               onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
               className="text-primary text-sm font-medium"
             >
-              Historique
+              {t('history', { defaultValue: 'Historique' })}
             </button>
           </div>
 
@@ -341,7 +344,7 @@ export function MobileClientDetail() {
 
           {client.lastLedgerEntry && (
             <p className="text-xs text-muted-foreground mt-2">
-              Dernier mouvement : {formatDate(client.lastLedgerEntry.createdAt)}
+              {t('lastMovement', { defaultValue: 'Dernier mouvement' })} : {formatDate(client.lastLedgerEntry.createdAt)}
             </p>
           )}
 
@@ -354,7 +357,7 @@ export function MobileClientDetail() {
               onClick={() => openAdjustment('CREDIT')}
             >
               <Plus className="w-4 h-4 mr-1" />
-              Crédit
+              {t('credit', { defaultValue: 'Crédit' })}
             </Button>
             <Button
               variant="outline"
@@ -363,7 +366,7 @@ export function MobileClientDetail() {
               onClick={() => openAdjustment('DEBIT')}
             >
               <Minus className="w-4 h-4 mr-1" />
-              Débit
+              {t('debitLabel', { defaultValue: 'Débit' })}
             </Button>
           </div>
         </div>
@@ -380,7 +383,7 @@ export function MobileClientDetail() {
               {formatXAF(client.totalDeposits || 0)}{' '}
               <span className="text-sm font-medium">XAF</span>
             </p>
-            <p className="text-xs text-muted-foreground">Total dépôts</p>
+            <p className="text-xs text-muted-foreground">{t('totalDeposits', { defaultValue: 'Total dépôts' })}</p>
           </div>
 
           <div className="bg-card rounded-xl p-4 border border-border">
@@ -393,7 +396,7 @@ export function MobileClientDetail() {
               {formatXAF(client.totalPayments || 0)}{' '}
               <span className="text-sm font-medium">XAF</span>
             </p>
-            <p className="text-xs text-muted-foreground">Total paiements</p>
+            <p className="text-xs text-muted-foreground">{t('totalPayments', { defaultValue: 'Total paiements' })}</p>
           </div>
         </div>
 
@@ -408,8 +411,8 @@ export function MobileClientDetail() {
                 <History className="w-5 h-5 text-primary" />
               </div>
               <div className="text-left">
-                <p className="font-medium">Historique mouvements</p>
-                <p className="text-xs text-muted-foreground">Voir le ledger complet</p>
+                <p className="font-medium">{t('movementHistory', { defaultValue: 'Historique mouvements' })}</p>
+                <p className="text-xs text-muted-foreground">{t('viewFullLedger', { defaultValue: 'Voir le ledger complet' })}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -424,8 +427,8 @@ export function MobileClientDetail() {
                 <ArrowDownCircle className="w-5 h-5 text-green-500" />
               </div>
               <div className="text-left">
-                <p className="font-medium">Déclarer un dépôt</p>
-                <p className="text-xs text-muted-foreground">Créer un nouveau dépôt</p>
+                <p className="font-medium">{t('declareDeposit', { defaultValue: 'Déclarer un dépôt' })}</p>
+                <p className="text-xs text-muted-foreground">{t('createNewDeposit', { defaultValue: 'Créer un nouveau dépôt' })}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -446,12 +449,12 @@ export function MobileClientDetail() {
               </div>
               <div className="text-left">
                 <p className="font-medium">
-                  {isStatementGenerating ? 'Génération en cours…' : 'Exporter relevé PDF'}
+                  {isStatementGenerating ? t('generatingStatement', { defaultValue: 'Génération en cours…' }) : t('exportPDFStatement', { defaultValue: 'Exporter relevé PDF' })}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {ledgerEntries?.length
-                    ? `${ledgerEntries.length} opération${ledgerEntries.length > 1 ? 's' : ''}`
-                    : 'Télécharger l\'historique'}
+                    ? `${ledgerEntries.length} ${t('operations', { defaultValue: 'opération', count: ledgerEntries.length })}${ledgerEntries.length > 1 ? 's' : ''}`
+                    : t('downloadHistory', { defaultValue: "Télécharger l'historique" })}
                 </p>
               </div>
             </div>
@@ -469,8 +472,8 @@ export function MobileClientDetail() {
                   <Pencil className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="font-medium">Modifier le profil</p>
-                  <p className="text-xs text-muted-foreground">Nom, téléphone, email, entreprise…</p>
+                  <p className="font-medium">{t('editProfile', { defaultValue: 'Modifier le profil' })}</p>
+                  <p className="text-xs text-muted-foreground">{t('namePhoneEmailCompany', { defaultValue: 'Nom, téléphone, email, entreprise…' })}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -488,8 +491,8 @@ export function MobileClientDetail() {
                   <Key className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="text-left">
-                  <p className="font-medium">Réinitialiser mot de passe</p>
-                  <p className="text-xs text-muted-foreground">Générer un nouveau mot de passe</p>
+                  <p className="font-medium">{t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}</p>
+                  <p className="text-xs text-muted-foreground">{t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' })}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -508,8 +511,8 @@ export function MobileClientDetail() {
                   {deleteChecking ? <Loader2 className="w-5 h-5 text-destructive animate-spin" /> : <Trash2 className="w-5 h-5 text-destructive" />}
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-destructive">Supprimer le client</p>
-                  <p className="text-xs text-muted-foreground">Suppression définitive et irréversible</p>
+                  <p className="font-medium text-destructive">{t('deleteClient', { defaultValue: 'Supprimer le client' })}</p>
+                  <p className="text-xs text-muted-foreground">{t('permanentDeletion', { defaultValue: 'Suppression définitive et irréversible' })}</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -537,18 +540,18 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Pencil className="w-5 h-5 text-primary" />
-              Modifier le profil
+              {t('editProfile', { defaultValue: 'Modifier le profil' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 space-y-3 overflow-y-auto max-h-[60vh]">
             {[
-              { label: 'Prénom', key: 'firstName' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: 'Nom', key: 'lastName' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: 'Téléphone / WhatsApp', key: 'phone' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: 'Email', key: 'email' as const, icon: <Mail className="w-4 h-4" /> },
-              { label: 'Entreprise', key: 'companyName' as const, icon: <Building2 className="w-4 h-4" /> },
-              { label: 'Pays', key: 'country' as const, icon: <MapPin className="w-4 h-4" /> },
-              { label: 'Ville', key: 'city' as const, icon: <MapPin className="w-4 h-4" /> },
+              { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: t('phoneWhatsApp', { defaultValue: 'Téléphone / WhatsApp' }), key: 'phone' as const, icon: <Phone className="w-4 h-4" /> },
+              { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const, icon: <Mail className="w-4 h-4" /> },
+              { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const, icon: <Building2 className="w-4 h-4" /> },
+              { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const, icon: <MapPin className="w-4 h-4" /> },
+              { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const, icon: <MapPin className="w-4 h-4" /> },
             ].map(({ label, key }) => (
               <div key={key}>
                 <label className="block text-sm font-bold mb-1">{label}</label>
@@ -564,10 +567,10 @@ export function MobileClientDetail() {
           <DrawerFooter>
             <Button onClick={handleSaveEdit} disabled={updateClientMutation.isPending}>
               {updateClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Enregistrer
+              {t('save', { defaultValue: 'Enregistrer' })}
             </Button>
             <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -579,7 +582,7 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="w-5 h-5" />
-              Supprimer le client
+              {t('deleteClient', { defaultValue: 'Supprimer le client' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4">
@@ -597,10 +600,10 @@ export function MobileClientDetail() {
               disabled={deleteClientMutation.isPending}
             >
               {deleteClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Confirmer la suppression
+              {t('confirmDeletion', { defaultValue: 'Confirmer la suppression' })}
             </Button>
             <Button variant="outline" onClick={() => setDeleteDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -612,14 +615,13 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
-              Réinitialiser le mot de passe
+              {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4">
             <p className="text-muted-foreground">
-              Un nouveau mot de passe temporaire sera généré pour{' '}
-              <strong>{client.firstName} {client.lastName}</strong>. Vous devrez le
-              transmettre manuellement au client.
+              {t('resetPasswordClientMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
+              <strong>{client.firstName} {client.lastName}</strong>. {t('resetPasswordClientSuffix', { defaultValue: 'Vous devrez le transmettre manuellement au client.' })}
             </p>
           </div>
           <DrawerFooter>
@@ -627,10 +629,10 @@ export function MobileClientDetail() {
               {resetPasswordMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-              Générer nouveau mot de passe
+              {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
             </Button>
             <Button variant="outline" onClick={() => setResetDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -642,12 +644,12 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Check className="w-5 h-5 text-green-500" />
-              Mot de passe généré
+              {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 space-y-4">
             <p className="text-muted-foreground">
-              Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.
+              {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
             </p>
             <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
               <code className="text-lg font-mono">{newPassword}</code>
@@ -660,11 +662,11 @@ export function MobileClientDetail() {
               </Button>
             </div>
             <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-lg">
-              Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.
+              {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
             </p>
           </div>
           <DrawerFooter>
-            <Button onClick={() => setPasswordResultDrawerOpen(false)}>Fermer</Button>
+            <Button onClick={() => setPasswordResultDrawerOpen(false)}>{t('close', { defaultValue: 'Fermer' })}</Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

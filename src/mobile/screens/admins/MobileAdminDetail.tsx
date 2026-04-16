@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminUsers } from '@/hooks/useAdminData';
@@ -50,6 +51,7 @@ const ROLE_BADGE_COLORS: Record<AppRole, string> = {
 const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent'];
 
 export function MobileAdminDetail() {
+  const { t } = useTranslation('common');
   const { adminId } = useParams();
   const navigate = useNavigate();
   const { data: admins, isLoading } = useAdminUsers();
@@ -136,7 +138,7 @@ export function MobileAdminDetail() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Détail admin" showBack backTo="/m/more/admins" />
+        <MobileHeader title={t('adminDetail', { defaultValue: 'Détail admin' })} showBack backTo="/m/more/admins" />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -147,9 +149,9 @@ export function MobileAdminDetail() {
   if (!admin) {
     return (
       <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Détail admin" showBack backTo="/m/more/admins" />
+        <MobileHeader title={t('adminDetail', { defaultValue: 'Détail admin' })} showBack backTo="/m/more/admins" />
         <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-muted-foreground">Admin non trouvé</p>
+          <p className="text-muted-foreground">{t('adminNotFound', { defaultValue: 'Admin non trouvé' })}</p>
         </div>
       </div>
     );
@@ -159,7 +161,7 @@ export function MobileAdminDetail() {
 
   return (
     <div className="flex flex-col min-h-screen pb-4">
-      <MobileHeader title="Détail admin" showBack backTo="/m/more/admins" />
+      <MobileHeader title={t('adminDetail', { defaultValue: 'Détail admin' })} showBack backTo="/m/more/admins" />
 
       <div className="flex-1 px-4 py-4 space-y-4">
         {/* Profile Header */}
@@ -206,12 +208,12 @@ export function MobileAdminDetail() {
                   : 'bg-red-500/10 text-red-600 dark:text-red-400'
               )}
             >
-              {admin.status === 'ACTIVE' ? 'Actif' : 'Désactivé'}
+              {admin.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) : t('disabled', { defaultValue: 'Désactivé' })}
             </span>
 
             {isSelf && (
               <span className="px-3 py-1 rounded-full text-sm font-medium bg-muted text-muted-foreground">
-                C'est vous
+                {t('itsYou', { defaultValue: "C'est vous" })}
               </span>
             )}
           </div>
@@ -226,7 +228,7 @@ export function MobileAdminDetail() {
               </div>
             </div>
             <p className="text-sm font-medium">{formatDate(admin.createdAt)}</p>
-            <p className="text-xs text-muted-foreground">Créé le</p>
+            <p className="text-xs text-muted-foreground">{t('createdOn', { defaultValue: 'Créé le' })}</p>
           </div>
 
           <div className="bg-card rounded-xl p-4 border border-border">
@@ -241,9 +243,9 @@ export function MobileAdminDetail() {
                     addSuffix: true,
                     locale: fr,
                   })
-                : 'Jamais'}
+                : t('never', { defaultValue: 'Jamais' })}
             </p>
-            <p className="text-xs text-muted-foreground">Dernière connexion</p>
+            <p className="text-xs text-muted-foreground">{t('lastLogin', { defaultValue: 'Dernière connexion' })}</p>
           </div>
         </div>
 
@@ -257,7 +259,7 @@ export function MobileAdminDetail() {
               <p className="font-medium">
                 {ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
               </p>
-              <p className="text-sm text-muted-foreground">Rôle attribué</p>
+              <p className="text-sm text-muted-foreground">{t('assignedRole', { defaultValue: 'Rôle attribué' })}</p>
             </div>
           </div>
         </div>
@@ -266,7 +268,7 @@ export function MobileAdminDetail() {
       {/* Action Cards */}
       {canManageUsers && (
         <div className="px-4 pb-4 space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground px-1">Actions</h3>
+          <h3 className="text-sm font-medium text-muted-foreground px-1">{t('actions', { defaultValue: 'Actions' })}</h3>
           <div className="space-y-2">
             <button
               onClick={handleOpenEditDrawer}
@@ -276,8 +278,8 @@ export function MobileAdminDetail() {
                 <Edit2 className="w-5 h-5 text-blue-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium">Modifier le profil</p>
-                <p className="text-xs text-muted-foreground">Nom, prénom, rôle</p>
+                <p className="font-medium">{t('editProfile', { defaultValue: 'Modifier le profil' })}</p>
+                <p className="text-xs text-muted-foreground">{t('nameAndRole', { defaultValue: 'Nom, prénom, rôle' })}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </button>
@@ -294,9 +296,9 @@ export function MobileAdminDetail() {
                   <Power className={cn('w-5 h-5', admin.status === 'ACTIVE' ? 'text-red-500' : 'text-green-500')} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium">{admin.status === 'ACTIVE' ? 'Désactiver' : 'Activer'} le compte</p>
+                  <p className="font-medium">{admin.status === 'ACTIVE' ? t('deactivateAccount', { defaultValue: 'Désactiver le compte' }) : t('activateAccount', { defaultValue: 'Activer le compte' })}</p>
                   <p className="text-xs text-muted-foreground">
-                    {admin.status === 'ACTIVE' ? 'Bloquer l\'accès' : 'Restaurer l\'accès'}
+                    {admin.status === 'ACTIVE' ? t('blockAccess', { defaultValue: "Bloquer l'accès" }) : t('restoreAccess', { defaultValue: "Restaurer l'accès" })}
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -311,9 +313,9 @@ export function MobileAdminDetail() {
                 <Key className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium">{isSelf ? 'Changer mon mot de passe' : 'Réinitialiser mot de passe'}</p>
+                <p className="font-medium">{isSelf ? t('changeMyPassword', { defaultValue: 'Changer mon mot de passe' }) : t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}</p>
                 <p className="text-xs text-muted-foreground">
-                  {isSelf ? 'Générer un nouveau mot de passe' : 'Générer un mot de passe temporaire'}
+                  {isSelf ? t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' }) : t('generateTempPassword', { defaultValue: 'Générer un mot de passe temporaire' })}
                 </p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -326,11 +328,11 @@ export function MobileAdminDetail() {
       <Drawer open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
         <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
           <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle>Modifier l'admin</DrawerTitle>
+            <DrawerTitle>{t('editAdmin', { defaultValue: "Modifier l'admin" })}</DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
             <div>
-              <Label htmlFor="firstName">Prénom</Label>
+              <Label htmlFor="firstName">{t('firstName', { defaultValue: 'Prénom' })}</Label>
               <Input
                 id="firstName"
                 value={editFirstName}
@@ -339,7 +341,7 @@ export function MobileAdminDetail() {
               />
             </div>
             <div>
-              <Label htmlFor="lastName">Nom</Label>
+              <Label htmlFor="lastName">{t('lastName', { defaultValue: 'Nom' })}</Label>
               <Input
                 id="lastName"
                 value={editLastName}
@@ -349,7 +351,7 @@ export function MobileAdminDetail() {
             </div>
             {!isSelf && (
               <div>
-                <Label>Rôle</Label>
+                <Label>{t('role', { defaultValue: 'Rôle' })}</Label>
                 <div className="grid grid-cols-1 gap-2 mt-1.5">
                   {MANAGEABLE_ROLES.map((role) => (
                     <button
@@ -377,10 +379,10 @@ export function MobileAdminDetail() {
               {(updateProfileMutation.isPending || updateRoleMutation.isPending) && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-              Enregistrer
+              {t('save', { defaultValue: 'Enregistrer' })}
             </Button>
             <Button variant="outline" onClick={() => setEditDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -392,14 +394,14 @@ export function MobileAdminDetail() {
           <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              {admin.status === 'ACTIVE' ? 'Désactiver' : 'Réactiver'} l'admin
+              {admin.status === 'ACTIVE' ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })} {t('theAdmin', { defaultValue: "l'admin" })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             <p className="text-muted-foreground">
               {admin.status === 'ACTIVE'
-                ? `Voulez-vous vraiment désactiver ${admin.firstName} ${admin.lastName} ? Cet admin ne pourra plus se connecter.`
-                : `Voulez-vous vraiment réactiver ${admin.firstName} ${admin.lastName} ? Cet admin pourra à nouveau se connecter.`}
+                ? t('confirmDeactivateAdmin', { defaultValue: `Voulez-vous vraiment désactiver ${admin.firstName} ${admin.lastName} ? Cet admin ne pourra plus se connecter.`, name: `${admin.firstName} ${admin.lastName}` })
+                : t('confirmReactivateAdmin', { defaultValue: `Voulez-vous vraiment réactiver ${admin.firstName} ${admin.lastName} ? Cet admin pourra à nouveau se connecter.`, name: `${admin.firstName} ${admin.lastName}` })}
             </p>
           </div>
           <DrawerFooter>
@@ -411,10 +413,10 @@ export function MobileAdminDetail() {
               {toggleStatusMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-              {admin.status === 'ACTIVE' ? 'Désactiver' : 'Réactiver'}
+              {admin.status === 'ACTIVE' ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })}
             </Button>
             <Button variant="outline" onClick={() => setStatusDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -426,16 +428,15 @@ export function MobileAdminDetail() {
           <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle className="flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
-              Réinitialiser le mot de passe
+              {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             <p className="text-muted-foreground">
               {isSelf
-                ? 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.'
-                : <>Un nouveau mot de passe temporaire sera généré pour{' '}
-                  <strong>{admin.firstName} {admin.lastName}</strong>. Vous devrez le
-                  transmettre manuellement à l'administrateur.</>}
+                ? t('resetPasswordSelfMessage', { defaultValue: 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.' })
+                : <>{t('resetPasswordOtherMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
+                  <strong>{admin.firstName} {admin.lastName}</strong>. {t('resetPasswordOtherMessageSuffix', { defaultValue: "Vous devrez le transmettre manuellement à l'administrateur." })}</>}
             </p>
           </div>
           <DrawerFooter>
@@ -446,10 +447,10 @@ export function MobileAdminDetail() {
               {resetPasswordMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-              Générer nouveau mot de passe
+              {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
             </Button>
             <Button variant="outline" onClick={() => setResetDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -461,14 +462,14 @@ export function MobileAdminDetail() {
           <DrawerHeader className="flex-shrink-0 border-b border-border/20">
             <DrawerTitle className="flex items-center gap-2">
               <Check className="w-5 h-5 text-green-500" />
-              Mot de passe généré
+              {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
             <p className="text-muted-foreground">
               {isSelf
-                ? 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.'
-                : 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l\'administrateur.'}
+                ? t('copyPasswordSelfMessage', { defaultValue: 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.' })
+                : t('copyPasswordOtherMessage', { defaultValue: "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur." })}
             </p>
             <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
               <code className="text-lg font-mono">{newPassword}</code>
@@ -485,12 +486,12 @@ export function MobileAdminDetail() {
               </Button>
             </div>
             <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-lg">
-              Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.
+              {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
             </p>
           </div>
           <DrawerFooter>
             <Button onClick={() => setPasswordResultDrawerOpen(false)}>
-              Fermer
+              {t('close', { defaultValue: 'Fermer' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>

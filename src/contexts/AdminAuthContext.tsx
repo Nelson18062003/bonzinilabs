@@ -201,7 +201,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!data.user) {
-        return { success: false, error: 'Connexion échouée' };
+        return { success: false, error: 'Login failed' };
       }
 
       // Check if user is an admin/agent
@@ -209,19 +209,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
       if (!adminData) {
         await supabaseAdmin.auth.signOut();
-        return { success: false, error: 'Accès non autorisé. Aucun rôle attribué à ce compte.' };
+        return { success: false, error: 'Unauthorized access. No role assigned to this account.' };
       }
 
       if ('disabled' in adminData) {
         await supabaseAdmin.auth.signOut();
-        return { success: false, error: 'Ce compte a été désactivé. Contactez un administrateur.' };
+        return { success: false, error: 'This account has been disabled. Contact an administrator.' };
       }
 
       setCurrentUser(adminData);
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Une erreur est survenue' };
+      return { success: false, error: 'An error occurred' };
     }
   };
 

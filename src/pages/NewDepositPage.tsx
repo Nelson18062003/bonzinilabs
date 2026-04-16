@@ -44,6 +44,7 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type Step =
   | 'amount'
@@ -64,6 +65,7 @@ function getPhaseIndex(step: Step): number {
 
 const NewDepositPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('deposits');
   const { user } = useAuth();
   const createDeposit = useCreateDeposit();
 
@@ -92,10 +94,10 @@ const NewDepositPage = () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
-      toast.success('Copié !');
+      toast.success(t('detail.copied'));
       setTimeout(() => setCopiedField(null), 2000);
     } catch {
-      toast.error('Erreur lors de la copie');
+      toast.error(t('detail.copyError'));
     }
   };
 
@@ -118,8 +120,8 @@ const NewDepositPage = () => {
         agency_name: selectedAgency || undefined,
       });
 
-      toast.success('Dépôt créé avec succès !', {
-        description: `Référence: ${deposit.reference}. Téléchargez vos justificatifs.`,
+      toast.success(t('new.depositCreated'), {
+        description: t('new.depositCreatedDesc', { reference: deposit.reference }),
       });
 
       // Navigate to deposit detail — proof upload is handled there
@@ -189,27 +191,27 @@ const NewDepositPage = () => {
     if (selectedFamily === 'BANK' && selectedBank) {
       const bankInfo = getBankInfo(selectedBank);
       return {
-        title: selectedSubMethod === 'BANK_TRANSFER' ? 'Virement bancaire' : 'Dépôt cash en banque',
+        title: selectedSubMethod === 'BANK_TRANSFER' ? t('new.recap.bankTransferTitle') : t('new.recap.bankCashTitle'),
         fields: [
-          { label: 'Banque', value: bankInfo?.bonziniAccount.bankName || '', key: 'bank' },
-          { label: 'N° Compte', value: bankInfo?.bonziniAccount.accountNumber || '', key: 'account', mono: true },
-          { label: 'Titulaire', value: bankInfo?.bonziniAccount.accountName || '', key: 'name' },
-          { label: 'IBAN', value: bankInfo?.bonziniAccount.iban || '', key: 'iban', mono: true },
-          { label: 'SWIFT', value: bankInfo?.bonziniAccount.swift || '', key: 'swift', mono: true },
+          { label: t('new.recap.bank'), value: bankInfo?.bonziniAccount.bankName || '', key: 'bank' },
+          { label: t('new.recap.accountNumber'), value: bankInfo?.bonziniAccount.accountNumber || '', key: 'account', mono: true },
+          { label: t('new.recap.accountHolder'), value: bankInfo?.bonziniAccount.accountName || '', key: 'name' },
+          { label: t('new.recap.iban'), value: bankInfo?.bonziniAccount.iban || '', key: 'iban', mono: true },
+          { label: t('new.recap.swift'), value: bankInfo?.bonziniAccount.swift || '', key: 'swift', mono: true },
         ],
         merchantCode: undefined as string | undefined,
         instructions: selectedSubMethod === 'BANK_TRANSFER'
           ? [
-              'Connectez-vous à votre application bancaire ou rendez-vous en agence',
-              'Effectuez un virement vers le compte ci-dessus',
-              'Vous recevrez une référence après confirmation',
-              'Conservez le reçu et téléchargez-le ensuite',
+              t('new.recap.bankTransferInstr1'),
+              t('new.recap.bankTransferInstr2'),
+              t('new.recap.bankTransferInstr3'),
+              t('new.recap.bankTransferInstr4'),
             ]
           : [
-              `Rendez-vous dans une agence ${bankInfo?.label}`,
-              'Effectuez un dépôt cash sur le compte ci-dessus',
-              'Vous recevrez une référence après confirmation',
-              'Conservez le bordereau et téléchargez-le ensuite',
+              t('new.recap.bankCashInstr1', { bank: bankInfo?.label }),
+              t('new.recap.bankCashInstr2'),
+              t('new.recap.bankCashInstr3'),
+              t('new.recap.bankCashInstr4'),
             ],
       };
     }
@@ -217,32 +219,32 @@ const NewDepositPage = () => {
     if (selectedFamily === 'ORANGE_MONEY') {
       if (selectedSubMethod === 'OM_TRANSFER') {
         return {
-          title: 'Transfert Orange Money',
+          title: t('new.recap.omTransferTitle'),
           fields: [
-            { label: 'Numéro OM', value: orangeMoneyAccount.phone, key: 'account', mono: true },
-            { label: 'Titulaire', value: orangeMoneyAccount.accountName, key: 'name' },
+            { label: t('new.recap.omNumber'), value: orangeMoneyAccount.phone, key: 'account', mono: true },
+            { label: t('new.recap.accountHolder'), value: orangeMoneyAccount.accountName, key: 'name' },
           ],
           merchantCode: undefined as string | undefined,
           instructions: [
-            'Composez #150*1*1#',
-            `Entrez le numéro: ${orangeMoneyAccount.phone}`,
-            `Saisissez le montant: ${formatXAF(parseInt(amount))} XAF`,
-            'Confirmez avec votre code PIN',
-            'Prenez une capture d\'écran du SMS de confirmation',
+            t('new.recap.omTransferInstr1'),
+            t('new.recap.omTransferInstr2', { phone: orangeMoneyAccount.phone }),
+            t('new.recap.omTransferInstr3', { amount: `${formatXAF(parseInt(amount))} XAF` }),
+            t('new.recap.omTransferInstr4'),
+            t('new.recap.omTransferInstr5'),
           ],
         };
       } else {
         const merchantCodeWithAmount = omMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
-          title: 'Retrait Orange Money',
+          title: t('new.recap.omWithdrawalTitle'),
           fields: [
-            { label: 'Titulaire', value: omMerchantInfo.accountName, key: 'name' },
+            { label: t('new.recap.accountHolder'), value: omMerchantInfo.accountName, key: 'name' },
           ],
           merchantCode: merchantCodeWithAmount,
           instructions: [
-            'Composez le code ci-dessous sur votre téléphone',
-            'Validez avec votre code PIN Orange Money',
-            'Prenez une capture d\'écran du SMS de confirmation',
+            t('new.recap.omWithdrawalInstr1'),
+            t('new.recap.omWithdrawalInstr2'),
+            t('new.recap.omWithdrawalInstr3'),
           ],
         };
       }
@@ -251,32 +253,32 @@ const NewDepositPage = () => {
     if (selectedFamily === 'MTN_MONEY') {
       if (selectedSubMethod === 'MTN_TRANSFER') {
         return {
-          title: 'Transfert MTN Mobile Money',
+          title: t('new.recap.mtnTransferTitle'),
           fields: [
-            { label: 'Numéro MOMO', value: mtnMoneyAccount.phone, key: 'account', mono: true },
-            { label: 'Titulaire', value: mtnMoneyAccount.accountName, key: 'name' },
+            { label: t('new.recap.mtnNumber'), value: mtnMoneyAccount.phone, key: 'account', mono: true },
+            { label: t('new.recap.accountHolder'), value: mtnMoneyAccount.accountName, key: 'name' },
           ],
           merchantCode: undefined as string | undefined,
           instructions: [
-            'Composez *126#',
-            'Sélectionnez "Transfert d\'argent"',
-            `Entrez le numéro: ${mtnMoneyAccount.phone}`,
-            `Saisissez le montant: ${formatXAF(parseInt(amount))} XAF`,
-            'Confirmez avec votre code PIN',
+            t('new.recap.mtnTransferInstr1'),
+            t('new.recap.mtnTransferInstr2'),
+            t('new.recap.mtnTransferInstr3', { phone: mtnMoneyAccount.phone }),
+            t('new.recap.mtnTransferInstr4', { amount: `${formatXAF(parseInt(amount))} XAF` }),
+            t('new.recap.mtnTransferInstr5'),
           ],
         };
       } else {
         const merchantCodeWithAmount = mtnMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
-          title: 'Retrait MTN Mobile Money',
+          title: t('new.recap.mtnWithdrawalTitle'),
           fields: [
-            { label: 'Titulaire', value: mtnMerchantInfo.accountName, key: 'name' },
+            { label: t('new.recap.accountHolder'), value: mtnMerchantInfo.accountName, key: 'name' },
           ],
           merchantCode: merchantCodeWithAmount,
           instructions: [
-            'Composez le code ci-dessous sur votre téléphone',
-            'Validez avec votre code PIN MTN Mobile Money',
-            'Prenez une capture d\'écran du SMS de confirmation',
+            t('new.recap.mtnWithdrawalInstr1'),
+            t('new.recap.mtnWithdrawalInstr2'),
+            t('new.recap.mtnWithdrawalInstr3'),
           ],
         };
       }
@@ -285,37 +287,37 @@ const NewDepositPage = () => {
     if (selectedFamily === 'AGENCY_BONZINI' && selectedAgency) {
       const agencyInfo = getAgencyInfo(selectedAgency);
       return {
-        title: 'Dépôt en agence Bonzini',
+        title: t('new.recap.agencyTitle'),
         fields: [
-          { label: 'Agence', value: agencyInfo?.label || '', key: 'agency' },
-          { label: 'Adresse', value: agencyInfo?.address || '', key: 'address' },
-          { label: 'Horaires', value: agencyInfo?.hours || '', key: 'hours' },
+          { label: t('new.recap.agency'), value: agencyInfo?.label || '', key: 'agency' },
+          { label: t('new.recap.address'), value: agencyInfo?.address || '', key: 'address' },
+          { label: t('new.recap.hours'), value: agencyInfo?.hours || '', key: 'hours' },
         ],
         merchantCode: undefined as string | undefined,
         instructions: [
-          `Rendez-vous à l'agence ${agencyInfo?.label}`,
-          'Présentez votre pièce d\'identité',
-          'Vous recevrez une référence après confirmation',
-          'Effectuez votre dépôt en espèces',
-          'Conservez votre reçu',
+          t('new.recap.agencyInstr1', { agency: agencyInfo?.label }),
+          t('new.recap.agencyInstr2'),
+          t('new.recap.agencyInstr3'),
+          t('new.recap.agencyInstr4'),
+          t('new.recap.agencyInstr5'),
         ],
       };
     }
 
     if (selectedFamily === 'WAVE') {
       return {
-        title: 'Transfert Wave',
+        title: t('new.recap.waveTitle'),
         fields: [
-          { label: 'Numéro Wave', value: waveAccount.phone, key: 'account', mono: true },
-          { label: 'Titulaire', value: waveAccount.accountName, key: 'name' },
+          { label: t('new.recap.waveNumber'), value: waveAccount.phone, key: 'account', mono: true },
+          { label: t('new.recap.accountHolder'), value: waveAccount.accountName, key: 'name' },
         ],
         merchantCode: undefined as string | undefined,
         instructions: [
-          'Ouvrez l\'application Wave',
-          'Sélectionnez "Envoyer"',
-          `Entrez le numéro: ${waveAccount.phone}`,
-          `Saisissez le montant: ${formatXAF(parseInt(amount))} XAF`,
-          'Confirmez le transfert',
+          t('new.recap.waveInstr1'),
+          t('new.recap.waveInstr2'),
+          t('new.recap.waveInstr3', { phone: waveAccount.phone }),
+          t('new.recap.waveInstr4', { amount: `${formatXAF(parseInt(amount))} XAF` }),
+          t('new.recap.waveInstr5'),
         ],
       };
     }
@@ -350,7 +352,7 @@ const NewDepositPage = () => {
       <div className="space-y-6">
         <div className="card-elevated p-6">
           <p className="text-sm text-muted-foreground text-center mb-4">
-            Montant à déposer
+            {t('new.amountToDeposit')}
           </p>
           <div className="flex items-center justify-center gap-2">
             <input
@@ -392,7 +394,7 @@ const NewDepositPage = () => {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Montant minimum : 50 000 XAF
+          {t('new.minimumAmount')}
         </p>
 
         <button
@@ -405,7 +407,7 @@ const NewDepositPage = () => {
               : 'bg-muted text-muted-foreground cursor-not-allowed'
           )}
         >
-          Continuer
+          {t('new.continue')}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -420,11 +422,11 @@ const NewDepositPage = () => {
           className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour
+          {t('new.back')}
         </button>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Comment souhaitez-vous déposer ?
+          {t('new.howToDeposit')}
         </p>
         {methodFamilies.map((family) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -470,11 +472,11 @@ const NewDepositPage = () => {
             className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour
+            {t('new.back')}
           </button>
 
           <p className="text-sm text-muted-foreground mb-4">
-            Type d'opération
+            {t('new.operationType')}
           </p>
 
           {subMethodsList.map((subMethod) => (
@@ -503,11 +505,11 @@ const NewDepositPage = () => {
           className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour
+          {t('new.back')}
         </button>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Choisissez votre banque
+          {t('new.chooseBank')}
         </p>
 
         {banks.map((bank) => (
@@ -537,11 +539,11 @@ const NewDepositPage = () => {
           className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour
+          {t('new.back')}
         </button>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Choisissez une agence
+          {t('new.chooseAgency')}
         </p>
 
         {agencies.map((agency) => (
@@ -580,13 +582,13 @@ const NewDepositPage = () => {
             className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour
+            {t('new.back')}
           </button>
 
           {/* Summary card */}
           <div className="card-elevated p-4 bg-primary/5 border-primary/20">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">Montant à déposer</span>
+              <span className="text-sm text-muted-foreground">{t('new.amountToDeposit')}</span>
               <span
                 className="font-bold text-lg text-foreground"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -595,7 +597,7 @@ const NewDepositPage = () => {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Méthode</span>
+              <span className="text-sm text-muted-foreground">{t('detail.method')}</span>
               <span className="text-sm font-medium text-foreground">{info.title}</span>
             </div>
           </div>
@@ -604,7 +606,7 @@ const NewDepositPage = () => {
           <div className="card-elevated p-4 space-y-1">
             <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
               <Info className="w-4 h-4 text-primary" />
-              Coordonnées de dépôt
+              {t('new.recap.depositCoordinates')}
             </p>
 
             {info.fields.map((field) => (
@@ -630,7 +632,7 @@ const NewDepositPage = () => {
             {/* Merchant code for withdrawals */}
             {info.merchantCode && (
               <div className="py-3 border-b border-border/50">
-                <span className="text-sm text-muted-foreground block mb-2">Code Marchand</span>
+                <span className="text-sm text-muted-foreground block mb-2">{t('new.recap.merchantCode')}</span>
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
                   <span className="font-bold text-foreground font-mono text-sm break-all">{info.merchantCode}</span>
                   <button onClick={() => handleCopy(info.merchantCode!, 'merchant')} className="flex-shrink-0 ml-2">
@@ -645,7 +647,7 @@ const NewDepositPage = () => {
 
             {/* Amount row */}
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Montant à envoyer</span>
+              <span className="text-sm text-muted-foreground">{t('new.recap.amountToSend')}</span>
               <span className="font-bold text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {formatXAF(parseInt(amount))} XAF
               </span>
@@ -654,7 +656,7 @@ const NewDepositPage = () => {
 
           {/* Instructions */}
           <div className="card-elevated p-4">
-            <p className="text-sm font-semibold text-foreground mb-4">Instructions</p>
+            <p className="text-sm font-semibold text-foreground mb-4">{t('new.recap.instructions')}</p>
             <ol className="space-y-3">
               {info.instructions.map((instruction, index) => (
                 <li key={index} className="flex gap-3">
@@ -670,7 +672,7 @@ const NewDepositPage = () => {
           {/* Confirmation notice */}
           <div className="rounded-xl border-l-4 border-primary bg-primary/5 px-4 py-3">
             <p className="text-xs text-primary leading-relaxed">
-              En confirmant, votre demande de dépôt sera enregistrée. Vous pourrez ensuite télécharger vos justificatifs.
+              {t('new.recap.confirmNotice')}
             </p>
           </div>
 
@@ -690,7 +692,7 @@ const NewDepositPage = () => {
             ) : (
               <ShieldCheck className="w-5 h-5" />
             )}
-            Je confirme ma demande de dépôt
+            {t('new.recap.confirmButton')}
           </button>
         </div>
       </StepTransition>
@@ -702,20 +704,20 @@ const NewDepositPage = () => {
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-deposit-pulse">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
-      <p className="font-semibold text-foreground mt-6">Création du dépôt...</p>
-      <p className="text-sm text-muted-foreground mt-2">Un instant</p>
+      <p className="font-semibold text-foreground mt-6">{t('new.creating')}</p>
+      <p className="text-sm text-muted-foreground mt-2">{t('new.pleaseWait')}</p>
     </div>
   );
 
   const getStepTitle = () => {
     const titles: Record<Step, string> = {
-      amount: 'Nouveau dépôt',
-      family: 'Méthode de dépôt',
-      submethod: 'Type d\'opération',
-      bank: 'Choix de la banque',
-      agency: 'Choix de l\'agence',
-      recap: 'Récapitulatif',
-      creating: 'Création...',
+      amount: t('new.steps.amount'),
+      family: t('new.steps.family'),
+      submethod: t('new.steps.submethod'),
+      bank: t('new.steps.bank'),
+      agency: t('new.steps.agency'),
+      recap: t('new.steps.recap'),
+      creating: t('new.steps.creating'),
     };
     return titles[step];
   };

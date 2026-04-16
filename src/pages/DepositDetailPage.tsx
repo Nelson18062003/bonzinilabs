@@ -20,8 +20,8 @@ import {
   useDeleteDepositProof,
   useCancelDeposit,
 } from '@/hooks/useDeposits';
-import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/types/deposit';
 import { formatXAF } from '@/lib/formatters';
+import { useTranslation } from 'react-i18next';
 import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
 import { useCountUp } from '@/hooks/useCountUp';
 import {
@@ -141,6 +141,7 @@ const DepositDetailPage = () => {
   const { depositId } = useParams<{ depositId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('deposits');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [uploadedProofs, setUploadedProofs] = useState<File[]>([]);
   const [viewingProof, setViewingProof] = useState<{ url: string; name: string } | null>(null);
@@ -166,7 +167,7 @@ const DepositDetailPage = () => {
   useEffect(() => {
     const state = location.state as { fromProofUpload?: boolean } | null;
     if (state?.fromProofUpload) {
-      toast.success('Preuve envoyée avec succès !');
+      toast.success(t('detail.proofUploadedSuccess'));
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -206,9 +207,9 @@ const DepositDetailPage = () => {
           </button>
         </div>
         <div className="p-4 text-center pt-20">
-          <p className="text-muted-foreground">Ce dépôt n'existe pas.</p>
+          <p className="text-muted-foreground">{t('detail.notFound')}</p>
           <Button onClick={() => navigate('/deposits')} className="mt-4">
-            Retour aux dépôts
+            {t('detail.backToDeposits')}
           </Button>
         </div>
       </MobileLayout>
@@ -251,10 +252,10 @@ const DepositDetailPage = () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
-      toast.success('Copié !');
+      toast.success(t('detail.copied'));
       setTimeout(() => setCopiedField(null), 2000);
     } catch {
-      toast.error('Erreur lors de la copie');
+      toast.error(t('detail.copyError'));
     }
   };
 
@@ -318,10 +319,10 @@ const DepositDetailPage = () => {
         <DepositReceiptPDF data={receiptData} />,
         `recu_depot_${deposit.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
-      toast.success('Relevé téléchargé');
+      toast.success(t('detail.receiptDownloaded'));
     } catch (error) {
       console.error('Error generating deposit PDF:', error);
-      toast.error('Erreur lors de la génération du PDF');
+      toast.error(t('detail.receiptError'));
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -353,7 +354,7 @@ const DepositDetailPage = () => {
 
         {/* Method label */}
         <p className="text-sm font-medium text-muted-foreground mb-2 animate-fade-in">
-          {DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method}
+          {t(`method.${deposit.method}`, deposit.method)}
         </p>
 
         {/* Status badge */}
@@ -363,7 +364,7 @@ const DepositDetailPage = () => {
         >
           <StatusBadge
             status={mapStatusToType(deposit.status)}
-            label={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status}
+            label={t(`status.${deposit.status}`, deposit.status)}
           />
         </div>
 
@@ -409,7 +410,7 @@ const DepositDetailPage = () => {
                 onClick={handleDownloadReceipt}
                 disabled={isGeneratingPDF}
                 className="p-2 rounded-lg hover:bg-muted transition-colors"
-                title="Télécharger le relevé"
+                title={t('detail.downloadReceipt')}
               >
                 {isGeneratingPDF ? (
                   <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
@@ -442,7 +443,7 @@ const DepositDetailPage = () => {
             <div className="flex items-start gap-3">
               <XCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-semibold text-sm text-destructive">Dépôt rejeté</p>
+                <p className="font-semibold text-sm text-destructive">{t('detail.depositRejected')}</p>
                 <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
               </div>
             </div>
@@ -459,9 +460,9 @@ const DepositDetailPage = () => {
               <Ban className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-sm text-gray-600 dark:text-gray-400">
-                  Dépôt annulé
+                  {t('detail.depositCancelled')}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">Ce dépôt a été annulé.</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('detail.depositCancelledDesc')}</p>
               </div>
             </div>
           </div>
@@ -473,23 +474,23 @@ const DepositDetailPage = () => {
           style={{ animationDelay: '220ms', animationFillMode: 'both' }}
         >
           <div className="revolut-detail-header">
-            <h3 className="text-sm font-semibold text-foreground">Détails</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('detail.details')}</h3>
           </div>
           <div className="divide-y divide-border/30">
-            <DetailRow label="Méthode" value={DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method} />
+            <DetailRow label={t('detail.method')} value={t(`method.${deposit.method}`, deposit.method)} />
             {deposit.bank_name && (
-              <DetailRow label="Banque" value={deposit.bank_name} />
+              <DetailRow label={t('detail.bank')} value={deposit.bank_name} />
             )}
             {deposit.agency_name && (
-              <DetailRow label="Agence" value={deposit.agency_name} />
+              <DetailRow label={t('detail.agency')} value={deposit.agency_name} />
             )}
-            <DetailRow label="Montant" value={`${formatXAF(deposit.amount_xaf)} XAF`} />
+            <DetailRow label={t('detail.amount')} value={`${formatXAF(deposit.amount_xaf)} XAF`} />
             <DetailRow
-              label="Statut"
-              value={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status}
+              label={t('detail.status')}
+              value={t(`status.${deposit.status}`, deposit.status)}
               valueClassName={getStatusTextColor(deposit.status)}
             />
-            <DetailRow label="Date" value={safeFormatDate(deposit.created_at) || '-'} />
+            <DetailRow label={t('detail.date')} value={safeFormatDate(deposit.created_at) || '-'} />
           </div>
         </div>
 
@@ -513,7 +514,7 @@ const DepositDetailPage = () => {
               onClick={() => setInstructionsOpen(!instructionsOpen)}
               className="w-full flex items-center justify-between py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              <span>Voir les instructions de dépôt</span>
+              <span>{t('detail.viewInstructions')}</span>
               <ChevronDown
                 className={cn(
                   'w-4 h-4 transition-transform duration-200',
@@ -538,7 +539,7 @@ const DepositDetailPage = () => {
             style={{ animationDelay: '300ms', animationFillMode: 'both' }}
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Preuves</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t('detail.proofs')}</h3>
               <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
                 {proofs.length}
               </span>
@@ -615,7 +616,7 @@ const DepositDetailPage = () => {
           style={{ animationDelay: '380ms', animationFillMode: 'both' }}
         >
           <div className="revolut-detail-header">
-            <h3 className="text-sm font-semibold text-foreground">Suivi</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('detail.timeline')}</h3>
           </div>
           <div className="p-4">
             <DepositTimelineDisplay steps={timelineSteps} variant="compact" />
@@ -639,7 +640,7 @@ const DepositDetailPage = () => {
               ) : (
                 <FileDown className="w-4 h-4" />
               )}
-              Télécharger le relevé
+              {t('detail.downloadReceipt')}
             </Button>
           </div>
         )}
@@ -654,7 +655,7 @@ const DepositDetailPage = () => {
               className="w-full py-3 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
               onClick={() => setCancelDialogOpen(true)}
             >
-              Annuler le dépôt
+              {t('detail.cancelDeposit')}
             </button>
           </div>
         )}
@@ -669,7 +670,7 @@ const DepositDetailPage = () => {
             onClick={() => navigate('/deposits')}
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour à mes dépôts
+            {t('detail.backToDeposits')}
           </button>
         </div>
       </div>
@@ -696,7 +697,7 @@ const DepositDetailPage = () => {
                   onClick={() => handleDownloadProof(viewingProof.url, viewingProof.name)}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Télécharger
+                  {t('detail.download')}
                 </Button>
               </>
             )}
@@ -710,15 +711,14 @@ const DepositDetailPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Ban className="w-5 h-5 text-destructive" />
-              Annuler ce dépôt ?
+              {t('detail.cancelDialogTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Voulez-vous vraiment annuler ce dépôt de {formatXAF(deposit.amount_xaf)} XAF ?
-              Cette action est irréversible.
+              {t('detail.cancelDialogDesc', { amount: `${formatXAF(deposit.amount_xaf)} XAF` })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Non, garder</AlertDialogCancel>
+            <AlertDialogCancel>{t('detail.cancelDialogKeep')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={cancelDeposit.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -735,7 +735,7 @@ const DepositDetailPage = () => {
               ) : (
                 <Ban className="w-4 h-4 mr-2" />
               )}
-              Oui, annuler
+              {t('detail.cancelDialogConfirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -747,34 +747,37 @@ const DepositDetailPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-destructive" />
-              Supprimer cette preuve ?
+              {t('detail.deleteProofTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Veuillez indiquer le motif de suppression. Cette action est irréversible.
+              {t('detail.deleteProofDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-2 py-2">
-            {PROOF_DELETE_REASONS.map((reason) => (
-              <button
-                key={reason}
-                type="button"
-                className={cn(
-                  'w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors',
-                  deleteReason === reason
-                    ? 'border-primary bg-primary/10 text-primary font-medium'
-                    : 'border-border hover:bg-muted/50 text-foreground',
-                )}
-                onClick={() => setDeleteReason(reason)}
-              >
-                {reason}
-              </button>
-            ))}
+            {PROOF_DELETE_REASONS.map((reason, index) => {
+              const reasonKeys = ['incorrectUpload', 'wrongDeposit', 'duplicate', 'illegibleImage', 'other'] as const;
+              return (
+                <button
+                  key={reason}
+                  type="button"
+                  className={cn(
+                    'w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors',
+                    deleteReason === reason
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border hover:bg-muted/50 text-foreground',
+                  )}
+                  onClick={() => setDeleteReason(reason)}
+                >
+                  {t(`proofDeleteReasons.${reasonKeys[index]}`)}
+                </button>
+              );
+            })}
             {deleteReason === 'Autre' && (
               <textarea
                 className="w-full mt-2 p-2 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
                 rows={2}
-                placeholder="Précisez le motif..."
+                placeholder={t('detail.specifyReason')}
                 value={customDeleteReason}
                 onChange={(e) => setCustomDeleteReason(e.target.value)}
               />
@@ -782,7 +785,7 @@ const DepositDetailPage = () => {
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t('detail.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={!deleteReason || (deleteReason === 'Autre' && !customDeleteReason.trim()) || deleteProof.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -800,7 +803,7 @@ const DepositDetailPage = () => {
               ) : (
                 <Trash2 className="w-4 h-4 mr-2" />
               )}
-              Supprimer
+              {t('detail.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

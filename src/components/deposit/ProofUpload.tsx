@@ -4,6 +4,7 @@
 // Max 5 files, images + PDF
 // ============================================================
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Upload, Camera, Image, X, FileCheck, Loader2, Eye, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -59,6 +60,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export const ProofUpload = (props: Props) => {
+  const { t } = useTranslation('deposits');
   const [dragActive, setDragActive] = useState(false);
   const [filesWithPreview, setFilesWithPreview] = useState<FileWithPreview[]>([]);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -146,7 +148,7 @@ export const ProofUpload = (props: Props) => {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Upload className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-foreground">Joindre les preuves de dépôt</h3>
+        <h3 className="font-semibold text-foreground">{t('proof.title')}</h3>
       </div>
 
       {/* Drop zone */}
@@ -171,16 +173,16 @@ export const ProofUpload = (props: Props) => {
                 <Upload className="w-7 h-7 text-primary" />
               </div>
               <p className="text-sm font-medium text-foreground mb-1">
-                Glissez vos fichiers ici
+                {t('proof.dragFiles')}
               </p>
               <p className="text-xs text-muted-foreground">
-                ou cliquez pour parcourir
+                {t('proof.orClick')}
               </p>
             </>
           ) : (
             <div className="flex items-center justify-center gap-2 text-primary">
               <Upload className="w-4 h-4" />
-              <p className="text-sm font-medium">Ajouter d'autres preuves</p>
+              <p className="text-sm font-medium">{t('proof.addMore')}</p>
             </div>
           )}
         </div>
@@ -201,7 +203,7 @@ export const ProofUpload = (props: Props) => {
           }}
         >
           <Camera className="w-4 h-4 mr-2" />
-          Appareil photo
+          {t('proof.camera')}
         </Button>
         <Button
           variant="outline"
@@ -216,12 +218,12 @@ export const ProofUpload = (props: Props) => {
           }}
         >
           <Image className="w-4 h-4 mr-2" />
-          Galerie
+          {t('proof.gallery')}
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Formats acceptés : JPG, PNG, PDF &bull; Max 10 MB par fichier
+        {t('proof.acceptedFormats')}
       </p>
 
       <input
@@ -238,8 +240,9 @@ export const ProofUpload = (props: Props) => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-foreground">
-              {filesWithPreview.length} fichier{filesWithPreview.length > 1 ? 's' : ''} sélectionné
-              {filesWithPreview.length > 1 ? 's' : ''}
+              {filesWithPreview.length > 1
+                ? t('proof.filesSelected_plural', { count: filesWithPreview.length })
+                : t('proof.filesSelected', { count: filesWithPreview.length })}
             </p>
             <Button
               variant="ghost"
@@ -251,7 +254,7 @@ export const ProofUpload = (props: Props) => {
               className="text-destructive hover:text-destructive"
             >
               <X className="w-4 h-4 mr-1" />
-              Tout supprimer
+              {t('proof.removeAll')}
             </Button>
           </div>
 
@@ -321,19 +324,20 @@ export const ProofUpload = (props: Props) => {
             {props.isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Envoi en cours...
+                {t('proof.sending')}
               </>
             ) : (
               <>
                 <FileCheck className="w-4 h-4 mr-2" />
-                Confirmer l'envoi ({filesWithPreview.length} preuve
-                {filesWithPreview.length > 1 ? 's' : ''})
+                {filesWithPreview.length > 1
+                  ? t('proof.confirmSend_plural', { count: filesWithPreview.length })
+                  : t('proof.confirmSend', { count: filesWithPreview.length })}
               </>
             )}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            En confirmant, vous attestez que ces preuves correspondent bien à ce dépôt.
+            {t('proof.attestation')}
           </p>
         </div>
       )}
@@ -344,12 +348,12 @@ export const ProofUpload = (props: Props) => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-primary" />
-              Confirmer l'envoi des preuves
+              {t('proof.confirmTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Vous allez envoyer {filesWithPreview.length} preuve
-              {filesWithPreview.length > 1 ? 's' : ''} de dépôt. Cette action déclenchera la
-              vérification par notre équipe.
+              {filesWithPreview.length > 1
+                ? t('proof.confirmDescription_plural', { count: filesWithPreview.length })
+                : t('proof.confirmDescription', { count: filesWithPreview.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -382,7 +386,7 @@ export const ProofUpload = (props: Props) => {
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setShowConfirmDialog(false);
@@ -391,7 +395,7 @@ export const ProofUpload = (props: Props) => {
               className="btn-primary-gradient"
             >
               <FileCheck className="w-4 h-4 mr-2" />
-              Confirmer
+              {t('common:confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -401,13 +405,13 @@ export const ProofUpload = (props: Props) => {
       <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
           <DialogHeader className="p-4 pb-0">
-            <DialogTitle>Aperçu de la preuve</DialogTitle>
+            <DialogTitle>{t('proof.previewTitle')}</DialogTitle>
           </DialogHeader>
           <div className="p-4 pt-2">
             {viewingImage && (
               <img
                 src={viewingImage}
-                alt="Aperçu"
+                alt={t('proof.previewAlt')}
                 className="w-full max-h-[70vh] object-contain rounded-lg"
               />
             )}

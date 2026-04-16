@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import {
   Search,
@@ -25,6 +26,7 @@ const FILTERS = [
 ];
 
 export function MobileHistoryScreen() {
+  const { t } = useTranslation('common');
   const { data: logs, isLoading, refetch } = useAdminAuditLogs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
@@ -71,7 +73,7 @@ export function MobileHistoryScreen() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <MobileHeader title="Historique" backTo="/m/more" showBack />
+      <MobileHeader title={t('history', { defaultValue: 'Historique' })} backTo="/m/more" showBack />
 
       <PullToRefresh onRefresh={refetch} className="flex-1 overflow-y-auto">
         <div className="px-4 py-4 space-y-4">
@@ -80,7 +82,7 @@ export function MobileHistoryScreen() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher une action..."
+              placeholder={t('searchAction', { defaultValue: 'Rechercher une action...' })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -156,7 +158,7 @@ export function MobileHistoryScreen() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <History className="w-6 h-6 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucun log trouvé</p>
+            <p className="text-muted-foreground">{t('noLogsFound', { defaultValue: 'Aucun log trouvé' })}</p>
           </div>
         )}
       </PullToRefresh>

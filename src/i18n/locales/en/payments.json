@@ -1,0 +1,98 @@
+{
+  "title": "My Payments",
+  "subtitle": "Transfers to China",
+  "newPayment": "New payment",
+  "noPayments": "No payments yet",
+  "status": {
+    "created": "Created",
+    "waiting_beneficiary_info": "Pending",
+    "ready_for_payment": "Ready",
+    "cash_pending": "QR generated",
+    "cash_scanned": "Scanned",
+    "processing": "Processing",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "cancelled_by_admin": "Cancelled (admin)"
+  },
+  "statusConfig": {
+    "created": "Created",
+    "waiting_beneficiary_info": "Waiting for info",
+    "ready_for_payment": "Ready to pay",
+    "cash_pending": "QR Generated",
+    "cash_scanned": "Scanned",
+    "processing": "Processing",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "cancelled_by_admin": "Cancelled (admin)"
+  },
+  "statusLabels": {
+    "created": "Created",
+    "waiting_beneficiary_info": "Info pend.",
+    "ready_for_payment": "Ready",
+    "processing": "Processing",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "cash_pending": "Cash pend.",
+    "cash_scanned": "Cash scanned",
+    "cancelled_by_admin": "Cancelled (admin)"
+  },
+  "method": {
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "bank_transfer": "Bank Transfer",
+    "cash": "Cash"
+  },
+  "form": {
+    "steps": {
+      "method": "Method",
+      "amount": "Amount",
+      "beneficiary": "Benef.",
+      "confirm": "Summary"
+    },
+    "methods": {
+      "alipay": { "label": "Alipay", "desc": "Pay via Alipay" },
+      "wechat": { "label": "WeChat Pay", "desc": "Pay via WeChat" },
+      "bank_transfer": { "label": "Bank transfer", "desc": "Transfer to bank account" },
+      "cash": { "label": "Cash", "desc": "Pickup at Bonzini office" }
+    },
+    "chooseMethod": "Choose a payment method",
+    "enterAmount": "Enter the amount",
+    "youSend": "You send",
+    "supplierReceives": "Supplier receives",
+    "rate": "Rate",
+    "balance": "Balance",
+    "insufficientBalance": "Insufficient balance",
+    "amountTooHigh": "Amount cannot exceed 50,000,000 XAF",
+    "beneficiaryTitle": "Beneficiary information",
+    "beneficiaryName": "Beneficiary name",
+    "beneficiaryId": "Identifier",
+    "summary": "Summary",
+    "submit": "Confirm payment",
+    "submitting": "Sending...",
+    "success": "Payment created successfully",
+    "error": "Error creating payment"
+  },
+  "detail": {
+    "title": "Payment detail",
+    "beneficiaryInfo": "Beneficiary information",
+    "timeline": "Timeline",
+    "proofs": "Payment proofs",
+    "noProofs": "No proofs available",
+    "uploadProof": "Add proof",
+    "reference": "Reference",
+    "amountXAF": "Amount XAF",
+    "amountRMB": "Amount RMB",
+    "exchangeRate": "Exchange rate",
+    "createdAt": "Created on"
+  },
+  "rejectionReasons": {
+    "beneficiaryNotFound": "Beneficiary not found",
+    "incorrectBankAccount": "Incorrect bank account",
+    "expiredQR": "Expired or invalid QR code",
+    "incorrectAmount": "Incorrect amount",
+    "incompleteInfo": "Incomplete information",
+    "beneficiaryRefused": "Beneficiary refused",
+    "technicalIssue": "Technical issue",
+    "other": "Other"
+  }
+}

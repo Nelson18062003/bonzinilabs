@@ -4,6 +4,7 @@ import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
+import i18n from '@/i18n';
 
 export function usePaymentProofMultiUpload() {
   const queryClient = useQueryClient();
@@ -20,7 +21,7 @@ export function usePaymentProofMultiUpload() {
       files: File[];
       description?: string;
     }) => {
-      if (!user?.id) throw new Error('Non authentifié');
+      if (!user?.id) throw new Error(i18n.t('hooks.auth.notAuthenticated', { ns: 'common', defaultValue: 'Non authentifié' }));
 
       const results: { success: boolean; fileName: string; error?: string }[] = [];
       let completed = 0;
@@ -82,11 +83,11 @@ export function usePaymentProofMultiUpload() {
       const failCount = results.filter((r) => !r.success).length;
 
       if (failCount === 0) {
-        toast.success(`${successCount} fichier(s) téléchargé(s) avec succès`);
+        toast.success(i18n.t('hooks.proofMultiUpload.success', { ns: 'common', defaultValue: `${successCount} fichier(s) téléchargé(s) avec succès`, count: successCount }));
       } else if (successCount > 0) {
-        toast.warning(`${successCount} fichier(s) téléchargé(s), ${failCount} échec(s)`);
+        toast.warning(i18n.t('hooks.proofMultiUpload.partialSuccess', { ns: 'common', defaultValue: `${successCount} fichier(s) téléchargé(s), ${failCount} échec(s)`, successCount, failCount }));
       } else {
-        toast.error('Échec du téléchargement des fichiers');
+        toast.error(i18n.t('hooks.proofMultiUpload.allFailed', { ns: 'common', defaultValue: 'Échec du téléchargement des fichiers' }));
       }
 
       setUploadProgress(0);
@@ -121,7 +122,7 @@ export function useAdminPaymentProofUpload() {
       description?: string;
     }) => {
       const { data: { user } } = await supabaseAdmin.auth.getUser();
-      if (!user) throw new Error('Non authentifié');
+      if (!user) throw new Error(i18n.t('hooks.auth.notAuthenticated', { ns: 'common', defaultValue: 'Non authentifié' }));
 
       const compressedFile = await compressImage(file);
       const filePath = `proofs/${paymentId}/${Date.now()}_${compressedFile.name}`;
@@ -163,7 +164,7 @@ export function useAdminPaymentProofUpload() {
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
-      toast.success('Preuve ajoutée');
+      toast.success(i18n.t('hooks.adminProofUpload.success', { ns: 'common', defaultValue: 'Preuve ajoutée' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -187,7 +188,7 @@ export function useAdminUploadPaymentInstruction() {
       files: File[];
     }) => {
       const { data: { user } } = await supabaseAdmin.auth.getUser();
-      if (!user) throw new Error('Non authentifié');
+      if (!user) throw new Error(i18n.t('hooks.auth.notAuthenticated', { ns: 'common', defaultValue: 'Non authentifié' }));
 
       let successCount = 0;
 

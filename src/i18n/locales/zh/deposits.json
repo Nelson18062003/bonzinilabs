@@ -1,0 +1,74 @@
+{
+  "title": "\u6211\u7684\u5145\u503c",
+  "subtitle": "\u5386\u53f2\u4e0e\u8ddf\u8e2a",
+  "newDeposit": "\u8fdb\u884c\u5145\u503c",
+  "noDeposits": "\u6682\u65e0\u5145\u503c\u8bb0\u5f55",
+  "loadError": "\u52a0\u8f7d\u5145\u503c\u65f6\u51fa\u9519",
+  "status": {
+    "created": "\u8bf7\u6c42\u5df2\u521b\u5efa",
+    "awaiting_proof": "\u7b49\u5f85\u51ed\u8bc1",
+    "proof_submitted": "\u51ed\u8bc1\u5df2\u63d0\u4ea4",
+    "admin_review": "\u5ba1\u6838\u4e2d",
+    "validated": "\u5df2\u9a8c\u8bc1",
+    "rejected": "\u5df2\u62d2\u7edd",
+    "pending_correction": "\u5f85\u4fee\u6b63",
+    "cancelled": "\u5df2\u53d6\u6d88",
+    "cancelled_by_admin": "\u5df2\u53d6\u6d88\uff08\u7ba1\u7406\u5458\uff09"
+  },
+  "method": {
+    "bank_transfer": "\u94f6\u884c\u8f6c\u8d26",
+    "bank_cash": "\u94f6\u884c\u73b0\u91d1\u5b58\u6b3e",
+    "agency_cash": "Bonzini\u4ee3\u7406\u73b0\u91d1",
+    "om_transfer": "Orange Money \u2013 \u8f6c\u8d26",
+    "om_withdrawal": "Orange Money \u2013 \u53d6\u6b3e",
+    "mtn_transfer": "MTN MoMo \u2013 \u8f6c\u8d26",
+    "mtn_withdrawal": "MTN MoMo \u2013 \u53d6\u6b3e",
+    "wave": "Wave"
+  },
+  "methodShort": {
+    "bank_transfer": "\u8f6c\u8d26",
+    "bank_cash": "\u94f6\u884c\u73b0\u91d1",
+    "agency_cash": "\u4ee3\u7406\u73b0\u91d1",
+    "om_transfer": "Orange UV",
+    "om_withdrawal": "Orange\u4ee3\u7801",
+    "mtn_transfer": "MTN Float",
+    "mtn_withdrawal": "MTN\u4ee3\u7801",
+    "wave": "Wave"
+  },
+  "timeline": {
+    "standard": {
+      "created": { "label": "\u5145\u503c\u5df2\u58f0\u660e", "description": "\u60a8\u7684\u5145\u503c\u5df2\u767b\u8bb0" },
+      "proof_submitted": { "label": "\u51ed\u8bc1\u5df2\u53d1\u9001", "description": "\u7b49\u5f85\u9a8c\u8bc1" },
+      "admin_review": { "label": "\u5ba1\u6838\u4e2d", "description": "Bonzini\u56e2\u961f\u6b63\u5728\u9a8c\u8bc1\u60a8\u7684\u5145\u503c" },
+      "validated": { "label": "\u5df2\u9a8c\u8bc1 \u2014 \u4f59\u989d\u5df2\u5165\u8d26", "description": "\u60a8\u7684\u94b1\u5305\u5df2\u5165\u8d26" }
+    },
+    "withdrawal": {
+      "created": { "label": "\u53d6\u6b3e\u5df2\u58f0\u660e", "description": "\u60a8\u7684\u53d6\u6b3e\u5df2\u767b\u8bb0" },
+      "proof_submitted": { "label": "\u4ee3\u7801\u5df2\u63d0\u4f9b", "description": "\u53d6\u6b3e\u4ee3\u7801\u5df2\u4f20\u8f93" },
+      "admin_review": { "label": "\u5ba1\u6838\u4e2d", "description": "Bonzini\u56e2\u961f\u6b63\u5728\u9a8c\u8bc1\u53d6\u6b3e" },
+      "validated": { "label": "\u5df2\u9a8c\u8bc1 \u2014 \u4f59\u989d\u5df2\u5165\u8d26", "description": "\u60a8\u7684\u94b1\u5305\u5df2\u5165\u8d26" }
+    },
+    "agency": {
+      "created": { "label": "\u4ee3\u7406\u5145\u503c", "description": "\u5728Bonzini\u4ee3\u7406\u5904\u58f0\u660e\u7684\u5145\u503c" },
+      "proof_submitted": { "label": "\u6536\u636e\u5df2\u786e\u8ba4", "description": "\u4ee3\u7406\u6536\u636e\u5df2\u767b\u8bb0" },
+      "admin_review": { "label": "\u5ba1\u6838\u4e2d", "description": "\u9a8c\u8bc1\u8fdb\u884c\u4e2d" },
+      "validated": { "label": "\u5df2\u9a8c\u8bc1 \u2014 \u4f59\u989d\u5df2\u5165\u8d26", "description": "\u60a8\u7684\u94b1\u5305\u5df2\u5165\u8d26" }
+    }
+  },
+  "rejectionReasons": {
+    "incorrectAmount": "\u91d1\u989d\u4e0d\u6b63\u786e",
+    "illegibleProof": "\u51ed\u8bc1\u4e0d\u6e05\u6670",
+    "missingReference": "\u7f3a\u5c11\u53c2\u8003\u53f7",
+    "wrongBankAccount": "\u94f6\u884c\u8d26\u6237\u9519\u8bef",
+    "nonCompliantDocument": "\u6587\u4ef6\u4e0d\u5408\u89c4",
+    "suspicion": "\u7591\u4f3c/\u4e0d\u4e00\u81f4",
+    "other": "\u5176\u4ed6"
+  },
+  "proofDeleteReasons": {
+    "incorrectUpload": "\u4e0a\u4f20\u9519\u8bef",
+    "wrongDeposit": "\u9519\u8bef\u7684\u5145\u503c",
+    "duplicate": "\u91cd\u590d",
+    "illegibleImage": "\u56fe\u7247\u4e0d\u6e05\u6670",
+    "other": "\u5176\u4ed6"
+  }
+}

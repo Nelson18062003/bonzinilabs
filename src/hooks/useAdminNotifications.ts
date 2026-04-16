@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG } from '@/lib/constants';
 import type { Enums } from '@/integrations/supabase/types';
+import i18n from '@/i18n';
 
 export type AdminNotificationType =
   | 'deposit_needs_review'
@@ -75,13 +76,13 @@ export function useAdminNotifications() {
 
       const getClientName = (userId: string) => {
         const client = clientMap.get(userId);
-        return client ? `${client.first_name} ${client.last_name}` : 'Client inconnu';
+        return client ? `${client.first_name} ${client.last_name}` : i18n.t('hooks.adminNotifications.unknownClient', { ns: 'common', defaultValue: 'Client inconnu' });
       };
 
       const depositNotifications: AdminNotification[] = deposits.map(d => ({
         id: `deposit-${d.id}`,
         type: 'deposit_needs_review' as const,
-        title: 'Dépôt à examiner',
+        title: i18n.t('hooks.adminNotifications.depositNeedsReview', { ns: 'common', defaultValue: 'Dépôt à examiner' }),
         subtitle: `${getClientName(d.user_id)} — ${d.reference || ''}`,
         amount: d.amount_xaf,
         currency: 'XAF' as const,
@@ -95,8 +96,8 @@ export function useAdminNotifications() {
           ? 'payment_processing' as const
           : 'payment_ready' as const,
         title: p.status === 'processing'
-          ? 'Paiement en cours'
-          : 'Paiement à traiter',
+          ? i18n.t('hooks.adminNotifications.paymentProcessing', { ns: 'common', defaultValue: 'Paiement en cours' })
+          : i18n.t('hooks.adminNotifications.paymentReady', { ns: 'common', defaultValue: 'Paiement à traiter' }),
         subtitle: `${getClientName(p.user_id)} — ${p.reference || ''}`,
         amount: p.amount_xaf,
         currency: 'XAF' as const,

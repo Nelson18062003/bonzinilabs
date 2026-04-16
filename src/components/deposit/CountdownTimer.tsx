@@ -4,6 +4,7 @@
 // Supports default (card) and banner (left-accent) variants
 // ============================================================
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, AlertTriangle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -101,6 +102,7 @@ export function CountdownTimer({
   variant = 'default',
   onExpire,
 }: CountdownTimerProps) {
+  const { t } = useTranslation('deposits');
   const [timer, setTimer] = useState<TimerState>(() =>
     computeTimer(createdAt, deadlineHours),
   );
@@ -139,7 +141,7 @@ export function CountdownTimer({
           <div className="flex items-center gap-2">
             <IconComponent className={cn('w-4 h-4', styles.iconColor)} />
             <span className={cn('text-sm font-medium', styles.textColor)}>
-              {timer.isExpired ? 'Delai depasse' : 'Delai restant'}
+              {timer.isExpired ? t('countdown.expiredBanner') : t('countdown.remainingBanner')}
             </span>
           </div>
           <span className={cn('text-base font-bold tabular-nums', styles.textColor)}>
@@ -159,12 +161,12 @@ export function CountdownTimer({
 
         <p className="text-xs text-muted-foreground mt-2">
           {timer.isExpired
-            ? 'Le delai recommande est depasse, mais vous pouvez toujours envoyer votre preuve'
+            ? t('countdown.expiredBannerMessage')
             : timer.urgency === 'critical'
-              ? 'Attention: delai presque ecoule !'
+              ? t('countdown.criticalBannerWarning')
               : timer.urgency === 'warning'
-                ? 'Pensez a envoyer votre preuve rapidement'
-                : 'Effectuez le depot et envoyez la preuve'}
+                ? t('countdown.warningBannerMessage')
+                : t('countdown.normalBannerMessage')}
         </p>
       </div>
     );
@@ -177,7 +179,7 @@ export function CountdownTimer({
         <div className="flex items-center gap-2">
           <IconComponent className={cn('w-5 h-5', styles.iconColor)} />
           <span className={cn('font-medium', styles.textColor)}>
-            {timer.isExpired ? 'Délai dépassé' : 'Délai restant'}
+            {timer.isExpired ? t('countdown.expired') : t('countdown.remaining')}
           </span>
         </div>
         <span className={cn('text-lg font-bold tabular-nums', styles.textColor)}>
@@ -198,16 +200,16 @@ export function CountdownTimer({
       {!timer.isExpired && (
         <p className="text-xs text-muted-foreground mt-2 text-center">
           {timer.urgency === 'critical'
-            ? 'Attention: délai presque écoulé !'
+            ? t('countdown.criticalWarning')
             : timer.urgency === 'warning'
-              ? 'Pensez à envoyer votre preuve rapidement'
-              : 'Effectuez le dépôt et envoyez la preuve'}
+              ? t('countdown.warningMessage')
+              : t('countdown.normalMessage')}
         </p>
       )}
 
       {timer.isExpired && (
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Le délai recommandé est dépassé, mais vous pouvez toujours envoyer votre preuve
+          {t('countdown.expiredMessage')}
         </p>
       )}
     </div>

@@ -2,15 +2,16 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge, getStatusType } from '@/components/common/StatusBadge';
 import { useMyDeposits } from '@/hooks/useDeposits';
-import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS } from '@/types/deposit';
 import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, ChevronRight, Loader2, Inbox, Building2, Smartphone, Store, Waves } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const DepositsPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('deposits');
   const { data: deposits, isLoading, error } = useMyDeposits();
 
   const getMethodIcon = (method: string) => {
@@ -49,7 +50,7 @@ const DepositsPage = () => {
   if (isLoading) {
     return (
       <MobileLayout>
-        <PageHeader title="Mes Dépôts" subtitle="Historique et suivi" />
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -60,9 +61,9 @@ const DepositsPage = () => {
   if (error) {
     return (
       <MobileLayout>
-        <PageHeader title="Mes Dépôts" subtitle="Historique et suivi" />
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <div className="px-4 py-12 text-center">
-          <p className="text-destructive">Erreur lors du chargement des dépôts</p>
+          <p className="text-destructive">{t('loadError')}</p>
         </div>
       </MobileLayout>
     );
@@ -70,9 +71,9 @@ const DepositsPage = () => {
 
   return (
     <MobileLayout>
-      <PageHeader 
-        title="Mes Dépôts" 
-        subtitle="Historique et suivi"
+      <PageHeader
+        title={t('title')}
+        subtitle={t('subtitle')}
         rightElement={
           <button
             onClick={() => navigate('/deposits/new')}
@@ -104,7 +105,7 @@ const DepositsPage = () => {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-semibold text-foreground">
-                          {DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method}
+                          {t(`method.${deposit.method}`, deposit.method)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(deposit.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
@@ -114,9 +115,9 @@ const DepositsPage = () => {
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <StatusBadge 
-                        status={mapStatusToType(deposit.status)} 
-                        label={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status} 
+                      <StatusBadge
+                        status={mapStatusToType(deposit.status)}
+                        label={t(`status.${deposit.status}`, deposit.status)}
                       />
                       <p className="font-bold text-foreground">
                         {formatXAF(deposit.amount_xaf)} <span className="text-muted-foreground font-normal text-sm">XAF</span>
@@ -132,12 +133,12 @@ const DepositsPage = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Inbox className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Aucun dépôt pour le moment</p>
+            <p className="text-muted-foreground">{t('noDeposits')}</p>
             <button
               onClick={() => navigate('/deposits/new')}
               className="mt-4 btn-primary-gradient"
             >
-              Faire un dépôt
+              {t('newDeposit')}
             </button>
           </div>
         )}

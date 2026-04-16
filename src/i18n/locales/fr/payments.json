@@ -1,0 +1,123 @@
+{
+  "title": "Mes Paiements",
+  "subtitle": "Envois vers la Chine",
+  "newPayment": "Nouveau paiement",
+  "noPayments": "Aucun paiement pour le moment",
+  "status": {
+    "created": "Cr\u00e9\u00e9",
+    "waiting_beneficiary_info": "En attente",
+    "ready_for_payment": "Pr\u00eat",
+    "cash_pending": "QR g\u00e9n\u00e9r\u00e9",
+    "cash_scanned": "Scann\u00e9",
+    "processing": "En cours",
+    "completed": "Effectu\u00e9",
+    "rejected": "Refus\u00e9",
+    "cancelled_by_admin": "Annul\u00e9 (admin)"
+  },
+  "statusConfig": {
+    "created": "Cr\u00e9\u00e9",
+    "waiting_beneficiary_info": "En attente infos",
+    "ready_for_payment": "Pr\u00eat \u00e0 payer",
+    "cash_pending": "QR G\u00e9n\u00e9r\u00e9",
+    "cash_scanned": "Scann\u00e9",
+    "processing": "En cours",
+    "completed": "Effectu\u00e9",
+    "rejected": "Refus\u00e9",
+    "cancelled_by_admin": "Annul\u00e9 (admin)"
+  },
+  "statusLabels": {
+    "created": "Cr\u00e9\u00e9",
+    "waiting_beneficiary_info": "Info att.",
+    "ready_for_payment": "Pr\u00eat",
+    "processing": "En cours",
+    "completed": "Termin\u00e9",
+    "rejected": "Rejet\u00e9",
+    "cash_pending": "Cash att.",
+    "cash_scanned": "Cash scann\u00e9",
+    "cancelled_by_admin": "Annul\u00e9 (admin)"
+  },
+  "method": {
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "bank_transfer": "Virement",
+    "cash": "Cash",
+    "bank_transfer_full": "Virement bancaire"
+  },
+  "form": {
+    "steps": {
+      "method": "Mode",
+      "amount": "Montant",
+      "beneficiary": "B\u00e9n\u00e9f.",
+      "confirm": "R\u00e9sum\u00e9"
+    },
+    "methods": {
+      "alipay": {
+        "label": "Alipay",
+        "desc": "Paiement via Alipay"
+      },
+      "wechat": {
+        "label": "WeChat Pay",
+        "desc": "Paiement via WeChat"
+      },
+      "bank_transfer": {
+        "label": "Virement bancaire",
+        "desc": "Transfert vers compte bancaire"
+      },
+      "cash": {
+        "label": "Cash",
+        "desc": "Retrait au bureau Bonzini"
+      }
+    },
+    "chooseMethod": "Choisissez un mode de paiement",
+    "enterAmount": "Entrez le montant",
+    "youSend": "Vous envoyez",
+    "supplierReceives": "Fournisseur re\u00e7oit",
+    "rate": "Taux",
+    "balance": "Solde",
+    "insufficientBalance": "Solde insuffisant",
+    "amountTooHigh": "Le montant ne peut pas d\u00e9passer 50 000 000 XAF",
+    "beneficiaryTitle": "Informations b\u00e9n\u00e9ficiaire",
+    "beneficiaryName": "Nom du b\u00e9n\u00e9ficiaire",
+    "beneficiaryId": "Identifiant",
+    "summary": "R\u00e9capitulatif",
+    "submit": "Confirmer le paiement",
+    "submitting": "Envoi en cours...",
+    "success": "Paiement cr\u00e9\u00e9 avec succ\u00e8s",
+    "error": "Erreur lors de la cr\u00e9ation du paiement"
+  },
+  "detail": {
+    "title": "D\u00e9tail du paiement",
+    "beneficiaryInfo": "Informations b\u00e9n\u00e9ficiaire",
+    "timeline": "Suivi",
+    "proofs": "Preuves de paiement",
+    "noProofs": "Aucune preuve disponible",
+    "uploadProof": "Ajouter une preuve",
+    "reference": "R\u00e9f\u00e9rence",
+    "amountXAF": "Montant XAF",
+    "amountRMB": "Montant RMB",
+    "exchangeRate": "Taux de change",
+    "createdAt": "Cr\u00e9\u00e9 le"
+  },
+  "rejectionReasons": {
+    "beneficiaryNotFound": "B\u00e9n\u00e9ficiaire introuvable",
+    "incorrectBankAccount": "Compte bancaire incorrect",
+    "expiredQR": "QR code expir\u00e9 ou invalide",
+    "incorrectAmount": "Montant incorrect",
+    "incompleteInfo": "Informations incompl\u00e8tes",
+    "beneficiaryRefused": "Refus du b\u00e9n\u00e9ficiaire",
+    "technicalIssue": "Probl\u00e8me technique",
+    "other": "Autre"
+  },
+  "success": {
+    "paymentCreated": "Paiement cr\u00e9\u00e9",
+    "paymentCreatedClient": "Paiement cr\u00e9\u00e9 !",
+    "requestRecorded": "Votre demande a \u00e9t\u00e9 enregistr\u00e9e",
+    "xafDebited": "{{amount}} XAF d\u00e9bit\u00e9s",
+    "forClient": "pour {{name}}",
+    "newPayment": "Nouveau paiement",
+    "viewSheet": "Voir la fiche",
+    "viewPayment": "Voir le paiement",
+    "myPayments": "Mes paiements",
+    "backToHome": "Retour \u00e0 l'accueil"
+  }
+}
