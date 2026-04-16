@@ -615,14 +615,13 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
-              Réinitialiser le mot de passe
+              {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4">
             <p className="text-muted-foreground">
-              Un nouveau mot de passe temporaire sera généré pour{' '}
-              <strong>{client.firstName} {client.lastName}</strong>. Vous devrez le
-              transmettre manuellement au client.
+              {t('resetPasswordClientMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
+              <strong>{client.firstName} {client.lastName}</strong>. {t('resetPasswordClientSuffix', { defaultValue: 'Vous devrez le transmettre manuellement au client.' })}
             </p>
           </div>
           <DrawerFooter>
@@ -630,10 +629,10 @@ export function MobileClientDetail() {
               {resetPasswordMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-              Générer nouveau mot de passe
+              {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
             </Button>
             <Button variant="outline" onClick={() => setResetDrawerOpen(false)}>
-              Annuler
+              {t('cancel', { defaultValue: 'Annuler' })}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -645,12 +644,12 @@ export function MobileClientDetail() {
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
               <Check className="w-5 h-5 text-green-500" />
-              Mot de passe généré
+              {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 space-y-4">
             <p className="text-muted-foreground">
-              Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.
+              {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
             </p>
             <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
               <code className="text-lg font-mono">{newPassword}</code>
@@ -663,7 +662,7 @@ export function MobileClientDetail() {
               </Button>
             </div>
             <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-lg">
-              Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.
+              {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
             </p>
           </div>
           <DrawerFooter>
