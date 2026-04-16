@@ -97,7 +97,7 @@ export function MobileProofsScreen() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher par client ou fichier..."
+              placeholder={t('searchByClientOrFile', { defaultValue: 'Rechercher par client ou fichier...' })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -152,7 +152,7 @@ export function MobileProofsScreen() {
 
           {filteredProofs.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              Aucun justificatif trouvé
+              {t('noProofsFound', { defaultValue: 'Aucun justificatif trouvé' })}
             </div>
           )}
         </div>
@@ -204,7 +204,7 @@ export function MobileProofsScreen() {
               className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center gap-2 font-medium"
             >
               <Download className="w-5 h-5" />
-              Télécharger
+              {t('download', { defaultValue: 'Télécharger' })}
             </button>
           </DrawerFooter>
         </DrawerContent>
