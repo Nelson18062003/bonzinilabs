@@ -3,6 +3,7 @@ import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface ClientHeaderProps {
   className?: string;
@@ -30,10 +31,12 @@ export const ClientHeader = ({ className }: ClientHeaderProps) => {
         />
 
         {/* Actions */}
-        <button
-          onClick={() => navigate('/notifications')}
-          className="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
-        >
+        <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          <button
+            onClick={() => navigate('/notifications')}
+            className="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+          >
           <Bell className="h-5 w-5 text-muted-foreground" />
           {/* Notification badge - shown when there are unread notifications */}
           {unreadCount && unreadCount > 0 && (
@@ -41,7 +44,8 @@ export const ClientHeader = ({ className }: ClientHeaderProps) => {
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-        </button>
+          </button>
+        </div>
       </div>
     </header>
   );

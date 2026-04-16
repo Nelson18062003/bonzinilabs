@@ -89,14 +89,14 @@ function Nav({ onCTA }: { onCTA: () => void }) {
           {navItems.map(item => (
             <a key={item.key} href={`#${item.anchor}`} style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: 'none' }}>{t(`nav.${item.key}`)}</a>
           ))}
-          <LanguageSwitcher />
+          <LanguageSwitcher variant="landing" />
           <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13, color: '#fff', background: `linear-gradient(135deg, ${C.violet}, #8b3cf0)`, border: 'none', padding: '10px 22px', borderRadius: 50, cursor: 'pointer' }}>
             {t('nav.cta')}
           </button>
         </div>
         {/* Mobile hamburger */}
         <div className="md:hidden" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <LanguageSwitcher />
+          <LanguageSwitcher variant="landing" />
           <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8 }}>
             {menuOpen
               ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
