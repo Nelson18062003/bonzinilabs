@@ -130,7 +130,7 @@ export function useAdminDeposits() {
         profile: clientMap.get(deposit.user_id) || null,
         clientName: clientMap.get(deposit.user_id)
           ? `${clientMap.get(deposit.user_id)!.first_name} ${clientMap.get(deposit.user_id)!.last_name}`
-          : 'Client inconnu',
+          : i18n.t('hooks.adminNotifications.unknownClient', { ns: 'common', defaultValue: 'Client inconnu' }),
       }));
     },
   });
@@ -176,7 +176,7 @@ export function useAdminWallets() {
         profile: clientMap.get(wallet.user_id) || null,
         clientName: clientMap.get(wallet.user_id)
           ? `${clientMap.get(wallet.user_id)!.first_name} ${clientMap.get(wallet.user_id)!.last_name}`
-          : 'Client inconnu',
+          : i18n.t('hooks.adminNotifications.unknownClient', { ns: 'common', defaultValue: 'Client inconnu' }),
         totalDeposits: depositSums.get(wallet.user_id) || 0,
         totalPayments: 0,
       }));
@@ -306,7 +306,7 @@ export function useAdminProofs() {
         ...proof,
         clientName: proof.deposits && clientMap.get(proof.deposits.user_id)
           ? `${clientMap.get(proof.deposits.user_id)!.first_name} ${clientMap.get(proof.deposits.user_id)!.last_name}`
-          : 'Client inconnu',
+          : i18n.t('hooks.adminNotifications.unknownClient', { ns: 'common', defaultValue: 'Client inconnu' }),
       }));
     },
   });

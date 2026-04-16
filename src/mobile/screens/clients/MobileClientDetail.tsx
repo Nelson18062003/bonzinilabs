@@ -66,6 +66,7 @@ const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> =
 };
 
 export function MobileClientDetail() {
+  const { t } = useTranslation('common');
   const { clientId } = useParams();
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId || '');
@@ -136,7 +137,7 @@ export function MobileClientDetail() {
     setDeleteChecking(true);
     try {
       if ((client.walletBalance || 0) > 0) {
-        toast.error(`Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)`);
+        toast.error(t('cannotDeleteClientPositiveBalance', { defaultValue: `Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)` }));
         return;
       }
       const { data: pending } = await supabaseAdmin
@@ -146,7 +147,7 @@ export function MobileClientDetail() {
         .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned'])
         .limit(1);
       if (pending && pending.length > 0) {
-        toast.error('Impossible de supprimer un client ayant des paiements en cours');
+        toast.error(t('cannotDeleteClientPendingPayments', { defaultValue: 'Impossible de supprimer un client ayant des paiements en cours' }));
         return;
       }
       setDeleteDrawerOpen(true);
