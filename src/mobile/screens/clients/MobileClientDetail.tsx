@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
@@ -56,11 +57,12 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
   PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE:      'Actif',
-  INACTIVE:    'Inactif',
-  SUSPENDED:   'Suspendu',
-  PENDING_KYC: 'KYC en attente',
+// Status labels are resolved via i18n inside the component
+const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> = {
+  ACTIVE:      { key: 'active', defaultValue: 'Actif' },
+  INACTIVE:    { key: 'inactive', defaultValue: 'Inactif' },
+  SUSPENDED:   { key: 'suspendedStatus', defaultValue: 'Suspendu' },
+  PENDING_KYC: { key: 'kycPending', defaultValue: 'KYC en attente' },
 };
 
 export function MobileClientDetail() {

@@ -106,9 +106,9 @@ export function MobileClientsScreen() {
                         'px-1.5 py-0.5 rounded text-[10px] font-medium',
                         STATUS_BADGE_STYLES[client.status]
                       )}>
-                        {client.status === 'ACTIVE' ? 'Actif' :
-                         client.status === 'INACTIVE' ? 'Inactif' :
-                         client.status === 'SUSPENDED' ? 'Suspendu' : 'KYC'}
+                        {client.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) :
+                         client.status === 'INACTIVE' ? t('inactive', { defaultValue: 'Inactif' }) :
+                         client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
                       </span>
                     </div>
                     {client.phone && (
@@ -129,8 +129,8 @@ export function MobileClientsScreen() {
 
                 {/* Stats Row */}
                 <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50 text-xs text-muted-foreground">
-                  <span>Dépôts: {formatCurrency(client.totalDeposits || 0)}</span>
-                  <span>Paiements: {formatCurrency(client.totalPayments || 0)}</span>
+                  <span>{t('deposits', { defaultValue: 'Dépôts' })}: {formatCurrency(client.totalDeposits || 0)}</span>
+                  <span>{t('payments', { defaultValue: 'Paiements' })}: {formatCurrency(client.totalPayments || 0)}</span>
                 </div>
               </button>
             ))}
@@ -138,8 +138,8 @@ export function MobileClientsScreen() {
         ) : (
           <MobileEmptyState
             icon={User}
-            title={searchQuery ? 'Aucun client trouvé' : 'Aucun client pour le moment'}
-            action={{ label: 'Créer un client', onClick: () => navigate('/m/clients/new') }}
+            title={searchQuery ? t('noClientFound', { defaultValue: 'Aucun client trouvé' }) : t('noClientsYet', { defaultValue: 'Aucun client pour le moment' })}
+            action={{ label: t('createClient', { defaultValue: 'Créer un client' }), onClick: () => navigate('/m/clients/new') }}
           />
         )}
       </PullToRefresh>
