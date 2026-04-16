@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
 import { compressImage } from '@/lib/imageCompression';
+import i18n from '@/i18n';
 
 export function useAdminPaymentProofMultiUpload() {
   const queryClient = useQueryClient();

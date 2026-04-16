@@ -378,7 +378,7 @@ export function useCreateAdjustment() {
 
       const rpcResult = result as AdjustmentResult;
       if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de l\'ajustement');
+        throw new Error(rpcResult?.error || i18n.t('hooks.createAdjustment.error', { ns: 'common', defaultValue: "Erreur lors de l'ajustement" }));
       }
 
       return rpcResult;
@@ -390,11 +390,13 @@ export function useCreateAdjustment() {
       queryClient.invalidateQueries({ queryKey: ['admin-wallets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
-      const action = variables.adjustmentType === 'CREDIT' ? 'crédité' : 'débité';
-      toast.success(`Portefeuille ${action} avec succès`);
+      const action = variables.adjustmentType === 'CREDIT'
+        ? i18n.t('hooks.createAdjustment.credited', { ns: 'common', defaultValue: 'crédité' })
+        : i18n.t('hooks.createAdjustment.debited', { ns: 'common', defaultValue: 'débité' });
+      toast.success(i18n.t('hooks.createAdjustment.success', { ns: 'common', defaultValue: `Portefeuille ${action} avec succès`, action }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de l\'ajustement');
+      toast.error(error.message || i18n.t('hooks.createAdjustment.error', { ns: 'common', defaultValue: "Erreur lors de l'ajustement" }));
     },
   });
 }
@@ -415,16 +417,16 @@ export function useResetClientPassword() {
 
       const rpcResult = result as unknown as { success: boolean; tempPassword?: string; error?: string };
       if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la réinitialisation');
+        throw new Error(rpcResult?.error || i18n.t('hooks.resetClientPassword.error', { ns: 'common', defaultValue: 'Erreur lors de la réinitialisation' }));
       }
 
       return rpcResult;
     },
     onSuccess: () => {
-      toast.success('Mot de passe client réinitialisé');
+      toast.success(i18n.t('hooks.resetClientPassword.success', { ns: 'common', defaultValue: 'Mot de passe client réinitialisé' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la réinitialisation du mot de passe');
+      toast.error(error.message || i18n.t('hooks.resetClientPassword.errorFull', { ns: 'common', defaultValue: 'Erreur lors de la réinitialisation du mot de passe' }));
     },
   });
 }

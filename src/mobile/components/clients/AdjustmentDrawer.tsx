@@ -166,11 +166,11 @@ export function AdjustmentDrawer({
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Décrivez la raison de cet ajustement..."
+              placeholder={t('adjustmentReasonPlaceholder', { defaultValue: 'Décrivez la raison de cet ajustement...' })}
               className="mt-1.5 min-h-[100px]"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Le motif sera enregistré dans l'historique et visible par le client.
+              {t('reasonRecordedNote', { defaultValue: "Le motif sera enregistré dans l'historique et visible par le client." })}
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export function AdjustmentDrawer({
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-amber-800">
-              Cette action sera enregistrée avec votre nom et ne peut pas être annulée.
+              {t('actionCannotBeUndone', { defaultValue: 'Cette action sera enregistrée avec votre nom et ne peut pas être annulée.' })}
             </p>
           </div>
         </div>
@@ -197,16 +197,16 @@ export function AdjustmentDrawer({
             {createAdjustmentMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Traitement...
+                {t('processing', { defaultValue: 'Traitement...' })}
               </>
             ) : (
               <>
-                {isDebit ? 'Débiter' : 'Créditer'} {amountNumber > 0 && formatCurrency(amountNumber)}
+                {isDebit ? t('debit', { defaultValue: 'Débiter' }) : t('credit', { defaultValue: 'Créditer' })} {amountNumber > 0 && formatCurrency(amountNumber)}
               </>
             )}
           </Button>
           <Button variant="outline" onClick={handleClose}>
-            Annuler
+            {t('cancel', { defaultValue: 'Annuler' })}
           </Button>
         </DrawerFooter>
       </DrawerContent>

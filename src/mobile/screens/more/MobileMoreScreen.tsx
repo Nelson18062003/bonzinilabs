@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminNotificationCount } from '@/hooks/useAdminNotifications';
@@ -57,6 +58,7 @@ function MenuItem({ icon: Icon, label, description, onClick, destructive, badge 
 }
 
 export function MobileMoreScreen() {
+  const { t } = useTranslation('common');
   const { profile, logout, canManageUsers } = useAdminAuth();
   const { data: notifCount } = useAdminNotificationCount();
   const navigate = useNavigate();
@@ -68,7 +70,7 @@ export function MobileMoreScreen() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <MobileHeader title="Plus" />
+      <MobileHeader title={t('more', { defaultValue: 'Plus' })} />
 
       <div className="flex-1">
         {/* Profile Section */}
@@ -92,46 +94,46 @@ export function MobileMoreScreen() {
           <MenuItem
             icon={BarChart3}
             label="Dashboard"
-            description="Rapports et indicateurs clés"
+            description={t('reportsAndKPIs', { defaultValue: 'Rapports et indicateurs clés' })}
             onClick={() => navigate('/m/dashboard')}
           />
           <MenuItem
             icon={TrendingUp}
-            label="Taux de change"
-            description="Gérer les taux XAF/RMB"
+            label={t('exchangeRate', { defaultValue: 'Taux de change' })}
+            description={t('manageRates', { defaultValue: 'Gérer les taux XAF/RMB' })}
             onClick={() => navigate('/m/more/rates')}
           />
           <MenuItem
             icon={FileText}
-            label="Justificatifs"
-            description="Voir les preuves de dépôts"
+            label={t('proofs', { defaultValue: 'Justificatifs' })}
+            description={t('viewDepositProofs', { defaultValue: 'Voir les preuves de dépôts' })}
             onClick={() => navigate('/m/more/proofs')}
           />
           <MenuItem
             icon={History}
-            label="Historique"
-            description="Journal d'activité"
+            label={t('history', { defaultValue: 'Historique' })}
+            description={t('activityLog', { defaultValue: "Journal d'activité" })}
             onClick={() => navigate('/m/more/history')}
           />
           <MenuItem
             icon={Bell}
-            label="Notifications"
-            description="Centre de notifications"
+            label={t('notifications', { defaultValue: 'Notifications' })}
+            description={t('notificationCenter', { defaultValue: 'Centre de notifications' })}
             onClick={() => navigate('/m/more/notifications')}
             badge={notifCount && notifCount > 0 ? String(notifCount) : undefined}
           />
           {canManageUsers && (
             <MenuItem
               icon={UserCog}
-              label="Administrateurs"
-              description="Gérer les accès admin"
+              label={t('administrators', { defaultValue: 'Administrateurs' })}
+              description={t('manageAdminAccess', { defaultValue: 'Gérer les accès admin' })}
               onClick={() => navigate('/m/more/admins')}
             />
           )}
           <MenuItem
             icon={Settings}
-            label="Paramètres"
-            description="Thème, préférences"
+            label={t('settings', { defaultValue: 'Paramètres' })}
+            description={t('themePreferences', { defaultValue: 'Thème, préférences' })}
             onClick={() => navigate('/m/more/settings')}
           />
         </div>
@@ -139,7 +141,7 @@ export function MobileMoreScreen() {
         {/* Theme Quick Toggle */}
         <div className="px-4 py-3 border-t border-border">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Thème</span>
+            <span className="text-sm text-muted-foreground">{t('theme', { defaultValue: 'Thème' })}</span>
             <ThemeToggleCompact />
           </div>
         </div>
@@ -148,7 +150,7 @@ export function MobileMoreScreen() {
         <div className="border-t border-border">
           <MenuItem
             icon={LogOut}
-            label="Déconnexion"
+            label={t('logout', { defaultValue: 'Déconnexion' })}
             onClick={handleLogout}
             destructive
           />

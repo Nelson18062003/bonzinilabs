@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Monitor, Palette, Info } from 'lucide-react';
 
 export function MobileSettingsScreen() {
+  const { t } = useTranslation('common');
   const { profile } = useAdminAuth();
 
   return (
     <div className="flex flex-col min-h-full">
-      <MobileHeader title="Paramètres" showBack />
+      <MobileHeader title={t('settings', { defaultValue: 'Paramètres' })} showBack />
 
       <div className="flex-1 px-4 py-4 space-y-6">
         {/* Theme Section */}
