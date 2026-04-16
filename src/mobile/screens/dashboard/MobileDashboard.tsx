@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
@@ -31,6 +32,7 @@ import {
 } from 'lucide-react';
 
 export function MobileDashboard() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentUser } = useAdminAuth();
@@ -138,7 +140,7 @@ export function MobileDashboard() {
           className="card-glass p-4 sm:p-5 rounded-2xl border border-primary/20 animate-kpi-entrance"
           style={{ animationDelay: '50ms', animationFillMode: 'both' }}
         >
-          <p className="text-sm text-muted-foreground">Solde plateforme</p>
+          <p className="text-sm text-muted-foreground">{t('platformBalance', { defaultValue: 'Solde plateforme' })}</p>
           <p
             className="text-2xl sm:text-3xl font-bold tracking-tight mt-1"
             style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -157,7 +159,7 @@ export function MobileDashboard() {
           {/* Sub-indicators */}
           <div className="flex items-start gap-2 sm:gap-4 mt-3 sm:mt-4 pt-3 border-t border-border/50">
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-muted-foreground">Dépôts aujourd'hui</p>
+              <p className="text-[11px] text-muted-foreground">{t('depositsToday', { defaultValue: "Dépôts aujourd'hui" })}</p>
               <p
                 className="text-sm font-semibold text-green-600 dark:text-green-400"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
