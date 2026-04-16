@@ -164,7 +164,7 @@ export function MobileClientDetail() {
   const handleDownloadStatement = async () => {
     if (!client) return;
     if (!ledgerEntries?.length) {
-      toast.error('Aucun mouvement à exporter');
+      toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
       return;
     }
     setIsStatementGenerating(true);
@@ -210,7 +210,7 @@ export function MobileClientDetail() {
       });
     } catch (err) {
       console.error('Error generating statement:', err);
-      toast.error('Erreur lors de la génération du relevé');
+      toast.error(t('statementGenerationError', { defaultValue: 'Erreur lors de la génération du relevé' }));
     } finally {
       setIsStatementGenerating(false);
     }
@@ -235,7 +235,7 @@ export function MobileClientDetail() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Détail client" showBack backTo="/m/clients" />
+        <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
         <SkeletonClientDetail />
       </div>
     );
@@ -244,9 +244,9 @@ export function MobileClientDetail() {
   if (!client) {
     return (
       <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Détail client" showBack backTo="/m/clients" />
+        <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
         <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-muted-foreground">Client non trouvé</p>
+          <p className="text-muted-foreground">{t('clientNotFound', { defaultValue: 'Client non trouvé' })}</p>
         </div>
       </div>
     );

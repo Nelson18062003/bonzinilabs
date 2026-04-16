@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 import { subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
 
 export interface ExchangeRate {
