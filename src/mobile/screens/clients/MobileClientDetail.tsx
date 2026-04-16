@@ -322,13 +322,13 @@ export function MobileClientDetail() {
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Solde disponible</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
             </div>
             <button
               onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
               className="text-primary text-sm font-medium"
             >
-              Historique
+              {t('history', { defaultValue: 'Historique' })}
             </button>
           </div>
 
@@ -344,7 +344,7 @@ export function MobileClientDetail() {
 
           {client.lastLedgerEntry && (
             <p className="text-xs text-muted-foreground mt-2">
-              Dernier mouvement : {formatDate(client.lastLedgerEntry.createdAt)}
+              {t('lastMovement', { defaultValue: 'Dernier mouvement' })} : {formatDate(client.lastLedgerEntry.createdAt)}
             </p>
           )}
 

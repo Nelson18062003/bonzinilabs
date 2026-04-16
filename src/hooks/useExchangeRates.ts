@@ -205,9 +205,9 @@ export function useDeleteExchangeRate() {
       
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(result.error || i18n.t('hooks.exchangeRates.unknownError', { ns: 'common', defaultValue: 'Erreur inconnue' }));
       }
-      
+
       return result;
     },
     onSuccess: () => {
@@ -215,10 +215,10 @@ export function useDeleteExchangeRate() {
       queryClient.invalidateQueries({ queryKey: ['exchange-rates-chart'] });
       queryClient.invalidateQueries({ queryKey: ['current-exchange-rate'] });
       queryClient.invalidateQueries({ queryKey: ['exchange-rate'] });
-      toast.success('Taux de change supprimé');
+      toast.success(i18n.t('hooks.exchangeRates.deleted', { ns: 'common', defaultValue: 'Taux de change supprimé' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la suppression du taux');
+      toast.error(error.message || i18n.t('hooks.exchangeRates.deleteError', { ns: 'common', defaultValue: 'Erreur lors de la suppression du taux' }));
     },
   });
 }
