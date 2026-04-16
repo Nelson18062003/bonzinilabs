@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 import type {
   CreateClientData,
   CreateClientResult,
@@ -295,7 +296,7 @@ export function useCreateClient() {
       const rpcResult = result as Record<string, unknown>;
 
       if (!rpcResult?.success) {
-        throw new Error((rpcResult?.error as string) || 'Erreur lors de la création du client');
+        throw new Error((rpcResult?.error as string) || i18n.t('hooks.createClient.error', { ns: 'common', defaultValue: 'Erreur lors de la création du client' }));
       }
 
       return {
@@ -311,10 +312,10 @@ export function useCreateClient() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Client créé avec succès');
+      toast.success(i18n.t('hooks.createClient.success', { ns: 'common', defaultValue: 'Client créé avec succès' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la création du client');
+      toast.error(error.message || i18n.t('hooks.createClient.error', { ns: 'common', defaultValue: 'Erreur lors de la création du client' }));
     },
   });
 }
@@ -347,10 +348,10 @@ export function useUpdateClient() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
-      toast.success('Profil client modifié');
+      toast.success(i18n.t('hooks.updateClient.success', { ns: 'common', defaultValue: 'Profil client modifié' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la modification');
+      toast.error(error.message || i18n.t('hooks.updateClient.error', { ns: 'common', defaultValue: 'Erreur lors de la modification' }));
     },
   });
 }

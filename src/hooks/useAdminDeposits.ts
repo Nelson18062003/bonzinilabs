@@ -538,9 +538,9 @@ export function useAdminUploadProofs() {
       // Note: upload doesn't affect financial stats — deposit-stats not invalidated
 
       if (data.failedFiles && data.failedFiles.length > 0) {
-        toast.warning(`${data.uploadedCount} preuve(s) ajoutée(s), ${data.failedFiles.length} échec(s)`);
+        toast.warning(i18n.t('hooks.adminUploadProofs.partialSuccess', { ns: 'common', defaultValue: `${data.uploadedCount} preuve(s) ajoutée(s), ${data.failedFiles.length} échec(s)`, successCount: data.uploadedCount, failCount: data.failedFiles.length }));
       } else {
-        toast.success(`${data.uploadedCount} preuve(s) ajoutée(s)`);
+        toast.success(i18n.t('hooks.adminUploadProofs.success', { ns: 'common', defaultValue: `${data.uploadedCount} preuve(s) ajoutée(s)`, count: data.uploadedCount }));
       }
     },
     onError: (error: Error) => {
@@ -567,7 +567,7 @@ export function useCancelDeposit() {
 
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
-        throw new Error(result.error || "Erreur lors de l'annulation");
+        throw new Error(result.error || i18n.t('hooks.cancelDeposit.error', { ns: 'common', defaultValue: "Erreur lors de l'annulation" }));
       }
 
       return result;
@@ -577,7 +577,7 @@ export function useCancelDeposit() {
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
-      toast.success('Dépôt annulé');
+      toast.success(i18n.t('hooks.adminCancelDeposit.success', { ns: 'common', defaultValue: 'Dépôt annulé' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -601,7 +601,7 @@ export function useAdminDeleteProof() {
       reason: string;
     }) => {
       const admin = await getAdminUser();
-      if (!admin) throw new Error('Vous devez être connecté');
+      if (!admin) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
       // Soft-delete the proof
       const { error } = await supabaseAdmin
@@ -657,7 +657,7 @@ export function useAdminDeleteProof() {
       // Paginated list status may have changed (revert to 'created' if no proofs left)
       queryClient.invalidateQueries({ queryKey: ['admin-deposits-paginated'] });
       // Note: proof deletion doesn't affect financial stats — deposit-stats not invalidated
-      toast.success('Preuve supprimée');
+      toast.success(i18n.t('hooks.deleteProof.success', { ns: 'common', defaultValue: 'Preuve supprimée' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);

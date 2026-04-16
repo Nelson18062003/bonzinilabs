@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateAdjustment } from '@/hooks/useClientManagement';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export function AdjustmentDrawer({
   currentBalance,
   onSuccess,
 }: AdjustmentDrawerProps) {
+  const { t } = useTranslation('common');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
 
@@ -90,12 +92,12 @@ export function AdjustmentDrawer({
             {isDebit ? (
               <>
                 <MinusCircle className="w-5 h-5 text-red-500" />
-                Débit manuel
+                {t('manualDebit', { defaultValue: 'Débit manuel' })}
               </>
             ) : (
               <>
                 <PlusCircle className="w-5 h-5 text-green-500" />
-                Crédit manuel
+                {t('manualCredit', { defaultValue: 'Crédit manuel' })}
               </>
             )}
           </DrawerTitle>
@@ -104,13 +106,13 @@ export function AdjustmentDrawer({
         <div className="px-4 pb-4 space-y-4">
           {/* Current Balance */}
           <div className="bg-muted rounded-lg p-3">
-            <p className="text-sm text-muted-foreground">Solde actuel</p>
+            <p className="text-sm text-muted-foreground">{t('currentBalance', { defaultValue: 'Solde actuel' })}</p>
             <p className="text-xl font-bold">{formatCurrency(currentBalance)}</p>
           </div>
 
           {/* Amount Input */}
           <div>
-            <Label htmlFor="amount">Montant (XAF) *</Label>
+            <Label htmlFor="amount">{t('amountXAF', { defaultValue: 'Montant (XAF)' })} *</Label>
             <div className="relative mt-1.5">
               <Input
                 id="amount"
@@ -140,11 +142,11 @@ export function AdjustmentDrawer({
                 {isInsufficientBalance ? (
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
-                    Solde insuffisant
+                    {t('insufficientBalance', { defaultValue: 'Solde insuffisant' })}
                   </div>
                 ) : (
                   <span>
-                    Nouveau solde: {formatCurrency(currentBalance - amountNumber)}
+                    {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance - amountNumber)}
                   </span>
                 )}
               </div>
@@ -152,14 +154,14 @@ export function AdjustmentDrawer({
 
             {!isDebit && amountNumber > 0 && (
               <p className="mt-2 text-sm text-muted-foreground">
-                Nouveau solde: {formatCurrency(currentBalance + amountNumber)}
+                {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance + amountNumber)}
               </p>
             )}
           </div>
 
           {/* Reason Input */}
           <div>
-            <Label htmlFor="reason">Motif *</Label>
+            <Label htmlFor="reason">{t('reason', { defaultValue: 'Motif' })} *</Label>
             <Textarea
               id="reason"
               value={reason}

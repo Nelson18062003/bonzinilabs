@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 import type {
   CreateAdminData,
   CreateAdminResult,
@@ -27,17 +28,17 @@ export function useCreateAdmin() {
 
       const rpcResult = result as unknown as CreateAdminResult;
       if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la création');
+        throw new Error(rpcResult?.error || i18n.t('hooks.createAdmin.error', { ns: 'common', defaultValue: 'Erreur lors de la création' }));
       }
 
       return rpcResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Admin créé avec succès');
+      toast.success(i18n.t('hooks.createAdmin.success', { ns: 'common', defaultValue: 'Admin créé avec succès' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la création de l\'admin');
+      toast.error(error.message || i18n.t('hooks.createAdmin.errorFull', { ns: 'common', defaultValue: "Erreur lors de la création de l'admin" }));
     },
   });
 }
@@ -63,10 +64,10 @@ export function useUpdateAdminProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Profil admin modifié');
+      toast.success(i18n.t('hooks.updateAdminProfile.success', { ns: 'common', defaultValue: 'Profil admin modifié' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la modification du profil');
+      toast.error(error.message || i18n.t('hooks.updateAdminProfile.error', { ns: 'common', defaultValue: 'Erreur lors de la modification du profil' }));
     },
   });
 }
@@ -89,10 +90,10 @@ export function useUpdateAdminRole() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Rôle admin modifié');
+      toast.success(i18n.t('hooks.updateAdminRole.success', { ns: 'common', defaultValue: 'Rôle admin modifié' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la modification du rôle');
+      toast.error(error.message || i18n.t('hooks.updateAdminRole.error', { ns: 'common', defaultValue: 'Erreur lors de la modification du rôle' }));
     },
   });
 }
@@ -115,10 +116,13 @@ export function useToggleAdminStatus() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success(variables.disabled ? 'Compte admin désactivé' : 'Compte admin réactivé');
+      toast.success(variables.disabled
+        ? i18n.t('hooks.toggleAdminStatus.disabled', { ns: 'common', defaultValue: 'Compte admin désactivé' })
+        : i18n.t('hooks.toggleAdminStatus.enabled', { ns: 'common', defaultValue: 'Compte admin réactivé' })
+      );
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors du changement de statut');
+      toast.error(error.message || i18n.t('hooks.toggleAdminStatus.error', { ns: 'common', defaultValue: 'Erreur lors du changement de statut' }));
     },
   });
 }
@@ -139,16 +143,16 @@ export function useResetAdminPassword() {
 
       const rpcResult = result as ResetPasswordResult;
       if (!rpcResult?.success) {
-        throw new Error(rpcResult?.error || 'Erreur lors de la réinitialisation');
+        throw new Error(rpcResult?.error || i18n.t('hooks.resetPassword.error', { ns: 'common', defaultValue: 'Erreur lors de la réinitialisation' }));
       }
 
       return rpcResult;
     },
     onSuccess: () => {
-      toast.success('Mot de passe réinitialisé');
+      toast.success(i18n.t('hooks.resetPassword.success', { ns: 'common', defaultValue: 'Mot de passe réinitialisé' }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erreur lors de la réinitialisation du mot de passe');
+      toast.error(error.message || i18n.t('hooks.resetPassword.errorFull', { ns: 'common', defaultValue: 'Erreur lors de la réinitialisation du mot de passe' }));
     },
   });
 }
