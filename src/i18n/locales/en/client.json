@@ -56,7 +56,7 @@
     "appearance": "Appearance",
     "appearanceDesc": "App theme",
     "logout": "Log out",
-    "version": "Bonzini v1.0.0 \u2022 Made with \ud83d\udc9c in Cameroon",
+    "version": "Bonzini v1.0.0 • Made with 💜 in Cameroon",
     "comingSoon": "Feature coming soon"
   },
   "beneficiaries": {
@@ -76,5 +76,15 @@
     "title": "404",
     "message": "Oops! Page not found",
     "backHome": "Return to Home"
+  },
+  "welcomeGreeting": {
+    "trustMessage": "Your money is safe with Bonzini."
+  },
+  "nav": {
+    "wallet": "Wallet",
+    "deposits": "Deposits",
+    "payments": "Payments",
+    "history": "History",
+    "profile": "Profile"
   }
 }

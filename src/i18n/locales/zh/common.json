@@ -1,36 +1,428 @@
 {
-  "loading": "\u52a0\u8f7d\u4e2d...",
-  "error": "\u9519\u8bef",
-  "success": "\u6210\u529f",
-  "cancel": "\u53d6\u6d88",
-  "confirm": "\u786e\u8ba4",
-  "save": "\u4fdd\u5b58",
-  "delete": "\u5220\u9664",
-  "edit": "\u7f16\u8f91",
-  "back": "\u8fd4\u56de",
-  "next": "\u4e0b\u4e00\u6b65",
-  "continue": "\u7ee7\u7eed",
-  "close": "\u5173\u95ed",
-  "search": "\u641c\u7d22",
-  "or": "\u6216",
-  "yes": "\u662f",
-  "no": "\u5426",
-  "amount": "\u91d1\u989d",
-  "date": "\u65e5\u671f",
-  "status": "\u72b6\u6001",
-  "phone": "\u7535\u8bdd",
-  "email": "\u90ae\u7bb1",
-  "name": "\u59d3\u540d",
-  "download": "\u4e0b\u8f7d",
+  "loading": "加载中...",
+  "error": "错误",
+  "success": "成功",
+  "cancel": "取消",
+  "confirm": "确认",
+  "save": "保存",
+  "delete": "删除",
+  "edit": "编辑",
+  "back": "返回",
+  "next": "下一步",
+  "continue": "继续",
+  "close": "关闭",
+  "search": "搜索",
+  "or": "或",
+  "yes": "是",
+  "no": "否",
+  "amount": "金额",
+  "date": "日期",
+  "status": "状态",
+  "phone": "电话",
+  "email": "邮箱",
+  "name": "姓名",
+  "download": "下载",
   "currency": {
     "xaf": "XAF",
-    "rmb": "\u4eba\u6c11\u5e01",
+    "rmb": "人民币",
     "cny": "CNY"
   },
   "relativeTime": {
-    "justNow": "\u521a\u521a",
-    "minutesAgo": "{{count}}\u5206\u949f\u524d",
-    "hoursAgo": "{{count}}\u5c0f\u65f6\u524d",
-    "daysAgo": "{{count}}\u5929\u524d"
-  }
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前"
+  },
+  "errorBoundary": {
+    "title": "哎呀！发生了错误",
+    "description": "别担心，您的数据是安全的。请尝试刷新页面。",
+    "contactSupport": "如果问题持续存在，请联系技术支持。",
+    "retry": "重试",
+    "refreshPage": "刷新页面",
+    "featureLoadError": "无法加载此部分"
+  },
+  "hooks": {
+    "adjustWallet": {
+      "error": "调整失败",
+      "credit": "贷记",
+      "debit": "借记",
+      "success": "{{typeLabel}}成功完成",
+      "newBalance": "新余额：{{newBalance}}",
+      "errorPrefix": "错误：{{errorMessage}}"
+    },
+    "adminNotifications": {
+      "unknownClient": "未知客户",
+      "depositNeedsReview": "待审核存款",
+      "paymentProcessing": "付款处理中",
+      "paymentReady": "待处理付款"
+    },
+    "addExchangeRate": {
+      "success": "汇率已更新",
+      "error": "更新汇率时出错"
+    },
+    "deleteClient": {
+      "error": "删除失败",
+      "success": "客户已成功删除",
+      "errorPrefix": "错误：{{errorMessage}}"
+    },
+    "validateDeposit": {
+      "error": "验证失败",
+      "success": "存款已验证！钱包已入账 {{amountCredited}}"
+    },
+    "rejectDeposit": {
+      "error": "拒绝失败",
+      "success": "存款已拒绝"
+    },
+    "startReview": {
+      "error": "错误"
+    },
+    "auth": {
+      "mustBeLoggedIn": "您必须登录",
+      "notAuthenticated": "未认证"
+    },
+    "adminCreateDeposit": {
+      "error": "创建时出错",
+      "success": "存款已成功创建"
+    },
+    "uploadMultiple": {
+      "allFailed": "上传失败：{{files}}",
+      "partialSuccess": "已发送 {{uploadedCount}} 个凭证，{{failedCount}} 个失败",
+      "success": "已成功发送 {{uploadedCount}} 个凭证"
+    },
+    "adminUploadProofs": {
+      "partialSuccess": "已添加 {{uploadedCount}} 个凭证，{{failedCount}} 个失败",
+      "success": "已添加 {{uploadedCount}} 个凭证"
+    },
+    "cancelDeposit": {
+      "error": "取消时出错",
+      "success": "存款已成功取消"
+    },
+    "adminCancelDeposit": {
+      "success": "存款已取消"
+    },
+    "deleteProof": {
+      "success": "凭证已删除",
+      "error": "删除时出错"
+    },
+    "createAdmin": {
+      "error": "创建时出错",
+      "success": "管理员已成功创建",
+      "errorFull": "创建管理员时出错"
+    },
+    "updateAdminProfile": {
+      "success": "管理员资料已更新",
+      "error": "修改资料时出错"
+    },
+    "updateAdminRole": {
+      "success": "管理员角色已更新",
+      "error": "修改角色时出错"
+    },
+    "toggleAdminStatus": {
+      "disabled": "管理员帐户已停用",
+      "enabled": "管理员帐户已重新启用",
+      "error": "更改状态时出错"
+    },
+    "resetPassword": {
+      "error": "重置时出错",
+      "success": "密码已重置",
+      "errorFull": "重置密码时出错"
+    },
+    "adminProofMultiUpload": {
+      "successMultiple": "已上传 {{successCount}} 个凭证",
+      "partialSuccess": "{{successCount}} 个成功，{{failCount}} 个失败",
+      "allFailed": "上传失败"
+    },
+    "uploadProof": {
+      "success": "凭证已上传",
+      "sentSuccess": "凭证已成功发送"
+    },
+    "createPayment": {
+      "error": "创建付款时出错",
+      "success": "付款已成功创建"
+    },
+    "cancelPayment": {
+      "error": "取消时出错",
+      "success": "付款已取消"
+    },
+    "adminUpdateBeneficiary": {
+      "infoUpdated": "信息已更新",
+      "error": "更新时出错",
+      "success": "收款人信息已更新"
+    },
+    "adminUploadProofsDeposit": {
+      "success": "已添加 {{count}} 个凭证",
+      "errorPrefix": "错误：{{errorMessage}}"
+    },
+    "createBeneficiary": {
+      "success": "收款人已添加",
+      "error": "添加收款人时出错"
+    },
+    "updateBeneficiary": {
+      "success": "收款人已更新",
+      "infoUpdated": "收款人信息已更新",
+      "qrAdded": "{{method}} 二维码已添加",
+      "contactAdded": "付款联系方式已添加",
+      "bankAdded": "银行信息已添加",
+      "error": "更新时出错",
+      "readySuccess": "信息已保存 - 付款准备处理",
+      "partialSuccess": "信息已部分保存"
+    },
+    "scanCashPayment": {
+      "success": "二维码扫描成功",
+      "error": "扫描时出错"
+    },
+    "confirmCashPayment": {
+      "success": "现金付款已成功确认",
+      "error": "确认时出错"
+    },
+    "createClient": {
+      "error": "创建客户时出错",
+      "success": "客户已成功创建"
+    },
+    "updateClient": {
+      "success": "客户资料已更新",
+      "error": "修改时出错"
+    },
+    "createAdjustment": {
+      "error": "调整时出错",
+      "credited": "已贷记",
+      "debited": "已借记",
+      "success": "钱包已成功{{action}}"
+    },
+    "resetClientPassword": {
+      "error": "重置时出错",
+      "success": "客户密码已重置",
+      "errorFull": "重置密码时出错"
+    },
+    "createDailyRates": {
+      "unknownError": "未知错误",
+      "success": "新汇率已应用",
+      "error": "应用汇率时出错"
+    },
+    "updateRateAdjustment": {
+      "unknownError": "未知错误",
+      "success": "调整已更新",
+      "error": "更新时出错"
+    },
+    "calculateRate": {
+      "error": "计算错误"
+    },
+    "createDeposit": {
+      "error": "创建存款时出错"
+    },
+    "exchangeRates": {
+      "unknownError": "未知错误",
+      "added": "汇率已添加",
+      "addError": "添加汇率时出错",
+      "updated": "汇率已修改",
+      "updateError": "修改汇率时出错",
+      "deleted": "汇率已删除",
+      "deleteError": "删除汇率时出错"
+    },
+    "proofMultiUpload": {
+      "success": "已成功上传 {{successCount}} 个文件",
+      "partialSuccess": "已上传 {{successCount}} 个文件，{{failCount}} 个失败",
+      "allFailed": "文件上传失败"
+    },
+    "adminProofUpload": {
+      "success": "凭证已添加"
+    },
+    "processPayment": {
+      "error": "处理时出错",
+      "startProcessing": "付款处理中",
+      "complete": "付款已标记为完成",
+      "reject": "付款已拒绝"
+    }
+  },
+  "adminDetail": "管理员详情",
+  "adminNotFound": "未找到管理员",
+  "active": "活跃",
+  "disabled": "已停用",
+  "itsYou": "是您",
+  "createdOn": "创建于",
+  "never": "从未",
+  "lastLogin": "上次登录",
+  "assignedRole": "分配角色",
+  "actions": "操作",
+  "editProfile": "编辑资料",
+  "nameAndRole": "姓名、名字、角色",
+  "deactivateAccount": "停用帐户",
+  "activateAccount": "启用帐户",
+  "blockAccess": "禁止访问",
+  "restoreAccess": "恢复访问",
+  "changeMyPassword": "修改我的密码",
+  "resetPassword": "重置密码",
+  "generateNewPassword": "生成新密码",
+  "generateTempPassword": "生成临时密码",
+  "editAdmin": "编辑管理员",
+  "firstName": "名字",
+  "lastName": "姓氏",
+  "role": "角色",
+  "deactivate": "停用",
+  "reactivate": "重新启用",
+  "theAdmin": "管理员",
+  "confirmDeactivateAdmin": "确定要停用 {{firstName}} {{lastName}} 吗？该管理员将无法再登录。",
+  "confirmReactivateAdmin": "确定要重新启用 {{firstName}} {{lastName}} 吗？该管理员将能够重新登录。",
+  "resetPasswordSelfMessage": "将为您的帐户生成新密码。您需要使用新密码重新登录。",
+  "resetPasswordOtherMessage": "将为以下用户生成新的临时密码：",
+  "resetPasswordOtherMessageSuffix": "您需要手动将密码传达给管理员。",
+  "passwordGenerated": "密码已生成",
+  "copyPasswordSelfMessage": "这是您的新密码。请在关闭此窗口前复制。",
+  "copyPasswordOtherMessage": "这是新的临时密码。请安全地传达给管理员。",
+  "passwordWontBeShownAgain": "关闭此窗口后将不再显示此密码。",
+  "all": "全部",
+  "activeUsers": "活跃",
+  "disabledUsers": "已停用",
+  "administrators": "管理员",
+  "searchAdmin": "搜索管理员...",
+  "you": "您",
+  "noAdminFound": "未找到管理员",
+  "newAdmin": "新建管理员",
+  "personalInfo": "个人信息",
+  "enterNewAdminInfo": "输入新管理员的基本信息",
+  "roleSelection": "角色选择",
+  "chooseRoleForAdmin": "选择要分配给此管理员的角色",
+  "confirmation": "确认",
+  "verifyBeforeCreating": "创建管理员前请核实信息",
+  "fullName": "全名",
+  "adminCreatedSuccess": "管理员已成功创建",
+  "temporaryPassword": "临时密码",
+  "viewAdminProfile": "查看管理员资料",
+  "backToList": "返回列表",
+  "creating": "创建中...",
+  "createAdmin": "创建管理员",
+  "allTab": "全部",
+  "clients": "客户",
+  "reportsAndKPIs": "报告和关键指标",
+  "invalidEmail": "请输入有效的邮箱地址",
+  "loginSuccess": "登录成功",
+  "invalidCredentials": "凭证无效",
+  "errorOccurred": "发生错误",
+  "enterEmailToContinue": "输入您的邮箱地址以继续",
+  "emailAddress": "邮箱地址",
+  "hello": "您好，",
+  "password": "密码",
+  "connecting": "连接中...",
+  "signIn": "登录",
+  "cannotDeleteClientPositiveBalance": "无法删除余额为正的客户（{{balance}} XAF）",
+  "cannotDeleteClientPendingPayments": "无法删除有待处理付款的客户",
+  "noMovementsToExport": "没有可导出的交易记录",
+  "statementGenerationError": "生成对账单时出错",
+  "clientDetail": "客户详情",
+  "clientNotFound": "未找到客户",
+  "clientProfile": "客户资料",
+  "notProvided": "未提供",
+  "clientSince": "客户始于",
+  "availableBalance": "可用余额",
+  "history": "历史记录",
+  "lastMovement": "最近交易",
+  "credit": "贷记",
+  "debitLabel": "借记",
+  "totalDeposits": "存款总额",
+  "totalPayments": "付款总额",
+  "movementHistory": "交易历史",
+  "viewFullLedger": "查看完整账本",
+  "declareDeposit": "申报存款",
+  "createNewDeposit": "创建新存款",
+  "generatingStatement": "生成中...",
+  "exportPDFStatement": "导出PDF对账单",
+  "operations": "笔操作",
+  "downloadHistory": "下载历史记录",
+  "namePhoneEmailCompany": "姓名、电话、邮箱、公司...",
+  "deleteClient": "删除客户",
+  "permanentDeletion": "永久且不可撤销的删除",
+  "phoneWhatsApp": "电话 / WhatsApp",
+  "emailLabel": "邮箱",
+  "company": "公司",
+  "country": "国家",
+  "city": "城市",
+  "confirmDeletion": "确认删除",
+  "resetPasswordClientMessage": "将为以下用户生成新的临时密码：",
+  "resetPasswordClientSuffix": "您需要手动将密码传达给客户。",
+  "tempPasswordClientMessage": "这是新的临时密码。请安全地传达给客户。",
+  "currentBalance": "当前余额",
+  "balance": "余额",
+  "noMovementsRecorded": "暂无交易记录",
+  "noMovementsOfType": "暂无此类型的交易",
+  "searchByNamePhone": "按姓名、电话搜索...",
+  "inactive": "不活跃",
+  "suspendedStatus": "已暂停",
+  "deposits": "存款",
+  "payments": "付款",
+  "noClientFound": "未找到客户",
+  "noClientsYet": "暂无客户",
+  "createClient": "创建客户",
+  "clientCreatedSuccess": "客户已成功创建",
+  "viewClientProfile": "查看客户资料",
+  "newClient": "新客户",
+  "whoIsYourClient": "您的客户是谁？",
+  "firstNameLastNameCompany": "名字、姓氏和公司",
+  "howToReachClient": "如何联系？",
+  "whatsappEmailLocation": "WhatsApp、邮箱和位置",
+  "everythingCorrect": "一切正确？",
+  "verifyBeforeCreatingAccount": "创建帐户前请核实",
+  "createTheClient": "创建客户",
+  "platformBalance": "平台余额",
+  "depositsToday": "今日存款",
+  "paymentsToday": "今日付款",
+  "depositsToValidate": "笔待验证存款",
+  "paymentsPending": "笔待处理付款",
+  "deposit": "存款",
+  "payment": "付款",
+  "recentActivity": "近期活动",
+  "viewAll": "查看全部",
+  "welcomeToBonzini": "欢迎使用 Bonzini",
+  "welcomeMessage": "首先创建您的第一批客户并配置汇率。",
+  "exchangeRate": "汇率",
+  "searchNamePhoneRef": "姓名、电话或参考号...",
+  "noDepositFound": "未找到存款",
+  "tryModifyingFilters": "请尝试修改筛选条件",
+  "depositsWillAppearHere": "存款将显示在这里",
+  "searchAction": "搜索操作...",
+  "noLogsFound": "未找到日志",
+  "more": "更多",
+  "manageRates": "管理 XAF/RMB 汇率",
+  "proofs": "凭证",
+  "viewDepositProofs": "查看存款凭证",
+  "activityLog": "活动日志",
+  "notifications": "通知",
+  "notificationCenter": "通知中心",
+  "manageAdminAccess": "管理管理员访问权限",
+  "settings": "设置",
+  "themePreferences": "主题、偏好设置",
+  "language": "语言",
+  "theme": "主题",
+  "logout": "退出登录",
+  "allUpToDate": "一切就绪",
+  "noPendingItems": "没有待处理项目",
+  "searchByClientOrFile": "按客户或文件搜索...",
+  "noProofsFound": "未找到凭证",
+  "rateCreated": "汇率已创建",
+  "rateModified": "汇率已修改",
+  "rateDeleted": "汇率已删除",
+  "youSend": "您发送",
+  "youReceive": "您收到",
+  "rateAppliedAtPayment": "付款时适用的汇率",
+  "rateTrend": "汇率趋势",
+  "followRatesRealtime": "实时跟踪汇率",
+  "ratesUpdatedDaily": "汇率每天早上更新，为您提供最佳汇率。",
+  "rateHistory": "汇率历史",
+  "rateDetails": "汇率详情",
+  "noRatesForPeriod": "该时段无汇率",
+  "newExchangeRate": "新汇率",
+  "editRate": "编辑汇率",
+  "saving": "保存中...",
+  "applyNewRate": "应用新汇率",
+  "saveChanges": "保存更改",
+  "deleteRateConfirm": "删除此汇率？",
+  "deleting": "删除中...",
+  "appearance": "外观",
+  "appTheme": "应用主题",
+  "systemModeNote": "系统模式会自动适应您的设备偏好设置。",
+  "account": "帐户",
+  "about": "关于",
+  "noPaymentsToExport": "没有进行中的付款可导出",
+  "exportDownloaded": "已下载 {{count}} 笔付款的导出文件",
+  "exportError": "导出时出错",
+  "noPaymentFound": "未找到付款"
 }

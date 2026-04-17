@@ -1,7 +1,7 @@
 {
   "loading": "Chargement...",
   "error": "Erreur",
-  "success": "Succ\u00e8s",
+  "success": "Succès",
   "cancel": "Annuler",
   "confirm": "Confirmer",
   "save": "Enregistrer",
@@ -18,27 +18,413 @@
   "amount": "Montant",
   "date": "Date",
   "status": "Statut",
-  "phone": "T\u00e9l\u00e9phone",
+  "phone": "Téléphone",
   "email": "Email",
   "name": "Nom",
-  "download": "T\u00e9l\u00e9charger",
+  "download": "Télécharger",
   "currency": {
     "xaf": "XAF",
     "rmb": "RMB",
     "cny": "CNY"
   },
   "relativeTime": {
-    "justNow": "\u00c0 l'instant",
+    "justNow": "À l'instant",
     "minutesAgo": "Il y a {{count}} min",
     "hoursAgo": "Il y a {{count}}h",
     "daysAgo": "Il y a {{count}}j"
   },
   "errorBoundary": {
     "title": "Oops! Une erreur est survenue",
-    "description": "Ne vous inqui\u00e9tez pas, vos donn\u00e9es sont en s\u00e9curit\u00e9. Essayez de rafra\u00eechir la page.",
-    "contactSupport": "Si le probl\u00e8me persiste, veuillez contacter le support technique.",
-    "retry": "R\u00e9essayer",
-    "refreshPage": "Rafra\u00eechir la page",
+    "description": "Ne vous inquiétez pas, vos données sont en sécurité. Essayez de rafraîchir la page.",
+    "contactSupport": "Si le problème persiste, veuillez contacter le support technique.",
+    "retry": "Réessayer",
+    "refreshPage": "Rafraîchir la page",
     "featureLoadError": "Impossible de charger cette section"
-  }
+  },
+  "about": "À propos",
+  "account": "Compte",
+  "actions": "Actions",
+  "activateAccount": "Activer le compte",
+  "active": "Actif",
+  "activeUsers": "Actifs",
+  "activityLog": "Journal d",
+  "adminCreatedSuccess": "Admin créé avec succès",
+  "adminDetail": "Détail admin",
+  "adminNotFound": "Admin non trouvé",
+  "administrators": "Administrateurs",
+  "all": "Tous",
+  "allTab": "Tout",
+  "allUpToDate": "Tout est à jour",
+  "appTheme": "Thème de l",
+  "appearance": "Apparence",
+  "applyNewRate": "Appliquer le nouveau taux",
+  "assignedRole": "Rôle attribué",
+  "availableBalance": "Solde disponible",
+  "backToList": "Retour à la liste",
+  "balance": "Solde",
+  "blockAccess": "Bloquer l",
+  "cannotDeleteClientPendingPayments": "Impossible de supprimer un client ayant des paiements en cours",
+  "cannotDeleteClientPositiveBalance": "Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)",
+  "changeMyPassword": "Changer mon mot de passe",
+  "chooseRoleForAdmin": "Choisissez le rôle à attribuer à cet administrateur",
+  "city": "Ville",
+  "clientCreatedSuccess": "Client créé avec succès",
+  "clientDetail": "Détail client",
+  "clientNotFound": "Client non trouvé",
+  "clientProfile": "Fiche client",
+  "clientSince": "Client depuis",
+  "clients": "Clients",
+  "company": "Entreprise",
+  "confirmDeactivateAdmin": "Voulez-vous vraiment désactiver ${admin.firstName} ${admin.lastName} ? Cet admin ne pourra plus se connecter.",
+  "confirmDeletion": "Confirmer la suppression",
+  "confirmReactivateAdmin": "Voulez-vous vraiment réactiver ${admin.firstName} ${admin.lastName} ? Cet admin pourra à nouveau se connecter.",
+  "confirmation": "Confirmation",
+  "connecting": "Connexion...",
+  "copyPasswordOtherMessage": "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l",
+  "copyPasswordSelfMessage": "Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.",
+  "country": "Pays",
+  "createAdmin": "Créer l",
+  "createClient": "Créer un client",
+  "createNewDeposit": "Créer un nouveau dépôt",
+  "createTheClient": "Créer le client",
+  "createdOn": "Créé le",
+  "creating": "Création...",
+  "credit": "Crédit",
+  "currentBalance": "Solde actuel",
+  "deactivate": "Désactiver",
+  "deactivateAccount": "Désactiver le compte",
+  "debitLabel": "Débit",
+  "declareDeposit": "Déclarer un dépôt",
+  "deleteClient": "Supprimer le client",
+  "deleteRateConfirm": "Supprimer ce taux ?",
+  "deleting": "Suppression...",
+  "deposit": "Dépôt",
+  "deposits": "Dépôts",
+  "depositsToValidate": "dépôt(s) à valider",
+  "depositsToday": "Dépôts aujourd",
+  "depositsWillAppearHere": "Les dépôts apparaîtront ici",
+  "disabled": "Désactivé",
+  "disabledUsers": "Désactivés",
+  "downloadHistory": "Télécharger l",
+  "editAdmin": "Modifier l",
+  "editProfile": "Modifier le profil",
+  "editRate": "Modifier le taux",
+  "emailAddress": "Adresse email",
+  "emailLabel": "Email",
+  "enterEmailToContinue": "Entrez votre adresse email pour continuer",
+  "enterNewAdminInfo": "Entrez les informations de base du nouvel administrateur",
+  "errorOccurred": "Une erreur est survenue",
+  "everythingCorrect": "Tout est correct ?",
+  "exchangeRate": "Taux de change",
+  "exportDownloaded": "Export de ${entries.length} paiement(s) téléchargé",
+  "exportError": "Erreur lors de l",
+  "exportPDFStatement": "Exporter relevé PDF",
+  "firstName": "Prénom",
+  "firstNameLastNameCompany": "Prénom, nom et entreprise",
+  "followRatesRealtime": "Suivez les taux en temps réel",
+  "fullName": "Nom complet",
+  "generateNewPassword": "Générer nouveau mot de passe",
+  "generateTempPassword": "Générer un mot de passe temporaire",
+  "generatingStatement": "Génération en cours…",
+  "hello": "Bonjour,",
+  "history": "Historique",
+  "hooks": {
+    "addExchangeRate": {
+      "error": "Erreur lors de la mise à jour du taux",
+      "success": "Taux de change mis à jour"
+    },
+    "adjustWallet": {
+      "credit": "Crédit",
+      "debit": "Débit",
+      "error": "Ajustement échoué",
+      "errorPrefix": "Erreur: ${error.message}",
+      "newBalance": "Nouveau solde: ${formatCurrency(data.new_balance || 0)}",
+      "success": "${typeLabel} effectué avec succès"
+    },
+    "adminCancelDeposit": {
+      "success": "Dépôt annulé"
+    },
+    "adminCreateDeposit": {
+      "error": "Erreur lors de la création",
+      "success": "Dépôt créé avec succès"
+    },
+    "adminNotifications": {
+      "depositNeedsReview": "Dépôt à examiner",
+      "paymentProcessing": "Paiement en cours",
+      "paymentReady": "Paiement à traiter",
+      "unknownClient": "Client inconnu"
+    },
+    "adminProofMultiUpload": {
+      "allFailed": "Échec du téléchargement",
+      "partialSuccess": "${successCount} réussie(s), ${failCount} échec(s)",
+      "successMultiple": "${successCount} preuves téléchargées"
+    },
+    "adminProofUpload": {
+      "success": "Preuve ajoutée"
+    },
+    "adminUpdateBeneficiary": {
+      "error": "Erreur lors de la mise à jour",
+      "infoUpdated": "Informations mises à jour",
+      "success": "Infos bénéficiaire mises à jour"
+    },
+    "adminUploadProofs": {
+      "partialSuccess": "${data.uploadedCount} preuve(s) ajoutée(s), ${data.failedFiles.length} échec(s)",
+      "success": "${data.uploadedCount} preuve(s) ajoutée(s)"
+    },
+    "adminUploadProofsDeposit": {
+      "errorPrefix": "Erreur: ${error.message}",
+      "success": "${data.count} preuve${data.count > 1 ? "
+    },
+    "auth": {
+      "mustBeLoggedIn": "Vous devez être connecté",
+      "notAuthenticated": "Non authentifié"
+    },
+    "calculateRate": {
+      "error": "Erreur de calcul"
+    },
+    "cancelDeposit": {
+      "error": "Erreur lors de l",
+      "success": "Dépôt annulé avec succès"
+    },
+    "cancelPayment": {
+      "error": "Erreur lors de l",
+      "success": "Paiement annulé"
+    },
+    "confirmCashPayment": {
+      "error": "Erreur lors de la confirmation",
+      "success": "Paiement cash confirmé avec succès"
+    },
+    "createAdjustment": {
+      "credited": "crédité",
+      "debited": "débité",
+      "error": "Erreur lors de l",
+      "success": "Portefeuille ${action} avec succès"
+    },
+    "createAdmin": {
+      "error": "Erreur lors de la création",
+      "errorFull": "Erreur lors de la création de l",
+      "success": "Admin créé avec succès"
+    },
+    "createBeneficiary": {
+      "error": "Erreur lors de l",
+      "success": "Bénéficiaire ajouté"
+    },
+    "createClient": {
+      "error": "Erreur lors de la création du client",
+      "success": "Client créé avec succès"
+    },
+    "createDailyRates": {
+      "error": "Erreur lors de l",
+      "success": "Nouveaux taux appliqués",
+      "unknownError": "Erreur inconnue"
+    },
+    "createDeposit": {
+      "error": "Erreur lors de la création du dépôt"
+    },
+    "createPayment": {
+      "error": "Erreur lors de la création du paiement",
+      "success": "Paiement créé avec succès"
+    },
+    "deleteClient": {
+      "error": "Échec de la suppression",
+      "errorPrefix": "Erreur: ${error.message}",
+      "success": "Client supprimé avec succès"
+    },
+    "deleteProof": {
+      "error": "Erreur lors de la suppression",
+      "success": "Preuve supprimée"
+    },
+    "exchangeRates": {
+      "addError": "Erreur lors de l",
+      "added": "Taux de change ajouté",
+      "deleteError": "Erreur lors de la suppression du taux",
+      "deleted": "Taux de change supprimé",
+      "unknownError": "Erreur inconnue",
+      "updateError": "Erreur lors de la modification du taux",
+      "updated": "Taux de change modifié"
+    },
+    "processPayment": {
+      "complete": "Paiement marqué comme effectué",
+      "error": "Erreur lors du traitement",
+      "reject": "Paiement refusé",
+      "startProcessing": "Paiement en cours de traitement"
+    },
+    "proofMultiUpload": {
+      "allFailed": "Échec du téléchargement des fichiers",
+      "partialSuccess": "${successCount} fichier(s) téléchargé(s), ${failCount} échec(s)",
+      "success": "${successCount} fichier(s) téléchargé(s) avec succès"
+    },
+    "rejectDeposit": {
+      "error": "Rejet échoué",
+      "success": "Dépôt rejeté"
+    },
+    "resetClientPassword": {
+      "error": "Erreur lors de la réinitialisation",
+      "errorFull": "Erreur lors de la réinitialisation du mot de passe",
+      "success": "Mot de passe client réinitialisé"
+    },
+    "resetPassword": {
+      "error": "Erreur lors de la réinitialisation",
+      "errorFull": "Erreur lors de la réinitialisation du mot de passe",
+      "success": "Mot de passe réinitialisé"
+    },
+    "scanCashPayment": {
+      "error": "Erreur lors du scan",
+      "success": "QR Code scanné avec succès"
+    },
+    "startReview": {
+      "error": "Erreur"
+    },
+    "toggleAdminStatus": {
+      "disabled": "Compte admin désactivé",
+      "enabled": "Compte admin réactivé",
+      "error": "Erreur lors du changement de statut"
+    },
+    "updateAdminProfile": {
+      "error": "Erreur lors de la modification du profil",
+      "success": "Profil admin modifié"
+    },
+    "updateAdminRole": {
+      "error": "Erreur lors de la modification du rôle",
+      "success": "Rôle admin modifié"
+    },
+    "updateBeneficiary": {
+      "bankAdded": "Coordonnées bancaires ajoutées",
+      "contactAdded": "Coordonnées de paiement ajoutées",
+      "error": "Erreur lors de la mise à jour",
+      "infoUpdated": "Informations du bénéficiaire mises à jour",
+      "partialSuccess": "Informations partiellement enregistrées",
+      "qrAdded": "QR Code ${paymentMethod === ",
+      "readySuccess": "Informations enregistrées - Paiement prêt à être traité",
+      "success": "Bénéficiaire mis à jour"
+    },
+    "updateClient": {
+      "error": "Erreur lors de la modification",
+      "success": "Profil client modifié"
+    },
+    "updateRateAdjustment": {
+      "error": "Erreur lors de la mise à jour",
+      "success": "Ajustement mis à jour",
+      "unknownError": "Erreur inconnue"
+    },
+    "uploadMultiple": {
+      "allFailed": "Échec de l",
+      "partialSuccess": "${data.uploadedCount} preuve(s) envoyée(s), ${data.failedFiles.length} échec(s)",
+      "success": "${data.uploadedCount} preuve(s) envoyée(s) avec succès"
+    },
+    "uploadProof": {
+      "sentSuccess": "Preuve envoyée avec succès",
+      "success": "Preuve téléchargée"
+    },
+    "validateDeposit": {
+      "error": "Validation échouée",
+      "success": "Dépôt validé ! Wallet crédité de ${formatCurrency(data.amount_credited || 0)}"
+    }
+  },
+  "howToReachClient": "Comment le joindre ?",
+  "inactive": "Inactif",
+  "invalidCredentials": "Identifiants incorrects",
+  "invalidEmail": "Veuillez entrer un email valide",
+  "itsYou": "C",
+  "language": "Langue",
+  "lastLogin": "Dernière connexion",
+  "lastMovement": "Dernier mouvement",
+  "lastName": "Nom",
+  "loginSuccess": "Connexion réussie",
+  "logout": "Déconnexion",
+  "manageAdminAccess": "Gérer les accès admin",
+  "manageRates": "Gérer les taux XAF/RMB",
+  "more": "Plus",
+  "movementHistory": "Historique mouvements",
+  "nameAndRole": "Nom, prénom, rôle",
+  "namePhoneEmailCompany": "Nom, téléphone, email, entreprise…",
+  "never": "Jamais",
+  "newAdmin": "Nouvel admin",
+  "newClient": "Nouveau client",
+  "newExchangeRate": "Nouveau taux de change",
+  "noAdminFound": "Aucun admin trouvé",
+  "noClientFound": "Aucun client trouvé",
+  "noClientsYet": "Aucun client pour le moment",
+  "noDepositFound": "Aucun dépôt trouvé",
+  "noLogsFound": "Aucun log trouvé",
+  "noMovementsOfType": "Aucun mouvement de ce type",
+  "noMovementsRecorded": "Aucun mouvement enregistré",
+  "noMovementsToExport": "Aucun mouvement à exporter",
+  "noPaymentFound": "Aucun paiement trouvé",
+  "noPaymentsToExport": "Aucun paiement en cours à exporter",
+  "noPendingItems": "Aucun élément en attente d",
+  "noProofsFound": "Aucun justificatif trouvé",
+  "noRatesForPeriod": "Aucun taux pour cette période",
+  "notProvided": "Non renseigné",
+  "notificationCenter": "Centre de notifications",
+  "notifications": "Notifications",
+  "operations": "opération",
+  "password": "Mot de passe",
+  "passwordGenerated": "Mot de passe généré",
+  "passwordWontBeShownAgain": "Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.",
+  "payment": "Paiement",
+  "payments": "Paiements",
+  "paymentsPending": "paiement(s) en attente",
+  "paymentsToday": "Paiements aujourd",
+  "permanentDeletion": "Suppression définitive et irréversible",
+  "personalInfo": "Informations personnelles",
+  "phoneWhatsApp": "Téléphone / WhatsApp",
+  "platformBalance": "Solde plateforme",
+  "proofs": "Justificatifs",
+  "rateAppliedAtPayment": "Taux appliqué au moment du paiement",
+  "rateCreated": "Taux créé",
+  "rateDeleted": "Taux supprimé",
+  "rateDetails": "Détails du taux",
+  "rateHistory": "Historique des taux",
+  "rateModified": "Taux modifié",
+  "rateTrend": "Tendance du taux",
+  "ratesUpdatedDaily": "Les taux sont mis à jour chaque matin pour vous offrir le meilleur cours.",
+  "reactivate": "Réactiver",
+  "recentActivity": "Activité récente",
+  "reportsAndKPIs": "Rapports et indicateurs clés",
+  "resetPassword": {
+    "linkExpired": "Lien invalide ou expiré. Veuillez refaire « Mot de passe oublié »."
+  },
+  "resetPasswordClientMessage": "Un nouveau mot de passe temporaire sera généré pour",
+  "resetPasswordClientSuffix": "Vous devrez le transmettre manuellement au client.",
+  "resetPasswordOtherMessage": "Un nouveau mot de passe temporaire sera généré pour",
+  "resetPasswordOtherMessageSuffix": "Vous devrez le transmettre manuellement à l",
+  "resetPasswordSelfMessage": "Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.",
+  "restoreAccess": "Restaurer l",
+  "role": "Rôle",
+  "roleSelection": "Sélection du rôle",
+  "saveChanges": "Enregistrer les modifications",
+  "saving": "Enregistrement...",
+  "searchAction": "Rechercher une action...",
+  "searchAdmin": "Rechercher un admin...",
+  "searchByClientOrFile": "Rechercher par client ou fichier...",
+  "searchByNamePhone": "Rechercher par nom, téléphone...",
+  "searchNamePhoneRef": "Nom, téléphone ou référence...",
+  "settings": "Paramètres",
+  "signIn": "Se connecter",
+  "statementGenerationError": "Erreur lors de la génération du relevé",
+  "suspendedStatus": "Suspendu",
+  "systemModeNote": "Le mode Système s",
+  "tempPasswordClientMessage": "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.",
+  "temporaryPassword": "Mot de passe temporaire",
+  "theAdmin": "l",
+  "theme": "Thème",
+  "themePreferences": "Thème, préférences",
+  "totalDeposits": "Total dépôts",
+  "totalPayments": "Total paiements",
+  "tryModifyingFilters": "Essayez de modifier vos filtres",
+  "verifyBeforeCreating": "Vérifiez les informations avant de créer l",
+  "verifyBeforeCreatingAccount": "Vérifiez avant de créer le compte",
+  "viewAdminProfile": "Voir le profil admin",
+  "viewAll": "Voir tous",
+  "viewClientProfile": "Voir la fiche client",
+  "viewDepositProofs": "Voir les preuves de dépôts",
+  "viewFullLedger": "Voir le ledger complet",
+  "welcomeMessage": "Commencez par créer vos premiers clients et configurer le taux de change.",
+  "welcomeToBonzini": "Bienvenue sur Bonzini",
+  "whatsappEmailLocation": "WhatsApp, email et localisation",
+  "whoIsYourClient": "Qui est votre client ?",
+  "you": "vous",
+  "youReceive": "Vous recevez",
+  "youSend": "Vous envoyez"
 }

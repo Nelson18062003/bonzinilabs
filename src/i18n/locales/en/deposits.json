@@ -19,10 +19,10 @@
     "bank_transfer": "Bank transfer",
     "bank_cash": "Bank cash deposit",
     "agency_cash": "Bonzini agency cash",
-    "om_transfer": "Orange Money \u2013 Transfer",
-    "om_withdrawal": "Orange Money \u2013 Withdrawal",
-    "mtn_transfer": "MTN MoMo \u2013 Transfer",
-    "mtn_withdrawal": "MTN MoMo \u2013 Withdrawal",
+    "om_transfer": "Orange Money – Transfer",
+    "om_withdrawal": "Orange Money – Withdrawal",
+    "mtn_transfer": "MTN MoMo – Transfer",
+    "mtn_withdrawal": "MTN MoMo – Withdrawal",
     "wave": "Wave"
   },
   "methodShort": {
@@ -37,22 +37,58 @@
   },
   "timeline": {
     "standard": {
-      "created": { "label": "Deposit declared", "description": "Your deposit has been registered" },
-      "proof_submitted": { "label": "Proof sent", "description": "Waiting for verification" },
-      "admin_review": { "label": "Under review", "description": "Bonzini team is verifying your deposit" },
-      "validated": { "label": "Validated \u2014 Balance credited", "description": "Your wallet has been credited" }
+      "created": {
+        "label": "Deposit declared",
+        "description": "Your deposit has been registered"
+      },
+      "proof_submitted": {
+        "label": "Proof sent",
+        "description": "Waiting for verification"
+      },
+      "admin_review": {
+        "label": "Under review",
+        "description": "Bonzini team is verifying your deposit"
+      },
+      "validated": {
+        "label": "Validated — Balance credited",
+        "description": "Your wallet has been credited"
+      }
     },
     "withdrawal": {
-      "created": { "label": "Withdrawal declared", "description": "Your withdrawal has been registered" },
-      "proof_submitted": { "label": "Code provided", "description": "Withdrawal code transmitted" },
-      "admin_review": { "label": "Under review", "description": "Bonzini team is verifying the withdrawal" },
-      "validated": { "label": "Validated \u2014 Balance credited", "description": "Your wallet has been credited" }
+      "created": {
+        "label": "Withdrawal declared",
+        "description": "Your withdrawal has been registered"
+      },
+      "proof_submitted": {
+        "label": "Code provided",
+        "description": "Withdrawal code transmitted"
+      },
+      "admin_review": {
+        "label": "Under review",
+        "description": "Bonzini team is verifying the withdrawal"
+      },
+      "validated": {
+        "label": "Validated — Balance credited",
+        "description": "Your wallet has been credited"
+      }
     },
     "agency": {
-      "created": { "label": "Agency deposit", "description": "Deposit declared at Bonzini agency" },
-      "proof_submitted": { "label": "Receipt confirmed", "description": "Agency receipt registered" },
-      "admin_review": { "label": "Under review", "description": "Validation in progress" },
-      "validated": { "label": "Validated \u2014 Balance credited", "description": "Your wallet has been credited" }
+      "created": {
+        "label": "Agency deposit",
+        "description": "Deposit declared at Bonzini agency"
+      },
+      "proof_submitted": {
+        "label": "Receipt confirmed",
+        "description": "Agency receipt registered"
+      },
+      "admin_review": {
+        "label": "Under review",
+        "description": "Validation in progress"
+      },
+      "validated": {
+        "label": "Validated — Balance credited",
+        "description": "Your wallet has been credited"
+      }
     }
   },
   "rejectionReasons": {
@@ -70,5 +106,248 @@
     "duplicate": "Duplicate",
     "illegibleImage": "Illegible image",
     "other": "Other"
+  },
+  "instructions": {
+    "title": "Deposit instructions",
+    "copyAll": "Copy all",
+    "copied": "Copied",
+    "copySuccess": "Copied!",
+    "copyError": "Error copying",
+    "merchantCode": "Merchant code",
+    "stepsToFollow": "Steps to follow",
+    "bankTransfer": "Bank transfer",
+    "bankCash": "Bank cash deposit",
+    "omTransfer": "Orange UV transfer to Bonzini",
+    "omWithdrawal": "Orange Money withdrawal (merchant code)",
+    "mtnTransfer": "MTN Float transfer to Bonzini",
+    "mtnWithdrawal": "MoMo withdrawal (merchant code)",
+    "agencyCash": "Deposit at Bonzini agency",
+    "wave": "Wave transfer",
+    "fields": {
+      "bank": "Bank",
+      "holder": "Account holder",
+      "accountNumber": "Account No.",
+      "iban": "IBAN",
+      "swift": "SWIFT code",
+      "reference": "Reference",
+      "operator": "Operator",
+      "number": "Number",
+      "agency": "Agency",
+      "address": "Address",
+      "hours": "Hours",
+      "waveNumber": "Wave number",
+      "amount": "Amount"
+    },
+    "steps": {
+      "bankTransfer": [
+        "Log in to your banking app or go to a branch",
+        "Transfer funds to the account above",
+        "Use the reference: {{reference}}",
+        "Keep the receipt and upload it here"
+      ],
+      "bankCash": [
+        "Go to a {{bankName}} branch",
+        "Make a cash deposit to the account above",
+        "Use the reference: {{reference}}",
+        "Keep the slip and upload it here"
+      ],
+      "omTransfer": [
+        "Dial #150*1*1#",
+        "Enter the number: {{phone}}",
+        "Enter the amount: {{amount}} XAF",
+        "Confirm with your PIN code",
+        "Take a screenshot of the confirmation SMS"
+      ],
+      "omWithdrawal": [
+        "On your phone, dial the merchant code displayed below",
+        "Replace AMOUNT with the amount to send",
+        "Validate with your Orange Money PIN",
+        "Take a screenshot of the confirmation SMS"
+      ],
+      "mtnTransfer": [
+        "From your MTN Float business account",
+        "Make a transfer to: {{phone}}",
+        "Enter the amount: {{amount}} XAF",
+        "Confirm with your PIN code",
+        "Take a screenshot of the confirmation"
+      ],
+      "mtnWithdrawal": [
+        "On your phone, dial the merchant code displayed below",
+        "Replace AMOUNT with the amount to send",
+        "Validate with your MTN Mobile Money PIN",
+        "Take a screenshot of the confirmation SMS"
+      ],
+      "agencyCash": [
+        "Go to the {{agencyName}} agency",
+        "Show your ID document",
+        "Mention the reference: {{reference}}",
+        "Make your cash deposit",
+        "Keep your receipt"
+      ],
+      "wave": [
+        "Open the Wave app",
+        "Select \"Send\"",
+        "Enter the number: {{phone}}",
+        "Enter the amount: {{amount}} XAF",
+        "Confirm the transfer"
+      ]
+    },
+    "notes": {
+      "omWithdrawalLimit": "Limit: 500,000 XAF per transaction",
+      "mtnWithdrawalLimit": "Limit: 500,000 XAF per transaction"
+    }
+  },
+  "proof": {
+    "title": "Attach deposit proofs",
+    "dragFiles": "Drop your files here",
+    "orClick": "or click to browse",
+    "addMore": "Add more proofs",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "acceptedFormats": "Accepted formats: JPG, PNG, PDF • Max 10 MB per file",
+    "filesSelected": "{{count}} file selected",
+    "filesSelected_plural": "{{count}} files selected",
+    "removeAll": "Remove all",
+    "sending": "Sending...",
+    "confirmSend": "Confirm sending ({{count}} proof)",
+    "confirmSend_plural": "Confirm sending ({{count}} proofs)",
+    "attestation": "By confirming, you certify that these proofs correspond to this deposit.",
+    "confirmTitle": "Confirm proof submission",
+    "confirmDescription": "You are about to send {{count}} deposit proof. This will trigger verification by our team.",
+    "confirmDescription_plural": "You are about to send {{count}} deposit proofs. This will trigger verification by our team.",
+    "previewTitle": "Proof preview",
+    "previewAlt": "Preview"
+  },
+  "detail": {
+    "proofUploadedSuccess": "Proof sent successfully!",
+    "notFound": "This deposit does not exist.",
+    "backToDeposits": "Back to deposits",
+    "copied": "Copied!",
+    "copyError": "Error copying",
+    "receiptDownloaded": "Statement downloaded",
+    "receiptError": "Error generating PDF",
+    "depositRejected": "Deposit rejected",
+    "depositCancelled": "Deposit cancelled",
+    "depositCancelledDesc": "This deposit has been cancelled.",
+    "details": "Details",
+    "method": "Method",
+    "bank": "Bank",
+    "agency": "Agency",
+    "amount": "Amount",
+    "status": "Status",
+    "date": "Date",
+    "viewInstructions": "View deposit instructions",
+    "proofs": "Proofs",
+    "timeline": "Timeline",
+    "downloadReceipt": "Download statement",
+    "download": "Download",
+    "cancelDeposit": "Cancel deposit",
+    "cancelDialogTitle": "Cancel this deposit?",
+    "cancelDialogDesc": "Are you sure you want to cancel this deposit of {{amount}}? This action is irreversible.",
+    "cancelDialogKeep": "No, keep",
+    "cancelDialogConfirm": "Yes, cancel",
+    "deleteProofTitle": "Delete this proof?",
+    "deleteProofDesc": "Please specify the reason for deletion. This action is irreversible.",
+    "specifyReason": "Specify the reason...",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "new": {
+    "amountToDeposit": "Amount to deposit",
+    "minimumAmount": "Minimum amount: 50,000 XAF",
+    "continue": "Continue",
+    "back": "Back",
+    "howToDeposit": "How would you like to deposit?",
+    "operationType": "Operation type",
+    "chooseBank": "Choose your bank",
+    "chooseAgency": "Choose an agency",
+    "depositCreated": "Deposit created successfully!",
+    "depositCreatedDesc": "Reference: {{reference}}. Upload your supporting documents.",
+    "creating": "Creating deposit...",
+    "pleaseWait": "One moment",
+    "steps": {
+      "amount": "New deposit",
+      "family": "Deposit method",
+      "submethod": "Operation type",
+      "bank": "Bank selection",
+      "agency": "Agency selection",
+      "recap": "Summary",
+      "creating": "Creating..."
+    },
+    "recap": {
+      "depositCoordinates": "Deposit details",
+      "merchantCode": "Merchant code",
+      "amountToSend": "Amount to send",
+      "instructions": "Instructions",
+      "confirmNotice": "By confirming, your deposit request will be registered. You can then upload your supporting documents.",
+      "confirmButton": "I confirm my deposit request",
+      "bankTransferTitle": "Bank transfer",
+      "bankCashTitle": "Bank cash deposit",
+      "bank": "Bank",
+      "accountNumber": "Account No.",
+      "accountHolder": "Holder",
+      "iban": "IBAN",
+      "swift": "SWIFT",
+      "bankTransferInstr1": "Log in to your banking app or visit a branch",
+      "bankTransferInstr2": "Transfer funds to the account above",
+      "bankTransferInstr3": "You will receive a reference after confirmation",
+      "bankTransferInstr4": "Keep the receipt and upload it later",
+      "bankCashInstr1": "Go to a {{bank}} branch",
+      "bankCashInstr2": "Make a cash deposit to the account above",
+      "bankCashInstr3": "You will receive a reference after confirmation",
+      "bankCashInstr4": "Keep the slip and upload it later",
+      "omTransferTitle": "Orange Money Transfer",
+      "omNumber": "OM Number",
+      "omTransferInstr1": "Dial #150*1*1#",
+      "omTransferInstr2": "Enter the number: {{phone}}",
+      "omTransferInstr3": "Enter the amount: {{amount}}",
+      "omTransferInstr4": "Confirm with your PIN code",
+      "omTransferInstr5": "Take a screenshot of the confirmation SMS",
+      "omWithdrawalTitle": "Orange Money Withdrawal",
+      "omWithdrawalInstr1": "Dial the code below on your phone",
+      "omWithdrawalInstr2": "Validate with your Orange Money PIN",
+      "omWithdrawalInstr3": "Take a screenshot of the confirmation SMS",
+      "mtnTransferTitle": "MTN Mobile Money Transfer",
+      "mtnNumber": "MOMO Number",
+      "mtnTransferInstr1": "Dial *126#",
+      "mtnTransferInstr2": "Select \"Money transfer\"",
+      "mtnTransferInstr3": "Enter the number: {{phone}}",
+      "mtnTransferInstr4": "Enter the amount: {{amount}}",
+      "mtnTransferInstr5": "Confirm with your PIN code",
+      "mtnWithdrawalTitle": "MTN Mobile Money Withdrawal",
+      "mtnWithdrawalInstr1": "Dial the code below on your phone",
+      "mtnWithdrawalInstr2": "Validate with your MTN Mobile Money PIN",
+      "mtnWithdrawalInstr3": "Take a screenshot of the confirmation SMS",
+      "agencyTitle": "Deposit at Bonzini agency",
+      "agency": "Agency",
+      "address": "Address",
+      "hours": "Hours",
+      "agencyInstr1": "Go to the {{agency}} agency",
+      "agencyInstr2": "Show your ID document",
+      "agencyInstr3": "You will receive a reference after confirmation",
+      "agencyInstr4": "Make your cash deposit",
+      "agencyInstr5": "Keep your receipt",
+      "waveTitle": "Wave transfer",
+      "waveNumber": "Wave number",
+      "waveInstr1": "Open the Wave app",
+      "waveInstr2": "Select \"Send\"",
+      "waveInstr3": "Enter the number: {{phone}}",
+      "waveInstr4": "Enter the amount: {{amount}}",
+      "waveInstr5": "Confirm the transfer"
+    }
+  },
+  "countdown": {
+    "expired": "Deadline exceeded",
+    "remaining": "Time remaining",
+    "expiredBanner": "Deadline exceeded",
+    "remainingBanner": "Time remaining",
+    "expiredMessage": "The recommended deadline has passed, but you can still send your proof",
+    "criticalWarning": "Warning: deadline almost up!",
+    "warningMessage": "Remember to send your proof quickly",
+    "normalMessage": "Make the deposit and send the proof",
+    "expiredBannerMessage": "The recommended deadline has passed, but you can still send your proof",
+    "criticalBannerWarning": "Warning: deadline almost up!",
+    "warningBannerMessage": "Remember to send your proof quickly",
+    "normalBannerMessage": "Make the deposit and send the proof"
   }
 }

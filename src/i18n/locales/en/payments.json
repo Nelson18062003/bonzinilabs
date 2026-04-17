@@ -39,8 +39,9 @@
   "method": {
     "alipay": "Alipay",
     "wechat": "WeChat Pay",
-    "bank_transfer": "Bank Transfer",
-    "cash": "Cash"
+    "bank_transfer": "Transfer",
+    "cash": "Cash",
+    "bank_transfer_full": "Bank transfer"
   },
   "form": {
     "steps": {
@@ -50,10 +51,22 @@
       "confirm": "Summary"
     },
     "methods": {
-      "alipay": { "label": "Alipay", "desc": "Pay via Alipay" },
-      "wechat": { "label": "WeChat Pay", "desc": "Pay via WeChat" },
-      "bank_transfer": { "label": "Bank transfer", "desc": "Transfer to bank account" },
-      "cash": { "label": "Cash", "desc": "Pickup at Bonzini office" }
+      "alipay": {
+        "label": "Alipay",
+        "desc": "Pay via Alipay"
+      },
+      "wechat": {
+        "label": "WeChat Pay",
+        "desc": "Pay via WeChat"
+      },
+      "bank_transfer": {
+        "label": "Bank transfer",
+        "desc": "Transfer to bank account"
+      },
+      "cash": {
+        "label": "Cash",
+        "desc": "Pickup at Bonzini office"
+      }
     },
     "chooseMethod": "Choose a payment method",
     "enterAmount": "Enter the amount",
@@ -94,5 +107,17 @@
     "beneficiaryRefused": "Beneficiary refused",
     "technicalIssue": "Technical issue",
     "other": "Other"
+  },
+  "success": {
+    "paymentCreated": "Payment created",
+    "paymentCreatedClient": "Payment created!",
+    "requestRecorded": "Your request has been recorded",
+    "xafDebited": "{{amount}} XAF debited",
+    "forClient": "for {{name}}",
+    "newPayment": "New payment",
+    "viewSheet": "View sheet",
+    "viewPayment": "View payment",
+    "myPayments": "My payments",
+    "backToHome": "Back to home"
   }
 }
