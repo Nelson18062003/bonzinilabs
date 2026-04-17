@@ -40,5 +40,389 @@
     "retry": "Retry",
     "refreshPage": "Refresh page",
     "featureLoadError": "Unable to load this section"
-  }
+  },
+  "hooks": {
+    "adjustWallet": {
+      "error": "Adjustment failed",
+      "credit": "Credit",
+      "debit": "Debit",
+      "success": "{{typeLabel}} completed successfully",
+      "newBalance": "New balance: {{newBalance}}",
+      "errorPrefix": "Error: {{errorMessage}}"
+    },
+    "adminNotifications": {
+      "unknownClient": "Unknown client",
+      "depositNeedsReview": "Deposit to review",
+      "paymentProcessing": "Payment processing",
+      "paymentReady": "Payment to process"
+    },
+    "addExchangeRate": {
+      "success": "Exchange rate updated",
+      "error": "Error updating the rate"
+    },
+    "deleteClient": {
+      "error": "Deletion failed",
+      "success": "Client deleted successfully",
+      "errorPrefix": "Error: {{errorMessage}}"
+    },
+    "validateDeposit": {
+      "error": "Validation failed",
+      "success": "Deposit validated! Wallet credited with {{amountCredited}}"
+    },
+    "rejectDeposit": {
+      "error": "Rejection failed",
+      "success": "Deposit rejected"
+    },
+    "startReview": {
+      "error": "Error"
+    },
+    "auth": {
+      "mustBeLoggedIn": "You must be logged in",
+      "notAuthenticated": "Not authenticated"
+    },
+    "adminCreateDeposit": {
+      "error": "Error during creation",
+      "success": "Deposit created successfully"
+    },
+    "uploadMultiple": {
+      "allFailed": "Upload failed: {{files}}",
+      "partialSuccess": "{{uploadedCount}} proof(s) sent, {{failedCount}} failure(s)",
+      "success": "{{uploadedCount}} proof(s) sent successfully"
+    },
+    "adminUploadProofs": {
+      "partialSuccess": "{{uploadedCount}} proof(s) added, {{failedCount}} failure(s)",
+      "success": "{{uploadedCount}} proof(s) added"
+    },
+    "cancelDeposit": {
+      "error": "Error during cancellation",
+      "success": "Deposit cancelled successfully"
+    },
+    "adminCancelDeposit": {
+      "success": "Deposit cancelled"
+    },
+    "deleteProof": {
+      "success": "Proof deleted",
+      "error": "Error during deletion"
+    },
+    "createAdmin": {
+      "error": "Error during creation",
+      "success": "Admin created successfully",
+      "errorFull": "Error creating the admin"
+    },
+    "updateAdminProfile": {
+      "success": "Admin profile updated",
+      "error": "Error updating the profile"
+    },
+    "updateAdminRole": {
+      "success": "Admin role updated",
+      "error": "Error updating the role"
+    },
+    "toggleAdminStatus": {
+      "disabled": "Admin account deactivated",
+      "enabled": "Admin account reactivated",
+      "error": "Error changing status"
+    },
+    "resetPassword": {
+      "error": "Error during reset",
+      "success": "Password reset",
+      "errorFull": "Error resetting the password"
+    },
+    "adminProofMultiUpload": {
+      "successMultiple": "{{successCount}} proofs uploaded",
+      "partialSuccess": "{{successCount}} succeeded, {{failCount}} failed",
+      "allFailed": "Upload failed"
+    },
+    "uploadProof": {
+      "success": "Proof uploaded",
+      "sentSuccess": "Proof sent successfully"
+    },
+    "createPayment": {
+      "error": "Error creating the payment",
+      "success": "Payment created successfully"
+    },
+    "cancelPayment": {
+      "error": "Error during cancellation",
+      "success": "Payment cancelled"
+    },
+    "adminUpdateBeneficiary": {
+      "infoUpdated": "Information updated",
+      "error": "Error during update",
+      "success": "Beneficiary info updated"
+    },
+    "adminUploadProofsDeposit": {
+      "success": "{{count}} proof(s) added",
+      "errorPrefix": "Error: {{errorMessage}}"
+    },
+    "createBeneficiary": {
+      "success": "Beneficiary added",
+      "error": "Error adding beneficiary"
+    },
+    "updateBeneficiary": {
+      "success": "Beneficiary updated",
+      "infoUpdated": "Beneficiary information updated",
+      "qrAdded": "{{method}} QR Code added",
+      "contactAdded": "Payment contact details added",
+      "bankAdded": "Bank details added",
+      "error": "Error during update",
+      "readySuccess": "Information saved - Payment ready to process",
+      "partialSuccess": "Information partially saved"
+    },
+    "scanCashPayment": {
+      "success": "QR Code scanned successfully",
+      "error": "Error during scan"
+    },
+    "confirmCashPayment": {
+      "success": "Cash payment confirmed successfully",
+      "error": "Error during confirmation"
+    },
+    "createClient": {
+      "error": "Error creating the client",
+      "success": "Client created successfully"
+    },
+    "updateClient": {
+      "success": "Client profile updated",
+      "error": "Error during modification"
+    },
+    "createAdjustment": {
+      "error": "Error during adjustment",
+      "credited": "credited",
+      "debited": "debited",
+      "success": "Wallet {{action}} successfully"
+    },
+    "resetClientPassword": {
+      "error": "Error during reset",
+      "success": "Client password reset",
+      "errorFull": "Error resetting the password"
+    },
+    "createDailyRates": {
+      "unknownError": "Unknown error",
+      "success": "New rates applied",
+      "error": "Error applying rates"
+    },
+    "updateRateAdjustment": {
+      "unknownError": "Unknown error",
+      "success": "Adjustment updated",
+      "error": "Error during update"
+    },
+    "calculateRate": {
+      "error": "Calculation error"
+    },
+    "createDeposit": {
+      "error": "Error creating the deposit"
+    },
+    "exchangeRates": {
+      "unknownError": "Unknown error",
+      "added": "Exchange rate added",
+      "addError": "Error adding the rate",
+      "updated": "Exchange rate updated",
+      "updateError": "Error updating the rate",
+      "deleted": "Exchange rate deleted",
+      "deleteError": "Error deleting the rate"
+    },
+    "proofMultiUpload": {
+      "success": "{{successCount}} file(s) uploaded successfully",
+      "partialSuccess": "{{successCount}} file(s) uploaded, {{failCount}} failure(s)",
+      "allFailed": "File upload failed"
+    },
+    "adminProofUpload": {
+      "success": "Proof added"
+    },
+    "processPayment": {
+      "error": "Error during processing",
+      "startProcessing": "Payment being processed",
+      "complete": "Payment marked as completed",
+      "reject": "Payment rejected"
+    }
+  },
+  "adminDetail": "Admin detail",
+  "adminNotFound": "Admin not found",
+  "active": "Active",
+  "disabled": "Disabled",
+  "itsYou": "It's you",
+  "createdOn": "Created on",
+  "never": "Never",
+  "lastLogin": "Last login",
+  "assignedRole": "Assigned role",
+  "actions": "Actions",
+  "editProfile": "Edit profile",
+  "nameAndRole": "Name, first name, role",
+  "deactivateAccount": "Deactivate account",
+  "activateAccount": "Activate account",
+  "blockAccess": "Block access",
+  "restoreAccess": "Restore access",
+  "changeMyPassword": "Change my password",
+  "resetPassword": "Reset password",
+  "generateNewPassword": "Generate new password",
+  "generateTempPassword": "Generate a temporary password",
+  "editAdmin": "Edit admin",
+  "firstName": "First name",
+  "lastName": "Last name",
+  "role": "Role",
+  "deactivate": "Deactivate",
+  "reactivate": "Reactivate",
+  "theAdmin": "the admin",
+  "confirmDeactivateAdmin": "Are you sure you want to deactivate {{firstName}} {{lastName}}? This admin will no longer be able to log in.",
+  "confirmReactivateAdmin": "Are you sure you want to reactivate {{firstName}} {{lastName}}? This admin will be able to log in again.",
+  "resetPasswordSelfMessage": "A new password will be generated for your account. You will need to log in again with this new password.",
+  "resetPasswordOtherMessage": "A new temporary password will be generated for",
+  "resetPasswordOtherMessageSuffix": "You will need to manually share it with the administrator.",
+  "passwordGenerated": "Password generated",
+  "copyPasswordSelfMessage": "Here is your new password. Copy it before closing this window.",
+  "copyPasswordOtherMessage": "Here is the new temporary password. Share it securely with the administrator.",
+  "passwordWontBeShownAgain": "This password will not be shown again after closing this window.",
+  "all": "All",
+  "activeUsers": "Active",
+  "disabledUsers": "Disabled",
+  "administrators": "Administrators",
+  "searchAdmin": "Search admin...",
+  "you": "you",
+  "noAdminFound": "No admin found",
+  "newAdmin": "New admin",
+  "personalInfo": "Personal information",
+  "enterNewAdminInfo": "Enter the basic information for the new administrator",
+  "roleSelection": "Role selection",
+  "chooseRoleForAdmin": "Choose the role to assign to this administrator",
+  "confirmation": "Confirmation",
+  "verifyBeforeCreating": "Verify the information before creating the administrator",
+  "fullName": "Full name",
+  "adminCreatedSuccess": "Admin created successfully",
+  "temporaryPassword": "Temporary password",
+  "viewAdminProfile": "View admin profile",
+  "backToList": "Back to list",
+  "creating": "Creating...",
+  "createAdmin": "Create admin",
+  "allTab": "All",
+  "clients": "Clients",
+  "reportsAndKPIs": "Reports and KPIs",
+  "invalidEmail": "Please enter a valid email",
+  "loginSuccess": "Login successful",
+  "invalidCredentials": "Invalid credentials",
+  "errorOccurred": "An error occurred",
+  "enterEmailToContinue": "Enter your email address to continue",
+  "emailAddress": "Email address",
+  "hello": "Hello,",
+  "password": "Password",
+  "connecting": "Connecting...",
+  "signIn": "Sign in",
+  "cannotDeleteClientPositiveBalance": "Cannot delete a client with a positive balance ({{balance}} XAF)",
+  "cannotDeleteClientPendingPayments": "Cannot delete a client with pending payments",
+  "noMovementsToExport": "No movements to export",
+  "statementGenerationError": "Error generating the statement",
+  "clientDetail": "Client detail",
+  "clientNotFound": "Client not found",
+  "clientProfile": "Client profile",
+  "notProvided": "Not provided",
+  "clientSince": "Client since",
+  "availableBalance": "Available balance",
+  "history": "History",
+  "lastMovement": "Last movement",
+  "credit": "Credit",
+  "debitLabel": "Debit",
+  "totalDeposits": "Total deposits",
+  "totalPayments": "Total payments",
+  "movementHistory": "Movement history",
+  "viewFullLedger": "View full ledger",
+  "declareDeposit": "Declare a deposit",
+  "createNewDeposit": "Create a new deposit",
+  "generatingStatement": "Generating...",
+  "exportPDFStatement": "Export PDF statement",
+  "operations": "operation",
+  "downloadHistory": "Download history",
+  "namePhoneEmailCompany": "Name, phone, email, company...",
+  "deleteClient": "Delete client",
+  "permanentDeletion": "Permanent and irreversible deletion",
+  "phoneWhatsApp": "Phone / WhatsApp",
+  "emailLabel": "Email",
+  "company": "Company",
+  "country": "Country",
+  "city": "City",
+  "confirmDeletion": "Confirm deletion",
+  "resetPasswordClientMessage": "A new temporary password will be generated for",
+  "resetPasswordClientSuffix": "You will need to manually share it with the client.",
+  "tempPasswordClientMessage": "Here is the new temporary password. Share it securely with the client.",
+  "currentBalance": "Current balance",
+  "balance": "Balance",
+  "noMovementsRecorded": "No movements recorded",
+  "noMovementsOfType": "No movements of this type",
+  "searchByNamePhone": "Search by name, phone...",
+  "inactive": "Inactive",
+  "suspendedStatus": "Suspended",
+  "deposits": "Deposits",
+  "payments": "Payments",
+  "noClientFound": "No client found",
+  "noClientsYet": "No clients yet",
+  "createClient": "Create a client",
+  "clientCreatedSuccess": "Client created successfully",
+  "viewClientProfile": "View client profile",
+  "newClient": "New client",
+  "whoIsYourClient": "Who is your client?",
+  "firstNameLastNameCompany": "First name, last name and company",
+  "howToReachClient": "How to reach them?",
+  "whatsappEmailLocation": "WhatsApp, email and location",
+  "everythingCorrect": "Everything correct?",
+  "verifyBeforeCreatingAccount": "Verify before creating the account",
+  "createTheClient": "Create the client",
+  "platformBalance": "Platform balance",
+  "depositsToday": "Deposits today",
+  "paymentsToday": "Payments today",
+  "depositsToValidate": "deposit(s) to validate",
+  "paymentsPending": "payment(s) pending",
+  "deposit": "Deposit",
+  "payment": "Payment",
+  "recentActivity": "Recent activity",
+  "viewAll": "View all",
+  "welcomeToBonzini": "Welcome to Bonzini",
+  "welcomeMessage": "Start by creating your first clients and configuring the exchange rate.",
+  "exchangeRate": "Exchange rate",
+  "searchNamePhoneRef": "Name, phone or reference...",
+  "noDepositFound": "No deposit found",
+  "tryModifyingFilters": "Try modifying your filters",
+  "depositsWillAppearHere": "Deposits will appear here",
+  "searchAction": "Search an action...",
+  "noLogsFound": "No logs found",
+  "more": "More",
+  "manageRates": "Manage XAF/RMB rates",
+  "proofs": "Proofs",
+  "viewDepositProofs": "View deposit proofs",
+  "activityLog": "Activity log",
+  "notifications": "Notifications",
+  "notificationCenter": "Notification center",
+  "manageAdminAccess": "Manage admin access",
+  "settings": "Settings",
+  "themePreferences": "Theme, preferences",
+  "language": "Language",
+  "theme": "Theme",
+  "logout": "Log out",
+  "allUpToDate": "All up to date",
+  "noPendingItems": "No items pending action",
+  "searchByClientOrFile": "Search by client or file...",
+  "noProofsFound": "No proofs found",
+  "rateCreated": "Rate created",
+  "rateModified": "Rate modified",
+  "rateDeleted": "Rate deleted",
+  "youSend": "You send",
+  "youReceive": "You receive",
+  "rateAppliedAtPayment": "Rate applied at time of payment",
+  "rateTrend": "Rate trend",
+  "followRatesRealtime": "Follow rates in real time",
+  "ratesUpdatedDaily": "Rates are updated every morning to offer you the best exchange rate.",
+  "rateHistory": "Rate history",
+  "rateDetails": "Rate details",
+  "noRatesForPeriod": "No rates for this period",
+  "newExchangeRate": "New exchange rate",
+  "editRate": "Edit rate",
+  "saving": "Saving...",
+  "applyNewRate": "Apply new rate",
+  "saveChanges": "Save changes",
+  "deleteRateConfirm": "Delete this rate?",
+  "deleting": "Deleting...",
+  "appearance": "Appearance",
+  "appTheme": "Application theme",
+  "systemModeNote": "System mode automatically adapts to your device preferences.",
+  "account": "Account",
+  "about": "About",
+  "noPaymentsToExport": "No payments in progress to export",
+  "exportDownloaded": "Export of {{count}} payment(s) downloaded",
+  "exportError": "Error during export",
+  "noPaymentFound": "No payment found"
 }
