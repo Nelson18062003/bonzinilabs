@@ -1,74 +1,353 @@
 {
-  "title": "\u6211\u7684\u5145\u503c",
-  "subtitle": "\u5386\u53f2\u4e0e\u8ddf\u8e2a",
-  "newDeposit": "\u8fdb\u884c\u5145\u503c",
-  "noDeposits": "\u6682\u65e0\u5145\u503c\u8bb0\u5f55",
-  "loadError": "\u52a0\u8f7d\u5145\u503c\u65f6\u51fa\u9519",
+  "title": "我的充值",
+  "subtitle": "历史与跟踪",
+  "newDeposit": "进行充值",
+  "noDeposits": "暂无充值记录",
+  "loadError": "加载充值时出错",
   "status": {
-    "created": "\u8bf7\u6c42\u5df2\u521b\u5efa",
-    "awaiting_proof": "\u7b49\u5f85\u51ed\u8bc1",
-    "proof_submitted": "\u51ed\u8bc1\u5df2\u63d0\u4ea4",
-    "admin_review": "\u5ba1\u6838\u4e2d",
-    "validated": "\u5df2\u9a8c\u8bc1",
-    "rejected": "\u5df2\u62d2\u7edd",
-    "pending_correction": "\u5f85\u4fee\u6b63",
-    "cancelled": "\u5df2\u53d6\u6d88",
-    "cancelled_by_admin": "\u5df2\u53d6\u6d88\uff08\u7ba1\u7406\u5458\uff09"
+    "created": "请求已创建",
+    "awaiting_proof": "等待凭证",
+    "proof_submitted": "凭证已提交",
+    "admin_review": "审核中",
+    "validated": "已验证",
+    "rejected": "已拒绝",
+    "pending_correction": "待修正",
+    "cancelled": "已取消",
+    "cancelled_by_admin": "已取消（管理员）"
   },
   "method": {
-    "bank_transfer": "\u94f6\u884c\u8f6c\u8d26",
-    "bank_cash": "\u94f6\u884c\u73b0\u91d1\u5b58\u6b3e",
-    "agency_cash": "Bonzini\u4ee3\u7406\u73b0\u91d1",
-    "om_transfer": "Orange Money \u2013 \u8f6c\u8d26",
-    "om_withdrawal": "Orange Money \u2013 \u53d6\u6b3e",
-    "mtn_transfer": "MTN MoMo \u2013 \u8f6c\u8d26",
-    "mtn_withdrawal": "MTN MoMo \u2013 \u53d6\u6b3e",
+    "bank_transfer": "银行转账",
+    "bank_cash": "银行现金存款",
+    "agency_cash": "Bonzini代理现金",
+    "om_transfer": "Orange Money – 转账",
+    "om_withdrawal": "Orange Money – 取款",
+    "mtn_transfer": "MTN MoMo – 转账",
+    "mtn_withdrawal": "MTN MoMo – 取款",
     "wave": "Wave"
   },
   "methodShort": {
-    "bank_transfer": "\u8f6c\u8d26",
-    "bank_cash": "\u94f6\u884c\u73b0\u91d1",
-    "agency_cash": "\u4ee3\u7406\u73b0\u91d1",
+    "bank_transfer": "转账",
+    "bank_cash": "银行现金",
+    "agency_cash": "代理现金",
     "om_transfer": "Orange UV",
-    "om_withdrawal": "Orange\u4ee3\u7801",
+    "om_withdrawal": "Orange代码",
     "mtn_transfer": "MTN Float",
-    "mtn_withdrawal": "MTN\u4ee3\u7801",
+    "mtn_withdrawal": "MTN代码",
     "wave": "Wave"
   },
   "timeline": {
     "standard": {
-      "created": { "label": "\u5145\u503c\u5df2\u58f0\u660e", "description": "\u60a8\u7684\u5145\u503c\u5df2\u767b\u8bb0" },
-      "proof_submitted": { "label": "\u51ed\u8bc1\u5df2\u53d1\u9001", "description": "\u7b49\u5f85\u9a8c\u8bc1" },
-      "admin_review": { "label": "\u5ba1\u6838\u4e2d", "description": "Bonzini\u56e2\u961f\u6b63\u5728\u9a8c\u8bc1\u60a8\u7684\u5145\u503c" },
-      "validated": { "label": "\u5df2\u9a8c\u8bc1 \u2014 \u4f59\u989d\u5df2\u5165\u8d26", "description": "\u60a8\u7684\u94b1\u5305\u5df2\u5165\u8d26" }
+      "created": {
+        "label": "充值已声明",
+        "description": "您的充值已登记"
+      },
+      "proof_submitted": {
+        "label": "凭证已发送",
+        "description": "等待验证"
+      },
+      "admin_review": {
+        "label": "审核中",
+        "description": "Bonzini团队正在验证您的充值"
+      },
+      "validated": {
+        "label": "已验证 — 余额已入账",
+        "description": "您的钱包已入账"
+      }
     },
     "withdrawal": {
-      "created": { "label": "\u53d6\u6b3e\u5df2\u58f0\u660e", "description": "\u60a8\u7684\u53d6\u6b3e\u5df2\u767b\u8bb0" },
-      "proof_submitted": { "label": "\u4ee3\u7801\u5df2\u63d0\u4f9b", "description": "\u53d6\u6b3e\u4ee3\u7801\u5df2\u4f20\u8f93" },
-      "admin_review": { "label": "\u5ba1\u6838\u4e2d", "description": "Bonzini\u56e2\u961f\u6b63\u5728\u9a8c\u8bc1\u53d6\u6b3e" },
-      "validated": { "label": "\u5df2\u9a8c\u8bc1 \u2014 \u4f59\u989d\u5df2\u5165\u8d26", "description": "\u60a8\u7684\u94b1\u5305\u5df2\u5165\u8d26" }
+      "created": {
+        "label": "取款已声明",
+        "description": "您的取款已登记"
+      },
+      "proof_submitted": {
+        "label": "代码已提供",
+        "description": "取款代码已传输"
+      },
+      "admin_review": {
+        "label": "审核中",
+        "description": "Bonzini团队正在验证取款"
+      },
+      "validated": {
+        "label": "已验证 — 余额已入账",
+        "description": "您的钱包已入账"
+      }
     },
     "agency": {
-      "created": { "label": "\u4ee3\u7406\u5145\u503c", "description": "\u5728Bonzini\u4ee3\u7406\u5904\u58f0\u660e\u7684\u5145\u503c" },
-      "proof_submitted": { "label": "\u6536\u636e\u5df2\u786e\u8ba4", "description": "\u4ee3\u7406\u6536\u636e\u5df2\u767b\u8bb0" },
-      "admin_review": { "label": "\u5ba1\u6838\u4e2d", "description": "\u9a8c\u8bc1\u8fdb\u884c\u4e2d" },
-      "validated": { "label": "\u5df2\u9a8c\u8bc1 \u2014 \u4f59\u989d\u5df2\u5165\u8d26", "description": "\u60a8\u7684\u94b1\u5305\u5df2\u5165\u8d26" }
+      "created": {
+        "label": "代理充值",
+        "description": "在Bonzini代理处声明的充值"
+      },
+      "proof_submitted": {
+        "label": "收据已确认",
+        "description": "代理收据已登记"
+      },
+      "admin_review": {
+        "label": "审核中",
+        "description": "验证进行中"
+      },
+      "validated": {
+        "label": "已验证 — 余额已入账",
+        "description": "您的钱包已入账"
+      }
     }
   },
   "rejectionReasons": {
-    "incorrectAmount": "\u91d1\u989d\u4e0d\u6b63\u786e",
-    "illegibleProof": "\u51ed\u8bc1\u4e0d\u6e05\u6670",
-    "missingReference": "\u7f3a\u5c11\u53c2\u8003\u53f7",
-    "wrongBankAccount": "\u94f6\u884c\u8d26\u6237\u9519\u8bef",
-    "nonCompliantDocument": "\u6587\u4ef6\u4e0d\u5408\u89c4",
-    "suspicion": "\u7591\u4f3c/\u4e0d\u4e00\u81f4",
-    "other": "\u5176\u4ed6"
+    "incorrectAmount": "金额不正确",
+    "illegibleProof": "凭证不清晰",
+    "missingReference": "缺少参考号",
+    "wrongBankAccount": "银行账户错误",
+    "nonCompliantDocument": "文件不合规",
+    "suspicion": "疑似/不一致",
+    "other": "其他"
   },
   "proofDeleteReasons": {
-    "incorrectUpload": "\u4e0a\u4f20\u9519\u8bef",
-    "wrongDeposit": "\u9519\u8bef\u7684\u5145\u503c",
-    "duplicate": "\u91cd\u590d",
-    "illegibleImage": "\u56fe\u7247\u4e0d\u6e05\u6670",
-    "other": "\u5176\u4ed6"
+    "incorrectUpload": "上传错误",
+    "wrongDeposit": "错误的充值",
+    "duplicate": "重复",
+    "illegibleImage": "图片不清晰",
+    "other": "其他"
+  },
+  "instructions": {
+    "title": "充值说明",
+    "copyAll": "全部复制",
+    "copied": "已复制",
+    "copySuccess": "已复制！",
+    "copyError": "复制出错",
+    "merchantCode": "商户代码",
+    "stepsToFollow": "操作步骤",
+    "bankTransfer": "银行转账",
+    "bankCash": "银行现金存款",
+    "omTransfer": "Orange UV转账到Bonzini",
+    "omWithdrawal": "Orange Money取款（商户代码）",
+    "mtnTransfer": "MTN Float转账到Bonzini",
+    "mtnWithdrawal": "MoMo取款（商户代码）",
+    "agencyCash": "在Bonzini代理处充值",
+    "wave": "Wave转账",
+    "fields": {
+      "bank": "银行",
+      "holder": "账户持有人",
+      "accountNumber": "账号",
+      "iban": "IBAN",
+      "swift": "SWIFT代码",
+      "reference": "参考号",
+      "operator": "运营商",
+      "number": "号码",
+      "agency": "代理",
+      "address": "地址",
+      "hours": "营业时间",
+      "waveNumber": "Wave号码",
+      "amount": "金额"
+    },
+    "steps": {
+      "bankTransfer": [
+        "登录您的银行应用或前往分行",
+        "向上述账户转账",
+        "使用参考号：{{reference}}",
+        "保留收据并在此上传"
+      ],
+      "bankCash": [
+        "前往{{bankName}}分行",
+        "向上述账户进行现金存款",
+        "使用参考号：{{reference}}",
+        "保留凭条并在此上传"
+      ],
+      "omTransfer": [
+        "拨打 #150*1*1#",
+        "输入号码：{{phone}}",
+        "输入金额：{{amount}} XAF",
+        "使用PIN码确认",
+        "截取确认短信的屏幕截图"
+      ],
+      "omWithdrawal": [
+        "在您的手机上，拨打下面显示的商户代码",
+        "将MONTANT替换为要发送的金额",
+        "用Orange Money PIN验证",
+        "截取确认短信的屏幕截图"
+      ],
+      "mtnTransfer": [
+        "从您的MTN Float商户账户",
+        "转账至：{{phone}}",
+        "输入金额：{{amount}} XAF",
+        "使用PIN码确认",
+        "截取确认屏幕"
+      ],
+      "mtnWithdrawal": [
+        "在您的手机上，拨打下面显示的商户代码",
+        "将MONTANT替换为要发送的金额",
+        "用MTN Mobile Money PIN验证",
+        "截取确认短信的屏幕截图"
+      ],
+      "agencyCash": [
+        "前往{{agencyName}}代理",
+        "出示您的身份证件",
+        "提及参考号：{{reference}}",
+        "进行现金充值",
+        "保留您的收据"
+      ],
+      "wave": [
+        "打开Wave应用",
+        "选择\"发送\"",
+        "输入号码：{{phone}}",
+        "输入金额：{{amount}} XAF",
+        "确认转账"
+      ]
+    },
+    "notes": {
+      "omWithdrawalLimit": "限额：每笔交易500,000 XAF",
+      "mtnWithdrawalLimit": "限额：每笔交易500,000 XAF"
+    }
+  },
+  "proof": {
+    "title": "附加充值凭证",
+    "dragFiles": "拖放您的文件到此处",
+    "orClick": "或点击浏览",
+    "addMore": "添加更多凭证",
+    "camera": "相机",
+    "gallery": "图库",
+    "acceptedFormats": "支持格式：JPG、PNG、PDF • 每个文件最大10 MB",
+    "filesSelected": "已选择{{count}}个文件",
+    "filesSelected_plural": "已选择{{count}}个文件",
+    "removeAll": "全部删除",
+    "sending": "发送中...",
+    "confirmSend": "确认发送（{{count}}个凭证）",
+    "confirmSend_plural": "确认发送（{{count}}个凭证）",
+    "attestation": "确认后，您证明这些凭证与此充值相符。",
+    "confirmTitle": "确认凭证提交",
+    "confirmDescription": "您将发送{{count}}个充值凭证。这将触发我们团队的验证。",
+    "confirmDescription_plural": "您将发送{{count}}个充值凭证。这将触发我们团队的验证。",
+    "previewTitle": "凭证预览",
+    "previewAlt": "预览"
+  },
+  "detail": {
+    "proofUploadedSuccess": "凭证发送成功！",
+    "notFound": "此充值不存在。",
+    "backToDeposits": "返回充值列表",
+    "copied": "已复制！",
+    "copyError": "复制出错",
+    "receiptDownloaded": "对账单已下载",
+    "receiptError": "生成PDF时出错",
+    "depositRejected": "充值已拒绝",
+    "depositCancelled": "充值已取消",
+    "depositCancelledDesc": "此充值已取消。",
+    "details": "详情",
+    "method": "方式",
+    "bank": "银行",
+    "agency": "代理",
+    "amount": "金额",
+    "status": "状态",
+    "date": "日期",
+    "viewInstructions": "查看充值说明",
+    "proofs": "凭证",
+    "timeline": "时间线",
+    "downloadReceipt": "下载对账单",
+    "download": "下载",
+    "cancelDeposit": "取消充值",
+    "cancelDialogTitle": "取消此充值？",
+    "cancelDialogDesc": "您确定要取消此{{amount}}的充值吗？此操作不可逆。",
+    "cancelDialogKeep": "不，保留",
+    "cancelDialogConfirm": "是，取消",
+    "deleteProofTitle": "删除此凭证？",
+    "deleteProofDesc": "请指定删除原因。此操作不可逆。",
+    "specifyReason": "指定原因...",
+    "cancel": "取消",
+    "delete": "删除"
+  },
+  "new": {
+    "amountToDeposit": "充值金额",
+    "minimumAmount": "最低金额：50,000 XAF",
+    "continue": "继续",
+    "back": "返回",
+    "howToDeposit": "您想如何充值？",
+    "operationType": "操作类型",
+    "chooseBank": "选择您的银行",
+    "chooseAgency": "选择代理",
+    "depositCreated": "充值创建成功！",
+    "depositCreatedDesc": "参考号：{{reference}}。上传您的证明文件。",
+    "creating": "正在创建充值...",
+    "pleaseWait": "请稍候",
+    "steps": {
+      "amount": "新充值",
+      "family": "充值方式",
+      "submethod": "操作类型",
+      "bank": "银行选择",
+      "agency": "代理选择",
+      "recap": "摘要",
+      "creating": "创建中..."
+    },
+    "recap": {
+      "depositCoordinates": "充值详情",
+      "merchantCode": "商户代码",
+      "amountToSend": "发送金额",
+      "instructions": "说明",
+      "confirmNotice": "确认后，您的充值请求将被登记。然后您可以上传您的证明文件。",
+      "confirmButton": "我确认我的充值请求",
+      "bankTransferTitle": "银行转账",
+      "bankCashTitle": "银行现金存款",
+      "bank": "银行",
+      "accountNumber": "账号",
+      "accountHolder": "持有人",
+      "iban": "IBAN",
+      "swift": "SWIFT",
+      "bankTransferInstr1": "登录您的银行应用或访问分行",
+      "bankTransferInstr2": "向上述账户转账",
+      "bankTransferInstr3": "确认后您将收到参考号",
+      "bankTransferInstr4": "保留收据并稍后上传",
+      "bankCashInstr1": "前往{{bank}}分行",
+      "bankCashInstr2": "向上述账户进行现金存款",
+      "bankCashInstr3": "确认后您将收到参考号",
+      "bankCashInstr4": "保留凭条并稍后上传",
+      "omTransferTitle": "Orange Money转账",
+      "omNumber": "OM号码",
+      "omTransferInstr1": "拨打 #150*1*1#",
+      "omTransferInstr2": "输入号码：{{phone}}",
+      "omTransferInstr3": "输入金额：{{amount}}",
+      "omTransferInstr4": "使用PIN码确认",
+      "omTransferInstr5": "截取确认短信的屏幕截图",
+      "omWithdrawalTitle": "Orange Money取款",
+      "omWithdrawalInstr1": "在您的手机上拨打下面的代码",
+      "omWithdrawalInstr2": "用Orange Money PIN验证",
+      "omWithdrawalInstr3": "截取确认短信的屏幕截图",
+      "mtnTransferTitle": "MTN Mobile Money转账",
+      "mtnNumber": "MOMO号码",
+      "mtnTransferInstr1": "拨打 *126#",
+      "mtnTransferInstr2": "选择\"转账\"",
+      "mtnTransferInstr3": "输入号码：{{phone}}",
+      "mtnTransferInstr4": "输入金额：{{amount}}",
+      "mtnTransferInstr5": "使用PIN码确认",
+      "mtnWithdrawalTitle": "MTN Mobile Money取款",
+      "mtnWithdrawalInstr1": "在您的手机上拨打下面的代码",
+      "mtnWithdrawalInstr2": "用MTN Mobile Money PIN验证",
+      "mtnWithdrawalInstr3": "截取确认短信的屏幕截图",
+      "agencyTitle": "在Bonzini代理充值",
+      "agency": "代理",
+      "address": "地址",
+      "hours": "营业时间",
+      "agencyInstr1": "前往{{agency}}代理",
+      "agencyInstr2": "出示您的身份证件",
+      "agencyInstr3": "确认后您将收到参考号",
+      "agencyInstr4": "进行现金充值",
+      "agencyInstr5": "保留您的收据",
+      "waveTitle": "Wave转账",
+      "waveNumber": "Wave号码",
+      "waveInstr1": "打开Wave应用",
+      "waveInstr2": "选择\"发送\"",
+      "waveInstr3": "输入号码：{{phone}}",
+      "waveInstr4": "输入金额：{{amount}}",
+      "waveInstr5": "确认转账"
+    }
+  },
+  "countdown": {
+    "expired": "截止期限已过",
+    "remaining": "剩余时间",
+    "expiredBanner": "截止期限已过",
+    "remainingBanner": "剩余时间",
+    "expiredMessage": "推荐的截止期限已过，但您仍可以发送您的凭证",
+    "criticalWarning": "警告：截止期限即将到期！",
+    "warningMessage": "请尽快发送您的凭证",
+    "normalMessage": "进行充值并发送凭证",
+    "expiredBannerMessage": "推荐的截止期限已过，但您仍可以发送您的凭证",
+    "criticalBannerWarning": "警告：截止期限即将到期！",
+    "warningBannerMessage": "请尽快发送您的凭证",
+    "normalBannerMessage": "进行充值并发送凭证"
   }
 }

@@ -32,5 +32,13 @@
     "minutesAgo": "{{count}}m ago",
     "hoursAgo": "{{count}}h ago",
     "daysAgo": "{{count}}d ago"
+  },
+  "errorBoundary": {
+    "title": "Oops! Something went wrong",
+    "description": "Don't worry, your data is safe. Try refreshing the page.",
+    "contactSupport": "If the problem persists, please contact technical support.",
+    "retry": "Retry",
+    "refreshPage": "Refresh page",
+    "featureLoadError": "Unable to load this section"
   }
 }
