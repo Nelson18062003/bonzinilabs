@@ -241,7 +241,7 @@ export function useAdminUpdateBeneficiaryInfo() {
       qrCodeFile?: File;
     }) => {
       let qrCodeUrl: string | null | undefined = beneficiaryInfo.beneficiary_qr_code_url;
-      
+
       // Upload QR code if provided
       if (qrCodeFile) {
         const compressed = await compressImage(qrCodeFile);
@@ -256,49 +256,50 @@ export function useAdminUpdateBeneficiaryInfo() {
         qrCodeUrl = `payment-proofs/${filePath}`;
       }
 
-      // Build update data - only include qr_code_url if it's explicitly set (including null for deletion)
-      const updateData: Record<string, unknown> = {
-        ...beneficiaryInfo,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Only update QR code URL if explicitly provided (including null for deletion) or if file was uploaded
-      if (qrCodeFile || beneficiaryInfo.beneficiary_qr_code_url !== undefined) {
-        updateData.beneficiary_qr_code_url = qrCodeUrl;
+      // Explicit QR deletion: caller passed `null` and no new file → clear the
+      // column first. The RPC uses COALESCE semantics (NULL = no change) so
+      // a "clear" operation cannot go through the RPC alone.
+      const isExplicitQrDeletion =
+        !qrCodeFile && beneficiaryInfo.beneficiary_qr_code_url === null;
+      if (isExplicitQrDeletion) {
+        const { error: clearError } = await supabaseAdmin
+          .from('payments')
+          .update({ beneficiary_qr_code_url: null })
+          .eq('id', paymentId);
+        if (clearError) throw clearError;
       }
 
-      // Determine if we have sufficient info after this update
-      // Fetch current payment to merge with updates
-      const { data: currentPayment } = await supabaseAdmin
-        .from('payments')
-        .select('beneficiary_name, beneficiary_bank_account, beneficiary_qr_code_url')
-        .eq('id', paymentId)
-        .single();
+      // Everything else (fields + status + timeline) goes through the RPC so
+      // the status transition and the timeline entries stay server-side and
+      // atomic.
+      const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+        'admin_update_payment_beneficiary',
+        {
+          p_payment_id: paymentId,
+          p_beneficiary_name:            beneficiaryInfo.beneficiary_name || undefined,
+          p_beneficiary_phone:           beneficiaryInfo.beneficiary_phone || undefined,
+          p_beneficiary_email:           beneficiaryInfo.beneficiary_email || undefined,
+          p_beneficiary_qr_code_url:     qrCodeUrl || undefined,
+          p_beneficiary_bank_name:       beneficiaryInfo.beneficiary_bank_name || undefined,
+          p_beneficiary_bank_account:    beneficiaryInfo.beneficiary_bank_account || undefined,
+          p_beneficiary_notes:           beneficiaryInfo.beneficiary_notes || undefined,
+          p_beneficiary_identifier:      beneficiaryInfo.beneficiary_identifier || undefined,
+          p_beneficiary_identifier_type: beneficiaryInfo.beneficiary_identifier_type || undefined,
+          p_beneficiary_bank_extra:      beneficiaryInfo.beneficiary_bank_extra || undefined,
+        } as Record<string, unknown>,
+      );
 
-      const finalQrCode = qrCodeFile ? qrCodeUrl : (beneficiaryInfo.beneficiary_qr_code_url !== undefined ? beneficiaryInfo.beneficiary_qr_code_url : currentPayment?.beneficiary_qr_code_url);
-      const finalName = beneficiaryInfo.beneficiary_name !== undefined ? beneficiaryInfo.beneficiary_name : currentPayment?.beneficiary_name;
-      const finalBankAccount = beneficiaryInfo.beneficiary_bank_account !== undefined ? beneficiaryInfo.beneficiary_bank_account : currentPayment?.beneficiary_bank_account;
-      
-      const hasInfo = finalQrCode || finalName || finalBankAccount;
+      if (rpcError) throw rpcError;
 
-      updateData.status = hasInfo ? 'ready_for_payment' : 'waiting_beneficiary_info';
-
-      const { error } = await supabaseAdmin
-        .from('payments')
-        .update(updateData)
-        .eq('id', paymentId);
-
-      if (error) throw error;
-
-      // Add timeline event
-      if (hasInfo) {
-        const { data: { user } } = await supabaseAdmin.auth.getUser();
-        await supabaseAdmin.from('payment_timeline_events').insert({
-          payment_id: paymentId,
-          event_type: 'info_provided',
-          description: 'Informations du bénéficiaire ajoutées par l\'admin',
-          performed_by: user?.id,
-        });
+      const result = rpcResult as { success: boolean; error?: string; new_status?: string };
+      if (!result.success) {
+        throw new Error(
+          result.error ||
+            i18n.t('hooks.adminUpdateBeneficiary.error', {
+              ns: 'common',
+              defaultValue: "Erreur lors de la mise à jour",
+            }),
+        );
       }
     },
     onSuccess: (_, variables) => {
