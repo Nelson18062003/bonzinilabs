@@ -271,25 +271,62 @@ export function useAdminUpdateBeneficiaryInfo() {
 
       // Everything else (fields + status + timeline) goes through the RPC so
       // the status transition and the timeline entries stay server-side and
-      // atomic.
+      // atomic. If the extended RPC (20260421000002) isn't deployed yet we
+      // fall back to a direct UPDATE so the admin edit keeps working.
+      const rpcParams: Record<string, unknown> = {
+        p_payment_id: paymentId,
+        p_beneficiary_name:            beneficiaryInfo.beneficiary_name || undefined,
+        p_beneficiary_phone:           beneficiaryInfo.beneficiary_phone || undefined,
+        p_beneficiary_email:           beneficiaryInfo.beneficiary_email || undefined,
+        p_beneficiary_qr_code_url:     qrCodeUrl || undefined,
+        p_beneficiary_bank_name:       beneficiaryInfo.beneficiary_bank_name || undefined,
+        p_beneficiary_bank_account:    beneficiaryInfo.beneficiary_bank_account || undefined,
+        p_beneficiary_notes:           beneficiaryInfo.beneficiary_notes || undefined,
+        p_beneficiary_identifier:      beneficiaryInfo.beneficiary_identifier || undefined,
+        p_beneficiary_identifier_type: beneficiaryInfo.beneficiary_identifier_type || undefined,
+        p_beneficiary_bank_extra:      beneficiaryInfo.beneficiary_bank_extra || undefined,
+      };
+
       const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
         'admin_update_payment_beneficiary',
-        {
-          p_payment_id: paymentId,
-          p_beneficiary_name:            beneficiaryInfo.beneficiary_name || undefined,
-          p_beneficiary_phone:           beneficiaryInfo.beneficiary_phone || undefined,
-          p_beneficiary_email:           beneficiaryInfo.beneficiary_email || undefined,
-          p_beneficiary_qr_code_url:     qrCodeUrl || undefined,
-          p_beneficiary_bank_name:       beneficiaryInfo.beneficiary_bank_name || undefined,
-          p_beneficiary_bank_account:    beneficiaryInfo.beneficiary_bank_account || undefined,
-          p_beneficiary_notes:           beneficiaryInfo.beneficiary_notes || undefined,
-          p_beneficiary_identifier:      beneficiaryInfo.beneficiary_identifier || undefined,
-          p_beneficiary_identifier_type: beneficiaryInfo.beneficiary_identifier_type || undefined,
-          p_beneficiary_bank_extra:      beneficiaryInfo.beneficiary_bank_extra || undefined,
-        } as Record<string, unknown>,
+        rpcParams,
       );
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        const missing =
+          rpcError.code === '42883' ||
+          /function .* does not exist|could not find the function/i.test(rpcError.message || '');
+        if (!missing) throw rpcError;
+
+        // Fallback: RPC not deployed yet — write columns directly + compute
+        // status client-side like the pre-R2 hook did. Timeline is best-effort.
+        const directUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        for (const k of [
+          'beneficiary_name','beneficiary_phone','beneficiary_email',
+          'beneficiary_bank_name','beneficiary_bank_account','beneficiary_notes',
+          'beneficiary_bank_extra','beneficiary_identifier','beneficiary_identifier_type',
+        ] as const) {
+          const v = (beneficiaryInfo as Record<string, unknown>)[k];
+          if (v !== undefined) directUpdate[k] = v;
+        }
+        if (qrCodeFile || beneficiaryInfo.beneficiary_qr_code_url !== undefined) {
+          directUpdate.beneficiary_qr_code_url = qrCodeUrl;
+        }
+
+        // Skip columns that still don't exist on the remote (migration 20260421000001 not deployed)
+        const tryUpdate = async (payload: Record<string, unknown>) =>
+          supabaseAdmin.from('payments').update(payload).eq('id', paymentId);
+
+        let res = await tryUpdate(directUpdate);
+        if (res.error && (res.error.code === '42703' || /column .* does not exist/i.test(res.error.message || ''))) {
+          delete directUpdate.beneficiary_bank_extra;
+          delete directUpdate.beneficiary_identifier;
+          delete directUpdate.beneficiary_identifier_type;
+          res = await tryUpdate(directUpdate);
+        }
+        if (res.error) throw res.error;
+        return;
+      }
 
       const result = rpcResult as { success: boolean; error?: string; new_status?: string };
       if (!result.success) {

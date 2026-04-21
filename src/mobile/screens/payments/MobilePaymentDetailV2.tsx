@@ -33,6 +33,7 @@ import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -98,6 +99,69 @@ const INP: React.CSSProperties = {
   fontSize: 15, fontWeight: 600, color: C.text,
   fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box',
 };
+
+// ── CopyRow: label + value tap-to-copy (lisible, complet, monospace opt-in)
+function CopyRow({
+  label,
+  value,
+  mono,
+  highlight,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  highlight?: string;
+  multiline?: boolean;
+}) {
+  const onCopy = () => {
+    copyToClipboard(value, label);
+  };
+  return (
+    <button
+      onClick={onCopy}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 3,
+        padding: '8px 10px',
+        borderRadius: 10,
+        background: highlight ? `${highlight}08` : C.bg,
+        border: `1px solid ${highlight ? `${highlight}30` : C.border}`,
+        cursor: 'pointer',
+        textAlign: 'left',
+        width: '100%',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: highlight || C.sub,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: mono ? 15 : 14,
+          fontWeight: 700,
+          color: C.text,
+          fontFamily: mono ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : "'DM Sans',sans-serif",
+          letterSpacing: mono ? 0.3 : 0,
+          wordBreak: 'break-word',
+          whiteSpace: multiline ? 'pre-wrap' : 'normal',
+          lineHeight: 1.3,
+        }}
+      >
+        {value}
+      </div>
+    </button>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────
 export function MobilePaymentDetail() {
@@ -634,63 +698,61 @@ export function MobilePaymentDetail() {
 
               {/* VIREMENT */}
               {payment.method === 'bank_transfer' && hasBeneficiaryInfo && (
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{payment.beneficiary_name || '—'}</div>
-                  <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
-                    {payment.beneficiary_bank_name && `${payment.beneficiary_bank_name} · `}
-                    {payment.beneficiary_bank_account
-                      ? `•••• ${payment.beneficiary_bank_account.slice(-4)}`
-                      : ''}
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                  {payment.beneficiary_name && (
+                    <CopyRow label="Titulaire" value={payment.beneficiary_name} />
+                  )}
+                  {payment.beneficiary_bank_name && (
+                    <CopyRow label="Banque" value={payment.beneficiary_bank_name} />
+                  )}
+                  {payment.beneficiary_bank_account && (
+                    <CopyRow
+                      label="N° de compte"
+                      value={payment.beneficiary_bank_account}
+                      mono
+                    />
+                  )}
                   {(payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra && (
-                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
-                      {(payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra}
-                    </div>
+                    <CopyRow
+                      label="SWIFT / IBAN"
+                      value={(payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra as string}
+                      mono
+                    />
                   )}
                   {payment.beneficiary_phone && (
-                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
-                      {payment.beneficiary_phone}
-                    </div>
+                    <CopyRow label="Téléphone" value={payment.beneficiary_phone} />
                   )}
                   {payment.beneficiary_email && (
-                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
-                      {payment.beneficiary_email}
-                    </div>
+                    <CopyRow label="Email" value={payment.beneficiary_email} />
                   )}
                   {payment.beneficiary_notes && (
-                    <div style={{ fontSize: 11, color: C.dim, marginTop: 4, fontStyle: 'italic' }}>
-                      {payment.beneficiary_notes}
-                    </div>
+                    <CopyRow label="Notes" value={payment.beneficiary_notes} multiline />
                   )}
                 </div>
               )}
 
               {/* ALIPAY / WECHAT */}
               {(payment.method === 'alipay' || payment.method === 'wechat') && hasBeneficiaryInfo && (
-                <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                   {payment.beneficiary_name && (
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{payment.beneficiary_name}</div>
+                    <CopyRow label="Nom" value={payment.beneficiary_name} />
                   )}
                   {(payment as { beneficiary_identifier?: string | null }).beneficiary_identifier && (
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginTop: 2 }}>
-                      {payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'} ·{' '}
-                      {(payment as { beneficiary_identifier?: string | null }).beneficiary_identifier}
-                    </div>
+                    <CopyRow
+                      label={payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'}
+                      value={(payment as { beneficiary_identifier?: string | null }).beneficiary_identifier as string}
+                      mono
+                      highlight={methodCfg.color}
+                    />
                   )}
                   {payment.beneficiary_phone && (
-                    <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
-                      {payment.beneficiary_phone}
-                    </div>
+                    <CopyRow label="Téléphone" value={payment.beneficiary_phone} />
                   )}
                   {payment.beneficiary_email && (
-                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
-                      {payment.beneficiary_email}
-                    </div>
+                    <CopyRow label="Email" value={payment.beneficiary_email} />
                   )}
                   {payment.beneficiary_notes && (
-                    <div style={{ fontSize: 11, color: C.dim, marginTop: 4, fontStyle: 'italic' }}>
-                      {payment.beneficiary_notes}
-                    </div>
+                    <CopyRow label="Notes" value={payment.beneficiary_notes} multiline />
                   )}
 
                   {/* QR Code controls */}

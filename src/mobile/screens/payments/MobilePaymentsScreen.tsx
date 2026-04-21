@@ -189,14 +189,53 @@ export function MobilePaymentsScreen() {
     if (isExporting) return;
     setIsExporting(true);
     try {
-      // Fetch processing payments (non-cash) — must use supabaseAdmin (admin session)
-      const { data: payments, error } = await supabaseAdmin
-        .from('payments')
-        .select('id, reference, amount_rmb, method, created_at, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_bank_extra, beneficiary_qr_code_url, beneficiary_notes, beneficiary_identifier')
-        .eq('status', 'processing')
-        .neq('method', 'cash');
+      // Columns added by the 20260421* migrations. If they haven't been
+      // applied to the remote DB yet, PostgREST returns an error complaining
+      // about the unknown column. Detect that and retry with the legacy
+      // column set so the export keeps working while the migration catches up.
+      const LEGACY_COLUMNS =
+        'id, reference, amount_rmb, method, created_at, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, beneficiary_notes';
+      const EXTENDED_COLUMNS = `${LEGACY_COLUMNS}, beneficiary_bank_extra, beneficiary_identifier`;
 
-      if (error) throw error;
+      type PaymentRow = {
+        id: string;
+        reference: string;
+        amount_rmb: number;
+        method: string;
+        created_at: string | null;
+        beneficiary_name: string | null;
+        beneficiary_phone: string | null;
+        beneficiary_email: string | null;
+        beneficiary_bank_name: string | null;
+        beneficiary_bank_account: string | null;
+        beneficiary_qr_code_url: string | null;
+        beneficiary_notes: string | null;
+        beneficiary_bank_extra?: string | null;
+        beneficiary_identifier?: string | null;
+      };
+
+      const runSelect = async (columns: string) =>
+        supabaseAdmin
+          .from('payments')
+          .select(columns)
+          .eq('status', 'processing')
+          .neq('method', 'cash');
+
+      let payments: PaymentRow[] | null = null;
+      {
+        const res = await runSelect(EXTENDED_COLUMNS);
+        if (res.error) {
+          const missingColumn =
+            res.error.code === '42703' ||
+            /column .* does not exist/i.test(res.error.message || '');
+          if (!missingColumn) throw res.error;
+          const fallback = await runSelect(LEGACY_COLUMNS);
+          if (fallback.error) throw fallback.error;
+          payments = fallback.data as unknown as PaymentRow[];
+        } else {
+          payments = res.data as unknown as PaymentRow[];
+        }
+      }
 
       if (!payments || payments.length === 0) {
         toast.error(t('noPaymentsToExport', { defaultValue: 'Aucun paiement en cours à exporter' }));
@@ -225,10 +264,10 @@ export function MobilePaymentsScreen() {
             beneficiary_email: p.beneficiary_email,
             beneficiary_bank_name: p.beneficiary_bank_name,
             beneficiary_bank_account: p.beneficiary_bank_account,
-            beneficiary_bank_extra: p.beneficiary_bank_extra,
+            beneficiary_bank_extra: p.beneficiary_bank_extra ?? null,
             beneficiary_qr_code_url: qrUrl,
             beneficiary_notes: p.beneficiary_notes,
-            beneficiary_identifier: p.beneficiary_identifier,
+            beneficiary_identifier: p.beneficiary_identifier ?? null,
           };
         }),
       );
