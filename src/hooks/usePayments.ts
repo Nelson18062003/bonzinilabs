@@ -27,7 +27,10 @@ export interface Payment {
   beneficiary_qr_code_url: string | null;
   beneficiary_bank_name: string | null;
   beneficiary_bank_account: string | null;
+  beneficiary_bank_extra: string | null;
   beneficiary_notes: string | null;
+  beneficiary_identifier: string | null;
+  beneficiary_identifier_type: 'qr' | 'id' | 'email' | 'phone' | null;
   cash_qr_code: string | null;
   // Cash-specific fields
   cash_beneficiary_type: 'self' | 'other' | null;
@@ -87,7 +90,10 @@ export interface CreatePaymentData {
   beneficiary_qr_code_url?: string;
   beneficiary_bank_name?: string;
   beneficiary_bank_account?: string;
+  beneficiary_bank_extra?: string;
   beneficiary_notes?: string;
+  beneficiary_identifier?: string;
+  beneficiary_identifier_type?: 'qr' | 'id' | 'email' | 'phone';
   // Cash-specific fields
   cash_beneficiary_type?: 'self' | 'other';
   cash_beneficiary_first_name?: string;
@@ -245,13 +251,25 @@ export function useCreatePayment() {
       }
 
       // Update beneficiary system fields separately (migration pending)
-      if (response.payment_id && (data.beneficiary_id || data.beneficiary_details || data.rate_is_custom)) {
+      const hasExtendedFields = !!(
+        data.beneficiary_id ||
+        data.beneficiary_details ||
+        data.rate_is_custom ||
+        data.beneficiary_identifier ||
+        data.beneficiary_identifier_type ||
+        data.beneficiary_bank_extra
+      );
+
+      if (response.payment_id && hasExtendedFields) {
         await supabase
           .from('payments')
           .update({
             beneficiary_id: data.beneficiary_id || null,
             beneficiary_details: data.beneficiary_details || null,
             rate_is_custom: data.rate_is_custom ?? false,
+            beneficiary_identifier: data.beneficiary_identifier || null,
+            beneficiary_identifier_type: data.beneficiary_identifier_type || null,
+            beneficiary_bank_extra: data.beneficiary_bank_extra || null,
           })
           .eq('id', response.payment_id);
       }
@@ -289,7 +307,7 @@ export function useUpdateBeneficiaryInfo() {
       paymentMethod
     }: {
       paymentId: string;
-      beneficiaryInfo: Partial<Pick<Payment, 'beneficiary_name' | 'beneficiary_phone' | 'beneficiary_email' | 'beneficiary_qr_code_url' | 'beneficiary_bank_name' | 'beneficiary_bank_account' | 'beneficiary_notes'>>;
+      beneficiaryInfo: Partial<Pick<Payment, 'beneficiary_name' | 'beneficiary_phone' | 'beneficiary_email' | 'beneficiary_qr_code_url' | 'beneficiary_bank_name' | 'beneficiary_bank_account' | 'beneficiary_bank_extra' | 'beneficiary_notes' | 'beneficiary_identifier' | 'beneficiary_identifier_type'>>;
       paymentMethod?: Payment['method'];
     }) => {
       // Determine if we have sufficient info based on payment method
@@ -342,6 +360,28 @@ export function useUpdateBeneficiaryInfo() {
       const result = rpcResult as { success: boolean; error?: string; status?: string };
       if (!result.success) {
         throw new Error(result.error || i18n.t('hooks.updateBeneficiary.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour' }));
+      }
+
+      // The RPC only handles the legacy flat columns. Additional fields
+      // (identifier, identifier_type, bank_extra) are written directly so
+      // they don't require a new RPC signature.
+      const hasExtendedFields =
+        beneficiaryInfo.beneficiary_identifier !== undefined ||
+        beneficiaryInfo.beneficiary_identifier_type !== undefined ||
+        beneficiaryInfo.beneficiary_bank_extra !== undefined;
+
+      if (hasExtendedFields) {
+        const extendedUpdate: Record<string, unknown> = {};
+        if (beneficiaryInfo.beneficiary_identifier !== undefined) {
+          extendedUpdate.beneficiary_identifier = beneficiaryInfo.beneficiary_identifier || null;
+        }
+        if (beneficiaryInfo.beneficiary_identifier_type !== undefined) {
+          extendedUpdate.beneficiary_identifier_type = beneficiaryInfo.beneficiary_identifier_type || null;
+        }
+        if (beneficiaryInfo.beneficiary_bank_extra !== undefined) {
+          extendedUpdate.beneficiary_bank_extra = beneficiaryInfo.beneficiary_bank_extra || null;
+        }
+        await supabase.from('payments').update(extendedUpdate).eq('id', paymentId);
       }
 
       // Timeline event is handled by the RPC

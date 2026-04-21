@@ -192,7 +192,7 @@ export function MobilePaymentsScreen() {
       // Fetch processing payments (non-cash) — must use supabaseAdmin (admin session)
       const { data: payments, error } = await supabaseAdmin
         .from('payments')
-        .select('id, reference, amount_rmb, method, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url')
+        .select('id, reference, amount_rmb, method, created_at, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_bank_extra, beneficiary_qr_code_url, beneficiary_notes, beneficiary_identifier')
         .eq('status', 'processing')
         .neq('method', 'cash');
 
@@ -219,12 +219,16 @@ export function MobilePaymentsScreen() {
             reference: p.reference,
             amount_rmb: p.amount_rmb,
             method: p.method,
+            created_at: p.created_at,
             beneficiary_name: p.beneficiary_name,
             beneficiary_phone: p.beneficiary_phone,
             beneficiary_email: p.beneficiary_email,
             beneficiary_bank_name: p.beneficiary_bank_name,
             beneficiary_bank_account: p.beneficiary_bank_account,
+            beneficiary_bank_extra: p.beneficiary_bank_extra,
             beneficiary_qr_code_url: qrUrl,
+            beneficiary_notes: p.beneficiary_notes,
+            beneficiary_identifier: p.beneficiary_identifier,
           };
         }),
       );
@@ -232,7 +236,7 @@ export function MobilePaymentsScreen() {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       await downloadPDF(
         <BatchPaymentsPDF payments={entries} generatedAt={new Date()} />,
-        `Paiements_en_cours_${dateStr}.pdf`,
+        `Bonzini_Payments_Pending_${dateStr}.pdf`,
       );
       toast.success(t('exportDownloaded', { defaultValue: `Export de ${entries.length} paiement(s) téléchargé`, count: entries.length }));
     } catch (error) {
