@@ -29,7 +29,9 @@ export function MobileBeneficiaryEdit() {
     beneficiary_qr_code_url: '',
     beneficiary_bank_name: '',
     beneficiary_bank_account: '',
+    beneficiary_bank_extra: '',
     beneficiary_notes: '',
+    beneficiary_identifier: '',
   });
   const [initialized, setInitialized] = useState(false);
 
@@ -41,6 +43,10 @@ export function MobileBeneficiaryEdit() {
 
   // Pre-fill form once payment data is available
   if (payment && !initialized) {
+    const p = payment as typeof payment & {
+      beneficiary_bank_extra?: string | null;
+      beneficiary_identifier?: string | null;
+    };
     setForm({
       beneficiary_name: payment.beneficiary_name ?? '',
       beneficiary_phone: payment.beneficiary_phone ?? '',
@@ -48,7 +54,9 @@ export function MobileBeneficiaryEdit() {
       beneficiary_qr_code_url: payment.beneficiary_qr_code_url ?? '',
       beneficiary_bank_name: payment.beneficiary_bank_name ?? '',
       beneficiary_bank_account: payment.beneficiary_bank_account ?? '',
+      beneficiary_bank_extra: p.beneficiary_bank_extra ?? '',
       beneficiary_notes: payment.beneficiary_notes ?? '',
+      beneficiary_identifier: p.beneficiary_identifier ?? '',
     });
     setInitialized(true);
   }
@@ -84,6 +92,10 @@ export function MobileBeneficiaryEdit() {
         qrUrl = `payment-proofs/${filePath}`;
       }
 
+      const identifier = form.beneficiary_identifier.trim();
+      const isAlipayOrWechat =
+        payment.method === 'alipay' || payment.method === 'wechat';
+
       await adminUpdateBeneficiaryInfo.mutateAsync({
         paymentId,
         beneficiaryInfo: {
@@ -93,7 +105,10 @@ export function MobileBeneficiaryEdit() {
           beneficiary_qr_code_url: qrUrl || undefined,
           beneficiary_bank_name: form.beneficiary_bank_name || undefined,
           beneficiary_bank_account: form.beneficiary_bank_account || undefined,
+          beneficiary_bank_extra: form.beneficiary_bank_extra || undefined,
           beneficiary_notes: form.beneficiary_notes || undefined,
+          beneficiary_identifier: identifier || undefined,
+          beneficiary_identifier_type: isAlipayOrWechat && identifier ? 'id' : undefined,
         },
       });
 
@@ -191,6 +206,20 @@ export function MobileBeneficiaryEdit() {
                   autoComplete="off"
                   inputMode="text"
                   className={`${inputCls} font-mono`}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Infos complémentaires <span className="text-muted-foreground font-normal">(SWIFT, IBAN, adresse…)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.beneficiary_bank_extra}
+                  onChange={(e) => setForm(f => ({ ...f, beneficiary_bank_extra: e.target.value }))}
+                  placeholder="SWIFT / IBAN / adresse banque"
+                  autoComplete="off"
+                  className={inputCls}
                 />
               </div>
 
@@ -312,6 +341,34 @@ export function MobileBeneficiaryEdit() {
                   placeholder="Nom du bénéficiaire"
                   autoComplete="off"
                   className={inputCls}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Identifiant {payment.method === 'wechat' ? 'WeChat' : 'Alipay'}
+                  <span className="text-muted-foreground font-normal"> (optionnel)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.beneficiary_identifier}
+                  onChange={(e) => setForm(f => ({ ...f, beneficiary_identifier: e.target.value }))}
+                  placeholder={payment.method === 'wechat' ? 'WeChat ID / 微信号' : 'Alipay ID / 支付宝账号'}
+                  autoComplete="off"
+                  className={inputCls}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Notes <span className="text-muted-foreground font-normal">(optionnel)</span>
+                </label>
+                <textarea
+                  value={form.beneficiary_notes}
+                  onChange={(e) => setForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
+                  placeholder="Instructions supplémentaires…"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-base resize-none"
                 />
               </div>
             </div>

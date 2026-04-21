@@ -225,6 +225,15 @@ const NewPaymentPage = () => {
         ? (cashBenefType === 'self' ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() : newBenefName)
         : (snapshot?.name as string || undefined);
 
+      const identifierValue = snapshot?.identifier as string | undefined;
+      const identifierTypeValue = snapshot?.identifier_type as
+        | 'qr'
+        | 'id'
+        | 'email'
+        | 'phone'
+        | undefined;
+      const bankExtraValue = snapshot?.bank_extra as string | undefined;
+
       const result = await createPayment.mutateAsync({
         amount_xaf: amountXAF, amount_rmb: amountRMB, exchange_rate: Math.round(rate * 1_000_000), method: selectedMethod,
         beneficiary_name: legacyBenefName || undefined,
@@ -233,6 +242,9 @@ const NewPaymentPage = () => {
         beneficiary_qr_code_url: qrCodeUrl || undefined,
         beneficiary_bank_name: snapshot?.bank_name as string || undefined,
         beneficiary_bank_account: snapshot?.bank_account as string || undefined,
+        beneficiary_bank_extra: bankExtraValue || undefined,
+        beneficiary_identifier: identifierValue || undefined,
+        beneficiary_identifier_type: identifierTypeValue,
         cash_beneficiary_type: isCash ? cashBenefType : undefined,
         cash_beneficiary_first_name: isCash && cashBenefType === 'self' ? profile?.first_name : (isCash ? newBenefName.split(' ')[0] : undefined),
         cash_beneficiary_last_name: isCash && cashBenefType === 'self' ? profile?.last_name : (isCash ? newBenefName.split(' ').slice(1).join(' ') : undefined),

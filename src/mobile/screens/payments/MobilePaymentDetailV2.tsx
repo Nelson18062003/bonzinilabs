@@ -164,7 +164,9 @@ export function MobilePaymentDetail() {
     beneficiary_qr_code_url:  '',
     beneficiary_bank_name:    '',
     beneficiary_bank_account: '',
+    beneficiary_bank_extra:   '',
     beneficiary_notes:        '',
+    beneficiary_identifier:   '',
   });
   const [qrFile,       setQrFile]       = useState<File | null>(null);
   const [qrPreview,    setQrPreview]    = useState<string | null>(null);
@@ -181,6 +183,10 @@ export function MobilePaymentDetail() {
 
   const initBeneficiaryForm = () => {
     if (!payment) return;
+    const p = payment as typeof payment & {
+      beneficiary_bank_extra?: string | null;
+      beneficiary_identifier?: string | null;
+    };
     setBeneficiaryForm({
       beneficiary_name:         payment.beneficiary_name         || '',
       beneficiary_phone:        payment.beneficiary_phone        || '',
@@ -188,7 +194,9 @@ export function MobilePaymentDetail() {
       beneficiary_qr_code_url:  payment.beneficiary_qr_code_url  || '',
       beneficiary_bank_name:    payment.beneficiary_bank_name    || '',
       beneficiary_bank_account: payment.beneficiary_bank_account || '',
+      beneficiary_bank_extra:   p.beneficiary_bank_extra         || '',
       beneficiary_notes:        payment.beneficiary_notes        || '',
+      beneficiary_identifier:   p.beneficiary_identifier         || '',
     });
     setQrFile(null);
     setQrPreview(null);
@@ -229,6 +237,10 @@ export function MobilePaymentDetail() {
         qrUrl = `payment-proofs/${filePath}`;
       }
 
+      const identifier = beneficiaryForm.beneficiary_identifier.trim();
+      const isAlipayOrWechat =
+        payment.method === 'alipay' || payment.method === 'wechat';
+
       await adminUpdateBeneficiaryInfo.mutateAsync({
         paymentId,
         beneficiaryInfo: {
@@ -238,7 +250,10 @@ export function MobilePaymentDetail() {
           beneficiary_qr_code_url:  qrUrl                                   || undefined,
           beneficiary_bank_name:    beneficiaryForm.beneficiary_bank_name    || undefined,
           beneficiary_bank_account: beneficiaryForm.beneficiary_bank_account || undefined,
+          beneficiary_bank_extra:   beneficiaryForm.beneficiary_bank_extra   || undefined,
           beneficiary_notes:        beneficiaryForm.beneficiary_notes        || undefined,
+          beneficiary_identifier:   identifier || undefined,
+          beneficiary_identifier_type: isAlipayOrWechat && identifier ? 'id' : undefined,
         },
       });
 
@@ -627,9 +642,19 @@ export function MobilePaymentDetail() {
                       ? `•••• ${payment.beneficiary_bank_account.slice(-4)}`
                       : ''}
                   </div>
+                  {(payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra && (
+                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
+                      {(payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra}
+                    </div>
+                  )}
                   {payment.beneficiary_phone && (
                     <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
                       {payment.beneficiary_phone}
+                    </div>
+                  )}
+                  {payment.beneficiary_email && (
+                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
+                      {payment.beneficiary_email}
                     </div>
                   )}
                   {payment.beneficiary_notes && (
@@ -646,9 +671,25 @@ export function MobilePaymentDetail() {
                   {payment.beneficiary_name && (
                     <div style={{ fontSize: 15, fontWeight: 700 }}>{payment.beneficiary_name}</div>
                   )}
-                  {(payment.beneficiary_phone || payment.beneficiary_email) && (
+                  {(payment as { beneficiary_identifier?: string | null }).beneficiary_identifier && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginTop: 2 }}>
+                      {payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'} ·{' '}
+                      {(payment as { beneficiary_identifier?: string | null }).beneficiary_identifier}
+                    </div>
+                  )}
+                  {payment.beneficiary_phone && (
                     <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
-                      {payment.beneficiary_phone || payment.beneficiary_email}
+                      {payment.beneficiary_phone}
+                    </div>
+                  )}
+                  {payment.beneficiary_email && (
+                    <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>
+                      {payment.beneficiary_email}
+                    </div>
+                  )}
+                  {payment.beneficiary_notes && (
+                    <div style={{ fontSize: 11, color: C.dim, marginTop: 4, fontStyle: 'italic' }}>
+                      {payment.beneficiary_notes}
                     </div>
                   )}
 
@@ -850,6 +891,31 @@ export function MobilePaymentDetail() {
                       placeholder="beneficiaire@example.com"
                     />
                   </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                      Identifiant {payment.method === 'wechat' ? 'WeChat' : 'Alipay'}{' '}
+                      <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
+                    </label>
+                    <input
+                      style={INP}
+                      value={beneficiaryForm.beneficiary_identifier}
+                      onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_identifier: e.target.value }))}
+                      placeholder={payment.method === 'wechat' ? 'WeChat ID / 微信号' : 'Alipay ID / 支付宝账号'}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                      Notes <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
+                    </label>
+                    <textarea
+                      style={{ ...INP, height: 72, resize: 'none' }}
+                      value={beneficiaryForm.beneficiary_notes}
+                      onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
+                      placeholder="Instructions supplémentaires…"
+                      rows={3}
+                    />
+                  </div>
                 </>
               )}
 
@@ -889,6 +955,18 @@ export function MobilePaymentDetail() {
                       value={beneficiaryForm.beneficiary_bank_account}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_account: e.target.value }))}
                       placeholder="6214 8888 1234 5678"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
+                      Infos complémentaires <span style={{ fontWeight: 400, color: C.dim }}>(SWIFT / IBAN / adresse)</span>
+                    </label>
+                    <input
+                      style={INP}
+                      value={beneficiaryForm.beneficiary_bank_extra}
+                      onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_extra: e.target.value }))}
+                      placeholder="SWIFT / IBAN / adresse banque"
                       autoComplete="off"
                     />
                   </div>

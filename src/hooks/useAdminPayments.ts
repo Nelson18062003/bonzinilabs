@@ -16,7 +16,10 @@ export interface AdminCreatePaymentData {
   beneficiary_qr_code_url?: string;
   beneficiary_bank_name?: string;
   beneficiary_bank_account?: string;
+  beneficiary_bank_extra?: string;
   beneficiary_notes?: string;
+  beneficiary_identifier?: string;
+  beneficiary_identifier_type?: 'qr' | 'id' | 'email' | 'phone';
   client_visible_comment?: string;
   desired_date?: Date;
   qr_code_files?: File[];
@@ -83,13 +86,25 @@ export function useAdminCreatePayment() {
       }
 
       // Update beneficiary system fields separately (migration pending)
-      if (response.payment_id && (data.beneficiary_id || data.beneficiary_details || data.rate_is_custom)) {
+      const hasExtendedFields = !!(
+        data.beneficiary_id ||
+        data.beneficiary_details ||
+        data.rate_is_custom ||
+        data.beneficiary_identifier ||
+        data.beneficiary_identifier_type ||
+        data.beneficiary_bank_extra
+      );
+
+      if (response.payment_id && hasExtendedFields) {
         await supabaseAdmin
           .from('payments')
           .update({
             beneficiary_id: data.beneficiary_id || null,
             beneficiary_details: data.beneficiary_details || null,
             rate_is_custom: data.rate_is_custom ?? false,
+            beneficiary_identifier: data.beneficiary_identifier || null,
+            beneficiary_identifier_type: data.beneficiary_identifier_type || null,
+            beneficiary_bank_extra: data.beneficiary_bank_extra || null,
           })
           .eq('id', response.payment_id);
       }
@@ -218,7 +233,10 @@ export function useAdminUpdateBeneficiaryInfo() {
         beneficiary_qr_code_url?: string | null;
         beneficiary_bank_name?: string;
         beneficiary_bank_account?: string;
+        beneficiary_bank_extra?: string;
         beneficiary_notes?: string;
+        beneficiary_identifier?: string;
+        beneficiary_identifier_type?: 'qr' | 'id' | 'email' | 'phone' | null;
       };
       qrCodeFile?: File;
     }) => {

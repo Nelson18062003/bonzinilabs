@@ -557,8 +557,11 @@ export type Database = {
           balance_after: number
           balance_before: number
           beneficiary_bank_account: string | null
+          beneficiary_bank_extra: string | null
           beneficiary_bank_name: string | null
           beneficiary_email: string | null
+          beneficiary_identifier: string | null
+          beneficiary_identifier_type: string | null
           beneficiary_name: string | null
           beneficiary_notes: string | null
           beneficiary_phone: string | null
@@ -595,8 +598,11 @@ export type Database = {
           balance_after: number
           balance_before: number
           beneficiary_bank_account?: string | null
+          beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
           beneficiary_email?: string | null
+          beneficiary_identifier?: string | null
+          beneficiary_identifier_type?: string | null
           beneficiary_name?: string | null
           beneficiary_notes?: string | null
           beneficiary_phone?: string | null
@@ -633,8 +639,11 @@ export type Database = {
           balance_after?: number
           balance_before?: number
           beneficiary_bank_account?: string | null
+          beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
           beneficiary_email?: string | null
+          beneficiary_identifier?: string | null
+          beneficiary_identifier_type?: string | null
           beneficiary_name?: string | null
           beneficiary_notes?: string | null
           beneficiary_phone?: string | null

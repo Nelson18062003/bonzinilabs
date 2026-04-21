@@ -672,6 +672,13 @@ export default function PaymentDetailPage() {
           {payment.beneficiary_name && (
             <CopyableField label={t('detail.fields.name')} value={payment.beneficiary_name} copyLabel={t('detail.fields.beneficiaryName')} />
           )}
+          {payment.beneficiary_identifier && (
+            <CopyableField
+              label={payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'}
+              value={payment.beneficiary_identifier}
+              copyLabel={payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'}
+            />
+          )}
           {payment.beneficiary_phone && (
             <CopyableField label={t('detail.fields.phone')} value={payment.beneficiary_phone} copyLabel={t('detail.fields.beneficiaryPhone')} />
           )}
@@ -683,6 +690,9 @@ export default function PaymentDetailPage() {
           )}
           {payment.beneficiary_bank_account && (
             <CopyableField label={t('detail.fields.accountNumber')} value={payment.beneficiary_bank_account} copyLabel={t('detail.fields.accountNumber')} />
+          )}
+          {payment.beneficiary_bank_extra && (
+            <CopyableField label="SWIFT / IBAN" value={payment.beneficiary_bank_extra} copyLabel="SWIFT / IBAN" />
           )}
           {payment.beneficiary_notes && (
             <div className="pt-2 border-t border-border">

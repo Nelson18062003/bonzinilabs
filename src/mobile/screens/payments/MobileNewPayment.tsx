@@ -222,7 +222,10 @@ export function MobileNewPayment() {
           beneficiary_email: benef.email || undefined,
           beneficiary_bank_name: benef.bank || undefined,
           beneficiary_bank_account: benef.account || undefined,
-          beneficiary_notes: benef.ident ? `ID ${mode.name}: ${benef.ident}` : undefined,
+          beneficiary_identifier: benef.ident || undefined,
+          beneficiary_identifier_type: benef.ident
+            ? ('id' as const)
+            : undefined,
           qr_code_files: qrFile ? [qrFile] : undefined,
         };
 

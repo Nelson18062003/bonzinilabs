@@ -407,8 +407,10 @@ export interface BatchPaymentEntry {
   beneficiary_email?: string | null;
   beneficiary_bank_name?: string | null;
   beneficiary_bank_account?: string | null;
+  beneficiary_bank_extra?: string | null;
   beneficiary_qr_code_url?: string | null;
   beneficiary_notes?: string | null;
+  beneficiary_identifier?: string | null;
 }
 
 interface BatchPaymentsPDFProps {
@@ -541,6 +543,12 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
                     <Text style={styles.fieldValueMono}>{payment.beneficiary_bank_account}</Text>
                   </View>
                 )}
+                {payment.beneficiary_bank_extra && (
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>SWIFT / IBAN · 银行代码</Text>
+                    <Text style={styles.fieldValue}>{payment.beneficiary_bank_extra}</Text>
+                  </View>
+                )}
                 {payment.beneficiary_phone && (
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Phone · 电话</Text>
@@ -579,6 +587,14 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Name · 姓名</Text>
                     <Text style={styles.fieldValue}>{payment.beneficiary_name}</Text>
+                  </View>
+                )}
+                {payment.beneficiary_identifier && (
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>
+                      {payment.method === 'wechat' ? 'WeChat ID · 微信号' : 'Alipay ID · 支付宝账号'}
+                    </Text>
+                    <Text style={styles.fieldValueMono}>{payment.beneficiary_identifier}</Text>
                   </View>
                 )}
                 {payment.beneficiary_phone && (
