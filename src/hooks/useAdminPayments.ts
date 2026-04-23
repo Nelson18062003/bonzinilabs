@@ -173,8 +173,11 @@ export function useCancelPayment() {
 
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (_data, paymentId) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', paymentId] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
       queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
       toast.success(i18n.t('hooks.cancelPayment.success', { ns: 'common', defaultValue: 'Paiement annulé' }));
@@ -185,7 +188,9 @@ export function useCancelPayment() {
   });
 }
 
-// Delete a payment proof (admin only)
+// Delete a payment proof (admin only). The RPC also returns the parent
+// payment_id so we can invalidate the right cache keys without forcing the
+// caller to remember and pass it.
 export function useDeletePaymentProof() {
   const queryClient = useQueryClient();
 
@@ -197,16 +202,23 @@ export function useDeletePaymentProof() {
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string };
+      const result = data as { success: boolean; error?: string; payment_id?: string };
       if (!result.success) {
         throw new Error(result.error || i18n.t('hooks.deleteProof.error', { ns: 'common', defaultValue: 'Erreur lors de la suppression' }));
       }
 
       return result;
     },
-    onSuccess: (_) => {
-      queryClient.invalidateQueries({ queryKey: ['payment-proofs'] });
-      queryClient.invalidateQueries({ queryKey: ['payment-timeline'] });
+    onSuccess: (result) => {
+      const paymentId = result.payment_id;
+      // The admin-side query is keyed `['admin-payment-proofs', paymentId]`
+      // (usePayments.ts:719). The previous `['payment-proofs']` invalidation
+      // missed it silently and produced the "have to reload" symptom.
+      queryClient.invalidateQueries({ queryKey: ['payment-proofs', paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-proofs', paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', paymentId] });
       toast.success(i18n.t('hooks.deleteProof.success', { ns: 'common', defaultValue: 'Preuve supprimée' }));
     },
     onError: (error: Error) => {

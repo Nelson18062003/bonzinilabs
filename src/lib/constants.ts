@@ -12,10 +12,12 @@
 export const CACHE_CONFIG = {
   /** How long data is considered fresh (in milliseconds) */
   STALE_TIME: {
-    /** User's own data (wallet, profile) - 10 seconds */
-    OWN_DATA: 10 * 1000,
-    /** List data (deposits, payments) - 30 seconds */
-    LISTS: 30 * 1000,
+    /** User's own data (wallet, profile) - 5 seconds */
+    OWN_DATA: 5 * 1000,
+    /** List data (deposits, payments) - 5 seconds.
+     *  Realtime + global mutationCache invalidation handle freshness;
+     *  this short window only governs the refetch-on-focus safety net. */
+    LISTS: 5 * 1000,
     /** Exchange rates - 1 minute */
     EXCHANGE_RATES: 60 * 1000,
   },

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AgentCashShell } from './AgentCashShell';
@@ -40,23 +40,22 @@ export function AgentCashRouteWrapper({
   requireAuth = true,
   showTabBar = true,
 }: AgentCashRouteWrapperProps) {
+  // Auth context (AdminAuthProvider) is mounted once at the app shell in App.tsx.
   return (
-    <AdminAuthProvider>
-      <LanguageProvider>
-        <ErrorBoundary onError={(error, info) => console.error('[AgentCash] Route error:', error.message, error.stack, info.componentStack)}>
-          {requireAuth ? (
-            <ProtectedAgentCashRoute>
-              <AgentCashShell showTabBar={showTabBar}>
-                {children}
-              </AgentCashShell>
-            </ProtectedAgentCashRoute>
-          ) : (
-            <AgentCashShell showTabBar={false}>
+    <LanguageProvider>
+      <ErrorBoundary onError={(error, info) => console.error('[AgentCash] Route error:', error.message, error.stack, info.componentStack)}>
+        {requireAuth ? (
+          <ProtectedAgentCashRoute>
+            <AgentCashShell showTabBar={showTabBar}>
               {children}
             </AgentCashShell>
-          )}
-        </ErrorBoundary>
-      </LanguageProvider>
-    </AdminAuthProvider>
+          </ProtectedAgentCashRoute>
+        ) : (
+          <AgentCashShell showTabBar={false}>
+            {children}
+          </AgentCashShell>
+        )}
+      </ErrorBoundary>
+    </LanguageProvider>
   );
 }
