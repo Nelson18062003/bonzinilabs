@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TrendBadge } from './TrendBadge';
 
@@ -25,27 +26,33 @@ export interface KpiCardProps {
   invertColor?: boolean;
   /** Small description shown in an info tooltip. Makes metric definition explicit. */
   description?: React.ReactNode;
-  /** Icon shown in the top-right corner of the card. */
+  /** Icon rendered in a bordered badge on the top-right of the card. */
   icon?: React.ReactNode;
   /** When true, shows a skeleton shimmer instead of the value. */
   loading?: boolean;
   className?: string;
   /**
-   * Accent color — changes the left border / icon color.
-   * Defaults to 'neutral'.
+   * Subtle colour hint on the icon badge and value. Defaults to 'neutral'
+   * — most KPIs should use neutral for a calm, professional look.
    */
   accent?: 'neutral' | 'violet' | 'amber' | 'orange' | 'emerald' | 'red';
 }
 
-const ACCENT_MAP: Record<NonNullable<KpiCardProps['accent']>, string> = {
-  neutral: 'border-l-border',
-  violet: 'border-l-[hsl(258_100%_60%)]',
-  amber: 'border-l-[hsl(36_100%_55%)]',
-  orange: 'border-l-[hsl(16_100%_55%)]',
-  emerald: 'border-l-emerald-500',
-  red: 'border-l-red-500',
+const ACCENT_STYLES: Record<NonNullable<KpiCardProps['accent']>, { iconBg: string; iconText: string }> = {
+  neutral: { iconBg: 'bg-muted', iconText: 'text-muted-foreground' },
+  violet: { iconBg: 'bg-[hsl(258_100%_60%/0.1)]', iconText: 'text-[hsl(258_100%_60%)]' },
+  amber: { iconBg: 'bg-[hsl(36_100%_55%/0.1)]', iconText: 'text-[hsl(36_100%_55%)]' },
+  orange: { iconBg: 'bg-[hsl(16_100%_55%/0.1)]', iconText: 'text-[hsl(16_100%_55%)]' },
+  emerald: { iconBg: 'bg-emerald-500/10', iconText: 'text-emerald-600' },
+  red: { iconBg: 'bg-red-500/10', iconText: 'text-red-600' },
 };
 
+/**
+ * KPI card inspired by the `ln-dev7/square-ui` dashboard pattern, built
+ * on the shadcn `<Card>` primitive. Deliberately restrained: one value,
+ * optional trend, optional icon in a discreet bordered badge. No colored
+ * accent borders, no heavy shadows — the data is the content.
+ */
 export function KpiCard({
   label,
   value,
@@ -58,50 +65,60 @@ export function KpiCard({
   className,
   accent = 'neutral',
 }: KpiCardProps) {
+  const accentStyle = ACCENT_STYLES[accent];
+
   return (
-    <div
-      className={cn(
-        'rounded-xl border-2 border-border/50 bg-card p-4 shadow-sm',
-        'border-l-[4px]',
-        ACCENT_MAP[accent],
-        className,
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-            {label}
-          </span>
-          {description ? (
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" aria-label="Définition" className="text-muted-foreground/50 hover:text-muted-foreground">
-                    <Info className="h-3 w-3" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[240px] text-xs" side="top">
-                  {description}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : null}
+    <Card className={cn('p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm text-muted-foreground truncate">{label}</p>
+            {description ? (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Définition"
+                      className="text-muted-foreground/50 hover:text-muted-foreground"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[240px] text-xs" side="top">
+                    {description}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null}
+          </div>
+
+          {loading ? (
+            <div className="h-8 w-28 animate-pulse rounded bg-muted" />
+          ) : (
+            <p className="text-2xl font-semibold text-foreground tabular-nums leading-tight">{value}</p>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
+            {secondary ? (
+              <p className="text-xs text-muted-foreground tabular-nums">{secondary}</p>
+            ) : null}
+          </div>
         </div>
-        {icon ? <div className="flex-shrink-0 text-muted-foreground">{icon}</div> : null}
-      </div>
 
-      <div className="mt-1.5 flex items-baseline gap-2">
-        {loading ? (
-          <div className="h-7 w-24 animate-pulse rounded bg-muted" />
-        ) : (
-          <span className="text-2xl font-bold text-foreground tabular-nums">{value}</span>
-        )}
-        {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
+        {icon ? (
+          <div
+            className={cn(
+              'flex size-10 flex-shrink-0 items-center justify-center rounded-lg border border-border',
+              accentStyle.iconBg,
+              accentStyle.iconText,
+            )}
+          >
+            {icon}
+          </div>
+        ) : null}
       </div>
-
-      {secondary ? (
-        <div className="mt-1 text-xs text-muted-foreground tabular-nums">{secondary}</div>
-      ) : null}
-    </div>
+    </Card>
   );
 }
