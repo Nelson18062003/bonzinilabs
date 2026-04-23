@@ -416,30 +416,27 @@ export function useTopClients(range: DateRange, limit = 10) {
     gcTime: ANALYTICS_GC,
     queryFn: async () => {
       const { fromISO, toISO } = toSupabaseBounds(range);
-      const { data, error } = await supabaseAdmin
+      // Two-step fetch: the `payments.user_id` FK targets `auth.users`, not
+      // `clients`, so PostgREST can't embed the client row directly. The
+      // rest of the codebase (usePaginatedPayments, useAdminDeposits, etc.)
+      // uses the same two-step pattern.
+      const { data: payments, error } = await supabaseAdmin
         .from('payments')
-        .select('user_id, amount_xaf, amount_rmb, clients!payments_user_id_fkey(first_name, last_name)')
+        .select('user_id, amount_xaf, amount_rmb')
         .eq('status', 'completed')
         .gte('created_at', fromISO)
         .lt('created_at', toISO);
       if (error) throw error;
 
-      type PaymentRow = {
-        user_id: string;
-        amount_xaf: number | null;
-        amount_rmb: number | null;
-        clients?: { first_name: string | null; last_name: string | null } | null;
-      };
-
       const agg = new Map<
         string,
         { firstName: string; lastName: string; opCount: number; totalXAF: number; totalRMB: number }
       >();
-      for (const row of (data ?? []) as unknown as PaymentRow[]) {
+      for (const row of payments ?? []) {
         if (!row.user_id) continue;
         const e = agg.get(row.user_id) ?? {
-          firstName: row.clients?.first_name ?? '',
-          lastName: row.clients?.last_name ?? '',
+          firstName: '',
+          lastName: '',
           opCount: 0,
           totalXAF: 0,
           totalRMB: 0,
@@ -449,6 +446,23 @@ export function useTopClients(range: DateRange, limit = 10) {
         e.totalRMB += Number(row.amount_rmb ?? 0);
         agg.set(row.user_id, e);
       }
+
+      // Resolve names in a single batch query over the aggregated user IDs.
+      const userIds = [...agg.keys()];
+      if (userIds.length > 0) {
+        const { data: clients } = await supabaseAdmin
+          .from('clients')
+          .select('user_id, first_name, last_name')
+          .in('user_id', userIds);
+        for (const c of clients ?? []) {
+          const e = agg.get(c.user_id);
+          if (e) {
+            e.firstName = c.first_name ?? '';
+            e.lastName = c.last_name ?? '';
+          }
+        }
+      }
+
       return [...agg.entries()]
         .map(([userId, v]) => ({ userId, ...v }))
         .sort((a, b) => b.totalXAF - a.totalXAF)
