@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
+import { PhoneField, TextField } from '@/components/form';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { User, Users, Phone } from 'lucide-react';
+import { User, Users } from 'lucide-react';
 import { useMyProfile } from '@/hooks/useProfile';
 
 interface CashBeneficiaryFormProps {
@@ -105,42 +105,39 @@ export function CashBeneficiaryForm({ onChange }: CashBeneficiaryFormProps) {
       {beneficiaryType === 'other' && (
         <div className="space-y-4 animate-fade-in p-4 rounded-xl bg-muted/50">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="other-first-name">Prénom *</Label>
-              <Input
-                id="other-first-name"
-                value={otherFirstName}
-                onChange={(e) => setOtherFirstName(e.target.value)}
-                placeholder="Prénom"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="other-last-name">Nom *</Label>
-              <Input
-                id="other-last-name"
-                value={otherLastName}
-                onChange={(e) => setOtherLastName(e.target.value)}
-                placeholder="Nom"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="other-phone" className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              Téléphone *
-            </Label>
-            <Input
-              id="other-phone"
-              type="tel"
-              value={otherPhone}
-              onChange={(e) => setOtherPhone(e.target.value)}
-              placeholder="+86 138 0000 0000"
+            <TextField
+              id="other-first-name"
+              label="Prénom *"
+              variant="name"
+              autoComplete="given-name"
+              enterKeyHint="next"
+              value={otherFirstName}
+              onChange={(e) => setOtherFirstName(e.target.value)}
+              placeholder="Prénom"
+              required
+            />
+            <TextField
+              id="other-last-name"
+              label="Nom *"
+              variant="name"
+              autoComplete="family-name"
+              enterKeyHint="next"
+              value={otherLastName}
+              onChange={(e) => setOtherLastName(e.target.value)}
+              placeholder="Nom"
               required
             />
           </div>
+
+          <PhoneField
+            id="other-phone"
+            label="Téléphone *"
+            dialCode="+86"
+            value={otherPhone}
+            onChange={(e) => setOtherPhone(e.target.value)}
+            placeholder="138 0000 0000"
+            required
+          />
         </div>
       )}
     </div>
