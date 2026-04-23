@@ -544,3 +544,519 @@ export function useDepositProcessingTime(range: DateRange) {
     },
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// 10. Operational alerts — stale deposits/payments, clients without activity
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface DashboardAlert {
+  id: string;
+  severity: 'warning' | 'info' | 'critical';
+  title: string;
+  description: string;
+  count: number;
+  actionHref?: string;
+}
+
+export function useDashboardAlerts() {
+  return useQuery<DashboardAlert[]>({
+    queryKey: ['analytics-v2-alerts'],
+    staleTime: 60 * 1000,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
+      const fortyEightHoursAgo = new Date(Date.now() - 48 * 3600_000).toISOString();
+
+      const [stalePendingProof, stalePayments, criticalStaleReview] = await Promise.all([
+        supabaseAdmin
+          .from('deposits')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'proof_submitted')
+          .lt('updated_at', twentyFourHoursAgo),
+        supabaseAdmin
+          .from('payments')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['ready_for_payment', 'processing'])
+          .lt('updated_at', twentyFourHoursAgo),
+        supabaseAdmin
+          .from('deposits')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'admin_review')
+          .lt('updated_at', fortyEightHoursAgo),
+      ]);
+
+      const alerts: DashboardAlert[] = [];
+
+      if ((stalePendingProof.count ?? 0) > 0) {
+        alerts.push({
+          id: 'stale-deposit-proofs',
+          severity: 'warning',
+          title: 'Preuves de dépôt anciennes',
+          description: 'Dépôts avec preuve envoyée depuis plus de 24h sans traitement.',
+          count: stalePendingProof.count ?? 0,
+          actionHref: '/m/deposits',
+        });
+      }
+
+      if ((criticalStaleReview.count ?? 0) > 0) {
+        alerts.push({
+          id: 'stale-review',
+          severity: 'critical',
+          title: 'Dépôts en revue depuis >48h',
+          description: 'Action admin requise — bloquent potentiellement les paiements clients.',
+          count: criticalStaleReview.count ?? 0,
+          actionHref: '/m/deposits',
+        });
+      }
+
+      if ((stalePayments.count ?? 0) > 0) {
+        alerts.push({
+          id: 'stale-payments',
+          severity: 'warning',
+          title: 'Paiements en attente > 24h',
+          description: "Paiements prêts ou en cours d'exécution depuis plus de 24h.",
+          count: stalePayments.count ?? 0,
+          actionHref: '/m/payments',
+        });
+      }
+
+      return alerts;
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 11. Rate history — time series of daily_rates per method
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface RateHistoryPoint {
+  bucket: string; // ISO
+  label: string;
+  alipay: number | null;
+  wechat: number | null;
+  virement: number | null;
+  cash: number | null;
+}
+
+export function useRateHistory(range: DateRange) {
+  return useQuery<RateHistoryPoint[]>({
+    queryKey: ['analytics-v2-rate-history', range.from.toISOString(), range.to.toISOString()],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      const { data, error } = await supabaseAdmin
+        .from('daily_rates')
+        .select('effective_at, rate_alipay, rate_wechat, rate_virement, rate_cash')
+        .gte('effective_at', fromISO)
+        .lt('effective_at', toISO)
+        .order('effective_at', { ascending: true });
+      if (error) throw error;
+
+      return (data ?? []).map((r) => ({
+        bucket: r.effective_at,
+        label: labelFor(new Date(r.effective_at), range.granularity === 'hour' ? 'day' : range.granularity),
+        alipay: r.rate_alipay != null ? Number(r.rate_alipay) : null,
+        wechat: r.rate_wechat != null ? Number(r.rate_wechat) : null,
+        virement: r.rate_virement != null ? Number(r.rate_virement) : null,
+        cash: r.rate_cash != null ? Number(r.rate_cash) : null,
+      }));
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 12. Admin productivity — action counts per admin from audit logs
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface AdminProductivityRow {
+  adminId: string;
+  name: string;
+  depositsValidated: number;
+  depositsRejected: number;
+  paymentsProcessed: number;
+  totalActions: number;
+}
+
+export function useAdminProductivity(range: DateRange) {
+  return useQuery<AdminProductivityRow[]>({
+    queryKey: ['analytics-v2-admin-productivity', range.from.toISOString(), range.to.toISOString()],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      const { data: logs, error } = await supabaseAdmin
+        .from('admin_audit_logs')
+        .select('admin_user_id, action_type')
+        .gte('created_at', fromISO)
+        .lt('created_at', toISO);
+      if (error) throw error;
+
+      const agg = new Map<string, AdminProductivityRow>();
+      for (const log of logs ?? []) {
+        if (!log.admin_user_id) continue;
+        const entry = agg.get(log.admin_user_id) ?? {
+          adminId: log.admin_user_id,
+          name: '',
+          depositsValidated: 0,
+          depositsRejected: 0,
+          paymentsProcessed: 0,
+          totalActions: 0,
+        };
+        const action = log.action_type ?? '';
+        if (action === 'validate_deposit') entry.depositsValidated += 1;
+        else if (action === 'reject_deposit') entry.depositsRejected += 1;
+        else if (action === 'process_payment' || action === 'complete_payment') entry.paymentsProcessed += 1;
+        entry.totalActions += 1;
+        agg.set(log.admin_user_id, entry);
+      }
+
+      if (agg.size === 0) return [];
+
+      // Resolve admin names in one round-trip.
+      const ids = [...agg.keys()];
+      const { data: roles } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', ids);
+      for (const role of roles ?? []) {
+        const row = agg.get(role.user_id);
+        if (row) {
+          row.name = `${role.first_name ?? ''} ${role.last_name ?? ''}`.trim() || 'Admin';
+        }
+      }
+
+      return [...agg.values()].sort((a, b) => b.totalActions - a.totalActions);
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 13. Volume report — time-series with peak, total, avg, and trend
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface VolumeReportPoint {
+  bucket: string;
+  label: string;
+  amountXAF: number;
+  opCount: number;
+}
+
+export interface VolumeReport {
+  series: VolumeReportPoint[];
+  totalXAF: number;
+  opCount: number;
+  avgXAF: number;
+  peak: VolumeReportPoint | null;
+  previousTotalXAF: number;
+  trendPct: number | null; // (current - previous) / previous
+}
+
+async function fetchVolumeReport(
+  range: DateRange,
+  table: 'deposits' | 'payments',
+  status: string,
+): Promise<VolumeReport> {
+  const { fromISO, toISO } = toSupabaseBounds(range);
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .select('amount_xaf, created_at')
+    .eq('status', status)
+    .gte('created_at', fromISO)
+    .lt('created_at', toISO);
+  if (error) throw error;
+
+  const buckets = new Map<string, { amountXAF: number; opCount: number }>();
+  for (const b of bucketStarts(range)) {
+    buckets.set(b.toISOString(), { amountXAF: 0, opCount: 0 });
+  }
+  for (const row of data ?? []) {
+    const key = bucketKeyFor(new Date(row.created_at), range.granularity);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+    bucket.amountXAF += Number(row.amount_xaf ?? 0);
+    bucket.opCount += 1;
+  }
+
+  const series: VolumeReportPoint[] = [...buckets.entries()].map(([iso, v]) => ({
+    bucket: iso,
+    label: labelFor(new Date(iso), range.granularity),
+    amountXAF: v.amountXAF,
+    opCount: v.opCount,
+  }));
+
+  const totalXAF = series.reduce((s, p) => s + p.amountXAF, 0);
+  const opCount = series.reduce((s, p) => s + p.opCount, 0);
+  const avgXAF = opCount === 0 ? 0 : Math.round(totalXAF / opCount);
+  const peak = series.length === 0
+    ? null
+    : series.reduce((best, p) => (p.amountXAF > (best?.amountXAF ?? 0) ? p : best), series[0]);
+
+  // Previous period total for trend computation
+  const prev = previousRange(range);
+  const prevBounds = toSupabaseBounds(prev);
+  const prevRes = await supabaseAdmin
+    .from(table)
+    .select('amount_xaf')
+    .eq('status', status)
+    .gte('created_at', prevBounds.fromISO)
+    .lt('created_at', prevBounds.toISO);
+  const previousTotalXAF = (prevRes.data ?? []).reduce((s, r) => s + Number(r.amount_xaf ?? 0), 0);
+  const trendPct = previousTotalXAF === 0 ? null : (totalXAF - previousTotalXAF) / Math.abs(previousTotalXAF);
+
+  return { series, totalXAF, opCount, avgXAF, peak, previousTotalXAF, trendPct };
+}
+
+export function useDepositVolumeReport(range: DateRange) {
+  return useQuery<VolumeReport>({
+    queryKey: ['analytics-v2-deposit-volume-report', range.from.toISOString(), range.to.toISOString(), range.granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: () => fetchVolumeReport(range, 'deposits', 'validated'),
+  });
+}
+
+export function usePaymentVolumeReport(range: DateRange) {
+  return useQuery<VolumeReport>({
+    queryKey: ['analytics-v2-payment-volume-report', range.from.toISOString(), range.to.toISOString(), range.granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: () => fetchVolumeReport(range, 'payments', 'completed'),
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 14. Client growth — cumulative new clients by month
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ClientGrowthPoint {
+  bucket: string;
+  label: string;
+  newClients: number;
+  cumulative: number;
+}
+
+export function useClientGrowth(range: DateRange) {
+  return useQuery<ClientGrowthPoint[]>({
+    queryKey: ['analytics-v2-client-growth', range.from.toISOString(), range.to.toISOString(), range.granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      // Cumulative requires counting everyone BEFORE the window too.
+      const [before, within] = await Promise.all([
+        supabaseAdmin
+          .from('clients')
+          .select('id', { count: 'exact', head: true })
+          .lt('created_at', fromISO),
+        supabaseAdmin
+          .from('clients')
+          .select('created_at')
+          .gte('created_at', fromISO)
+          .lt('created_at', toISO)
+          .order('created_at', { ascending: true }),
+      ]);
+
+      if (within.error) throw within.error;
+
+      const buckets = new Map<string, number>();
+      for (const b of bucketStarts(range)) {
+        buckets.set(b.toISOString(), 0);
+      }
+      for (const row of within.data ?? []) {
+        const key = bucketKeyFor(new Date(row.created_at), range.granularity);
+        if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+      }
+
+      let cumulative = before.count ?? 0;
+      return [...buckets.entries()].map(([iso, newClients]) => {
+        cumulative += newClients;
+        return {
+          bucket: iso,
+          label: labelFor(new Date(iso), range.granularity),
+          newClients,
+          cumulative,
+        };
+      });
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 15. Registration source — admin-created vs self-registered
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface RegistrationSourceStats {
+  adminCreated: number;
+  selfRegistered: number;
+  totalNew: number;
+  adminCreatedPct: number;
+}
+
+export function useRegistrationSource(range: DateRange) {
+  return useQuery<RegistrationSourceStats>({
+    queryKey: ['analytics-v2-registration-source', range.from.toISOString(), range.to.toISOString()],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      const [clientsRes, adminLogsRes] = await Promise.all([
+        supabaseAdmin
+          .from('clients')
+          .select('user_id, created_at')
+          .gte('created_at', fromISO)
+          .lt('created_at', toISO),
+        supabaseAdmin
+          .from('admin_audit_logs')
+          .select('target_id, action_type, created_at')
+          .eq('action_type', 'create_client')
+          .gte('created_at', fromISO)
+          .lt('created_at', toISO),
+      ]);
+
+      if (clientsRes.error) throw clientsRes.error;
+      if (adminLogsRes.error) throw adminLogsRes.error;
+
+      const adminCreatedIds = new Set(
+        (adminLogsRes.data ?? []).map((l) => l.target_id).filter((id): id is string => !!id),
+      );
+      const totalNew = (clientsRes.data ?? []).length;
+      const adminCreated = (clientsRes.data ?? []).filter((c) => adminCreatedIds.has(c.user_id)).length;
+      const selfRegistered = totalNew - adminCreated;
+
+      return {
+        adminCreated,
+        selfRegistered,
+        totalNew,
+        adminCreatedPct: totalNew === 0 ? 0 : adminCreated / totalNew,
+      };
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 16. UTM source — top channels self-registered clients came from
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface UtmSourceRow {
+  source: string;
+  medium: string;
+  campaign: string;
+  count: number;
+}
+
+export function useUtmSources(range: DateRange, limit = 10) {
+  return useQuery<UtmSourceRow[]>({
+    queryKey: ['analytics-v2-utm-sources', range.from.toISOString(), range.to.toISOString(), limit],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      const { data, error } = await supabaseAdmin
+        .from('clients')
+        .select('utm_source, utm_medium, utm_campaign')
+        .gte('created_at', fromISO)
+        .lt('created_at', toISO)
+        .not('utm_source', 'is', null);
+      if (error) throw error;
+
+      const map = new Map<string, UtmSourceRow>();
+      for (const row of data ?? []) {
+        const source = row.utm_source ?? '(direct)';
+        const medium = row.utm_medium ?? '(none)';
+        const campaign = row.utm_campaign ?? '(none)';
+        const key = `${source}|${medium}|${campaign}`;
+        const entry = map.get(key) ?? { source, medium, campaign, count: 0 };
+        entry.count += 1;
+        map.set(key, entry);
+      }
+      return [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit);
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 17. Wallet exposure — total XAF sitting in client wallets (unpaid-out)
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface WalletExposure {
+  totalXAF: number;
+  clientsWithBalance: number;
+  avgBalancePerClient: number;
+  top10ShareXAF: number; // concentration risk
+}
+
+export function useWalletExposure() {
+  return useQuery<WalletExposure>({
+    queryKey: ['analytics-v2-wallet-exposure'],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('wallets')
+        .select('balance_xaf')
+        .gt('balance_xaf', 0);
+      if (error) throw error;
+
+      const balances = (data ?? []).map((r) => Number(r.balance_xaf ?? 0)).sort((a, b) => b - a);
+      const totalXAF = balances.reduce((s, v) => s + v, 0);
+      const clientsWithBalance = balances.length;
+      const top10ShareXAF = balances.slice(0, 10).reduce((s, v) => s + v, 0);
+
+      return {
+        totalXAF,
+        clientsWithBalance,
+        avgBalancePerClient: clientsWithBalance === 0 ? 0 : Math.round(totalXAF / clientsWithBalance),
+        top10ShareXAF,
+      };
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 18. Deposit status timeline — stacked status counts by bucket
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface DepositStatusTimelinePoint {
+  bucket: string;
+  label: string;
+  validated: number;
+  rejected: number;
+  pending: number;
+}
+
+export function useDepositStatusTimeline(range: DateRange) {
+  return useQuery<DepositStatusTimelinePoint[]>({
+    queryKey: ['analytics-v2-deposit-status-timeline', range.from.toISOString(), range.to.toISOString(), range.granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      const { data, error } = await supabaseAdmin
+        .from('deposits')
+        .select('status, created_at')
+        .gte('created_at', fromISO)
+        .lt('created_at', toISO);
+      if (error) throw error;
+
+      const buckets = new Map<string, { validated: number; rejected: number; pending: number }>();
+      for (const b of bucketStarts(range)) {
+        buckets.set(b.toISOString(), { validated: 0, rejected: 0, pending: 0 });
+      }
+      for (const row of data ?? []) {
+        const key = bucketKeyFor(new Date(row.created_at), range.granularity);
+        const bucket = buckets.get(key);
+        if (!bucket) continue;
+        if (row.status === 'validated') bucket.validated += 1;
+        else if (row.status === 'rejected') bucket.rejected += 1;
+        else bucket.pending += 1;
+      }
+      return [...buckets.entries()].map(([iso, v]) => ({
+        bucket: iso,
+        label: labelFor(new Date(iso), range.granularity),
+        ...v,
+      }));
+    },
+  });
+}
+

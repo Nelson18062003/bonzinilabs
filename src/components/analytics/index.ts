@@ -23,6 +23,9 @@ export type { BreakdownBarProps, BreakdownItem } from './BreakdownBar';
 
 export { DateRangePicker } from './DateRangePicker';
 
+export { ExportButton } from './ExportButton';
+export type { ExportButtonProps } from './ExportButton';
+
 export {
   formatCurrency,
   formatInteger,
