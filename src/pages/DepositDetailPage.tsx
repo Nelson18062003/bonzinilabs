@@ -7,6 +7,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import { TextArea } from '@/components/form';
 import { ProofUpload } from '@/components/deposit/ProofUpload';
 import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
 import { CountdownTimer } from '@/components/deposit/CountdownTimer';
@@ -774,12 +775,13 @@ const DepositDetailPage = () => {
               );
             })}
             {deleteReason === 'Autre' && (
-              <textarea
-                className="w-full mt-2 p-2 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+              <TextArea
+                wrapperClassName="mt-2"
                 rows={2}
                 placeholder={t('detail.specifyReason')}
                 value={customDeleteReason}
                 onChange={(e) => setCustomDeleteReason(e.target.value)}
+                controlClassName="min-h-[56px] resize-none"
               />
             )}
           </div>

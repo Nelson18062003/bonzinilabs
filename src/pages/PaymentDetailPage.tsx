@@ -55,9 +55,8 @@ import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisp
 import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { CopyableField } from '@/mobile/components/payments/CopyableField';
-import { Input } from '@/components/ui/input';
+import { EmailField, PhoneField, TextArea, TextField } from '@/components/form';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -475,51 +474,50 @@ export default function PaymentDetailPage() {
             </div>
           </div>
 
-          {/* Phone */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              {t('detail.form.phoneNumber')}
-            </Label>
-            <Input
-              value={beneficiaryForm.beneficiary_phone}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_phone: e.target.value }))
-              }
-              placeholder="Ex: +86 138 0000 0000"
-            />
-          </div>
+          <PhoneField
+            label={
+              <span className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                {t('detail.form.phoneNumber')}
+              </span>
+            }
+            dialCode="+86"
+            value={beneficiaryForm.beneficiary_phone}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_phone: e.target.value }))
+            }
+            placeholder="138 0000 0000"
+          />
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              {t('detail.form.emailOptional')}
-            </Label>
-            <Input
-              type="email"
-              value={beneficiaryForm.beneficiary_email}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_email: e.target.value }))
-              }
-              placeholder="email@exemple.com"
-            />
-          </div>
+          <EmailField
+            label={
+              <span className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                {t('detail.form.emailOptional')}
+              </span>
+            }
+            showIcon={false}
+            value={beneficiaryForm.beneficiary_email}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_email: e.target.value }))
+            }
+          />
 
-          {/* Name (optional) */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {t('detail.form.beneficiaryNameOptional')}
-            </Label>
-            <Input
-              value={beneficiaryForm.beneficiary_name}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
-              }
-              placeholder={t('detail.form.fullName')}
-            />
-          </div>
+          <TextField
+            label={
+              <span className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {t('detail.form.beneficiaryNameOptional')}
+              </span>
+            }
+            variant="name"
+            autoComplete="name"
+            value={beneficiaryForm.beneficiary_name}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
+            }
+            placeholder={t('detail.form.fullName')}
+          />
         </div>
       );
     }
@@ -533,65 +531,70 @@ export default function PaymentDetailPage() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {t('detail.form.beneficiaryNameRequired')}
-            </Label>
-            <Input
-              value={beneficiaryForm.beneficiary_name}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
-              }
-              placeholder={t('detail.form.accountHolderName')}
-              required
-            />
-          </div>
+          <TextField
+            label={
+              <span className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {t('detail.form.beneficiaryNameRequired')}
+              </span>
+            }
+            variant="name"
+            autoComplete="name"
+            value={beneficiaryForm.beneficiary_name}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
+            }
+            placeholder={t('detail.form.accountHolderName')}
+            required
+          />
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              {t('detail.form.bankNameRequired')}
-            </Label>
-            <Input
-              value={beneficiaryForm.beneficiary_bank_name}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_name: e.target.value }))
-              }
-              placeholder="Ex: Bank of China, ICBC..."
-              required
-            />
-          </div>
+          <TextField
+            label={
+              <span className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                {t('detail.form.bankNameRequired')}
+              </span>
+            }
+            autoComplete="organization"
+            value={beneficiaryForm.beneficiary_bank_name}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_name: e.target.value }))
+            }
+            placeholder="Ex: Bank of China, ICBC..."
+            required
+          />
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              {t('detail.form.accountNumberRequired')}
-            </Label>
-            <Input
-              value={beneficiaryForm.beneficiary_bank_account}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_account: e.target.value }))
-              }
-              placeholder={t('detail.form.bankAccountNumber')}
-              required
-            />
-          </div>
+          <TextField
+            label={
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t('detail.form.accountNumberRequired')}
+              </span>
+            }
+            variant="numeric"
+            autoComplete="off"
+            value={beneficiaryForm.beneficiary_bank_account}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_account: e.target.value }))
+            }
+            placeholder={t('detail.form.bankAccountNumber')}
+            required
+          />
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              {t('detail.form.commentOptional')}
-            </Label>
-            <Textarea
-              value={beneficiaryForm.beneficiary_notes}
-              onChange={(e) =>
-                setBeneficiaryForm((prev) => ({ ...prev, beneficiary_notes: e.target.value }))
-              }
-              placeholder={t('detail.form.additionalInstructions')}
-              rows={3}
-            />
-          </div>
+          <TextArea
+            label={
+              <span className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                {t('detail.form.commentOptional')}
+              </span>
+            }
+            value={beneficiaryForm.beneficiary_notes}
+            onChange={(e) =>
+              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_notes: e.target.value }))
+            }
+            placeholder={t('detail.form.additionalInstructions')}
+            rows={3}
+          />
         </div>
       );
     }
