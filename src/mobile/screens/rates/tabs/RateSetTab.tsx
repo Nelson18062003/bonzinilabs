@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { DateField, TextField } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
@@ -114,11 +114,13 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
                 {direction === 'xaf_cny' ? 'CNY / 1M XAF' : 'XAF / 1 CNY'}
               </div>
             </div>
-            <Input
-              type="text"
+            <TextField
+              variant="decimal"
               value={rates[pm.key]}
               onChange={(e) => setRates({ ...rates, [pm.key]: e.target.value })}
-              className="w-[100px] text-right text-base font-bold"
+              wrapperClassName="w-[108px]"
+              controlClassName="text-right font-bold"
+              aria-label={`Taux ${pm.label}`}
             />
           </div>
         ))}
@@ -202,17 +204,13 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
         {dateOption === 'custom' && (
           <div className="bg-white rounded-xl p-3.5 border border-border mt-2.5 space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-                Date
-              </label>
-              <Input
-                type="date"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-                className="font-semibold"
-              />
-            </div>
+            <DateField
+              label="Date"
+              labelClassName="text-xs font-semibold text-muted-foreground"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              controlClassName="font-semibold"
+            />
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
                 Heure
