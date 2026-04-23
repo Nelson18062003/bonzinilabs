@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { TextField } from '@/components/form';
 import { ScanLine, Search, AlertCircle, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -168,11 +168,16 @@ export function AgentCashScanner() {
             {t('enter_payment_id')}
           </p>
           <div className="flex gap-2">
-            <Input
+            <TextField
               value={manualId}
               onChange={(e) => setManualId(e.target.value)}
               placeholder="Payment ID / QR content"
-              className="flex-1 font-mono text-sm"
+              wrapperClassName="flex-1"
+              controlClassName="font-mono"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              enterKeyHint="search"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleManualSearch();
               }}

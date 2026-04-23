@@ -161,14 +161,44 @@
     @apply bg-background text-foreground;
   }
 
-  /* Samsung/iOS: prevent auto-zoom on input focus (requires font-size >= 16px) */
+  /* Samsung/iOS: prevent auto-zoom on input focus (requires font-size >= 16px).
+     Defensive fallback — the form primitives at src/components/form/* already
+     enforce `text-base md:text-sm` which is ≥16px on mobile. This rule
+     catches any raw <input> that escaped the design system. */
   input, select, textarea {
     font-size: 16px;
+  }
+  @media (max-width: 767px) {
+    /* !important only on mobile so desktop keeps Tailwind's finer text-sm. */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
   }
 
   /* Remove 300ms tap delay on mobile browsers */
   button, [role="button"], a {
     touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  /* Keyboard-safe scroll containers */
+  .scroll-keyboard-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior: contain;
+  }
+  /* Prevent body bounce / rubber-band scrolling on iOS during form flows */
+  .no-bounce {
+    overscroll-behavior-y: none;
+  }
+  /* Hide native number-input spinners (browsers inconsistent) */
+  .no-spin::-webkit-outer-spin-button,
+  .no-spin::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .no-spin {
+    -moz-appearance: textfield;
   }
 }
 

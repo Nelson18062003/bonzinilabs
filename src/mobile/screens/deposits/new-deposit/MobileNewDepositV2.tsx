@@ -1367,7 +1367,8 @@ export function MobileNewDepositV2() {
                     border: `1px solid ${t.border}`,
                     background: t.bg,
                     resize: 'none',
-                    fontSize: 12,
+                    // iOS Safari auto-zooms any control with font-size < 16px on focus.
+                    fontSize: 16,
                     fontFamily: "'DM Sans', sans-serif",
                     color: t.text,
                     outline: 'none',

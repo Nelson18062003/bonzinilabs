@@ -35,7 +35,7 @@ import {
   DrawerFooter,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { TextField } from '@/components/form';
 import { Label } from '@/components/ui/label';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -331,24 +331,24 @@ export function MobileAdminDetail() {
             <DrawerTitle>{t('editAdmin', { defaultValue: "Modifier l'admin" })}</DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
-            <div>
-              <Label htmlFor="firstName">{t('firstName', { defaultValue: 'Prénom' })}</Label>
-              <Input
-                id="firstName"
-                value={editFirstName}
-                onChange={(e) => setEditFirstName(e.target.value)}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName">{t('lastName', { defaultValue: 'Nom' })}</Label>
-              <Input
-                id="lastName"
-                value={editLastName}
-                onChange={(e) => setEditLastName(e.target.value)}
-                className="mt-1.5"
-              />
-            </div>
+            <TextField
+              id="firstName"
+              label={t('firstName', { defaultValue: 'Prénom' })}
+              variant="name"
+              autoComplete="given-name"
+              enterKeyHint="next"
+              value={editFirstName}
+              onChange={(e) => setEditFirstName(e.target.value)}
+            />
+            <TextField
+              id="lastName"
+              label={t('lastName', { defaultValue: 'Nom' })}
+              variant="name"
+              autoComplete="family-name"
+              enterKeyHint="done"
+              value={editLastName}
+              onChange={(e) => setEditLastName(e.target.value)}
+            />
             {!isSelf && (
               <div>
                 <Label>{t('role', { defaultValue: 'Rôle' })}</Label>

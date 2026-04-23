@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { TextField } from '@/components/form';
 import { PAYMENT_METHODS, COUNTRIES, MIN_AMOUNT_XAF } from '@/types/rates';
 import type { PaymentMethodKey, RateAdjustment, DailyRate, InputCurrency } from '@/types/rates';
 import { calculateFinalRate, getBaseRate, convertCNYtoXAF } from '@/lib/rateCalculation';
@@ -176,15 +176,13 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
 
         {/* Amount */}
         <div className="mb-4">
-          <label className="text-[13px] font-semibold text-muted-foreground block mb-1.5">
-            Montant ({inputCurrency === 'xaf' ? 'XAF' : 'CNY'})
-          </label>
-          <Input
-            type="text"
-            inputMode="numeric"
+          <TextField
+            label={`Montant (${inputCurrency === 'xaf' ? 'XAF' : 'CNY'})`}
+            labelClassName="text-[13px] font-semibold text-muted-foreground"
+            variant="numeric"
             value={numAmount > 0 ? formatNumber(numAmount) : ''}
             onChange={handleAmountChange}
-            className="text-lg font-bold"
+            controlClassName="font-bold"
             placeholder={inputCurrency === 'xaf' ? '500 000' : '5 000'}
           />
           <div className="flex gap-1.5 mt-2">

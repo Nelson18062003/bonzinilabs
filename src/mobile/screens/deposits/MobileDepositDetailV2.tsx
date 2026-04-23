@@ -1042,7 +1042,7 @@ export function MobileDepositDetailV2() {
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
                   enterKeyHint="done"
-                  className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
+                  className="w-full mt-1 p-3 rounded-xl border bg-muted text-base md:text-sm resize-none"
                   rows={2}
                   placeholder="Commentaire visible uniquement par les admins..."
                 />
@@ -1123,7 +1123,7 @@ export function MobileDepositDetailV2() {
                 <textarea
                   value={clientMessage}
                   onChange={(e) => setClientMessage(e.target.value)}
-                  className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
+                  className="w-full mt-1 p-3 rounded-xl border bg-muted text-base md:text-sm resize-none"
                   rows={2}
                   placeholder="Expliquez au client pourquoi son dépôt est refusé..."
                 />
@@ -1135,7 +1135,7 @@ export function MobileDepositDetailV2() {
                   value={adminNote}
                   onChange={(e) => setAdminNote(e.target.value)}
                   enterKeyHint="done"
-                  className="w-full mt-1 p-3 rounded-xl border bg-muted text-sm resize-none"
+                  className="w-full mt-1 p-3 rounded-xl border bg-muted text-base md:text-sm resize-none"
                   rows={2}
                   placeholder="Note visible uniquement par les admins..."
                 />
@@ -1246,7 +1246,7 @@ export function MobileDepositDetailV2() {
               <textarea
                 value={customDeleteReason}
                 onChange={(e) => setCustomDeleteReason(e.target.value)}
-                className="w-full p-3 rounded-xl border bg-muted text-sm resize-none"
+                className="w-full p-3 rounded-xl border bg-muted text-base md:text-sm resize-none"
                 rows={2}
                 placeholder="Précisez le motif..."
               />

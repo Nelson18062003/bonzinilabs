@@ -17,8 +17,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { EmailField, TextField } from '@/components/form';
 
 type Step = 'personal' | 'role' | 'confirm' | 'success';
 
@@ -147,39 +146,38 @@ export function MobileCreateAdmin() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="firstName">{t('firstName', { defaultValue: 'Prénom' })} *</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Jean"
-                  className="mt-1.5"
-                />
-              </div>
+              <TextField
+                id="firstName"
+                label={`${t('firstName', { defaultValue: 'Prénom' })} *`}
+                variant="name"
+                autoComplete="given-name"
+                enterKeyHint="next"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Jean"
+              />
 
-              <div>
-                <Label htmlFor="lastName">{t('lastName', { defaultValue: 'Nom' })} *</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Dupont"
-                  className="mt-1.5"
-                />
-              </div>
+              <TextField
+                id="lastName"
+                label={`${t('lastName', { defaultValue: 'Nom' })} *`}
+                variant="name"
+                autoComplete="family-name"
+                enterKeyHint="next"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Dupont"
+              />
 
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jean.dupont@bonzini.com"
-                  className="mt-1.5"
-                />
-              </div>
+              <EmailField
+                id="email"
+                label="Email *"
+                autoComplete="email"
+                enterKeyHint="done"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jean.dupont@bonzini.com"
+                showIcon={false}
+              />
             </div>
           </div>
         )}

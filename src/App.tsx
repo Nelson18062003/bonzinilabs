@@ -20,6 +20,7 @@ import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { MobileRouteWrapper } from "./mobile/components/MobileRouteWrapper";
 import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealtimeInvalidation";
+import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
 
 // ── Lazy-loaded Client Pages ───────────────────────────────────
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -73,6 +74,11 @@ const AgentCashPaymentDetail = lazy(() => import("./mobile/screens/agent-cash").
 const AgentCashConfirm = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashConfirm })));
 const AgentCashSuccess = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashSuccess })));
 
+// ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
+const FormShowcase = lazy(() =>
+  import("./components/form/__showcase__/FormShowcase").then(m => ({ default: m.FormShowcase })),
+);
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -100,6 +106,7 @@ const App = () => (
             <ClientRealtimeListener />
             <AdminAuthProvider>
             <AdminRealtimeListener />
+            <KeyboardFocusManager />
               <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Auth Routes */}
@@ -155,6 +162,11 @@ const App = () => (
                 <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/success" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashSuccess /></AgentCashRouteWrapper>} />
+
+                {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
+                {import.meta.env.DEV && (
+                  <Route path="/dev/form-showcase" element={<FormShowcase />} />
+                )}
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -11,9 +11,7 @@ import {
   DrawerFooter,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { AmountField, TextArea } from '@/components/form';
 import {
   Loader2,
   AlertTriangle,
@@ -40,15 +38,15 @@ export function AdjustmentDrawer({
   onSuccess,
 }: AdjustmentDrawerProps) {
   const { t } = useTranslation('common');
-  const [amount, setAmount] = useState('');
+  const [amountNumber, setAmountNumber] = useState<number | null>(null);
   const [reason, setReason] = useState('');
 
   const createAdjustmentMutation = useCreateAdjustment();
 
-  const amountNumber = parseInt(amount.replace(/\D/g, ''), 10) || 0;
+  const amount = amountNumber ?? 0;
   const isDebit = type === 'DEBIT';
-  const isInsufficientBalance = isDebit && amountNumber > currentBalance;
-  const isValid = amountNumber > 0 && reason.trim().length > 0 && !isInsufficientBalance;
+  const isInsufficientBalance = isDebit && amount > currentBalance;
+  const isValid = amount > 0 && reason.trim().length > 0 && !isInsufficientBalance;
 
   const handleSubmit = async () => {
     if (!isValid) return;
@@ -57,28 +55,22 @@ export function AdjustmentDrawer({
       await createAdjustmentMutation.mutateAsync({
         userId,
         adjustmentType: type,
-        amountXAF: amountNumber,
+        amountXAF: amount,
         reason: reason.trim(),
       });
 
       // Reset form
-      setAmount('');
+      setAmountNumber(null);
       setReason('');
       onSuccess?.();
-    } catch (error) {
+    } catch {
       // Error handled by mutation
     }
   };
 
-  const handleAmountChange = (value: string) => {
-    // Only allow numbers
-    const numericValue = value.replace(/\D/g, '');
-    setAmount(numericValue);
-  };
-
   const handleClose = () => {
     if (!createAdjustmentMutation.isPending) {
-      setAmount('');
+      setAmountNumber(null);
       setReason('');
       onOpenChange(false);
     }
@@ -112,67 +104,40 @@ export function AdjustmentDrawer({
 
           {/* Amount Input */}
           <div>
-            <Label htmlFor="amount">{t('amountXAF', { defaultValue: 'Montant (XAF)' })} *</Label>
-            <div className="relative mt-1.5">
-              <Input
-                id="amount"
-                type="text"
-                inputMode="numeric"
-                value={amount ? formatCurrency(amountNumber).replace(' XAF', '') : ''}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                placeholder="0"
-                className={cn(
-                  'text-lg font-medium',
-                  isInsufficientBalance && 'border-red-500 focus-visible:ring-red-500'
-                )}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                XAF
-              </span>
-            </div>
+            <AmountField
+              id="amount"
+              label={`${t('amountXAF', { defaultValue: 'Montant (XAF)' })} *`}
+              currency="XAF"
+              value={amountNumber}
+              onValueChange={setAmountNumber}
+              enterKeyHint="next"
+              error={isInsufficientBalance ? t('insufficientBalance', { defaultValue: 'Solde insuffisant' }) : undefined}
+            />
 
-            {/* Balance Warning */}
-            {isDebit && amountNumber > 0 && (
-              <div className={cn(
-                'mt-2 p-2 rounded-lg text-sm',
-                isInsufficientBalance
-                  ? 'bg-red-50 text-red-700'
-                  : 'bg-muted text-muted-foreground'
-              )}>
-                {isInsufficientBalance ? (
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    {t('insufficientBalance', { defaultValue: 'Solde insuffisant' })}
-                  </div>
-                ) : (
-                  <span>
-                    {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance - amountNumber)}
-                  </span>
-                )}
-              </div>
+            {/* Balance preview */}
+            {isDebit && amount > 0 && !isInsufficientBalance && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance - amount)}
+              </p>
             )}
 
-            {!isDebit && amountNumber > 0 && (
+            {!isDebit && amount > 0 && (
               <p className="mt-2 text-sm text-muted-foreground">
-                {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance + amountNumber)}
+                {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance + amount)}
               </p>
             )}
           </div>
 
           {/* Reason Input */}
-          <div>
-            <Label htmlFor="reason">{t('reason', { defaultValue: 'Motif' })} *</Label>
-            <Textarea
-              id="reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={t('adjustmentReasonPlaceholder', { defaultValue: 'Décrivez la raison de cet ajustement...' })}
-              className="mt-1.5 min-h-[100px]"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('reasonRecordedNote', { defaultValue: "Le motif sera enregistré dans l'historique et visible par le client." })}
-            </p>
-          </div>
+          <TextArea
+            id="reason"
+            label={`${t('reason', { defaultValue: 'Motif' })} *`}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t('adjustmentReasonPlaceholder', { defaultValue: 'Décrivez la raison de cet ajustement...' })}
+            controlClassName="min-h-[100px]"
+            hint={t('reasonRecordedNote', { defaultValue: "Le motif sera enregistré dans l'historique et visible par le client." })}
+          />
 
           {/* Warning */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
@@ -201,7 +166,7 @@ export function AdjustmentDrawer({
               </>
             ) : (
               <>
-                {isDebit ? t('debit', { defaultValue: 'Débiter' }) : t('credit', { defaultValue: 'Créditer' })} {amountNumber > 0 && formatCurrency(amountNumber)}
+                {isDebit ? t('debit', { defaultValue: 'Débiter' }) : t('credit', { defaultValue: 'Créditer' })} {amount > 0 && formatCurrency(amount)}
               </>
             )}
           </Button>

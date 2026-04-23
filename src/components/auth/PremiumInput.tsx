@@ -16,6 +16,14 @@ interface PremiumInputProps {
   autoFocus?: boolean;
   disabled?: boolean;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  /** Mobile keyboard hints — forwarded to <input>. */
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  enterKeyHint?: React.InputHTMLAttributes<HTMLInputElement>['enterKeyHint'];
+  autoCapitalize?: React.InputHTMLAttributes<HTMLInputElement>['autoCapitalize'];
+  autoCorrect?: 'on' | 'off';
+  spellCheck?: boolean;
+  name?: string;
+  required?: boolean;
 }
 
 export function PremiumInput({
@@ -32,6 +40,13 @@ export function PremiumInput({
   autoFocus,
   disabled,
   onKeyDown,
+  inputMode,
+  enterKeyHint,
+  autoCapitalize,
+  autoCorrect,
+  spellCheck,
+  name,
+  required,
 }: PremiumInputProps) {
   // Shake re-trigger: increment key on each new error to force remount
   const [shakeKey, setShakeKey] = useState(0);
@@ -46,6 +61,27 @@ export function PremiumInput({
   const hasRightElement = !!rightElement;
   const showValidCheck = isValid && !hasRightElement && !error;
 
+  // Sensible mobile keyboard defaults based on `type`. Consumers can override
+  // via explicit props. Keeps every auth/login consumer correct for free.
+  const typeDefaults = (() => {
+    switch (type) {
+      case 'email':
+        return { inputMode: 'email' as const, autoCapitalize: 'none' as const, autoCorrect: 'off' as const, spellCheck: false };
+      case 'password':
+        return { inputMode: 'text' as const, autoCapitalize: 'none' as const, autoCorrect: 'off' as const, spellCheck: false };
+      case 'tel':
+        return { inputMode: 'tel' as const, autoCapitalize: 'none' as const, autoCorrect: 'off' as const, spellCheck: false };
+      case 'url':
+        return { inputMode: 'url' as const, autoCapitalize: 'none' as const, autoCorrect: 'off' as const, spellCheck: false };
+      default:
+        return {};
+    }
+  })();
+  const resolvedInputMode = inputMode ?? typeDefaults.inputMode;
+  const resolvedAutoCapitalize = autoCapitalize ?? typeDefaults.autoCapitalize;
+  const resolvedAutoCorrect = autoCorrect ?? typeDefaults.autoCorrect;
+  const resolvedSpellCheck = spellCheck ?? typeDefaults.spellCheck;
+
   return (
     <div>
       <div
@@ -59,9 +95,13 @@ export function PremiumInput({
           </div>
         )}
 
-        {/* Input */}
+        {/* Input — `.premium-input` CSS class handles typography.
+            `text-base` kept as belt-and-suspenders against future
+            html/body font-size changes that could drop below 16px
+            and re-introduce the iOS zoom-on-focus bug. */}
         <input
           id={id}
+          name={name}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -69,9 +109,15 @@ export function PremiumInput({
           autoComplete={autoComplete}
           autoFocus={autoFocus}
           disabled={disabled}
+          required={required}
           onKeyDown={onKeyDown}
+          inputMode={resolvedInputMode}
+          enterKeyHint={enterKeyHint}
+          autoCapitalize={resolvedAutoCapitalize}
+          autoCorrect={resolvedAutoCorrect}
+          spellCheck={resolvedSpellCheck}
           className={cn(
-            'premium-input',
+            'premium-input text-base',
             hasLeftIcon && 'premium-input-has-left-icon',
             (hasRightElement || showValidCheck) && 'premium-input-has-right',
             error && 'premium-input-error'

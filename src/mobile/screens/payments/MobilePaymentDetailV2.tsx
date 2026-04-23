@@ -93,10 +93,11 @@ const METHOD_CFG: Record<string, { icon: string; color: string }> = {
 };
 
 // ── Style input inline bénéficiaire ──────────────────────────
+// fontSize must stay ≥ 16 so iOS Safari doesn't zoom on focus.
 const INP: React.CSSProperties = {
   width: '100%', padding: '12px 14px', borderRadius: 10,
   border: `1.5px solid ${C.border}`, background: C.bg,
-  fontSize: 15, fontWeight: 600, color: C.text,
+  fontSize: 16, fontWeight: 600, color: C.text,
   fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box',
 };
 
