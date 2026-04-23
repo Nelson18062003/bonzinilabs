@@ -14,9 +14,12 @@ export interface TextFieldProps extends BaseFieldProps, NativeInputProps {
   /**
    * Semantic variant — drives inputMode, autoCapitalize, autoCorrect, spellCheck.
    * Defaults to 'text' (free-form sentences). Use 'name' for proper-case
-   * fields, 'url' for URLs, etc.
+   * fields, 'url' for URLs, 'numeric'/'decimal' for free-typed numbers.
+   *
+   * Note: prefer EmailField/PasswordField/PhoneField/AmountField when they
+   * apply — this variant prop is for the cases they don't cover.
    */
-  variant?: 'text' | 'name' | 'url';
+  variant?: keyof typeof KEYBOARD;
 }
 
 /**

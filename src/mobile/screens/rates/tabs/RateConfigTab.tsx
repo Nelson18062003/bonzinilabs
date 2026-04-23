@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { TextField } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useRateAdjustments, useUpdateRateAdjustment } from '@/hooks/useDailyRates';
 import { COUNTRIES, TIERS } from '@/types/rates';
@@ -106,13 +106,16 @@ export function RateConfigTab() {
         <span className="text-sm font-bold text-green-600">0 %</span>
       ) : (
         <div className="flex items-center gap-1">
-          <Input
-            type="text"
+          <TextField
+            variant="decimal"
+            size="sm"
             value={localValues[adj.id] ?? adj.percentage.toString()}
             onChange={(e) =>
               setLocalValues({ ...localValues, [adj.id]: e.target.value })
             }
-            className="w-[60px] text-right text-sm font-bold text-red-600"
+            wrapperClassName="w-[72px]"
+            controlClassName="text-right font-bold text-red-600"
+            aria-label={`Ajustement ${meta.label}`}
           />
           <span className="text-sm font-semibold text-muted-foreground">%</span>
         </div>
