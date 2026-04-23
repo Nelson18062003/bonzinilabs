@@ -1,14 +1,17 @@
 /**
- * Subscribes to Supabase Realtime postgres_changes for the tables that
- * power admin-visible UI, and invalidates the matching React Query caches
- * on every change. This is the push-based safety net so that:
+ * Subscribes to Supabase Realtime postgres_changes for EVERY table the app
+ * reads, and invalidates the matching React Query caches on each change.
  *
- *   - actions taken in another tab/admin appear without a manual reload
- *   - server-side triggers (e.g. wallet credit on deposit validation)
- *     surface in the UI without per-mutation invalidation gymnastics
+ * Two separate channels because the client app and the admin/agent app
+ * use isolated Supabase sessions (different storageKeys) and therefore
+ * different RLS evaluations — a single shared channel would lose events
+ * for one of them.
  *
- * Mount once inside the AdminAuthProvider — it depends on an authenticated
- * admin session for RLS to deliver the events.
+ * Coverage:
+ *   - Client app (supabase):       deposits, payments, wallets, proofs,
+ *                                  ledger, rates, beneficiaries, notifications
+ *   - Admin/Agent app (supabaseAdmin): the above PLUS clients, user_roles,
+ *                                  audit logs
  *
  * Performance note: Supabase advises switching to private Broadcast channels
  * if you exceed ~1000 concurrent subscribers or hit RLS perf walls.
@@ -16,55 +19,135 @@
  */
 
 import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabaseAdmin } from '@/integrations/supabase/client';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   depositKeys,
   paymentKeys,
   walletKeys,
   ledgerKeys,
+  clientKeys,
+  rateKeys,
+  beneficiaryKeys,
+  notificationKeys,
+  adminKeys,
   dashboardKeys,
 } from '@/lib/queryKeys';
 
-const TABLES_TO_QUERY_KEYS = {
-  deposits: [depositKeys.all, dashboardKeys.all] as const,
-  payments: [paymentKeys.all, dashboardKeys.all] as const,
-  wallets: [walletKeys.all, dashboardKeys.all] as const,
-  ledger_entries: [ledgerKeys.all, walletKeys.all, dashboardKeys.all] as const,
-  payment_proofs: [paymentKeys.all] as const,
-  deposit_proofs: [depositKeys.all] as const,
-} as const;
+// Every table the app touches → the query key prefixes that depend on it.
+// Keep prefixes only (not full keyed queries) so prefix-matching invalidation
+// catches every descendant key without us enumerating them.
+const TABLE_INVALIDATIONS: Record<string, ReadonlyArray<readonly unknown[]>> = {
+  deposits:                [depositKeys.all, dashboardKeys.all],
+  deposit_proofs:          [depositKeys.all],
+  deposit_timeline_events: [depositKeys.all],
+  payments:                [paymentKeys.all, dashboardKeys.all],
+  payment_proofs:          [paymentKeys.all],
+  payment_timeline_events: [paymentKeys.all],
+  wallets:                 [walletKeys.all, dashboardKeys.all],
+  ledger_entries:          [ledgerKeys.all, walletKeys.all, dashboardKeys.all],
+  clients:                 [clientKeys.all, dashboardKeys.all],
+  beneficiaries:           [beneficiaryKeys.all],
+  daily_rates:             [rateKeys.all],
+  exchange_rates:          [rateKeys.all],
+  rate_adjustments:        [rateKeys.all],
+  user_roles:              [adminKeys.all],
+  admin_audit_logs:        [adminKeys.all],
+};
 
-export function useRealtimeInvalidation() {
+// Tables the CLIENT app cares about (subset — RLS hides the rest anyway,
+// but narrower subscriptions save bandwidth and RLS eval cost on the server).
+const CLIENT_TABLES = [
+  'deposits',
+  'deposit_proofs',
+  'deposit_timeline_events',
+  'payments',
+  'payment_proofs',
+  'payment_timeline_events',
+  'wallets',
+  'ledger_entries',
+  'beneficiaries',
+  'daily_rates',
+  'exchange_rates',
+] as const;
+
+// Tables the ADMIN/AGENT app cares about (everything).
+const ADMIN_TABLES = Object.keys(TABLE_INVALIDATIONS);
+
+function subscribeTables(
+  client: SupabaseClient,
+  channelName: string,
+  tables: readonly string[],
+  queryClient: QueryClient,
+) {
+  const channel = client.channel(channelName);
+
+  tables.forEach((table) => {
+    channel.on(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'postgres_changes' as any,
+      { event: '*', schema: 'public', table },
+      () => {
+        const prefixes = TABLE_INVALIDATIONS[table] ?? [];
+        for (const key of prefixes) {
+          queryClient.invalidateQueries({ queryKey: key as readonly unknown[] });
+        }
+        // Back-compat: older hooks still use hand-typed 'admin-*' / 'my-*'
+        // keys that predate the factories. Catch them by table-name heuristic
+        // so the global safety net covers the legacy surface too.
+        queryClient.invalidateQueries({ queryKey: [`admin-${table}`] });
+        queryClient.invalidateQueries({ queryKey: [`my-${table}`] });
+        const singular = table.replace(/s$/, '').replace(/_events$/, '');
+        queryClient.invalidateQueries({ queryKey: [`admin-${singular}`] });
+        queryClient.invalidateQueries({ queryKey: [`my-${singular}`] });
+      },
+    );
+  });
+
+  channel.subscribe();
+  return channel;
+}
+
+export function useClientRealtimeInvalidation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = subscribeTables(
+      supabase,
+      `client-realtime-${user.id}`,
+      CLIENT_TABLES,
+      queryClient,
+    );
+    // Notifications is its own case — RLS-scoped per user
+    channel.on(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'postgres_changes' as any,
+      { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+      () => queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+    );
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+}
+
+export function useAdminRealtimeInvalidation() {
   const queryClient = useQueryClient();
   const { isAuthenticated, currentUser } = useAdminAuth();
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
-
-    const channel = supabaseAdmin.channel('admin-realtime-invalidation');
-
-    (Object.keys(TABLES_TO_QUERY_KEYS) as Array<keyof typeof TABLES_TO_QUERY_KEYS>).forEach(
-      (table) => {
-        channel.on(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          'postgres_changes' as any,
-          { event: '*', schema: 'public', table },
-          () => {
-            for (const key of TABLES_TO_QUERY_KEYS[table]) {
-              queryClient.invalidateQueries({ queryKey: key as readonly unknown[] });
-            }
-            // Also catch admin-prefixed legacy keys still scattered in older hooks.
-            queryClient.invalidateQueries({ queryKey: [`admin-${table}`] });
-            queryClient.invalidateQueries({ queryKey: [`admin-${table.replace(/s$/, '')}`] });
-          },
-        );
-      },
+    const channel = subscribeTables(
+      supabaseAdmin,
+      'admin-realtime-invalidation',
+      ADMIN_TABLES,
+      queryClient,
     );
-
-    channel.subscribe();
-
     return () => {
       supabaseAdmin.removeChannel(channel);
     };
@@ -72,10 +155,16 @@ export function useRealtimeInvalidation() {
 }
 
 /**
- * Headless component that mounts the realtime subscription. Render this
- * INSIDE AdminAuthProvider so it can read the auth state.
+ * Headless components that mount the realtime subscriptions. Render
+ * AdminRealtimeListener inside AdminAuthProvider; ClientRealtimeListener
+ * inside AuthProvider.
  */
 export function AdminRealtimeListener() {
-  useRealtimeInvalidation();
+  useAdminRealtimeInvalidation();
+  return null;
+}
+
+export function ClientRealtimeListener() {
+  useClientRealtimeInvalidation();
   return null;
 }

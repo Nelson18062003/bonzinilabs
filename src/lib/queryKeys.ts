@@ -46,6 +46,28 @@ export const clientKeys = {
   list: () => [...clientKeys.all, 'list'] as const,
 };
 
+export const rateKeys = {
+  all: ['rates'] as const,
+  daily: () => [...rateKeys.all, 'daily'] as const,
+  exchange: () => [...rateKeys.all, 'exchange'] as const,
+  adjustments: () => [...rateKeys.all, 'adjustments'] as const,
+};
+
+export const beneficiaryKeys = {
+  all: ['beneficiaries'] as const,
+  byUser: (userId: string | undefined) => [...beneficiaryKeys.all, 'byUser', userId] as const,
+};
+
+export const notificationKeys = {
+  all: ['notifications'] as const,
+};
+
+export const adminKeys = {
+  all: ['admins'] as const,
+  list: () => [...adminKeys.all, 'list'] as const,
+  detail: (id: string | undefined) => [...adminKeys.all, 'detail', id] as const,
+};
+
 export const dashboardKeys = {
   all: ['dashboard'] as const,
   stats: () => [...dashboardKeys.all, 'stats'] as const,
