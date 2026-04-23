@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 import { ProtectedAdminRoute } from '@/components/admin/ProtectedAdminRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MobileAppShell } from './layout/MobileAppShell';
@@ -12,29 +11,23 @@ interface MobileRouteWrapperProps {
 
 /**
  * Wrapper for mobile admin routes.
- * Provides AdminAuthProvider context, authentication protection,
- * and the mobile app shell with tab bar.
+ * Auth context (AdminAuthProvider) is mounted once at the app shell in
+ * App.tsx so navigation does not remount the provider on every route change.
  */
 export function MobileRouteWrapper({
   children,
   requireAuth = true,
-  showTabBar = true
+  showTabBar = true,
 }: MobileRouteWrapperProps) {
   return (
-    <AdminAuthProvider>
-      <ErrorBoundary>
-        {requireAuth ? (
-          <ProtectedAdminRoute>
-            <MobileAppShell showTabBar={showTabBar}>
-              {children}
-            </MobileAppShell>
-          </ProtectedAdminRoute>
-        ) : (
-          <MobileAppShell showTabBar={false}>
-            {children}
-          </MobileAppShell>
-        )}
-      </ErrorBoundary>
-    </AdminAuthProvider>
+    <ErrorBoundary>
+      {requireAuth ? (
+        <ProtectedAdminRoute>
+          <MobileAppShell showTabBar={showTabBar}>{children}</MobileAppShell>
+        </ProtectedAdminRoute>
+      ) : (
+        <MobileAppShell showTabBar={false}>{children}</MobileAppShell>
+      )}
+    </ErrorBoundary>
   );
 }
