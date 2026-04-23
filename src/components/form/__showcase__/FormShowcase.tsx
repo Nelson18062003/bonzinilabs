@@ -20,8 +20,17 @@ import {
   TextArea,
   TextField,
 } from '@/components/form';
+import { KeyboardSafeArea } from '@/components/form/KeyboardSafeArea';
+import {
+  useKeyboardHeight,
+  useKeyboardOpen,
+  useVisualViewport,
+} from '@/hooks/keyboard';
 
 export function FormShowcase() {
+  const kbHeight = useKeyboardHeight();
+  const kbOpen = useKeyboardOpen();
+  const vv = useVisualViewport();
   const [search, setSearch] = React.useState('');
   const [otp, setOtp] = React.useState('');
   const [amount, setAmount] = React.useState<number | null>(null);
@@ -33,17 +42,19 @@ export function FormShowcase() {
   const computedFontSizes = useComputedFontSizes();
 
   return (
-    <div className="mx-auto max-w-xl p-4 pb-24">
+    <KeyboardSafeArea className="mx-auto max-w-xl p-4" extraPadding={16}>
       <header className="mb-6">
         <h1 className="text-xl font-bold">Form primitives — Showcase</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Ouvre cette page sur un vrai iPhone (Safari). Focus chaque champ :
           <strong> aucun ne doit déclencher de zoom.</strong>
         </p>
-        <p className="mt-2 rounded-md bg-muted p-2 text-xs font-mono">
-          font-size détectée sur les inputs : <strong>{computedFontSizes}px</strong>
-          {' '}— doit être ≥ 16 sur mobile
-        </p>
+        <div className="mt-2 space-y-1 rounded-md bg-muted p-2 text-xs font-mono">
+          <div>font-size input : <strong>{computedFontSizes}px</strong> (doit être ≥ 16 mobile)</div>
+          <div>visualViewport support : <strong>{vv.supported ? 'oui' : 'non'}</strong></div>
+          <div>clavier ouvert : <strong>{kbOpen ? `oui (${kbHeight}px)` : 'non'}</strong></div>
+          <div>vv.height / window.innerHeight : <strong>{Math.round(vv.height)} / {typeof window !== 'undefined' ? window.innerHeight : 0}</strong></div>
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Dernier événement : <span className="font-mono">{lastEvent}</span>
         </p>
@@ -146,8 +157,18 @@ export function FormShowcase() {
             hint="Limité à 500 caractères"
           />
         </Group>
+
+        <Group title="Long form (test keyboard safe area)">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <TextField key={i} label={`Champ #${i + 1}`} placeholder={`Saisie ligne ${i + 1}`} />
+          ))}
+          <p className="text-xs text-muted-foreground">
+            Au focus du dernier champ, la page scrolle automatiquement au-dessus du clavier
+            grâce à <code>useScrollIntoViewOnFocus</code> (monté à la racine de l'app).
+          </p>
+        </Group>
       </section>
-    </div>
+    </KeyboardSafeArea>
   );
 }
 

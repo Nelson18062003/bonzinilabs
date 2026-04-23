@@ -47,4 +47,9 @@ export type { FormFieldWrapperProps } from './FormFieldWrapper';
 
 export { LeftAddon, RightAddon, LeftIcon, RightIcon } from './Adornments';
 
+export { KeyboardSafeArea } from './KeyboardSafeArea';
+export type { KeyboardSafeAreaProps } from './KeyboardSafeArea';
+
+export { KeyboardFocusManager } from './KeyboardFocusManager';
+
 export type { FieldSize, BaseFieldProps } from './shared';

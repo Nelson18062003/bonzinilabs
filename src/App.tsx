@@ -20,6 +20,7 @@ import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { MobileRouteWrapper } from "./mobile/components/MobileRouteWrapper";
 import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealtimeInvalidation";
+import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
 
 // ── Lazy-loaded Client Pages ───────────────────────────────────
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -105,6 +106,7 @@ const App = () => (
             <ClientRealtimeListener />
             <AdminAuthProvider>
             <AdminRealtimeListener />
+            <KeyboardFocusManager />
               <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Auth Routes */}
