@@ -1,350 +1,69 @@
 // ============================================================
-// PAGE CLIENT — PaymentDetailPage (Redesign v2)
-// Clean, hierarchical client payment detail page.
-// Hero amount with payment method logo, beneficiary section
-// with copyable fields, consolidated proofs, collapsible timeline.
+// PAGE — Client payment detail (orchestrator).
+// All sections live under src/components/payment-detail/*.
 // ============================================================
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { MobileLayout } from '@/components/layout/MobileLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { cn } from '@/lib/utils';
 import {
   usePaymentDetail,
   usePaymentTimeline,
   usePaymentProofs,
-  useUpdateBeneficiaryInfo,
 } from '@/hooks/usePayments';
 import { usePaymentProofMultiUpload } from '@/hooks/usePaymentProofUpload';
-import { formatXAF, formatCurrencyRMB, formatCurrency, formatNumber, formatRelativeDate } from '@/lib/formatters';
-import { PAYMENT_STATUS_CONFIG, PAYMENT_METHOD_LABELS } from '@/types/payment';
-import type { PaymentStatus, PaymentMethod } from '@/types/payment';
-import {
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Loader2,
-  Upload,
-  Edit2,
-  CreditCard,
-  Building2,
-  Banknote,
-  QrCode,
-  User,
-  Phone,
-  Mail,
-  FileText,
-  FileDown,
-  Lock,
-  ScanLine,
-  TrendingUp,
-  Download,
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { useEffect, useRef, useState, useMemo } from 'react';
-import { PaymentTimelineDisplay } from '@/components/payment/PaymentTimelineDisplay';
-import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
-import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
-import { CopyableField } from '@/mobile/components/payments/CopyableField';
-import { EmailField, PhoneField, TextArea, TextField } from '@/components/form';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { compressImage } from '@/lib/imageCompression';
-import { PaymentProofUpload } from '@/components/payment/PaymentProofUpload';
-import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
-import { CashQRCode } from '@/components/cash/CashQRCode';
-import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
-import { downloadPDF } from '@/lib/pdf/downloadPDF';
-import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
-import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
-
-// ── Status badge styles for header ──────────────────────────
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  created: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  waiting_beneficiary_info: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  ready_for_payment: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  cash_pending: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-  cash_scanned: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-  processing: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  rejected: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-};
+import { PAYMENT_STATUS_CONFIG } from '@/types/payment';
+import type { PaymentStatus } from '@/types/payment';
+import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
+import { toast } from 'sonner';
+import { STATUS_BADGE_STYLES } from '@/components/payment-detail/types';
+import {
+  buildReceiptData,
+  captureQrDataUrl,
+} from '@/components/payment-detail/paymentReceiptHelpers';
+import { PaymentHeroCard } from '@/components/payment-detail/PaymentHeroCard';
+import { PaymentCashSection } from '@/components/payment-detail/PaymentCashSection';
+import { PaymentBeneficiarySection } from '@/components/payment-detail/PaymentBeneficiarySection';
+import { PaymentBeneficiaryEditDialog } from '@/components/payment-detail/PaymentBeneficiaryEditDialog';
+import { PaymentDocumentsSection } from '@/components/payment-detail/PaymentDocumentsSection';
+import { PaymentStatusMessages } from '@/components/payment-detail/PaymentStatusMessages';
+import { PaymentDetailsAccordion } from '@/components/payment-detail/PaymentDetailsAccordion';
+import { PaymentQrViewerDrawer } from '@/components/payment-detail/PaymentQrViewerDrawer';
 
 export default function PaymentDetailPage() {
   const { t } = useTranslation('payments');
   const { paymentId } = useParams();
   const navigate = useNavigate();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [beneficiaryForm, setBeneficiaryForm] = useState({
-    beneficiary_name: '',
-    beneficiary_phone: '',
-    beneficiary_email: '',
-    beneficiary_qr_code_url: '',
-    beneficiary_bank_name: '',
-    beneficiary_bank_account: '',
-    beneficiary_notes: '',
-  });
 
-  const [qrFile, setQrFile] = useState<File | null>(null);
-  const [qrPreview, setQrPreview] = useState<string | null>(null);
-  const [isUploadingQr, setIsUploadingQr] = useState(false);
-  const qrInputRef = useRef<HTMLInputElement>(null);
-
-  // Proof upload state
-  const [instructionFiles, setInstructionFiles] = useState<File[]>([]);
-  const [uploadKey, setUploadKey] = useState(0);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-
-  // QR viewer drawer state
-  const [selectedProof, setSelectedProof] = useState<string | null>(null);
-
+  // ── Data ───────────────────────────────────────────────────
   const { data: payment, isLoading: paymentLoading } = usePaymentDetail(paymentId);
   const { data: timeline, isLoading: timelineLoading } = usePaymentTimeline(paymentId);
   const { data: proofs } = usePaymentProofs(paymentId);
   const { data: clientProfile } = useMyProfile();
   const { user: authUser } = useAuth();
-
-  const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
   const { uploadProofs, isUploading: isUploadingProofs } = usePaymentProofMultiUpload();
 
-  // Build timeline steps — MUST be before any early return to respect Rules of Hooks
+  // ── UI state ───────────────────────────────────────────────
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedQrUrl, setSelectedQrUrl] = useState<string | null>(null);
+  const [instructionFiles, setInstructionFiles] = useState<File[]>([]);
+  const [uploadKey, setUploadKey] = useState(0);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
   const timelineSteps = useMemo(() => {
     if (!payment) return [];
     return buildPaymentTimelineSteps(payment.status, payment.method, timeline || []);
   }, [payment, timeline]);
 
-  // Initialize form when payment loads
-  useEffect(() => {
-    if (!payment) return;
-
-    setBeneficiaryForm({
-      beneficiary_name: payment.beneficiary_name || '',
-      beneficiary_phone: payment.beneficiary_phone || '',
-      beneficiary_email: payment.beneficiary_email || '',
-      beneficiary_qr_code_url: payment.beneficiary_qr_code_url || '',
-      beneficiary_bank_name: payment.beneficiary_bank_name || '',
-      beneficiary_bank_account: payment.beneficiary_bank_account || '',
-      beneficiary_notes: payment.beneficiary_notes || '',
-    });
-
-    setQrFile(null);
-    setQrPreview(null);
-  }, [payment?.id]);
-
-  // Handle QR file selection
-  const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setQrFile(file);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setQrPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Validate form based on payment method
-  const validateForm = (): { valid: boolean; message?: string } => {
-    if (!payment) return { valid: false };
-
-    if (payment.method === 'alipay' || payment.method === 'wechat') {
-      // At least one required: QR code, phone, or email
-      const hasQr = qrFile || beneficiaryForm.beneficiary_qr_code_url;
-      const hasPhone = beneficiaryForm.beneficiary_phone.trim();
-      const hasEmail = beneficiaryForm.beneficiary_email.trim();
-
-      if (!hasQr && !hasPhone && !hasEmail) {
-        return {
-          valid: false,
-          message: t('detail.validation.atLeastOneContact')
-        };
-      }
-      return { valid: true };
-    }
-
-    if (payment.method === 'bank_transfer') {
-      // Required: name, bank, account
-      if (!beneficiaryForm.beneficiary_name.trim()) {
-        return { valid: false, message: t('detail.validation.nameRequired') };
-      }
-      if (!beneficiaryForm.beneficiary_bank_name.trim()) {
-        return { valid: false, message: t('detail.validation.bankNameRequired') };
-      }
-      if (!beneficiaryForm.beneficiary_bank_account.trim()) {
-        return { valid: false, message: t('detail.validation.bankAccountRequired') };
-      }
-      return { valid: true };
-    }
-
-    // Cash: no validation needed
-    return { valid: true };
-  };
-
-  // Save beneficiary info
-  const handleSaveBeneficiaryInfo = async () => {
-    if (!paymentId || !payment) return;
-
-    const validation = validateForm();
-    if (!validation.valid) {
-      toast.error(validation.message);
-      return;
-    }
-
-    try {
-      let qrUrl = beneficiaryForm.beneficiary_qr_code_url;
-
-      // Upload QR code if selected
-      if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
-        setIsUploadingQr(true);
-
-        const compressed = await compressImage(qrFile);
-        const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('payment-proofs')
-          .upload(filePath, compressed, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        // Store the file path for later signed URL generation
-        qrUrl = `payment-proofs/${filePath}`;
-      }
-
-      await updateBeneficiaryInfo.mutateAsync({
-        paymentId,
-        beneficiaryInfo: {
-          beneficiary_name: beneficiaryForm.beneficiary_name || null,
-          beneficiary_phone: beneficiaryForm.beneficiary_phone || null,
-          beneficiary_email: beneficiaryForm.beneficiary_email || null,
-          beneficiary_qr_code_url: qrUrl || null,
-          beneficiary_bank_name: beneficiaryForm.beneficiary_bank_name || null,
-          beneficiary_bank_account: beneficiaryForm.beneficiary_bank_account || null,
-          beneficiary_notes: beneficiaryForm.beneficiary_notes || null,
-        },
-        paymentMethod: payment.method,
-      });
-
-      setIsEditDialogOpen(false);
-      setQrFile(null);
-      setQrPreview(null);
-      toast.success(t('detail.toast.beneficiarySaved'));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      toast.error(err?.message || t('detail.toast.saveFailed'));
-    } finally {
-      setIsUploadingQr(false);
-    }
-  };
-
-  // Handle "complete later" action
-  const handleCompleteLater = () => {
-    setIsEditDialogOpen(false);
-    toast.info(t('detail.toast.completeLater'));
-  };
-
-  // Capture QR SVG from DOM and convert to data URL for PDF
-  const captureQrDataUrl = (paymentId: string): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const svgElement = document.getElementById(`qr-${paymentId}`);
-      if (!svgElement) { resolve(null); return; }
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new window.Image();
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.onerror = () => resolve(null);
-      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-    });
-  };
-
-  const handleDownloadReceipt = async () => {
-    if (!payment || isGeneratingPDF) return;
-    setIsGeneratingPDF(true);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const clientName = clientProfile
-        ? `${clientProfile.first_name} ${clientProfile.last_name}`
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        : (payment as any).profiles
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? `${(payment as any).profiles.first_name} ${(payment as any).profiles.last_name}`
-          : 'Client';
-
-      // Capture cash QR code from DOM if present
-      let cashPaymentQrDataUrl: string | null = null;
-      if (payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status)) {
-        cashPaymentQrDataUrl = await captureQrDataUrl(payment.id);
-      }
-
-      const receiptData: PaymentReceiptData = {
-        id: payment.id,
-        reference: payment.reference,
-        created_at: payment.created_at,
-        processed_at: payment.processed_at,
-        amount_xaf: payment.amount_xaf,
-        amount_rmb: payment.amount_rmb,
-        exchange_rate: payment.exchange_rate,
-        method: payment.method,
-        status: payment.status,
-        client_name: clientName,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        client_phone: clientProfile?.phone || (payment as any).profiles?.phone,
-        client_email: authUser?.email || undefined,
-        client_country: clientProfile?.country || undefined,
-        beneficiary_name: payment.beneficiary_name,
-        beneficiary_phone: payment.beneficiary_phone,
-        beneficiary_email: payment.beneficiary_email,
-        beneficiary_bank_name: payment.beneficiary_bank_name,
-        beneficiary_bank_account: payment.beneficiary_bank_account,
-        beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
-        cashPaymentQrDataUrl,
-        adminProofs: adminProofs.map(p => ({
-          file_url: p.file_url,
-          file_type: p.file_type,
-          file_name: p.file_name,
-          created_at: p.created_at,
-        })),
-      };
-      await downloadPDF(
-        <PaymentReceiptPDF data={receiptData} />,
-        `recu_paiement_${payment.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
-      );
-      toast.success(t('detail.toast.receiptDownloaded'));
-    } catch (error) {
-      console.error('Error generating payment PDF:', error);
-      toast.error(t('detail.toast.receiptError'));
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
-
+  // ── Loading / not found ───────────────────────────────────
   if (paymentLoading) {
     return (
       <MobileLayout>
@@ -371,744 +90,136 @@ export default function PaymentDetailPage() {
     );
   }
 
-  const statusCfg = PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus]
-    || { label: payment.status, color: 'bg-gray-100 text-gray-700' };
-  const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
-  // Rétro-compatible: anciens paiements clients stockent en décimal (0.01153), admin en entier (11530)
-  const rateInt = payment.exchange_rate
-    ? (payment.exchange_rate < 1 ? Math.round(payment.exchange_rate * 1_000_000) : Math.round(payment.exchange_rate))
-    : 0;
+  // ── Derived ───────────────────────────────────────────────
+  const statusCfg =
+    PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus] ?? {
+      label: payment.status,
+      color: 'bg-gray-100 text-gray-700',
+    };
 
-  // Can edit beneficiary info when not yet processing/completed/rejected
-  const canEditBeneficiary = ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
-  const isLocked = ['processing', 'completed', 'rejected'].includes(payment.status);
-  const canUploadInstructions = ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
-
-  const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'client');
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
+  const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'client');
 
-  // Handle instruction upload
+  const hasBeneficiaryInfo =
+    payment.method === 'cash' ||
+    !!payment.beneficiary_qr_code_url ||
+    !!payment.beneficiary_name ||
+    !!payment.beneficiary_phone ||
+    !!payment.beneficiary_email ||
+    !!payment.beneficiary_bank_account;
+
+  // ── Actions ───────────────────────────────────────────────
   const handleUploadInstructions = async () => {
     if (!paymentId || instructionFiles.length === 0) return;
     await uploadProofs({ paymentId, files: instructionFiles });
     setInstructionFiles([]);
-    setUploadKey(k => k + 1);
+    setUploadKey((k) => k + 1);
   };
 
-  // Check if beneficiary info is provided
-  const hasBeneficiaryInfo = payment.method === 'cash' ||
-    payment.beneficiary_qr_code_url ||
-    payment.beneficiary_name ||
-    payment.beneficiary_phone ||
-    payment.beneficiary_email ||
-    payment.beneficiary_bank_account;
+  const handleDownloadReceipt = async () => {
+    if (isGeneratingPDF) return;
+    setIsGeneratingPDF(true);
+    try {
+      const clientName = clientProfile
+        ? `${clientProfile.first_name} ${clientProfile.last_name}`
+        : 'Client';
 
-  // Render form fields based on payment method (for the dialog)
-  const renderBeneficiaryFormFields = () => {
-    if (payment.method === 'alipay' || payment.method === 'wechat') {
-      return (
-        <div className="space-y-4">
-          <div className="bg-muted/50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-muted-foreground">
-              {t('detail.form.provideAtLeastOne')}
-            </p>
-          </div>
+      let cashPaymentQrDataUrl: string | null = null;
+      if (
+        payment.method === 'cash' &&
+        !['completed', 'rejected'].includes(payment.status)
+      ) {
+        cashPaymentQrDataUrl = await captureQrDataUrl(payment.id);
+      }
 
-          {/* QR Code Upload */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <QrCode className="w-4 h-4" />
-              QR Code {payment.method === 'alipay' ? 'Alipay' : 'WeChat'}
-            </Label>
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => qrInputRef.current?.click()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') qrInputRef.current?.click();
-              }}
-              className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-            >
-              {qrPreview ? (
-                <div className="flex flex-col items-center gap-2">
-                  <img
-                    src={qrPreview}
-                    alt={t('detail.form.qrPreview')}
-                    className="w-32 h-32 rounded-lg border object-cover"
-                  />
-                  <span className="text-xs text-muted-foreground">{t('detail.form.clickToReplace')}</span>
-                </div>
-              ) : beneficiaryForm.beneficiary_qr_code_url ? (
-                <div className="flex flex-col items-center gap-2">
-                  <img
-                    src={beneficiaryForm.beneficiary_qr_code_url}
-                    alt={t('detail.form.qrBeneficiary')}
-                    className="w-32 h-32 rounded-lg border object-cover"
-                    loading="lazy"
-                  />
-                  <span className="text-xs text-muted-foreground">{t('detail.form.clickToReplace')}</span>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm font-medium">{t('detail.form.addQrCode')}</p>
-                  <p className="text-xs text-muted-foreground">{t('detail.form.ofBeneficiary')}</p>
-                </>
-              )}
-            </div>
-            <input
-              ref={qrInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleQrFileChange}
-            />
-          </div>
+      const receiptData = buildReceiptData({
+        payment,
+        clientName,
+        clientPhone: clientProfile?.phone,
+        clientEmail: authUser?.email ?? undefined,
+        clientCountry: clientProfile?.country,
+        cashPaymentQrDataUrl,
+        adminProofs,
+      });
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">{t('detail.form.or')}</span>
-            </div>
-          </div>
-
-          <PhoneField
-            label={
-              <span className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                {t('detail.form.phoneNumber')}
-              </span>
-            }
-            dialCode="+86"
-            value={beneficiaryForm.beneficiary_phone}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_phone: e.target.value }))
-            }
-            placeholder="138 0000 0000"
-          />
-
-          <EmailField
-            label={
-              <span className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                {t('detail.form.emailOptional')}
-              </span>
-            }
-            showIcon={false}
-            value={beneficiaryForm.beneficiary_email}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_email: e.target.value }))
-            }
-          />
-
-          <TextField
-            label={
-              <span className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                {t('detail.form.beneficiaryNameOptional')}
-              </span>
-            }
-            variant="name"
-            autoComplete="name"
-            value={beneficiaryForm.beneficiary_name}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
-            }
-            placeholder={t('detail.form.fullName')}
-          />
-        </div>
+      await downloadPDF(
+        <PaymentReceiptPDF data={receiptData} />,
+        `recu_paiement_${payment.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
+      toast.success(t('detail.toast.receiptDownloaded'));
+    } catch (error) {
+      console.error('Error generating payment PDF:', error);
+      toast.error(t('detail.toast.receiptError'));
+    } finally {
+      setIsGeneratingPDF(false);
     }
-
-    if (payment.method === 'bank_transfer') {
-      return (
-        <div className="space-y-4">
-          <div className="bg-muted/50 rounded-lg p-3 mb-4">
-            <p className="text-sm text-muted-foreground">
-              {t('detail.form.provideBankInfo')}
-            </p>
-          </div>
-
-          <TextField
-            label={
-              <span className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                {t('detail.form.beneficiaryNameRequired')}
-              </span>
-            }
-            variant="name"
-            autoComplete="name"
-            value={beneficiaryForm.beneficiary_name}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_name: e.target.value }))
-            }
-            placeholder={t('detail.form.accountHolderName')}
-            required
-          />
-
-          <TextField
-            label={
-              <span className="flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                {t('detail.form.bankNameRequired')}
-              </span>
-            }
-            autoComplete="organization"
-            value={beneficiaryForm.beneficiary_bank_name}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_name: e.target.value }))
-            }
-            placeholder="Ex: Bank of China, ICBC..."
-            required
-          />
-
-          <TextField
-            label={
-              <span className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                {t('detail.form.accountNumberRequired')}
-              </span>
-            }
-            variant="numeric"
-            autoComplete="off"
-            value={beneficiaryForm.beneficiary_bank_account}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_bank_account: e.target.value }))
-            }
-            placeholder={t('detail.form.bankAccountNumber')}
-            required
-          />
-
-          <TextArea
-            label={
-              <span className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {t('detail.form.commentOptional')}
-              </span>
-            }
-            value={beneficiaryForm.beneficiary_notes}
-            onChange={(e) =>
-              setBeneficiaryForm((prev) => ({ ...prev, beneficiary_notes: e.target.value }))
-            }
-            placeholder={t('detail.form.additionalInstructions')}
-            rows={3}
-          />
-        </div>
-      );
-    }
-
-    // Cash method - no form needed
-    return (
-      <div className="text-center py-6">
-        <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-        <p className="font-medium">{t('detail.form.noInfoRequired')}</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          {t('detail.form.cashQrAutoGenerated')}
-        </p>
-      </div>
-    );
   };
 
-  // Render displayed beneficiary info
-  const renderBeneficiaryDisplay = () => {
-    if (payment.method === 'cash') {
-      return (
-        <div className="text-center py-4">
-          <Banknote className="w-8 h-8 text-primary mx-auto mb-2" />
-          <p className="text-sm font-medium">{t('detail.cashPayment')}</p>
-          <p className="text-xs text-muted-foreground">
-            {t('detail.cashQrWillBeGenerated')}
-          </p>
-          {payment.cash_qr_code && (
-            <div className="mt-3">
-              <img
-                src={payment.cash_qr_code}
-                alt="QR Code Cash"
-                className="w-32 h-32 mx-auto rounded-lg border"
-              />
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    if (!hasBeneficiaryInfo) {
-      return (
-        <div className="text-center py-6">
-          <AlertCircle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
-          <p className="font-medium">{t('detail.missingInfo')}</p>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
-            {t('detail.addBeneficiaryPrompt')}
-          </p>
-          {canEditBeneficiary && (
-            <Button onClick={() => setIsEditDialogOpen(true)}>
-              {t('detail.addInfo')}
-            </Button>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        {/* QR Code display for Alipay/WeChat — prominent, tappable */}
-        {payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method) && (
-          <div className="flex justify-center mb-4">
-            <button
-              onClick={() => setSelectedProof(payment.beneficiary_qr_code_url)}
-              className="active:scale-[0.98] transition-transform"
-            >
-              <img
-                src={payment.beneficiary_qr_code_url}
-                alt={t('detail.form.qrBeneficiary')}
-                className="w-[200px] h-[200px] rounded-xl border-2 border-border object-contain bg-white"
-              />
-              <p className="text-xs text-primary mt-2 text-center">{t('detail.tapToEnlarge')}</p>
-            </button>
-          </div>
-        )}
-
-        {/* Copyable fields */}
-        <div className="space-y-2.5 text-sm">
-          {payment.beneficiary_name && (
-            <CopyableField label={t('detail.fields.name')} value={payment.beneficiary_name} copyLabel={t('detail.fields.beneficiaryName')} />
-          )}
-          {payment.beneficiary_identifier && (
-            <CopyableField
-              label={payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'}
-              value={payment.beneficiary_identifier}
-              copyLabel={payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'}
-            />
-          )}
-          {payment.beneficiary_phone && (
-            <CopyableField label={t('detail.fields.phone')} value={payment.beneficiary_phone} copyLabel={t('detail.fields.beneficiaryPhone')} />
-          )}
-          {payment.beneficiary_email && (
-            <CopyableField label={t('detail.fields.email')} value={payment.beneficiary_email} copyLabel={t('detail.fields.beneficiaryEmail')} />
-          )}
-          {payment.beneficiary_bank_name && (
-            <CopyableField label={t('detail.fields.bank')} value={payment.beneficiary_bank_name} copyLabel={t('detail.fields.bank')} />
-          )}
-          {payment.beneficiary_bank_account && (
-            <CopyableField label={t('detail.fields.accountNumber')} value={payment.beneficiary_bank_account} copyLabel={t('detail.fields.accountNumber')} />
-          )}
-          {payment.beneficiary_bank_extra && (
-            <CopyableField label="SWIFT / IBAN" value={payment.beneficiary_bank_extra} copyLabel="SWIFT / IBAN" />
-          )}
-          {payment.beneficiary_notes && (
-            <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-1">{t('detail.fields.notes')}</p>
-              <p className="text-sm">{payment.beneficiary_notes}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
+  // ── Render ────────────────────────────────────────────────
   return (
     <MobileLayout>
-      {/* ── Header with status badge ─────────────────────────── */}
       <PageHeader
         title={payment.reference}
         showBack
         rightElement={
-          <span className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap',
-            STATUS_BADGE_STYLES[payment.status] || STATUS_BADGE_STYLES.created
-          )}>
+          <span
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap',
+              STATUS_BADGE_STYLES[payment.status] ?? STATUS_BADGE_STYLES.created,
+            )}
+          >
             {statusCfg.label}
           </span>
         }
       />
 
       <div className="px-4 py-4 space-y-6">
-        {/* ── Hero Amount Card ─────────────────────────────────── */}
-        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-          {/* Method logo + label + download button */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <PaymentMethodLogo method={payment.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={48} />
-              <span className="text-lg font-semibold">{methodLabel}</span>
-            </div>
-            <button
-              onClick={handleDownloadReceipt}
-              disabled={isGeneratingPDF}
-              className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform disabled:opacity-50"
-              aria-label={t('detail.downloadReceipt')}
-            >
-              {isGeneratingPDF ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <FileDown className="w-5 h-5" />
-              )}
-            </button>
-          </div>
+        <PaymentHeroCard
+          payment={payment}
+          onDownloadReceipt={handleDownloadReceipt}
+          isGeneratingPDF={isGeneratingPDF}
+        />
 
-          {/* Primary amount: RMB */}
-          <p className="text-[32px] sm:text-[36px] font-bold tracking-tight leading-none">
-            {formatCurrencyRMB(payment.amount_rmb)}
-          </p>
+        <PaymentCashSection payment={payment} />
 
-          {/* Secondary amount: XAF */}
-          <p className="text-xl sm:text-2xl font-semibold text-muted-foreground mt-1">
-            {formatCurrency(payment.amount_xaf)}
-          </p>
+        <PaymentBeneficiarySection
+          payment={payment}
+          onEdit={() => setIsEditDialogOpen(true)}
+          onViewQr={setSelectedQrUrl}
+        />
 
-          {/* Exchange rate — explicit and visible */}
-          <div className="mt-4 bg-muted/50 rounded-xl p-3 border border-border/50">
-            <div className="flex items-start gap-2">
-              <TrendingUp className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">
-                  {t('detail.rateApplied')} : 1M XAF = ¥{formatNumber(rateInt)}
-                </p>
-                <p className="text-muted-foreground mt-0.5">
-                  ¥{formatNumber(payment.amount_rmb, 2)} = {formatNumber(payment.amount_xaf)} XAF
-                </p>
-              </div>
-            </div>
-          </div>
+        <PaymentStatusMessages payment={payment} />
 
-          {/* Date info */}
-          <p className="text-xs text-muted-foreground mt-3">
-            {t('detail.createdAt')} {formatRelativeDate(payment.created_at)} · {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
-            {isLocked && ` · ${t('detail.locked')}`}
-          </p>
-        </div>
+        <PaymentDocumentsSection
+          payment={payment}
+          adminProofs={adminProofs}
+          clientProofs={clientProofs}
+          uploadKey={uploadKey}
+          instructionFiles={instructionFiles}
+          onInstructionFilesChange={setInstructionFiles}
+          onUploadInstructions={handleUploadInstructions}
+          isUploadingProofs={isUploadingProofs}
+        />
 
-        {/* ── Cash QR Code ──────────────────────────────────────── */}
-        {payment.method === 'cash' && !['completed', 'rejected'].includes(payment.status) && (
-          <CashQRCode
-            paymentId={payment.id}
-            paymentReference={payment.reference}
-            amountRMB={payment.amount_rmb}
-            beneficiaryName={payment.beneficiary_name || 'Client'}
-          />
-        )}
-
-        {/* Cash scanned status */}
-        {payment.method === 'cash' && payment.status === 'cash_scanned' && (
-          <div className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border border-orange-200 dark:border-orange-800">
-            <div className="flex items-start gap-3">
-              <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
-              <div>
-                <p className="font-medium text-orange-600">{t('detail.qrScannedAtOffice')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('detail.processingAtOffice')}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Cash completed with signature */}
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {payment.method === 'cash' && payment.status === 'completed' && (payment as any).cash_signature_url && (
-          <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-green-600">{t('detail.cashPaymentCompleted')}</p>
-                {/* eslint-disable @typescript-eslint/no-explicit-any */}
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('detail.signatureRecordedOn')} {(payment as any).cash_signature_timestamp &&
-                    format(new Date((payment as any).cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                </p>
-                {(payment as any).cash_signed_by_name && (
-                  <p className="text-sm text-muted-foreground">
-                    {t('detail.signedBy')}: {(payment as any).cash_signed_by_name}
-                  </p>
-                )}
-
-                {/* Signature image */}
-                <div className="mt-3 p-3 bg-white rounded-xl border border-green-200 dark:border-green-800">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">{t('detail.beneficiarySignature')}</p>
-                  <img
-                    src={(payment as any).cash_signature_url}
-                    alt={t('detail.beneficiarySignature')}
-                    className="w-full max-w-xs h-auto rounded"
-                    style={{ maxHeight: '120px', objectFit: 'contain' }}
-                  />
-                </div>
-
-                <div className="mt-3">
-                  <CashReceiptDownloadButton
-                    payment={payment as any}
-                    variant="outline"
-                    size="sm"
-                    label={t('detail.downloadReceiptPDF')}
-                  />
-                  {/* eslint-enable @typescript-eslint/no-explicit-any */}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Beneficiary Section ──────────────────────────────── */}
-        <div className="bg-card rounded-2xl p-5 border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {t('detail.beneficiary')}
-            </h3>
-            {isLocked ? (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                <Lock className="w-3 h-3" />
-                {t('detail.locked')}
-              </span>
-            ) : canEditBeneficiary && hasBeneficiaryInfo && payment.method !== 'cash' ? (
-              <button
-                onClick={() => setIsEditDialogOpen(true)}
-                className="text-xs font-medium text-primary active:scale-95 transition-transform flex items-center gap-1"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                {t('detail.edit')}
-              </button>
-            ) : null}
-          </div>
-
-          {renderBeneficiaryDisplay()}
-        </div>
-
-        {/* ── Ready for payment message ─────────────────────────── */}
-        {payment.status === 'ready_for_payment' && (
-          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl p-5 border border-blue-200 dark:border-blue-800">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
-              <div>
-                <p className="font-medium text-primary">{t('detail.readyForProcessing')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('detail.bonziniWillProcess')}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Documents Section (consolidated proofs) ──────────── */}
-        <div className="bg-card rounded-2xl p-5 border border-border">
-          <h3 className="text-base font-semibold mb-4">{t('detail.documents')}</h3>
-
-          {/* Admin proofs (Bonzini proof of payment) */}
-          {adminProofs.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                {t('detail.bonziniProofs', { count: adminProofs.length })}
-              </p>
-              <p className="text-xs text-muted-foreground mb-3">
-                {t('detail.bonziniProofsDescription')}
-              </p>
-              <PaymentProofGallery
-                proofs={adminProofs}
-                title=""
-                emptyMessage=""
-                showUploadedBy={false}
-              />
-            </div>
-          )}
-
-          {/* Client instruction proofs */}
-          {clientProofs.length > 0 && (
-            <div className={cn(adminProofs.length > 0 && "mt-4 pt-4 border-t border-border")}>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                {t('detail.myInstructions', { count: clientProofs.length })}
-              </p>
-              <p className="text-xs text-muted-foreground mb-3">
-                {t('detail.myInstructionsDescription')}
-              </p>
-              <PaymentProofGallery
-                proofs={clientProofs}
-                title=""
-                emptyMessage=""
-                showUploadedBy={false}
-              />
-              {isLocked && (
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Lock className="w-3.5 h-3.5" />
-                  {t('detail.noMoreModifications')}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Client instruction upload area */}
-          {canUploadInstructions && (
-            <div className={cn(
-              (adminProofs.length > 0 || clientProofs.length > 0) && "mt-4 pt-4 border-t border-border"
-            )}>
-              <PaymentProofUpload
-                key={uploadKey}
-                onFilesSelect={setInstructionFiles}
-                selectedFiles={instructionFiles}
-                onConfirm={handleUploadInstructions}
-                isSubmitting={isUploadingProofs}
-              />
-            </div>
-          )}
-
-          {/* Empty state */}
-          {adminProofs.length === 0 && clientProofs.length === 0 && !canUploadInstructions && (
-            <p className="text-sm text-muted-foreground text-center py-3">{t('detail.noDocuments')}</p>
-          )}
-        </div>
-
-        {/* ── Rejection reason ──────────────────────────────────── */}
-        {payment.status === 'rejected' && payment.rejection_reason && (
-          <div className="bg-red-50 dark:bg-red-950/30 rounded-2xl p-5 border border-red-200 dark:border-red-800">
-            <p className="text-sm font-semibold text-red-800 dark:text-red-400 mb-1">{t('detail.rejectionReason')}</p>
-            <p className="text-sm text-red-700 dark:text-red-300">{payment.rejection_reason}</p>
-          </div>
-        )}
-
-        {/* ── Bonzini message ──────────────────────────────────── */}
-        {payment.client_visible_comment && (
-          <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
-            <p className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">{t('detail.bonziniMessage')}</p>
-            <p className="text-sm text-green-700 dark:text-green-300">{payment.client_visible_comment}</p>
-          </div>
-        )}
-
-        {/* ── Timeline & Details (collapsed by default) ─────────── */}
-        {timelineSteps.length > 0 && (
-          <Accordion type="single" collapsible className="bg-card rounded-2xl border border-border overflow-hidden">
-            <AccordionItem value="timeline" className="border-0">
-              <AccordionTrigger className="px-5 py-4 hover:no-underline">
-                <span className="flex items-center gap-2 font-semibold text-base">
-                  <Clock className="w-4 h-4" />
-                  {t('detail.historyAndDetails')}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="px-5 pb-5">
-                <div className="space-y-4">
-                  {/* Secondary info grid */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-muted-foreground text-xs">{t('detail.reference')}</p>
-                      <p className="font-mono text-xs mt-0.5">{payment.reference}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">{t('detail.method')}</p>
-                      <p className="font-medium text-xs mt-0.5">{methodLabel}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">{t('detail.createdOn')}</p>
-                      <p className="text-xs mt-0.5">
-                        {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
-                      </p>
-                    </div>
-                    {payment.processed_at && (
-                      <div>
-                        <p className="text-muted-foreground text-xs">{t('detail.processedOn')}</p>
-                        <p className="text-xs mt-0.5">
-                          {format(new Date(payment.processed_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Timeline */}
-                  {timelineLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-12 w-full" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="pt-2">
-                      <PaymentTimelineDisplay steps={timelineSteps} />
-                    </div>
-                  )}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
+        <PaymentDetailsAccordion
+          payment={payment}
+          timelineSteps={timelineSteps}
+          timelineLoading={timelineLoading}
+        />
       </div>
 
-      {/* ── QR Code Viewer Drawer ─────────────────────────────── */}
-      <Drawer open={!!selectedProof} onOpenChange={() => setSelectedProof(null)}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>{t('detail.qrCodeBeneficiary')}</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-3">
-            {payment.beneficiary_name && (
-              <p className="text-center text-sm font-medium">{payment.beneficiary_name}</p>
-            )}
-            {selectedProof && (
-              <img
-                src={selectedProof}
-                alt="QR Code"
-                className="w-full rounded-xl"
-              />
-            )}
-            {selectedProof && (
-              <a
-                href={selectedProof}
-                download="qr-code-beneficiaire"
-                className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-border font-medium text-sm active:scale-[0.98] transition-transform"
-              >
-                <Download className="w-4 h-4" />
-                {t('detail.downloadQrCode')}
-              </a>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
+      <PaymentQrViewerDrawer
+        url={selectedQrUrl}
+        beneficiaryName={payment.beneficiary_name}
+        onClose={() => setSelectedQrUrl(null)}
+      />
 
-      {/* ── Edit Beneficiary Dialog ───────────────────────────── */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {hasBeneficiaryInfo ? t('detail.dialog.editTitle') : t('detail.dialog.addTitle')}
-            </DialogTitle>
-            <DialogDescription>
-              {payment.method === 'alipay' && t('detail.dialog.alipayDescription')}
-              {payment.method === 'wechat' && t('detail.dialog.wechatDescription')}
-              {payment.method === 'bank_transfer' && t('detail.dialog.bankTransferDescription')}
-              {payment.method === 'cash' && t('detail.dialog.cashDescription')}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            {renderBeneficiaryFormFields()}
-          </div>
-
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            {(payment.method === 'alipay' || payment.method === 'wechat') && (
-              <Button
-                variant="outline"
-                onClick={handleCompleteLater}
-                className="w-full sm:w-auto"
-              >
-                {t('detail.dialog.completeLater')}
-              </Button>
-            )}
-            {payment.method !== 'cash' && (
-              <Button
-                onClick={handleSaveBeneficiaryInfo}
-                disabled={updateBeneficiaryInfo.isPending || isUploadingQr}
-                className="w-full sm:w-auto"
-              >
-                {(updateBeneficiaryInfo.isPending || isUploadingQr) && (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                )}
-                {t('detail.dialog.save')}
-              </Button>
-            )}
-            {payment.method === 'cash' && (
-              <Button onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
-                {t('detail.dialog.close')}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PaymentBeneficiaryEditDialog
+        payment={payment}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        hasBeneficiaryInfo={hasBeneficiaryInfo}
+      />
     </MobileLayout>
   );
 }

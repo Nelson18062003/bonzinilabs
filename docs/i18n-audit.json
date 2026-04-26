@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-26T05:51:03.748Z",
+  "generated_at": "2026-04-26T05:59:32.036Z",
   "summary": {
-    "files_scanned": 75,
+    "files_scanned": 83,
     "static_keys": 940,
     "dynamic_calls": 22,
     "languages": [

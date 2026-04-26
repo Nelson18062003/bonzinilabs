@@ -5,7 +5,7 @@
 
 ## Summary
 
-- Files scanned: **75**
+- Files scanned: **83**
 - Static keys: **940**
 - Dynamic calls (template strings): **22**
 
