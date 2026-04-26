@@ -1,7 +1,7 @@
 // ============================================================
 // Shared beneficiary edit form.
 // Single source of truth for the edit-after-creation flow used by:
-//   - The client (PaymentBeneficiaryEditDialog, in a <Dialog>)
+//   - The client (EditBeneficiaryPage, full-page route)
 //   - The admin  (MobileBeneficiaryEdit, in a full-page layout)
 //
 // The component owns its internal state (9 fields + QR file/preview),

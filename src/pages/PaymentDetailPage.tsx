@@ -32,7 +32,6 @@ import {
 import { PaymentHeroCard } from '@/components/payment-detail/PaymentHeroCard';
 import { PaymentCashSection } from '@/components/payment-detail/PaymentCashSection';
 import { PaymentBeneficiarySection } from '@/components/payment-detail/PaymentBeneficiarySection';
-import { PaymentBeneficiaryEditDialog } from '@/components/payment-detail/PaymentBeneficiaryEditDialog';
 import { PaymentDocumentsSection } from '@/components/payment-detail/PaymentDocumentsSection';
 import { PaymentStatusMessages } from '@/components/payment-detail/PaymentStatusMessages';
 import { PaymentDetailsAccordion } from '@/components/payment-detail/PaymentDetailsAccordion';
@@ -52,7 +51,6 @@ export default function PaymentDetailPage() {
   const { uploadProofs, isUploading: isUploadingProofs } = usePaymentProofMultiUpload();
 
   // ── UI state ───────────────────────────────────────────────
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedQrUrl, setSelectedQrUrl] = useState<string | null>(null);
   const [instructionFiles, setInstructionFiles] = useState<File[]>([]);
   const [uploadKey, setUploadKey] = useState(0);
@@ -100,13 +98,7 @@ export default function PaymentDetailPage() {
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
   const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'client');
 
-  const hasBeneficiaryInfo =
-    payment.method === 'cash' ||
-    !!payment.beneficiary_qr_code_url ||
-    !!payment.beneficiary_name ||
-    !!payment.beneficiary_phone ||
-    !!payment.beneficiary_email ||
-    !!payment.beneficiary_bank_account;
+  const goToEditBeneficiary = () => navigate(`/payments/${payment.id}/edit-beneficiary`);
 
   // ── Actions ───────────────────────────────────────────────
   const handleUploadInstructions = async () => {
@@ -184,7 +176,7 @@ export default function PaymentDetailPage() {
 
         <PaymentBeneficiarySection
           payment={payment}
-          onEdit={() => setIsEditDialogOpen(true)}
+          onEdit={goToEditBeneficiary}
           onViewQr={setSelectedQrUrl}
         />
 
@@ -212,13 +204,6 @@ export default function PaymentDetailPage() {
         url={selectedQrUrl}
         beneficiaryName={payment.beneficiary_name}
         onClose={() => setSelectedQrUrl(null)}
-      />
-
-      <PaymentBeneficiaryEditDialog
-        payment={payment}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        hasBeneficiaryInfo={hasBeneficiaryInfo}
       />
     </MobileLayout>
   );
