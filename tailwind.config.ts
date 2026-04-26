@@ -31,6 +31,12 @@ export default {
           "purple-light": "hsl(var(--bonzini-purple-light))",
           "purple-dark": "hsl(var(--bonzini-purple-dark))",
           "purple-glow": "hsl(var(--bonzini-purple-glow))",
+          // Logo palette (per .claude/rules/frontend.md). Use these
+          // for in-product elements that should reflect the brand —
+          // e.g. status accents, step indicators, hero highlights.
+          violet: "hsl(258 100% 60%)",
+          amber:  "hsl(36 100% 55%)",
+          orange: "hsl(16 100% 55%)",
         },
         admin: {
           sidebar: "hsl(var(--admin-sidebar))",

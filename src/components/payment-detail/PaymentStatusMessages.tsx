@@ -1,10 +1,12 @@
 // ============================================================
-// Status-driven narrative cards: "ready for processing", rejection
-// reason, and the optional client-visible Bonzini comment.
+// Status-driven narrative cards.
+// Renders zero or more PaymentStatusCards depending on the current
+// payment state and any client-visible message Bonzini left.
 // ============================================================
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2 } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import type { Payment } from '@/hooks/usePayments';
+import { PaymentStatusCard } from './PaymentStatusCard';
 
 interface Props {
   payment: Payment;
@@ -16,33 +18,51 @@ export function PaymentStatusMessages({ payment }: Props) {
   return (
     <>
       {payment.status === 'ready_for_payment' && (
-        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl p-5 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
-            <div>
-              <p className="font-medium text-primary">{t('detail.readyForProcessing')}</p>
-              <p className="text-sm text-muted-foreground mt-1">{t('detail.bonziniWillProcess')}</p>
-            </div>
-          </div>
-        </div>
+        <PaymentStatusCard
+          variant="info"
+          title={t('detail.readyForProcessing')}
+          description={t('detail.bonziniWillProcess')}
+        />
+      )}
+
+      {payment.status === 'processing' && (
+        <PaymentStatusCard
+          variant="progress"
+          spinIcon
+          title={t('statusConfig.processing')}
+          description={t('detail.bonziniWillProcess')}
+        />
+      )}
+
+      {payment.status === 'completed' && payment.method !== 'cash' && (
+        <PaymentStatusCard
+          variant="success"
+          title={t('statusConfig.completed')}
+        />
       )}
 
       {payment.status === 'rejected' && payment.rejection_reason && (
-        <div className="bg-red-50 dark:bg-red-950/30 rounded-2xl p-5 border border-red-200 dark:border-red-800">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-400 mb-1">
-            {t('detail.rejectionReason')}
-          </p>
-          <p className="text-sm text-red-700 dark:text-red-300">{payment.rejection_reason}</p>
-        </div>
+        <PaymentStatusCard
+          variant="rejected"
+          title={t('detail.rejectionReason')}
+          description={payment.rejection_reason}
+        />
+      )}
+
+      {payment.status === 'cancelled_by_admin' && (
+        <PaymentStatusCard
+          variant="cancelled"
+          icon={Lock}
+          title={t('statusConfig.cancelled_by_admin')}
+        />
       )}
 
       {payment.client_visible_comment && (
-        <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
-          <p className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">
-            {t('detail.bonziniMessage')}
-          </p>
-          <p className="text-sm text-green-700 dark:text-green-300">{payment.client_visible_comment}</p>
-        </div>
+        <PaymentStatusCard
+          variant="message"
+          title={t('detail.bonziniMessage')}
+          description={payment.client_visible_comment}
+        />
       )}
     </>
   );
