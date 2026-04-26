@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-04-26T05:59:32.036Z",
+  "generated_at": "2026-04-26T06:16:30.190Z",
   "summary": {
-    "files_scanned": 83,
-    "static_keys": 940,
+    "files_scanned": 85,
+    "static_keys": 936,
     "dynamic_calls": 22,
     "languages": [
       {

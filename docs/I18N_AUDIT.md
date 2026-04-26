@@ -5,8 +5,8 @@
 
 ## Summary
 
-- Files scanned: **83**
-- Static keys: **940**
+- Files scanned: **85**
+- Static keys: **936**
 - Dynamic calls (template strings): **22**
 
 | Language | Missing | Coverage |
