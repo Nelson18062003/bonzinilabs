@@ -424,5 +424,17 @@
   "noPaymentsToExport": "No payments in progress to export",
   "exportDownloaded": "Export of {{count}} payment(s) downloaded",
   "exportError": "Error during export",
-  "noPaymentFound": "No payment found"
+  "noPaymentFound": "No payment found",
+  "amountXAF": "Amount in XAF",
+  "manualDebit": "Manual debit",
+  "manualCredit": "Manual credit",
+  "insufficientBalance": "Insufficient balance",
+  "newBalance": "New balance",
+  "reason": "Reason",
+  "reasonRecordedNote": "The reason will be recorded in the history.",
+  "adjustmentReasonPlaceholder": "e.g. correction, goodwill gesture…",
+  "actionCannotBeUndone": "This action cannot be undone.",
+  "processing": "Processing…",
+  "debit": "Debit",
+  "home": "Home"
 }
