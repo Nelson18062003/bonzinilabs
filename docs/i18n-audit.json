@@ -1,0 +1,5147 @@
+{
+  "generated_at": "2026-04-26T05:19:49.549Z",
+  "summary": {
+    "files_scanned": 71,
+    "static_keys": 938,
+    "dynamic_calls": 21,
+    "languages": [
+      {
+        "lang": "fr",
+        "missing": 206,
+        "coverage_pct": 78.04
+      },
+      {
+        "lang": "en",
+        "missing": 206,
+        "coverage_pct": 78.04
+      },
+      {
+        "lang": "zh",
+        "missing": 206,
+        "coverage_pct": 78.04
+      }
+    ]
+  },
+  "missing": {
+    "fr": [
+      {
+        "file": "src/mobile/components/agent-cash/AgentCashTabBar.tsx",
+        "line": 10,
+        "raw": "cash_payments",
+        "ns": "common",
+        "key": "cash_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/agent-cash/AgentCashTabBar.tsx",
+        "line": 11,
+        "raw": "scanner",
+        "ns": "common",
+        "key": "scanner",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 87,
+        "raw": "manualDebit",
+        "ns": "common",
+        "key": "manualDebit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 92,
+        "raw": "manualCredit",
+        "ns": "common",
+        "key": "manualCredit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 109,
+        "raw": "amountXAF",
+        "ns": "common",
+        "key": "amountXAF",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 114,
+        "raw": "insufficientBalance",
+        "ns": "common",
+        "key": "insufficientBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 120,
+        "raw": "newBalance",
+        "ns": "common",
+        "key": "newBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 134,
+        "raw": "reason",
+        "ns": "common",
+        "key": "reason",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 137,
+        "raw": "adjustmentReasonPlaceholder",
+        "ns": "common",
+        "key": "adjustmentReasonPlaceholder",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 139,
+        "raw": "reasonRecordedNote",
+        "ns": "common",
+        "key": "reasonRecordedNote",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 146,
+        "raw": "actionCannotBeUndone",
+        "ns": "common",
+        "key": "actionCannotBeUndone",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 165,
+        "raw": "processing",
+        "ns": "common",
+        "key": "processing",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 169,
+        "raw": "debit",
+        "ns": "common",
+        "key": "debit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/layout/MobileTabBar.tsx",
+        "line": 22,
+        "raw": "home",
+        "ns": "common",
+        "key": "home",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 72,
+        "raw": "cash_confirmation",
+        "ns": "common",
+        "key": "cash_confirmation",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 86,
+        "raw": "payment_not_found",
+        "ns": "common",
+        "key": "payment_not_found",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 129,
+        "raw": "cash_handed",
+        "ns": "common",
+        "key": "cash_handed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 146,
+        "raw": "verify_identity",
+        "ns": "common",
+        "key": "verify_identity",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 156,
+        "raw": "signature_required",
+        "ns": "common",
+        "key": "signature_required",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 157,
+        "raw": "signature_instruction",
+        "ns": "common",
+        "key": "signature_instruction",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 172,
+        "raw": "sign_here",
+        "ns": "common",
+        "key": "sign_here",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 184,
+        "raw": "clear",
+        "ns": "common",
+        "key": "clear",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 190,
+        "raw": "beneficiary_name_confirmed",
+        "ns": "common",
+        "key": "beneficiary_name_confirmed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 207,
+        "raw": "confirm_payment",
+        "ns": "common",
+        "key": "confirm_payment",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 68,
+        "raw": "invalid_credentials",
+        "ns": "common",
+        "key": "invalid_credentials",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 128,
+        "raw": "agent_login",
+        "ns": "common",
+        "key": "agent_login",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 130,
+        "raw": "email_address",
+        "ns": "common",
+        "key": "email_address",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 231,
+        "raw": "sign_in",
+        "ns": "common",
+        "key": "sign_in",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 70,
+        "raw": "payment_details",
+        "ns": "common",
+        "key": "payment_details",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_paid",
+        "ns": "common",
+        "key": "status_paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_scanned",
+        "ns": "common",
+        "key": "status_scanned",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_to_pay",
+        "ns": "common",
+        "key": "status_to_pay",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 127,
+        "raw": "beneficiary_info",
+        "ns": "common",
+        "key": "beneficiary_info",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 152,
+        "raw": "client_info",
+        "ns": "common",
+        "key": "client_info",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 177,
+        "raw": "already_paid",
+        "ns": "common",
+        "key": "already_paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 180,
+        "raw": "already_paid_on",
+        "ns": "common",
+        "key": "already_paid_on",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 184,
+        "raw": "signed_by",
+        "ns": "common",
+        "key": "signed_by",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 192,
+        "raw": "beneficiary_signature",
+        "ns": "common",
+        "key": "beneficiary_signature",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 216,
+        "raw": "download_receipt",
+        "ns": "common",
+        "key": "download_receipt",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 229,
+        "raw": "proceed_to_payment",
+        "ns": "common",
+        "key": "proceed_to_payment",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 243,
+        "raw": "qr_already_scanned_continue",
+        "ns": "common",
+        "key": "qr_already_scanned_continue",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 81,
+        "raw": "to_pay",
+        "ns": "common",
+        "key": "to_pay",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 97,
+        "raw": "paid",
+        "ns": "common",
+        "key": "paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 115,
+        "raw": "no_pending_payments",
+        "ns": "common",
+        "key": "no_pending_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 115,
+        "raw": "no_paid_payments",
+        "ns": "common",
+        "key": "no_paid_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 164,
+        "raw": "beneficiary",
+        "ns": "common",
+        "key": "beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 168,
+        "raw": "client",
+        "ns": "common",
+        "key": "client",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 172,
+        "raw": "reference",
+        "ns": "common",
+        "key": "reference",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 44,
+        "raw": "invalid_qr",
+        "ns": "common",
+        "key": "invalid_qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 81,
+        "raw": "camera_permission_denied",
+        "ns": "common",
+        "key": "camera_permission_denied",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 83,
+        "raw": "camera_not_found",
+        "ns": "common",
+        "key": "camera_not_found",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 85,
+        "raw": "camera_https_required",
+        "ns": "common",
+        "key": "camera_https_required",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 87,
+        "raw": "camera_in_use",
+        "ns": "common",
+        "key": "camera_in_use",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 89,
+        "raw": "camera_not_supported",
+        "ns": "common",
+        "key": "camera_not_supported",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 91,
+        "raw": "camera_start_failed",
+        "ns": "common",
+        "key": "camera_start_failed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 127,
+        "raw": "scanning",
+        "ns": "common",
+        "key": "scanning",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 150,
+        "raw": "align_qr",
+        "ns": "common",
+        "key": "align_qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 160,
+        "raw": "manual_entry",
+        "ns": "common",
+        "key": "manual_entry",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 168,
+        "raw": "enter_payment_id",
+        "ns": "common",
+        "key": "enter_payment_id",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 47,
+        "raw": "payment_success",
+        "ns": "common",
+        "key": "payment_success",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 111,
+        "raw": "back_to_list",
+        "ns": "common",
+        "key": "back_to_list",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 118,
+        "raw": "scan_another",
+        "ns": "common",
+        "key": "scan_another",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 201,
+        "raw": "form.qrUploadError",
+        "ns": "payments",
+        "key": "form.qrUploadError",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 280,
+        "raw": "form.howToReceive",
+        "ns": "payments",
+        "key": "form.howToReceive",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 299,
+        "raw": "form.rateApplied",
+        "ns": "payments",
+        "key": "form.rateApplied",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 306,
+        "raw": "form.byXAF",
+        "ns": "payments",
+        "key": "form.byXAF",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 307,
+        "raw": "form.byRMB",
+        "ns": "payments",
+        "key": "form.byRMB",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 328,
+        "raw": "form.amountDebited",
+        "ns": "payments",
+        "key": "form.amountDebited",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 352,
+        "raw": "form.addFunds",
+        "ns": "payments",
+        "key": "form.addFunds",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 368,
+        "raw": "form.beneficiary.whoPicks",
+        "ns": "payments",
+        "key": "form.beneficiary.whoPicks",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 368,
+        "raw": "form.beneficiary.title",
+        "ns": "payments",
+        "key": "form.beneficiary.title",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 370,
+        "raw": "form.beneficiary.mustPresentQr",
+        "ns": "payments",
+        "key": "form.beneficiary.mustPresentQr",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 370,
+        "raw": "form.beneficiary.selectOrCreate",
+        "ns": "payments",
+        "key": "form.beneficiary.selectOrCreate",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 377,
+        "raw": "form.beneficiary.existing",
+        "ns": "payments",
+        "key": "form.beneficiary.existing",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 380,
+        "raw": "form.beneficiary.new",
+        "ns": "payments",
+        "key": "form.beneficiary.new",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 388,
+        "raw": "form.beneficiary.noneRegistered",
+        "ns": "payments",
+        "key": "form.beneficiary.noneRegistered",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 389,
+        "raw": "form.beneficiary.createNew",
+        "ns": "payments",
+        "key": "form.beneficiary.createNew",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 416,
+        "raw": "form.beneficiary.myself",
+        "ns": "payments",
+        "key": "form.beneficiary.myself",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 424,
+        "raw": "form.beneficiary.anotherPerson",
+        "ns": "payments",
+        "key": "form.beneficiary.anotherPerson",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 424,
+        "raw": "form.beneficiary.provideDetails",
+        "ns": "payments",
+        "key": "form.beneficiary.provideDetails",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 429,
+        "raw": "form.beneficiary.fullNameRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.fullNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 432,
+        "raw": "form.beneficiary.phoneRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.phoneRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 435,
+        "raw": "form.beneficiary.emailOptional",
+        "ns": "payments",
+        "key": "form.beneficiary.emailOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 456,
+        "raw": "form.beneficiary.addQrCode",
+        "ns": "payments",
+        "key": "form.beneficiary.addQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 463,
+        "raw": "form.beneficiary.orProvideInfo",
+        "ns": "payments",
+        "key": "form.beneficiary.orProvideInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 466,
+        "raw": "form.beneficiary.fullName",
+        "ns": "payments",
+        "key": "form.beneficiary.fullName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 469,
+        "raw": "form.beneficiary.idType",
+        "ns": "payments",
+        "key": "form.beneficiary.idType",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 472,
+        "raw": "form.beneficiary.idTypes.qr",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 473,
+        "raw": "form.beneficiary.idTypes.id",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.id",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 474,
+        "raw": "form.beneficiary.idTypes.email",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.email",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 475,
+        "raw": "form.beneficiary.idTypes.phone",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.phone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 487,
+        "raw": "form.beneficiary.phoneLabel",
+        "ns": "payments",
+        "key": "form.beneficiary.phoneLabel",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 490,
+        "raw": "form.beneficiary.alipayWechatId",
+        "ns": "payments",
+        "key": "form.beneficiary.alipayWechatId",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 498,
+        "raw": "form.beneficiary.nameRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.nameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 501,
+        "raw": "form.beneficiary.bankRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.bankRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 502,
+        "raw": "form.beneficiary.bankName",
+        "ns": "payments",
+        "key": "form.beneficiary.bankName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 504,
+        "raw": "form.beneficiary.accountRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.accountRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 505,
+        "raw": "form.beneficiary.accountNumber",
+        "ns": "payments",
+        "key": "form.beneficiary.accountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 507,
+        "raw": "form.beneficiary.additionalInfo",
+        "ns": "payments",
+        "key": "form.beneficiary.additionalInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 508,
+        "raw": "form.beneficiary.swiftAgency",
+        "ns": "payments",
+        "key": "form.beneficiary.swiftAgency",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 518,
+        "raw": "form.beneficiary.addLater",
+        "ns": "payments",
+        "key": "form.beneficiary.addLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 542,
+        "raw": "form.confirm.method",
+        "ns": "payments",
+        "key": "form.confirm.method",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 551,
+        "raw": "form.confirm.beneficiary",
+        "ns": "payments",
+        "key": "form.confirm.beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 555,
+        "raw": "form.confirm.amountDebited",
+        "ns": "payments",
+        "key": "form.confirm.amountDebited",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 558,
+        "raw": "form.confirm.newBalance",
+        "ns": "payments",
+        "key": "form.confirm.newBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 565,
+        "raw": "form.confirm.beneficiaryLater",
+        "ns": "payments",
+        "key": "form.confirm.beneficiaryLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 568,
+        "raw": "form.confirm.debitNotice",
+        "ns": "payments",
+        "key": "form.confirm.debitNotice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 575,
+        "raw": "form.continue",
+        "ns": "payments",
+        "key": "form.continue",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 182,
+        "raw": "detail.validation.atLeastOneContact",
+        "ns": "payments",
+        "key": "detail.validation.atLeastOneContact",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 191,
+        "raw": "detail.validation.nameRequired",
+        "ns": "payments",
+        "key": "detail.validation.nameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 194,
+        "raw": "detail.validation.bankNameRequired",
+        "ns": "payments",
+        "key": "detail.validation.bankNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 197,
+        "raw": "detail.validation.bankAccountRequired",
+        "ns": "payments",
+        "key": "detail.validation.bankAccountRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 252,
+        "raw": "detail.toast.beneficiarySaved",
+        "ns": "payments",
+        "key": "detail.toast.beneficiarySaved",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 255,
+        "raw": "detail.toast.saveFailed",
+        "ns": "payments",
+        "key": "detail.toast.saveFailed",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 264,
+        "raw": "detail.toast.completeLater",
+        "ns": "payments",
+        "key": "detail.toast.completeLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 339,
+        "raw": "detail.toast.receiptDownloaded",
+        "ns": "payments",
+        "key": "detail.toast.receiptDownloaded",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 342,
+        "raw": "detail.toast.receiptError",
+        "ns": "payments",
+        "key": "detail.toast.receiptError",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 365,
+        "raw": "detail.notFound",
+        "ns": "payments",
+        "key": "detail.notFound",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 367,
+        "raw": "detail.backToPayments",
+        "ns": "payments",
+        "key": "detail.backToPayments",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 413,
+        "raw": "detail.form.provideAtLeastOne",
+        "ns": "payments",
+        "key": "detail.form.provideAtLeastOne",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 436,
+        "raw": "detail.form.qrPreview",
+        "ns": "payments",
+        "key": "detail.form.qrPreview",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 439,
+        "raw": "detail.form.clickToReplace",
+        "ns": "payments",
+        "key": "detail.form.clickToReplace",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 445,
+        "raw": "detail.form.qrBeneficiary",
+        "ns": "payments",
+        "key": "detail.form.qrBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 454,
+        "raw": "detail.form.addQrCode",
+        "ns": "payments",
+        "key": "detail.form.addQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 455,
+        "raw": "detail.form.ofBeneficiary",
+        "ns": "payments",
+        "key": "detail.form.ofBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 473,
+        "raw": "detail.form.or",
+        "ns": "payments",
+        "key": "detail.form.or",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 481,
+        "raw": "detail.form.phoneNumber",
+        "ns": "payments",
+        "key": "detail.form.phoneNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 496,
+        "raw": "detail.form.emailOptional",
+        "ns": "payments",
+        "key": "detail.form.emailOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 510,
+        "raw": "detail.form.beneficiaryNameOptional",
+        "ns": "payments",
+        "key": "detail.form.beneficiaryNameOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 519,
+        "raw": "detail.form.fullName",
+        "ns": "payments",
+        "key": "detail.form.fullName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 530,
+        "raw": "detail.form.provideBankInfo",
+        "ns": "payments",
+        "key": "detail.form.provideBankInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 538,
+        "raw": "detail.form.beneficiaryNameRequired",
+        "ns": "payments",
+        "key": "detail.form.beneficiaryNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 547,
+        "raw": "detail.form.accountHolderName",
+        "ns": "payments",
+        "key": "detail.form.accountHolderName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 555,
+        "raw": "detail.form.bankNameRequired",
+        "ns": "payments",
+        "key": "detail.form.bankNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 571,
+        "raw": "detail.form.accountNumberRequired",
+        "ns": "payments",
+        "key": "detail.form.accountNumberRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 580,
+        "raw": "detail.form.bankAccountNumber",
+        "ns": "payments",
+        "key": "detail.form.bankAccountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 588,
+        "raw": "detail.form.commentOptional",
+        "ns": "payments",
+        "key": "detail.form.commentOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 595,
+        "raw": "detail.form.additionalInstructions",
+        "ns": "payments",
+        "key": "detail.form.additionalInstructions",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 606,
+        "raw": "detail.form.noInfoRequired",
+        "ns": "payments",
+        "key": "detail.form.noInfoRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 608,
+        "raw": "detail.form.cashQrAutoGenerated",
+        "ns": "payments",
+        "key": "detail.form.cashQrAutoGenerated",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 620,
+        "raw": "detail.cashPayment",
+        "ns": "payments",
+        "key": "detail.cashPayment",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 622,
+        "raw": "detail.cashQrWillBeGenerated",
+        "ns": "payments",
+        "key": "detail.cashQrWillBeGenerated",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 641,
+        "raw": "detail.missingInfo",
+        "ns": "payments",
+        "key": "detail.missingInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 643,
+        "raw": "detail.addBeneficiaryPrompt",
+        "ns": "payments",
+        "key": "detail.addBeneficiaryPrompt",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 647,
+        "raw": "detail.addInfo",
+        "ns": "payments",
+        "key": "detail.addInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 668,
+        "raw": "detail.tapToEnlarge",
+        "ns": "payments",
+        "key": "detail.tapToEnlarge",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 676,
+        "raw": "detail.fields.name",
+        "ns": "payments",
+        "key": "detail.fields.name",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 676,
+        "raw": "detail.fields.beneficiaryName",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 686,
+        "raw": "detail.fields.phone",
+        "ns": "payments",
+        "key": "detail.fields.phone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 686,
+        "raw": "detail.fields.beneficiaryPhone",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryPhone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 689,
+        "raw": "detail.fields.email",
+        "ns": "payments",
+        "key": "detail.fields.email",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 689,
+        "raw": "detail.fields.beneficiaryEmail",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryEmail",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 692,
+        "raw": "detail.fields.bank",
+        "ns": "payments",
+        "key": "detail.fields.bank",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 695,
+        "raw": "detail.fields.accountNumber",
+        "ns": "payments",
+        "key": "detail.fields.accountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 702,
+        "raw": "detail.fields.notes",
+        "ns": "payments",
+        "key": "detail.fields.notes",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 740,
+        "raw": "detail.downloadReceipt",
+        "ns": "payments",
+        "key": "detail.downloadReceipt",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 766,
+        "raw": "detail.rateApplied",
+        "ns": "payments",
+        "key": "detail.rateApplied",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 778,
+        "raw": "detail.locked",
+        "ns": "payments",
+        "key": "detail.locked",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 798,
+        "raw": "detail.qrScannedAtOffice",
+        "ns": "payments",
+        "key": "detail.qrScannedAtOffice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 800,
+        "raw": "detail.processingAtOffice",
+        "ns": "payments",
+        "key": "detail.processingAtOffice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 814,
+        "raw": "detail.cashPaymentCompleted",
+        "ns": "payments",
+        "key": "detail.cashPaymentCompleted",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 817,
+        "raw": "detail.signatureRecordedOn",
+        "ns": "payments",
+        "key": "detail.signatureRecordedOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 822,
+        "raw": "detail.signedBy",
+        "ns": "payments",
+        "key": "detail.signedBy",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 828,
+        "raw": "detail.beneficiarySignature",
+        "ns": "payments",
+        "key": "detail.beneficiarySignature",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 842,
+        "raw": "detail.downloadReceiptPDF",
+        "ns": "payments",
+        "key": "detail.downloadReceiptPDF",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 856,
+        "raw": "detail.beneficiary",
+        "ns": "payments",
+        "key": "detail.beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 869,
+        "raw": "detail.edit",
+        "ns": "payments",
+        "key": "detail.edit",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 883,
+        "raw": "detail.readyForProcessing",
+        "ns": "payments",
+        "key": "detail.readyForProcessing",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 885,
+        "raw": "detail.bonziniWillProcess",
+        "ns": "payments",
+        "key": "detail.bonziniWillProcess",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 894,
+        "raw": "detail.documents",
+        "ns": "payments",
+        "key": "detail.documents",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 900,
+        "raw": "detail.bonziniProofs",
+        "ns": "payments",
+        "key": "detail.bonziniProofs",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 903,
+        "raw": "detail.bonziniProofsDescription",
+        "ns": "payments",
+        "key": "detail.bonziniProofsDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 918,
+        "raw": "detail.myInstructions",
+        "ns": "payments",
+        "key": "detail.myInstructions",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 921,
+        "raw": "detail.myInstructionsDescription",
+        "ns": "payments",
+        "key": "detail.myInstructionsDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 932,
+        "raw": "detail.noMoreModifications",
+        "ns": "payments",
+        "key": "detail.noMoreModifications",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 955,
+        "raw": "detail.noDocuments",
+        "ns": "payments",
+        "key": "detail.noDocuments",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 962,
+        "raw": "detail.rejectionReason",
+        "ns": "payments",
+        "key": "detail.rejectionReason",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 970,
+        "raw": "detail.bonziniMessage",
+        "ns": "payments",
+        "key": "detail.bonziniMessage",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 982,
+        "raw": "detail.historyAndDetails",
+        "ns": "payments",
+        "key": "detail.historyAndDetails",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 994,
+        "raw": "detail.method",
+        "ns": "payments",
+        "key": "detail.method",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 998,
+        "raw": "detail.createdOn",
+        "ns": "payments",
+        "key": "detail.createdOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1005,
+        "raw": "detail.processedOn",
+        "ns": "payments",
+        "key": "detail.processedOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1036,
+        "raw": "detail.qrCodeBeneficiary",
+        "ns": "payments",
+        "key": "detail.qrCodeBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1056,
+        "raw": "detail.downloadQrCode",
+        "ns": "payments",
+        "key": "detail.downloadQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1068,
+        "raw": "detail.dialog.editTitle",
+        "ns": "payments",
+        "key": "detail.dialog.editTitle",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1068,
+        "raw": "detail.dialog.addTitle",
+        "ns": "payments",
+        "key": "detail.dialog.addTitle",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1071,
+        "raw": "detail.dialog.alipayDescription",
+        "ns": "payments",
+        "key": "detail.dialog.alipayDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1072,
+        "raw": "detail.dialog.wechatDescription",
+        "ns": "payments",
+        "key": "detail.dialog.wechatDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1073,
+        "raw": "detail.dialog.bankTransferDescription",
+        "ns": "payments",
+        "key": "detail.dialog.bankTransferDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1074,
+        "raw": "detail.dialog.cashDescription",
+        "ns": "payments",
+        "key": "detail.dialog.cashDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1089,
+        "raw": "detail.dialog.completeLater",
+        "ns": "payments",
+        "key": "detail.dialog.completeLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1101,
+        "raw": "detail.dialog.save",
+        "ns": "payments",
+        "key": "detail.dialog.save",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1106,
+        "raw": "detail.dialog.close",
+        "ns": "payments",
+        "key": "detail.dialog.close",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/ResetPasswordPage.tsx",
+        "line": 74,
+        "raw": "resetPassword.linkExpired",
+        "ns": "auth",
+        "key": "resetPassword.linkExpired",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 300,
+        "raw": "timeline.standard.created.label",
+        "ns": "common",
+        "key": "timeline.standard.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 301,
+        "raw": "timeline.standard.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.standard.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 302,
+        "raw": "timeline.standard.admin_review.label",
+        "ns": "common",
+        "key": "timeline.standard.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 303,
+        "raw": "timeline.standard.validated.label",
+        "ns": "common",
+        "key": "timeline.standard.validated.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 306,
+        "raw": "timeline.withdrawal.created.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 307,
+        "raw": "timeline.withdrawal.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 308,
+        "raw": "timeline.withdrawal.admin_review.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 309,
+        "raw": "timeline.withdrawal.validated.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.validated.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 312,
+        "raw": "timeline.agency.created.label",
+        "ns": "common",
+        "key": "timeline.agency.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 313,
+        "raw": "timeline.agency.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.agency.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 314,
+        "raw": "timeline.agency.admin_review.label",
+        "ns": "common",
+        "key": "timeline.agency.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 315,
+        "raw": "timeline.agency.validated.label",
+        "ns": "common",
+        "key": "timeline.agency.validated.label",
+        "dynamic": false
+      }
+    ],
+    "en": [
+      {
+        "file": "src/mobile/components/agent-cash/AgentCashTabBar.tsx",
+        "line": 10,
+        "raw": "cash_payments",
+        "ns": "common",
+        "key": "cash_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/agent-cash/AgentCashTabBar.tsx",
+        "line": 11,
+        "raw": "scanner",
+        "ns": "common",
+        "key": "scanner",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 87,
+        "raw": "manualDebit",
+        "ns": "common",
+        "key": "manualDebit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 92,
+        "raw": "manualCredit",
+        "ns": "common",
+        "key": "manualCredit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 109,
+        "raw": "amountXAF",
+        "ns": "common",
+        "key": "amountXAF",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 114,
+        "raw": "insufficientBalance",
+        "ns": "common",
+        "key": "insufficientBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 120,
+        "raw": "newBalance",
+        "ns": "common",
+        "key": "newBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 134,
+        "raw": "reason",
+        "ns": "common",
+        "key": "reason",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 137,
+        "raw": "adjustmentReasonPlaceholder",
+        "ns": "common",
+        "key": "adjustmentReasonPlaceholder",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 139,
+        "raw": "reasonRecordedNote",
+        "ns": "common",
+        "key": "reasonRecordedNote",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 146,
+        "raw": "actionCannotBeUndone",
+        "ns": "common",
+        "key": "actionCannotBeUndone",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 165,
+        "raw": "processing",
+        "ns": "common",
+        "key": "processing",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 169,
+        "raw": "debit",
+        "ns": "common",
+        "key": "debit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/layout/MobileTabBar.tsx",
+        "line": 22,
+        "raw": "home",
+        "ns": "common",
+        "key": "home",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 72,
+        "raw": "cash_confirmation",
+        "ns": "common",
+        "key": "cash_confirmation",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 86,
+        "raw": "payment_not_found",
+        "ns": "common",
+        "key": "payment_not_found",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 129,
+        "raw": "cash_handed",
+        "ns": "common",
+        "key": "cash_handed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 146,
+        "raw": "verify_identity",
+        "ns": "common",
+        "key": "verify_identity",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 156,
+        "raw": "signature_required",
+        "ns": "common",
+        "key": "signature_required",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 157,
+        "raw": "signature_instruction",
+        "ns": "common",
+        "key": "signature_instruction",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 172,
+        "raw": "sign_here",
+        "ns": "common",
+        "key": "sign_here",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 184,
+        "raw": "clear",
+        "ns": "common",
+        "key": "clear",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 190,
+        "raw": "beneficiary_name_confirmed",
+        "ns": "common",
+        "key": "beneficiary_name_confirmed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 207,
+        "raw": "confirm_payment",
+        "ns": "common",
+        "key": "confirm_payment",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 68,
+        "raw": "invalid_credentials",
+        "ns": "common",
+        "key": "invalid_credentials",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 128,
+        "raw": "agent_login",
+        "ns": "common",
+        "key": "agent_login",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 130,
+        "raw": "email_address",
+        "ns": "common",
+        "key": "email_address",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 231,
+        "raw": "sign_in",
+        "ns": "common",
+        "key": "sign_in",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 70,
+        "raw": "payment_details",
+        "ns": "common",
+        "key": "payment_details",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_paid",
+        "ns": "common",
+        "key": "status_paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_scanned",
+        "ns": "common",
+        "key": "status_scanned",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_to_pay",
+        "ns": "common",
+        "key": "status_to_pay",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 127,
+        "raw": "beneficiary_info",
+        "ns": "common",
+        "key": "beneficiary_info",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 152,
+        "raw": "client_info",
+        "ns": "common",
+        "key": "client_info",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 177,
+        "raw": "already_paid",
+        "ns": "common",
+        "key": "already_paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 180,
+        "raw": "already_paid_on",
+        "ns": "common",
+        "key": "already_paid_on",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 184,
+        "raw": "signed_by",
+        "ns": "common",
+        "key": "signed_by",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 192,
+        "raw": "beneficiary_signature",
+        "ns": "common",
+        "key": "beneficiary_signature",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 216,
+        "raw": "download_receipt",
+        "ns": "common",
+        "key": "download_receipt",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 229,
+        "raw": "proceed_to_payment",
+        "ns": "common",
+        "key": "proceed_to_payment",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 243,
+        "raw": "qr_already_scanned_continue",
+        "ns": "common",
+        "key": "qr_already_scanned_continue",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 81,
+        "raw": "to_pay",
+        "ns": "common",
+        "key": "to_pay",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 97,
+        "raw": "paid",
+        "ns": "common",
+        "key": "paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 115,
+        "raw": "no_pending_payments",
+        "ns": "common",
+        "key": "no_pending_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 115,
+        "raw": "no_paid_payments",
+        "ns": "common",
+        "key": "no_paid_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 164,
+        "raw": "beneficiary",
+        "ns": "common",
+        "key": "beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 168,
+        "raw": "client",
+        "ns": "common",
+        "key": "client",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 172,
+        "raw": "reference",
+        "ns": "common",
+        "key": "reference",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 44,
+        "raw": "invalid_qr",
+        "ns": "common",
+        "key": "invalid_qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 81,
+        "raw": "camera_permission_denied",
+        "ns": "common",
+        "key": "camera_permission_denied",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 83,
+        "raw": "camera_not_found",
+        "ns": "common",
+        "key": "camera_not_found",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 85,
+        "raw": "camera_https_required",
+        "ns": "common",
+        "key": "camera_https_required",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 87,
+        "raw": "camera_in_use",
+        "ns": "common",
+        "key": "camera_in_use",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 89,
+        "raw": "camera_not_supported",
+        "ns": "common",
+        "key": "camera_not_supported",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 91,
+        "raw": "camera_start_failed",
+        "ns": "common",
+        "key": "camera_start_failed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 127,
+        "raw": "scanning",
+        "ns": "common",
+        "key": "scanning",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 150,
+        "raw": "align_qr",
+        "ns": "common",
+        "key": "align_qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 160,
+        "raw": "manual_entry",
+        "ns": "common",
+        "key": "manual_entry",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 168,
+        "raw": "enter_payment_id",
+        "ns": "common",
+        "key": "enter_payment_id",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 47,
+        "raw": "payment_success",
+        "ns": "common",
+        "key": "payment_success",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 111,
+        "raw": "back_to_list",
+        "ns": "common",
+        "key": "back_to_list",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 118,
+        "raw": "scan_another",
+        "ns": "common",
+        "key": "scan_another",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 201,
+        "raw": "form.qrUploadError",
+        "ns": "payments",
+        "key": "form.qrUploadError",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 280,
+        "raw": "form.howToReceive",
+        "ns": "payments",
+        "key": "form.howToReceive",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 299,
+        "raw": "form.rateApplied",
+        "ns": "payments",
+        "key": "form.rateApplied",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 306,
+        "raw": "form.byXAF",
+        "ns": "payments",
+        "key": "form.byXAF",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 307,
+        "raw": "form.byRMB",
+        "ns": "payments",
+        "key": "form.byRMB",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 328,
+        "raw": "form.amountDebited",
+        "ns": "payments",
+        "key": "form.amountDebited",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 352,
+        "raw": "form.addFunds",
+        "ns": "payments",
+        "key": "form.addFunds",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 368,
+        "raw": "form.beneficiary.whoPicks",
+        "ns": "payments",
+        "key": "form.beneficiary.whoPicks",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 368,
+        "raw": "form.beneficiary.title",
+        "ns": "payments",
+        "key": "form.beneficiary.title",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 370,
+        "raw": "form.beneficiary.mustPresentQr",
+        "ns": "payments",
+        "key": "form.beneficiary.mustPresentQr",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 370,
+        "raw": "form.beneficiary.selectOrCreate",
+        "ns": "payments",
+        "key": "form.beneficiary.selectOrCreate",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 377,
+        "raw": "form.beneficiary.existing",
+        "ns": "payments",
+        "key": "form.beneficiary.existing",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 380,
+        "raw": "form.beneficiary.new",
+        "ns": "payments",
+        "key": "form.beneficiary.new",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 388,
+        "raw": "form.beneficiary.noneRegistered",
+        "ns": "payments",
+        "key": "form.beneficiary.noneRegistered",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 389,
+        "raw": "form.beneficiary.createNew",
+        "ns": "payments",
+        "key": "form.beneficiary.createNew",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 416,
+        "raw": "form.beneficiary.myself",
+        "ns": "payments",
+        "key": "form.beneficiary.myself",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 424,
+        "raw": "form.beneficiary.anotherPerson",
+        "ns": "payments",
+        "key": "form.beneficiary.anotherPerson",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 424,
+        "raw": "form.beneficiary.provideDetails",
+        "ns": "payments",
+        "key": "form.beneficiary.provideDetails",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 429,
+        "raw": "form.beneficiary.fullNameRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.fullNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 432,
+        "raw": "form.beneficiary.phoneRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.phoneRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 435,
+        "raw": "form.beneficiary.emailOptional",
+        "ns": "payments",
+        "key": "form.beneficiary.emailOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 456,
+        "raw": "form.beneficiary.addQrCode",
+        "ns": "payments",
+        "key": "form.beneficiary.addQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 463,
+        "raw": "form.beneficiary.orProvideInfo",
+        "ns": "payments",
+        "key": "form.beneficiary.orProvideInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 466,
+        "raw": "form.beneficiary.fullName",
+        "ns": "payments",
+        "key": "form.beneficiary.fullName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 469,
+        "raw": "form.beneficiary.idType",
+        "ns": "payments",
+        "key": "form.beneficiary.idType",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 472,
+        "raw": "form.beneficiary.idTypes.qr",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 473,
+        "raw": "form.beneficiary.idTypes.id",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.id",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 474,
+        "raw": "form.beneficiary.idTypes.email",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.email",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 475,
+        "raw": "form.beneficiary.idTypes.phone",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.phone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 487,
+        "raw": "form.beneficiary.phoneLabel",
+        "ns": "payments",
+        "key": "form.beneficiary.phoneLabel",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 490,
+        "raw": "form.beneficiary.alipayWechatId",
+        "ns": "payments",
+        "key": "form.beneficiary.alipayWechatId",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 498,
+        "raw": "form.beneficiary.nameRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.nameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 501,
+        "raw": "form.beneficiary.bankRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.bankRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 502,
+        "raw": "form.beneficiary.bankName",
+        "ns": "payments",
+        "key": "form.beneficiary.bankName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 504,
+        "raw": "form.beneficiary.accountRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.accountRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 505,
+        "raw": "form.beneficiary.accountNumber",
+        "ns": "payments",
+        "key": "form.beneficiary.accountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 507,
+        "raw": "form.beneficiary.additionalInfo",
+        "ns": "payments",
+        "key": "form.beneficiary.additionalInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 508,
+        "raw": "form.beneficiary.swiftAgency",
+        "ns": "payments",
+        "key": "form.beneficiary.swiftAgency",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 518,
+        "raw": "form.beneficiary.addLater",
+        "ns": "payments",
+        "key": "form.beneficiary.addLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 542,
+        "raw": "form.confirm.method",
+        "ns": "payments",
+        "key": "form.confirm.method",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 551,
+        "raw": "form.confirm.beneficiary",
+        "ns": "payments",
+        "key": "form.confirm.beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 555,
+        "raw": "form.confirm.amountDebited",
+        "ns": "payments",
+        "key": "form.confirm.amountDebited",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 558,
+        "raw": "form.confirm.newBalance",
+        "ns": "payments",
+        "key": "form.confirm.newBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 565,
+        "raw": "form.confirm.beneficiaryLater",
+        "ns": "payments",
+        "key": "form.confirm.beneficiaryLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 568,
+        "raw": "form.confirm.debitNotice",
+        "ns": "payments",
+        "key": "form.confirm.debitNotice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 575,
+        "raw": "form.continue",
+        "ns": "payments",
+        "key": "form.continue",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 182,
+        "raw": "detail.validation.atLeastOneContact",
+        "ns": "payments",
+        "key": "detail.validation.atLeastOneContact",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 191,
+        "raw": "detail.validation.nameRequired",
+        "ns": "payments",
+        "key": "detail.validation.nameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 194,
+        "raw": "detail.validation.bankNameRequired",
+        "ns": "payments",
+        "key": "detail.validation.bankNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 197,
+        "raw": "detail.validation.bankAccountRequired",
+        "ns": "payments",
+        "key": "detail.validation.bankAccountRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 252,
+        "raw": "detail.toast.beneficiarySaved",
+        "ns": "payments",
+        "key": "detail.toast.beneficiarySaved",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 255,
+        "raw": "detail.toast.saveFailed",
+        "ns": "payments",
+        "key": "detail.toast.saveFailed",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 264,
+        "raw": "detail.toast.completeLater",
+        "ns": "payments",
+        "key": "detail.toast.completeLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 339,
+        "raw": "detail.toast.receiptDownloaded",
+        "ns": "payments",
+        "key": "detail.toast.receiptDownloaded",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 342,
+        "raw": "detail.toast.receiptError",
+        "ns": "payments",
+        "key": "detail.toast.receiptError",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 365,
+        "raw": "detail.notFound",
+        "ns": "payments",
+        "key": "detail.notFound",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 367,
+        "raw": "detail.backToPayments",
+        "ns": "payments",
+        "key": "detail.backToPayments",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 413,
+        "raw": "detail.form.provideAtLeastOne",
+        "ns": "payments",
+        "key": "detail.form.provideAtLeastOne",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 436,
+        "raw": "detail.form.qrPreview",
+        "ns": "payments",
+        "key": "detail.form.qrPreview",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 439,
+        "raw": "detail.form.clickToReplace",
+        "ns": "payments",
+        "key": "detail.form.clickToReplace",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 445,
+        "raw": "detail.form.qrBeneficiary",
+        "ns": "payments",
+        "key": "detail.form.qrBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 454,
+        "raw": "detail.form.addQrCode",
+        "ns": "payments",
+        "key": "detail.form.addQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 455,
+        "raw": "detail.form.ofBeneficiary",
+        "ns": "payments",
+        "key": "detail.form.ofBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 473,
+        "raw": "detail.form.or",
+        "ns": "payments",
+        "key": "detail.form.or",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 481,
+        "raw": "detail.form.phoneNumber",
+        "ns": "payments",
+        "key": "detail.form.phoneNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 496,
+        "raw": "detail.form.emailOptional",
+        "ns": "payments",
+        "key": "detail.form.emailOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 510,
+        "raw": "detail.form.beneficiaryNameOptional",
+        "ns": "payments",
+        "key": "detail.form.beneficiaryNameOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 519,
+        "raw": "detail.form.fullName",
+        "ns": "payments",
+        "key": "detail.form.fullName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 530,
+        "raw": "detail.form.provideBankInfo",
+        "ns": "payments",
+        "key": "detail.form.provideBankInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 538,
+        "raw": "detail.form.beneficiaryNameRequired",
+        "ns": "payments",
+        "key": "detail.form.beneficiaryNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 547,
+        "raw": "detail.form.accountHolderName",
+        "ns": "payments",
+        "key": "detail.form.accountHolderName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 555,
+        "raw": "detail.form.bankNameRequired",
+        "ns": "payments",
+        "key": "detail.form.bankNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 571,
+        "raw": "detail.form.accountNumberRequired",
+        "ns": "payments",
+        "key": "detail.form.accountNumberRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 580,
+        "raw": "detail.form.bankAccountNumber",
+        "ns": "payments",
+        "key": "detail.form.bankAccountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 588,
+        "raw": "detail.form.commentOptional",
+        "ns": "payments",
+        "key": "detail.form.commentOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 595,
+        "raw": "detail.form.additionalInstructions",
+        "ns": "payments",
+        "key": "detail.form.additionalInstructions",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 606,
+        "raw": "detail.form.noInfoRequired",
+        "ns": "payments",
+        "key": "detail.form.noInfoRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 608,
+        "raw": "detail.form.cashQrAutoGenerated",
+        "ns": "payments",
+        "key": "detail.form.cashQrAutoGenerated",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 620,
+        "raw": "detail.cashPayment",
+        "ns": "payments",
+        "key": "detail.cashPayment",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 622,
+        "raw": "detail.cashQrWillBeGenerated",
+        "ns": "payments",
+        "key": "detail.cashQrWillBeGenerated",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 641,
+        "raw": "detail.missingInfo",
+        "ns": "payments",
+        "key": "detail.missingInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 643,
+        "raw": "detail.addBeneficiaryPrompt",
+        "ns": "payments",
+        "key": "detail.addBeneficiaryPrompt",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 647,
+        "raw": "detail.addInfo",
+        "ns": "payments",
+        "key": "detail.addInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 668,
+        "raw": "detail.tapToEnlarge",
+        "ns": "payments",
+        "key": "detail.tapToEnlarge",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 676,
+        "raw": "detail.fields.name",
+        "ns": "payments",
+        "key": "detail.fields.name",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 676,
+        "raw": "detail.fields.beneficiaryName",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 686,
+        "raw": "detail.fields.phone",
+        "ns": "payments",
+        "key": "detail.fields.phone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 686,
+        "raw": "detail.fields.beneficiaryPhone",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryPhone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 689,
+        "raw": "detail.fields.email",
+        "ns": "payments",
+        "key": "detail.fields.email",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 689,
+        "raw": "detail.fields.beneficiaryEmail",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryEmail",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 692,
+        "raw": "detail.fields.bank",
+        "ns": "payments",
+        "key": "detail.fields.bank",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 695,
+        "raw": "detail.fields.accountNumber",
+        "ns": "payments",
+        "key": "detail.fields.accountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 702,
+        "raw": "detail.fields.notes",
+        "ns": "payments",
+        "key": "detail.fields.notes",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 740,
+        "raw": "detail.downloadReceipt",
+        "ns": "payments",
+        "key": "detail.downloadReceipt",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 766,
+        "raw": "detail.rateApplied",
+        "ns": "payments",
+        "key": "detail.rateApplied",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 778,
+        "raw": "detail.locked",
+        "ns": "payments",
+        "key": "detail.locked",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 798,
+        "raw": "detail.qrScannedAtOffice",
+        "ns": "payments",
+        "key": "detail.qrScannedAtOffice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 800,
+        "raw": "detail.processingAtOffice",
+        "ns": "payments",
+        "key": "detail.processingAtOffice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 814,
+        "raw": "detail.cashPaymentCompleted",
+        "ns": "payments",
+        "key": "detail.cashPaymentCompleted",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 817,
+        "raw": "detail.signatureRecordedOn",
+        "ns": "payments",
+        "key": "detail.signatureRecordedOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 822,
+        "raw": "detail.signedBy",
+        "ns": "payments",
+        "key": "detail.signedBy",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 828,
+        "raw": "detail.beneficiarySignature",
+        "ns": "payments",
+        "key": "detail.beneficiarySignature",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 842,
+        "raw": "detail.downloadReceiptPDF",
+        "ns": "payments",
+        "key": "detail.downloadReceiptPDF",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 856,
+        "raw": "detail.beneficiary",
+        "ns": "payments",
+        "key": "detail.beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 869,
+        "raw": "detail.edit",
+        "ns": "payments",
+        "key": "detail.edit",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 883,
+        "raw": "detail.readyForProcessing",
+        "ns": "payments",
+        "key": "detail.readyForProcessing",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 885,
+        "raw": "detail.bonziniWillProcess",
+        "ns": "payments",
+        "key": "detail.bonziniWillProcess",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 894,
+        "raw": "detail.documents",
+        "ns": "payments",
+        "key": "detail.documents",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 900,
+        "raw": "detail.bonziniProofs",
+        "ns": "payments",
+        "key": "detail.bonziniProofs",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 903,
+        "raw": "detail.bonziniProofsDescription",
+        "ns": "payments",
+        "key": "detail.bonziniProofsDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 918,
+        "raw": "detail.myInstructions",
+        "ns": "payments",
+        "key": "detail.myInstructions",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 921,
+        "raw": "detail.myInstructionsDescription",
+        "ns": "payments",
+        "key": "detail.myInstructionsDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 932,
+        "raw": "detail.noMoreModifications",
+        "ns": "payments",
+        "key": "detail.noMoreModifications",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 955,
+        "raw": "detail.noDocuments",
+        "ns": "payments",
+        "key": "detail.noDocuments",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 962,
+        "raw": "detail.rejectionReason",
+        "ns": "payments",
+        "key": "detail.rejectionReason",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 970,
+        "raw": "detail.bonziniMessage",
+        "ns": "payments",
+        "key": "detail.bonziniMessage",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 982,
+        "raw": "detail.historyAndDetails",
+        "ns": "payments",
+        "key": "detail.historyAndDetails",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 994,
+        "raw": "detail.method",
+        "ns": "payments",
+        "key": "detail.method",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 998,
+        "raw": "detail.createdOn",
+        "ns": "payments",
+        "key": "detail.createdOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1005,
+        "raw": "detail.processedOn",
+        "ns": "payments",
+        "key": "detail.processedOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1036,
+        "raw": "detail.qrCodeBeneficiary",
+        "ns": "payments",
+        "key": "detail.qrCodeBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1056,
+        "raw": "detail.downloadQrCode",
+        "ns": "payments",
+        "key": "detail.downloadQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1068,
+        "raw": "detail.dialog.editTitle",
+        "ns": "payments",
+        "key": "detail.dialog.editTitle",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1068,
+        "raw": "detail.dialog.addTitle",
+        "ns": "payments",
+        "key": "detail.dialog.addTitle",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1071,
+        "raw": "detail.dialog.alipayDescription",
+        "ns": "payments",
+        "key": "detail.dialog.alipayDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1072,
+        "raw": "detail.dialog.wechatDescription",
+        "ns": "payments",
+        "key": "detail.dialog.wechatDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1073,
+        "raw": "detail.dialog.bankTransferDescription",
+        "ns": "payments",
+        "key": "detail.dialog.bankTransferDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1074,
+        "raw": "detail.dialog.cashDescription",
+        "ns": "payments",
+        "key": "detail.dialog.cashDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1089,
+        "raw": "detail.dialog.completeLater",
+        "ns": "payments",
+        "key": "detail.dialog.completeLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1101,
+        "raw": "detail.dialog.save",
+        "ns": "payments",
+        "key": "detail.dialog.save",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1106,
+        "raw": "detail.dialog.close",
+        "ns": "payments",
+        "key": "detail.dialog.close",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/ResetPasswordPage.tsx",
+        "line": 74,
+        "raw": "resetPassword.linkExpired",
+        "ns": "auth",
+        "key": "resetPassword.linkExpired",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 300,
+        "raw": "timeline.standard.created.label",
+        "ns": "common",
+        "key": "timeline.standard.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 301,
+        "raw": "timeline.standard.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.standard.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 302,
+        "raw": "timeline.standard.admin_review.label",
+        "ns": "common",
+        "key": "timeline.standard.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 303,
+        "raw": "timeline.standard.validated.label",
+        "ns": "common",
+        "key": "timeline.standard.validated.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 306,
+        "raw": "timeline.withdrawal.created.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 307,
+        "raw": "timeline.withdrawal.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 308,
+        "raw": "timeline.withdrawal.admin_review.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 309,
+        "raw": "timeline.withdrawal.validated.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.validated.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 312,
+        "raw": "timeline.agency.created.label",
+        "ns": "common",
+        "key": "timeline.agency.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 313,
+        "raw": "timeline.agency.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.agency.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 314,
+        "raw": "timeline.agency.admin_review.label",
+        "ns": "common",
+        "key": "timeline.agency.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 315,
+        "raw": "timeline.agency.validated.label",
+        "ns": "common",
+        "key": "timeline.agency.validated.label",
+        "dynamic": false
+      }
+    ],
+    "zh": [
+      {
+        "file": "src/mobile/components/agent-cash/AgentCashTabBar.tsx",
+        "line": 10,
+        "raw": "cash_payments",
+        "ns": "common",
+        "key": "cash_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/agent-cash/AgentCashTabBar.tsx",
+        "line": 11,
+        "raw": "scanner",
+        "ns": "common",
+        "key": "scanner",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 87,
+        "raw": "manualDebit",
+        "ns": "common",
+        "key": "manualDebit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 92,
+        "raw": "manualCredit",
+        "ns": "common",
+        "key": "manualCredit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 109,
+        "raw": "amountXAF",
+        "ns": "common",
+        "key": "amountXAF",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 114,
+        "raw": "insufficientBalance",
+        "ns": "common",
+        "key": "insufficientBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 120,
+        "raw": "newBalance",
+        "ns": "common",
+        "key": "newBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 134,
+        "raw": "reason",
+        "ns": "common",
+        "key": "reason",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 137,
+        "raw": "adjustmentReasonPlaceholder",
+        "ns": "common",
+        "key": "adjustmentReasonPlaceholder",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 139,
+        "raw": "reasonRecordedNote",
+        "ns": "common",
+        "key": "reasonRecordedNote",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 146,
+        "raw": "actionCannotBeUndone",
+        "ns": "common",
+        "key": "actionCannotBeUndone",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 165,
+        "raw": "processing",
+        "ns": "common",
+        "key": "processing",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/clients/AdjustmentDrawer.tsx",
+        "line": 169,
+        "raw": "debit",
+        "ns": "common",
+        "key": "debit",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/components/layout/MobileTabBar.tsx",
+        "line": 22,
+        "raw": "home",
+        "ns": "common",
+        "key": "home",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 72,
+        "raw": "cash_confirmation",
+        "ns": "common",
+        "key": "cash_confirmation",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 86,
+        "raw": "payment_not_found",
+        "ns": "common",
+        "key": "payment_not_found",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 129,
+        "raw": "cash_handed",
+        "ns": "common",
+        "key": "cash_handed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 146,
+        "raw": "verify_identity",
+        "ns": "common",
+        "key": "verify_identity",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 156,
+        "raw": "signature_required",
+        "ns": "common",
+        "key": "signature_required",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 157,
+        "raw": "signature_instruction",
+        "ns": "common",
+        "key": "signature_instruction",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 172,
+        "raw": "sign_here",
+        "ns": "common",
+        "key": "sign_here",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 184,
+        "raw": "clear",
+        "ns": "common",
+        "key": "clear",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 190,
+        "raw": "beneficiary_name_confirmed",
+        "ns": "common",
+        "key": "beneficiary_name_confirmed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashConfirm.tsx",
+        "line": 207,
+        "raw": "confirm_payment",
+        "ns": "common",
+        "key": "confirm_payment",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 68,
+        "raw": "invalid_credentials",
+        "ns": "common",
+        "key": "invalid_credentials",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 128,
+        "raw": "agent_login",
+        "ns": "common",
+        "key": "agent_login",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 130,
+        "raw": "email_address",
+        "ns": "common",
+        "key": "email_address",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashLogin.tsx",
+        "line": 231,
+        "raw": "sign_in",
+        "ns": "common",
+        "key": "sign_in",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 70,
+        "raw": "payment_details",
+        "ns": "common",
+        "key": "payment_details",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_paid",
+        "ns": "common",
+        "key": "status_paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_scanned",
+        "ns": "common",
+        "key": "status_scanned",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 119,
+        "raw": "status_to_pay",
+        "ns": "common",
+        "key": "status_to_pay",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 127,
+        "raw": "beneficiary_info",
+        "ns": "common",
+        "key": "beneficiary_info",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 152,
+        "raw": "client_info",
+        "ns": "common",
+        "key": "client_info",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 177,
+        "raw": "already_paid",
+        "ns": "common",
+        "key": "already_paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 180,
+        "raw": "already_paid_on",
+        "ns": "common",
+        "key": "already_paid_on",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 184,
+        "raw": "signed_by",
+        "ns": "common",
+        "key": "signed_by",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 192,
+        "raw": "beneficiary_signature",
+        "ns": "common",
+        "key": "beneficiary_signature",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 216,
+        "raw": "download_receipt",
+        "ns": "common",
+        "key": "download_receipt",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 229,
+        "raw": "proceed_to_payment",
+        "ns": "common",
+        "key": "proceed_to_payment",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPaymentDetail.tsx",
+        "line": 243,
+        "raw": "qr_already_scanned_continue",
+        "ns": "common",
+        "key": "qr_already_scanned_continue",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 81,
+        "raw": "to_pay",
+        "ns": "common",
+        "key": "to_pay",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 97,
+        "raw": "paid",
+        "ns": "common",
+        "key": "paid",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 115,
+        "raw": "no_pending_payments",
+        "ns": "common",
+        "key": "no_pending_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 115,
+        "raw": "no_paid_payments",
+        "ns": "common",
+        "key": "no_paid_payments",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 164,
+        "raw": "beneficiary",
+        "ns": "common",
+        "key": "beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 168,
+        "raw": "client",
+        "ns": "common",
+        "key": "client",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashPayments.tsx",
+        "line": 172,
+        "raw": "reference",
+        "ns": "common",
+        "key": "reference",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 44,
+        "raw": "invalid_qr",
+        "ns": "common",
+        "key": "invalid_qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 81,
+        "raw": "camera_permission_denied",
+        "ns": "common",
+        "key": "camera_permission_denied",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 83,
+        "raw": "camera_not_found",
+        "ns": "common",
+        "key": "camera_not_found",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 85,
+        "raw": "camera_https_required",
+        "ns": "common",
+        "key": "camera_https_required",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 87,
+        "raw": "camera_in_use",
+        "ns": "common",
+        "key": "camera_in_use",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 89,
+        "raw": "camera_not_supported",
+        "ns": "common",
+        "key": "camera_not_supported",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 91,
+        "raw": "camera_start_failed",
+        "ns": "common",
+        "key": "camera_start_failed",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 127,
+        "raw": "scanning",
+        "ns": "common",
+        "key": "scanning",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 150,
+        "raw": "align_qr",
+        "ns": "common",
+        "key": "align_qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 160,
+        "raw": "manual_entry",
+        "ns": "common",
+        "key": "manual_entry",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashScanner.tsx",
+        "line": 168,
+        "raw": "enter_payment_id",
+        "ns": "common",
+        "key": "enter_payment_id",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 47,
+        "raw": "payment_success",
+        "ns": "common",
+        "key": "payment_success",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 111,
+        "raw": "back_to_list",
+        "ns": "common",
+        "key": "back_to_list",
+        "dynamic": false
+      },
+      {
+        "file": "src/mobile/screens/agent-cash/AgentCashSuccess.tsx",
+        "line": 118,
+        "raw": "scan_another",
+        "ns": "common",
+        "key": "scan_another",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 201,
+        "raw": "form.qrUploadError",
+        "ns": "payments",
+        "key": "form.qrUploadError",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 280,
+        "raw": "form.howToReceive",
+        "ns": "payments",
+        "key": "form.howToReceive",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 299,
+        "raw": "form.rateApplied",
+        "ns": "payments",
+        "key": "form.rateApplied",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 306,
+        "raw": "form.byXAF",
+        "ns": "payments",
+        "key": "form.byXAF",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 307,
+        "raw": "form.byRMB",
+        "ns": "payments",
+        "key": "form.byRMB",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 328,
+        "raw": "form.amountDebited",
+        "ns": "payments",
+        "key": "form.amountDebited",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 352,
+        "raw": "form.addFunds",
+        "ns": "payments",
+        "key": "form.addFunds",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 368,
+        "raw": "form.beneficiary.whoPicks",
+        "ns": "payments",
+        "key": "form.beneficiary.whoPicks",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 368,
+        "raw": "form.beneficiary.title",
+        "ns": "payments",
+        "key": "form.beneficiary.title",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 370,
+        "raw": "form.beneficiary.mustPresentQr",
+        "ns": "payments",
+        "key": "form.beneficiary.mustPresentQr",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 370,
+        "raw": "form.beneficiary.selectOrCreate",
+        "ns": "payments",
+        "key": "form.beneficiary.selectOrCreate",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 377,
+        "raw": "form.beneficiary.existing",
+        "ns": "payments",
+        "key": "form.beneficiary.existing",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 380,
+        "raw": "form.beneficiary.new",
+        "ns": "payments",
+        "key": "form.beneficiary.new",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 388,
+        "raw": "form.beneficiary.noneRegistered",
+        "ns": "payments",
+        "key": "form.beneficiary.noneRegistered",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 389,
+        "raw": "form.beneficiary.createNew",
+        "ns": "payments",
+        "key": "form.beneficiary.createNew",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 416,
+        "raw": "form.beneficiary.myself",
+        "ns": "payments",
+        "key": "form.beneficiary.myself",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 424,
+        "raw": "form.beneficiary.anotherPerson",
+        "ns": "payments",
+        "key": "form.beneficiary.anotherPerson",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 424,
+        "raw": "form.beneficiary.provideDetails",
+        "ns": "payments",
+        "key": "form.beneficiary.provideDetails",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 429,
+        "raw": "form.beneficiary.fullNameRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.fullNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 432,
+        "raw": "form.beneficiary.phoneRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.phoneRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 435,
+        "raw": "form.beneficiary.emailOptional",
+        "ns": "payments",
+        "key": "form.beneficiary.emailOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 456,
+        "raw": "form.beneficiary.addQrCode",
+        "ns": "payments",
+        "key": "form.beneficiary.addQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 463,
+        "raw": "form.beneficiary.orProvideInfo",
+        "ns": "payments",
+        "key": "form.beneficiary.orProvideInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 466,
+        "raw": "form.beneficiary.fullName",
+        "ns": "payments",
+        "key": "form.beneficiary.fullName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 469,
+        "raw": "form.beneficiary.idType",
+        "ns": "payments",
+        "key": "form.beneficiary.idType",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 472,
+        "raw": "form.beneficiary.idTypes.qr",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.qr",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 473,
+        "raw": "form.beneficiary.idTypes.id",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.id",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 474,
+        "raw": "form.beneficiary.idTypes.email",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.email",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 475,
+        "raw": "form.beneficiary.idTypes.phone",
+        "ns": "payments",
+        "key": "form.beneficiary.idTypes.phone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 487,
+        "raw": "form.beneficiary.phoneLabel",
+        "ns": "payments",
+        "key": "form.beneficiary.phoneLabel",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 490,
+        "raw": "form.beneficiary.alipayWechatId",
+        "ns": "payments",
+        "key": "form.beneficiary.alipayWechatId",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 498,
+        "raw": "form.beneficiary.nameRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.nameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 501,
+        "raw": "form.beneficiary.bankRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.bankRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 502,
+        "raw": "form.beneficiary.bankName",
+        "ns": "payments",
+        "key": "form.beneficiary.bankName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 504,
+        "raw": "form.beneficiary.accountRequired",
+        "ns": "payments",
+        "key": "form.beneficiary.accountRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 505,
+        "raw": "form.beneficiary.accountNumber",
+        "ns": "payments",
+        "key": "form.beneficiary.accountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 507,
+        "raw": "form.beneficiary.additionalInfo",
+        "ns": "payments",
+        "key": "form.beneficiary.additionalInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 508,
+        "raw": "form.beneficiary.swiftAgency",
+        "ns": "payments",
+        "key": "form.beneficiary.swiftAgency",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 518,
+        "raw": "form.beneficiary.addLater",
+        "ns": "payments",
+        "key": "form.beneficiary.addLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 542,
+        "raw": "form.confirm.method",
+        "ns": "payments",
+        "key": "form.confirm.method",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 551,
+        "raw": "form.confirm.beneficiary",
+        "ns": "payments",
+        "key": "form.confirm.beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 555,
+        "raw": "form.confirm.amountDebited",
+        "ns": "payments",
+        "key": "form.confirm.amountDebited",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 558,
+        "raw": "form.confirm.newBalance",
+        "ns": "payments",
+        "key": "form.confirm.newBalance",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 565,
+        "raw": "form.confirm.beneficiaryLater",
+        "ns": "payments",
+        "key": "form.confirm.beneficiaryLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 568,
+        "raw": "form.confirm.debitNotice",
+        "ns": "payments",
+        "key": "form.confirm.debitNotice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/NewPaymentPage.tsx",
+        "line": 575,
+        "raw": "form.continue",
+        "ns": "payments",
+        "key": "form.continue",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 182,
+        "raw": "detail.validation.atLeastOneContact",
+        "ns": "payments",
+        "key": "detail.validation.atLeastOneContact",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 191,
+        "raw": "detail.validation.nameRequired",
+        "ns": "payments",
+        "key": "detail.validation.nameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 194,
+        "raw": "detail.validation.bankNameRequired",
+        "ns": "payments",
+        "key": "detail.validation.bankNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 197,
+        "raw": "detail.validation.bankAccountRequired",
+        "ns": "payments",
+        "key": "detail.validation.bankAccountRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 252,
+        "raw": "detail.toast.beneficiarySaved",
+        "ns": "payments",
+        "key": "detail.toast.beneficiarySaved",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 255,
+        "raw": "detail.toast.saveFailed",
+        "ns": "payments",
+        "key": "detail.toast.saveFailed",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 264,
+        "raw": "detail.toast.completeLater",
+        "ns": "payments",
+        "key": "detail.toast.completeLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 339,
+        "raw": "detail.toast.receiptDownloaded",
+        "ns": "payments",
+        "key": "detail.toast.receiptDownloaded",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 342,
+        "raw": "detail.toast.receiptError",
+        "ns": "payments",
+        "key": "detail.toast.receiptError",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 365,
+        "raw": "detail.notFound",
+        "ns": "payments",
+        "key": "detail.notFound",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 367,
+        "raw": "detail.backToPayments",
+        "ns": "payments",
+        "key": "detail.backToPayments",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 413,
+        "raw": "detail.form.provideAtLeastOne",
+        "ns": "payments",
+        "key": "detail.form.provideAtLeastOne",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 436,
+        "raw": "detail.form.qrPreview",
+        "ns": "payments",
+        "key": "detail.form.qrPreview",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 439,
+        "raw": "detail.form.clickToReplace",
+        "ns": "payments",
+        "key": "detail.form.clickToReplace",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 445,
+        "raw": "detail.form.qrBeneficiary",
+        "ns": "payments",
+        "key": "detail.form.qrBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 454,
+        "raw": "detail.form.addQrCode",
+        "ns": "payments",
+        "key": "detail.form.addQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 455,
+        "raw": "detail.form.ofBeneficiary",
+        "ns": "payments",
+        "key": "detail.form.ofBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 473,
+        "raw": "detail.form.or",
+        "ns": "payments",
+        "key": "detail.form.or",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 481,
+        "raw": "detail.form.phoneNumber",
+        "ns": "payments",
+        "key": "detail.form.phoneNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 496,
+        "raw": "detail.form.emailOptional",
+        "ns": "payments",
+        "key": "detail.form.emailOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 510,
+        "raw": "detail.form.beneficiaryNameOptional",
+        "ns": "payments",
+        "key": "detail.form.beneficiaryNameOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 519,
+        "raw": "detail.form.fullName",
+        "ns": "payments",
+        "key": "detail.form.fullName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 530,
+        "raw": "detail.form.provideBankInfo",
+        "ns": "payments",
+        "key": "detail.form.provideBankInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 538,
+        "raw": "detail.form.beneficiaryNameRequired",
+        "ns": "payments",
+        "key": "detail.form.beneficiaryNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 547,
+        "raw": "detail.form.accountHolderName",
+        "ns": "payments",
+        "key": "detail.form.accountHolderName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 555,
+        "raw": "detail.form.bankNameRequired",
+        "ns": "payments",
+        "key": "detail.form.bankNameRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 571,
+        "raw": "detail.form.accountNumberRequired",
+        "ns": "payments",
+        "key": "detail.form.accountNumberRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 580,
+        "raw": "detail.form.bankAccountNumber",
+        "ns": "payments",
+        "key": "detail.form.bankAccountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 588,
+        "raw": "detail.form.commentOptional",
+        "ns": "payments",
+        "key": "detail.form.commentOptional",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 595,
+        "raw": "detail.form.additionalInstructions",
+        "ns": "payments",
+        "key": "detail.form.additionalInstructions",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 606,
+        "raw": "detail.form.noInfoRequired",
+        "ns": "payments",
+        "key": "detail.form.noInfoRequired",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 608,
+        "raw": "detail.form.cashQrAutoGenerated",
+        "ns": "payments",
+        "key": "detail.form.cashQrAutoGenerated",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 620,
+        "raw": "detail.cashPayment",
+        "ns": "payments",
+        "key": "detail.cashPayment",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 622,
+        "raw": "detail.cashQrWillBeGenerated",
+        "ns": "payments",
+        "key": "detail.cashQrWillBeGenerated",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 641,
+        "raw": "detail.missingInfo",
+        "ns": "payments",
+        "key": "detail.missingInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 643,
+        "raw": "detail.addBeneficiaryPrompt",
+        "ns": "payments",
+        "key": "detail.addBeneficiaryPrompt",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 647,
+        "raw": "detail.addInfo",
+        "ns": "payments",
+        "key": "detail.addInfo",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 668,
+        "raw": "detail.tapToEnlarge",
+        "ns": "payments",
+        "key": "detail.tapToEnlarge",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 676,
+        "raw": "detail.fields.name",
+        "ns": "payments",
+        "key": "detail.fields.name",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 676,
+        "raw": "detail.fields.beneficiaryName",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryName",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 686,
+        "raw": "detail.fields.phone",
+        "ns": "payments",
+        "key": "detail.fields.phone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 686,
+        "raw": "detail.fields.beneficiaryPhone",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryPhone",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 689,
+        "raw": "detail.fields.email",
+        "ns": "payments",
+        "key": "detail.fields.email",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 689,
+        "raw": "detail.fields.beneficiaryEmail",
+        "ns": "payments",
+        "key": "detail.fields.beneficiaryEmail",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 692,
+        "raw": "detail.fields.bank",
+        "ns": "payments",
+        "key": "detail.fields.bank",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 695,
+        "raw": "detail.fields.accountNumber",
+        "ns": "payments",
+        "key": "detail.fields.accountNumber",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 702,
+        "raw": "detail.fields.notes",
+        "ns": "payments",
+        "key": "detail.fields.notes",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 740,
+        "raw": "detail.downloadReceipt",
+        "ns": "payments",
+        "key": "detail.downloadReceipt",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 766,
+        "raw": "detail.rateApplied",
+        "ns": "payments",
+        "key": "detail.rateApplied",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 778,
+        "raw": "detail.locked",
+        "ns": "payments",
+        "key": "detail.locked",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 798,
+        "raw": "detail.qrScannedAtOffice",
+        "ns": "payments",
+        "key": "detail.qrScannedAtOffice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 800,
+        "raw": "detail.processingAtOffice",
+        "ns": "payments",
+        "key": "detail.processingAtOffice",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 814,
+        "raw": "detail.cashPaymentCompleted",
+        "ns": "payments",
+        "key": "detail.cashPaymentCompleted",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 817,
+        "raw": "detail.signatureRecordedOn",
+        "ns": "payments",
+        "key": "detail.signatureRecordedOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 822,
+        "raw": "detail.signedBy",
+        "ns": "payments",
+        "key": "detail.signedBy",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 828,
+        "raw": "detail.beneficiarySignature",
+        "ns": "payments",
+        "key": "detail.beneficiarySignature",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 842,
+        "raw": "detail.downloadReceiptPDF",
+        "ns": "payments",
+        "key": "detail.downloadReceiptPDF",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 856,
+        "raw": "detail.beneficiary",
+        "ns": "payments",
+        "key": "detail.beneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 869,
+        "raw": "detail.edit",
+        "ns": "payments",
+        "key": "detail.edit",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 883,
+        "raw": "detail.readyForProcessing",
+        "ns": "payments",
+        "key": "detail.readyForProcessing",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 885,
+        "raw": "detail.bonziniWillProcess",
+        "ns": "payments",
+        "key": "detail.bonziniWillProcess",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 894,
+        "raw": "detail.documents",
+        "ns": "payments",
+        "key": "detail.documents",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 900,
+        "raw": "detail.bonziniProofs",
+        "ns": "payments",
+        "key": "detail.bonziniProofs",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 903,
+        "raw": "detail.bonziniProofsDescription",
+        "ns": "payments",
+        "key": "detail.bonziniProofsDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 918,
+        "raw": "detail.myInstructions",
+        "ns": "payments",
+        "key": "detail.myInstructions",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 921,
+        "raw": "detail.myInstructionsDescription",
+        "ns": "payments",
+        "key": "detail.myInstructionsDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 932,
+        "raw": "detail.noMoreModifications",
+        "ns": "payments",
+        "key": "detail.noMoreModifications",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 955,
+        "raw": "detail.noDocuments",
+        "ns": "payments",
+        "key": "detail.noDocuments",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 962,
+        "raw": "detail.rejectionReason",
+        "ns": "payments",
+        "key": "detail.rejectionReason",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 970,
+        "raw": "detail.bonziniMessage",
+        "ns": "payments",
+        "key": "detail.bonziniMessage",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 982,
+        "raw": "detail.historyAndDetails",
+        "ns": "payments",
+        "key": "detail.historyAndDetails",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 994,
+        "raw": "detail.method",
+        "ns": "payments",
+        "key": "detail.method",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 998,
+        "raw": "detail.createdOn",
+        "ns": "payments",
+        "key": "detail.createdOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1005,
+        "raw": "detail.processedOn",
+        "ns": "payments",
+        "key": "detail.processedOn",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1036,
+        "raw": "detail.qrCodeBeneficiary",
+        "ns": "payments",
+        "key": "detail.qrCodeBeneficiary",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1056,
+        "raw": "detail.downloadQrCode",
+        "ns": "payments",
+        "key": "detail.downloadQrCode",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1068,
+        "raw": "detail.dialog.editTitle",
+        "ns": "payments",
+        "key": "detail.dialog.editTitle",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1068,
+        "raw": "detail.dialog.addTitle",
+        "ns": "payments",
+        "key": "detail.dialog.addTitle",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1071,
+        "raw": "detail.dialog.alipayDescription",
+        "ns": "payments",
+        "key": "detail.dialog.alipayDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1072,
+        "raw": "detail.dialog.wechatDescription",
+        "ns": "payments",
+        "key": "detail.dialog.wechatDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1073,
+        "raw": "detail.dialog.bankTransferDescription",
+        "ns": "payments",
+        "key": "detail.dialog.bankTransferDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1074,
+        "raw": "detail.dialog.cashDescription",
+        "ns": "payments",
+        "key": "detail.dialog.cashDescription",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1089,
+        "raw": "detail.dialog.completeLater",
+        "ns": "payments",
+        "key": "detail.dialog.completeLater",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1101,
+        "raw": "detail.dialog.save",
+        "ns": "payments",
+        "key": "detail.dialog.save",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/PaymentDetailPage.tsx",
+        "line": 1106,
+        "raw": "detail.dialog.close",
+        "ns": "payments",
+        "key": "detail.dialog.close",
+        "dynamic": false
+      },
+      {
+        "file": "src/pages/ResetPasswordPage.tsx",
+        "line": 74,
+        "raw": "resetPassword.linkExpired",
+        "ns": "auth",
+        "key": "resetPassword.linkExpired",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 300,
+        "raw": "timeline.standard.created.label",
+        "ns": "common",
+        "key": "timeline.standard.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 301,
+        "raw": "timeline.standard.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.standard.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 302,
+        "raw": "timeline.standard.admin_review.label",
+        "ns": "common",
+        "key": "timeline.standard.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 303,
+        "raw": "timeline.standard.validated.label",
+        "ns": "common",
+        "key": "timeline.standard.validated.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 306,
+        "raw": "timeline.withdrawal.created.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 307,
+        "raw": "timeline.withdrawal.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 308,
+        "raw": "timeline.withdrawal.admin_review.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 309,
+        "raw": "timeline.withdrawal.validated.label",
+        "ns": "common",
+        "key": "timeline.withdrawal.validated.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 312,
+        "raw": "timeline.agency.created.label",
+        "ns": "common",
+        "key": "timeline.agency.created.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 313,
+        "raw": "timeline.agency.proof_submitted.label",
+        "ns": "common",
+        "key": "timeline.agency.proof_submitted.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 314,
+        "raw": "timeline.agency.admin_review.label",
+        "ns": "common",
+        "key": "timeline.agency.admin_review.label",
+        "dynamic": false
+      },
+      {
+        "file": "src/types/deposit.ts",
+        "line": 315,
+        "raw": "timeline.agency.validated.label",
+        "ns": "common",
+        "key": "timeline.agency.validated.label",
+        "dynamic": false
+      }
+    ]
+  },
+  "dynamic": [
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 358,
+      "raw": "method.${deposit.method}",
+      "ns": "deposits",
+      "key": "method.${deposit.method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 368,
+      "raw": "status.${deposit.status}",
+      "ns": "deposits",
+      "key": "status.${deposit.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 481,
+      "raw": "method.${deposit.method}",
+      "ns": "deposits",
+      "key": "method.${deposit.method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 491,
+      "raw": "status.${deposit.status}",
+      "ns": "deposits",
+      "key": "status.${deposit.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 773,
+      "raw": "proofDeleteReasons.${reasonKeys[index]}",
+      "ns": "deposits",
+      "key": "proofDeleteReasons.${reasonKeys[index]}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositsPage.tsx",
+      "line": 108,
+      "raw": "method.${deposit.method}",
+      "ns": "deposits",
+      "key": "method.${deposit.method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositsPage.tsx",
+      "line": 120,
+      "raw": "status.${deposit.status}",
+      "ns": "deposits",
+      "key": "status.${deposit.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 90,
+      "raw": "nav.${item.key}",
+      "ns": "landing",
+      "key": "nav.${item.key}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 110,
+      "raw": "nav.${item.key}",
+      "ns": "landing",
+      "key": "nav.${item.key}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 233,
+      "raw": "ticker.${k}",
+      "ns": "landing",
+      "key": "ticker.${k}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 337,
+      "raw": "methods.${m.key}.tag",
+      "ns": "landing",
+      "key": "methods.${m.key}.tag",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 339,
+      "raw": "methods.${m.key}.name",
+      "ns": "landing",
+      "key": "methods.${m.key}.name",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 340,
+      "raw": "methods.${m.key}.desc",
+      "ns": "landing",
+      "key": "methods.${m.key}.desc",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/NewPaymentPage.tsx",
+      "line": 78,
+      "raw": "form.steps.${key}",
+      "ns": "payments",
+      "key": "form.steps.${key}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/NewPaymentPage.tsx",
+      "line": 83,
+      "raw": "form.methods.${id}.label",
+      "ns": "payments",
+      "key": "form.methods.${id}.label",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/NewPaymentPage.tsx",
+      "line": 84,
+      "raw": "form.methods.${id}.desc",
+      "ns": "payments",
+      "key": "form.methods.${id}.desc",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/PaymentsPage.tsx",
+      "line": 63,
+      "raw": "status.${payment.status}",
+      "ns": "payments",
+      "key": "status.${payment.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/deposit.ts",
+      "line": 224,
+      "raw": "status.${status}",
+      "ns": "deposits",
+      "key": "status.${status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/deposit.ts",
+      "line": 242,
+      "raw": "method.${method}",
+      "ns": "deposits",
+      "key": "method.${method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/deposit.ts",
+      "line": 258,
+      "raw": "methodShort.${method}",
+      "ns": "deposits",
+      "key": "methodShort.${method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/payment.ts",
+      "line": 19,
+      "raw": "statusLabels.${status}",
+      "ns": "payments",
+      "key": "statusLabels.${status}",
+      "dynamic": true
+    }
+  ]
+}
