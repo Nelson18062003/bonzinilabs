@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-26T05:42:38.103Z",
+  "generated_at": "2026-04-26T05:51:03.748Z",
   "summary": {
-    "files_scanned": 71,
+    "files_scanned": 75,
     "static_keys": 940,
-    "dynamic_calls": 21,
+    "dynamic_calls": 22,
     "languages": [
       {
         "lang": "fr",
@@ -28,6 +28,22 @@
     "zh": []
   },
   "dynamic": [
+    {
+      "file": "src/components/payment-form/NewPaymentMethodStep.tsx",
+      "line": 25,
+      "raw": "form.methods.${id}.label",
+      "ns": "payments",
+      "key": "form.methods.${id}.label",
+      "dynamic": true
+    },
+    {
+      "file": "src/components/payment-form/NewPaymentMethodStep.tsx",
+      "line": 26,
+      "raw": "form.methods.${id}.desc",
+      "ns": "payments",
+      "key": "form.methods.${id}.desc",
+      "dynamic": true
+    },
     {
       "file": "src/pages/DepositDetailPage.tsx",
       "line": 358,
@@ -134,7 +150,7 @@
     },
     {
       "file": "src/pages/NewPaymentPage.tsx",
-      "line": 78,
+      "line": 293,
       "raw": "form.steps.${key}",
       "ns": "payments",
       "key": "form.steps.${key}",
@@ -142,18 +158,10 @@
     },
     {
       "file": "src/pages/NewPaymentPage.tsx",
-      "line": 83,
-      "raw": "form.methods.${id}.label",
+      "line": 418,
+      "raw": "form.methods.${selectedMethod}.label",
       "ns": "payments",
-      "key": "form.methods.${id}.label",
-      "dynamic": true
-    },
-    {
-      "file": "src/pages/NewPaymentPage.tsx",
-      "line": 84,
-      "raw": "form.methods.${id}.desc",
-      "ns": "payments",
-      "key": "form.methods.${id}.desc",
+      "key": "form.methods.${selectedMethod}.label",
       "dynamic": true
     },
     {

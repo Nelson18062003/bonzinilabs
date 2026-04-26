@@ -5,9 +5,9 @@
 
 ## Summary
 
-- Files scanned: **71**
+- Files scanned: **75**
 - Static keys: **940**
-- Dynamic calls (template strings): **21**
+- Dynamic calls (template strings): **22**
 
 | Language | Missing | Coverage |
 |---|---:|---:|
@@ -28,9 +28,10 @@ Make sure every possible value covered by the interpolation has a corresponding 
 
 | Pattern | Namespace | Call site |
 |---|---|---|
-| `form.methods.${id}.desc` | `payments` | `src/pages/NewPaymentPage.tsx:84` |
-| `form.methods.${id}.label` | `payments` | `src/pages/NewPaymentPage.tsx:83` |
-| `form.steps.${key}` | `payments` | `src/pages/NewPaymentPage.tsx:78` |
+| `form.methods.${id}.desc` | `payments` | `src/components/payment-form/NewPaymentMethodStep.tsx:26` |
+| `form.methods.${id}.label` | `payments` | `src/components/payment-form/NewPaymentMethodStep.tsx:25` |
+| `form.methods.${selectedMethod}.label` | `payments` | `src/pages/NewPaymentPage.tsx:418` |
+| `form.steps.${key}` | `payments` | `src/pages/NewPaymentPage.tsx:293` |
 | `method.${deposit.method}` | `deposits` | `src/pages/DepositDetailPage.tsx:358` |
 | `method.${deposit.method}` | `deposits` | `src/pages/DepositDetailPage.tsx:481` |
 | `method.${deposit.method}` | `deposits` | `src/pages/DepositsPage.tsx:108` |
