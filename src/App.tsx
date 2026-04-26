@@ -32,6 +32,7 @@ const DepositDetailPage = lazy(() => import("./pages/DepositDetailPage"));
 const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const NewPaymentPage = lazy(() => import("./pages/NewPaymentPage"));
 const PaymentDetailPage = lazy(() => import("./pages/PaymentDetailPage"));
+const EditBeneficiaryPage = lazy(() => import("./pages/EditBeneficiaryPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
@@ -124,6 +125,7 @@ const App = () => (
                 <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
                 <Route path="/payments/new" element={<ProtectedRoute><NewPaymentPage /></ProtectedRoute>} />
                 <Route path="/payments/:paymentId" element={<ProtectedRoute><PaymentDetailPage /></ProtectedRoute>} />
+                <Route path="/payments/:paymentId/edit-beneficiary" element={<ProtectedRoute><EditBeneficiaryPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />

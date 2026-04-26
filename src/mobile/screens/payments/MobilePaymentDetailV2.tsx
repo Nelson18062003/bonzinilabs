@@ -15,9 +15,12 @@ import {
   useAdminPaymentProofs,
   useProcessPayment,
   useAdminUploadPaymentProof,
-  useAdminUpdateBeneficiaryInfo,
 } from '@/hooks/usePayments';
-import { useDeletePayment, useDeletePaymentProof } from '@/hooks/useAdminPayments';
+import {
+  useDeletePayment,
+  useDeletePaymentProof,
+  useAdminUpdateBeneficiaryInfo,
+} from '@/hooks/useAdminPayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
 import { useAgentConfirmCashPayment } from '@/hooks/useAgentCashActions';
 import {

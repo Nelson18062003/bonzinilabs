@@ -7,6 +7,14 @@ import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
+// Initialise i18next so components that call t('foo.bar') in render
+// receive real localised strings, not the raw key. Importing the
+// real i18n module is enough — its side-effecting init runs once.
+// Pin the language to French so jsdom's en-US navigator default
+// doesn't make assertions language-dependent.
+import i18n from '@/i18n';
+void i18n.changeLanguage('fr');
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
 

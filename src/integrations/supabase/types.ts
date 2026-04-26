@@ -68,6 +68,60 @@ export type Database = {
         }
         Relationships: []
       }
+      beneficiaries: {
+        Row: {
+          bank_account: string | null
+          bank_extra: string | null
+          bank_name: string | null
+          client_id: string
+          created_at: string
+          email: string | null
+          id: string
+          identifier: string | null
+          identifier_type: string | null
+          is_active: boolean
+          name: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          phone: string | null
+          qr_code_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_account?: string | null
+          bank_extra?: string | null
+          bank_name?: string | null
+          client_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          identifier?: string | null
+          identifier_type?: string | null
+          is_active?: boolean
+          name: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          phone?: string | null
+          qr_code_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_account?: string | null
+          bank_extra?: string | null
+          bank_name?: string | null
+          client_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          identifier?: string | null
+          identifier_type?: string | null
+          is_active?: boolean
+          name?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          phone?: string | null
+          qr_code_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bot_config: {
         Row: {
           key: string
@@ -559,7 +613,9 @@ export type Database = {
           beneficiary_bank_account: string | null
           beneficiary_bank_extra: string | null
           beneficiary_bank_name: string | null
+          beneficiary_details: Json | null
           beneficiary_email: string | null
+          beneficiary_id: string | null
           beneficiary_identifier: string | null
           beneficiary_identifier_type: string | null
           beneficiary_name: string | null
@@ -585,6 +641,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           processed_at: string | null
           processed_by: string | null
+          rate_is_custom: boolean
           reference: string
           rejection_reason: string | null
           status: Database["public"]["Enums"]["payment_status"]
@@ -600,7 +657,9 @@ export type Database = {
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
+          beneficiary_details?: Json | null
           beneficiary_email?: string | null
+          beneficiary_id?: string | null
           beneficiary_identifier?: string | null
           beneficiary_identifier_type?: string | null
           beneficiary_name?: string | null
@@ -626,6 +685,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           processed_at?: string | null
           processed_by?: string | null
+          rate_is_custom?: boolean
           reference: string
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
@@ -641,7 +701,9 @@ export type Database = {
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
+          beneficiary_details?: Json | null
           beneficiary_email?: string | null
+          beneficiary_id?: string | null
           beneficiary_identifier?: string | null
           beneficiary_identifier_type?: string | null
           beneficiary_name?: string | null
@@ -667,13 +729,22 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           processed_at?: string | null
           processed_by?: string | null
+          rate_is_custom?: boolean
           reference?: string
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payments_beneficiary_id_fkey"
+            columns: ["beneficiary_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_adjustments: {
         Row: {
@@ -949,8 +1020,11 @@ export type Database = {
       admin_update_payment_beneficiary: {
         Args: {
           p_beneficiary_bank_account?: string
+          p_beneficiary_bank_extra?: string
           p_beneficiary_bank_name?: string
           p_beneficiary_email?: string
+          p_beneficiary_identifier?: string
+          p_beneficiary_identifier_type?: string
           p_beneficiary_name?: string
           p_beneficiary_notes?: string
           p_beneficiary_phone?: string
@@ -988,7 +1062,9 @@ export type Database = {
           p_amount_xaf: number
           p_beneficiary_bank_account?: string
           p_beneficiary_bank_name?: string
+          p_beneficiary_details?: Json
           p_beneficiary_email?: string
+          p_beneficiary_id?: string
           p_beneficiary_name?: string
           p_beneficiary_notes?: string
           p_beneficiary_phone?: string
@@ -997,6 +1073,7 @@ export type Database = {
           p_desired_date?: string
           p_exchange_rate: number
           p_method: Database["public"]["Enums"]["payment_method"]
+          p_rate_is_custom?: boolean
           p_user_id: string
         }
         Returns: Json
@@ -1028,7 +1105,9 @@ export type Database = {
           p_amount_xaf: number
           p_beneficiary_bank_account?: string
           p_beneficiary_bank_name?: string
+          p_beneficiary_details?: Json
           p_beneficiary_email?: string
+          p_beneficiary_id?: string
           p_beneficiary_name?: string
           p_beneficiary_notes?: string
           p_beneficiary_phone?: string
@@ -1039,6 +1118,7 @@ export type Database = {
           p_cash_beneficiary_type?: string
           p_exchange_rate: number
           p_method: Database["public"]["Enums"]["payment_method"]
+          p_rate_is_custom?: boolean
         }
         Returns: Json
       }
@@ -1160,24 +1240,15 @@ export type Database = {
         Args: { p_adjustment_id: string; p_percentage: number }
         Returns: Json
       }
-      validate_deposit:
-        | {
-            Args: {
-              p_admin_comment?: string
-              p_confirmed_amount?: number
-              p_deposit_id: string
-              p_send_notification?: boolean
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_admin_comment?: string
-              p_deposit_id: string
-              p_send_notification?: boolean
-            }
-            Returns: Json
-          }
+      validate_deposit: {
+        Args: {
+          p_admin_comment?: string
+          p_confirmed_amount?: number
+          p_deposit_id: string
+          p_send_notification?: boolean
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:

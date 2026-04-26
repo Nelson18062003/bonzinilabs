@@ -74,5 +74,8 @@
   "signature": "\u7b7e\u540d",
   "paid_by": "\u652f\u4ed8\u4eba",
   "download_receipt": "\u4e0b\u8f7d\u51ed\u8bc1",
-  "receipt_available_after_payment": "\u652f\u4ed8\u540e\u53ef\u7528"
+  "receipt_available_after_payment": "\u652f\u4ed8\u540e\u53ef\u7528",
+  "signed_by": "\u7b7e\u540d\u4eba",
+  "beneficiary_signature": "\u6536\u6b3e\u4eba\u7b7e\u540d",
+  "qr_already_scanned_continue": "QR\u7801\u5df2\u626b\u63cf\u2014\u2014\u7ee7\u7eed\uff1f"
 }

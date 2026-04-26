@@ -424,5 +424,17 @@
   "noPaymentsToExport": "没有进行中的付款可导出",
   "exportDownloaded": "已下载 {{count}} 笔付款的导出文件",
   "exportError": "导出时出错",
-  "noPaymentFound": "未找到付款"
+  "noPaymentFound": "未找到付款",
+  "amountXAF": "金额（XAF）",
+  "manualDebit": "手动扣款",
+  "manualCredit": "手动充值",
+  "insufficientBalance": "余额不足",
+  "newBalance": "新余额",
+  "reason": "原因",
+  "reasonRecordedNote": "原因将记录到历史中。",
+  "adjustmentReasonPlaceholder": "例如：调整、商业让步……",
+  "actionCannotBeUndone": "此操作无法撤销。",
+  "processing": "处理中……",
+  "debit": "扣款",
+  "home": "首页"
 }

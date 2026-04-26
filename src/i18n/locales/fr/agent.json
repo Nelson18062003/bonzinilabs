@@ -74,5 +74,8 @@
   "signature": "Signature",
   "paid_by": "Pay\u00e9 par",
   "download_receipt": "T\u00e9l\u00e9charger le re\u00e7u",
-  "receipt_available_after_payment": "Disponible apr\u00e8s paiement"
+  "receipt_available_after_payment": "Disponible apr\u00e8s paiement",
+  "signed_by": "Sign\u00e9 par",
+  "beneficiary_signature": "Signature du b\u00e9n\u00e9ficiaire",
+  "qr_already_scanned_continue": "QR d\u00e9j\u00e0 scann\u00e9 \u2014 continuer ?"
 }

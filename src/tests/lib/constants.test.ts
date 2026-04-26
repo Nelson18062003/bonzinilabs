@@ -10,9 +10,9 @@ import {
 describe('Constants', () => {
   describe('CACHE_CONFIG', () => {
     it('should have valid stale times', () => {
-      expect(CACHE_CONFIG.STALE_TIME.OWN_DATA).toBe(10000);
-      expect(CACHE_CONFIG.STALE_TIME.LISTS).toBe(30000);
-      expect(CACHE_CONFIG.STALE_TIME.EXCHANGE_RATES).toBe(60000);
+      expect(CACHE_CONFIG.STALE_TIME.OWN_DATA).toBe(5_000);
+      expect(CACHE_CONFIG.STALE_TIME.LISTS).toBe(5_000);
+      expect(CACHE_CONFIG.STALE_TIME.EXCHANGE_RATES).toBe(60_000);
     });
 
     it('should have valid gc time', () => {

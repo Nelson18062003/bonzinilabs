@@ -1,0 +1,208 @@
+{
+  "generated_at": "2026-04-26T07:49:01.065Z",
+  "summary": {
+    "files_scanned": 87,
+    "static_keys": 937,
+    "dynamic_calls": 22,
+    "languages": [
+      {
+        "lang": "fr",
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      {
+        "lang": "en",
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      {
+        "lang": "zh",
+        "missing": 0,
+        "coverage_pct": 100
+      }
+    ]
+  },
+  "missing": {
+    "fr": [],
+    "en": [],
+    "zh": []
+  },
+  "dynamic": [
+    {
+      "file": "src/components/payment-form/NewPaymentMethodStep.tsx",
+      "line": 25,
+      "raw": "form.methods.${id}.label",
+      "ns": "payments",
+      "key": "form.methods.${id}.label",
+      "dynamic": true
+    },
+    {
+      "file": "src/components/payment-form/NewPaymentMethodStep.tsx",
+      "line": 26,
+      "raw": "form.methods.${id}.desc",
+      "ns": "payments",
+      "key": "form.methods.${id}.desc",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 358,
+      "raw": "method.${deposit.method}",
+      "ns": "deposits",
+      "key": "method.${deposit.method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 368,
+      "raw": "status.${deposit.status}",
+      "ns": "deposits",
+      "key": "status.${deposit.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 481,
+      "raw": "method.${deposit.method}",
+      "ns": "deposits",
+      "key": "method.${deposit.method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 491,
+      "raw": "status.${deposit.status}",
+      "ns": "deposits",
+      "key": "status.${deposit.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositDetailPage.tsx",
+      "line": 773,
+      "raw": "proofDeleteReasons.${reasonKeys[index]}",
+      "ns": "deposits",
+      "key": "proofDeleteReasons.${reasonKeys[index]}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositsPage.tsx",
+      "line": 108,
+      "raw": "method.${deposit.method}",
+      "ns": "deposits",
+      "key": "method.${deposit.method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/DepositsPage.tsx",
+      "line": 120,
+      "raw": "status.${deposit.status}",
+      "ns": "deposits",
+      "key": "status.${deposit.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 90,
+      "raw": "nav.${item.key}",
+      "ns": "landing",
+      "key": "nav.${item.key}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 110,
+      "raw": "nav.${item.key}",
+      "ns": "landing",
+      "key": "nav.${item.key}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 233,
+      "raw": "ticker.${k}",
+      "ns": "landing",
+      "key": "ticker.${k}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 337,
+      "raw": "methods.${m.key}.tag",
+      "ns": "landing",
+      "key": "methods.${m.key}.tag",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 339,
+      "raw": "methods.${m.key}.name",
+      "ns": "landing",
+      "key": "methods.${m.key}.name",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/LandingPage.tsx",
+      "line": 340,
+      "raw": "methods.${m.key}.desc",
+      "ns": "landing",
+      "key": "methods.${m.key}.desc",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/NewPaymentPage.tsx",
+      "line": 298,
+      "raw": "form.steps.${key}",
+      "ns": "payments",
+      "key": "form.steps.${key}",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/NewPaymentPage.tsx",
+      "line": 444,
+      "raw": "form.methods.${selectedMethod}.label",
+      "ns": "payments",
+      "key": "form.methods.${selectedMethod}.label",
+      "dynamic": true
+    },
+    {
+      "file": "src/pages/PaymentsPage.tsx",
+      "line": 63,
+      "raw": "status.${payment.status}",
+      "ns": "payments",
+      "key": "status.${payment.status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/deposit.ts",
+      "line": 224,
+      "raw": "status.${status}",
+      "ns": "deposits",
+      "key": "status.${status}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/deposit.ts",
+      "line": 242,
+      "raw": "method.${method}",
+      "ns": "deposits",
+      "key": "method.${method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/deposit.ts",
+      "line": 258,
+      "raw": "methodShort.${method}",
+      "ns": "deposits",
+      "key": "methodShort.${method}",
+      "dynamic": true
+    },
+    {
+      "file": "src/types/payment.ts",
+      "line": 19,
+      "raw": "statusLabels.${status}",
+      "ns": "payments",
+      "key": "statusLabels.${status}",
+      "dynamic": true
+    }
+  ]
+}

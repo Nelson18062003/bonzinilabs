@@ -305,9 +305,14 @@ export function useAdminUpdateBeneficiaryInfo() {
       );
 
       if (rpcError) {
+        // Only fall back when the RPC truly cannot be resolved by PostgREST
+        // (function not found / unknown signature). Real errors raised by
+        // the RPC body — including 42804 datatype_mismatch — must surface.
         const missing =
           rpcError.code === '42883' ||
-          /function .* does not exist|could not find the function/i.test(rpcError.message || '');
+          rpcError.code === 'PGRST202' ||
+          rpcError.code === 'PGRST203' ||
+          /function .* does not exist|could not find the function|no function matches/i.test(rpcError.message || '');
         if (!missing) throw rpcError;
 
         // Fallback: RPC not deployed yet — write columns directly + compute

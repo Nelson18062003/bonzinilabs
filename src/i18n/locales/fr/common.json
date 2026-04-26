@@ -426,5 +426,17 @@
   "whoIsYourClient": "Qui est votre client ?",
   "you": "vous",
   "youReceive": "Vous recevez",
-  "youSend": "Vous envoyez"
+  "youSend": "Vous envoyez",
+  "amountXAF": "Montant en XAF",
+  "manualDebit": "Débit manuel",
+  "manualCredit": "Crédit manuel",
+  "insufficientBalance": "Solde insuffisant",
+  "newBalance": "Nouveau solde",
+  "reason": "Motif",
+  "reasonRecordedNote": "Le motif sera consigné dans l'historique.",
+  "adjustmentReasonPlaceholder": "Ex : régularisation, geste commercial…",
+  "actionCannotBeUndone": "Cette action est irréversible.",
+  "processing": "En cours…",
+  "debit": "Débit",
+  "home": "Accueil"
 }
