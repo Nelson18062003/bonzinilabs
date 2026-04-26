@@ -29,6 +29,11 @@ import {
   clientCountryToRateKey,
   computePaymentValues,
 } from '@/components/payment-form/paymentRateLogic';
+import {
+  makeAmountStepSchema,
+  methodStepSchema,
+  validateBeneficiaryStep,
+} from '@/components/payment-form/paymentSchemas';
 import { useMyWallet } from '@/hooks/useWallet';
 import { useClientRates } from '@/hooks/useDailyRates';
 import { useMyProfile } from '@/hooks/useProfile';
@@ -293,25 +298,46 @@ const NewPaymentPage = () => {
   const STEPS = STEP_KEYS.map((key) => ({ key, label: t(`form.steps.${key}`) }));
   const currentStepIndex = STEPS.findIndex((s) => s.key === step);
 
+  // ── Step validation (Zod-backed) ───────────────────────────
+  // Each step has its own schema; the wizard footer disables the
+  // "Continuer" CTA when the current step doesn't parse. The
+  // beneficiary step exposes a soft error (informational only;
+  // navigation is always allowed thanks to "compléter plus tard").
+  const stepValidations = {
+    method: methodStepSchema.safeParse({ selectedMethod }),
+    amount: makeAmountStepSchema({
+      walletBalanceXaf: wallet?.balance_xaf ?? 0,
+    }).safeParse({ amountXAF: computed.amountXAF }),
+    beneficiarySoftError: validateBeneficiaryStep({
+      method: selectedMethod ?? 'cash',
+      draft,
+      hasQrFile: !!qrCodeFile,
+      cashType: cashBenefType,
+      hasSelectedBeneficiary: !!selectedBeneficiary,
+    }),
+  };
+
   // ── Footer button ──────────────────────────────────────────
   const footerCTA = (() => {
     switch (step) {
       case 'method':
         return {
           label: t('form.continue'),
-          disabled: !selectedMethod,
+          disabled: !stepValidations.method.success,
           onClick: () => setStep('amount'),
           isSubmit: false,
         };
       case 'amount':
         return {
           label: t('form.continue'),
-          disabled: !computed.isValidAmount || !computed.hasEnoughBalance,
+          disabled: !stepValidations.amount.success,
           onClick: () => setStep('beneficiary'),
           isSubmit: false,
         };
       case 'beneficiary':
         return {
+          // Validation is informational on this step — the user is
+          // always allowed to skip via the "complete later" path.
           label: t('form.continue'),
           disabled: false,
           onClick: () => {
