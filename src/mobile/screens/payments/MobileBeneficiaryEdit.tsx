@@ -7,7 +7,8 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useAdminPaymentDetail, useAdminUpdateBeneficiaryInfo } from '@/hooks/usePayments';
+import { useAdminPaymentDetail } from '@/hooks/usePayments';
+import { useAdminUpdateBeneficiaryInfo } from '@/hooks/useAdminPayments';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
