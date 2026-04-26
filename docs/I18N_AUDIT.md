@@ -5,8 +5,8 @@
 
 ## Summary
 
-- Files scanned: **85**
-- Static keys: **936**
+- Files scanned: **86**
+- Static keys: **937**
 - Dynamic calls (template strings): **22**
 
 | Language | Missing | Coverage |
@@ -30,8 +30,8 @@ Make sure every possible value covered by the interpolation has a corresponding 
 |---|---|---|
 | `form.methods.${id}.desc` | `payments` | `src/components/payment-form/NewPaymentMethodStep.tsx:26` |
 | `form.methods.${id}.label` | `payments` | `src/components/payment-form/NewPaymentMethodStep.tsx:25` |
-| `form.methods.${selectedMethod}.label` | `payments` | `src/pages/NewPaymentPage.tsx:418` |
-| `form.steps.${key}` | `payments` | `src/pages/NewPaymentPage.tsx:293` |
+| `form.methods.${selectedMethod}.label` | `payments` | `src/pages/NewPaymentPage.tsx:444` |
+| `form.steps.${key}` | `payments` | `src/pages/NewPaymentPage.tsx:298` |
 | `method.${deposit.method}` | `deposits` | `src/pages/DepositDetailPage.tsx:358` |
 | `method.${deposit.method}` | `deposits` | `src/pages/DepositDetailPage.tsx:481` |
 | `method.${deposit.method}` | `deposits` | `src/pages/DepositsPage.tsx:108` |
