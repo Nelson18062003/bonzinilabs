@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { Info, AlertCircle, Loader2 } from 'lucide-react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -50,30 +49,37 @@ export function ChartCard({
   return (
     <Card className={cn('overflow-hidden', className)}>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-4 pb-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <CardTitle className="truncate text-sm font-semibold tracking-normal">{title}</CardTitle>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-1.5">
+            <CardTitle className="text-sm font-semibold tracking-normal leading-snug line-clamp-2 break-words">
+              {title}
+            </CardTitle>
             {description ? (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="Définition"
-                      className="text-muted-foreground/50 hover:text-muted-foreground"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[280px] text-xs" side="top">
-                    {description}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Définition de la métrique"
+                    className="mt-0.5 flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="top"
+                  align="start"
+                  sideOffset={6}
+                  className="w-[280px] p-3 text-xs leading-relaxed"
+                >
+                  {description}
+                </PopoverContent>
+              </Popover>
             ) : null}
           </div>
           {subtitle ? (
-            <CardDescription className="mt-0.5 text-[11px]">{subtitle}</CardDescription>
+            <CardDescription className="mt-0.5 text-[11px] leading-snug">
+              {subtitle}
+            </CardDescription>
           ) : null}
         </div>
         {toolbar ? <div className="flex-shrink-0">{toolbar}</div> : null}

@@ -22,6 +22,9 @@ import {
   Bar,
   LineChart,
   Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -33,6 +36,7 @@ import {
   DateRangeProvider,
   useDateRange,
 } from '@/lib/analytics/DateRangeContext';
+import { granularitySubtitle } from '@/lib/analytics/dateRange';
 import {
   DateRangePicker,
   KpiCard,
@@ -40,8 +44,10 @@ import {
   ChartCard,
   BreakdownBar,
   ExportButton,
-  formatCompact,
   formatCurrency,
+  formatCurrencyFull,
+  formatAxisTick,
+  chartTickInterval,
   formatInteger,
   formatPercent,
   computeDelta,
@@ -66,16 +72,19 @@ import {
   useUtmSources,
   useWalletExposure,
   useDepositStatusTimeline,
+  useClientCountryDistribution,
   type DashboardAlert,
   type AdminProductivityRow,
   type VolumeReport,
   type ClientGrowthPoint,
   type DepositStatusTimelinePoint,
   type UtmSourceRow,
+  type CountryDistributionRow,
 } from '@/hooks/analytics/useAnalytics';
 import { Area, AreaChart } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useDateRange as useDateRangeCtx } from '@/lib/analytics/DateRangeContext';
+import { cn } from '@/lib/utils';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Colour tokens — match the Bonzini brand palette used across the app.
@@ -143,6 +152,7 @@ function DashboardBody() {
   const utmSources = useUtmSources(range, 10);
   const walletExposure = useWalletExposure();
   const statusTimeline = useDepositStatusTimeline(range);
+  const countryDistribution = useClientCountryDistribution();
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -209,8 +219,8 @@ function DashboardBody() {
             accent="amber"
             icon={<TrendingUp className="h-4 w-4" />}
             label="TPV — Volume paiements"
-            value={formatCurrency(tpvCurrent, 'XAF', { compact: true })}
-            secondary={`${formatInteger(payments.data?.current.opCount)} opérations · ¥${formatCompact(payments.data?.current.totalRMB ?? 0)}`}
+            value={formatCurrencyFull(tpvCurrent, 'XAF')}
+            secondary={`${formatInteger(payments.data?.current.opCount)} opérations · ${formatCurrency(payments.data?.current.totalRMB ?? 0, 'CNY')}`}
             delta={range.compareToPrevious ? tpvDelta : undefined}
             loading={payments.isLoading}
             description="Somme des paiements au statut 'completed' sur la période. Exclut explicitement les paiements en cours (processing, ready_for_payment)."
@@ -219,7 +229,7 @@ function DashboardBody() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Dépôts validés"
-            value={formatCurrency(depositsCurrent, 'XAF', { compact: true })}
+            value={formatCurrencyFull(depositsCurrent, 'XAF')}
             secondary={`${formatInteger(deposits.data?.current.opCount)} dépôts`}
             delta={range.compareToPrevious ? depositsDelta : undefined}
             loading={deposits.isLoading}
@@ -228,7 +238,7 @@ function DashboardBody() {
           <KpiCard
             accent={netCurrent >= 0 ? 'emerald' : 'red'}
             label="Flux net"
-            value={formatCurrency(netCurrent, 'XAF', { compact: true })}
+            value={formatCurrencyFull(netCurrent, 'XAF')}
             secondary={netCurrent >= 0 ? "Plus d'entrées que de sorties" : 'Plus de sorties que d\'entrées'}
             delta={range.compareToPrevious ? netDelta : undefined}
             loading={payments.isLoading || deposits.isLoading}
@@ -238,7 +248,7 @@ function DashboardBody() {
             accent="neutral"
             icon={<Clock className="h-4 w-4" />}
             label="Ticket moyen paiement"
-            value={formatCurrency(avgTicketCurrent, 'XAF', { compact: true })}
+            value={formatCurrencyFull(avgTicketCurrent, 'XAF')}
             delta={range.compareToPrevious ? avgTicketDelta : undefined}
             loading={payments.isLoading}
             description="Montant moyen par paiement exécuté (total XAF / nombre d'opérations completed)."
@@ -251,7 +261,7 @@ function DashboardBody() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Exposition wallets"
-            value={formatCurrency(walletExposure.data?.totalXAF ?? 0, 'XAF', { compact: true })}
+            value={formatCurrencyFull(walletExposure.data?.totalXAF ?? 0, 'XAF')}
             secondary={`${formatInteger(walletExposure.data?.clientsWithBalance ?? 0)} clients avec solde`}
             loading={walletExposure.isLoading}
             description="Somme totale XAF encore dans les wallets clients (non dépensée). Indique ton engagement financier envers les clients à l'instant T — indépendant de la période sélectionnée."
@@ -259,7 +269,7 @@ function DashboardBody() {
           <KpiCard
             accent="amber"
             label="Solde moyen par client"
-            value={formatCurrency(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF', { compact: true })}
+            value={formatCurrencyFull(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF')}
             loading={walletExposure.isLoading}
             description="Exposition totale / nombre de clients avec un solde strictement positif."
           />
@@ -273,7 +283,7 @@ function DashboardBody() {
             }
             secondary={
               walletExposure.data
-                ? formatCurrency(walletExposure.data.top10ShareXAF, 'XAF', { compact: true })
+                ? formatCurrencyFull(walletExposure.data.top10ShareXAF, 'XAF')
                 : undefined
             }
             loading={walletExposure.isLoading}
@@ -330,7 +340,7 @@ function DashboardBody() {
         {/* SECTION 3 — Flow chart ──────────────────────────── */}
         <ChartCard
           title="Flux financier"
-          subtitle={range.granularity === 'day' ? 'par jour' : range.granularity === 'week' ? 'par semaine' : range.granularity === 'month' ? 'par mois' : 'par heure'}
+          subtitle={granularitySubtitle(range.granularity)}
           description="Dépôts validés (violet) vs paiements exécutés (ambre) agrégés par bucket. Le flux net est la différence."
           loading={flow.isLoading}
           error={flow.error as Error | null}
@@ -359,10 +369,24 @@ function DashboardBody() {
           }
         >
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={flow.data?.current ?? []} margin={{ top: 8, right: 0, bottom: 0, left: -10 }}>
+            <BarChart data={flow.data?.current ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => formatCompact(v)} axisLine={false} tickLine={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                interval={chartTickInterval((flow.data?.current ?? []).length)}
+                minTickGap={4}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickFormatter={formatAxisTick}
+                tickCount={5}
+                axisLine={false}
+                tickLine={false}
+                width={56}
+              />
               <Tooltip content={<FlowTooltip />} />
               <Bar dataKey="deposits" name="Dépôts" fill={COLOR_DEPOSITS} radius={[4, 4, 0, 0]} />
               <Bar dataKey="payments" name="Paiements" fill={COLOR_PAYMENTS} radius={[4, 4, 0, 0]} />
@@ -400,10 +424,24 @@ function DashboardBody() {
           empty={!statusTimeline.data || statusTimeline.data.every((p) => p.validated + p.rejected + p.pending === 0)}
         >
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={statusTimeline.data ?? []} margin={{ top: 8, right: 0, bottom: 0, left: -10 }}>
+            <BarChart data={statusTimeline.data ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                interval={chartTickInterval((statusTimeline.data ?? []).length)}
+                minTickGap={4}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickCount={5}
+                allowDecimals={false}
+                width={36}
+              />
               <Tooltip />
               <Bar dataKey="validated" stackId="s" name="Validés" fill="hsl(142 71% 45%)" />
               <Bar dataKey="pending" stackId="s" name="En attente" fill="hsl(36 100% 55%)" />
@@ -482,6 +520,13 @@ function DashboardBody() {
           </ChartCard>
         </div>
 
+        {/* SECTION 4c — Répartition clients par pays (donut) ── */}
+        <CountryDistributionReport
+          rows={countryDistribution.data ?? []}
+          isLoading={countryDistribution.isLoading}
+          error={countryDistribution.error as Error | null}
+        />
+
         {/* SECTION 5 — Opérations (processing time + status) ── */}
         <div className="grid gap-4 md:grid-cols-3">
           <KpiCard
@@ -502,7 +547,7 @@ function DashboardBody() {
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Dépôts rejetés"
             value={formatInteger(statusSummary.data?.rejected.count ?? 0)}
-            secondary={formatCurrency(statusSummary.data?.rejected.amountXAF ?? 0, 'XAF', { compact: true })}
+            secondary={formatCurrencyFull(statusSummary.data?.rejected.amountXAF ?? 0, 'XAF')}
             loading={statusSummary.isLoading}
             invertColor
             description="Dépôts explicitement rejetés sur la période. Pour les raisons détaillées, consulter l'écran Dépôts."
@@ -521,27 +566,11 @@ function DashboardBody() {
         </div>
 
         {/* SECTION 6 — Rate history ────────────────────────── */}
-        <ChartCard
-          title="Évolution des taux"
-          subtitle="CNY pour 1M XAF par méthode — définis dans daily_rates"
-          description="Taux effectifs appliqués sur la période, par méthode. Indique la marge que tu prends (écart entre les méthodes) et la volatilité."
-          loading={rateHistory.isLoading}
+        <RateEvolutionReport
+          data={rateHistory.data ?? []}
+          isLoading={rateHistory.isLoading}
           error={rateHistory.error as Error | null}
-          empty={!rateHistory.data || rateHistory.data.length === 0}
-        >
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={rateHistory.data ?? []} margin={{ top: 8, right: 8, bottom: 0, left: -10 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => formatCompact(v)} />
-              <Tooltip content={<RateTooltip />} />
-              <Line type="monotone" dataKey="alipay" name="Alipay" stroke="#1677ff" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="wechat" name="WeChat" stroke="#07c160" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="virement" name="Virement" stroke="hsl(258 100% 60%)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="cash" name="Cash" stroke="hsl(16 100% 55%)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
+        />
 
         {/* SECTION 7 — Admin productivity ───────────────────── */}
         <ChartCard
@@ -614,19 +643,19 @@ function FlowTooltip({ active, payload, label }: {
     <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
       <p className="font-semibold mb-1">{label}</p>
       {payload.map((e) => (
-        <p key={e.name} className="flex items-center gap-1.5">
+        <p key={e.name} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: e.color }} />
           <span className="text-muted-foreground">{e.name}</span>
           <span className="font-bold tabular-nums ml-auto">
-            {formatCurrency(e.value, 'XAF', { compact: true })}
+            {formatCurrencyFull(e.value, 'XAF')}
           </span>
         </p>
       ))}
-      <p className="mt-1 pt-1 border-t border-border/50 flex items-center justify-between">
+      <p className="mt-1 pt-1 border-t border-border/50 flex items-center justify-between gap-2">
         <span className="text-muted-foreground">Net</span>
         <span className="font-bold tabular-nums" style={{ color: net >= 0 ? COLOR_NET_POSITIVE : COLOR_NET_NEGATIVE }}>
           {net >= 0 ? '+' : ''}
-          {formatCurrency(net, 'XAF', { compact: true })}
+          {formatCurrencyFull(net, 'XAF')}
         </span>
       </p>
     </div>
@@ -660,7 +689,7 @@ function TopClientsList({ items }: { items: TopClientRow[] }) {
                 <span className="font-medium truncate max-w-[180px]">{name}</span>
               </span>
               <span className="tabular-nums text-muted-foreground">
-                {formatInteger(c.opCount)} op · <span className="font-semibold text-foreground">{formatCurrency(c.totalXAF, 'XAF', { compact: true })}</span>
+                {formatInteger(c.opCount)} op · <span className="font-semibold text-foreground">{formatCurrencyFull(c.totalXAF, 'XAF')}</span>
               </span>
             </div>
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -745,25 +774,496 @@ function AlertsSection({
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// RateTooltip — shared with LineChart (rate history)
+// CountryDistributionReport — répartition des clients par pays (donut).
+//
+// Top 5 pays + "Autres" + bucket "Non renseigné" pour signaler la qualité
+// de la donnée. Légende cliquable, tooltip avec count + %, et un total
+// sous le graphique.
 // ────────────────────────────────────────────────────────────────────────────
 
-function RateTooltip({ active, payload, label }: {
+const COUNTRY_PALETTE = [
+  'hsl(258 100% 60%)', // violet
+  'hsl(36 100% 55%)',  // amber
+  'hsl(16 100% 55%)',  // orange
+  'hsl(142 71% 45%)',  // emerald
+  'hsl(200 70% 55%)',  // sky
+];
+const COUNTRY_OTHER_COLOR = 'hsl(220 13% 65%)';
+const COUNTRY_UNKNOWN_COLOR = 'hsl(0 0% 80%)';
+
+function CountryDistributionReport({
+  rows,
+  isLoading,
+  error,
+}: {
+  rows: CountryDistributionRow[];
+  isLoading: boolean;
+  error: Error | null;
+}) {
+  const { displayed, total, unknownRow, hasOther } = React.useMemo(() => {
+    const total = rows.reduce((s, r) => s + r.count, 0);
+    const unknownRow = rows.find((r) => r.key === 'unknown') ?? null;
+    const known = rows.filter((r) => r.key !== 'unknown');
+    const top = known.slice(0, 5);
+    const rest = known.slice(5);
+    const otherCount = rest.reduce((s, r) => s + r.count, 0);
+    const displayed: Array<CountryDistributionRow & { color: string }> = top.map((r, i) => ({
+      ...r,
+      color: COUNTRY_PALETTE[i % COUNTRY_PALETTE.length],
+    }));
+    if (otherCount > 0) {
+      displayed.push({
+        key: 'other',
+        country: 'Autres',
+        count: otherCount,
+        share: total === 0 ? 0 : otherCount / total,
+        color: COUNTRY_OTHER_COLOR,
+      });
+    }
+    if (unknownRow) {
+      displayed.push({
+        ...unknownRow,
+        color: COUNTRY_UNKNOWN_COLOR,
+      });
+    }
+    return { displayed, total, unknownRow, hasOther: otherCount > 0 };
+  }, [rows]);
+
+  const empty = !isLoading && rows.length === 0;
+  const unknownShare = unknownRow && total > 0 ? unknownRow.count / total : 0;
+  const showQualityWarning = unknownShare >= 0.1;
+
+  return (
+    <ChartCard
+      title="Répartition clients par pays"
+      subtitle={
+        total > 0
+          ? `${formatInteger(total)} client${total > 1 ? 's' : ''} au total · top 5 pays + Autres`
+          : 'Pas de données'
+      }
+      description="Compte des clients par pays, normalisé depuis le champ libre clients.country. Le bucket « Non renseigné » mesure la qualité de la donnée — au-delà de 10% un signal de collecte est nécessaire à l'inscription."
+      loading={isLoading}
+      error={error}
+      empty={empty}
+      toolbar={
+        <ExportButton
+          filename="clients_par_pays"
+          disabled={total === 0}
+          rows={() =>
+            rows.map((r) => ({
+              pays: r.country,
+              code: r.key,
+              clients: r.count,
+              part: `${(r.share * 100).toFixed(1)}%`,
+            }))
+          }
+          columns={[
+            { key: 'pays', label: 'Pays' },
+            { key: 'code', label: 'Code' },
+            { key: 'clients', label: 'Clients' },
+            { key: 'part', label: 'Part' },
+          ]}
+        />
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-[200px_1fr] md:items-center">
+        <div className="relative mx-auto h-[180px] w-[180px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={displayed}
+                dataKey="count"
+                nameKey="country"
+                innerRadius={50}
+                outerRadius={85}
+                paddingAngle={1}
+                stroke="hsl(var(--background))"
+                strokeWidth={2}
+              >
+                {displayed.map((row) => (
+                  <Cell key={row.key} fill={row.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<CountryTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-bold tabular-nums leading-none">{formatInteger(total)}</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">clients</span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          {displayed.map((row) => (
+            <div
+              key={row.key}
+              className="flex items-center justify-between gap-3 rounded-md bg-muted/20 px-2.5 py-1.5 text-xs"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  style={{ background: row.color }}
+                />
+                <span className="font-medium truncate">{row.country}</span>
+              </span>
+              <span className="flex-shrink-0 tabular-nums text-muted-foreground">
+                <span className="font-semibold text-foreground">{formatInteger(row.count)}</span>
+                {' · '}
+                {(row.share * 100).toFixed(1)}%
+              </span>
+            </div>
+          ))}
+          {hasOther ? (
+            <p className="pt-1 text-[10px] text-muted-foreground">
+              « Autres » regroupe les pays au-delà du top 5.
+            </p>
+          ) : null}
+          {showQualityWarning ? (
+            <p className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700">
+              ⚠ {(unknownShare * 100).toFixed(0)}% des clients n'ont pas de pays renseigné — pense à rendre le champ obligatoire à l'inscription.
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
+
+function CountryTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; payload: CountryDistributionRow & { color: string } }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
+      <p className="font-semibold mb-1 flex items-center gap-2">
+        <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
+        {p.country}
+      </p>
+      <p className="flex items-center gap-3 tabular-nums">
+        <span className="text-muted-foreground">Clients</span>
+        <span className="ml-auto font-bold">{formatInteger(p.count)}</span>
+      </p>
+      <p className="flex items-center gap-3 tabular-nums">
+        <span className="text-muted-foreground">Part</span>
+        <span className="ml-auto font-bold">{(p.share * 100).toFixed(1)}%</span>
+      </p>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// RateEvolutionReport — refonte complète du rapport "évolution des taux".
+//
+// Apporte 3 KPIs (taux moyen Alipay, écart max entre méthodes, volatilité),
+// un toggle absolu / variation %, un domaine Y resserré pour révéler la
+// variation réelle, un tooltip qui montre les 4 méthodes + le spread, et
+// une unité explicite affichée sous le graphique.
+// ────────────────────────────────────────────────────────────────────────────
+
+const RATE_METHODS = [
+  { key: 'alipay' as const, label: 'Alipay', color: '#1677ff' },
+  { key: 'wechat' as const, label: 'WeChat', color: '#07c160' },
+  { key: 'virement' as const, label: 'Virement', color: 'hsl(258 100% 60%)' },
+  { key: 'cash' as const, label: 'Cash', color: 'hsl(16 100% 55%)' },
+];
+
+interface RatePoint {
+  bucket: string;
+  label: string;
+  alipay: number | null;
+  wechat: number | null;
+  virement: number | null;
+  cash: number | null;
+}
+
+interface RateInsights {
+  avgPerMethod: Record<string, number | null>;
+  firstPerMethod: Record<string, number | null>;
+  lastPerMethod: Record<string, number | null>;
+  avgSpread: number | null;       // moyenne des (max - min) par bucket
+  volatilityCV: number | null;    // coefficient de variation moyen (σ/μ)
+}
+
+function computeRateInsights(points: RatePoint[]): RateInsights {
+  const empty: RateInsights = {
+    avgPerMethod: { alipay: null, wechat: null, virement: null, cash: null },
+    firstPerMethod: { alipay: null, wechat: null, virement: null, cash: null },
+    lastPerMethod: { alipay: null, wechat: null, virement: null, cash: null },
+    avgSpread: null,
+    volatilityCV: null,
+  };
+  if (points.length === 0) return empty;
+
+  const avgPerMethod: Record<string, number | null> = {};
+  const firstPerMethod: Record<string, number | null> = {};
+  const lastPerMethod: Record<string, number | null> = {};
+  for (const m of RATE_METHODS) {
+    const values = points.map((p) => p[m.key]).filter((v): v is number => v != null);
+    avgPerMethod[m.key] = values.length === 0 ? null : values.reduce((s, v) => s + v, 0) / values.length;
+    firstPerMethod[m.key] = points.find((p) => p[m.key] != null)?.[m.key] ?? null;
+    lastPerMethod[m.key] = [...points].reverse().find((p) => p[m.key] != null)?.[m.key] ?? null;
+  }
+
+  const spreads: number[] = [];
+  const cvs: number[] = [];
+  for (const p of points) {
+    const vals = RATE_METHODS.map((m) => p[m.key]).filter((v): v is number => v != null);
+    if (vals.length >= 2) {
+      spreads.push(Math.max(...vals) - Math.min(...vals));
+    }
+    if (vals.length >= 2) {
+      const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+      const variance = vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length;
+      const std = Math.sqrt(variance);
+      if (mean > 0) cvs.push(std / mean);
+    }
+  }
+
+  return {
+    avgPerMethod,
+    firstPerMethod,
+    lastPerMethod,
+    avgSpread: spreads.length === 0 ? null : spreads.reduce((s, v) => s + v, 0) / spreads.length,
+    volatilityCV: cvs.length === 0 ? null : cvs.reduce((s, v) => s + v, 0) / cvs.length,
+  };
+}
+
+function RateEvolutionReport({
+  data,
+  isLoading,
+  error,
+}: {
+  data: RatePoint[];
+  isLoading: boolean;
+  error: Error | null;
+}) {
+  const [mode, setMode] = React.useState<'absolute' | 'variation'>('absolute');
+  const insights = React.useMemo(() => computeRateInsights(data), [data]);
+
+  const chartData = React.useMemo(() => {
+    if (mode === 'absolute') return data;
+    // Variation % since first non-null value of each method
+    const first = insights.firstPerMethod;
+    return data.map((p) => ({
+      bucket: p.bucket,
+      label: p.label,
+      alipay: p.alipay != null && first.alipay ? ((p.alipay - first.alipay) / first.alipay) * 100 : null,
+      wechat: p.wechat != null && first.wechat ? ((p.wechat - first.wechat) / first.wechat) * 100 : null,
+      virement: p.virement != null && first.virement ? ((p.virement - first.virement) / first.virement) * 100 : null,
+      cash: p.cash != null && first.cash ? ((p.cash - first.cash) / first.cash) * 100 : null,
+    }));
+  }, [data, mode, insights.firstPerMethod]);
+
+  // Resserré domain to reveal variation. Recharts auto if absent → tighten manually.
+  const yDomain = React.useMemo<[number | string, number | string]>(() => {
+    const allValues = chartData.flatMap((p) =>
+      RATE_METHODS.map((m) => p[m.key as keyof typeof p]).filter(
+        (v): v is number => typeof v === 'number',
+      ),
+    );
+    if (allValues.length === 0) return ['auto', 'auto'];
+    const min = Math.min(...allValues);
+    const max = Math.max(...allValues);
+    const padding = mode === 'absolute' ? Math.max((max - min) * 0.15, max * 0.02) : Math.max((max - min) * 0.15, 1);
+    return [Math.floor(min - padding), Math.ceil(max + padding)];
+  }, [chartData, mode]);
+
+  const alipayDelta =
+    insights.firstPerMethod.alipay && insights.lastPerMethod.alipay
+      ? (insights.lastPerMethod.alipay - insights.firstPerMethod.alipay) / insights.firstPerMethod.alipay
+      : null;
+
+  return (
+    <ChartCard
+      title="Évolution des taux"
+      subtitle="CNY pour 1M XAF — par méthode de paiement"
+      description="Taux effectifs appliqués sur la période. Le toggle Absolu / Variation % permet d'identifier la tendance ; l'écart entre méthodes est ta marge de pricing."
+      loading={isLoading}
+      error={error}
+      empty={data.length === 0}
+      toolbar={
+        <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5 text-[11px]">
+          <button
+            type="button"
+            onClick={() => setMode('absolute')}
+            className={cn(
+              'rounded px-2 py-1 font-medium transition-colors',
+              mode === 'absolute' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Absolu
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('variation')}
+            className={cn(
+              'rounded px-2 py-1 font-medium transition-colors',
+              mode === 'variation' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Variation %
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {/* 3 KPI insights */}
+        <div className="grid grid-cols-3 gap-2">
+          <RateInsightTile
+            label="Alipay moyen"
+            value={
+              insights.avgPerMethod.alipay != null
+                ? `${formatInteger(Math.round(insights.avgPerMethod.alipay))} ¥`
+                : '—'
+            }
+            sub={
+              alipayDelta != null
+                ? `${alipayDelta >= 0 ? '+' : ''}${formatPercent(alipayDelta)} sur la période`
+                : 'Pas de variation'
+            }
+            color="#1677ff"
+          />
+          <RateInsightTile
+            label="Écart max méthodes"
+            value={
+              insights.avgSpread != null
+                ? `${formatInteger(Math.round(insights.avgSpread))} ¥`
+                : '—'
+            }
+            sub="Spread moyen entre méthode la plus chère et la moins chère, par bucket"
+            color="hsl(36 100% 55%)"
+          />
+          <RateInsightTile
+            label="Volatilité"
+            value={
+              insights.volatilityCV != null
+                ? formatPercent(insights.volatilityCV)
+                : '—'
+            }
+            sub="Coefficient de variation moyen (σ/μ) — plus élevé = taux plus dispersés"
+            color="hsl(16 100% 55%)"
+          />
+        </div>
+
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+            <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              interval={chartTickInterval(chartData.length)}
+              minTickGap={4}
+            />
+            <YAxis
+              tick={{ fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              domain={yDomain}
+              tickFormatter={(v: number) =>
+                mode === 'absolute'
+                  ? formatInteger(Math.round(v))
+                  : `${v >= 0 ? '+' : ''}${Math.round(v)}%`
+              }
+              tickCount={5}
+              width={56}
+            />
+            <Tooltip content={<RateTooltip mode={mode} />} />
+            {RATE_METHODS.map((m) => (
+              <Line
+                key={m.key}
+                type="monotone"
+                dataKey={m.key}
+                name={m.label}
+                stroke={m.color}
+                strokeWidth={2}
+                dot={chartData.length <= 30 ? { r: 2.5, strokeWidth: 0 } : false}
+                connectNulls
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>Unité : {mode === 'absolute' ? 'CNY pour 1 000 000 XAF' : '% depuis le début de la période'}</span>
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {RATE_METHODS.map((m) => (
+              <span key={m.key} className="inline-flex items-center gap-1">
+                <span className="inline-block h-2 w-2 rounded-full" style={{ background: m.color }} />
+                {m.label}
+              </span>
+            ))}
+          </span>
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
+
+function RateInsightTile({
+  label,
+  value,
+  sub,
+  color,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  color: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-2.5">
+      <div className="flex items-center gap-1.5">
+        <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      </div>
+      <div className="mt-1 text-base md:text-lg font-bold tabular-nums break-words">{value}</div>
+      <div className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{sub}</div>
+    </div>
+  );
+}
+
+function RateTooltip({
+  active,
+  payload,
+  label,
+  mode,
+}: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: string;
+  mode: 'absolute' | 'variation';
 }) {
   if (!active || !payload?.length) return null;
+  const values = payload.map((p) => p.value).filter((v): v is number => typeof v === 'number');
+  const spread = values.length >= 2 ? Math.max(...values) - Math.min(...values) : null;
+
   return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs min-w-[180px]">
       <p className="font-semibold mb-1">{label}</p>
       {payload.map((e) => (
-        <p key={e.name} className="flex items-center gap-1.5 tabular-nums">
-          <span className="h-2 w-2 rounded-full" style={{ background: e.color }} />
+        <p key={e.name} className="flex items-center gap-2 tabular-nums">
+          <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: e.color }} />
           <span className="text-muted-foreground">{e.name}</span>
-          <span className="ml-auto font-semibold">¥{formatCompact(e.value)}</span>
+          <span className="ml-auto font-semibold">
+            {mode === 'absolute'
+              ? `${formatInteger(Math.round(e.value))} ¥`
+              : `${e.value >= 0 ? '+' : ''}${e.value.toFixed(1)}%`}
+          </span>
         </p>
       ))}
+      {spread != null && mode === 'absolute' ? (
+        <p className="mt-1 pt-1 border-t border-border/50 flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">Écart max</span>
+          <span className="font-bold tabular-nums">{formatInteger(Math.round(spread))} ¥</span>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -825,15 +1325,7 @@ function VolumeReportCard({ title, report, isLoading, error, color, exportName }
   return (
     <ChartCard
       title={title}
-      subtitle={
-        range.granularity === 'day'
-          ? 'Par jour'
-          : range.granularity === 'week'
-            ? 'Par semaine'
-            : range.granularity === 'month'
-              ? 'Par mois'
-              : 'Par heure'
-      }
+      subtitle={granularitySubtitle(range.granularity).replace(/^par/, 'Par')}
       description="Série temporelle du volume avec total, opérations, ticket moyen, pic et tendance % par rapport à la période précédente de même longueur."
       loading={isLoading}
       error={error as Error | null}
@@ -860,11 +1352,11 @@ function VolumeReportCard({ title, report, isLoading, error, color, exportName }
       }
       footer={
         report && hasData ? (
-          <div className="grid grid-cols-3 gap-2 text-[11px]">
+          <div className="grid grid-cols-2 gap-3 text-[11px] md:grid-cols-3">
             <div>
               <div className="text-muted-foreground">Total</div>
-              <div className="text-sm font-bold text-foreground tabular-nums">
-                {formatCurrency(report.totalXAF, 'XAF', { compact: true })}
+              <div className="text-sm font-bold text-foreground tabular-nums break-words">
+                {formatCurrencyFull(report.totalXAF, 'XAF')}
               </div>
             </div>
             <div>
@@ -875,15 +1367,15 @@ function VolumeReportCard({ title, report, isLoading, error, color, exportName }
             </div>
             <div>
               <div className="text-muted-foreground">Ticket moyen</div>
-              <div className="text-sm font-bold text-foreground tabular-nums">
-                {formatCurrency(report.avgXAF, 'XAF', { compact: true })}
+              <div className="text-sm font-bold text-foreground tabular-nums break-words">
+                {formatCurrencyFull(report.avgXAF, 'XAF')}
               </div>
             </div>
             {report.peak ? (
               <div className="col-span-2">
                 <div className="text-muted-foreground">Pic</div>
-                <div className="text-sm font-bold text-foreground tabular-nums">
-                  {report.peak.label} · {formatCurrency(report.peak.amountXAF, 'XAF', { compact: true })}
+                <div className="text-sm font-bold text-foreground tabular-nums break-words">
+                  {report.peak.label} · {formatCurrencyFull(report.peak.amountXAF, 'XAF')}
                 </div>
               </div>
             ) : null}
@@ -909,11 +1401,25 @@ function VolumeReportCard({ title, report, isLoading, error, color, exportName }
         ) : null
       }
     >
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={report?.series ?? []} margin={{ top: 8, right: 0, bottom: 0, left: -10 }}>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={report?.series ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
           <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => formatCompact(v)} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            interval={chartTickInterval((report?.series ?? []).length)}
+            minTickGap={4}
+          />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={formatAxisTick}
+            tickCount={5}
+            width={56}
+          />
           <Tooltip content={<VolumeTooltip color={color} />} />
           <Bar dataKey="amountXAF" fill={color} radius={[4, 4, 0, 0]} />
         </BarChart>
@@ -933,10 +1439,10 @@ function VolumeTooltip({ active, payload, label, color }: {
   return (
     <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
       <p className="font-semibold mb-1">{label}</p>
-      <p className="flex items-center gap-1.5 tabular-nums">
+      <p className="flex items-center gap-2 tabular-nums">
         <span className="h-2 w-2 rounded-full" style={{ background: color }} />
         <span className="text-muted-foreground">Volume</span>
-        <span className="ml-auto font-bold">{formatCurrency(p.amountXAF, 'XAF', { compact: true })}</span>
+        <span className="ml-auto font-bold">{formatCurrencyFull(p.amountXAF, 'XAF')}</span>
       </p>
       <p className="flex items-center gap-1.5 tabular-nums">
         <span className="text-muted-foreground">Opérations</span>
@@ -953,7 +1459,7 @@ function VolumeTooltip({ active, payload, label, color }: {
 function ClientGrowthChart({ points }: { points: ClientGrowthPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <AreaChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -10 }}>
+      <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
         <defs>
           <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="hsl(258 100% 60%)" stopOpacity={0.4} />
@@ -961,8 +1467,22 @@ function ClientGrowthChart({ points }: { points: ClientGrowthPoint[] }) {
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          interval={chartTickInterval(points.length)}
+          minTickGap={4}
+        />
+        <YAxis
+          tick={{ fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          tickCount={5}
+          allowDecimals={false}
+          width={36}
+        />
         <Tooltip content={<GrowthTooltip />} />
         <Area type="monotone" dataKey="cumulative" stroke="hsl(258 100% 60%)" strokeWidth={2} fill="url(#growthGradient)" name="Total cumulé" />
         <Bar dataKey="newClients" fill="hsl(36 100% 55%)" name="Nouveaux" />

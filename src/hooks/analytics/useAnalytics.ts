@@ -112,6 +112,10 @@ function labelFor(bucket: Date, granularity: Granularity): string {
     }
     case 'month':
       return `${MONTH_LABELS_FR[biz.getUTCMonth()]} ${biz.getUTCFullYear().toString().slice(-2)}`;
+    case 'quarter': {
+      const q = Math.floor(biz.getUTCMonth() / 3) + 1;
+      return `T${q} ${biz.getUTCFullYear().toString().slice(-2)}`;
+    }
   }
 }
 
@@ -1023,6 +1027,88 @@ export function useWalletExposure() {
         avgBalancePerClient: clientsWithBalance === 0 ? 0 : Math.round(totalXAF / clientsWithBalance),
         top10ShareXAF,
       };
+    },
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 19. Client country distribution — for donut/pie chart
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface CountryDistributionRow {
+  /** Canonical country name in French (or 'Non renseigné'). */
+  country: string;
+  /** ISO-2-ish key used for stable ordering / colors. */
+  key: string;
+  count: number;
+  /** Share of total (0–1). */
+  share: number;
+}
+
+/** Normalises raw country values from `clients.country` (free-text field).
+ *  Maps common variants to a canonical French name. Unknown / empty values
+ *  fall into 'Non renseigné'. */
+function normaliseCountry(raw: string | null | undefined): { key: string; label: string } {
+  if (!raw || !raw.trim()) return { key: 'unknown', label: 'Non renseigné' };
+  const v = raw.trim().toLowerCase();
+  const map: Array<{ match: RegExp; key: string; label: string }> = [
+    { match: /^(cameroun|cameroon|cm|cmr)$/, key: 'CM', label: 'Cameroun' },
+    { match: /^(gabon|ga|gab)$/, key: 'GA', label: 'Gabon' },
+    { match: /^(congo|république du congo|cg|cog|congo-brazzaville)$/, key: 'CG', label: 'Congo' },
+    { match: /^(rdc|drc|cd|cod|république démocratique du congo|democratic republic of the congo|congo kinshasa)$/, key: 'CD', label: 'RD Congo' },
+    { match: /^(tchad|chad|td|tcd)$/, key: 'TD', label: 'Tchad' },
+    { match: /^(centrafrique|république centrafricaine|cf|caf|central african republic)$/, key: 'CF', label: 'Centrafrique' },
+    { match: /^(guinée équatoriale|guinea|gq|gnq|equatorial guinea)$/, key: 'GQ', label: 'Guinée équatoriale' },
+    { match: /^(sénégal|senegal|sn|sen)$/, key: 'SN', label: 'Sénégal' },
+    { match: /^(côte d'?ivoire|ivory coast|ci|civ)$/, key: 'CI', label: "Côte d'Ivoire" },
+    { match: /^(bénin|benin|bj|ben)$/, key: 'BJ', label: 'Bénin' },
+    { match: /^(togo|tg|tgo)$/, key: 'TG', label: 'Togo' },
+    { match: /^(mali|ml|mli)$/, key: 'ML', label: 'Mali' },
+    { match: /^(burkina faso|bf|bfa|burkina)$/, key: 'BF', label: 'Burkina Faso' },
+    { match: /^(niger|ne|ner)$/, key: 'NE', label: 'Niger' },
+    { match: /^(nigeria|nigéria|ng|nga)$/, key: 'NG', label: 'Nigeria' },
+    { match: /^(ghana|gh|gha)$/, key: 'GH', label: 'Ghana' },
+    { match: /^(france|fr|fra)$/, key: 'FR', label: 'France' },
+    { match: /^(chine|china|cn|chn)$/, key: 'CN', label: 'Chine' },
+  ];
+  for (const m of map) {
+    if (m.match.test(v)) return { key: m.key, label: m.label };
+  }
+  // Fallback: capitalise the raw value for display.
+  return {
+    key: v.toUpperCase().slice(0, 4),
+    label: raw.trim().replace(/\b\w/g, (c) => c.toUpperCase()),
+  };
+}
+
+export function useClientCountryDistribution() {
+  return useQuery<CountryDistributionRow[]>({
+    queryKey: ['analytics-v2-client-country'],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('clients')
+        .select('country');
+      if (error) throw error;
+
+      const map = new Map<string, { label: string; count: number }>();
+      for (const row of data ?? []) {
+        const { key, label } = normaliseCountry(row.country);
+        const entry = map.get(key) ?? { label, count: 0 };
+        entry.count += 1;
+        map.set(key, entry);
+      }
+      const total = (data ?? []).length;
+      const rows: CountryDistributionRow[] = [...map.entries()]
+        .map(([key, v]) => ({
+          key,
+          country: v.label,
+          count: v.count,
+          share: total === 0 ? 0 : v.count / total,
+        }))
+        .sort((a, b) => b.count - a.count);
+      return rows;
     },
   });
 }
