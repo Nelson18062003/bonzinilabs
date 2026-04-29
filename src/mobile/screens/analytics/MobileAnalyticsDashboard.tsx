@@ -46,10 +46,11 @@ import {
   ExportButton,
   GranularityPicker,
   useReportGranularity,
+  timeXAxisProps,
+  timeChartBottomMargin,
   formatCurrency,
   formatCurrencyFull,
   formatAxisTick,
-  chartTickInterval,
   formatInteger,
   formatPercent,
   computeDelta,
@@ -393,38 +394,37 @@ function DashboardBody() {
             </div>
           }
         >
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={flow.data?.current ?? []} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                interval={chartTickInterval((flow.data?.current ?? []).length)}
-                minTickGap={20}
-                padding={{ left: 6, right: 6 }}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={formatAxisTick}
-                tickCount={5}
-                axisLine={false}
-                tickLine={false}
-                width={64}
-                label={{
-                  value: 'XAF',
-                  angle: -90,
-                  position: 'insideLeft',
-                  offset: 14,
-                  style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
-                }}
-              />
-              <Tooltip content={<FlowTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
-              <Bar dataKey="deposits" name="Dépôts" fill={COLOR_DEPOSITS} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="payments" name="Paiements" fill={COLOR_PAYMENTS} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {(() => {
+            const data = flow.data?.current ?? [];
+            const xa = timeXAxisProps({ granularity: flowG, dataLength: data.length });
+            const bottom = timeChartBottomMargin({ granularity: flowG, dataLength: data.length });
+            return (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="label" {...xa} />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={formatAxisTick}
+                    tickCount={5}
+                    axisLine={false}
+                    tickLine={false}
+                    width={64}
+                    label={{
+                      value: 'XAF',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 14,
+                      style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                    }}
+                  />
+                  <Tooltip content={<FlowTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+                  <Bar dataKey="deposits" name="Dépôts" fill={COLOR_DEPOSITS} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="payments" name="Paiements" fill={COLOR_PAYMENTS} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            );
+          })()}
           <ChartAxisCaption xLabel={`Période en ${granularitySubtitle(flowG).replace(/^par /, '')}`} yLabel="Montants en XAF" />
         </ChartCard>
 
@@ -473,39 +473,38 @@ function DashboardBody() {
             />
           }
         >
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={statusTimeline.data ?? []} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
-              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                interval={chartTickInterval((statusTimeline.data ?? []).length)}
-                minTickGap={20}
-                padding={{ left: 6, right: 6 }}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                tickCount={5}
-                allowDecimals={false}
-                width={48}
-                label={{
-                  value: 'Nombre',
-                  angle: -90,
-                  position: 'insideLeft',
-                  offset: 10,
-                  style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
-                }}
-              />
-              <Tooltip cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
-              <Bar dataKey="validated" stackId="s" name="Validés" fill="hsl(142 71% 45%)" />
-              <Bar dataKey="pending" stackId="s" name="En attente" fill="hsl(36 100% 55%)" />
-              <Bar dataKey="rejected" stackId="s" name="Rejetés" fill="hsl(0 84% 60%)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {(() => {
+            const data = statusTimeline.data ?? [];
+            const xa = timeXAxisProps({ granularity: statusTimelineG, dataLength: data.length });
+            const bottom = timeChartBottomMargin({ granularity: statusTimelineG, dataLength: data.length });
+            return (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="label" {...xa} />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickCount={5}
+                    allowDecimals={false}
+                    width={48}
+                    label={{
+                      value: 'Nombre',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 10,
+                      style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                    }}
+                  />
+                  <Tooltip cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+                  <Bar dataKey="validated" stackId="s" name="Validés" fill="hsl(142 71% 45%)" />
+                  <Bar dataKey="pending" stackId="s" name="En attente" fill="hsl(36 100% 55%)" />
+                  <Bar dataKey="rejected" stackId="s" name="Rejetés" fill="hsl(0 84% 60%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            );
+          })()}
           <ChartAxisCaption
             xLabel={`Période en ${granularitySubtitle(statusTimelineG).replace(/^par /, '')}`}
             yLabel="Nombre de dépôts"
@@ -1259,18 +1258,14 @@ function RateEvolutionReport({
           />
         </div>
 
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
+        {(() => {
+          const xa = timeXAxisProps({ granularity, dataLength: chartData.length });
+          const bottom = timeChartBottomMargin({ granularity, dataLength: chartData.length });
+          return (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom, left: 8 }}>
             <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              interval={chartTickInterval(chartData.length)}
-              minTickGap={20}
-              padding={{ left: 6, right: 6 }}
-            />
+            <XAxis dataKey="label" {...xa} />
             <YAxis
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
@@ -1306,6 +1301,8 @@ function RateEvolutionReport({
             ))}
           </LineChart>
         </ResponsiveContainer>
+          );
+        })()}
 
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
           <span>Unité : {mode === 'absolute' ? 'CNY pour 1 000 000 XAF' : '% depuis le début de la période'}</span>
@@ -1540,37 +1537,36 @@ function VolumeReportCard({
         ) : null
       }
     >
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={report?.series ?? []} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-            interval={chartTickInterval((report?.series ?? []).length)}
-            minTickGap={20}
-            padding={{ left: 6, right: 6 }}
-          />
-          <YAxis
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={formatAxisTick}
-            tickCount={5}
-            width={64}
-            label={{
-              value: 'XAF',
-              angle: -90,
-              position: 'insideLeft',
-              offset: 14,
-              style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
-            }}
-          />
-          <Tooltip content={<VolumeTooltip color={color} />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
-          <Bar dataKey="amountXAF" fill={color} radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+      {(() => {
+        const data = report?.series ?? [];
+        const xa = timeXAxisProps({ granularity, dataLength: data.length });
+        const bottom = timeChartBottomMargin({ granularity, dataLength: data.length });
+        return (
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="label" {...xa} />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={formatAxisTick}
+                tickCount={5}
+                width={64}
+                label={{
+                  value: 'XAF',
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 14,
+                  style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                }}
+              />
+              <Tooltip content={<VolumeTooltip color={color} />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+              <Bar dataKey="amountXAF" fill={color} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      })()}
       <ChartAxisCaption
         xLabel={`Période en ${granularitySubtitle(granularity).replace(/^par /, '')}`}
         yLabel="Volume en XAF"
@@ -1608,10 +1604,12 @@ function VolumeTooltip({ active, payload, label, color }: {
 // ────────────────────────────────────────────────────────────────────────────
 
 function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[]; granularity: Granularity }) {
+  const xa = timeXAxisProps({ granularity, dataLength: points.length });
+  const bottom = timeChartBottomMargin({ granularity, dataLength: points.length });
   return (
     <>
-      <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
+      <ResponsiveContainer width="100%" height={280}>
+        <AreaChart data={points} margin={{ top: 8, right: 8, bottom, left: 8 }}>
           <defs>
             <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="hsl(258 100% 60%)" stopOpacity={0.4} />
@@ -1619,15 +1617,7 @@ function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-            interval={chartTickInterval(points.length)}
-            minTickGap={20}
-            padding={{ left: 6, right: 6 }}
-          />
+          <XAxis dataKey="label" {...xa} />
           <YAxis
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             axisLine={false}

@@ -26,6 +26,8 @@ export { DateRangePicker } from './DateRangePicker';
 export { GranularityPicker, useReportGranularity } from './GranularityPicker';
 export type { GranularityPickerProps } from './GranularityPicker';
 
+export { timeXAxisProps, timeChartBottomMargin } from './chartAxis';
+
 export { ExportButton } from './ExportButton';
 export type { ExportButtonProps } from './ExportButton';
 

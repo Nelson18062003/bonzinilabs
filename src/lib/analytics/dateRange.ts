@@ -346,12 +346,16 @@ export function toSupabaseBounds(range: DateRange): { fromISO: string; toISO: st
 
 /**
  * Yields the bucket start timestamps (in UTC) that cover `range`
- * at the requested granularity. The last bucket may extend past `range.to`
- * — the caller should clip when computing widths.
+ * at the requested granularity. The first bucket is snapped to the
+ * granularity boundary that contains `range.from` so it stays aligned
+ * with `bucketKeyFor` — without this snap, weekly/monthly buckets
+ * built from a range whose start doesn't fall on a Monday/1st would
+ * never receive any data point.
  */
 export function bucketStarts(range: DateRange): Date[] {
   const out: Date[] = [];
-  let cursor = new Date(range.from.getTime());
+  // Anchor on the bucket containing range.from, in business TZ.
+  let cursor = new Date(bucketKeyFor(range.from, range.granularity));
   while (cursor < range.to) {
     out.push(new Date(cursor.getTime()));
     switch (range.granularity) {
