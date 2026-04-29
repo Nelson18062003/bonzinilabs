@@ -30,6 +30,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Brush,
+  ReferenceLine,
 } from 'recharts';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import {
@@ -96,6 +98,21 @@ const COLOR_DEPOSITS = 'hsl(258 100% 60%)';   // violet
 const COLOR_PAYMENTS = 'hsl(36 100% 55%)';    // amber
 const COLOR_NET_POSITIVE = 'hsl(142 71% 45%)';
 const COLOR_NET_NEGATIVE = 'hsl(16 100% 55%)'; // orange
+
+// All time-series charts share the same syncId so hovering one shows
+// the matching bucket in every other chart that has the same X-axis.
+const ANALYTICS_SYNC_ID = 'bonzini-analytics-time-series';
+
+// Threshold beyond which we render an interactive Brush navigator
+// at the bottom of the chart for zoom/pan on long ranges.
+const BRUSH_THRESHOLD = 14;
+
+const BRUSH_PROPS = {
+  height: 24,
+  stroke: 'hsl(var(--border))',
+  fill: 'hsl(var(--muted) / 0.4)',
+  travellerWidth: 8,
+} as const;
 
 const PAYMENT_METHOD_COLORS: Record<string, string> = {
   alipay: '#1677ff',
@@ -398,9 +415,10 @@ function DashboardBody() {
             const data = flow.data?.current ?? [];
             const xa = timeXAxisProps({ granularity: flowG, dataLength: data.length });
             const bottom = timeChartBottomMargin({ granularity: flowG, dataLength: data.length });
+            const showBrush = data.length > BRUSH_THRESHOLD;
             return (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+              <ResponsiveContainer width="100%" height={showBrush ? 320 : 300}>
+                <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }} syncId={ANALYTICS_SYNC_ID}>
                   <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="label" {...xa} />
                   <YAxis
@@ -421,6 +439,9 @@ function DashboardBody() {
                   <Tooltip content={<FlowTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
                   <Bar dataKey="deposits" name="Dépôts" fill={COLOR_DEPOSITS} radius={[4, 4, 0, 0]} />
                   <Bar dataKey="payments" name="Paiements" fill={COLOR_PAYMENTS} radius={[4, 4, 0, 0]} />
+                  {showBrush ? (
+                    <Brush dataKey="label" {...BRUSH_PROPS} />
+                  ) : null}
                 </BarChart>
               </ResponsiveContainer>
             );
@@ -477,9 +498,10 @@ function DashboardBody() {
             const data = statusTimeline.data ?? [];
             const xa = timeXAxisProps({ granularity: statusTimelineG, dataLength: data.length });
             const bottom = timeChartBottomMargin({ granularity: statusTimelineG, dataLength: data.length });
+            const showBrush = data.length > BRUSH_THRESHOLD;
             return (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+              <ResponsiveContainer width="100%" height={showBrush ? 280 : 260}>
+                <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }} syncId={ANALYTICS_SYNC_ID}>
                   <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="label" {...xa} />
                   <YAxis
@@ -501,6 +523,9 @@ function DashboardBody() {
                   <Bar dataKey="validated" stackId="s" name="Validés" fill="hsl(142 71% 45%)" />
                   <Bar dataKey="pending" stackId="s" name="En attente" fill="hsl(36 100% 55%)" />
                   <Bar dataKey="rejected" stackId="s" name="Rejetés" fill="hsl(0 84% 60%)" radius={[4, 4, 0, 0]} />
+                  {showBrush ? (
+                    <Brush dataKey="label" {...BRUSH_PROPS} />
+                  ) : null}
                 </BarChart>
               </ResponsiveContainer>
             );
@@ -883,7 +908,7 @@ const COUNTRY_PALETTE = [
 const COUNTRY_OTHER_COLOR = 'hsl(220 13% 65%)';
 const COUNTRY_UNKNOWN_COLOR = 'hsl(0 0% 80%)';
 
-function CountryDistributionReport({
+const CountryDistributionReport = React.memo(function CountryDistributionReport({
   rows,
   isLoading,
   error,
@@ -1019,7 +1044,7 @@ function CountryDistributionReport({
       </div>
     </ChartCard>
   );
-}
+});
 
 function CountryTooltip({
   active,
@@ -1125,7 +1150,7 @@ function computeRateInsights(points: RatePoint[]): RateInsights {
   };
 }
 
-function RateEvolutionReport({
+const RateEvolutionReport = React.memo(function RateEvolutionReport({
   data,
   isLoading,
   error,
@@ -1261,9 +1286,10 @@ function RateEvolutionReport({
         {(() => {
           const xa = timeXAxisProps({ granularity, dataLength: chartData.length });
           const bottom = timeChartBottomMargin({ granularity, dataLength: chartData.length });
+          const showBrush = chartData.length > BRUSH_THRESHOLD;
           return (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+        <ResponsiveContainer width="100%" height={showBrush ? 320 : 300}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom, left: 8 }} syncId={ANALYTICS_SYNC_ID}>
             <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="label" {...xa} />
             <YAxis
@@ -1299,6 +1325,9 @@ function RateEvolutionReport({
                 connectNulls
               />
             ))}
+            {showBrush ? (
+              <Brush dataKey="label" {...BRUSH_PROPS} />
+            ) : null}
           </LineChart>
         </ResponsiveContainer>
           );
@@ -1318,7 +1347,7 @@ function RateEvolutionReport({
       </div>
     </ChartCard>
   );
-}
+});
 
 function RateInsightTile({
   label,
@@ -1436,7 +1465,10 @@ interface VolumeReportCardProps {
   range: DateRange;
 }
 
-function VolumeReportCard({
+// React.memo skips re-renders when none of the props changed by reference.
+// Wallet/exposure/rate hooks all return stable React Query references —
+// only the report card whose underlying query key changed will re-render.
+const VolumeReportCard = React.memo(function VolumeReportCard({
   title,
   report,
   isLoading,
@@ -1541,9 +1573,18 @@ function VolumeReportCard({
         const data = report?.series ?? [];
         const xa = timeXAxisProps({ granularity, dataLength: data.length });
         const bottom = timeChartBottomMargin({ granularity, dataLength: data.length });
+        const showBrush = data.length > BRUSH_THRESHOLD;
+        // Average XAF per non-empty bucket — drawn as a dashed reference
+        // line so the user can see at a glance which buckets out- or
+        // under-perform the period mean.
+        const nonEmpty = data.filter((p) => p.amountXAF > 0);
+        const avgPerBucket =
+          nonEmpty.length === 0
+            ? null
+            : Math.round(nonEmpty.reduce((s, p) => s + p.amountXAF, 0) / nonEmpty.length);
         return (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+          <ResponsiveContainer width="100%" height={showBrush ? 280 : 260}>
+            <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }} syncId={ANALYTICS_SYNC_ID}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="label" {...xa} />
               <YAxis
@@ -1563,6 +1604,23 @@ function VolumeReportCard({
               />
               <Tooltip content={<VolumeTooltip color={color} />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
               <Bar dataKey="amountXAF" fill={color} radius={[4, 4, 0, 0]} />
+              {avgPerBucket != null ? (
+                <ReferenceLine
+                  y={avgPerBucket}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.6}
+                  label={{
+                    value: `Moy. ${formatAxisTick(avgPerBucket)}`,
+                    position: 'right',
+                    fill: 'hsl(var(--muted-foreground))',
+                    fontSize: 10,
+                  }}
+                />
+              ) : null}
+              {showBrush ? (
+                <Brush dataKey="label" {...BRUSH_PROPS} />
+              ) : null}
             </BarChart>
           </ResponsiveContainer>
         );
@@ -1573,7 +1631,7 @@ function VolumeReportCard({
       />
     </ChartCard>
   );
-}
+});
 
 function VolumeTooltip({ active, payload, label, color }: {
   active?: boolean;
@@ -1603,13 +1661,14 @@ function VolumeTooltip({ active, payload, label, color }: {
 // ClientGrowthChart — AreaChart cumulative + bars for new
 // ────────────────────────────────────────────────────────────────────────────
 
-function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[]; granularity: Granularity }) {
+const ClientGrowthChart = React.memo(function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[]; granularity: Granularity }) {
   const xa = timeXAxisProps({ granularity, dataLength: points.length });
   const bottom = timeChartBottomMargin({ granularity, dataLength: points.length });
+  const showBrush = points.length > BRUSH_THRESHOLD;
   return (
     <>
-      <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={points} margin={{ top: 8, right: 8, bottom, left: 8 }}>
+      <ResponsiveContainer width="100%" height={showBrush ? 300 : 280}>
+        <AreaChart data={points} margin={{ top: 8, right: 8, bottom, left: 8 }} syncId={ANALYTICS_SYNC_ID}>
           <defs>
             <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="hsl(258 100% 60%)" stopOpacity={0.4} />
@@ -1636,6 +1695,9 @@ function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[
           <Tooltip content={<GrowthTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
           <Area type="monotone" dataKey="cumulative" stroke="hsl(258 100% 60%)" strokeWidth={2} fill="url(#growthGradient)" name="Total cumulé" />
           <Bar dataKey="newClients" fill="hsl(36 100% 55%)" name="Nouveaux" />
+          {showBrush ? (
+            <Brush dataKey="label" {...BRUSH_PROPS} />
+          ) : null}
         </AreaChart>
       </ResponsiveContainer>
       <ChartAxisCaption
@@ -1644,7 +1706,7 @@ function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[
       />
     </>
   );
-}
+});
 
 function GrowthTooltip({ active, payload, label }: {
   active?: boolean;
