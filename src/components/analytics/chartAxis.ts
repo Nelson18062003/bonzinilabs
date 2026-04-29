@@ -1,10 +1,14 @@
 /**
  * Adaptive Recharts axis helpers.
  *
- * The defaults are tuned for fintech time-series:
- *   - never silently drop bars or buckets;
- *   - keep every bucket label readable, rotating when crowded;
- *   - strip noisy day-of-week prefixes when the bucket count grows.
+ * Tuned for mobile-first fintech time-series:
+ *   - bars are NEVER dropped — every bucket renders;
+ *   - X-axis labels are thinned when the bucket count exceeds what the
+ *     canvas can show legibly (Recharts `interval` prop), keeping them
+ *     readable rather than overlapping;
+ *   - rotation kicks in only when even the thinned labels remain dense;
+ *   - day labels lose their weekday prefix once the row gets crowded;
+ *   - the full label stays available in the tooltip via `payload.label`.
  *
  * Spread the returned object on a Recharts `<XAxis>`:
  *
@@ -20,23 +24,35 @@ interface TimeXAxisOpts {
   dataLength: number;
 }
 
-/** Decide whether labels should be rotated to fit on a mobile-first canvas. */
-function needsRotation(opts: TimeXAxisOpts): boolean {
-  // Conservative thresholds tuned for ~360px wide cards on mobile.
-  switch (opts.granularity) {
-    case 'hour':
-      return opts.dataLength > 12;     // typical 24h day still fits without rotation
-    case 'day':
-      return opts.dataLength > 10;     // "Lun 24" fits 10 abreast, beyond → rotate
-    case 'week':
-      return opts.dataLength > 14;
-    case 'month':
-      return opts.dataLength > 12;
-    case 'quarter':
-      return opts.dataLength > 10;
-    case 'year':
-      return opts.dataLength > 10;
+/**
+ * Maximum legible labels for a ~360px wide mobile card by granularity.
+ * Beyond this, labels get thinned (every Nth tick) AND rotated.
+ */
+function maxLabelsFor(granularity: Granularity): number {
+  switch (granularity) {
+    case 'hour':    return 12;
+    case 'day':     return 10;
+    case 'week':    return 14;
+    case 'month':   return 12;
+    case 'quarter': return 10;
+    case 'year':    return 10;
   }
+}
+
+/**
+ * Compute Recharts `interval` to thin labels: 0 means "render every tick",
+ * N means "skip N ticks between rendered labels". Bars are unaffected —
+ * Recharts only thins the label rendering, not the data series.
+ */
+function tickInterval(opts: TimeXAxisOpts): number {
+  const cap = maxLabelsFor(opts.granularity);
+  if (opts.dataLength <= cap) return 0;
+  return Math.ceil(opts.dataLength / cap) - 1;
+}
+
+/** Rotate labels only when even thinned labels would still be cramped. */
+function needsRotation(opts: TimeXAxisOpts): boolean {
+  return opts.dataLength > maxLabelsFor(opts.granularity);
 }
 
 /**
@@ -52,18 +68,14 @@ function compactDayLabel(label: string): string {
 export function timeXAxisProps(opts: TimeXAxisOpts) {
   const rotate = needsRotation(opts);
   const compact = opts.granularity === 'day' && opts.dataLength > 7;
+  const interval = tickInterval(opts);
 
   return {
-    // interval=0 forces Recharts to render every bucket label so the
-    // user actually sees the temporal coverage. Rotation handles the
-    // fit; we don't want Recharts to silently hide ticks.
-    interval: 0 as const,
+    interval,
     tick: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
     axisLine: false,
     tickLine: false,
-    // minTickGap is only respected when interval is auto, but we keep
-    // it set to 0 for safety in case someone overrides interval.
-    minTickGap: 0,
+    minTickGap: 4,
     tickMargin: rotate ? 4 : 6,
     angle: rotate ? -35 : 0,
     textAnchor: (rotate ? 'end' : 'middle') as 'end' | 'middle',

@@ -107,6 +107,23 @@ export function granularityIsCompatible(g: Granularity, range: DateRange): boole
   }
 }
 
+/**
+ * Returns a granularity guaranteed to be compatible with `range`.
+ * If the requested granularity is incompatible (e.g. range = 1 day with
+ * granularity = year, which would yield a single empty bucket), falls
+ * back to a sensible default derived from the range size.
+ *
+ * Use this at every boundary where a granularity is consumed (chart
+ * queries, axis builders) so the dashboard never receives a degenerate
+ * combination — even if state is hydrated from URL params or persisted
+ * preferences.
+ */
+export function coerceGranularity(range: DateRange): Granularity {
+  return granularityIsCompatible(range.granularity, range)
+    ? range.granularity
+    : defaultGranularity(range.from, range.to);
+}
+
 export interface DateRange {
   /** Inclusive start in UTC. */
   from: Date;

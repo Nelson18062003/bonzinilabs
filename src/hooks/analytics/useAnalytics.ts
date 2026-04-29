@@ -426,12 +426,18 @@ export function useTopClients(range: DateRange, limit = 10) {
       // `clients`, so PostgREST can't embed the client row directly. The
       // rest of the codebase (usePaginatedPayments, useAdminDeposits, etc.)
       // uses the same two-step pattern.
+      // Safety cap: prevents an accidental multi-million-row payload while
+      // still covering realistic ranges (50k completed payments per range
+      // is well above current and short-term volumes). Above this, a server
+      // -side aggregation RPC should be introduced.
+      const PAYLOAD_CAP = 50_000;
       const { data: payments, error } = await supabaseAdmin
         .from('payments')
         .select('user_id, amount_xaf, amount_rmb')
         .eq('status', 'completed')
         .gte('created_at', fromISO)
-        .lt('created_at', toISO);
+        .lt('created_at', toISO)
+        .limit(PAYLOAD_CAP);
       if (error) throw error;
 
       const agg = new Map<
@@ -556,9 +562,19 @@ export function useDepositProcessingTime(range: DateRange) {
         return { medianMinutes: null, p90Minutes: null, sampleSize: 0 };
       }
 
+      // Linear interpolation between adjacent samples (NIST / Excel
+       // PERCENTILE.INC convention). Avoids the off-by-one bias of
+       // Math.floor(N * p) — the previous implementation returned the
+       // (floor(N*p)+1)-th value instead of the true p-th percentile.
       const pct = (p: number) => {
-        const idx = Math.min(durations.length - 1, Math.max(0, Math.floor(durations.length * p)));
-        return Math.round(durations[idx]);
+        const n = durations.length;
+        if (n === 1) return Math.round(durations[0]);
+        const rank = (n - 1) * p;
+        const lo = Math.floor(rank);
+        const hi = Math.ceil(rank);
+        const frac = rank - lo;
+        const value = durations[lo] + (durations[hi] - durations[lo]) * frac;
+        return Math.round(value);
       };
       return { medianMinutes: pct(0.5), p90Minutes: pct(0.9), sampleSize: durations.length };
     },
@@ -972,12 +988,15 @@ export function useUtmSources(range: DateRange, limit = 10) {
     gcTime: ANALYTICS_GC,
     queryFn: async () => {
       const { fromISO, toISO } = toSupabaseBounds(range);
+      // Safety cap on the new-client payload — see useTopClients comment.
+      const PAYLOAD_CAP = 50_000;
       const { data, error } = await supabaseAdmin
         .from('clients')
         .select('utm_source, utm_medium, utm_campaign')
         .gte('created_at', fromISO)
         .lt('created_at', toISO)
-        .not('utm_source', 'is', null);
+        .not('utm_source', 'is', null)
+        .limit(PAYLOAD_CAP);
       if (error) throw error;
 
       const map = new Map<string, UtmSourceRow>();
