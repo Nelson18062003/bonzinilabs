@@ -36,7 +36,7 @@ import {
   DateRangeProvider,
   useDateRange,
 } from '@/lib/analytics/DateRangeContext';
-import { granularitySubtitle } from '@/lib/analytics/dateRange';
+import { granularitySubtitle, type DateRange, type Granularity } from '@/lib/analytics/dateRange';
 import {
   DateRangePicker,
   KpiCard,
@@ -44,6 +44,8 @@ import {
   ChartCard,
   BreakdownBar,
   ExportButton,
+  GranularityPicker,
+  useReportGranularity,
   formatCurrency,
   formatCurrencyFull,
   formatAxisTick,
@@ -83,7 +85,6 @@ import {
 } from '@/hooks/analytics/useAnalytics';
 import { Area, AreaChart } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { useDateRange as useDateRangeCtx } from '@/lib/analytics/DateRangeContext';
 import { cn } from '@/lib/utils';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -133,7 +134,23 @@ function DashboardBody() {
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const flow = useFlowSeries(range);
+  // Per-report granularity overrides — each one defaults to the global
+  // value but can be changed independently via its own picker.
+  const [flowG, setFlowG] = useReportGranularity(range.granularity);
+  const [depositVolumeG, setDepositVolumeG] = useReportGranularity(range.granularity);
+  const [paymentVolumeG, setPaymentVolumeG] = useReportGranularity(range.granularity);
+  const [statusTimelineG, setStatusTimelineG] = useReportGranularity(range.granularity);
+  const [clientGrowthG, setClientGrowthG] = useReportGranularity(range.granularity);
+  const [rateHistoryG, setRateHistoryG] = useReportGranularity(range.granularity);
+
+  const flowRange = React.useMemo<DateRange>(() => ({ ...range, granularity: flowG }), [range, flowG]);
+  const depositVolumeRange = React.useMemo<DateRange>(() => ({ ...range, granularity: depositVolumeG }), [range, depositVolumeG]);
+  const paymentVolumeRange = React.useMemo<DateRange>(() => ({ ...range, granularity: paymentVolumeG }), [range, paymentVolumeG]);
+  const statusTimelineRange = React.useMemo<DateRange>(() => ({ ...range, granularity: statusTimelineG }), [range, statusTimelineG]);
+  const clientGrowthRange = React.useMemo<DateRange>(() => ({ ...range, granularity: clientGrowthG }), [range, clientGrowthG]);
+  const rateHistoryRange = React.useMemo<DateRange>(() => ({ ...range, granularity: rateHistoryG }), [range, rateHistoryG]);
+
+  const flow = useFlowSeries(flowRange);
   const payments = usePaymentSummary(range);
   const deposits = useDepositSummary(range);
   const depositMethods = useDepositMethodBreakdown(range);
@@ -143,15 +160,15 @@ function DashboardBody() {
   const funnel = useFunnel(range);
   const processing = useDepositProcessingTime(range);
   const alerts = useDashboardAlerts();
-  const rateHistory = useRateHistory(range);
+  const rateHistory = useRateHistory(rateHistoryRange);
   const adminProductivity = useAdminProductivity(range);
-  const depositVolumeReport = useDepositVolumeReport(range);
-  const paymentVolumeReport = usePaymentVolumeReport(range);
-  const clientGrowth = useClientGrowth(range);
+  const depositVolumeReport = useDepositVolumeReport(depositVolumeRange);
+  const paymentVolumeReport = usePaymentVolumeReport(paymentVolumeRange);
+  const clientGrowth = useClientGrowth(clientGrowthRange);
   const registrationSource = useRegistrationSource(range);
   const utmSources = useUtmSources(range, 10);
   const walletExposure = useWalletExposure();
-  const statusTimeline = useDepositStatusTimeline(range);
+  const statusTimeline = useDepositStatusTimeline(statusTimelineRange);
   const countryDistribution = useClientCountryDistribution();
 
   const handleRefresh = async () => {
@@ -340,58 +357,75 @@ function DashboardBody() {
         {/* SECTION 3 — Flow chart ──────────────────────────── */}
         <ChartCard
           title="Flux financier"
-          subtitle={granularitySubtitle(range.granularity)}
+          subtitle={granularitySubtitle(flowG)}
           description="Dépôts validés (violet) vs paiements exécutés (ambre) agrégés par bucket. Le flux net est la différence."
           loading={flow.isLoading}
           error={flow.error as Error | null}
           empty={flow.data?.current.every((p) => p.deposits === 0 && p.payments === 0)}
           toolbar={
-            <ExportButton
-              filename="flux"
-              disabled={!flow.data?.current || flow.data.current.length === 0}
-              rows={() =>
-                (flow.data?.current ?? []).map((p) => ({
-                  bucket: p.bucket,
-                  label: p.label,
-                  depots_xaf: p.deposits,
-                  paiements_xaf: p.payments,
-                  net_xaf: p.net,
-                }))
-              }
-              columns={[
-                { key: 'bucket', label: 'Bucket (UTC)' },
-                { key: 'label', label: 'Libellé' },
-                { key: 'depots_xaf', label: 'Dépôts XAF' },
-                { key: 'paiements_xaf', label: 'Paiements XAF' },
-                { key: 'net_xaf', label: 'Net XAF' },
-              ]}
-            />
+            <div className="flex items-center gap-2">
+              <GranularityPicker
+                value={flowG}
+                onChange={setFlowG}
+                globalGranularity={range.granularity}
+                range={range}
+              />
+              <ExportButton
+                filename="flux"
+                disabled={!flow.data?.current || flow.data.current.length === 0}
+                rows={() =>
+                  (flow.data?.current ?? []).map((p) => ({
+                    bucket: p.bucket,
+                    label: p.label,
+                    depots_xaf: p.deposits,
+                    paiements_xaf: p.payments,
+                    net_xaf: p.net,
+                  }))
+                }
+                columns={[
+                  { key: 'bucket', label: 'Bucket (UTC)' },
+                  { key: 'label', label: 'Libellé' },
+                  { key: 'depots_xaf', label: 'Dépôts XAF' },
+                  { key: 'paiements_xaf', label: 'Paiements XAF' },
+                  { key: 'net_xaf', label: 'Net XAF' },
+                ]}
+              />
+            </div>
           }
         >
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={flow.data?.current ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={flow.data?.current ?? []} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
                 interval={chartTickInterval((flow.data?.current ?? []).length)}
-                minTickGap={4}
+                minTickGap={20}
+                padding={{ left: 6, right: 6 }}
               />
               <YAxis
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 tickFormatter={formatAxisTick}
                 tickCount={5}
                 axisLine={false}
                 tickLine={false}
-                width={56}
+                width={64}
+                label={{
+                  value: 'XAF',
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 14,
+                  style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                }}
               />
-              <Tooltip content={<FlowTooltip />} />
+              <Tooltip content={<FlowTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
               <Bar dataKey="deposits" name="Dépôts" fill={COLOR_DEPOSITS} radius={[4, 4, 0, 0]} />
               <Bar dataKey="payments" name="Paiements" fill={COLOR_PAYMENTS} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <ChartAxisCaption xLabel={`Période en ${granularitySubtitle(flowG).replace(/^par /, '')}`} yLabel="Montants en XAF" />
         </ChartCard>
 
         {/* SECTION 3b — Volume reports (deposits + payments) ── */}
@@ -403,6 +437,10 @@ function DashboardBody() {
             error={depositVolumeReport.error}
             color="hsl(258 100% 60%)"
             exportName="rapport_depots"
+            granularity={depositVolumeG}
+            onGranularityChange={setDepositVolumeG}
+            globalGranularity={range.granularity}
+            range={range}
           />
           <VolumeReportCard
             title="Rapport volume paiements"
@@ -411,43 +449,67 @@ function DashboardBody() {
             error={paymentVolumeReport.error}
             color="hsl(36 100% 55%)"
             exportName="rapport_paiements"
+            granularity={paymentVolumeG}
+            onGranularityChange={setPaymentVolumeG}
+            globalGranularity={range.granularity}
+            range={range}
           />
         </div>
 
         {/* SECTION 3c — Deposit status timeline (stacked) ──── */}
         <ChartCard
           title="Statut des dépôts dans le temps"
-          subtitle="Nombre de dépôts créés par bucket, empilés par statut"
+          subtitle={`Nombre de dépôts créés ${granularitySubtitle(statusTimelineG)}, empilés par statut`}
           description="Montre à quel rythme les dépôts arrivent, combien sont validés vs rejetés vs encore en attente. Les pics peuvent signaler des campagnes ou des problèmes opérationnels."
           loading={statusTimeline.isLoading}
           error={statusTimeline.error as Error | null}
           empty={!statusTimeline.data || statusTimeline.data.every((p) => p.validated + p.rejected + p.pending === 0)}
+          toolbar={
+            <GranularityPicker
+              value={statusTimelineG}
+              onChange={setStatusTimelineG}
+              globalGranularity={range.granularity}
+              range={range}
+            />
+          }
         >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={statusTimeline.data ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={statusTimeline.data ?? []} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
                 interval={chartTickInterval((statusTimeline.data ?? []).length)}
-                minTickGap={4}
+                minTickGap={20}
+                padding={{ left: 6, right: 6 }}
               />
               <YAxis
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
                 tickCount={5}
                 allowDecimals={false}
-                width={36}
+                width={48}
+                label={{
+                  value: 'Nombre',
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 10,
+                  style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                }}
               />
-              <Tooltip />
+              <Tooltip cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
               <Bar dataKey="validated" stackId="s" name="Validés" fill="hsl(142 71% 45%)" />
               <Bar dataKey="pending" stackId="s" name="En attente" fill="hsl(36 100% 55%)" />
               <Bar dataKey="rejected" stackId="s" name="Rejetés" fill="hsl(0 84% 60%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <ChartAxisCaption
+            xLabel={`Période en ${granularitySubtitle(statusTimelineG).replace(/^par /, '')}`}
+            yLabel="Nombre de dépôts"
+          />
         </ChartCard>
 
         {/* SECTION 4 — Breakdowns côte-à-côte ─────────────── */}
@@ -499,13 +561,21 @@ function DashboardBody() {
         <div className="grid gap-4 md:grid-cols-2">
           <ChartCard
             title="Croissance clients"
-            subtitle="Cumul total + nouveaux clients par bucket"
+            subtitle={`Cumul total + nouveaux clients ${granularitySubtitle(clientGrowthG)}`}
             description="Barre : nouveaux clients inscrits dans le bucket. Aire : total cumulé (incluant tous les clients d'avant la période). Les plateaux indiquent un ralentissement de l'acquisition."
             loading={clientGrowth.isLoading}
             error={clientGrowth.error as Error | null}
             empty={!clientGrowth.data || clientGrowth.data.length === 0}
+            toolbar={
+              <GranularityPicker
+                value={clientGrowthG}
+                onChange={setClientGrowthG}
+                globalGranularity={range.granularity}
+                range={range}
+              />
+            }
           >
-            <ClientGrowthChart points={clientGrowth.data ?? []} />
+            <ClientGrowthChart points={clientGrowth.data ?? []} granularity={clientGrowthG} />
           </ChartCard>
 
           <ChartCard
@@ -570,6 +640,10 @@ function DashboardBody() {
           data={rateHistory.data ?? []}
           isLoading={rateHistory.isLoading}
           error={rateHistory.error as Error | null}
+          granularity={rateHistoryG}
+          onGranularityChange={setRateHistoryG}
+          globalGranularity={range.granularity}
+          range={range}
         />
 
         {/* SECTION 7 — Admin productivity ───────────────────── */}
@@ -628,6 +702,25 @@ function DashboardBody() {
 // ────────────────────────────────────────────────────────────────────────────
 // Sub-components
 // ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Discreet caption rendered below a chart so the axes' meaning stays
+ * explicit even when the in-chart label is too small to read at a glance.
+ */
+function ChartAxisCaption({ xLabel, yLabel }: { xLabel: string; yLabel: string }) {
+  return (
+    <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1">
+        <span className="font-semibold uppercase tracking-wider">X</span>
+        <span>· {xLabel}</span>
+      </span>
+      <span className="inline-flex items-center gap-1">
+        <span className="font-semibold uppercase tracking-wider">Y</span>
+        <span>· {yLabel}</span>
+      </span>
+    </div>
+  );
+}
 
 function FlowTooltip({ active, payload, label }: {
   active?: boolean;
@@ -1037,10 +1130,18 @@ function RateEvolutionReport({
   data,
   isLoading,
   error,
+  granularity,
+  onGranularityChange,
+  globalGranularity,
+  range,
 }: {
   data: RatePoint[];
   isLoading: boolean;
   error: Error | null;
+  granularity: Granularity;
+  onGranularityChange: (g: Granularity) => void;
+  globalGranularity: Granularity;
+  range: DateRange;
 }) {
   const [mode, setMode] = React.useState<'absolute' | 'variation'>('absolute');
   const insights = React.useMemo(() => computeRateInsights(data), [data]);
@@ -1087,27 +1188,35 @@ function RateEvolutionReport({
       error={error}
       empty={data.length === 0}
       toolbar={
-        <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5 text-[11px]">
-          <button
-            type="button"
-            onClick={() => setMode('absolute')}
-            className={cn(
-              'rounded px-2 py-1 font-medium transition-colors',
-              mode === 'absolute' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            Absolu
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('variation')}
-            className={cn(
-              'rounded px-2 py-1 font-medium transition-colors',
-              mode === 'variation' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            Variation %
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <GranularityPicker
+            value={granularity}
+            onChange={onGranularityChange}
+            globalGranularity={globalGranularity}
+            range={range}
+          />
+          <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setMode('absolute')}
+              className={cn(
+                'rounded px-2 py-1 font-medium transition-colors',
+                mode === 'absolute' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              Absolu
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('variation')}
+              className={cn(
+                'rounded px-2 py-1 font-medium transition-colors',
+                mode === 'variation' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              Variation %
+            </button>
+          </div>
         </div>
       }
     >
@@ -1150,19 +1259,20 @@ function RateEvolutionReport({
           />
         </div>
 
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
             <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
               interval={chartTickInterval(chartData.length)}
-              minTickGap={4}
+              minTickGap={20}
+              padding={{ left: 6, right: 6 }}
             />
             <YAxis
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
               domain={yDomain}
@@ -1172,7 +1282,14 @@ function RateEvolutionReport({
                   : `${v >= 0 ? '+' : ''}${Math.round(v)}%`
               }
               tickCount={5}
-              width={56}
+              width={64}
+              label={{
+                value: mode === 'absolute' ? 'CNY / 1M XAF' : '%',
+                angle: -90,
+                position: 'insideLeft',
+                offset: 6,
+                style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+              }}
             />
             <Tooltip content={<RateTooltip mode={mode} />} />
             {RATE_METHODS.map((m) => (
@@ -1316,39 +1433,61 @@ interface VolumeReportCardProps {
   error: unknown;
   color: string;
   exportName: string;
+  granularity: Granularity;
+  onGranularityChange: (g: Granularity) => void;
+  globalGranularity: Granularity;
+  range: DateRange;
 }
 
-function VolumeReportCard({ title, report, isLoading, error, color, exportName }: VolumeReportCardProps) {
-  const { range } = useDateRangeCtx();
+function VolumeReportCard({
+  title,
+  report,
+  isLoading,
+  error,
+  color,
+  exportName,
+  granularity,
+  onGranularityChange,
+  globalGranularity,
+  range,
+}: VolumeReportCardProps) {
   const hasData = !!report && report.series.some((p) => p.amountXAF > 0);
 
   return (
     <ChartCard
       title={title}
-      subtitle={granularitySubtitle(range.granularity).replace(/^par/, 'Par')}
+      subtitle={granularitySubtitle(granularity).replace(/^par/, 'Par')}
       description="Série temporelle du volume avec total, opérations, ticket moyen, pic et tendance % par rapport à la période précédente de même longueur."
       loading={isLoading}
       error={error as Error | null}
       empty={!hasData}
       toolbar={
-        <ExportButton
-          filename={exportName}
-          disabled={!hasData}
-          rows={() =>
-            (report?.series ?? []).map((p) => ({
-              bucket: p.bucket,
-              label: p.label,
-              volume_xaf: p.amountXAF,
-              operations: p.opCount,
-            }))
-          }
-          columns={[
-            { key: 'bucket', label: 'Bucket (UTC)' },
-            { key: 'label', label: 'Libellé' },
-            { key: 'volume_xaf', label: 'Volume XAF' },
-            { key: 'operations', label: 'Opérations' },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <GranularityPicker
+            value={granularity}
+            onChange={onGranularityChange}
+            globalGranularity={globalGranularity}
+            range={range}
+          />
+          <ExportButton
+            filename={exportName}
+            disabled={!hasData}
+            rows={() =>
+              (report?.series ?? []).map((p) => ({
+                bucket: p.bucket,
+                label: p.label,
+                volume_xaf: p.amountXAF,
+                operations: p.opCount,
+              }))
+            }
+            columns={[
+              { key: 'bucket', label: 'Bucket (UTC)' },
+              { key: 'label', label: 'Libellé' },
+              { key: 'volume_xaf', label: 'Volume XAF' },
+              { key: 'operations', label: 'Opérations' },
+            ]}
+          />
+        </div>
       }
       footer={
         report && hasData ? (
@@ -1401,29 +1540,41 @@ function VolumeReportCard({ title, report, isLoading, error, color, exportName }
         ) : null
       }
     >
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={report?.series ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={report?.series ?? []} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
           <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             axisLine={false}
             tickLine={false}
             interval={chartTickInterval((report?.series ?? []).length)}
-            minTickGap={4}
+            minTickGap={20}
+            padding={{ left: 6, right: 6 }}
           />
           <YAxis
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             axisLine={false}
             tickLine={false}
             tickFormatter={formatAxisTick}
             tickCount={5}
-            width={56}
+            width={64}
+            label={{
+              value: 'XAF',
+              angle: -90,
+              position: 'insideLeft',
+              offset: 14,
+              style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+            }}
           />
-          <Tooltip content={<VolumeTooltip color={color} />} />
+          <Tooltip content={<VolumeTooltip color={color} />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
           <Bar dataKey="amountXAF" fill={color} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
+      <ChartAxisCaption
+        xLabel={`Période en ${granularitySubtitle(granularity).replace(/^par /, '')}`}
+        yLabel="Volume en XAF"
+      />
     </ChartCard>
   );
 }
@@ -1456,38 +1607,52 @@ function VolumeTooltip({ active, payload, label, color }: {
 // ClientGrowthChart — AreaChart cumulative + bars for new
 // ────────────────────────────────────────────────────────────────────────────
 
-function ClientGrowthChart({ points }: { points: ClientGrowthPoint[] }) {
+function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[]; granularity: Granularity }) {
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
-        <defs>
-          <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(258 100% 60%)" stopOpacity={0.4} />
-            <stop offset="100%" stopColor="hsl(258 100% 60%)" stopOpacity={0.05} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          interval={chartTickInterval(points.length)}
-          minTickGap={4}
-        />
-        <YAxis
-          tick={{ fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          tickCount={5}
-          allowDecimals={false}
-          width={36}
-        />
-        <Tooltip content={<GrowthTooltip />} />
-        <Area type="monotone" dataKey="cumulative" stroke="hsl(258 100% 60%)" strokeWidth={2} fill="url(#growthGradient)" name="Total cumulé" />
-        <Bar dataKey="newClients" fill="hsl(36 100% 55%)" name="Nouveaux" />
-      </AreaChart>
-    </ResponsiveContainer>
+    <>
+      <ResponsiveContainer width="100%" height={260}>
+        <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
+          <defs>
+            <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(258 100% 60%)" stopOpacity={0.4} />
+              <stop offset="100%" stopColor="hsl(258 100% 60%)" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={false}
+            tickLine={false}
+            interval={chartTickInterval(points.length)}
+            minTickGap={20}
+            padding={{ left: 6, right: 6 }}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={false}
+            tickLine={false}
+            tickCount={5}
+            allowDecimals={false}
+            width={48}
+            label={{
+              value: 'Clients',
+              angle: -90,
+              position: 'insideLeft',
+              offset: 10,
+              style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+            }}
+          />
+          <Tooltip content={<GrowthTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+          <Area type="monotone" dataKey="cumulative" stroke="hsl(258 100% 60%)" strokeWidth={2} fill="url(#growthGradient)" name="Total cumulé" />
+          <Bar dataKey="newClients" fill="hsl(36 100% 55%)" name="Nouveaux" />
+        </AreaChart>
+      </ResponsiveContainer>
+      <ChartAxisCaption
+        xLabel={`Période en ${granularitySubtitle(granularity).replace(/^par /, '')}`}
+        yLabel="Nombre de clients"
+      />
+    </>
   );
 }
 
