@@ -61,10 +61,11 @@ export function KpiCard({
   const accentStyle = ACCENT_STYLES[accent];
 
   return (
-    <Card className={cn('p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-start gap-1.5">
+    <Card className={cn('flex h-full flex-col p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
+      <div className="flex flex-1 items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col space-y-1">
+          {/* min-h reserves 2 lines so values align vertically across cards */}
+          <div className="flex min-h-[2.25rem] items-start gap-1.5 md:min-h-[2.5rem]">
             <p className="text-xs md:text-sm text-muted-foreground leading-snug line-clamp-2 break-words">
               {label}
             </p>

@@ -36,7 +36,7 @@ import {
   DateRangeProvider,
   useDateRange,
 } from '@/lib/analytics/DateRangeContext';
-import { granularitySubtitle, type DateRange, type Granularity } from '@/lib/analytics/dateRange';
+import { coerceGranularity, granularitySubtitle, type DateRange, type Granularity } from '@/lib/analytics/dateRange';
 import {
   DateRangePicker,
   KpiCard,
@@ -144,12 +144,34 @@ function DashboardBody() {
   const [clientGrowthG, setClientGrowthG] = useReportGranularity(range.granularity);
   const [rateHistoryG, setRateHistoryG] = useReportGranularity(range.granularity);
 
-  const flowRange = React.useMemo<DateRange>(() => ({ ...range, granularity: flowG }), [range, flowG]);
-  const depositVolumeRange = React.useMemo<DateRange>(() => ({ ...range, granularity: depositVolumeG }), [range, depositVolumeG]);
-  const paymentVolumeRange = React.useMemo<DateRange>(() => ({ ...range, granularity: paymentVolumeG }), [range, paymentVolumeG]);
-  const statusTimelineRange = React.useMemo<DateRange>(() => ({ ...range, granularity: statusTimelineG }), [range, statusTimelineG]);
-  const clientGrowthRange = React.useMemo<DateRange>(() => ({ ...range, granularity: clientGrowthG }), [range, clientGrowthG]);
-  const rateHistoryRange = React.useMemo<DateRange>(() => ({ ...range, granularity: rateHistoryG }), [range, rateHistoryG]);
+  // coerceGranularity is the runtime guard: if the override is incompatible
+  // with the global range (e.g. range = 1 day with granularity = year, which
+  // would yield a single empty bucket), it falls back to a sane default.
+  // Prevents degenerate combinations from ever reaching the chart.
+  const flowRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: flowG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, flowG]);
+  const depositVolumeRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: depositVolumeG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, depositVolumeG]);
+  const paymentVolumeRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: paymentVolumeG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, paymentVolumeG]);
+  const statusTimelineRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: statusTimelineG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, statusTimelineG]);
+  const clientGrowthRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: clientGrowthG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, clientGrowthG]);
+  const rateHistoryRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: rateHistoryG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, rateHistoryG]);
 
   const flow = useFlowSeries(flowRange);
   const payments = usePaymentSummary(range);
@@ -278,22 +300,22 @@ function DashboardBody() {
           <KpiCard
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
-            label="Exposition wallets"
+            label="Exposition wallets (snapshot)"
             value={formatCurrencyFull(walletExposure.data?.totalXAF ?? 0, 'XAF')}
-            secondary={`${formatInteger(walletExposure.data?.clientsWithBalance ?? 0)} clients avec solde`}
+            secondary={`${formatInteger(walletExposure.data?.clientsWithBalance ?? 0)} clients · indépendant du filtre période`}
             loading={walletExposure.isLoading}
             description="Somme totale XAF encore dans les wallets clients (non dépensée). Indique ton engagement financier envers les clients à l'instant T — indépendant de la période sélectionnée."
           />
           <KpiCard
             accent="amber"
-            label="Solde moyen par client"
+            label="Solde moyen par client (snapshot)"
             value={formatCurrencyFull(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF')}
             loading={walletExposure.isLoading}
-            description="Exposition totale / nombre de clients avec un solde strictement positif."
+            description="Exposition totale / nombre de clients avec un solde strictement positif. Snapshot actuel — indépendant du filtre période."
           />
           <KpiCard
             accent="orange"
-            label="Concentration top 10"
+            label="Concentration top 10 (snapshot)"
             value={
               walletExposure.data && walletExposure.data.totalXAF > 0
                 ? formatPercent(walletExposure.data.top10ShareXAF / walletExposure.data.totalXAF)
@@ -305,7 +327,7 @@ function DashboardBody() {
                 : undefined
             }
             loading={walletExposure.isLoading}
-            description="Part des 10 plus gros soldes dans l'exposition totale. Plus élevé = plus de risque de concentration (un gros retrait aurait un impact disproportionné)."
+            description="Part des 10 plus gros soldes dans l'exposition totale. Plus élevé = plus de risque de concentration (un gros retrait aurait un impact disproportionné). Snapshot actuel — indépendant du filtre période."
           />
           <KpiCard
             accent="emerald"
@@ -358,7 +380,7 @@ function DashboardBody() {
         {/* SECTION 3 — Flow chart ──────────────────────────── */}
         <ChartCard
           title="Flux financier"
-          subtitle={granularitySubtitle(flowG)}
+          subtitle={granularitySubtitle(flowRange.granularity)}
           description="Dépôts validés (violet) vs paiements exécutés (ambre) agrégés par bucket. Le flux net est la différence."
           loading={flow.isLoading}
           error={flow.error as Error | null}
@@ -396,8 +418,8 @@ function DashboardBody() {
         >
           {(() => {
             const data = flow.data?.current ?? [];
-            const xa = timeXAxisProps({ granularity: flowG, dataLength: data.length });
-            const bottom = timeChartBottomMargin({ granularity: flowG, dataLength: data.length });
+            const xa = timeXAxisProps({ granularity: flowRange.granularity, dataLength: data.length });
+            const bottom = timeChartBottomMargin({ granularity: flowRange.granularity, dataLength: data.length });
             return (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
@@ -425,7 +447,7 @@ function DashboardBody() {
               </ResponsiveContainer>
             );
           })()}
-          <ChartAxisCaption xLabel={`Période en ${granularitySubtitle(flowG).replace(/^par /, '')}`} yLabel="Montants en XAF" />
+          <ChartAxisCaption xLabel={`Période en ${granularitySubtitle(flowRange.granularity).replace(/^par /, '')}`} yLabel="Montants en XAF" />
         </ChartCard>
 
         {/* SECTION 3b — Volume reports (deposits + payments) ── */}
@@ -437,7 +459,7 @@ function DashboardBody() {
             error={depositVolumeReport.error}
             color="hsl(258 100% 60%)"
             exportName="rapport_depots"
-            granularity={depositVolumeG}
+            granularity={depositVolumeRange.granularity}
             onGranularityChange={setDepositVolumeG}
             globalGranularity={range.granularity}
             range={range}
@@ -449,7 +471,7 @@ function DashboardBody() {
             error={paymentVolumeReport.error}
             color="hsl(36 100% 55%)"
             exportName="rapport_paiements"
-            granularity={paymentVolumeG}
+            granularity={paymentVolumeRange.granularity}
             onGranularityChange={setPaymentVolumeG}
             globalGranularity={range.granularity}
             range={range}
@@ -459,7 +481,7 @@ function DashboardBody() {
         {/* SECTION 3c — Deposit status timeline (stacked) ──── */}
         <ChartCard
           title="Statut des dépôts dans le temps"
-          subtitle={`Nombre de dépôts créés ${granularitySubtitle(statusTimelineG)}, empilés par statut`}
+          subtitle={`Nombre de dépôts créés ${granularitySubtitle(statusTimelineRange.granularity)}, empilés par statut`}
           description="Montre à quel rythme les dépôts arrivent, combien sont validés vs rejetés vs encore en attente. Les pics peuvent signaler des campagnes ou des problèmes opérationnels."
           loading={statusTimeline.isLoading}
           error={statusTimeline.error as Error | null}
@@ -475,8 +497,8 @@ function DashboardBody() {
         >
           {(() => {
             const data = statusTimeline.data ?? [];
-            const xa = timeXAxisProps({ granularity: statusTimelineG, dataLength: data.length });
-            const bottom = timeChartBottomMargin({ granularity: statusTimelineG, dataLength: data.length });
+            const xa = timeXAxisProps({ granularity: statusTimelineRange.granularity, dataLength: data.length });
+            const bottom = timeChartBottomMargin({ granularity: statusTimelineRange.granularity, dataLength: data.length });
             return (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data} margin={{ top: 8, right: 8, bottom, left: 8 }}>
@@ -506,7 +528,7 @@ function DashboardBody() {
             );
           })()}
           <ChartAxisCaption
-            xLabel={`Période en ${granularitySubtitle(statusTimelineG).replace(/^par /, '')}`}
+            xLabel={`Période en ${granularitySubtitle(statusTimelineRange.granularity).replace(/^par /, '')}`}
             yLabel="Nombre de dépôts"
           />
         </ChartCard>
@@ -560,7 +582,7 @@ function DashboardBody() {
         <div className="grid gap-4 md:grid-cols-2">
           <ChartCard
             title="Croissance clients"
-            subtitle={`Cumul total + nouveaux clients ${granularitySubtitle(clientGrowthG)}`}
+            subtitle={`Cumul total + nouveaux clients ${granularitySubtitle(clientGrowthRange.granularity)}`}
             description="Barre : nouveaux clients inscrits dans le bucket. Aire : total cumulé (incluant tous les clients d'avant la période). Les plateaux indiquent un ralentissement de l'acquisition."
             loading={clientGrowth.isLoading}
             error={clientGrowth.error as Error | null}
@@ -574,7 +596,7 @@ function DashboardBody() {
               />
             }
           >
-            <ClientGrowthChart points={clientGrowth.data ?? []} granularity={clientGrowthG} />
+            <ClientGrowthChart points={clientGrowth.data ?? []} granularity={clientGrowthRange.granularity} />
           </ChartCard>
 
           <ChartCard
@@ -597,7 +619,7 @@ function DashboardBody() {
         />
 
         {/* SECTION 5 — Opérations (processing time + status) ── */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard
             accent="violet"
             icon={<Clock className="h-4 w-4" />}
@@ -639,7 +661,7 @@ function DashboardBody() {
           data={rateHistory.data ?? []}
           isLoading={rateHistory.isLoading}
           error={rateHistory.error as Error | null}
-          granularity={rateHistoryG}
+          granularity={rateHistoryRange.granularity}
           onGranularityChange={setRateHistoryG}
           globalGranularity={range.granularity}
           range={range}

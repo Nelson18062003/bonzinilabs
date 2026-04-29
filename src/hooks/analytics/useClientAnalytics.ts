@@ -24,6 +24,28 @@ import {
 const CLIENT_ANALYTICS_STALE = 60 * 1000;
 const CLIENT_ANALYTICS_GC = 5 * 60 * 1000;
 
+/**
+ * Thrown by every client-analytics hook when no Supabase session is
+ * active. Callers can branch on `query.error instanceof UnauthenticatedError`
+ * to render a "please log in" state — distinct from "your data is empty".
+ *
+ * Previously these hooks returned a zero-filled summary on missing auth,
+ * which made an authentication failure indistinguishable from a genuine
+ * empty period. That ambiguity hid bugs.
+ */
+export class UnauthenticatedError extends Error {
+  constructor() {
+    super('Aucune session active.');
+    this.name = 'UnauthenticatedError';
+  }
+}
+
+async function requireUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new UnauthenticatedError();
+  return user;
+}
+
 // Re-use types from the admin layer without pulling the whole module.
 export interface ClientCurrentVsPrevious<T> {
   current: T;
@@ -101,8 +123,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 
 async function fetchClientFlow(range: DateRange): Promise<ClientFlowPoint[]> {
   const { fromISO, toISO } = toSupabaseBounds(range);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const user = await requireUser();
 
   // Instead of ledger_entries (admin-only), combine the two user-facing tables.
   const [depRes, payRes] = await Promise.all([
@@ -172,8 +193,7 @@ export function useClientFlowSeries(range: DateRange) {
 
 async function fetchClientPaymentSummary(range: DateRange): Promise<ClientVolumeSummary> {
   const { fromISO, toISO } = toSupabaseBounds(range);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { totalXAF: 0, totalRMB: 0, opCount: 0, avgTicketXAF: 0 };
+  const user = await requireUser();
 
   const { data, error } = await supabase
     .from('payments')
@@ -215,8 +235,7 @@ export function useClientPaymentSummary(range: DateRange) {
 
 async function fetchClientDepositSummary(range: DateRange): Promise<ClientVolumeSummary> {
   const { fromISO, toISO } = toSupabaseBounds(range);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { totalXAF: 0, totalRMB: 0, opCount: 0, avgTicketXAF: 0 };
+  const user = await requireUser();
 
   const { data, error } = await supabase
     .from('deposits')
@@ -262,8 +281,7 @@ export function useClientPaymentMethodBreakdown(range: DateRange) {
     gcTime: CLIENT_ANALYTICS_GC,
     queryFn: async () => {
       const { fromISO, toISO } = toSupabaseBounds(range);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const user = await requireUser();
 
       const { data, error } = await supabase
         .from('payments')
@@ -305,8 +323,7 @@ export function useClientDepositMethodBreakdown(range: DateRange) {
     gcTime: CLIENT_ANALYTICS_GC,
     queryFn: async () => {
       const { fromISO, toISO } = toSupabaseBounds(range);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const user = await requireUser();
 
       const { data, error } = await supabase
         .from('deposits')
@@ -355,10 +372,7 @@ export function useClientWalletStats(range: DateRange) {
     gcTime: CLIENT_ANALYTICS_GC,
     queryFn: async () => {
       const { fromISO, toISO } = toSupabaseBounds(range);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return { currentBalanceXAF: 0, totalDepositedXAF: 0, totalPaidXAF: 0, utilizationRate: 0 };
-      }
+      const user = await requireUser();
 
       const [walletRes, depRes, payRes] = await Promise.all([
         supabase
