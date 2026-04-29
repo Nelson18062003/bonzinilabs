@@ -28,6 +28,9 @@ export type { ExportButtonProps } from './ExportButton';
 
 export {
   formatCurrency,
+  formatCurrencyFull,
+  formatAxisTick,
+  chartTickInterval,
   formatInteger,
   formatCompact,
   formatPercent,

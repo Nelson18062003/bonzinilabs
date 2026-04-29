@@ -31,6 +31,7 @@ import {
   subQuarters,
   subWeeks,
   subYears,
+  differenceInCalendarDays,
 } from 'date-fns';
 
 /** Business timezone — fixed, no daylight-saving. */
@@ -54,7 +55,43 @@ export type PresetId =
   | 'last_year'
   | 'custom';
 
-export type Granularity = 'hour' | 'day' | 'week' | 'month';
+export type Granularity = 'hour' | 'day' | 'week' | 'month' | 'quarter';
+
+export const GRANULARITY_LABELS: Record<Granularity, string> = {
+  hour: 'Heure',
+  day: 'Jour',
+  week: 'Semaine',
+  month: 'Mois',
+  quarter: 'Trimestre',
+};
+
+/** Returns "par jour", "par semaine"... — for chart subtitles. */
+export function granularitySubtitle(g: Granularity): string {
+  switch (g) {
+    case 'hour': return 'par heure';
+    case 'day': return 'par jour';
+    case 'week': return 'par semaine';
+    case 'month': return 'par mois';
+    case 'quarter': return 'par trimestre';
+  }
+}
+
+/** Granularities that don't make sense for very short / very long ranges. */
+export function granularityIsCompatible(g: Granularity, range: DateRange): boolean {
+  const days = differenceInCalendarDays(range.to, range.from) + 1;
+  switch (g) {
+    case 'hour':
+      return days <= 3;
+    case 'day':
+      return days <= 120;
+    case 'week':
+      return days >= 7 && days <= 730;
+    case 'month':
+      return days >= 28;
+    case 'quarter':
+      return days >= 90;
+  }
+}
 
 export interface DateRange {
   /** Inclusive start in UTC. */
@@ -99,7 +136,8 @@ function defaultGranularity(from: Date, to: Date): Granularity {
   if (days <= 2) return 'hour';
   if (days <= 60) return 'day';
   if (days <= 180) return 'week';
-  return 'month';
+  if (days <= 365) return 'month';
+  return 'quarter';
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -307,6 +345,9 @@ export function bucketStarts(range: DateRange): Date[] {
       case 'month':
         cursor = addMonths(cursor, 1);
         break;
+      case 'quarter':
+        cursor = addMonths(cursor, 3);
+        break;
     }
   }
   return out;
@@ -332,6 +373,9 @@ export function bucketKeyFor(instant: Date, granularity: Granularity): string {
       break;
     case 'month':
       bucketBiz = startOfMonth(biz);
+      break;
+    case 'quarter':
+      bucketBiz = startOfQuarter(biz);
       break;
   }
   return businessTZToUTC(bucketBiz).toISOString();

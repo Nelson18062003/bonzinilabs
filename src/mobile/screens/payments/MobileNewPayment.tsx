@@ -614,6 +614,39 @@ export function MobileNewPayment() {
                   {label}
                 </button>
               ))}
+              {(() => {
+                // "Tout" — solde complet du client converti dans la devise saisie.
+                // Pas de plafond admin (les paiements opérés par admin peuvent
+                // dépasser le cap client de 50M XAF).
+                const allXAF = clientBalance;
+                const allValue =
+                  inputCurrency === 'xaf'
+                    ? allXAF
+                    : rate > 0
+                      ? Math.floor((allXAF * rate) / 1_000_000)
+                      : 0;
+                const allStr = allValue > 0 ? String(allValue) : '';
+                const isActive = allStr !== '' && raw === allValue;
+                const disabled = !client || allValue <= 0;
+                return (
+                  <button
+                    onClick={() => allStr && setRawAmount(allStr)}
+                    disabled={disabled}
+                    style={{
+                      flex: 1, padding: '9px 0', borderRadius: 8,
+                      background: isActive ? `${V}10` : t.card,
+                      border: `1px solid ${isActive ? V : t.border}`,
+                      fontSize: 12, fontWeight: 700,
+                      color: isActive ? V : t.text,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      opacity: disabled ? 0.4 : 1,
+                      fontFamily: FONT,
+                    }}
+                  >
+                    Tout
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Bloc taux personnalisé */}

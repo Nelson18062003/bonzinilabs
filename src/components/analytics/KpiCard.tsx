@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { Info } from 'lucide-react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TrendBadge } from './TrendBadge';
@@ -24,7 +23,7 @@ export interface KpiCardProps {
   delta?: number | null;
   /** When true, DOWN is good (e.g. rejection rate). */
   invertColor?: boolean;
-  /** Small description shown in an info tooltip. Makes metric definition explicit. */
+  /** Small description shown in an info popover. Makes metric definition explicit. */
   description?: React.ReactNode;
   /** Icon rendered in a bordered badge on the top-right of the card. */
   icon?: React.ReactNode;
@@ -47,12 +46,6 @@ const ACCENT_STYLES: Record<NonNullable<KpiCardProps['accent']>, { iconBg: strin
   red: { iconBg: 'bg-red-500/10', iconText: 'text-red-600' },
 };
 
-/**
- * KPI card inspired by the `ln-dev7/square-ui` dashboard pattern, built
- * on the shadcn `<Card>` primitive. Deliberately restrained: one value,
- * optional trend, optional icon in a discreet bordered badge. No colored
- * accent borders, no heavy shadows — the data is the content.
- */
 export function KpiCard({
   label,
   value,
@@ -71,38 +64,50 @@ export function KpiCard({
     <Card className={cn('p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm text-muted-foreground truncate">{label}</p>
+          <div className="flex items-start gap-1.5">
+            <p className="text-xs md:text-sm text-muted-foreground leading-snug line-clamp-2 break-words">
+              {label}
+            </p>
             {description ? (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="Définition"
-                      className="text-muted-foreground/50 hover:text-muted-foreground"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[240px] text-xs" side="top">
-                    {description}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Définition de la métrique"
+                    className="mt-0.5 flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="top"
+                  align="start"
+                  sideOffset={6}
+                  className="w-[260px] p-3 text-xs leading-relaxed"
+                >
+                  {description}
+                </PopoverContent>
+              </Popover>
             ) : null}
           </div>
 
           {loading ? (
-            <div className="h-8 w-28 animate-pulse rounded bg-muted" />
+            <div className="h-7 w-28 animate-pulse rounded bg-muted" />
           ) : (
-            <p className="text-2xl font-semibold text-foreground tabular-nums leading-tight">{value}</p>
+            <p
+              className="text-xl md:text-2xl font-semibold text-foreground tabular-nums leading-tight break-words"
+              title={typeof value === 'string' ? value : undefined}
+            >
+              {value}
+            </p>
           )}
 
           <div className="flex items-center gap-2 flex-wrap">
             {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
             {secondary ? (
-              <p className="text-xs text-muted-foreground tabular-nums">{secondary}</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground tabular-nums leading-snug">
+                {secondary}
+              </p>
             ) : null}
           </div>
         </div>
@@ -110,7 +115,7 @@ export function KpiCard({
         {icon ? (
           <div
             className={cn(
-              'flex size-10 flex-shrink-0 items-center justify-center rounded-lg border border-border',
+              'flex size-9 md:size-10 flex-shrink-0 items-center justify-center rounded-lg border border-border',
               accentStyle.iconBg,
               accentStyle.iconText,
             )}

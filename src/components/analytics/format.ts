@@ -36,6 +36,39 @@ export function formatCurrency(
   return currency === 'XAF' ? `${formatted} ${symbol}` : `${symbol}${formatted}`;
 }
 
+/**
+ * Always renders the full amount (never compact). Use for KPI primary
+ * values, tooltips and any place where the user expects the exact figure.
+ * Example: 1 200 000 XAF, ¥45 230.
+ */
+export function formatCurrencyFull(
+  value: number | null | undefined,
+  currency: 'XAF' | 'RMB' | 'CNY' = 'XAF',
+): string {
+  return formatCurrency(value, currency, { compact: false });
+}
+
+/**
+ * Smart formatter for chart axis ticks: compact when the value would not
+ * fit in a typical 60–80px tick label, else full integer. The unit symbol
+ * is intentionally omitted — the axis label or chart subtitle carries it.
+ */
+export function formatAxisTick(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return '';
+  if (Math.abs(value) < 10_000) return nf.format(value);
+  return nfCompact.format(value);
+}
+
+/**
+ * Computes a sensible `interval` prop for a Recharts XAxis so the
+ * number of visible ticks stays around `maxTicks`. Returns 0 when all
+ * labels fit, else N where 1 of every (N+1) ticks is rendered.
+ */
+export function chartTickInterval(dataLength: number, maxTicks = 8): number {
+  if (dataLength <= maxTicks) return 0;
+  return Math.ceil(dataLength / maxTicks) - 1;
+}
+
 /** Formats a decimal 0-1 (or raw number if already %) as a signed percentage. */
 export function formatPercent(
   value: number | null | undefined,

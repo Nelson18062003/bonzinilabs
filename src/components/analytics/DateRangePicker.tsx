@@ -12,9 +12,14 @@ import { cn } from '@/lib/utils';
 import {
   PRESET_GROUPS,
   PRESET_LABELS,
+  GRANULARITY_LABELS,
+  granularityIsCompatible,
   type PresetId,
+  type Granularity,
 } from '@/lib/analytics/dateRange';
 import { useDateRange } from '@/lib/analytics/DateRangeContext';
+
+const GRANULARITY_ORDER: Granularity[] = ['hour', 'day', 'week', 'month', 'quarter'];
 
 /**
  * Unique source of truth for the dashboard's time filter.
@@ -24,7 +29,7 @@ import { useDateRange } from '@/lib/analytics/DateRangeContext';
  *   - custom from/to inputs (native date picker — iOS-safe)
  */
 export function DateRangePicker() {
-  const { range, setPreset, setCustom, setCompareToPrevious } = useDateRange();
+  const { range, setPreset, setCustom, setGranularity, setCompareToPrevious } = useDateRange();
   const [open, setOpen] = React.useState(false);
 
   const label =
@@ -95,6 +100,41 @@ export function DateRangePicker() {
               Personnalisé
             </div>
             <CustomRangeInputs onApply={handleCustom} />
+          </div>
+
+          <div>
+            <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Granularité
+            </div>
+            <div className="grid grid-cols-5 gap-1">
+              {GRANULARITY_ORDER.map((g) => {
+                const compatible = granularityIsCompatible(g, range);
+                const active = range.granularity === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    disabled={!compatible}
+                    onClick={() => setGranularity(g)}
+                    className={cn(
+                      'rounded-md px-1.5 py-1.5 text-xs font-medium transition-colors',
+                      active
+                        ? 'bg-primary text-primary-foreground'
+                        : compatible
+                          ? 'bg-muted/50 text-foreground hover:bg-muted'
+                          : 'bg-muted/20 text-muted-foreground/50 cursor-not-allowed',
+                    )}
+                    title={
+                      compatible
+                        ? `Agréger par ${GRANULARITY_LABELS[g].toLowerCase()}`
+                        : `Incompatible avec la période sélectionnée`
+                    }
+                  >
+                    {GRANULARITY_LABELS[g]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">

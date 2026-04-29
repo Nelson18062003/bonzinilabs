@@ -35,7 +35,7 @@ import { RateCard } from '@/components/rates/RateCard';
 import { useGreeting } from '@/hooks/useGreeting';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { SkeletonDashboard } from '@/mobile/components/ui/SkeletonCard';
-import { KpiCard, KpiRow, formatCurrency } from '@/components/analytics';
+import { KpiCard, KpiRow, formatCurrencyFull } from '@/components/analytics';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -146,7 +146,7 @@ export function MobileDashboard() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Solde plateforme"
-            value={formatCurrency(balanceXAF, 'XAF', { compact: true })}
+            value={formatCurrencyFull(balanceXAF, 'XAF')}
             secondary={balanceRMB != null ? `≈ ${formatCurrencyRMB(balanceRMB)}` : undefined}
             description="Somme totale XAF actuellement détenue par tous les wallets clients — ton engagement financier à l'instant T."
           />
@@ -154,19 +154,19 @@ export function MobileDashboard() {
             accent="amber"
             icon={<TrendingUp className="h-4 w-4" />}
             label="Volume 7 jours"
-            value={formatCurrency(weekVolume, 'XAF', { compact: true })}
+            value={formatCurrencyFull(weekVolume, 'XAF')}
             description="Volume cumulé des paiements exécutés sur les 7 derniers jours."
           />
           <KpiCard
             accent="emerald"
             label="Dépôts aujourd'hui"
-            value={formatCurrency(todayDepositAmount, 'XAF', { compact: true })}
+            value={formatCurrencyFull(todayDepositAmount, 'XAF')}
             description="Dépôts validés depuis minuit (heure Douala)."
           />
           <KpiCard
             accent="orange"
             label="Paiements aujourd'hui"
-            value={formatCurrency(todayPaymentAmount, 'XAF', { compact: true })}
+            value={formatCurrencyFull(todayPaymentAmount, 'XAF')}
             description="Paiements exécutés depuis minuit (heure Douala)."
           />
         </KpiRow>
@@ -298,7 +298,7 @@ export function MobileDashboard() {
                       </div>
                       <div className="flex-shrink-0 text-right">
                         <p className="text-sm font-semibold tabular-nums">
-                          {formatCurrency(deposit.amount_xaf, 'XAF', { compact: true })}
+                          {formatCurrencyFull(deposit.amount_xaf, 'XAF')}
                         </p>
                         <span
                           className={cn(

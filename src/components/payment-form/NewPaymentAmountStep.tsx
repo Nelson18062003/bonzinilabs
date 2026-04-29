@@ -109,7 +109,7 @@ export function NewPaymentAmountStep({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         {(currency === 'XAF' ? QUICK_XAF : QUICK_RMB).map((preset) => (
           <button
             key={preset}
@@ -128,6 +128,38 @@ export function NewPaymentAmountStep({
               : `¥${preset.toLocaleString('fr-FR')}`}
           </button>
         ))}
+        {(() => {
+          const balance = walletBalanceXaf ?? 0;
+          // Cap at the 50M XAF business limit so the resulting amount stays valid.
+          const maxXAF = Math.min(balance, 50_000_000);
+          const allValue =
+            currency === 'XAF'
+              ? maxXAF
+              // Truncate to keep the converted XAF ≤ wallet (rate is XAF→RMB decimal).
+              : rate > 0
+                ? Math.floor(maxXAF * rate)
+                : 0;
+          const allValueStr = allValue > 0 ? String(allValue) : '';
+          const isActive = allValueStr !== '' && inputAmount === allValueStr;
+          const disabled = walletLoading || allValue <= 0;
+          return (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => allValueStr && onInputAmountChange(allValueStr)}
+              className={cn(
+                'py-3 rounded-xl font-medium transition-colors text-sm',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-foreground hover:bg-secondary/80',
+                disabled && 'opacity-40 cursor-not-allowed',
+              )}
+              aria-label={t('form.all')}
+            >
+              {t('form.all')}
+            </button>
+          );
+        })()}
       </div>
 
       {!hasEnoughBalance && isValidAmount && (
