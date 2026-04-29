@@ -79,6 +79,7 @@
     "amountDebited": "Amount debited",
     "rate": "Rate",
     "balance": "Balance",
+    "all": "All",
     "addFunds": "Top up my account",
     "insufficientBalance": "Insufficient balance",
     "amountTooHigh": "Amount cannot exceed 50,000,000 XAF",

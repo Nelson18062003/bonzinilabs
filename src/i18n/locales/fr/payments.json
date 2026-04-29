@@ -79,6 +79,7 @@
     "amountDebited": "Montant débité",
     "rate": "Taux",
     "balance": "Solde",
+    "all": "Tout",
     "addFunds": "Recharger mon compte",
     "insufficientBalance": "Solde insuffisant",
     "amountTooHigh": "Le montant ne peut pas dépasser 50 000 000 XAF",

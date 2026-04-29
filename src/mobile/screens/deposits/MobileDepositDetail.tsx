@@ -456,12 +456,12 @@ export function MobileDepositDetail() {
             )}
           </div>
 
-          {/* Warning when no proofs and can validate */}
+          {/* Info when no proofs and validation is still possible */}
           {!hasProofs && canValidate && (
             <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-3 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
               <span className="text-sm text-yellow-700 dark:text-yellow-400">
-                Preuve manquante - validation impossible
+                Aucune preuve fournie — la validation reste possible sous responsabilité admin.
               </span>
             </div>
           )}
