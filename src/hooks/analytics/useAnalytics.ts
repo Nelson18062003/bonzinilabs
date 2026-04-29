@@ -116,6 +116,8 @@ function labelFor(bucket: Date, granularity: Granularity): string {
       const q = Math.floor(biz.getUTCMonth() / 3) + 1;
       return `T${q} ${biz.getUTCFullYear().toString().slice(-2)}`;
     }
+    case 'year':
+      return biz.getUTCFullYear().toString();
   }
 }
 

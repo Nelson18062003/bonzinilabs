@@ -19,7 +19,7 @@ import {
 } from '@/lib/analytics/dateRange';
 import { useDateRange } from '@/lib/analytics/DateRangeContext';
 
-const GRANULARITY_ORDER: Granularity[] = ['hour', 'day', 'week', 'month', 'quarter'];
+const GRANULARITY_ORDER: Granularity[] = ['hour', 'day', 'week', 'month', 'quarter', 'year'];
 
 /**
  * Unique source of truth for the dashboard's time filter.
@@ -104,9 +104,9 @@ export function DateRangePicker() {
 
           <div>
             <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Granularité
+              Granularité (défaut)
             </div>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-3 gap-1">
               {GRANULARITY_ORDER.map((g) => {
                 const compatible = granularityIsCompatible(g, range);
                 const active = range.granularity === g;
@@ -117,7 +117,7 @@ export function DateRangePicker() {
                     disabled={!compatible}
                     onClick={() => setGranularity(g)}
                     className={cn(
-                      'rounded-md px-1.5 py-1.5 text-xs font-medium transition-colors',
+                      'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
                       active
                         ? 'bg-primary text-primary-foreground'
                         : compatible
@@ -135,6 +135,9 @@ export function DateRangePicker() {
                 );
               })}
             </div>
+            <p className="mt-1.5 px-1 text-[10px] text-muted-foreground/80 leading-snug">
+              Chaque rapport peut overrider cette granularité par défaut via son propre sélecteur.
+            </p>
           </div>
 
           <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">

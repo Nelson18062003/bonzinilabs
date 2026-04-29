@@ -15,6 +15,7 @@
 import {
   addDays,
   addMonths,
+  addYears,
   endOfDay,
   endOfMonth,
   endOfQuarter,
@@ -38,6 +39,14 @@ import {
 export const BUSINESS_TZ = 'Africa/Douala';
 export const BUSINESS_TZ_OFFSET_MINUTES = 60;
 
+/**
+ * Earliest date covered by the analytics dashboard. Used as the lower
+ * bound of the "all_time" preset. Set conservatively before Bonzini's
+ * first records — extending it backwards is cheap (empty buckets), but
+ * shrinking it forwards risks hiding historic data.
+ */
+export const BONZINI_EPOCH = new Date('2024-01-01T00:00:00.000Z');
+
 // ────────────────────────────────────────────────────────────────────────────
 
 export type PresetId =
@@ -53,9 +62,10 @@ export type PresetId =
   | 'this_quarter'
   | 'this_year'
   | 'last_year'
+  | 'all_time'
   | 'custom';
 
-export type Granularity = 'hour' | 'day' | 'week' | 'month' | 'quarter';
+export type Granularity = 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
 
 export const GRANULARITY_LABELS: Record<Granularity, string> = {
   hour: 'Heure',
@@ -63,6 +73,7 @@ export const GRANULARITY_LABELS: Record<Granularity, string> = {
   week: 'Semaine',
   month: 'Mois',
   quarter: 'Trimestre',
+  year: 'Année',
 };
 
 /** Returns "par jour", "par semaine"... — for chart subtitles. */
@@ -73,6 +84,7 @@ export function granularitySubtitle(g: Granularity): string {
     case 'week': return 'par semaine';
     case 'month': return 'par mois';
     case 'quarter': return 'par trimestre';
+    case 'year': return 'par an';
   }
 }
 
@@ -90,6 +102,8 @@ export function granularityIsCompatible(g: Granularity, range: DateRange): boole
       return days >= 28;
     case 'quarter':
       return days >= 90;
+    case 'year':
+      return days >= 365;
   }
 }
 
@@ -136,8 +150,9 @@ function defaultGranularity(from: Date, to: Date): Granularity {
   if (days <= 2) return 'hour';
   if (days <= 60) return 'day';
   if (days <= 180) return 'week';
-  if (days <= 365) return 'month';
-  return 'quarter';
+  if (days <= 730) return 'month';
+  if (days <= 1825) return 'quarter';
+  return 'year';
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -217,6 +232,13 @@ export function buildRangeFromPreset(
       const ly = subYears(biz, 1);
       fromBiz = startOfYear(ly);
       toBiz = endOfYear(ly);
+      break;
+    }
+    case 'all_time': {
+      // From Bonzini's epoch to today (business TZ).
+      const epochBiz = nowInBusinessTZ(BONZINI_EPOCH);
+      fromBiz = startOfDay(epochBiz);
+      toBiz = endOfDay(biz);
       break;
     }
     case 'custom': {
@@ -348,6 +370,9 @@ export function bucketStarts(range: DateRange): Date[] {
       case 'quarter':
         cursor = addMonths(cursor, 3);
         break;
+      case 'year':
+        cursor = addYears(cursor, 1);
+        break;
     }
   }
   return out;
@@ -377,6 +402,9 @@ export function bucketKeyFor(instant: Date, granularity: Granularity): string {
     case 'quarter':
       bucketBiz = startOfQuarter(biz);
       break;
+    case 'year':
+      bucketBiz = startOfYear(biz);
+      break;
   }
   return businessTZToUTC(bucketBiz).toISOString();
 }
@@ -398,6 +426,7 @@ export const PRESET_LABELS: Record<PresetId, string> = {
   this_quarter: 'Ce trimestre',
   this_year: 'Cette année',
   last_year: 'Année dernière',
+  all_time: 'Tout',
   custom: 'Personnalisé',
 };
 
@@ -406,4 +435,5 @@ export const PRESET_GROUPS: Array<{ label: string; items: PresetId[] }> = [
   { label: 'Semaine', items: ['last_7_days', 'this_week', 'last_week'] },
   { label: 'Mois', items: ['last_30_days', 'this_month', 'last_month'] },
   { label: 'Période longue', items: ['last_90_days', 'this_quarter', 'this_year', 'last_year'] },
+  { label: 'Historique', items: ['all_time'] },
 ];
