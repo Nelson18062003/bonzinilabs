@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { DateField, TextField } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
-import { useCreateDailyRates } from '@/hooks/useDailyRates';
+import {
+  useCreateDailyRates,
+  useLatestSuggestion,
+  useComputeSuggestion,
+  useMarkSuggestionApplied,
+} from '@/hooks/useDailyRates';
 import { RateFlyer } from '@/mobile/components/rates/RateFlyer';
 import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
 
@@ -30,6 +36,9 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [exportingPDF, setExportingPDF] = useState(false);
 
   const createRates = useCreateDailyRates();
+  const { data: latestSuggestion } = useLatestSuggestion();
+  const computeSuggestion = useComputeSuggestion();
+  const markApplied = useMarkSuggestionApplied();
 
   // Helper: build the rates object passed to the Edge Function
   const flyerRates = () => ({
@@ -58,13 +67,29 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   };
 
   const handleApply = () => {
-    createRates.mutate({
-      rate_cash: parseInt(rates.cash) || 0,
-      rate_alipay: parseInt(rates.alipay) || 0,
-      rate_wechat: parseInt(rates.wechat) || 0,
-      rate_virement: parseInt(rates.virement) || 0,
-      effective_at: getEffectiveAt(),
-    });
+    const suggestionId = latestSuggestion && !latestSuggestion.applied ? latestSuggestion.id : null;
+    createRates.mutate(
+      {
+        rate_cash: parseInt(rates.cash) || 0,
+        rate_alipay: parseInt(rates.alipay) || 0,
+        rate_wechat: parseInt(rates.wechat) || 0,
+        rate_virement: parseInt(rates.virement) || 0,
+        effective_at: getEffectiveAt(),
+      },
+      {
+        onSuccess: (result) => {
+          if (suggestionId && result.rate_id) {
+            markApplied.mutate({ suggestionId, rateId: result.rate_id });
+          }
+        },
+      },
+    );
+  };
+
+  const handleUseSuggestion = () => {
+    if (!latestSuggestion) return;
+    const v = latestSuggestion.suggested_rate.toString();
+    setRates({ cash: v, alipay: v, wechat: v, virement: v });
   };
 
   return (
@@ -87,6 +112,86 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
             {d.label}
           </button>
         ))}
+      </div>
+
+      {/* ── Suggestion automatique (Binance P2P live) ── */}
+      <div
+        className="rounded-[14px] p-4 border"
+        style={{
+          background: 'linear-gradient(135deg, #fff7ed, #fef3c7)',
+          borderColor: '#fcd34d',
+        }}
+      >
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-600" />
+            <div>
+              <div className="text-xs font-bold text-amber-700 uppercase tracking-wide">
+                Suggestion automatique
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Binance P2P · methode Nelson v1
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => computeSuggestion.mutate()}
+            disabled={computeSuggestion.isPending}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-600 text-white cursor-pointer border-0 disabled:opacity-60"
+          >
+            {computeSuggestion.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+            Recalculer
+          </button>
+        </div>
+
+        {!latestSuggestion ? (
+          <div className="text-[12px] text-muted-foreground py-2">
+            Aucune suggestion encore. Cliquez sur <b>Recalculer</b> pour interroger Binance P2P.
+          </div>
+        ) : (
+          <>
+            <div className="bg-white rounded-xl p-3 mb-2.5 border border-amber-200/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                    Taux suggere · 1M XAF
+                  </div>
+                  <div className="text-[28px] font-extrabold text-amber-700 leading-tight">
+                    {latestSuggestion.suggested_rate.toLocaleString('fr-FR')} <span className="text-base">CNY</span>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleUseSuggestion}
+                  className="rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 h-auto"
+                >
+                  Pre-remplir
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="bg-white/60 rounded-lg p-2 border border-amber-200/40">
+                <div className="text-muted-foreground uppercase tracking-wide font-semibold text-[9px]">CMR · max + {latestSuggestion.cmr_margin_xaf} XAF</div>
+                <div className="font-bold text-foreground">{(latestSuggestion.cmr_rate_max + latestSuggestion.cmr_margin_xaf).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} XAF/USDT</div>
+                <div className="text-muted-foreground">{latestSuggestion.cmr_orders.length} ordres MTN/Orange</div>
+              </div>
+              <div className="bg-white/60 rounded-lg p-2 border border-amber-200/40">
+                <div className="text-muted-foreground uppercase tracking-wide font-semibold text-[9px]">CHN · moyenne</div>
+                <div className="font-bold text-foreground">{latestSuggestion.chn_rate_avg.toLocaleString('fr-FR', { maximumFractionDigits: 4 })} CNY/USDT</div>
+                <div className="text-muted-foreground">{latestSuggestion.chn_orders.length} ordres Alipay/WeChat</div>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-muted-foreground mt-2 text-center">
+              Calcule il y a {formatDistanceToNow(new Date(latestSuggestion.computed_at), { locale: fr })}
+              {latestSuggestion.applied && ' · deja applique'}
+            </div>
+          </>
+        )}
       </div>
 
       <p className="text-[13px] text-muted-foreground font-medium">

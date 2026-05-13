@@ -830,6 +830,62 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_suggestions: {
+        Row: {
+          applied: boolean
+          applied_at: string | null
+          applied_by: string | null
+          applied_rate_id: string | null
+          chn_orders: Json
+          chn_rate_avg: number
+          cmr_margin_xaf: number
+          cmr_orders: Json
+          cmr_rate_max: number
+          computed_at: string
+          id: string
+          method: string
+          suggested_rate: number
+        }
+        Insert: {
+          applied?: boolean
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_rate_id?: string | null
+          chn_orders: Json
+          chn_rate_avg: number
+          cmr_margin_xaf: number
+          cmr_orders: Json
+          cmr_rate_max: number
+          computed_at?: string
+          id?: string
+          method?: string
+          suggested_rate: number
+        }
+        Update: {
+          applied?: boolean
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_rate_id?: string | null
+          chn_orders?: Json
+          chn_rate_avg?: number
+          cmr_margin_xaf?: number
+          cmr_orders?: Json
+          cmr_rate_max?: number
+          computed_at?: string
+          id?: string
+          method?: string
+          suggested_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_suggestions_applied_rate_id_fkey"
+            columns: ["applied_rate_id"]
+            isOneToOne: false
+            referencedRelation: "daily_rates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1234,6 +1290,10 @@ export type Database = {
           p_beneficiary_qr_code_url?: string
           p_payment_id: string
         }
+        Returns: Json
+      }
+      mark_suggestion_applied: {
+        Args: { p_suggestion_id: string; p_rate_id: string }
         Returns: Json
       }
       update_rate_adjustment: {
