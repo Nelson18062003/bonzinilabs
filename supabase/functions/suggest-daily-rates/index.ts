@@ -1,21 +1,21 @@
 // supabase/functions/suggest-daily-rates/index.ts
 // Computes a suggested daily rate by replicating Nelson's manual Binance P2P method.
 //
-// CMR (XAF → USDT, "I buy USDT with XAF"):
-//   tradeType=BUY → returns SELL-side ads (merchants selling USDT)
+// CMR (price signal: what competitors are bidding to acquire USDT):
+//   tradeType=SELL → returns BUY-side ads (other merchants bidding to buy USDT — competitors)
 //   payTypes: MTN Mobile Money + Orange Money
-//   filters: tradableQuantity >= 5000, monthOrderCount >= 50, finishRate >= 0.90
-//   pick MAX price among top 15 merchants sorted by monthOrderCount desc
-//   add +3 XAF as Nelson's manual margin
+//   transAmount: 3_000_000 XAF minimum (serious players only)
+//   filters: monthOrderCount >= 50, monthFinishRate >= 0.90
+//   pick MAX competitor bid among top 15 (sorted by monthOrderCount desc)
+//   add +3 XAF (Nelson's "beat the highest competitor by 3" rule)
 //
 // CHN (USDT → CNY, "I sell USDT for CNY"):
-//   tradeType=SELL → returns BUY-side ads (merchants buying USDT)
+//   tradeType=SELL → returns BUY-side ads (merchants buying USDT from us)
 //   payTypes: Alipay + WeChat
-//   filters: userType=merchant, monthOrderCount >= 200, finishRate >= 0.95
-//   simple average over top 100-200 merchants sorted by monthOrderCount desc
+//   filters: userType=merchant, monthOrderCount >= 200, monthFinishRate >= 0.95
+//   simple average over top 200 (sorted by monthOrderCount desc)
 //
-// suggested_rate = round(1_000_000 / (cmr_rate / chn_rate) / 10) * 10
-//                = round(1_000_000 * chn_rate / cmr_rate / 10) * 10
+// suggested_rate = round(1_000_000 * chn_rate / cmr_rate / 10) * 10
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -28,11 +28,11 @@ const corsHeaders = {
 const BINANCE_API = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search";
 const CMR_MARGIN_XAF = 3;
 const CMR_TOP_N = 15;
-const CHN_TOP_N = 150;
+const CMR_MIN_TRANS_XAF = "3000000";   // Serious bidders only
+const CHN_TOP_N = 200;
 
 // Filters matching Nelson's manual screening on Binance P2P
 const CMR_FILTERS = {
-  minTradableUSDT: 5000,
   minMonthOrders: 50,
   minFinishRate: 0.90,
 };
@@ -77,25 +77,29 @@ async function fetchPage(
   payTypes: string[],
   page: number,
   rows: number,
+  transAmount?: string,
 ): Promise<BinanceItem[]> {
+  const body: Record<string, unknown> = {
+    fiat,
+    page,
+    rows,
+    tradeType,
+    asset: "USDT",
+    countries: [],
+    proMerchantAds: false,
+    publisherType: null,
+    payTypes,
+    classifies: ["mass", "profession", "fiat_merchant"],
+  };
+  if (transAmount) body.transAmount = transAmount;
+
   const res = await fetch(BINANCE_API, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     },
-    body: JSON.stringify({
-      fiat,
-      page,
-      rows,
-      tradeType,
-      asset: "USDT",
-      countries: [],
-      proMerchantAds: false,
-      publisherType: null,
-      payTypes,
-      classifies: ["mass", "profession", "fiat_merchant"],
-    }),
+    body: JSON.stringify(body),
   });
   const json = await res.json();
   if (!json.success) throw new Error(`Binance ${fiat}/${tradeType}: ${json.message}`);
@@ -107,9 +111,12 @@ async function fetchTop(
   tradeType: "BUY" | "SELL",
   payTypes: string[],
   pages: number,
+  transAmount?: string,
 ): Promise<BinanceItem[]> {
   const results = await Promise.all(
-    Array.from({ length: pages }, (_, i) => fetchPage(fiat, tradeType, payTypes, i + 1, 20)),
+    Array.from({ length: pages }, (_, i) =>
+      fetchPage(fiat, tradeType, payTypes, i + 1, 20, transAmount),
+    ),
   );
   return results.flat();
 }
@@ -168,14 +175,15 @@ serve(async (req: Request) => {
 
     // Fetch both markets in parallel
     const [cmrRaw, chnRaw] = await Promise.all([
-      fetchTop("XAF", "BUY", CMR_PAY_TYPES, 2),    // ~40 ads, plenty after filters
-      fetchTop("CNY", "SELL", CHN_PAY_TYPES, 10),  // ~200 ads
+      // CMR: SELL tab on the UI = tradeType "SELL" in API = ads from competitor BUYERS
+      fetchTop("XAF", "SELL", CMR_PAY_TYPES, 3, CMR_MIN_TRANS_XAF),
+      // CHN: SELL tab = ads from merchants buying USDT (where we'd sell)
+      fetchTop("CNY", "SELL", CHN_PAY_TYPES, 15, undefined),
     ]);
 
-    // --- Cameroon: filter, sort by month orders desc, take top 15, take MAX price ---
+    // --- Cameroon: filter, sort by month orders desc, take top 15, take MAX bid ---
     const cmrFiltered = cmrRaw
       .filter((i) =>
-        parseFloat(i.adv.tradableQuantity) >= CMR_FILTERS.minTradableUSDT &&
         i.advertiser.monthOrderCount >= CMR_FILTERS.minMonthOrders &&
         i.advertiser.monthFinishRate >= CMR_FILTERS.minFinishRate
       )
@@ -184,13 +192,13 @@ serve(async (req: Request) => {
       .slice(0, CMR_TOP_N);
 
     if (cmrFiltered.length === 0) {
-      throw new Error("Aucun ordre XAF ne passe les filtres (MTN/Orange, min trades, finish rate). Reessayez plus tard.");
+      throw new Error("Aucun ordre XAF ne passe les filtres (MTN/Orange, montant >= 3M, min trades, finish rate). Reessayez plus tard.");
     }
 
     const cmrMaxPrice = Math.max(...cmrFiltered.map((m) => m.price));
     const cmrRate = cmrMaxPrice + CMR_MARGIN_XAF;
 
-    // --- China: filter, sort by month orders desc, take top 150, simple average ---
+    // --- China: filter, sort by month orders desc, take top 200, simple average ---
     const chnFiltered = chnRaw
       .filter((i) =>
         i.advertiser.userType === "merchant" &&
@@ -221,7 +229,7 @@ serve(async (req: Request) => {
         chn_rate_avg: chnRate,
         chn_orders: chnFiltered,
         suggested_rate: suggestedRate,
-        method: "nelson_v1",
+        method: "nelson_v2",
       })
       .select()
       .single();
