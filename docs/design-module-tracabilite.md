@@ -548,11 +548,19 @@ Critère "ready to ship" par lot : type-check + build OK + scénario de test pas
 
 ---
 
-## J. Questions à valider avant Phase 4
+## J. Décisions validées pour Phase 4
 
-1. **Liste exacte des comptes à seeder** (XAF banques, MM, CNY comptes). J'ai besoin de tes vrais codes/labels.
-2. **Cap montant achat/vente USDT** : 100 000 000 XAF ? autre ?
-3. **Taux de référence CNY/XAF** : saisie manuelle quotidienne par toi, ou on ignore en Tier 2 (et on ne calcule que le bénéfice total) ?
-4. **Stock USDT négatif** : bloqué dur, ou warning autorisable ?
-5. **Rôle `ops` sur trésorerie** : lecture seule, ou aucun accès ?
-6. **Tolérance variance d'inventaire** : seuil sous lequel on accepte un ajustement sans motif obligatoire ?
+1. **Comptes seedés** (10 comptes) :
+   - **XAF (6)** : `xaf_afriland`, `xaf_uba`, `xaf_ecobank`, `xaf_cca` (kind=`bank`) ; `xaf_mtn_momo`, `xaf_orange_money` (kind=`mobile_money`).
+   - **USDT (1)** : `usdt_pool` (kind=`crypto_pool`).
+   - **CNY (3)** : `cny_cash_guangzhou` (kind=`cash`), `cny_alipay_papa` (kind=`alipay`), `cny_wechat_papa` (kind=`wechat`).
+2. **Cap montant achat/vente USDT** : **aucun** (décision utilisateur). Risque accepté : pas de plafond de garde-fou en cas de compromission de compte. Revue possible plus tard.
+3. **Taux de référence CNY/XAF** : tiré de `daily_rates` existant, mappé par canal CNY :
+   - `cny_cash_guangzhou` → `daily_rates.rate_cash`
+   - `cny_alipay_papa` → `daily_rates.rate_alipay`
+   - `cny_wechat_papa` → `daily_rates.rate_wechat`
+   - Compte CNY bancaire (futur) → `daily_rates.rate_virement`
+   - **Limitation actée** : comme `daily_rates` représente les taux clients de Bonzini (pas un taux marché externe), la décomposition `spread_client` sera biaisée vers 0. Le `spread_chaîne` reste pertinent et le bénéfice total est intrinsèque. Évolution future possible vers `rate_snapshots.cny_bid_binance`.
+4. **Stock USDT négatif** : autorisé, surligné en rouge sur dashboard tant que solde négatif. Pas de blocage RPC.
+5. **Rôle `ops`** : **aucun accès** trésorerie (séparation stricte). Seuls `super_admin` et `treasurer` voient et saisissent.
+6. **Variance d'inventaire** : aucune tolérance — toute variance ≠ 0 exige un motif (≥ 10 caractères). Pas de seuil "auto".
