@@ -830,6 +830,381 @@ export type Database = {
         }
         Relationships: []
       }
+      treasury_accounts: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          currency: Database["public"]["Enums"]["treasury_currency"]
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["treasury_account_kind"]
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          currency: Database["public"]["Enums"]["treasury_currency"]
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["treasury_account_kind"]
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: Database["public"]["Enums"]["treasury_currency"]
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["treasury_account_kind"]
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      treasury_counterparties: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          legal_name: string | null
+          notes: string | null
+          phone: string | null
+          type: Database["public"]["Enums"]["treasury_counterparty_type"]
+          updated_at: string
+          wechat_id: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          type: Database["public"]["Enums"]["treasury_counterparty_type"]
+          updated_at?: string
+          wechat_id?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          type?: Database["public"]["Enums"]["treasury_counterparty_type"]
+          updated_at?: string
+          wechat_id?: string | null
+        }
+        Relationships: []
+      }
+      treasury_inventory_snapshots: {
+        Row: {
+          account_id: string
+          actual_balance: number
+          adjustment_entry_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          snapshot_at: string
+          theoretical_balance: number
+          variance: number
+          variance_reason: string | null
+        }
+        Insert: {
+          account_id: string
+          actual_balance: number
+          adjustment_entry_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          snapshot_at: string
+          theoretical_balance: number
+          variance_reason?: string | null
+        }
+        Update: {
+          account_id?: string
+          actual_balance?: number
+          adjustment_entry_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          snapshot_at?: string
+          theoretical_balance?: number
+          variance_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_inventory_snapshots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_inventory_snapshots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_account_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_adjustment_entry_fk"
+            columns: ["adjustment_entry_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treasury_ledger_entries: {
+        Row: {
+          account_id: string
+          amount: number
+          contra_entry_id: string | null
+          created_at: string
+          created_by: string
+          currency: Database["public"]["Enums"]["treasury_currency"]
+          entry_kind: Database["public"]["Enums"]["treasury_ledger_entry_kind"]
+          id: string
+          metadata: Json
+          occurred_at: string
+          source_id: string
+          source_table: Database["public"]["Enums"]["treasury_ledger_source_table"]
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          contra_entry_id?: string | null
+          created_at?: string
+          created_by: string
+          currency: Database["public"]["Enums"]["treasury_currency"]
+          entry_kind: Database["public"]["Enums"]["treasury_ledger_entry_kind"]
+          id?: string
+          metadata?: Json
+          occurred_at: string
+          source_id: string
+          source_table: Database["public"]["Enums"]["treasury_ledger_source_table"]
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          contra_entry_id?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: Database["public"]["Enums"]["treasury_currency"]
+          entry_kind?: Database["public"]["Enums"]["treasury_ledger_entry_kind"]
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          source_id?: string
+          source_table?: Database["public"]["Enums"]["treasury_ledger_source_table"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_account_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_ledger_entries_contra_entry_id_fkey"
+            columns: ["contra_entry_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usdt_purchases: {
+        Row: {
+          channel: Database["public"]["Enums"]["treasury_channel_xaf"]
+          created_at: string
+          created_by: string
+          external_ref: string | null
+          id: string
+          implicit_rate: number
+          notes: string | null
+          occurred_at: string
+          supplier_id: string
+          usdt_amount: number
+          void_contra_entry_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+          xaf_account_id: string
+          xaf_amount: number
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["treasury_channel_xaf"]
+          created_at?: string
+          created_by: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          occurred_at: string
+          supplier_id: string
+          usdt_amount: number
+          void_contra_entry_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          xaf_account_id: string
+          xaf_amount: number
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["treasury_channel_xaf"]
+          created_at?: string
+          created_by?: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          supplier_id?: string
+          usdt_amount?: number
+          void_contra_entry_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          xaf_account_id?: string
+          xaf_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usdt_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_purchases_xaf_account_id_fkey"
+            columns: ["xaf_account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_purchases_xaf_account_id_fkey"
+            columns: ["xaf_account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_account_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_purchases_void_contra_entry_fk"
+            columns: ["void_contra_entry_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usdt_sales: {
+        Row: {
+          buyer_id: string
+          cny_account_id: string
+          cny_amount: number
+          created_at: string
+          created_by: string
+          external_ref: string | null
+          id: string
+          implicit_rate: number
+          notes: string | null
+          occurred_at: string
+          usdt_amount: number
+          void_contra_entry_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+          wac_at_sale: number
+        }
+        Insert: {
+          buyer_id: string
+          cny_account_id: string
+          cny_amount: number
+          created_at?: string
+          created_by: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          occurred_at: string
+          usdt_amount: number
+          void_contra_entry_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          wac_at_sale: number
+        }
+        Update: {
+          buyer_id?: string
+          cny_account_id?: string
+          cny_amount?: number
+          created_at?: string
+          created_by?: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          usdt_amount?: number
+          void_contra_entry_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          wac_at_sale?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usdt_sales_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_sales_cny_account_id_fkey"
+            columns: ["cny_account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_sales_cny_account_id_fkey"
+            columns: ["cny_account_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_account_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_sales_void_contra_entry_fk"
+            columns: ["void_contra_entry_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -946,7 +1321,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      treasury_account_balances: {
+        Row: {
+          balance: number | null
+          code: string | null
+          currency: Database["public"]["Enums"]["treasury_currency"] | null
+          entry_count: number | null
+          id: string | null
+          is_active: boolean | null
+          kind: Database["public"]["Enums"]["treasury_account_kind"] | null
+          label: string | null
+          last_entry_at: string | null
+          sort_order: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_exchange_rate: {
@@ -1040,6 +1429,10 @@ export type Database = {
           p_payment_method: string
         }
         Returns: Json
+      }
+      can_access_treasury: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
@@ -1172,6 +1565,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_cash_agent: { Args: { _user_id: string }; Returns: boolean }
+      is_treasurer: { Args: { _user_id: string }; Returns: boolean }
       is_rate_used: { Args: { p_rate_id: string }; Returns: boolean }
       process_payment: {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
@@ -1257,6 +1651,7 @@ export type Database = {
         | "support"
         | "customer_success"
         | "cash_agent"
+        | "treasurer"
       deposit_method:
         | "bank_transfer"
         | "bank_cash"
@@ -1295,6 +1690,34 @@ export type Database = {
         | "cash_pending"
         | "cash_scanned"
         | "cancelled_by_admin"
+      treasury_account_kind:
+        | "bank"
+        | "mobile_money"
+        | "crypto_pool"
+        | "cash"
+        | "alipay"
+        | "wechat"
+        | "other"
+      treasury_channel_xaf:
+        | "bank_transfer"
+        | "mobile_money"
+        | "cash"
+        | "other"
+      treasury_counterparty_type: "usdt_supplier" | "cny_buyer"
+      treasury_currency: "XAF" | "USDT" | "CNY"
+      treasury_ledger_entry_kind:
+        | "usdt_purchase_debit_xaf"
+        | "usdt_purchase_credit_usdt"
+        | "usdt_sale_debit_usdt"
+        | "usdt_sale_credit_cny"
+        | "inventory_adjustment"
+        | "void"
+      treasury_ledger_source_table:
+        | "usdt_purchase"
+        | "usdt_sale"
+        | "inventory_snapshot"
+        | "manual_adjustment"
+        | "void"
       wallet_operation_type: "deposit" | "payment" | "adjustment"
     }
     CompositeTypes: {

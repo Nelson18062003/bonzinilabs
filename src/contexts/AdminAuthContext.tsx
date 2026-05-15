@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -26,6 +26,8 @@ export interface RolePermission {
   canManageRates: boolean;
   canViewLogs: boolean;
   canManageUsers: boolean;
+  canViewTreasury: boolean;
+  canManageTreasury: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -39,6 +41,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: true,
+    canViewTreasury: true,
+    canManageTreasury: true,
   },
   ops: {
     canViewClients: true,
@@ -50,6 +54,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
   },
   support: {
     canViewClients: true,
@@ -61,6 +67,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: true,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
   },
   customer_success: {
     canViewClients: true,
@@ -72,6 +80,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -83,6 +93,21 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+  },
+  treasurer: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: true,
+    canManageTreasury: true,
   },
 };
 
@@ -92,6 +117,7 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   support: 'Support',
   customer_success: 'Chargé de clientèle',
   cash_agent: 'Agent Cash',
+  treasurer: 'Trésorier',
 };
 
 interface AdminAuthContextType {
