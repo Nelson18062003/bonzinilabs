@@ -222,3 +222,17 @@ Helper : `hasPermission(key)` (`AdminAuthContext.tsx:236-239`). `is_disabled` bl
 4. **Précision décimale** : on impose `NUMERIC(20,8)` sur tous les taux et montants USDT/CNY du nouveau module — non négociable.
 
 **Aucun blocker** pour passer en Phase 2 (3 tiers d'ambition).
+
+---
+
+## Décisions Phase 2 (validées)
+
+- **Tier visé** : **Tier 2 — Comptabilité par lot avec WAC**.
+- **Rôle père** : nouveau rôle dédié `treasurer` (pas de `super_admin`).
+- **Dette `daily_rates` INTEGER** : traitée comme **Lot 0** du module (migration `INTEGER → NUMERIC(10,4)`).
+- **Cohabitation terminologie** : `amount_rmb` reste sur l'existant ; le nouveau module utilise **CNY** partout.
+- **Précision décimale** : `NUMERIC(20,8)` pour tous les montants USDT/CNY et tous les taux du nouveau module — non négociable.
+- **Effort cible** : 40-50h.
+- **Rapports livrés (13)** : volumes achat/vente, soldes 3 devises, taux moyens pondérés (achat/vente/client), spread réalisé, bénéfice hebdo/mensuel, top 5 fournisseurs, top 5 acheteurs, évolution WAC, réconciliation, capital immobilisé.
+
+**Reportés en Tier 3 (post-MVP)** : marge par transaction client, alertes paramétrables, dashboard analytique multi-axes.
