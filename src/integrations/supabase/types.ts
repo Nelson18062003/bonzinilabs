@@ -1556,6 +1556,34 @@ export type Database = {
       get_dashboard_stats: { Args: never; Returns: Json }
       get_deposit_stats: { Args: never; Returns: Json }
       get_rate_usage_count: { Args: { p_rate_id: string }; Returns: number }
+      get_top_counterparties: {
+        Args: {
+          p_from_date: string
+          p_limit?: number
+          p_to_date: string
+          p_type: Database["public"]["Enums"]["treasury_counterparty_type"]
+        }
+        Returns: Json
+      }
+      get_treasury_dashboard: {
+        Args: { p_from_date: string; p_to_date: string }
+        Returns: Json
+      }
+      get_usdt_stock: {
+        Args: { p_at?: string }
+        Returns: number
+      }
+      get_wac_usdt: {
+        Args: { p_at?: string }
+        Returns: number
+      }
+      get_xaf_per_cny_at: {
+        Args: {
+          p_at: string
+          p_kind: Database["public"]["Enums"]["treasury_account_kind"]
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1569,6 +1597,40 @@ export type Database = {
       is_rate_used: { Args: { p_rate_id: string }; Returns: boolean }
       process_payment: {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
+        Returns: Json
+      }
+      record_inventory_snapshot: {
+        Args: {
+          p_account_id: string
+          p_actual_balance: number
+          p_snapshot_at?: string
+          p_variance_reason?: string
+        }
+        Returns: Json
+      }
+      record_usdt_purchase: {
+        Args: {
+          p_channel: Database["public"]["Enums"]["treasury_channel_xaf"]
+          p_external_ref?: string
+          p_notes?: string
+          p_occurred_at?: string
+          p_supplier_id: string
+          p_usdt_amount: number
+          p_xaf_account_id: string
+          p_xaf_amount: number
+        }
+        Returns: Json
+      }
+      record_usdt_sale: {
+        Args: {
+          p_buyer_id: string
+          p_cny_account_id: string
+          p_cny_amount: number
+          p_external_ref?: string
+          p_notes?: string
+          p_occurred_at?: string
+          p_usdt_amount: number
+        }
         Returns: Json
       }
       reject_deposit:
@@ -1640,6 +1702,14 @@ export type Database = {
           p_confirmed_amount?: number
           p_deposit_id: string
           p_send_notification?: boolean
+        }
+        Returns: Json
+      }
+      void_treasury_operation: {
+        Args: {
+          p_source_id: string
+          p_source_table: Database["public"]["Enums"]["treasury_ledger_source_table"]
+          p_void_reason: string
         }
         Returns: Json
       }
