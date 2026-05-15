@@ -33,10 +33,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
   // Helper: build the rates object passed to the Edge Function
   const flyerRates = () => ({
-    alipay: parseInt(rates.alipay)   || currentRate?.rate_alipay   || 0,
-    wechat: parseInt(rates.wechat)   || currentRate?.rate_wechat   || 0,
-    bank:   parseInt(rates.virement) || currentRate?.rate_virement || 0,
-    cash:   parseInt(rates.cash)     || currentRate?.rate_cash     || 0,
+    alipay: parseFloat(rates.alipay)   || currentRate?.rate_alipay   || 0,
+    wechat: parseFloat(rates.wechat)   || currentRate?.rate_wechat   || 0,
+    bank:   parseFloat(rates.virement) || currentRate?.rate_virement || 0,
+    cash:   parseFloat(rates.cash)     || currentRate?.rate_cash     || 0,
   });
 
   const getEffectiveAt = (): string => {
@@ -59,10 +59,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
   const handleApply = () => {
     createRates.mutate({
-      rate_cash: parseInt(rates.cash) || 0,
-      rate_alipay: parseInt(rates.alipay) || 0,
-      rate_wechat: parseInt(rates.wechat) || 0,
-      rate_virement: parseInt(rates.virement) || 0,
+      rate_cash: parseFloat(rates.cash) || 0,
+      rate_alipay: parseFloat(rates.alipay) || 0,
+      rate_wechat: parseFloat(rates.wechat) || 0,
+      rate_virement: parseFloat(rates.virement) || 0,
       effective_at: getEffectiveAt(),
     });
   };
@@ -306,10 +306,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         <div className="px-4 pb-3 overflow-hidden flex justify-center">
           <div style={{ transform: 'scale(0.172)', transformOrigin: 'top center', height: Math.round(2560 * 0.172), pointerEvents: 'none' }}>
             <RateFlyer
-              alipay={parseInt(rates.alipay) || currentRate?.rate_alipay || 0}
-              wechat={parseInt(rates.wechat) || currentRate?.rate_wechat || 0}
-              bank={parseInt(rates.virement) || currentRate?.rate_virement || 0}
-              cash={parseInt(rates.cash) || currentRate?.rate_cash || 0}
+              alipay={parseFloat(rates.alipay) || currentRate?.rate_alipay || 0}
+              wechat={parseFloat(rates.wechat) || currentRate?.rate_wechat || 0}
+              bank={parseFloat(rates.virement) || currentRate?.rate_virement || 0}
+              cash={parseFloat(rates.cash) || currentRate?.rate_cash || 0}
               theme={flyerDark ? 'dark' : 'light'}
             />
           </div>
