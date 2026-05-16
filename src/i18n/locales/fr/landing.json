@@ -13,7 +13,8 @@
     "title3": "ce soir",
     "subtitle": "Alipay, WeChat, virement ou cash. Vous envoyez en francs CFA, votre fournisseur re\u00e7oit en yuan. Avec la <strong>preuve dans votre poche</strong>.",
     "ctaPrimary": "Envoyer un paiement",
-    "ctaSecondary": "Voir les taux",
+    "ctaSecondary": "Discuter sur WhatsApp",
+    "whatsappMessage": "Bonjour, j'ai vu votre site Bonzini. J'aimerais en savoir plus sur le paiement de mes fournisseurs en Chine.",
     "simulator": {
       "title": "Simulateur de paiement",
       "youSend": "VOUS ENVOYEZ",
@@ -94,6 +95,9 @@
     "subtitle": "Chaque minute compte dans le commerce. Envoyez votre premier paiement maintenant.",
     "button": "Commencer maintenant"
   },
+  "fab": {
+    "whatsapp": "Discuter sur WhatsApp"
+  },
   "footer": {
     "tagline": "Paiements instantan\u00e9s vers la Chine pour les importateurs de la zone CEMAC.",
     "product": "Produit",
@@ -109,7 +113,7 @@
       "legal": "Mentions l\u00e9gales",
       "terms": "CGU",
       "whatsapp": "WhatsApp",
-      "emailSupport": "Email",
+      "facebook": "Facebook",
       "helpCenter": "Centre d'aide"
     },
     "copyright": "\u00a9 2026 Bonzini. Tous droits r\u00e9serv\u00e9s."

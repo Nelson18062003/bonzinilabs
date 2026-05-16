@@ -14,8 +14,75 @@ const C = {
   muted: '#8b82a0', dim: '#3d3555',
   surface: '#0f0b18', surfaceLight: '#1a1428',
   alipay: '#1677ff', wechat: '#07c160',
+  whatsapp: '#25d366',
 };
 const F = { display: "'Syne', sans-serif", body: "'DM Sans', sans-serif" };
+
+// ─── External links ──────────────────────────────────────────────────────────
+const WHATSAPP_NUMBER = '237652388483';
+const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61573734423252';
+const buildWhatsAppUrl = (message: string) =>
+  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+// ─── WhatsApp icon (inline SVG) ──────────────────────────────────────────────
+function WhatsAppIcon({ size = 18, color = '#fff' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  );
+}
+
+// ─── WhatsApp Floating Action Button ─────────────────────────────────────────
+function WhatsAppFAB() {
+  const { t } = useTranslation('landing');
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const tm = setTimeout(() => setVisible(true), 1200);
+    return () => clearTimeout(tm);
+  }, []);
+
+  const onClick = () => {
+    const utm = getStoredUtm();
+    track('cta_clicked', {
+      utm_source:   utm?.utm_source   ?? 'direct',
+      utm_medium:   utm?.utm_medium   ?? 'none',
+      utm_campaign: utm?.utm_campaign ?? 'none',
+      cta_location: 'fab_whatsapp',
+    });
+  };
+
+  return (
+    <a
+      href={buildWhatsAppUrl(t('hero.whatsappMessage'))}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      aria-label={t('fab.whatsapp')}
+      style={{
+        position: 'fixed',
+        right: 20,
+        bottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+        zIndex: 90,
+        width: 60,
+        height: 60,
+        borderRadius: '50%',
+        background: C.whatsapp,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: `0 8px 28px ${C.whatsapp}55, 0 0 0 1px rgba(255,255,255,0.06), 0 0 32px ${C.violet}40`,
+        textDecoration: 'none',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'scale(1)' : 'scale(0.6)',
+        transition: 'opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.16,1,0.3,1)',
+      }}
+    >
+      <WhatsAppIcon size={28} color="#fff" />
+    </a>
+  );
+}
 
 // ─── Logo SVG ─────────────────────────────────────────────────────────────────
 function Logo({ size = 36 }: { size?: number }) {
@@ -67,7 +134,6 @@ function Nav({ onCTA }: { onCTA: () => void }) {
 
   const navItems = [
     { key: 'howItWorks', anchor: 'fonctionnement' },
-    { key: 'pricing', anchor: 'tarifs' },
     { key: 'faq', anchor: 'faq' },
   ] as const;
 
@@ -168,9 +234,39 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
             <button onClick={onCTA} style={{ fontFamily: F.body, fontWeight: 800, fontSize: 16, background: C.violet, color: '#fff', border: 'none', padding: '16px 32px', borderRadius: 14, cursor: 'pointer', boxShadow: `0 0 40px ${C.violet}40` }}>
               {t('hero.ctaPrimary')}
             </button>
-            <button style={{ fontFamily: F.body, fontWeight: 600, fontSize: 15, background: 'transparent', color: C.muted, border: `1px solid ${C.dim}`, padding: '16px 28px', borderRadius: 14, cursor: 'pointer' }}>
+            <a
+              href={buildWhatsAppUrl(t('hero.whatsappMessage'))}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                const utm = getStoredUtm();
+                track('cta_clicked', {
+                  utm_source:   utm?.utm_source   ?? 'direct',
+                  utm_medium:   utm?.utm_medium   ?? 'none',
+                  utm_campaign: utm?.utm_campaign ?? 'none',
+                  cta_location: 'hero_whatsapp',
+                });
+              }}
+              style={{
+                fontFamily: F.body,
+                fontWeight: 700,
+                fontSize: 15,
+                background: 'transparent',
+                color: '#fff',
+                border: `1px solid ${C.whatsapp}66`,
+                padding: '16px 24px',
+                borderRadius: 14,
+                cursor: 'pointer',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 10,
+                boxShadow: `inset 0 0 0 0 ${C.whatsapp}, 0 0 20px ${C.whatsapp}15`,
+              }}
+            >
+              <WhatsAppIcon size={18} color={C.whatsapp} />
               {t('hero.ctaSecondary')}
-            </button>
+            </a>
           </div>
         </div>
 
@@ -405,23 +501,22 @@ function CTASection({ onCTA }: { onCTA: () => void }) {
 // ─── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
   const { t } = useTranslation('landing');
-  const cols = [
+  const waUrl = buildWhatsAppUrl(t('hero.whatsappMessage'));
+  type FooterLink = { key: string; label: string; href: string; external?: boolean };
+  const cols: Array<{ title: string; links: FooterLink[] }> = [
     { title: t('footer.product'), links: [
-      { key: 'howItWorks', label: t('footer.links.howItWorks') },
-      { key: 'pricing', label: t('footer.links.pricing') },
-      { key: 'faq', label: t('footer.links.faq') },
-      { key: 'security', label: t('footer.links.security') },
+      { key: 'howItWorks', label: t('footer.links.howItWorks'), href: '#fonctionnement' },
+      { key: 'faq', label: t('footer.links.faq'), href: '#faq' },
+      { key: 'security', label: t('footer.links.security'), href: '#faq' },
     ]},
     { title: t('footer.company'), links: [
-      { key: 'about', label: t('footer.links.about') },
-      { key: 'contact', label: t('footer.links.contact') },
-      { key: 'legal', label: t('footer.links.legal') },
-      { key: 'terms', label: t('footer.links.terms') },
+      { key: 'about', label: t('footer.links.about'), href: '#fonctionnement' },
+      { key: 'contact', label: t('footer.links.contact'), href: waUrl, external: true },
     ]},
     { title: t('footer.support'), links: [
-      { key: 'whatsapp', label: t('footer.links.whatsapp') },
-      { key: 'emailSupport', label: t('footer.links.emailSupport') },
-      { key: 'helpCenter', label: t('footer.links.helpCenter') },
+      { key: 'whatsapp', label: t('footer.links.whatsapp'), href: waUrl, external: true },
+      { key: 'facebook', label: t('footer.links.facebook'), href: FACEBOOK_URL, external: true },
+      { key: 'helpCenter', label: t('footer.links.helpCenter'), href: '#faq' },
     ]},
   ];
   return (
@@ -438,7 +533,16 @@ function Footer() {
           {cols.map(col => (
             <div key={col.title}>
               <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 11, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.title}</h4>
-              {col.links.map(l => <a key={l.key} href="#" style={{ display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' }}>{l.label}</a>)}
+              {col.links.map(l => (
+                <a
+                  key={l.key}
+                  href={l.href}
+                  {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  style={{ display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' }}
+                >
+                  {l.label}
+                </a>
+              ))}
             </div>
           ))}
         </div>
@@ -468,28 +572,29 @@ export default function LandingPage() {
       .then(({ data }) => { if (data?.rate_alipay) setAlipayRate(data.rate_alipay); });
   }, []);
 
-  const onCTA = () => {
+  const makeCTAHandler = (location: 'nav' | 'hero_primary' | 'bottom_cta') => () => {
     const utm = getStoredUtm();
     track('cta_clicked', {
       utm_source:   utm?.utm_source   ?? 'direct',
       utm_medium:   utm?.utm_medium   ?? 'none',
       utm_campaign: utm?.utm_campaign ?? 'none',
-      page_section: 'landing',
+      cta_location: location,
     });
     navigate('/auth?mode=signup');
   };
 
   return (
     <div style={{ background: C.bg, overflowX: 'hidden' }}>
-      <Nav onCTA={onCTA} />
-      <Hero rate={alipayRate} onCTA={onCTA} />
+      <Nav onCTA={makeCTAHandler('nav')} />
+      <Hero rate={alipayRate} onCTA={makeCTAHandler('hero_primary')} />
       <Ticker />
       <Stats />
       <HowItWorks />
       <Methods />
       <FAQ />
-      <CTASection onCTA={onCTA} />
+      <CTASection onCTA={makeCTAHandler('bottom_cta')} />
       <Footer />
+      <WhatsAppFAB />
     </div>
   );
 }

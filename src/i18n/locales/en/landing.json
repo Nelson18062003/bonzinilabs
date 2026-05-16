@@ -13,7 +13,8 @@
     "title3": "tonight",
     "subtitle": "Alipay, WeChat, bank transfer or cash. You send in CFA francs, your supplier receives in yuan. With the <strong>proof in your pocket</strong>.",
     "ctaPrimary": "Send a payment",
-    "ctaSecondary": "View rates",
+    "ctaSecondary": "Chat on WhatsApp",
+    "whatsappMessage": "Hello, I saw your Bonzini website. I'd like to learn more about paying my suppliers in China.",
     "simulator": {
       "title": "Payment simulator",
       "youSend": "YOU SEND",
@@ -94,6 +95,9 @@
     "subtitle": "Every minute counts in business. Send your first payment now.",
     "button": "Get started"
   },
+  "fab": {
+    "whatsapp": "Chat on WhatsApp"
+  },
   "footer": {
     "tagline": "Instant payments to China for CEMAC zone importers.",
     "product": "Product",
@@ -109,7 +113,7 @@
       "legal": "Legal notice",
       "terms": "Terms",
       "whatsapp": "WhatsApp",
-      "emailSupport": "Email",
+      "facebook": "Facebook",
       "helpCenter": "Help center"
     },
     "copyright": "\u00a9 2026 Bonzini. All rights reserved."
