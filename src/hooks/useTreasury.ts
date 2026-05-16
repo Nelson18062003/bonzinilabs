@@ -329,3 +329,191 @@ export function useTreasuryDashboard(fromIso: string, toIso: string) {
     staleTime: 30_000,
   });
 }
+
+// ─── Top counterparties ─────────────────────────────────────
+
+export interface TopCounterpartyRow {
+  id: string;
+  display_name: string;
+  phone: string | null;
+  wechat_id: string | null;
+  operation_count: number;
+  total_usdt: number;
+  total_xaf?: number;
+  total_cny?: number;
+  weighted_avg_rate: number;
+  deviation_pct: number;
+  last_op_at: string;
+}
+
+export interface TopCounterpartiesResult {
+  success: boolean;
+  type: CounterpartyType;
+  overall_weighted_avg_rate: number;
+  top: TopCounterpartyRow[];
+}
+
+export function useTopCounterparties(type: CounterpartyType, fromIso: string, toIso: string, limit = 5) {
+  return useQuery({
+    queryKey: ['treasury', 'top-counterparties', type, fromIso, toIso, limit],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.rpc('get_top_counterparties', {
+        p_type: type,
+        p_from_date: fromIso,
+        p_to_date: toIso,
+        p_limit: limit,
+      });
+      if (error) throw error;
+      return data as unknown as TopCounterpartiesResult;
+    },
+    staleTime: 30_000,
+  });
+}
+
+// ─── Operations feed (purchases + sales merged) ────────────
+
+export type PurchaseRow = Database['public']['Tables']['usdt_purchases']['Row'] & {
+  supplier?: Pick<TreasuryCounterparty, 'id' | 'display_name' | 'phone' | 'wechat_id'> | null;
+  xaf_account?: Pick<TreasuryAccount, 'id' | 'code' | 'label'> | null;
+};
+
+export type SaleRow = Database['public']['Tables']['usdt_sales']['Row'] & {
+  buyer?: Pick<TreasuryCounterparty, 'id' | 'display_name' | 'phone' | 'wechat_id'> | null;
+  cny_account?: Pick<TreasuryAccount, 'id' | 'code' | 'label' | 'kind'> | null;
+};
+
+export type OperationRow =
+  | (PurchaseRow & { kind: 'purchase' })
+  | (SaleRow & { kind: 'sale' });
+
+export function useTreasuryOperations(fromIso: string, toIso: string) {
+  return useQuery({
+    queryKey: ['treasury', 'operations', fromIso, toIso],
+    queryFn: async () => {
+      const [purchases, sales] = await Promise.all([
+        supabaseAdmin
+          .from('usdt_purchases')
+          .select('*, supplier:treasury_counterparties!supplier_id(id,display_name,phone,wechat_id), xaf_account:treasury_accounts!xaf_account_id(id,code,label)')
+          .gte('occurred_at', fromIso)
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: false }),
+        supabaseAdmin
+          .from('usdt_sales')
+          .select('*, buyer:treasury_counterparties!buyer_id(id,display_name,phone,wechat_id), cny_account:treasury_accounts!cny_account_id(id,code,label,kind)')
+          .gte('occurred_at', fromIso)
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: false }),
+      ]);
+      if (purchases.error) throw purchases.error;
+      if (sales.error) throw sales.error;
+
+      const merged: OperationRow[] = [
+        ...((purchases.data ?? []) as PurchaseRow[]).map((p) => ({ ...p, kind: 'purchase' as const })),
+        ...((sales.data ?? []) as SaleRow[]).map((s) => ({ ...s, kind: 'sale' as const })),
+      ];
+      merged.sort((a, b) => (b.occurred_at ?? '').localeCompare(a.occurred_at ?? ''));
+      return merged;
+    },
+    staleTime: 15_000,
+  });
+}
+
+// ─── Single operation lookup (for detail / void) ───────────
+
+export function usePurchase(id: string | undefined) {
+  return useQuery({
+    queryKey: ['treasury', 'purchase', id],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('usdt_purchases')
+        .select('*, supplier:treasury_counterparties!supplier_id(*), xaf_account:treasury_accounts!xaf_account_id(*)')
+        .eq('id', id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as PurchaseRow | null;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useSale(id: string | undefined) {
+  return useQuery({
+    queryKey: ['treasury', 'sale', id],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('usdt_sales')
+        .select('*, buyer:treasury_counterparties!buyer_id(*), cny_account:treasury_accounts!cny_account_id(*)')
+        .eq('id', id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as SaleRow | null;
+    },
+    enabled: !!id,
+  });
+}
+
+// ─── WAC time series (for chart) ────────────────────────────
+// Replays purchases + non-voided sales chronologically and emits
+// a WAC point at each event. Computed client-side to avoid an
+// extra RPC; trivial for typical Tier 2 volumes.
+
+export interface WacPoint {
+  at: string;
+  wac: number;
+  stock: number;
+  event: 'purchase' | 'sale';
+}
+
+export function useWacEvolution(fromIso: string, toIso: string) {
+  return useQuery({
+    queryKey: ['treasury', 'wac-evolution', fromIso, toIso],
+    queryFn: async (): Promise<WacPoint[]> => {
+      // Need full history up to `toIso` to compute correct WAC, not just within period.
+      const [purchases, sales] = await Promise.all([
+        supabaseAdmin
+          .from('usdt_purchases')
+          .select('occurred_at, xaf_amount, usdt_amount, voided_at')
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: true }),
+        supabaseAdmin
+          .from('usdt_sales')
+          .select('occurred_at, usdt_amount, wac_at_sale, voided_at')
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: true }),
+      ]);
+      if (purchases.error) throw purchases.error;
+      if (sales.error) throw sales.error;
+
+      const events: { at: string; type: 'purchase' | 'sale'; xafDelta: number; usdtDelta: number }[] = [];
+      for (const p of purchases.data ?? []) {
+        if (p.voided_at) continue;
+        events.push({ at: p.occurred_at, type: 'purchase', xafDelta: Number(p.xaf_amount), usdtDelta: Number(p.usdt_amount) });
+      }
+      for (const s of sales.data ?? []) {
+        if (s.voided_at) continue;
+        events.push({
+          at: s.occurred_at,
+          type: 'sale',
+          xafDelta: -(Number(s.usdt_amount) * Number(s.wac_at_sale)),
+          usdtDelta: -Number(s.usdt_amount),
+        });
+      }
+      events.sort((a, b) => a.at.localeCompare(b.at));
+
+      let totalXaf = 0;
+      let totalUsdt = 0;
+      const series: WacPoint[] = [];
+      for (const e of events) {
+        totalXaf += e.xafDelta;
+        totalUsdt += e.usdtDelta;
+        const wac = totalUsdt > 0 ? totalXaf / totalUsdt : 0;
+        // Only emit points within the requested window.
+        if (e.at >= fromIso && e.at <= toIso) {
+          series.push({ at: e.at, wac, stock: totalUsdt, event: e.type });
+        }
+      }
+      return series;
+    },
+    staleTime: 30_000,
+  });
+}
