@@ -1338,6 +1338,15 @@ export type Database = {
       }
     }
     Functions: {
+      adjust_treasury_account: {
+        Args: {
+          p_account_id: string
+          p_delta_amount: number
+          p_occurred_at?: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       add_exchange_rate: {
         Args: { p_effective_at?: string; p_rate_xaf_to_rmb: number }
         Returns: Json

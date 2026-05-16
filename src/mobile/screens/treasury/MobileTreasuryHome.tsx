@@ -214,11 +214,25 @@ export function MobileTreasuryHome() {
               tone="violet"
             />
             <ActionTile
+              icon={ArrowDownToLine}
+              label="Mes achats USDT"
+              description="Liste, total, suppression"
+              onClick={() => navigate('/m/more/treasury/purchases')}
+              tone="neutral"
+            />
+            <ActionTile
               icon={ArrowUpFromLine}
               label="Nouvelle vente USDT"
               description="Saisir une vente USDT → CNY auprès d'un acheteur"
               onClick={() => navigate('/m/more/treasury/sale')}
               tone="amber"
+            />
+            <ActionTile
+              icon={ArrowUpFromLine}
+              label="Mes ventes USDT"
+              description="Liste, total, suppression"
+              onClick={() => navigate('/m/more/treasury/sales')}
+              tone="neutral"
             />
             <ActionTile
               icon={Users}

@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { Loader2, ClipboardCheck, AlertTriangle } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/form';
+import { AmountField, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useRecordInventorySnapshot,
@@ -21,7 +21,7 @@ export function MobileInventoryScreen() {
   const canManage = hasPermission('canManageTreasury');
 
   const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
-  const [actual, setActual] = useState('');
+  const [actual, setActual] = useState<number | null>(null);
   const [reason, setReason] = useState('');
 
   if (!hasPermission('canViewTreasury')) {
@@ -30,23 +30,22 @@ export function MobileInventoryScreen() {
 
   const accounts = (data ?? []).filter((a) => a.kind && INVENTORY_KINDS.includes(a.kind));
   const active = accounts.find((a) => a.id === activeAccountId);
-  const actualNum = parseFloat(actual.replace(/\s/g, '')) || 0;
   const theoretical = Number(active?.balance ?? 0);
-  const variance = activeAccountId ? actualNum - theoretical : 0;
+  const variance = activeAccountId && actual !== null ? actual - theoretical : 0;
   const reasonRequired = variance !== 0;
   const reasonValid = reason.trim().length >= 10;
-  const valid = !!activeAccountId && actual !== '' && (!reasonRequired || reasonValid);
+  const valid = !!activeAccountId && actual !== null && (!reasonRequired || reasonValid);
 
   const handleSubmit = async () => {
-    if (!valid || !activeAccountId) return;
+    if (!valid || !activeAccountId || actual === null) return;
     const result = await submit.mutateAsync({
       account_id: activeAccountId,
-      actual_balance: actualNum,
+      actual_balance: actual,
       variance_reason: reasonRequired ? reason.trim() : undefined,
     });
     if (result.success) {
       setActiveAccountId(null);
-      setActual('');
+      setActual(null);
       setReason('');
     }
   };
@@ -80,7 +79,7 @@ export function MobileInventoryScreen() {
                     setActiveAccountId(null);
                   } else {
                     setActiveAccountId(a.id ?? null);
-                    setActual('');
+                    setActual(null);
                     setReason('');
                   }
                 }}
@@ -95,13 +94,16 @@ export function MobileInventoryScreen() {
                 <ClipboardCheck className={cn('w-5 h-5', isActive ? 'text-violet-600' : 'text-muted-foreground')} />
               </button>
 
-              {isActive && canManage && (
+              {isActive && canManage && a.currency && (
                 <div className="px-3.5 pb-3.5 space-y-3 border-t border-border bg-muted/20">
-                  <TextField
-                    label={`Solde réel constaté (${a.currency})`}
-                    variant="decimal"
+                  <AmountField
+                    label="Solde réel constaté"
+                    currency={a.currency}
                     value={actual}
-                    onChange={(e) => setActual(e.target.value)}
+                    onValueChange={setActual}
+                    allowDecimal
+                    decimals={a.currency === 'USDT' ? 4 : a.currency === 'CNY' ? 2 : 0}
+                    max={null}
                   />
 
                   <div className="grid grid-cols-2 gap-2 text-[12px]">

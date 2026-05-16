@@ -94,7 +94,7 @@ export function MobileOperationDetail({ kind }: Props) {
           <div className="rounded-xl bg-slate-100 border border-slate-300 px-3 py-2.5 flex items-start gap-2">
             <Ban className="w-4 h-4 text-slate-700 flex-shrink-0 mt-0.5" />
             <div className="text-[12px] text-slate-700">
-              <strong>Opération annulée</strong> le{' '}
+              <strong>Opération supprimée</strong> le{' '}
               {new Date(op.voided_at!).toLocaleString('fr-FR')}
               {op.void_reason && (
                 <>
@@ -184,11 +184,11 @@ export function MobileOperationDetail({ kind }: Props) {
               <>
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-red-700" />
-                  <span className="text-[13px] font-bold text-red-700">Annuler cette opération</span>
+                  <span className="text-[13px] font-bold text-red-700">Supprimer cette opération</span>
                 </div>
                 <p className="text-[12px] text-red-700 mb-3">
-                  L’annulation crée des contre-écritures dans le ledger. La ligne d’origine reste mais
-                  est marquée comme annulée. Cette action est tracée.
+                  L’opération disparaîtra des stats et des soldes. Pour des raisons d’audit fintech, une
+                  contre-écriture est enregistrée dans le ledger (l’action est tracée, irréversible).
                 </p>
                 <TextField
                   label="Motif * (10 caractères min)"
@@ -205,7 +205,7 @@ export function MobileOperationDetail({ kind }: Props) {
                     disabled={!reasonValid || voidOp.isPending}
                     className="flex-1 bg-red-600 hover:bg-red-700"
                   >
-                    {voidOp.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer annulation'}
+                    {voidOp.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer la suppression'}
                   </Button>
                 </div>
               </>
@@ -216,7 +216,7 @@ export function MobileOperationDetail({ kind }: Props) {
                 className="w-full border-red-300 text-red-700 hover:bg-red-100"
               >
                 <Ban className="w-4 h-4 mr-2" />
-                Annuler cette opération (super admin)
+                Supprimer cette opération (super admin)
               </Button>
             )}
           </section>

@@ -11,13 +11,15 @@ import { RightAddon } from './Adornments';
 type NativeInputProps = Omit<React.ComponentPropsWithoutRef<'input'>, 'size' | 'type' | 'value' | 'onChange'>;
 
 export interface AmountFieldProps extends BaseFieldProps, NativeInputProps {
-  /** Currency code shown as a right addon. Defaults to XAF. */
-  currency?: 'XAF' | 'RMB' | 'USD' | 'EUR' | string;
+  /** Currency / unit shown as a right addon. Defaults to XAF. */
+  currency?: string;
   /** Controlled amount (in currency base unit — i.e. XAF, RMB, etc). */
   value?: number | null;
   onValueChange?: (value: number | null) => void;
-  /** Whether to allow fractional amounts. XAF is integer-only, RMB can be decimal. */
+  /** Shortcut: enable decimals with 2-fractional precision. Prefer `decimals` for explicit control. */
   allowDecimal?: boolean;
+  /** Number of fractional digits to display when formatted. Overrides allowDecimal when provided. */
+  decimals?: number;
   /** Hard cap. Defaults are per-currency (50M for XAF). Pass `null` to disable. */
   max?: number | null;
   min?: number;
@@ -31,11 +33,14 @@ const DEFAULT_MAX: Record<string, number | undefined> = {
 };
 
 /**
- * Money input with live thousands-separator formatting, per-currency caps,
- * and `Number.isSafeInteger` guard (security rule from CLAUDE.md).
+ * Money input with thousands-separator formatting (rendered on blur so
+ * partial inputs like "583," don't get clobbered mid-typing), comma OR
+ * dot decimal separator, per-currency caps, and `Number.isSafeInteger`
+ * guard when integer-only.
  *
- * Displays the amount as "1 234 567" while the user types; emits a plain
- * integer to `onValueChange` and to form libraries.
+ * Emits a plain number (or null) via `onValueChange`. The displayed
+ * string while editing is whatever the user typed minus invalid chars;
+ * on blur, it switches to the locale-formatted representation.
  */
 export const AmountField = React.forwardRef<HTMLInputElement, AmountFieldProps>(function AmountField(
   {
@@ -53,10 +58,13 @@ export const AmountField = React.forwardRef<HTMLInputElement, AmountFieldProps>(
     value,
     onValueChange,
     allowDecimal = false,
+    decimals,
     max,
     min = 0,
     locale = 'fr-FR',
     enterKeyHint = 'done',
+    onFocus,
+    onBlur,
     ...rest
   },
   ref,
@@ -64,56 +72,75 @@ export const AmountField = React.forwardRef<HTMLInputElement, AmountFieldProps>(
   const reactId = React.useId();
   const id = idProp ?? reactId;
   const hasError = Boolean(error);
-  const keyboard = allowDecimal ? KEYBOARD.decimal : KEYBOARD.numeric;
+  const effectiveDecimals = decimals ?? (allowDecimal ? 2 : 0);
+  const isDecimal = effectiveDecimals > 0;
+  const keyboard = isDecimal ? KEYBOARD.decimal : KEYBOARD.numeric;
   const effectiveMax = max === undefined ? DEFAULT_MAX[currency] : max ?? undefined;
 
   const formatter = React.useMemo(() => {
     return new Intl.NumberFormat(locale, {
-      maximumFractionDigits: allowDecimal ? 2 : 0,
+      maximumFractionDigits: effectiveDecimals,
       useGrouping: true,
     });
-  }, [locale, allowDecimal]);
+  }, [locale, effectiveDecimals]);
 
-  const format = (n: number | null | undefined) =>
-    n == null || Number.isNaN(n) ? '' : formatter.format(n);
+  const format = React.useCallback(
+    (n: number | null | undefined) =>
+      n == null || Number.isNaN(n) ? '' : formatter.format(n),
+    [formatter],
+  );
 
   const [display, setDisplay] = React.useState<string>(() => format(value));
+  const [isFocused, setIsFocused] = React.useState(false);
 
+  // Sync from external value (form.reset, parent state change) only when not focused
+  // so the user's in-flight typing isn't reformatted underneath them.
   React.useEffect(() => {
-    // Sync from external value (form.reset, parent state change).
-    const externalFormatted = format(value);
-    setDisplay((current) => {
-      const currentNumeric = parseAmount(current, allowDecimal);
-      return currentNumeric === value ? current : externalFormatted;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+    if (isFocused) return;
+    setDisplay(format(value));
+  }, [value, isFocused, format]);
 
   const emit = (n: number | null) => {
-    if (n != null && !allowDecimal && !Number.isSafeInteger(n)) return;
+    if (n != null && !isDecimal && !Number.isSafeInteger(n)) return;
     if (onValueChange) onValueChange(n);
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const parsed = parseAmount(event.target.value, allowDecimal);
+    const raw = event.target.value;
+    // Strip invalid chars but keep separators as-typed so partial input
+    // (e.g. "583,") survives until blur.
+    const cleaned = raw.replace(/[^\d.,\s-]/g, '');
+    setDisplay(cleaned);
+
+    const parsed = parseAmount(cleaned, isDecimal);
     if (parsed == null) {
-      setDisplay('');
       emit(null);
       return;
     }
     if (effectiveMax != null && parsed > effectiveMax) {
-      // Clamp silently to the cap.
-      setDisplay(format(effectiveMax));
       emit(effectiveMax);
+      setDisplay(format(effectiveMax));
       return;
     }
     if (parsed < min) {
-      setDisplay(format(min));
       emit(min);
+      setDisplay(format(min));
       return;
     }
-    setDisplay(format(parsed));
     emit(parsed);
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+    onFocus?.(e);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(false);
+    // Re-format on blur so the user sees the canonical representation.
+    const parsed = parseAmount(display, isDecimal);
+    setDisplay(parsed == null ? '' : format(parsed));
+    onBlur?.(e);
   };
 
   return (
@@ -136,6 +163,8 @@ export const AmountField = React.forwardRef<HTMLInputElement, AmountFieldProps>(
           enterKeyHint={enterKeyHint}
           value={display}
           onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder="0"
           className={cn(
             fieldControlVariants({ size, invalid: hasError }),
@@ -150,12 +179,12 @@ export const AmountField = React.forwardRef<HTMLInputElement, AmountFieldProps>(
   );
 });
 
-function parseAmount(raw: string, allowDecimal: boolean): number | null {
+export function parseAmount(raw: string, allowDecimal: boolean): number | null {
   const cleaned = raw
     .replace(/\s/g, '')
     .replace(/[^\d.,-]/g, '')
     .replace(',', '.');
-  if (cleaned === '' || cleaned === '.' || cleaned === '-') return null;
+  if (cleaned === '' || cleaned === '.' || cleaned === '-' || cleaned === '-.') return null;
   const parsed = allowDecimal ? parseFloat(cleaned) : parseInt(cleaned.split('.')[0], 10);
   return Number.isNaN(parsed) ? null : parsed;
 }

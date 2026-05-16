@@ -258,6 +258,38 @@ export function useRecordInventorySnapshot() {
   });
 }
 
+// ─── Manual account adjustment ─────────────────────────────
+
+interface AdjustArgs {
+  account_id: string;
+  delta_amount: number;
+  reason: string;
+  occurred_at?: string;
+}
+
+export function useAdjustAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: AdjustArgs) => {
+      const { data, error } = await supabaseAdmin.rpc('adjust_treasury_account', {
+        p_account_id: args.account_id,
+        p_delta_amount: args.delta_amount,
+        p_reason: args.reason,
+        p_occurred_at: args.occurred_at,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; direction?: string };
+      if (!result.success) throw new Error(result.error ?? 'Erreur ajustement');
+      return result;
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['treasury'] });
+      toast.success(r.direction === 'credit' ? 'Compte approvisionné' : 'Compte débité');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ─── Voiding ────────────────────────────────────────────────
 
 interface VoidArgs {
