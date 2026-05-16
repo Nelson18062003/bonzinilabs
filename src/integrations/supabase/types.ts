@@ -877,6 +877,7 @@ export type Database = {
           legal_name: string | null
           notes: string | null
           phone: string | null
+          short_id: string
           type: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at: string
           wechat_id: string | null
@@ -891,6 +892,7 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          short_id?: string
           type: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at?: string
           wechat_id?: string | null
@@ -905,6 +907,7 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          short_id?: string
           type?: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at?: string
           wechat_id?: string | null
@@ -1124,7 +1127,7 @@ export type Database = {
       usdt_sales: {
         Row: {
           buyer_id: string
-          cny_account_id: string
+          cny_account_id: string | null
           cny_amount: number
           created_at: string
           created_by: string
@@ -1142,7 +1145,7 @@ export type Database = {
         }
         Insert: {
           buyer_id: string
-          cny_account_id: string
+          cny_account_id?: string | null
           cny_amount: number
           created_at?: string
           created_by: string
@@ -1159,7 +1162,7 @@ export type Database = {
         }
         Update: {
           buyer_id?: string
-          cny_account_id?: string
+          cny_account_id?: string | null
           cny_amount?: number
           created_at?: string
           created_by?: string
@@ -1443,6 +1446,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      delete_treasury_counterparty: {
+        Args: { p_id: string }
+        Returns: Json
+      }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_payment: { Args: { p_payment_id: string }; Returns: Json }
@@ -1656,7 +1663,7 @@ export type Database = {
       record_usdt_sale: {
         Args: {
           p_buyer_id: string
-          p_cny_account_id: string
+          p_cny_account_id?: string
           p_cny_amount: number
           p_external_ref?: string
           p_notes?: string

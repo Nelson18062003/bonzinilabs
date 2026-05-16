@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, Plus } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { AmountField, TextField } from '@/components/form';
+import { AmountField, PhoneInputWithCountry, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -57,7 +57,7 @@ export function MobileNewPurchase() {
 
   const [showNewSupplier, setShowNewSupplier] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
+  const [newPhone, setNewPhone] = useState<string | null>(null);
 
   // Resolve the 3 values from the 2 user-typed inputs.
   const resolved = useMemo(() => {
@@ -102,13 +102,13 @@ export function MobileNewPurchase() {
     const result = await create.mutateAsync({
       type: 'usdt_supplier',
       display_name: newName.trim(),
-      phone: newPhone.trim() || undefined,
+      phone: newPhone ?? undefined,
     });
     if (result.success && result.id) {
       setSupplierId(result.id);
       setShowNewSupplier(false);
       setNewName('');
-      setNewPhone('');
+      setNewPhone(null);
     }
   };
 
@@ -146,7 +146,12 @@ export function MobileNewPurchase() {
           {showNewSupplier && (
             <div className="mt-2 bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-2">
               <TextField label="Nom fournisseur" value={newName} onChange={(e) => setNewName(e.target.value)} />
-              <TextField label="Téléphone (optionnel)" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+              <PhoneInputWithCountry
+                label="Téléphone (optionnel)"
+                value={newPhone}
+                onValueChange={setNewPhone}
+                defaultDialCode="+237"
+              />
               <Button
                 onClick={handleCreateSupplier}
                 disabled={create.isPending || !newName.trim()}

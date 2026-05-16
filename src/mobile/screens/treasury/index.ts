@@ -3,6 +3,7 @@ export { MobileTreasuryDashboard } from './MobileTreasuryDashboard';
 export { MobileNewPurchase } from './MobileNewPurchase';
 export { MobileNewSale } from './MobileNewSale';
 export { MobileCounterpartiesScreen } from './MobileCounterpartiesScreen';
+export { MobileCounterpartyEdit } from './MobileCounterpartyEdit';
 export { MobileAccountsScreen } from './MobileAccountsScreen';
 export { MobileInventoryScreen } from './MobileInventoryScreen';
 export { MobileOperationsHistory } from './MobileOperationsHistory';

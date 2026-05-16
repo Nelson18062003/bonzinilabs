@@ -6,12 +6,12 @@ import {
   TrendingDown,
   ArrowDownToLine,
   ArrowUpFromLine,
-  Users,
   History,
   AlertTriangle,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { DateField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useTopCounterparties,
@@ -20,31 +20,69 @@ import {
 } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 
-type Preset = '7d' | '30d' | 'mtd';
+type Preset = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom';
 
-function getRange(preset: Preset): { from: Date; to: Date; label: string } {
+const PRESETS: { value: Preset; label: string }[] = [
+  { value: 'day', label: 'Jour' },
+  { value: 'week', label: 'Semaine' },
+  { value: 'month', label: 'Mois' },
+  { value: 'quarter', label: 'Trimestre' },
+  { value: 'year', label: 'Année' },
+  { value: 'all', label: 'Tout' },
+  { value: 'custom', label: 'Custom' },
+];
+
+function getRange(preset: Preset, customFrom?: string, customTo?: string): { from: Date; to: Date } {
   const to = new Date();
   const from = new Date(to);
-  if (preset === '7d') {
-    from.setDate(to.getDate() - 7);
-    return { from, to, label: '7 derniers jours' };
+  switch (preset) {
+    case 'day':
+      from.setHours(0, 0, 0, 0);
+      break;
+    case 'week': {
+      // Monday-based start.
+      const dayOfWeek = from.getDay() || 7; // Sun=7
+      from.setDate(from.getDate() - (dayOfWeek - 1));
+      from.setHours(0, 0, 0, 0);
+      break;
+    }
+    case 'month':
+      from.setDate(1);
+      from.setHours(0, 0, 0, 0);
+      break;
+    case 'quarter': {
+      const m = from.getMonth();
+      const startMonth = m - (m % 3);
+      from.setMonth(startMonth, 1);
+      from.setHours(0, 0, 0, 0);
+      break;
+    }
+    case 'year':
+      from.setMonth(0, 1);
+      from.setHours(0, 0, 0, 0);
+      break;
+    case 'all':
+      from.setFullYear(2020, 0, 1);
+      from.setHours(0, 0, 0, 0);
+      break;
+    case 'custom':
+      return {
+        from: customFrom ? new Date(customFrom + 'T00:00:00') : new Date(to.getFullYear(), to.getMonth(), 1),
+        to: customTo ? new Date(customTo + 'T23:59:59') : to,
+      };
   }
-  if (preset === '30d') {
-    from.setDate(to.getDate() - 30);
-    return { from, to, label: '30 derniers jours' };
-  }
-  // mtd
-  from.setDate(1);
-  from.setHours(0, 0, 0, 0);
-  return { from, to, label: 'Mois en cours' };
+  return { from, to };
 }
 
 function fmt(n: number | null | undefined, decimals = 2): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
-  return Number(n).toLocaleString('fr-FR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/** "1M XAF → X CNY" representation of a XAF/CNY rate. */
+function toCnyPer1MXaf(xafPerCny: number | null | undefined): number | null {
+  if (xafPerCny === null || xafPerCny === undefined || !Number.isFinite(xafPerCny) || xafPerCny <= 0) return null;
+  return 1_000_000 / xafPerCny;
 }
 
 function KpiCard({
@@ -60,7 +98,7 @@ function KpiCard({
   unit?: string;
   hint?: string;
   tone?: 'violet' | 'amber' | 'orange' | 'emerald' | 'red' | 'neutral';
-  trend?: 'up' | 'down' | 'flat';
+  trend?: 'up' | 'down';
 }) {
   const toneClasses: Record<string, string> = {
     violet: 'border-violet-200 bg-violet-50',
@@ -97,11 +135,38 @@ function KpiCard({
   );
 }
 
+/** Rate card showing XAF/CNY value AND the "1M XAF = X CNY" dual format. */
+function RateCardXafCny({
+  label,
+  xafPerCny,
+  tone,
+}: {
+  label: string;
+  xafPerCny: number | null | undefined;
+  tone: 'violet' | 'amber' | 'orange' | 'emerald';
+}) {
+  const altFormat = toCnyPer1MXaf(xafPerCny ?? null);
+  return (
+    <KpiCard
+      label={label}
+      value={fmt(xafPerCny ?? null, 4)}
+      unit="XAF/CNY"
+      tone={tone}
+      hint={altFormat ? `1M XAF = ${fmt(altFormat, 0)} CNY` : undefined}
+    />
+  );
+}
+
 export function MobileTreasuryDashboard() {
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
-  const [preset, setPreset] = useState<Preset>('30d');
-  const range = useMemo(() => getRange(preset), [preset]);
+  const [preset, setPreset] = useState<Preset>('month');
+  const today = new Date().toISOString().slice(0, 10);
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  const [customFrom, setCustomFrom] = useState(monthStart);
+  const [customTo, setCustomTo] = useState(today);
+
+  const range = useMemo(() => getRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
   const fromIso = range.from.toISOString();
   const toIso = range.to.toISOString();
 
@@ -116,30 +181,45 @@ export function MobileTreasuryDashboard() {
 
   const benefitTone = (dash?.benefit_total_xaf ?? 0) >= 0 ? 'emerald' : 'red';
 
+  // Client rate is XAF/CNY directly from the existing `payments` table.
+  const clientRateXafPerCny = dash?.client_rate.weighted_avg_rate_xaf_per_cny ?? null;
+  const revientXafPerCny = dash?.taux_de_revient_xaf_per_cny ?? null;
+  const margePerCny =
+    clientRateXafPerCny !== null && revientXafPerCny !== null
+      ? clientRateXafPerCny - revientXafPerCny
+      : null;
+
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Dashboard trésorerie" showBack backTo="/m/more/treasury" />
 
       <div className="px-4 py-4 space-y-5">
-        {/* Period */}
-        <div className="flex bg-muted rounded-xl p-1">
-          {([
-            { value: '7d' as const, label: '7 j' },
-            { value: '30d' as const, label: '30 j' },
-            { value: 'mtd' as const, label: 'Mois' },
-          ]).map((p) => (
+        {/* Period chips (scrollable on small screens) */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4">
+          {PRESETS.map((p) => (
             <button
               key={p.value}
               onClick={() => setPreset(p.value)}
               className={cn(
-                'flex-1 h-9 rounded-lg text-[13px] font-semibold transition-colors',
-                preset === p.value ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground',
+                'flex-shrink-0 h-9 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
+                preset === p.value
+                  ? 'border-violet-600 bg-violet-50 text-violet-700'
+                  : 'border-border bg-white text-muted-foreground',
               )}
             >
               {p.label}
             </button>
           ))}
         </div>
+
+        {/* Custom range pickers */}
+        {preset === 'custom' && (
+          <div className="grid grid-cols-2 gap-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
+            <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+            <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+          </div>
+        )}
+
         <div className="text-center text-[11px] text-muted-foreground -mt-2">
           {range.from.toLocaleDateString('fr-FR')} → {range.to.toLocaleDateString('fr-FR')}
         </div>
@@ -166,19 +246,8 @@ export function MobileTreasuryDashboard() {
                 {fmt(dash.benefit_total_xaf, 0)}
                 <span className="text-sm font-semibold text-muted-foreground ml-1">XAF</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-[12px]">
-                <div>
-                  <span className="text-muted-foreground">Spread chaîne</span>
-                  <div className={cn('font-bold', dash.spread_chain_xaf >= 0 ? 'text-emerald-700' : 'text-red-700')}>
-                    {dash.spread_chain_xaf >= 0 ? '+' : ''}{fmt(dash.spread_chain_xaf, 0)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Spread client</span>
-                  <div className={cn('font-bold', dash.spread_client_xaf >= 0 ? 'text-emerald-700' : 'text-red-700')}>
-                    {dash.spread_client_xaf >= 0 ? '+' : ''}{fmt(dash.spread_client_xaf, 0)}
-                  </div>
-                </div>
+              <div className="text-[11px] text-muted-foreground mt-1">
+                = XAF reçu clients − coût XAF des USDT vendus pour les livrer
               </div>
             </div>
 
@@ -203,9 +272,11 @@ export function MobileTreasuryDashboard() {
               </div>
             </section>
 
-            {/* Taux moyens pondérés */}
+            {/* Taux moyens pondérés (XAF/USDT, CNY/USDT) */}
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Taux moyens pondérés</h2>
+              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                Taux moyens pondérés
+              </h2>
               <div className="grid grid-cols-2 gap-2">
                 <KpiCard
                   label="Achat"
@@ -219,26 +290,48 @@ export function MobileTreasuryDashboard() {
                   unit="CNY/USDT"
                   tone="amber"
                 />
+              </div>
+            </section>
+
+            {/* Taux XAF/CNY (revient / client / marge) avec format dual */}
+            <section>
+              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                Taux XAF / CNY
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                <RateCardXafCny label="Revient" xafPerCny={revientXafPerCny} tone="emerald" />
+                <RateCardXafCny label="Client" xafPerCny={clientRateXafPerCny} tone="orange" />
+                {margePerCny !== null && (
+                  <div className="col-span-2 bg-gradient-to-br from-emerald-50 to-amber-50 border border-emerald-200 rounded-2xl p-3.5">
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-700 mb-1">
+                      Marge par CNY livré
+                    </div>
+                    <div className={cn(
+                      'text-[18px] font-extrabold tabular-nums',
+                      margePerCny >= 0 ? 'text-emerald-700' : 'text-red-700',
+                    )}>
+                      {margePerCny >= 0 ? '+' : ''}
+                      {fmt(margePerCny, 4)}
+                      <span className="text-xs font-semibold text-muted-foreground ml-1">XAF / CNY livré</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      = Taux client − Taux de revient
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* WAC + stocks */}
+            <section>
+              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Stock & capital</h2>
+              <div className="grid grid-cols-2 gap-2">
                 <KpiCard
-                  label="Client"
-                  value={fmt(dash.client_rate.weighted_avg_rate_xaf_per_cny, 4)}
-                  unit="XAF/CNY"
-                  hint={`${dash.client_rate.count} paiements`}
-                  tone="orange"
-                />
-                <KpiCard
-                  label="WAC USDT actuel"
+                  label="WAC USDT"
                   value={fmt(dash.wac_usdt_current, 4)}
                   unit="XAF/USDT"
                   tone="emerald"
                 />
-              </div>
-            </section>
-
-            {/* Stocks & capital */}
-            <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Stock & capital</h2>
-              <div className="grid grid-cols-2 gap-2">
                 <KpiCard
                   label="Stock USDT"
                   value={fmt(dash.stock_usdt, 2)}
@@ -257,7 +350,7 @@ export function MobileTreasuryDashboard() {
                 <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
                   <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                   <span className="text-[12px] text-red-700">
-                    Stock USDT négatif. Cherchez un achat manquant à enregistrer.
+                    Stock USDT négatif. Cherche un achat manquant à enregistrer.
                   </span>
                 </div>
               )}

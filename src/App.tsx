@@ -71,6 +71,7 @@ const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").t
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
 const MobileTreasuryNewSale = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewSale })));
 const MobileTreasuryCounterparties = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartiesScreen })));
+const MobileTreasuryCounterpartyEdit = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartyEdit })));
 const MobileTreasuryAccounts = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileAccountsScreen })));
 const MobileTreasuryInventory = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileInventoryScreen })));
 const MobileTreasuryOperations = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileOperationsHistory })));
@@ -176,6 +177,7 @@ const App = () => (
                 <Route path="/m/more/treasury/purchase" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewPurchase /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/sale" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewSale /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties" element={<MobileRouteWrapper><MobileTreasuryCounterparties /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryCounterpartyEdit /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/accounts" element={<MobileRouteWrapper><MobileTreasuryAccounts /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/inventory" element={<MobileRouteWrapper><MobileTreasuryInventory /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/operations" element={<MobileRouteWrapper><MobileTreasuryOperations /></MobileRouteWrapper>} />

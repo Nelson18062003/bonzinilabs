@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Loader2, Plus, Phone, MessageCircle, Archive } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/form';
+import { PhoneInputWithCountry, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
+import { formatPhone } from '@/data/countryCodes';
 import type { Database } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
 
@@ -13,15 +14,17 @@ type CounterpartyType = Database['public']['Enums']['treasury_counterparty_type'
 
 export function MobileCounterpartiesScreen() {
   const { hasPermission } = useAdminAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<CounterpartyType>('usdt_supplier');
-  const { data, isLoading } = useCounterparties(tab);
+  const [showArchived, setShowArchived] = useState(false);
+  const { data, isLoading } = useCounterparties(tab, showArchived);
   const create = useCreateCounterparty();
   const canManage = hasPermission('canManageTreasury');
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState<string | null>(null);
   const [wechat, setWechat] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -32,7 +35,7 @@ export function MobileCounterpartiesScreen() {
   const resetForm = () => {
     setName('');
     setCompany('');
-    setPhone('');
+    setPhone(null);
     setWechat('');
     setNotes('');
     setShowForm(false);
@@ -44,12 +47,14 @@ export function MobileCounterpartiesScreen() {
       type: tab,
       display_name: name.trim(),
       legal_name: company.trim() || undefined,
-      phone: phone.trim() || undefined,
+      phone: phone ?? undefined,
       wechat_id: wechat.trim() || undefined,
       notes: notes.trim() || undefined,
     });
     if (result.success) resetForm();
   };
+
+  const defaultDialCode = tab === 'usdt_supplier' ? '+237' : '+86';
 
   return (
     <div className="flex flex-col min-h-full bg-background">
@@ -76,6 +81,18 @@ export function MobileCounterpartiesScreen() {
         </div>
       </div>
 
+      {/* Toggle archived */}
+      <div className="px-4 pt-2">
+        <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          Afficher les archivées
+        </label>
+      </div>
+
       {/* New form */}
       {canManage && (
         <div className="px-4 pt-3">
@@ -86,7 +103,12 @@ export function MobileCounterpartiesScreen() {
             )}>
               <TextField label="Nom *" value={name} onChange={(e) => setName(e.target.value)} />
               <TextField label="Entreprise" value={company} onChange={(e) => setCompany(e.target.value)} />
-              <TextField label="Téléphone / WhatsApp" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <PhoneInputWithCountry
+                label="Téléphone / WhatsApp"
+                value={phone}
+                onValueChange={setPhone}
+                defaultDialCode={defaultDialCode}
+              />
               {tab === 'cny_buyer' && (
                 <TextField label="WeChat ID" value={wechat} onChange={(e) => setWechat(e.target.value)} />
               )}
@@ -129,19 +151,40 @@ export function MobileCounterpartiesScreen() {
             Aucune contrepartie {tab === 'usdt_supplier' ? 'fournisseur' : 'acheteur'} pour l’instant.
           </div>
         ) : (
-          (data ?? []).map((c) => (
-            <div key={c.id} className="bg-white rounded-xl border border-border p-3.5">
-              <div className="flex items-start justify-between gap-2">
+          (data ?? []).map((c) => {
+            const toneBadge = tab === 'usdt_supplier'
+              ? 'bg-violet-100 text-violet-700'
+              : 'bg-amber-100 text-amber-700';
+            return (
+              <button
+                key={c.id}
+                onClick={() => canManage && navigate(`/m/more/treasury/counterparties/${c.id}`)}
+                className={cn(
+                  'w-full text-left bg-white rounded-xl border border-border p-3.5 flex items-center gap-3',
+                  canManage && 'active:bg-muted/40 transition-colors',
+                )}
+              >
+                <span className={cn('px-2 py-1 rounded-lg text-[11px] font-bold flex-shrink-0', toneBadge)}>
+                  {c.short_id}
+                </span>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-foreground truncate">{c.display_name}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-foreground truncate">{c.display_name}</span>
+                    {!c.is_active && (
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-flex items-center gap-0.5">
+                        <Archive className="w-3 h-3" />
+                        Archivée
+                      </span>
+                    )}
+                  </div>
                   {c.legal_name && (
                     <div className="text-[12px] text-muted-foreground truncate">{c.legal_name}</div>
                   )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[12px] text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
                     {c.phone && (
                       <span className="inline-flex items-center gap-1">
                         <Phone className="w-3 h-3" />
-                        {c.phone}
+                        {formatPhone(c.phone)}
                       </span>
                     )}
                     {c.wechat_id && (
@@ -151,19 +194,11 @@ export function MobileCounterpartiesScreen() {
                       </span>
                     )}
                   </div>
-                  {c.notes && (
-                    <div className="text-[12px] text-muted-foreground italic mt-1.5">{c.notes}</div>
-                  )}
                 </div>
-                {!c.is_active && (
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                    <Archive className="w-3 h-3" />
-                    Archivé
-                  </span>
-                )}
-              </div>
-            </div>
-          ))
+                {canManage && <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
+              </button>
+            );
+          })
         )}
       </div>
     </div>

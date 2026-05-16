@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, Plus, AlertTriangle } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { AmountField, TextField } from '@/components/form';
+import { AmountField, PhoneInputWithCountry, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -40,7 +40,8 @@ export function MobileNewSale() {
 
   const [mode, setMode] = useState<InputMode>('usdt_cny');
   const [buyerId, setBuyerId] = useState('');
-  const [cnyAccountId, setCnyAccountId] = useState('');
+  // Empty string = no Bonzini CNY account credited (the most common case).
+  const [cnyAccountId, setCnyAccountId] = useState<string>('');
   const [usdtAmount, setUsdtAmount] = useState<number | null>(null);
   const [cnyAmount, setCnyAmount] = useState<number | null>(null);
   const [rate, setRate] = useState<number | null>(null);
@@ -50,7 +51,7 @@ export function MobileNewSale() {
   const [showNewBuyer, setShowNewBuyer] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCompany, setNewCompany] = useState('');
-  const [newPhone, setNewPhone] = useState('');
+  const [newPhone, setNewPhone] = useState<string | null>(null);
   const [newWechat, setNewWechat] = useState('');
 
   const resolved = useMemo(() => {
@@ -76,7 +77,6 @@ export function MobileNewSale() {
 
   const valid =
     !!buyerId &&
-    !!cnyAccountId &&
     resolved.usdt !== null && resolved.usdt > 0 &&
     resolved.cny !== null && resolved.cny > 0;
 
@@ -84,7 +84,7 @@ export function MobileNewSale() {
     if (!valid || resolved.usdt === null || resolved.cny === null) return;
     const result = await submit.mutateAsync({
       buyer_id: buyerId,
-      cny_account_id: cnyAccountId,
+      cny_account_id: cnyAccountId || null,
       usdt_amount: resolved.usdt,
       cny_amount: resolved.cny,
       external_ref: externalRef || undefined,
@@ -99,7 +99,7 @@ export function MobileNewSale() {
       type: 'cny_buyer',
       display_name: newName.trim(),
       legal_name: newCompany.trim() || undefined,
-      phone: newPhone.trim() || undefined,
+      phone: newPhone ?? undefined,
       wechat_id: newWechat.trim() || undefined,
     });
     if (result.success && result.id) {
@@ -107,7 +107,7 @@ export function MobileNewSale() {
       setShowNewBuyer(false);
       setNewName('');
       setNewCompany('');
-      setNewPhone('');
+      setNewPhone(null);
       setNewWechat('');
     }
   };
@@ -147,7 +147,12 @@ export function MobileNewSale() {
             <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
               <TextField label="Nom" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <TextField label="Entreprise (optionnel)" value={newCompany} onChange={(e) => setNewCompany(e.target.value)} />
-              <TextField label="Téléphone (optionnel)" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+              <PhoneInputWithCountry
+                label="Téléphone (optionnel)"
+                value={newPhone}
+                onValueChange={setNewPhone}
+                defaultDialCode="+86"
+              />
               <TextField label="WeChat ID (optionnel)" value={newWechat} onChange={(e) => setNewWechat(e.target.value)} />
               <Button onClick={handleCreateBuyer} disabled={create.isPending || !newName.trim()} size="sm" className="w-full">
                 {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Créer'}
@@ -156,21 +161,28 @@ export function MobileNewSale() {
           )}
         </div>
 
-        {/* CNY account */}
+        {/* CNY account (optional) */}
         <div>
-          <label className="block text-[13px] font-semibold mb-1.5">Compte CNY crédité *</label>
+          <label className="block text-[13px] font-semibold mb-1.5">
+            Compte CNY crédité <span className="text-muted-foreground font-normal">(optionnel)</span>
+          </label>
           <select
             value={cnyAccountId}
             onChange={(e) => setCnyAccountId(e.target.value)}
             className="w-full h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
           >
-            <option value="">Sélectionner…</option>
+            <option value="">Aucun compte Bonzini concerné</option>
             {(cnyAccounts ?? []).map((a) => (
               <option key={a.id} value={a.id}>
                 {a.label}
               </option>
             ))}
           </select>
+          <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
+            Sélectionne le compte uniquement si le CNY a atterri sur un de nos comptes (cash Guangzhou,
+            Alipay/WeChat de papa…). Sinon laisse vide — tu pourras toujours déclarer une arrivée de
+            cash via « Approvisionner » plus tard.
+          </p>
         </div>
 
         {/* Mode toggle */}
