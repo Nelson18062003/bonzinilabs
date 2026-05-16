@@ -37,6 +37,11 @@ const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefa
     descriptionKey: 'roleCashAgentDesc',
     descriptionDefault: 'Gestion des paiements cash uniquement',
   },
+  {
+    role: 'treasurer',
+    descriptionKey: 'roleTreasurerDesc',
+    descriptionDefault: 'Trésorerie : achats/ventes USDT, contreparties, inventaire',
+  },
 ];
 
 const ROLE_BADGE_COLORS: Record<AppRole, string> = {
@@ -45,6 +50,7 @@ const ROLE_BADGE_COLORS: Record<AppRole, string> = {
   support: 'bg-green-100 text-green-700 border-green-200',
   customer_success: 'bg-orange-100 text-orange-700 border-orange-200',
   cash_agent: 'bg-amber-100 text-amber-700 border-amber-200',
+  treasurer: 'bg-emerald-100 text-emerald-700 border-emerald-200',
 };
 
 export function MobileCreateAdmin() {
