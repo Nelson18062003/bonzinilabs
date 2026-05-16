@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "support": "客服"
+  },
+  "page": {
+    "title": "Bonzini 团队",
+    "subtitle": "我们在这里为您服务"
+  },
+  "empty": {
+    "title": "Bonzini 团队随时为您服务",
+    "subtitle": "关于付款、汇率或其他任何问题，请告诉我们。我们会快速回复。"
+  },
+  "input": {
+    "placeholder": "输入您的消息…",
+    "send": "发送",
+    "sendImage": "发送图片",
+    "sending": "发送中…"
+  },
+  "responseTime": {
+    "label": "今日平均响应时间",
+    "minutes": "{{count}} 分钟",
+    "seconds": "{{count}} 秒",
+    "veryFast": "几乎即时"
+  },
+  "errors": {
+    "imageTooLarge": "图片太大（最大 5 MB）",
+    "imageWrongFormat": "不支持的格式（仅限 JPG、PNG 或 WebP）",
+    "messageEmpty": "消息不能为空",
+    "messageTooLong": "消息太长（最多 2000 个字符）",
+    "sendFailed": "发送失败，请重试",
+    "loadFailed": "无法加载对话"
+  },
+  "day": {
+    "today": "今天",
+    "yesterday": "昨天"
+  },
+  "image": {
+    "loading": "加载中…",
+    "error": "图片不可用",
+    "tapToOpen": "查看全屏"
+  },
+  "admin": {
+    "listTitle": "对话",
+    "listEmpty": "没有正在进行的对话",
+    "filterAll": "全部",
+    "filterUnread": "未读",
+    "searchPlaceholder": "搜索客户…",
+    "unreadBadge": "{{count}} 条未读",
+    "unreadBadgePlural": "{{count}} 条未读",
+    "openChat": "打开对话",
+    "noClientName": "未命名客户",
+    "clientLink": "查看客户资料",
+    "lastActivity": "最后活动"
+  },
+  "bubble": {
+    "you": "您",
+    "bonziniTeam": "Bonzini 团队",
+    "sending": "发送中…"
+  }
+}

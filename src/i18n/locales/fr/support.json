@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "support": "Support"
+  },
+  "page": {
+    "title": "Équipe Bonzini",
+    "subtitle": "Nous sommes là pour vous aider"
+  },
+  "empty": {
+    "title": "L'équipe Bonzini est là pour vous aider",
+    "subtitle": "Posez vos questions sur un paiement, un taux ou autre. On vous répond rapidement."
+  },
+  "input": {
+    "placeholder": "Écrivez votre message…",
+    "send": "Envoyer",
+    "sendImage": "Envoyer une image",
+    "sending": "Envoi…"
+  },
+  "responseTime": {
+    "label": "Réponse moyenne aujourd'hui",
+    "minutes": "{{count}} min",
+    "seconds": "{{count}} sec",
+    "veryFast": "Quasi-immédiat"
+  },
+  "errors": {
+    "imageTooLarge": "Image trop volumineuse (max 5 Mo)",
+    "imageWrongFormat": "Format non supporté (JPG, PNG ou WebP uniquement)",
+    "messageEmpty": "Le message ne peut pas être vide",
+    "messageTooLong": "Message trop long (2000 caractères max)",
+    "sendFailed": "Échec d'envoi, réessayez",
+    "loadFailed": "Impossible de charger la conversation"
+  },
+  "day": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier"
+  },
+  "image": {
+    "loading": "Chargement…",
+    "error": "Image indisponible",
+    "tapToOpen": "Voir en plein écran"
+  },
+  "admin": {
+    "listTitle": "Conversations",
+    "listEmpty": "Aucune conversation en cours",
+    "filterAll": "Toutes",
+    "filterUnread": "Non lus",
+    "searchPlaceholder": "Rechercher un client…",
+    "unreadBadge": "{{count}} non lu",
+    "unreadBadgePlural": "{{count}} non lus",
+    "openChat": "Ouvrir le chat",
+    "noClientName": "Client sans nom",
+    "clientLink": "Voir la fiche client",
+    "lastActivity": "Dernière activité"
+  },
+  "bubble": {
+    "you": "Vous",
+    "bonziniTeam": "Équipe Bonzini",
+    "sending": "Envoi…"
+  }
+}

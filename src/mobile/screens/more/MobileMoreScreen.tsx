@@ -14,10 +14,12 @@ import {
   ChevronRight,
   Settings,
   Coins,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useAdminConversations } from '@/hooks/useAdminChat';
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -63,7 +65,12 @@ export function MobileMoreScreen() {
   const { t } = useTranslation('common');
   const { profile, logout, canManageUsers, hasPermission } = useAdminAuth();
   const canViewTreasury = hasPermission('canViewTreasury');
+  const canAccessSupportChat = hasPermission('canAccessSupportChat');
   const { data: notifCount } = useAdminNotificationCount();
+  const { data: convs } = useAdminConversations();
+  const supportUnreadTotal = canAccessSupportChat
+    ? (convs ?? []).reduce((sum, c) => sum + (c.unread_count_admin || 0), 0)
+    : 0;
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -133,6 +140,15 @@ export function MobileMoreScreen() {
             onClick={() => navigate('/m/more/notifications')}
             badge={notifCount && notifCount > 0 ? String(notifCount) : undefined}
           />
+          {canAccessSupportChat && (
+            <MenuItem
+              icon={MessageCircle}
+              label="Support chat"
+              description="Conversations avec les clients"
+              onClick={() => navigate('/m/support')}
+              badge={supportUnreadTotal > 0 ? String(supportUnreadTotal) : undefined}
+            />
+          )}
           {canManageUsers && (
             <MenuItem
               icon={UserCog}
