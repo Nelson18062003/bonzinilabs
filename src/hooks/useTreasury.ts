@@ -100,6 +100,60 @@ export function useCreateCounterparty() {
   });
 }
 
+interface UpdateCounterpartyArgs {
+  id: string;
+  display_name?: string;
+  legal_name?: string | null;
+  phone?: string | null;
+  wechat_id?: string | null;
+  notes?: string | null;
+  is_active?: boolean;
+}
+
+export function useUpdateCounterparty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: UpdateCounterpartyArgs) => {
+      const { data, error } = await supabaseAdmin.rpc('update_treasury_counterparty', {
+        p_id: args.id,
+        p_display_name: args.display_name ?? undefined,
+        p_legal_name: args.legal_name ?? undefined,
+        p_phone: args.phone ?? undefined,
+        p_wechat_id: args.wechat_id ?? undefined,
+        p_notes: args.notes ?? undefined,
+        p_is_active: args.is_active ?? undefined,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error ?? 'Erreur mise à jour');
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['treasury', 'counterparties'] });
+      toast.success('Contrepartie mise à jour');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteCounterparty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabaseAdmin.rpc('delete_treasury_counterparty', { p_id: id });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; operation_count?: number };
+      if (!result.success) throw new Error(result.error ?? 'Erreur suppression');
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['treasury', 'counterparties'] });
+      toast.success('Contrepartie supprimée');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ─── USDT pool: WAC & stock ─────────────────────────────────
 
 export function useUsdtWac() {
@@ -178,7 +232,8 @@ export function useRecordUsdtPurchase() {
 
 interface RecordSaleArgs {
   buyer_id: string;
-  cny_account_id: string;
+  /** Optional: when omitted, the sale is recorded without crediting any Bonzini CNY account. */
+  cny_account_id?: string | null;
   usdt_amount: number;
   cny_amount: number;
   occurred_at?: string;
@@ -202,7 +257,7 @@ export function useRecordUsdtSale() {
     mutationFn: async (args: RecordSaleArgs) => {
       const { data, error } = await supabaseAdmin.rpc('record_usdt_sale', {
         p_buyer_id: args.buyer_id,
-        p_cny_account_id: args.cny_account_id,
+        p_cny_account_id: args.cny_account_id ?? undefined,
         p_usdt_amount: args.usdt_amount,
         p_cny_amount: args.cny_amount,
         p_occurred_at: args.occurred_at,
@@ -345,6 +400,7 @@ export interface TreasuryDashboard {
   spread_client_xaf: number;
   benefit_total_xaf: number;
   capital_immobilized_current_xaf: number;
+  taux_de_revient_xaf_per_cny: number | null;
 }
 
 export function useTreasuryDashboard(fromIso: string, toIso: string) {

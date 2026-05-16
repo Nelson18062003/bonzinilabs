@@ -30,6 +30,8 @@ export type { NumberFieldProps } from './NumberField';
 export { AmountField, parseAmount } from './AmountField';
 export type { AmountFieldProps } from './AmountField';
 
+export { PhoneInputWithCountry } from './PhoneInputWithCountry';
+
 export { PhoneField } from './PhoneField';
 export type { PhoneFieldProps } from './PhoneField';
 
