@@ -76,6 +76,8 @@ const MobileTreasuryInventory = lazy(() => import("./mobile/screens/treasury").t
 const MobileTreasuryOperations = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileOperationsHistory })));
 const MobileTreasuryPurchaseDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchaseDetail })));
 const MobileTreasurySaleDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSaleDetail })));
+const MobileTreasuryPurchasesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchasesList })));
+const MobileTreasurySalesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSalesList })));
 
 // ── Lazy-loaded Agent Cash Screens ──────────────────────────
 import { AgentCashRouteWrapper } from "./mobile/components/agent-cash/AgentCashRouteWrapper";
@@ -177,7 +179,9 @@ const App = () => (
                 <Route path="/m/more/treasury/accounts" element={<MobileRouteWrapper><MobileTreasuryAccounts /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/inventory" element={<MobileRouteWrapper><MobileTreasuryInventory /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/operations" element={<MobileRouteWrapper><MobileTreasuryOperations /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases" element={<MobileRouteWrapper><MobileTreasuryPurchasesList /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/purchases/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryPurchaseDetail /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/sales" element={<MobileRouteWrapper><MobileTreasurySalesList /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/sales/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></MobileRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
