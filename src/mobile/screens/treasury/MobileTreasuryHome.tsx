@@ -7,6 +7,8 @@ import {
   ClipboardCheck,
   TrendingUp,
   AlertTriangle,
+  BarChart3,
+  History,
 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -176,6 +178,27 @@ export function MobileTreasuryHome() {
               </div>
             </div>
             <TrendingUp className="w-8 h-8 text-amber-500" />
+          </div>
+        </section>
+
+        {/* Analytics */}
+        <section>
+          <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Analyse</h2>
+          <div className="space-y-2.5">
+            <ActionTile
+              icon={BarChart3}
+              label="Dashboard analytique"
+              description="Volumes, taux moyens, bénéfice, top contreparties"
+              onClick={() => navigate('/m/more/treasury/dashboard')}
+              tone="violet"
+            />
+            <ActionTile
+              icon={History}
+              label="Historique opérations"
+              description="Toutes les opérations + voiding"
+              onClick={() => navigate('/m/more/treasury/operations')}
+              tone="neutral"
+            />
           </div>
         </section>
 

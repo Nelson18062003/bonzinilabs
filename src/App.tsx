@@ -67,11 +67,15 @@ const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m =>
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
+const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
 const MobileTreasuryNewSale = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewSale })));
 const MobileTreasuryCounterparties = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartiesScreen })));
 const MobileTreasuryAccounts = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileAccountsScreen })));
 const MobileTreasuryInventory = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileInventoryScreen })));
+const MobileTreasuryOperations = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileOperationsHistory })));
+const MobileTreasuryPurchaseDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchaseDetail })));
+const MobileTreasurySaleDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSaleDetail })));
 
 // ── Lazy-loaded Agent Cash Screens ──────────────────────────
 import { AgentCashRouteWrapper } from "./mobile/components/agent-cash/AgentCashRouteWrapper";
@@ -166,11 +170,15 @@ const App = () => (
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/more/treasury" element={<MobileRouteWrapper><MobileTreasuryHome /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/dashboard" element={<MobileRouteWrapper><MobileTreasuryDashboard /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/purchase" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewPurchase /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/sale" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewSale /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties" element={<MobileRouteWrapper><MobileTreasuryCounterparties /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/accounts" element={<MobileRouteWrapper><MobileTreasuryAccounts /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/inventory" element={<MobileRouteWrapper><MobileTreasuryInventory /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/operations" element={<MobileRouteWrapper><MobileTreasuryOperations /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryPurchaseDetail /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/sales/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></MobileRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
