@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronRight,
   Settings,
+  Coins,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -60,7 +61,8 @@ function MenuItem({ icon: Icon, label, description, onClick, destructive, badge 
 
 export function MobileMoreScreen() {
   const { t } = useTranslation('common');
-  const { profile, logout, canManageUsers } = useAdminAuth();
+  const { profile, logout, canManageUsers, hasPermission } = useAdminAuth();
+  const canViewTreasury = hasPermission('canViewTreasury');
   const { data: notifCount } = useAdminNotificationCount();
   const navigate = useNavigate();
 
@@ -104,6 +106,14 @@ export function MobileMoreScreen() {
             description={t('manageRates', { defaultValue: 'Gérer les taux XAF/RMB' })}
             onClick={() => navigate('/m/more/rates')}
           />
+          {canViewTreasury && (
+            <MenuItem
+              icon={Coins}
+              label="Trésorerie"
+              description="Achats/ventes USDT, soldes, inventaire"
+              onClick={() => navigate('/m/more/treasury')}
+            />
+          )}
           <MenuItem
             icon={FileText}
             label={t('proofs', { defaultValue: 'Justificatifs' })}

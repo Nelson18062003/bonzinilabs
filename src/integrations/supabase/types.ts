@@ -1482,6 +1482,29 @@ export type Database = {
         }
         Returns: Json
       }
+      create_treasury_counterparty: {
+        Args: {
+          p_display_name: string
+          p_legal_name?: string
+          p_notes?: string
+          p_phone?: string
+          p_type: Database["public"]["Enums"]["treasury_counterparty_type"]
+          p_wechat_id?: string
+        }
+        Returns: Json
+      }
+      update_treasury_counterparty: {
+        Args: {
+          p_display_name?: string
+          p_id: string
+          p_is_active?: boolean
+          p_legal_name?: string
+          p_notes?: string
+          p_phone?: string
+          p_wechat_id?: string
+        }
+        Returns: Json
+      }
       create_daily_rates: {
         Args: {
           p_effective_at?: string
