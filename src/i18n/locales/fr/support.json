@@ -46,6 +46,7 @@
     "cancel": "Annuler",
     "maxDurationReached": "Maximum 60 secondes",
     "lockedHint": "Enregistrement verrouillé · touchez pour envoyer",
+    "holdToRecord": "Maintenez le micro pour enregistrer",
     "permissionHelp": "Autorisez le micro dans les réglages",
     "errors": {
       "permissionDenied": "Autorisation micro refusée. Activez-la dans les réglages du navigateur.",
