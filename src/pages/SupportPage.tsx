@@ -1,28 +1,58 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ChatThread } from '@/components/support/ChatThread';
 import { MessageInput } from '@/components/support/MessageInput';
 import { ResponseTimeBadge } from '@/components/support/ResponseTimeBadge';
+import { TypingIndicator } from '@/components/support/TypingIndicator';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   useMyChatConversation,
   useChatMessages,
   useSendClientMessage,
   useSendClientImage,
+  useSendClientVoice,
+  useSendClientVideo,
+  useSendClientFile,
   useMarkConversationReadClient,
 } from '@/hooks/useClientChat';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import type { ChatMessage } from '@/types/chat';
 
 const SupportPage = () => {
   const { t } = useTranslation('support');
+  const { user } = useAuth();
   const { data: conversation, isLoading: isLoadingConv } = useMyChatConversation();
   const conversationId = conversation?.id ?? null;
   const { data: messages, isLoading: isLoadingMsgs } = useChatMessages(conversationId);
   const sendText = useSendClientMessage();
   const sendImage = useSendClientImage();
+  const sendVoice = useSendClientVoice();
+  const sendVideo = useSendClientVideo();
+  const sendFile = useSendClientFile();
   const markRead = useMarkConversationReadClient();
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
 
-  // Marquer comme lu à l'ouverture
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setClientId((data?.id as string) ?? null));
+  }, [user]);
+
+  const { otherIsTyping, notifyTyping, notifyStop } = useTypingIndicator({
+    client: supabase,
+    conversationId,
+    selfSenderType: 'client',
+    selfSenderId: clientId,
+  });
+
   useEffect(() => {
     if (conversationId && conversation && conversation.unread_count_client > 0) {
       markRead.mutate(conversationId);
@@ -30,7 +60,6 @@ const SupportPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
-  // Marquer comme lu à chaque nouveau message admin reçu
   useEffect(() => {
     if (!conversationId || !messages || messages.length === 0) return;
     const last = messages[messages.length - 1];
@@ -40,10 +69,11 @@ const SupportPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length, conversationId]);
 
+  const replyToId = replyTo?.id ?? null;
+
   return (
     <MobileLayout>
       <div className="flex h-[calc(100dvh-3.5rem-5rem)] flex-col lg:h-[calc(100dvh-3rem)]">
-        {/* Header — sticky */}
         <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
           <div>
             <h1 className="text-base font-semibold text-foreground">
@@ -54,7 +84,6 @@ const SupportPage = () => {
           <ResponseTimeBadge compact />
         </header>
 
-        {/* Zone messages — scrollable */}
         <div className="flex-1 overflow-y-auto">
           {isLoadingConv || isLoadingMsgs ? (
             <div className="flex h-full items-center justify-center">
@@ -65,18 +94,41 @@ const SupportPage = () => {
               messages={messages ?? []}
               selfSenderType="client"
               variant="client-app"
+              onReply={setReplyTo}
             />
           )}
         </div>
 
-        {/* Input — sticky bottom */}
+        {otherIsTyping && <TypingIndicator who="admin" />}
+
         {conversationId && (
           <MessageInput
+            replyTo={replyTo}
+            onCancelReply={() => setReplyTo(null)}
             onSendText={async (text) => {
-              await sendText.mutateAsync({ conversationId, content: text });
+              notifyStop();
+              await sendText.mutateAsync({ conversationId, content: text, replyToMessageId: replyToId });
+              setReplyTo(null);
             }}
             onSendImage={async (file) => {
-              await sendImage.mutateAsync({ conversationId, file });
+              await sendImage.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
+              setReplyTo(null);
+            }}
+            onSendVoice={async (payload) => {
+              await sendVoice.mutateAsync({ conversationId, ...payload, replyToMessageId: replyToId });
+              setReplyTo(null);
+            }}
+            onSendVideo={async (file) => {
+              await sendVideo.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
+              setReplyTo(null);
+            }}
+            onSendFile={async (file) => {
+              await sendFile.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
+              setReplyTo(null);
+            }}
+            onTextChange={(v) => {
+              if (v.length > 0) notifyTyping();
+              else notifyStop();
             }}
           />
         )}

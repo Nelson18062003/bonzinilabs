@@ -14,6 +14,9 @@
     "placeholder": "输入您的消息…",
     "send": "发送",
     "sendImage": "发送图片",
+    "sendVideo": "发送视频",
+    "sendFile": "发送文件",
+    "attachMenu": "附加媒体",
     "sending": "发送中…"
   },
   "responseTime": {
@@ -25,10 +28,56 @@
   "errors": {
     "imageTooLarge": "图片太大（最大 5 MB）",
     "imageWrongFormat": "不支持的格式（仅限 JPG、PNG 或 WebP）",
+    "videoTooLarge": "视频太大（最大 25 MB）",
+    "videoWrongFormat": "不支持的视频格式（仅限 MP4）",
+    "videoTooLong": "视频太长（最多 30 秒）",
+    "fileTooLarge": "文件太大（最大 10 MB）",
+    "fileWrongFormat": "不支持的格式（仅限 PDF、DOC、DOCX、XLS、XLSX）",
     "messageEmpty": "消息不能为空",
     "messageTooLong": "消息太长（最多 2000 个字符）",
     "sendFailed": "发送失败，请重试",
     "loadFailed": "无法加载对话"
+  },
+  "voice": {
+    "startRecording": "按住录音",
+    "slideToCancel": "← 滑动取消",
+    "releaseToCancel": "松开取消",
+    "cancel": "取消",
+    "maxDurationReached": "最长 60 秒",
+    "permissionHelp": "请在设置中允许使用麦克风",
+    "errors": {
+      "permissionDenied": "麦克风访问被拒绝。请在浏览器设置中启用。",
+      "noMicrophone": "此设备未检测到麦克风",
+      "microphoneBusy": "麦克风正被其他应用使用",
+      "unknownStart": "无法开始录音"
+    }
+  },
+  "video": {
+    "error": "视频不可用"
+  },
+  "file": {
+    "download": "下载"
+  },
+  "typing": {
+    "adminWriting": "Bonzini 团队正在输入…",
+    "clientWriting": "客户正在输入…"
+  },
+  "receipt": {
+    "sent": "已发送",
+    "seen": "已读",
+    "seenAt": "{{time}} 已读"
+  },
+  "contextMenu": {
+    "reply": "回复",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "无法复制"
+  },
+  "quoted": {
+    "image": "照片",
+    "voice": "语音消息",
+    "video": "视频",
+    "file": "文件"
   },
   "day": {
     "today": "今天",

@@ -110,13 +110,17 @@ serve(async (req) => {
       : "Client";
     const clientPhone = client?.phone ? ` (${client.phone})` : "";
 
+    const mediaEmoji: Record<string, string> = {
+      image: "🖼️ Photo",
+      voice: "🎤 Message vocal",
+      video: "🎥 Vidéo",
+      file: "📎 Fichier",
+    };
     const preview = msg.content
       ? msg.content.length > 120
         ? msg.content.slice(0, 117) + "..."
         : msg.content
-      : msg.media_type === "image"
-      ? "🖼️ Photo"
-      : "📎 Pièce jointe";
+      : (msg.media_type && mediaEmoji[msg.media_type]) || "📎 Pièce jointe";
 
     const text = [
       "💬 *Nouveau message support*",

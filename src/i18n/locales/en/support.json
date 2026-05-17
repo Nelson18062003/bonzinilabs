@@ -14,6 +14,9 @@
     "placeholder": "Write your message…",
     "send": "Send",
     "sendImage": "Send an image",
+    "sendVideo": "Send a video",
+    "sendFile": "Send a file",
+    "attachMenu": "Attach media",
     "sending": "Sending…"
   },
   "responseTime": {
@@ -25,10 +28,56 @@
   "errors": {
     "imageTooLarge": "Image too large (max 5 MB)",
     "imageWrongFormat": "Format not supported (JPG, PNG or WebP only)",
+    "videoTooLarge": "Video too large (max 25 MB)",
+    "videoWrongFormat": "Video format not supported (MP4 only)",
+    "videoTooLong": "Video too long (max 30 seconds)",
+    "fileTooLarge": "File too large (max 10 MB)",
+    "fileWrongFormat": "Format not supported (PDF, DOC, DOCX, XLS, XLSX only)",
     "messageEmpty": "Message cannot be empty",
     "messageTooLong": "Message too long (max 2000 characters)",
     "sendFailed": "Send failed, try again",
     "loadFailed": "Unable to load conversation"
+  },
+  "voice": {
+    "startRecording": "Hold to record",
+    "slideToCancel": "← Slide to cancel",
+    "releaseToCancel": "Release to cancel",
+    "cancel": "Cancel",
+    "maxDurationReached": "Maximum 60 seconds",
+    "permissionHelp": "Allow microphone access in settings",
+    "errors": {
+      "permissionDenied": "Microphone access denied. Enable it in browser settings.",
+      "noMicrophone": "No microphone detected on this device",
+      "microphoneBusy": "Microphone is being used by another app",
+      "unknownStart": "Unable to start recording"
+    }
+  },
+  "video": {
+    "error": "Video unavailable"
+  },
+  "file": {
+    "download": "Download"
+  },
+  "typing": {
+    "adminWriting": "Bonzini team is typing…",
+    "clientWriting": "Client is typing…"
+  },
+  "receipt": {
+    "sent": "Sent",
+    "seen": "Seen",
+    "seenAt": "Seen at {{time}}"
+  },
+  "contextMenu": {
+    "reply": "Reply",
+    "copy": "Copy",
+    "copied": "Text copied",
+    "copyFailed": "Unable to copy"
+  },
+  "quoted": {
+    "image": "Photo",
+    "voice": "Voice message",
+    "video": "Video",
+    "file": "File"
   },
   "day": {
     "today": "Today",
