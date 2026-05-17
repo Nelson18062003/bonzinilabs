@@ -27,7 +27,7 @@ import {
   useSupportAdmins,
 } from '@/hooks/useAdminChatTools';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
-import { useKeyboardInset } from '@/hooks/keyboard/useKeyboardInset';
+import { useViewportContainerHeight } from '@/hooks/keyboard/useViewportContainerHeight';
 import { notifyAssignment } from '@/lib/notify-assignment';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -40,7 +40,7 @@ export function MobileSupportConversationScreen() {
   const navigate = useNavigate();
   const { hasPermission, currentUser } = useAdminAuth();
   const canAccess = hasPermission('canAccessSupportChat');
-  const kbInset = useKeyboardInset();
+  const containerHeight = useViewportContainerHeight();
 
   const { data: conversation, isLoading: isLoadingConv } =
     useAdminConversation(conversationId);
@@ -172,8 +172,8 @@ export function MobileSupportConversationScreen() {
 
   return (
     <div
-      className="flex flex-col bg-background transition-[height] duration-200"
-      style={{ height: `calc(100dvh - ${kbInset}px)` }}
+      className="flex flex-col bg-background"
+      style={{ height: containerHeight }}
     >
       {/* Header custom */}
       <header
