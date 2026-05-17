@@ -149,60 +149,66 @@ export function MessageBubble({
     </div>
   );
 
+  // Structure : chaque ligne (label, bulle, réactions, meta) est un flex-row
+  // pleine largeur avec justify-end/start, et l'enfant interne a w-fit pour
+  // se rétracter à sa taille de contenu. C'est la garantie cross-browser
+  // que la bulle ne s'étire pas et que le texte ne wrappe pas inutilement.
+  const rowAlign = isSelf ? 'justify-end' : 'justify-start';
+
   return (
     <motion.div
       data-message-id={message.id}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
-      className={cn(
-        'flex w-full flex-col gap-0.5 scroll-mt-12',
-        isSelf ? 'items-end' : 'items-start'
-      )}
+      className="flex w-full flex-col gap-0.5 scroll-mt-12"
     >
       {showLabel && !isSelf && (
-        <span className="px-3 pb-0.5 text-[11px] font-medium text-muted-foreground">
-          {label}
-        </span>
+        <div className={cn('flex w-full', rowAlign)}>
+          <span className="px-3 pb-0.5 text-[11px] font-medium text-muted-foreground">
+            {label}
+          </span>
+        </div>
       )}
 
-      {onReply || supabaseClient ? (
-        <MessageContextMenu
-          message={message}
-          side={isSelf ? 'right' : 'left'}
-          onReply={onReply ? () => onReply(message) : undefined}
-          supabaseClient={supabaseClient}
-          selfReactorId={selfReactorId ?? null}
-          selfReactorType={selfReactorType}
-          conversationId={conversationId ?? null}
-          existingReactions={reactions}
-        >
-          {bubble}
-        </MessageContextMenu>
-      ) : (
-        bubble
-      )}
+      <div className={cn('flex w-full', rowAlign)}>
+        {onReply || supabaseClient ? (
+          <MessageContextMenu
+            message={message}
+            side={isSelf ? 'right' : 'left'}
+            onReply={onReply ? () => onReply(message) : undefined}
+            supabaseClient={supabaseClient}
+            selfReactorId={selfReactorId ?? null}
+            selfReactorType={selfReactorType}
+            conversationId={conversationId ?? null}
+            existingReactions={reactions}
+          >
+            {bubble}
+          </MessageContextMenu>
+        ) : (
+          bubble
+        )}
+      </div>
 
       {reactions.length > 0 && (
-        <ReactionPills
-          reactions={reactions}
-          selfReactorId={selfReactorId ?? null}
-          align={isSelf ? 'right' : 'left'}
-          supabaseClient={supabaseClient}
-          messageId={message.id}
-          conversationId={conversationId ?? null}
-          selfReactorType={selfReactorType}
-        />
+        <div className={cn('flex w-full', rowAlign)}>
+          <ReactionPills
+            reactions={reactions}
+            selfReactorId={selfReactorId ?? null}
+            align={isSelf ? 'right' : 'left'}
+            supabaseClient={supabaseClient}
+            messageId={message.id}
+            conversationId={conversationId ?? null}
+            selfReactorType={selfReactorType}
+          />
+        </div>
       )}
 
       {isLastInGroup && (
-        <div
-          className={cn(
-            'flex items-center gap-1.5 px-2 mt-0.5',
-            isSelf ? 'justify-end' : 'justify-start'
-          )}
-        >
-          <span className="text-[10px] text-muted-foreground tabular-nums">{time}</span>
+        <div className={cn('flex w-full items-center gap-1.5 mt-0.5', rowAlign)}>
+          <span className="text-[10px] text-muted-foreground tabular-nums px-2">
+            {time}
+          </span>
           {isSelf && <ReadReceiptIndicator readAt={message.read_at} />}
         </div>
       )}

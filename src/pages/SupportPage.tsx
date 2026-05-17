@@ -9,6 +9,7 @@ import { TypingIndicator } from '@/components/support/TypingIndicator';
 import { ClosedBanner } from '@/components/support/ClosedBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useKeyboardInset } from '@/hooks/keyboard/useKeyboardInset';
 import {
   useMyChatConversation,
   useChatMessages,
@@ -27,6 +28,7 @@ const SupportPage = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const kbInset = useKeyboardInset();
   const { data: conversation, isLoading: isLoadingConv } = useMyChatConversation(conversationId);
   const { data: messages, isLoading: isLoadingMsgs } = useChatMessages(conversationId);
   const sendText = useSendClientMessage();
@@ -75,7 +77,10 @@ const SupportPage = () => {
   const headerTitle = conversation?.subject || t('list.defaultSubject');
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-background">
+    <div
+      className="flex flex-col bg-background transition-[height] duration-200"
+      style={{ height: `calc(100dvh - ${kbInset}px)` }}
+    >
       <header className="flex items-center gap-2 border-b border-border bg-background px-2 py-2.5"
               style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}>
         <button

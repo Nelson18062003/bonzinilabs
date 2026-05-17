@@ -103,10 +103,18 @@ export function VoiceMessage({
   );
 
   // Couleurs solides quel que soit le côté — la bulle parent est claire dans
-  // les 2 cas (tint léger pour self, blanc pour other), donc on utilise des
-  // couleurs SATURÉES visibles sur fond clair.
+  // les 2 cas (tint léger pour self, blanc pour other).
+  // Largeurs strictes : la bulle entière mesure max 200px (pour rester DANS la
+  // limite max-w-[80%] même sur petits écrans Android 320px), avec waveform qui
+  // shrink-fit ce qui reste après play button + timer.
   return (
-    <div className={cn('flex items-center gap-2.5 py-0.5 text-foreground', className)}>
+    <div
+      className={cn(
+        'flex w-fit items-center gap-2 py-0.5 text-foreground',
+        className
+      )}
+      style={{ width: '200px', maxWidth: '100%' }}
+    >
       <button
         type="button"
         onClick={togglePlay}
@@ -128,9 +136,8 @@ export function VoiceMessage({
       </button>
 
       <div
-        className="flex flex-1 cursor-pointer items-center gap-[2px]"
+        className="flex min-w-0 flex-1 cursor-pointer items-center gap-[2px]"
         onClick={onWaveformClick}
-        style={{ minWidth: 120 }}
       >
         {displayPeaks.map((p, i) => {
           const passed = i / displayPeaks.length <= progress;
@@ -138,18 +145,19 @@ export function VoiceMessage({
             <span
               key={i}
               className={cn(
-                'block w-[3px] rounded-full transition-colors',
+                'block w-[2px] rounded-full transition-colors',
                 passed ? 'bg-bonzini-violet' : 'bg-foreground/25'
               )}
               style={{
-                height: `${Math.max(3, p * 22)}px`,
+                height: `${Math.max(3, p * 20)}px`,
+                flex: '1 1 auto',
               }}
             />
           );
         })}
       </div>
 
-      <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+      <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground tracking-tight">
         {formatDuration(playing ? currentTime : total)}
       </span>
     </div>
