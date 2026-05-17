@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useKeyboardHeight } from '@/hooks/keyboard/useKeyboardHeight';
 import { VoiceRecorder, VoiceRecorderInline, type VoiceBlobPayload } from './VoiceRecorder';
 import { QuotedMessage } from './QuotedMessage';
 import { CannedResponsesPicker } from './CannedResponsesPicker';
@@ -62,7 +61,6 @@ export function MessageInput({
   className,
 }: MessageInputProps) {
   const { t } = useTranslation('support');
-  const kbHeight = useKeyboardHeight();
   const [text, setText] = useState(initialText ?? '');
   const [sendingText, setSendingText] = useState(false);
   const [sendingMedia, setSendingMedia] = useState(false);
@@ -170,8 +168,9 @@ export function MessageInput({
     <div
       className={cn('flex flex-col bg-background', className)}
       style={{
-        paddingBottom: `calc(${kbHeight}px + env(safe-area-inset-bottom))`,
-        transition: 'padding-bottom 220ms cubic-bezier(0.2, 0, 0, 1)',
+        // safe-area pour la home bar iPhone ; le clavier est géré par
+        // le PARENT qui ajuste son height via useKeyboardInset.
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       {/* Reply preview */}
