@@ -17,6 +17,7 @@ interface MessageContextMenuProps {
   selfReactorType?: 'client' | 'admin';
   conversationId?: string | null;
   existingReactions?: ChatMessageReaction[];
+  className?: string;
   children: ReactNode;
 }
 
@@ -31,6 +32,7 @@ export function MessageContextMenu({
   selfReactorType,
   conversationId,
   existingReactions = [],
+  className,
   children,
 }: MessageContextMenuProps) {
   const { t } = useTranslation('support');
@@ -128,7 +130,7 @@ export function MessageContextMenu({
   return (
     <div
       ref={wrapperRef}
-      className="relative"
+      className={cn('relative', className)}
       onTouchStart={startPress}
       onTouchEnd={cancelPress}
       onTouchCancel={cancelPress}

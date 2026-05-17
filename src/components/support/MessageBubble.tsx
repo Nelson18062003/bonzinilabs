@@ -85,13 +85,17 @@ export function MessageBubble({
     ? 'bg-[hsl(258_60%_92%)] text-[hsl(258_60%_22%)] dark:bg-[hsl(258_45%_28%)] dark:text-[hsl(258_100%_94%)]'
     : 'bg-background text-foreground';
 
+  // Note importante : w-fit + max-w-[80%] doivent être sur le WRAPPER parent
+  // (MessageContextMenu ou un div équivalent), PAS sur la bulle elle-même.
+  // Si on les met sur la bulle, le max-w-[80%] est calculé par rapport à son
+  // propre container (le wrapper sans largeur explicite) qui prend la taille
+  // de la bulle = dépendance circulaire qui résout à "wrap à 80% du contenu"
+  // = wrap caractère par caractère. La bulle ici reste sans contrainte de
+  // width, c'est le parent qui contraint.
   const bubble = (
     <div
       className={cn(
-        // w-fit pour que la bulle se réduise à la taille du contenu et ne pas
-        // forcer "Salut, tu vas bien ?" sur plusieurs lignes. max-w-[80%]
-        // garde la limite habituelle pour les longs messages.
-        'w-fit max-w-[80%] text-[15px] leading-[1.42] tracking-[-0.005em]',
+        'text-[15px] leading-[1.42] tracking-[-0.005em]',
         'shadow-[0_0_0_1px_hsl(var(--border))]',
         bubblePadding,
         tailRadius,
@@ -182,11 +186,16 @@ export function MessageBubble({
             selfReactorType={selfReactorType}
             conversationId={conversationId ?? null}
             existingReactions={reactions}
+            // w-fit : le wrapper se rétracte à la largeur de la bulle
+            // (content size). max-w-[80%] : cap à 80% du flex parent (la
+            // ligne pleine largeur), évitant la dépendance circulaire qui
+            // causait le wrap "Oui" → "O\nui".
+            className="w-fit max-w-[80%]"
           >
             {bubble}
           </MessageContextMenu>
         ) : (
-          bubble
+          <div className="w-fit max-w-[80%]">{bubble}</div>
         )}
       </div>
 
