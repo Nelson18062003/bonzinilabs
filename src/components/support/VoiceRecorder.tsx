@@ -84,8 +84,14 @@ export function VoiceRecorder({
   const collectedPeaksRef = useRef<number[]>([]);
   const animRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const cancelledRef = useRef(false);
+  // Race-condition guard : si l'utilisateur relâche son doigt PENDANT la
+  // demande de permission ("requesting"), on note l'action à faire (envoi
+  // ou annulation) pour l'appliquer dès que l'enregistrement démarre.
+  const pendingReleaseRef = useRef<'send' | 'cancel' | null>(null);
+  // Évite que onClick après touchend déclenche un double event sur mobile.
+  const recentTouchRef = useRef<number>(0);
 
   // Sync parent
   useEffect(() => {
@@ -120,6 +126,7 @@ export function VoiceRecorder({
     setCancelArmed(false);
     touchStartRef.current = null;
     cancelledRef.current = false;
+    pendingReleaseRef.current = null;
   }, []);
 
   useEffect(() => () => cleanup(), [cleanup]);
@@ -222,6 +229,23 @@ export function VoiceRecorder({
       }, 200);
 
       setState({ kind: 'recording', startedAt, locked: false });
+
+      // Race-condition : si l'utilisateur a relâché PENDANT la demande de
+      // permission micro, on applique l'action différée maintenant.
+      if (pendingReleaseRef.current) {
+        const action = pendingReleaseRef.current;
+        pendingReleaseRef.current = null;
+        // Petit délai pour laisser MediaRecorder collecter au moins une
+        // chunk (sinon le blob est vide).
+        setTimeout(() => {
+          if (action === 'cancel') {
+            cancelledRef.current = true;
+          }
+          if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+            try { recorderRef.current.stop(); } catch { /* */ }
+          }
+        }, 400);
+      }
     } catch (err) {
       const error = err as DOMException & { name?: string };
       console.error('Voice start error', error);
@@ -255,7 +279,12 @@ export function VoiceRecorder({
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (disabled) return;
     if (state.kind !== 'idle' && state.kind !== 'denied') return;
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      t: Date.now(),
+    };
+    pendingReleaseRef.current = null;
     void startRecording();
   }, [disabled, state.kind, startRecording]);
 
@@ -278,26 +307,55 @@ export function VoiceRecorder({
   }, [state, cancelArmed]);
 
   const onTouchEnd = useCallback(() => {
+    recentTouchRef.current = Date.now();
+
+    // Cas : permission encore en cours quand l'utilisateur relâche
+    if (state.kind === 'requesting') {
+      const duration = Date.now() - (touchStartRef.current?.t ?? Date.now());
+      if (duration < 300) {
+        // Tap trop court → annule dès que l'enregistrement démarre
+        pendingReleaseRef.current = 'cancel';
+        toast.info(t('voice.holdToRecord'));
+      } else {
+        // Attente longue, prêt à envoyer
+        pendingReleaseRef.current = cancelArmed ? 'cancel' : 'send';
+      }
+      touchStartRef.current = null;
+      return;
+    }
+
     if (state.kind !== 'recording') {
       touchStartRef.current = null;
       return;
     }
     if (state.locked) {
-      // En mode verrouillé, on n'arrête pas en relâchant — l'utilisateur
-      // doit cliquer sur le bouton stop/envoyer.
       touchStartRef.current = null;
       return;
     }
+
+    // Vérification durée minimum (anti tap accidentel)
+    const duration = Date.now() - state.startedAt;
+    if (duration < 300) {
+      toast.info(t('voice.holdToRecord'));
+      touchStartRef.current = null;
+      setCancelArmed(false);
+      stopRecording(true);
+      return;
+    }
+
     const shouldCancel = cancelArmed;
     touchStartRef.current = null;
     setCancelArmed(false);
     stopRecording(shouldCancel);
-  }, [state, cancelArmed, stopRecording]);
+  }, [state, cancelArmed, stopRecording, t]);
 
-  // Click desktop : toggle
+  // Click desktop : toggle. Ignore click si déclenché juste après touchend
+  // (touch device émet click + touch events).
   const onClick = useCallback(() => {
     if (disabled) return;
+    if (Date.now() - recentTouchRef.current < 600) return;
     if (state.kind === 'idle' || state.kind === 'denied') {
+      // Sur desktop : start. L'utilisateur cliquera à nouveau pour envoyer.
       void startRecording();
     } else if (state.kind === 'recording') {
       stopRecording(false);
@@ -403,17 +461,18 @@ export function VoiceRecorderInline({ state }: { state: InlineRecorderState }) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        'flex flex-1 items-center gap-2 rounded-full px-3 py-2 min-h-[38px]',
+        'flex flex-1 items-center gap-2 rounded-full px-3 py-2 min-h-[40px]',
+        // Couleurs SATURÉES pour être bien visibles (vs translucides flou)
         state.isCancelArmed
-          ? 'bg-destructive/10'
-          : 'bg-muted'
+          ? 'bg-red-100 dark:bg-red-950'
+          : 'bg-red-50 dark:bg-red-950/60'
       )}
     >
       {state.isLocked ? (
         <button
           type="button"
           onClick={state.onCancel}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-200 text-red-700 active:scale-95 dark:bg-red-900 dark:text-red-200"
           aria-label={t('voice.cancel')}
         >
           <Trash2 className="h-4 w-4" />
@@ -422,45 +481,49 @@ export function VoiceRecorderInline({ state }: { state: InlineRecorderState }) {
         <motion.span
           animate={{ opacity: [1, 0.3, 1] }}
           transition={{ duration: 1, repeat: Infinity }}
-          className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive"
+          className="h-3 w-3 shrink-0 rounded-full bg-red-600 dark:bg-red-500"
         />
       )}
-      <span className="shrink-0 min-w-[38px] text-sm font-medium tabular-nums text-foreground">
+      <span
+        className={cn(
+          'shrink-0 min-w-[40px] text-[15px] font-semibold tabular-nums',
+          state.isCancelArmed
+            ? 'text-red-700 dark:text-red-300'
+            : 'text-red-800 dark:text-red-200'
+        )}
+      >
         {formatDuration(state.elapsedSeconds)}
       </span>
       <span
         className={cn(
-          'flex flex-1 items-center gap-1 truncate text-sm',
-          state.isCancelArmed ? 'text-destructive font-semibold' : 'text-muted-foreground'
+          'flex flex-1 items-center gap-1 truncate text-[13px] font-medium',
+          state.isCancelArmed
+            ? 'text-red-700 dark:text-red-300'
+            : 'text-red-700/80 dark:text-red-300/80'
         )}
       >
         {state.isLocked ? (
           <>
-            <Lock className="h-3 w-3" />
+            <Lock className="h-3.5 w-3.5" />
             <span className="truncate">{t('voice.lockedHint')}</span>
           </>
         ) : state.isCancelArmed ? (
           <span className="truncate">{t('voice.releaseToCancel')}</span>
         ) : (
           <>
-            <ChevronLeft className="h-3 w-3" />
+            <ChevronLeft className="h-3.5 w-3.5" />
             <span className="truncate">{t('voice.slideToCancel')}</span>
           </>
         )}
       </span>
-      {!state.isLocked && (
-        <div className="hidden flex-col items-center gap-0.5 text-[10px] text-muted-foreground sm:flex">
-          <Lock className="h-3 w-3" />
-        </div>
-      )}
       {state.isLocked && (
         <button
           type="button"
           onClick={state.onLockedSend}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-white shadow-[0_2px_6px_hsl(258_95%_60%/_0.3)] active:scale-95"
           aria-label={t('input.send')}
         >
-          <Send className="h-3.5 w-3.5" />
+          <Send className="h-4 w-4" />
         </button>
       )}
     </motion.div>

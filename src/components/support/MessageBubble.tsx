@@ -69,24 +69,29 @@ export function MessageBubble({
     : isMediaOnly && isImageOrVideo
     ? 'p-[3px]'
     : isMediaOnly && (isVoice || isFile)
-    ? 'p-0'
-    : 'px-2.5 py-1.5';
+    ? 'px-2 py-1.5'
+    : 'px-3 py-1.5';
 
   // Queue uniquement sur la dernière bulle d'une séquence
   const tailRadius = isSelf
     ? isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl'
     : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl';
 
-  // Couleurs : tint très léger pour self (à la WhatsApp avec son mint),
-  // blanc pur pour other. Pas de gradient.
+  // Bulle envoyée : tint violet doux mais bien VISIBLE (vs quasi-blanc avant
+  // qui passait pour de la transparence floue). On garde un tint léger pour
+  // ne pas saturer mais avec assez de contraste pour être identifiable.
+  // Bulle reçue : blanc pur avec hairline 1px.
   const bubbleColors = isSelf
-    ? 'bg-[hsl(258_100%_97%)] text-[hsl(258_50%_28%)] dark:bg-[hsl(258_45%_22%)] dark:text-[hsl(258_100%_92%)]'
+    ? 'bg-[hsl(258_60%_92%)] text-[hsl(258_60%_22%)] dark:bg-[hsl(258_45%_28%)] dark:text-[hsl(258_100%_94%)]'
     : 'bg-background text-foreground';
 
   const bubble = (
     <div
       className={cn(
-        'max-w-[80%] text-[15px] leading-[1.42] tracking-[-0.005em]',
+        // w-fit pour que la bulle se réduise à la taille du contenu et ne pas
+        // forcer "Salut, tu vas bien ?" sur plusieurs lignes. max-w-[80%]
+        // garde la limite habituelle pour les longs messages.
+        'w-fit max-w-[80%] text-[15px] leading-[1.42] tracking-[-0.005em]',
         'shadow-[0_0_0_1px_hsl(var(--border))]',
         bubblePadding,
         tailRadius,
@@ -137,7 +142,7 @@ export function MessageBubble({
         />
       )}
       {message.content && (
-        <p className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+        <p className="m-0 whitespace-pre-wrap break-words">
           {message.content}
         </p>
       )}

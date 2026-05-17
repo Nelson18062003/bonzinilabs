@@ -31,10 +31,7 @@ export function VoiceMessage({
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Stabilise les peaks (32 valeurs par défaut)
   const displayPeaks = peaks && peaks.length > 0 ? peaks : defaultPeaks();
-
-  // Total duration : priorité au meta, sinon valeur lue du <audio>
   const total = durationSeconds && durationSeconds > 0 ? durationSeconds : 0;
   const progress = total > 0 ? Math.min(1, currentTime / total) : 0;
 
@@ -69,7 +66,6 @@ export function VoiceMessage({
     }
 
     if (audio.paused) {
-      // Pause l'autre audio en cours (si différent)
       if (currentAudio && currentAudio !== audio) {
         currentAudio.pause();
       }
@@ -84,7 +80,6 @@ export function VoiceMessage({
     }
   }, [fetchUrl]);
 
-  // Cleanup au démontage
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -95,7 +90,6 @@ export function VoiceMessage({
     };
   }, []);
 
-  // Seek sur clic dans la waveform
   const onWaveformClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const audio = audioRef.current;
@@ -108,26 +102,19 @@ export function VoiceMessage({
     [total]
   );
 
-  const isSelf = perspective === 'self';
-  const accentColor = isSelf ? 'bg-white' : 'bg-bonzini-violet';
-  const dimColor = isSelf ? 'bg-white/30' : 'bg-bonzini-violet/30';
-  const textColor = isSelf ? 'text-white' : 'text-foreground';
-
+  // Couleurs solides quel que soit le côté — la bulle parent est claire dans
+  // les 2 cas (tint léger pour self, blanc pour other), donc on utilise des
+  // couleurs SATURÉES visibles sur fond clair.
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 px-1 py-1',
-        textColor,
-        className
-      )}
-    >
+    <div className={cn('flex items-center gap-2.5 py-0.5 text-foreground', className)}>
       <button
         type="button"
         onClick={togglePlay}
         disabled={loading}
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-          isSelf ? 'bg-white/20 hover:bg-white/30' : 'bg-bonzini-violet/15 hover:bg-bonzini-violet/25'
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
+          'bg-bonzini-violet text-white transition active:scale-95',
+          'shadow-[0_2px_6px_hsl(258_95%_60%/_0.3)]'
         )}
         aria-label={playing ? 'Pause' : 'Play'}
       >
@@ -152,17 +139,17 @@ export function VoiceMessage({
               key={i}
               className={cn(
                 'block w-[3px] rounded-full transition-colors',
-                passed ? accentColor : dimColor
+                passed ? 'bg-bonzini-violet' : 'bg-foreground/25'
               )}
               style={{
-                height: `${Math.max(3, p * 24)}px`,
+                height: `${Math.max(3, p * 22)}px`,
               }}
             />
           );
         })}
       </div>
 
-      <span className="shrink-0 font-mono text-xs tabular-nums opacity-80">
+      <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
         {formatDuration(playing ? currentTime : total)}
       </span>
     </div>
@@ -170,7 +157,6 @@ export function VoiceMessage({
 }
 
 function defaultPeaks(): number[] {
-  // Fallback rare : peaks pas stockés en BDD (anciens messages, par ex.)
   return [
     0.2, 0.4, 0.6, 0.3, 0.5, 0.7, 0.4, 0.6, 0.8, 0.5, 0.3, 0.6, 0.4, 0.7, 0.5,
     0.3, 0.8, 0.6, 0.4, 0.5, 0.7, 0.4, 0.3, 0.6, 0.5, 0.4, 0.7, 0.5, 0.3, 0.4,
