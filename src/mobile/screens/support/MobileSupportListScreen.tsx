@@ -7,6 +7,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
 import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { SearchField } from '@/components/form';
+import { HighlightedSnippet } from '@/components/support/HighlightedSnippet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminConversations } from '@/hooks/useAdminChat';
 import { useSearchConversations, useSupportAdmins } from '@/hooks/useAdminChatTools';
@@ -30,7 +31,7 @@ export function MobileSupportListScreen() {
   const [assignFilter, setAssignFilter] = useState<AssignFilter>('all');
 
   const { data: conversations, isLoading } = useAdminConversations(statusFilter);
-  const { data: searchResults, isLoading: isSearching } = useSearchConversations(
+  const { data: searchResults, isLoading: isSearchLoading } = useSearchConversations(
     debouncedSearch.length >= 2 ? debouncedSearch : ''
   );
   const { data: admins } = useSupportAdmins();
@@ -45,6 +46,12 @@ export function MobileSupportListScreen() {
   }, []);
 
   const myUserRoleId = admins?.find((a) => a.user_id === currentUser?.id)?.id ?? null;
+
+  const searchSnippetByConv = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of searchResults ?? []) map.set(r.conversation_id, r.snippet);
+    return map;
+  }, [searchResults]);
 
   const filtered = useMemo(() => {
     let list = conversations ?? [];
@@ -63,6 +70,8 @@ export function MobileSupportListScreen() {
 
     return list;
   }, [conversations, assignFilter, myUserRoleId, debouncedSearch, searchResults]);
+
+  const isSearching = debouncedSearch.trim().length >= 2;
 
   if (!canAccess) {
     return (
@@ -117,7 +126,7 @@ export function MobileSupportListScreen() {
         />
       </div>
 
-      {isLoading || (debouncedSearch.length >= 2 && isSearching) ? (
+      {isLoading || (debouncedSearch.length >= 2 && isSearchLoading) ? (
         <div className="flex flex-1 items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -176,9 +185,21 @@ export function MobileSupportListScreen() {
                         {subject}
                       </p>
                     )}
-                    <p className={cn('truncate text-xs mt-0.5', unread > 0 ? 'text-foreground' : 'text-muted-foreground')}>
-                      {c.last_message_preview || '—'}
-                    </p>
+                    {isSearching && searchSnippetByConv.has(c.id) ? (
+                      <HighlightedSnippet
+                        text={searchSnippetByConv.get(c.id) ?? ''}
+                        query={debouncedSearch}
+                        maxLength={100}
+                        className={cn(
+                          'truncate text-xs mt-0.5',
+                          unread > 0 ? 'text-foreground' : 'text-muted-foreground'
+                        )}
+                      />
+                    ) : (
+                      <p className={cn('truncate text-xs mt-0.5', unread > 0 ? 'text-foreground' : 'text-muted-foreground')}>
+                        {c.last_message_preview || '—'}
+                      </p>
+                    )}
                     {assignedName && (
                       <p className="mt-0.5 text-[10px] text-bonzini-amber">
                         {t('admin.assignedToLabel')} {assignedName}

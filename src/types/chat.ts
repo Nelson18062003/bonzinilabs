@@ -95,6 +95,7 @@ export interface ChatAdminStats {
   client_messages: number;
   admin_messages: number;
   avg_response_seconds_global: number;
+  median_response_seconds_global: number;
   per_admin: Array<{
     admin_user_id: string;
     first_name: string | null;
@@ -102,6 +103,17 @@ export interface ChatAdminStats {
     replies_count: number;
     avg_response_seconds: number;
   }>;
+  daily_volume: Array<{
+    day: string; // YYYY-MM-DD
+    client_count: number;
+    admin_count: number;
+  }>;
+  response_buckets: {
+    under_1min: number;
+    one_to_five: number;
+    five_to_fifteen: number;
+    over_fifteen: number;
+  };
 }
 
 export interface ChatSearchResult {

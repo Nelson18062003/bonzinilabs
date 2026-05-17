@@ -16,6 +16,7 @@ import {
   Coins,
   MessageCircle,
   MessageSquareQuote,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -154,8 +155,16 @@ export function MobileMoreScreen() {
             <MenuItem
               icon={MessageSquareQuote}
               label="Templates support"
-              description="Réponses pré-enregistrées"
+              description="Réponses pré-enregistrées avec variables"
               onClick={() => navigate('/m/more/canned-responses')}
+            />
+          )}
+          {canAccessSupportChat && (
+            <MenuItem
+              icon={Sparkles}
+              label="Quick replies clients"
+              description="Suggestions affichées aux nouveaux clients"
+              onClick={() => navigate('/m/more/quick-replies')}
             />
           )}
           {canManageUsers && (

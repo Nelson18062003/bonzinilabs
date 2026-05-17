@@ -27,9 +27,11 @@ import {
   useSupportAdmins,
 } from '@/hooks/useAdminChatTools';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { notifyAssignment } from '@/lib/notify-assignment';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ChatMessage } from '@/types/chat';
+import type { TemplateContext } from '@/lib/template-vars';
 
 export function MobileSupportConversationScreen() {
   const { t } = useTranslation('support');
@@ -109,10 +111,17 @@ export function MobileSupportConversationScreen() {
     : null;
 
   const handleClaim = async () => {
-    if (!conversationId) return;
+    if (!conversationId || !currentUser) return;
     try {
       await claim.mutateAsync(conversationId);
       toast.success(t('admin.actions.claimed'));
+      // Fire-and-forget notif Telegram
+      void notifyAssignment({
+        conversation_id: conversationId,
+        event_type: 'claim',
+        new_admin_user_role_id: myUserRoleId ?? null,
+        changed_by_admin_user_id: currentUser.id,
+      });
     } catch (e) {
       toast.error(t('errors.sendFailed'));
       console.error(e);
@@ -120,11 +129,17 @@ export function MobileSupportConversationScreen() {
   };
 
   const handleAssign = async (adminUserRoleId: string | null) => {
-    if (!conversationId) return;
+    if (!conversationId || !currentUser) return;
     try {
       await assign.mutateAsync({ conversationId, adminUserRoleId });
       setAssignOpen(false);
       toast.success(t('admin.actions.assigned'));
+      void notifyAssignment({
+        conversation_id: conversationId,
+        event_type: adminUserRoleId ? 'assign' : 'unassign',
+        new_admin_user_role_id: adminUserRoleId,
+        changed_by_admin_user_id: currentUser.id,
+      });
     } catch (e) {
       toast.error(t('errors.sendFailed'));
       console.error(e);
@@ -265,6 +280,13 @@ export function MobileSupportConversationScreen() {
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           showCannedResponses
+          cannedContext={{
+            clientFirstName: conversation?.client_first_name,
+            clientLastName: conversation?.client_last_name,
+            clientPhone: conversation?.client_phone,
+            conversationSubject: conversation?.subject,
+            adminFirstName: currentUser?.firstName,
+          } satisfies TemplateContext}
           onSendText={async (text) => {
             notifyStop();
             await sendText.mutateAsync({ conversationId, content: text, replyToMessageId: replyToId });

@@ -7,6 +7,7 @@ import { VoiceRecorder, type VoiceBlobPayload } from './VoiceRecorder';
 import { QuotedMessage } from './QuotedMessage';
 import { CannedResponsesPicker } from './CannedResponsesPicker';
 import type { ChatMessage } from '@/types/chat';
+import type { TemplateContext } from '@/lib/template-vars';
 
 interface MessageInputProps {
   onSendText: (text: string) => Promise<void> | void;
@@ -18,9 +19,9 @@ interface MessageInputProps {
   // Reply
   replyTo?: ChatMessage | null;
   onCancelReply?: () => void;
-  // Templates admin (si défini, affiche bouton "templates" qui pré-remplit le textarea)
+  // Templates admin
   showCannedResponses?: boolean;
-  // Texte initial à injecter (depuis EmptyChatState quick replies, par ex.)
+  cannedContext?: TemplateContext;
   initialText?: string;
   disabled?: boolean;
   className?: string;
@@ -50,6 +51,7 @@ export function MessageInput({
   replyTo,
   onCancelReply,
   showCannedResponses = false,
+  cannedContext,
   initialText,
   disabled = false,
   className,
@@ -213,6 +215,7 @@ export function MessageInput({
         <CannedResponsesPicker
           open={cannedOpen}
           onClose={() => setCannedOpen(false)}
+          context={cannedContext}
           onPick={(content) => {
             setText(content);
             onTextChange?.(content);

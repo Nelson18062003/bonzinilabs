@@ -1,19 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Search } from 'lucide-react';
+import { X, Search, Sparkles } from 'lucide-react';
 import { useCannedResponses } from '@/hooks/useCannedResponses';
+import { substituteTemplateVars, type TemplateContext } from '@/lib/template-vars';
+import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
+import type { Locale } from 'date-fns';
 
 interface CannedResponsesPickerProps {
   open: boolean;
   onClose: () => void;
   onPick: (content: string) => void;
+  /** Contexte pour substituer les variables {{...}} avant injection */
+  context?: TemplateContext;
 }
 
-export function CannedResponsesPicker({ open, onClose, onPick }: CannedResponsesPickerProps) {
+export function CannedResponsesPicker({
+  open,
+  onClose,
+  onPick,
+  context,
+}: CannedResponsesPickerProps) {
   const { t } = useTranslation('support');
   const { data: templates, isLoading } = useCannedResponses();
   const [query, setQuery] = useState('');
+  const [locale, setLocale] = useState<Locale | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    getDateFnsLocale().then((l) => !cancelled && setLocale(l));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!open) return null;
 
@@ -22,6 +41,14 @@ export function CannedResponsesPicker({ open, onClose, onPick }: CannedResponses
     const q = query.toLowerCase();
     return tpl.label.toLowerCase().includes(q) || tpl.content.toLowerCase().includes(q);
   });
+
+  const resolve = (content: string): string => {
+    return substituteTemplateVars(content, {
+      ...(context ?? {}),
+      dateLocale: locale,
+      defaultSubject: t('list.defaultSubject'),
+    });
+  };
 
   return (
     <div
@@ -66,20 +93,38 @@ export function CannedResponsesPicker({ open, onClose, onPick }: CannedResponses
                 : t('templates.noMatch')}
             </p>
           ) : (
-            filtered.map((tpl) => (
-              <button
-                key={tpl.id}
-                type="button"
-                onClick={() => {
-                  onPick(tpl.content);
-                  onClose();
-                }}
-                className="w-full rounded-xl border border-border bg-background p-3 text-left transition-colors hover:bg-muted"
-              >
-                <p className="mb-0.5 text-sm font-semibold text-foreground">{tpl.label}</p>
-                <p className="line-clamp-2 text-xs text-muted-foreground">{tpl.content}</p>
-              </button>
-            ))
+            filtered.map((tpl) => {
+              const resolved = resolve(tpl.content);
+              const hasUnresolvedVars = /\{\{[a-z_]+\}\}/i.test(resolved);
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => {
+                    onPick(resolved);
+                    onClose();
+                  }}
+                  className="w-full rounded-xl border border-border bg-background p-3 text-left transition-colors hover:bg-muted"
+                >
+                  <div className="mb-0.5 flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-foreground">{tpl.label}</p>
+                    {hasUnresolvedVars && (
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-0.5 rounded-full bg-bonzini-amber/20',
+                          'px-1.5 py-0.5 text-[10px] font-medium text-bonzini-amber'
+                        )}
+                        title={t('templates.unresolvedVars')}
+                      >
+                        <Sparkles className="h-2.5 w-2.5" />
+                        {t('templates.varsHint')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{resolved}</p>
+                </button>
+              );
+            })
           )}
         </div>
       </div>

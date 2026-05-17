@@ -6,48 +6,48 @@ import {
   Loader2,
   Trash2,
   Edit3,
-  MessageSquareQuote,
   ArrowUp,
   ArrowDown,
   Sparkles,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
-  useCannedResponses,
-  useCreateCannedResponse,
-  useUpdateCannedResponse,
-  useDeleteCannedResponse,
-  useReorderCannedResponses,
-} from '@/hooks/useCannedResponses';
-import { TEMPLATE_VARIABLES, previewWithExamples } from '@/lib/template-vars';
+  useAdminAllQuickReplies,
+  useCreateQuickReply,
+  useUpdateQuickReply,
+  useDeleteQuickReply,
+  useReorderQuickReplies,
+} from '@/hooks/useAdminQuickReplies';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { ChatCannedResponse } from '@/types/chat';
+import type { ChatClientQuickReply } from '@/types/chat';
 
-export function MobileCannedResponsesScreen() {
+export function MobileQuickRepliesScreen() {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { currentUser, hasPermission } = useAdminAuth();
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const canAccess = hasPermission('canAccessSupportChat');
-  const { data: templates, isLoading } = useCannedResponses();
-  const create = useCreateCannedResponse();
-  const update = useUpdateCannedResponse();
-  const del = useDeleteCannedResponse();
-  const reorder = useReorderCannedResponses();
+  const { data: replies, isLoading } = useAdminAllQuickReplies();
+  const create = useCreateQuickReply();
+  const update = useUpdateQuickReply();
+  const del = useDeleteQuickReply();
+  const reorder = useReorderQuickReplies();
 
-  const [editing, setEditing] = useState<ChatCannedResponse | null>(null);
+  const [editing, setEditing] = useState<ChatClientQuickReply | null>(null);
   const [creating, setCreating] = useState(false);
 
   const move = (index: number, dir: 'up' | 'down') => {
-    if (!templates) return;
-    const newList = [...templates];
+    if (!replies) return;
+    const newList = [...replies];
     const swap = dir === 'up' ? index - 1 : index + 1;
     if (swap < 0 || swap >= newList.length) return;
     [newList[index], newList[swap]] = [newList[swap], newList[index]];
-    reorder.mutate(newList.map((t) => t.id));
+    reorder.mutate(newList.map((r) => r.id));
   };
 
   if (!canAccess) {
@@ -61,7 +61,7 @@ export function MobileCannedResponsesScreen() {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background">
       <MobileHeader
-        title={t('templates.screenTitle')}
+        title={t('quickReplies.screenTitle')}
         showBack
         onBack={() => navigate('/m/more')}
         rightElement={
@@ -70,7 +70,7 @@ export function MobileCannedResponsesScreen() {
               type="button"
               onClick={() => setCreating(true)}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-bonzini-violet text-white hover:bg-bonzini-violet/90"
-              aria-label={t('templates.create')}
+              aria-label={t('quickReplies.create')}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -78,9 +78,13 @@ export function MobileCannedResponsesScreen() {
         }
       />
 
+      <div className="border-b border-border bg-bonzini-violet/5 p-3 text-xs text-muted-foreground">
+        {t('quickReplies.hint')}
+      </div>
+
       {!isSuperAdmin && (
         <div className="border-b border-border bg-bonzini-amber/10 p-3 text-xs text-bonzini-amber">
-          {t('templates.readOnlyHint')}
+          {t('quickReplies.readOnlyHint')}
         </div>
       )}
 
@@ -88,18 +92,25 @@ export function MobileCannedResponsesScreen() {
         <div className="flex flex-1 items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : (templates ?? []).length === 0 ? (
+      ) : (replies ?? []).length === 0 ? (
         <MobileEmptyState
-          icon={MessageSquareQuote}
-          title={t('templates.empty')}
-          description={isSuperAdmin ? t('templates.emptyHint') : undefined}
+          icon={Sparkles}
+          title={t('quickReplies.empty')}
+          description={isSuperAdmin ? t('quickReplies.emptyHint') : undefined}
         />
       ) : (
         <ul className="divide-y divide-border">
-          {(templates ?? []).map((tpl, idx) => (
-            <li key={tpl.id} className="p-4">
+          {(replies ?? []).map((qr, idx) => (
+            <li key={qr.id} className={cn('p-4', !qr.active && 'opacity-60')}>
               <div className="mb-2 flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-foreground">{tpl.label}</p>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">{qr.label}</p>
+                  {!qr.active && (
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {t('quickReplies.inactive')}
+                    </span>
+                  )}
+                </div>
                 {isSuperAdmin && (
                   <div className="flex gap-1">
                     <button
@@ -114,7 +125,7 @@ export function MobileCannedResponsesScreen() {
                     <button
                       type="button"
                       onClick={() => move(idx, 'down')}
-                      disabled={idx === (templates ?? []).length - 1}
+                      disabled={idx === (replies ?? []).length - 1}
                       className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:opacity-30"
                       aria-label="Down"
                     >
@@ -122,7 +133,15 @@ export function MobileCannedResponsesScreen() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditing(tpl)}
+                      onClick={() => update.mutate({ id: qr.id, active: !qr.active })}
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                      aria-label={qr.active ? 'Hide' : 'Show'}
+                    >
+                      {qr.active ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(qr)}
                       className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
                       aria-label="Edit"
                     >
@@ -131,8 +150,8 @@ export function MobileCannedResponsesScreen() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(t('templates.confirmDelete'))) {
-                          del.mutate(tpl.id);
+                        if (confirm(t('quickReplies.confirmDelete'))) {
+                          del.mutate(qr.id);
                         }
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
@@ -143,20 +162,14 @@ export function MobileCannedResponsesScreen() {
                   </div>
                 )}
               </div>
-              <p className="whitespace-pre-wrap text-xs text-muted-foreground">{tpl.content}</p>
-              {/\{\{[a-z_]+\}\}/i.test(tpl.content) && (
-                <p className="mt-2 flex items-center gap-1 text-[10px] text-bonzini-amber">
-                  <Sparkles className="h-2.5 w-2.5" />
-                  {t('templates.varsInside')}
-                </p>
-              )}
+              <p className="whitespace-pre-wrap text-xs text-muted-foreground">{qr.content}</p>
             </li>
           ))}
         </ul>
       )}
 
       {(creating || editing) && isSuperAdmin && (
-        <TemplateEditor
+        <QuickReplyEditor
           initial={editing}
           onClose={() => {
             setCreating(false);
@@ -166,10 +179,10 @@ export function MobileCannedResponsesScreen() {
             try {
               if (editing) {
                 await update.mutateAsync({ id: editing.id, ...input });
-                toast.success(t('templates.updated'));
+                toast.success(t('quickReplies.updated'));
               } else {
                 await create.mutateAsync(input);
-                toast.success(t('templates.created'));
+                toast.success(t('quickReplies.created'));
               }
               setCreating(false);
               setEditing(null);
@@ -184,23 +197,19 @@ export function MobileCannedResponsesScreen() {
   );
 }
 
-interface TemplateEditorProps {
-  initial: ChatCannedResponse | null;
+interface QuickReplyEditorProps {
+  initial: ChatClientQuickReply | null;
   onClose: () => void;
-  onSubmit: (input: { label: string; content: string }) => Promise<void> | void;
+  onSubmit: (input: { label: string; content: string; active?: boolean }) => Promise<void> | void;
 }
-function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
+function QuickReplyEditor({ initial, onClose, onSubmit }: QuickReplyEditorProps) {
   const { t } = useTranslation('support');
   const [label, setLabel] = useState(initial?.label ?? '');
   const [content, setContent] = useState(initial?.content ?? '');
+  const [active, setActive] = useState(initial?.active ?? true);
   const [saving, setSaving] = useState(false);
 
   const canSave = label.trim().length > 0 && content.trim().length > 0 && !saving;
-  const preview = previewWithExamples(content);
-
-  const insertVar = (key: string) => {
-    setContent((c) => c + `{{${key}}}`);
-  };
 
   return (
     <div
@@ -212,63 +221,44 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-3 text-base font-semibold">
-          {initial ? t('templates.editTitle') : t('templates.createTitle')}
+          {initial ? t('quickReplies.editTitle') : t('quickReplies.createTitle')}
         </h3>
 
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          {t('templates.labelField')}
+          {t('quickReplies.labelField')}
         </label>
         {/* eslint-disable-next-line no-restricted-syntax */}
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          maxLength={60}
-          placeholder={t('templates.labelPlaceholder')}
+          maxLength={40}
+          placeholder={t('quickReplies.labelPlaceholder')}
           className="mb-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
         />
 
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          {t('templates.contentField')}
+          {t('quickReplies.contentField')}
         </label>
         {/* eslint-disable-next-line no-restricted-syntax */}
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          maxLength={2000}
-          rows={5}
-          placeholder={t('templates.contentPlaceholder')}
-          className="mb-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
+          maxLength={500}
+          rows={3}
+          placeholder={t('quickReplies.contentPlaceholder')}
+          className="mb-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
         />
 
-        <div className="mb-3">
-          <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-            <Sparkles className="mr-1 inline h-3 w-3 text-bonzini-amber" />
-            {t('templates.varsAvailable')}
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {TEMPLATE_VARIABLES.map((v) => (
-              <button
-                key={v.key}
-                type="button"
-                onClick={() => insertVar(v.key)}
-                className="rounded-full bg-bonzini-amber/15 px-2 py-1 text-[10px] font-mono text-bonzini-amber hover:bg-bonzini-amber/25"
-                title={v.label}
-              >
-                {`{{${v.key}}}`}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {content && (
-          <div className="mb-3 rounded-xl border border-bonzini-violet/20 bg-bonzini-violet/5 p-3">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-bonzini-violet">
-              {t('templates.preview')}
-            </p>
-            <p className="whitespace-pre-wrap text-xs text-foreground">{preview}</p>
-          </div>
-        )}
+        <label className="mb-3 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={active}
+            onChange={(e) => setActive(e.target.checked)}
+            className="h-4 w-4 rounded border-border accent-bonzini-violet"
+          />
+          {t('quickReplies.activeLabel')}
+        </label>
 
         <div className="flex gap-2">
           <button
@@ -284,7 +274,7 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
             onClick={async () => {
               setSaving(true);
               try {
-                await onSubmit({ label, content });
+                await onSubmit({ label, content, active });
               } finally {
                 setSaving(false);
               }

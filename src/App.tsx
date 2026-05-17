@@ -71,6 +71,7 @@ const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").th
 const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
 const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
 const MobileCannedResponsesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileCannedResponsesScreen })));
+const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileQuickRepliesScreen })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
@@ -184,6 +185,7 @@ const App = () => (
                 <Route path="/m/support/stats" element={<MobileRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/support/:conversationId" element={<MobileRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/canned-responses" element={<MobileRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></MobileRouteWrapper>} />
+                <Route path="/m/more/quick-replies" element={<MobileRouteWrapper showTabBar={false}><MobileQuickRepliesScreen /></MobileRouteWrapper>} />
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/more/treasury" element={<MobileRouteWrapper><MobileTreasuryHome /></MobileRouteWrapper>} />
