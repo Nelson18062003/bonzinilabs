@@ -28,6 +28,7 @@ export interface RolePermission {
   canManageUsers: boolean;
   canViewTreasury: boolean;
   canManageTreasury: boolean;
+  canAccessSupportChat: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -43,6 +44,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: true,
     canViewTreasury: true,
     canManageTreasury: true,
+    canAccessSupportChat: true,
   },
   ops: {
     canViewClients: true,
@@ -56,6 +58,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canAccessSupportChat: true,
   },
   support: {
     canViewClients: true,
@@ -69,6 +72,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canAccessSupportChat: true,
   },
   customer_success: {
     canViewClients: true,
@@ -82,6 +86,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canAccessSupportChat: true,
   },
   cash_agent: {
     canViewClients: false,
@@ -95,6 +100,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canAccessSupportChat: false,
   },
   treasurer: {
     canViewClients: false,
@@ -108,6 +114,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: true,
     canManageTreasury: true,
+    canAccessSupportChat: false,
   },
 };
 
