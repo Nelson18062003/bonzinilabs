@@ -20,6 +20,9 @@ interface ChatThreadProps {
   selfReactorId?: string | null;
   selfReactorType?: 'client' | 'admin';
   onQuickReply?: (content: string) => void;
+  /** Si défini, affiche un indicateur "X écrit…" tout en bas (intégré au flux,
+   *  ne fait pas bouger l'input bar). */
+  typingIndicatorSlot?: React.ReactNode;
   className?: string;
 }
 
@@ -35,6 +38,7 @@ export function ChatThread({
   selfReactorId,
   selfReactorType,
   onQuickReply,
+  typingIndicatorSlot,
   className,
 }: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -130,6 +134,9 @@ export function ChatThread({
           </div>
         );
       })}
+      {/* Typing indicator intégré au flux pour éviter de faire bouger
+          l'input bar. Reste tout en bas, juste avant le scroll anchor. */}
+      {typingIndicatorSlot}
       <div ref={bottomRef} />
     </div>
   );
