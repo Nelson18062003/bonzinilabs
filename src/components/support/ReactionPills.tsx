@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useToggleReaction } from '@/hooks/useMessageReactions';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,6 @@ export function ReactionPills({
 }: ReactionPillsProps) {
   const toggle = useToggleReaction(supabaseClient!);
 
-  // Groupe par emoji
   const grouped = useMemo(() => {
     const map = new Map<ChatReactionEmoji, { count: number; selfReacted: boolean }>();
     for (const r of reactions) {
@@ -49,22 +49,38 @@ export function ReactionPills({
   };
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-1 px-2', align === 'right' ? 'justify-end' : 'justify-start')}>
+    <div
+      className={cn(
+        'flex flex-wrap items-center gap-1 px-2 pt-0.5',
+        align === 'right' ? 'justify-end' : 'justify-start'
+      )}
+    >
       {grouped.map(([emoji, info]) => (
-        <button
+        <motion.button
           key={emoji}
           type="button"
           onClick={() => handleToggle(emoji)}
+          whileTap={{ scale: 0.92 }}
           className={cn(
-            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
+            'inline-flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs',
+            'shadow-[0_0_0_1px_hsl(var(--border))]',
             info.selfReacted
-              ? 'border-bonzini-violet bg-bonzini-violet/10 text-bonzini-violet'
-              : 'border-border bg-background hover:bg-muted'
+              ? 'border-bonzini-violet bg-[hsl(258_100%_97%)] dark:bg-[hsl(258_45%_22%)]'
+              : 'border-border'
           )}
         >
           <span>{emoji}</span>
-          {info.count > 1 && <span className="font-medium">{info.count}</span>}
-        </button>
+          {info.count > 1 && (
+            <span
+              className={cn(
+                'text-[10px] font-semibold',
+                info.selfReacted ? 'text-bonzini-violet' : 'text-muted-foreground'
+              )}
+            >
+              {info.count}
+            </span>
+          )}
+        </motion.button>
       ))}
     </div>
   );

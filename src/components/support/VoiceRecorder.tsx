@@ -1,6 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mic, Send, Trash2, Lock, AlertCircle, ChevronLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Mic, X, Send, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   detectVoiceMimeType,
   isVoiceRecordingSupported,
@@ -9,72 +12,97 @@ import {
   type VoiceMimeChoice,
 } from '@/lib/voice-recording';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
-// Limites enregistrement
 const MAX_DURATION_SECONDS = 60;
-const SLIDE_CANCEL_THRESHOLD_PX = 100;
-const PEAKS_COUNT = 32; // nombre de barres stockées en BDD pour playback
+const SLIDE_CANCEL_PX = 80;
+const SLIDE_LOCK_PX = 60;
+const PEAKS_COUNT = 32;
 
 export interface VoiceBlobPayload {
   blob: Blob;
   mimeType: string;
   extension: string;
   durationSeconds: number;
-  peaks: number[]; // normalisés 0-1, longueur PEAKS_COUNT
+  peaks: number[];
 }
 
 interface VoiceRecorderProps {
   onSend: (payload: VoiceBlobPayload) => Promise<void> | void;
   disabled?: boolean;
+  /**
+   * Si défini, ce callback est appelé avec true quand l'enregistrement
+   * commence et false quand il se termine. Le parent peut l'utiliser
+   * pour masquer le textarea pendant l'enregistrement (UX WhatsApp).
+   */
+  onRecordingChange?: (recording: boolean) => void;
+  /**
+   * Si défini, ce render prop reçoit l'état de l'enregistrement
+   * et doit retourner l'UI inline à afficher À LA PLACE du textarea
+   * pendant qu'on enregistre. Si non défini, l'UI inline n'est pas
+   * rendue par le recorder (le parent gère).
+   */
+  renderInline?: (state: InlineRecorderState) => React.ReactNode;
   className?: string;
+}
+
+export interface InlineRecorderState {
+  elapsedSeconds: number;
+  isCancelArmed: boolean;
+  isLocked: boolean;
+  onCancel: () => void;
+  onLockedSend: () => void;
 }
 
 type State =
   | { kind: 'idle' }
   | { kind: 'requesting' }
-  | { kind: 'recording'; startedAt: number; cancelHinted: boolean }
+  | { kind: 'recording'; startedAt: number; locked: boolean }
   | { kind: 'sending' }
   | { kind: 'unsupported' }
   | { kind: 'denied' };
 
-export function VoiceRecorder({ onSend, disabled = false, className }: VoiceRecorderProps) {
+export function VoiceRecorder({
+  onSend,
+  disabled = false,
+  onRecordingChange,
+  renderInline,
+  className,
+}: VoiceRecorderProps) {
   const { t } = useTranslation('support');
   const [state, setState] = useState<State>(
     isVoiceRecordingSupported() ? { kind: 'idle' } : { kind: 'unsupported' }
   );
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [liveLevel, setLiveLevel] = useState(0); // 0-1, niveau micro courant
+  const [cancelArmed, setCancelArmed] = useState(false);
 
-  // Refs des objets stateful non-react
   const mimeRef = useRef<VoiceMimeChoice | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const collectedPeaksRef = useRef<number[]>([]); // peaks accumulés pour BDD
+  const collectedPeaksRef = useRef<number[]>([]);
   const animRef = useRef<number | null>(null);
-  const elapsedTimerRef = useRef<number | null>(null);
-  const touchStartXRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const cancelledRef = useRef(false);
 
-  // Nettoyage centralisé
+  // Sync parent
+  useEffect(() => {
+    onRecordingChange?.(state.kind === 'recording');
+  }, [state.kind]);
+
   const cleanup = useCallback(() => {
     if (animRef.current != null) {
       cancelAnimationFrame(animRef.current);
       animRef.current = null;
     }
-    if (elapsedTimerRef.current != null) {
-      clearInterval(elapsedTimerRef.current);
-      elapsedTimerRef.current = null;
+    if (timerRef.current != null) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      try {
-        recorderRef.current.stop();
-      } catch {
-        // ignore
-      }
+      try { recorderRef.current.stop(); } catch { /* */ }
     }
     recorderRef.current = null;
     if (streamRef.current) {
@@ -88,17 +116,14 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
     analyserRef.current = null;
     chunksRef.current = [];
     collectedPeaksRef.current = [];
-    setLiveLevel(0);
     setElapsedSeconds(0);
-    touchStartXRef.current = null;
+    setCancelArmed(false);
+    touchStartRef.current = null;
     cancelledRef.current = false;
   }, []);
 
-  useEffect(() => {
-    return () => cleanup();
-  }, [cleanup]);
+  useEffect(() => () => cleanup(), [cleanup]);
 
-  // Démarre l'enregistrement
   const startRecording = useCallback(async () => {
     if (state.kind !== 'idle' && state.kind !== 'denied') return;
     setState({ kind: 'requesting' });
@@ -109,7 +134,6 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
       const stream = await requestMicrophoneStream();
       streamRef.current = stream;
 
-      // Web Audio pour waveform live + collecte peaks
       type WindowAC = Window & { webkitAudioContext?: typeof AudioContext };
       const AC = window.AudioContext || (window as WindowAC).webkitAudioContext;
       const audioCtx: AudioContext = new AC();
@@ -120,7 +144,6 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      // MediaRecorder
       const options: MediaRecorderOptions = mime?.mimeType
         ? { mimeType: mime.mimeType, audioBitsPerSecond: 32000 }
         : { audioBitsPerSecond: 32000 };
@@ -133,28 +156,23 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
 
+      const startedAt = Date.now();
+
       recorder.onstop = async () => {
-        // Si annulé, on ne fait rien (cleanup déjà parti)
         if (cancelledRef.current) {
           cleanup();
           setState({ kind: 'idle' });
           return;
         }
 
-        const durationSec = (Date.now() - (state.kind === 'recording' ? state.startedAt : Date.now())) / 1000;
+        const durationSec = (Date.now() - startedAt) / 1000;
         const blob = new Blob(chunksRef.current, {
           type: mimeRef.current?.mimeType || 'audio/webm',
         });
-
-        // Génère peaks finaux : on rééchantillonne collectedPeaks à PEAKS_COUNT
-        const peaks = resampleToFixedLength(
-          collectedPeaksRef.current,
-          PEAKS_COUNT
-        );
-
-        // Cleanup et envoi
+        const peaks = resamplePeaks(collectedPeaksRef.current, PEAKS_COUNT);
         const mimeUsed = mimeRef.current?.mimeType || 'audio/webm';
         const ext = mimeRef.current?.extension || 'webm';
+
         cleanup();
         setState({ kind: 'sending' });
 
@@ -171,50 +189,39 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
         }
       };
 
-      recorder.start(250); // chunk toutes les 250ms
+      recorder.start(250);
 
-      // Boucle d'analyse waveform
+      // Boucle Web Audio pour collecter les peaks
       const data = new Uint8Array(analyser.frequencyBinCount);
-      let lastPeakSample = 0;
-      const PEAK_SAMPLE_INTERVAL_MS = 100;
+      let lastPeak = 0;
       const loop = () => {
         if (!analyserRef.current) return;
         analyserRef.current.getByteFrequencyData(data);
-        // Niveau RMS approximé
         let sum = 0;
         for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
-        const rms = Math.sqrt(sum / data.length) / 255; // 0-1
-        setLiveLevel(rms);
-
+        const rms = Math.sqrt(sum / data.length) / 255;
         const now = Date.now();
-        if (now - lastPeakSample >= PEAK_SAMPLE_INTERVAL_MS) {
+        if (now - lastPeak >= 100) {
           collectedPeaksRef.current.push(rms);
-          lastPeakSample = now;
+          lastPeak = now;
         }
-
         animRef.current = requestAnimationFrame(loop);
       };
       animRef.current = requestAnimationFrame(loop);
 
-      // Timer durée (auto-stop géré via ref pour éviter dépendance circulaire)
-      const startedAt = Date.now();
-      elapsedTimerRef.current = window.setInterval(() => {
+      timerRef.current = window.setInterval(() => {
         const sec = Math.floor((Date.now() - startedAt) / 1000);
         setElapsedSeconds(sec);
         if (sec >= MAX_DURATION_SECONDS) {
           toast.info(t('voice.maxDurationReached'));
-          cancelledRef.current = false;
           if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-            try {
-              recorderRef.current.stop();
-            } catch {
-              // ignore
-            }
+            cancelledRef.current = false;
+            try { recorderRef.current.stop(); } catch { /* */ }
           }
         }
       }, 200);
 
-      setState({ kind: 'recording', startedAt, cancelHinted: false });
+      setState({ kind: 'recording', startedAt, locked: false });
     } catch (err) {
       const error = err as DOMException & { name?: string };
       console.error('Voice start error', error);
@@ -234,49 +241,58 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
     }
   }, [state, cleanup, onSend, t]);
 
-  // Stoppe l'enregistrement (cancel=true → annulation, pas d'envoi)
   const stopRecording = useCallback((cancel: boolean) => {
     cancelledRef.current = cancel;
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      try {
-        recorderRef.current.stop();
-      } catch {
-        // ignore
-      }
+      try { recorderRef.current.stop(); } catch { /* */ }
     } else {
-      // Si recorder n'est pas en marche, on cleanup manuellement
       cleanup();
       setState({ kind: 'idle' });
     }
   }, [cleanup]);
 
-  // Touch handlers (mobile press-and-hold)
+  // Touch handlers — press long + slide pour annuler/verrouiller
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (disabled) return;
     if (state.kind !== 'idle' && state.kind !== 'denied') return;
-    touchStartXRef.current = e.touches[0].clientX;
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     void startRecording();
   }, [disabled, state.kind, startRecording]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (state.kind !== 'recording') return;
-    if (touchStartXRef.current == null) return;
-    const dx = touchStartXRef.current - e.touches[0].clientX;
-    const willCancel = dx > SLIDE_CANCEL_THRESHOLD_PX;
-    if (willCancel !== state.cancelHinted) {
-      setState({ ...state, cancelHinted: willCancel });
+    if (state.kind !== 'recording' || state.locked) return;
+    if (!touchStartRef.current) return;
+    const dx = touchStartRef.current.x - e.touches[0].clientX;
+    const dy = touchStartRef.current.y - e.touches[0].clientY;
+
+    // Slide vers le haut → verrouille
+    if (dy > SLIDE_LOCK_PX && dx < 30) {
+      setState((s) => (s.kind === 'recording' ? { ...s, locked: true } : s));
+      touchStartRef.current = null;
+      return;
     }
-  }, [state]);
+
+    // Slide vers la gauche → annule
+    const willCancel = dx > SLIDE_CANCEL_PX;
+    if (willCancel !== cancelArmed) setCancelArmed(willCancel);
+  }, [state, cancelArmed]);
 
   const onTouchEnd = useCallback(() => {
     if (state.kind !== 'recording') {
-      touchStartXRef.current = null;
+      touchStartRef.current = null;
       return;
     }
-    const shouldCancel = state.cancelHinted;
-    touchStartXRef.current = null;
+    if (state.locked) {
+      // En mode verrouillé, on n'arrête pas en relâchant — l'utilisateur
+      // doit cliquer sur le bouton stop/envoyer.
+      touchStartRef.current = null;
+      return;
+    }
+    const shouldCancel = cancelArmed;
+    touchStartRef.current = null;
+    setCancelArmed(false);
     stopRecording(shouldCancel);
-  }, [state, stopRecording]);
+  }, [state, cancelArmed, stopRecording]);
 
   // Click desktop : toggle
   const onClick = useCallback(() => {
@@ -286,13 +302,10 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
     } else if (state.kind === 'recording') {
       stopRecording(false);
     }
-  }, [disabled, state.kind, startRecording, stopRecording]);
+  }, [disabled, state, startRecording, stopRecording]);
 
-  // États affichage
-  if (state.kind === 'unsupported') {
-    // Pas de bouton — le parent affiche autre chose (texte / photo seulement)
-    return null;
-  }
+  // Render bouton micro/envoi
+  if (state.kind === 'unsupported') return null;
 
   if (state.kind === 'denied') {
     return (
@@ -300,7 +313,7 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
         type="button"
         onClick={() => toast.error(t('voice.errors.permissionDenied'))}
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+          'flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full',
           'bg-destructive/10 text-destructive',
           className
         )}
@@ -311,139 +324,152 @@ export function VoiceRecorder({ onSend, disabled = false, className }: VoiceReco
     );
   }
 
-  // Pendant enregistrement : on remplace le mini-bouton par une grosse barre flottante
-  if (state.kind === 'recording') {
-    return (
-      <RecordingOverlay
-        elapsedSeconds={elapsedSeconds}
-        liveLevel={liveLevel}
-        cancelHinted={state.cancelHinted}
-        onCancel={() => stopRecording(true)}
-        onSend={() => stopRecording(false)}
-      />
-    );
-  }
-
-  // État sending
   if (state.kind === 'sending') {
     return (
-      <button
-        type="button"
-        disabled
+      <div
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+          'flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full',
           'bg-bonzini-violet text-white',
           className
         )}
       >
         <Loader2 className="h-5 w-5 animate-spin" />
-      </button>
+      </div>
     );
   }
 
-  // Idle ou requesting → bouton micro
+  // Rendu de l'UI inline pendant l'enregistrement (via render prop parent)
+  const inlineState: InlineRecorderState | null = state.kind === 'recording' ? {
+    elapsedSeconds,
+    isCancelArmed: cancelArmed,
+    isLocked: state.locked,
+    onCancel: () => stopRecording(true),
+    onLockedSend: () => stopRecording(false),
+  } : null;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onTouchCancel={() => stopRecording(true)}
-      disabled={disabled || state.kind === 'requesting'}
-      className={cn(
-        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-        'bg-bonzini-orange/15 text-bonzini-orange',
-        'transition-colors hover:bg-bonzini-orange/25 active:scale-95',
-        'disabled:opacity-50',
-        className
-      )}
-      aria-label={t('voice.startRecording')}
-    >
-      {state.kind === 'requesting' ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <Mic className="h-5 w-5" />
-      )}
-    </button>
+    <>
+      {inlineState && renderInline?.(inlineState)}
+      <motion.button
+        type="button"
+        onClick={onClick}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={() => stopRecording(true)}
+        disabled={disabled || state.kind === 'requesting'}
+        whileTap={{ scale: 0.92 }}
+        animate={state.kind === 'recording' ? {
+          backgroundColor: cancelArmed ? 'hsl(0 84% 60%)' : 'hsl(258 95% 60%)',
+        } : {}}
+        className={cn(
+          'relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full',
+          'bg-bonzini-violet text-white shadow-[0_6px_18px_hsl(258_95%_60%/_0.22)]',
+          'disabled:opacity-50',
+          state.kind === 'recording' && 'shadow-[0_6px_18px_hsl(0_84%_60%/_0.22)]',
+          className
+        )}
+        aria-label={t('voice.startRecording')}
+      >
+        {state.kind === 'requesting' ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <Mic className="h-5 w-5" />
+        )}
+        {state.kind === 'recording' && !state.locked && (
+          <motion.span
+            initial={{ scale: 1, opacity: 0.6 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeOut' }}
+            className="absolute inset-0 rounded-full bg-current"
+          />
+        )}
+      </motion.button>
+    </>
   );
 }
-
-// ── Overlay pendant l'enregistrement ─────────────────────────
-
-interface OverlayProps {
-  elapsedSeconds: number;
-  liveLevel: number;
-  cancelHinted: boolean;
-  onCancel: () => void;
-  onSend: () => void;
-}
-
-function RecordingOverlay({
-  elapsedSeconds,
-  liveLevel,
-  cancelHinted,
-  onCancel,
-  onSend,
-}: OverlayProps) {
-  const { t } = useTranslation('support');
-  return (
-    <div
-      className={cn(
-        'flex h-10 flex-1 items-center gap-2 rounded-full px-3',
-        cancelHinted
-          ? 'bg-destructive/15 text-destructive'
-          : 'bg-bonzini-orange/15 text-bonzini-orange'
-      )}
-    >
-      <button
-        type="button"
-        onClick={onCancel}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-background/60"
-        aria-label={t('voice.cancel')}
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-
-      <div className="flex items-center gap-1.5">
-        <span
-          className="block h-2 w-2 rounded-full bg-current"
-          style={{
-            opacity: 0.5 + liveLevel * 0.5,
-            transform: `scale(${1 + liveLevel * 0.5})`,
-            transition: 'transform 80ms ease-out',
-          }}
-        />
-        <span className="text-sm font-mono tabular-nums">
-          {formatDuration(elapsedSeconds)}
-        </span>
-      </div>
-
-      <span className="flex-1 truncate text-center text-xs opacity-80">
-        {cancelHinted ? t('voice.releaseToCancel') : t('voice.slideToCancel')}
-      </span>
-
-      <button
-        type="button"
-        onClick={onSend}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-current text-background"
-        aria-label={t('input.send')}
-      >
-        <Send className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-}
-
-// ── Helpers ─────────────────────────────────────────────────
 
 /**
- * Rééchantillonne un tableau de peaks vers une longueur fixe.
- * Utilise une moyenne glissante simple. Sortie normalisée 0-1.
+ * UI INLINE qui REMPLACE le textarea dans la barre d'input pendant l'enregistrement.
+ * Style WhatsApp : rec-dot + timer + hint slide-to-cancel + hint lock vertical.
+ * À utiliser comme `renderInline` du VoiceRecorder.
  */
-function resampleToFixedLength(input: number[], targetLength: number): number[] {
+export function VoiceRecorderInline({ state }: { state: InlineRecorderState }) {
+  const { t } = useTranslation('support');
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className={cn(
+        'flex flex-1 items-center gap-2 rounded-full px-3 py-2 min-h-[38px]',
+        state.isCancelArmed
+          ? 'bg-destructive/10'
+          : 'bg-muted'
+      )}
+    >
+      {state.isLocked ? (
+        <button
+          type="button"
+          onClick={state.onCancel}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
+          aria-label={t('voice.cancel')}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      ) : (
+        <motion.span
+          animate={{ opacity: [1, 0.3, 1] }}
+          transition={{ duration: 1, repeat: Infinity }}
+          className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive"
+        />
+      )}
+      <span className="shrink-0 min-w-[38px] text-sm font-medium tabular-nums text-foreground">
+        {formatDuration(state.elapsedSeconds)}
+      </span>
+      <span
+        className={cn(
+          'flex flex-1 items-center gap-1 truncate text-sm',
+          state.isCancelArmed ? 'text-destructive font-semibold' : 'text-muted-foreground'
+        )}
+      >
+        {state.isLocked ? (
+          <>
+            <Lock className="h-3 w-3" />
+            <span className="truncate">{t('voice.lockedHint')}</span>
+          </>
+        ) : state.isCancelArmed ? (
+          <span className="truncate">{t('voice.releaseToCancel')}</span>
+        ) : (
+          <>
+            <ChevronLeft className="h-3 w-3" />
+            <span className="truncate">{t('voice.slideToCancel')}</span>
+          </>
+        )}
+      </span>
+      {!state.isLocked && (
+        <div className="hidden flex-col items-center gap-0.5 text-[10px] text-muted-foreground sm:flex">
+          <Lock className="h-3 w-3" />
+        </div>
+      )}
+      {state.isLocked && (
+        <button
+          type="button"
+          onClick={state.onLockedSend}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-white"
+          aria-label={t('input.send')}
+        >
+          <Send className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
+function resamplePeaks(input: number[], targetLength: number): number[] {
   if (input.length === 0) return new Array(targetLength).fill(0.05);
-  if (input.length === targetLength) return normalizePeaks(input);
+  if (input.length === targetLength) return normalize(input);
 
   const out: number[] = new Array(targetLength).fill(0);
   const ratio = input.length / targetLength;
@@ -458,10 +484,12 @@ function resampleToFixedLength(input: number[], targetLength: number): number[] 
     }
     out[i] = count > 0 ? sum / count : 0;
   }
-  return normalizePeaks(out);
+  return normalize(out);
 }
 
-function normalizePeaks(arr: number[]): number[] {
+function normalize(arr: number[]): number[] {
   const max = Math.max(0.01, ...arr);
   return arr.map((v) => Math.max(0.05, Math.min(1, v / max)));
 }
+
+export { AnimatePresence };

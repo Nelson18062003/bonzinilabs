@@ -33,8 +33,8 @@ export function DateSeparator({ isoDate }: DateSeparatorProps) {
   }
 
   return (
-    <div className="my-2 flex items-center justify-center">
-      <span className="rounded-full bg-muted/60 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+    <div className="my-3 flex items-center justify-center">
+      <span className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shadow-[0_0_0_1px_hsl(var(--border))]">
         {label}
       </span>
     </div>

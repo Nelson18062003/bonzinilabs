@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, FileSpreadsheet, FileType, Download, Loader2 } from 'lucide-react';
+import { FileText, Download, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatFileSize } from '@/lib/voice-recording';
 import { getChatMediaSignedUrl } from '@/hooks/useClientChat';
@@ -27,10 +27,7 @@ export function FileMessage({
   const [downloading, setDownloading] = useState(false);
 
   const displayName = filename || path.split('/').pop() || 'document';
-  const ext = displayName.split('.').pop()?.toLowerCase() ?? '';
-
-  const Icon = pickIcon(ext);
-  const iconColor = perspective === 'self' ? 'text-white' : pickIconColor(ext);
+  const isSelf = perspective === 'self';
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -38,7 +35,6 @@ export function FileMessage({
       const fetcher = variant === 'admin-app' ? getAdminChatMediaSignedUrl : getChatMediaSignedUrl;
       const url = await fetcher(path);
       if (!url) return;
-      // Trigger download via lien temporaire
       const a = document.createElement('a');
       a.href = url;
       a.download = displayName;
@@ -52,29 +48,27 @@ export function FileMessage({
     }
   };
 
-  const isSelf = perspective === 'self';
-
   return (
     <div
       className={cn(
-        'flex min-w-[220px] items-center gap-3 rounded-xl px-3 py-2.5',
-        isSelf ? 'bg-white/15' : 'bg-background/60',
+        'flex min-w-[220px] items-center gap-2.5 rounded-xl px-2.5 py-2',
+        isSelf ? 'bg-black/[0.04] dark:bg-white/5' : 'bg-muted/60',
         className
       )}
     >
       <div
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-          isSelf ? 'bg-white/20' : 'bg-muted'
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+          isSelf ? 'bg-black/[0.06] dark:bg-white/10' : 'bg-background'
         )}
       >
-        <Icon className={cn('h-5 w-5', iconColor)} />
+        <FileText className="h-4 w-4 text-foreground/70" />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{displayName}</p>
+        <p className="truncate text-[13px] font-medium text-foreground">{displayName}</p>
         {sizeBytes != null && (
-          <p className="text-xs opacity-70">{formatFileSize(sizeBytes)}</p>
+          <p className="text-[11px] text-muted-foreground">{formatFileSize(sizeBytes)}</p>
         )}
       </div>
 
@@ -83,31 +77,14 @@ export function FileMessage({
         onClick={handleDownload}
         disabled={downloading}
         className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-          isSelf ? 'bg-white/20 hover:bg-white/30' : 'bg-bonzini-violet/15 text-bonzini-violet hover:bg-bonzini-violet/25'
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+          isSelf ? 'bg-black/[0.06] dark:bg-white/10' : 'bg-background',
+          'text-foreground/70 transition active:scale-92'
         )}
         aria-label={t('file.download')}
       >
-        {downloading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Download className="h-4 w-4" />
-        )}
+        {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
       </button>
     </div>
   );
-}
-
-function pickIcon(ext: string) {
-  if (['pdf'].includes(ext)) return FileText;
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return FileSpreadsheet;
-  if (['doc', 'docx', 'odt'].includes(ext)) return FileType;
-  return FileText;
-}
-
-function pickIconColor(ext: string): string {
-  if (['pdf'].includes(ext)) return 'text-red-500';
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'text-emerald-600';
-  if (['doc', 'docx'].includes(ext)) return 'text-blue-500';
-  return 'text-muted-foreground';
 }

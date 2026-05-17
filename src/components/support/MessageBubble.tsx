@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ChatImage } from './ChatImage';
 import { VoiceMessage } from './VoiceMessage';
@@ -10,17 +11,18 @@ import { QuotedMessage } from './QuotedMessage';
 import { MessageContextMenu } from './MessageContextMenu';
 import { ReactionPills } from './ReactionPills';
 import { cn } from '@/lib/utils';
-import type { ChatMessage, ChatMessageReaction, ChatReactionEmoji } from '@/types/chat';
+import type { ChatMessage, ChatMessageReaction } from '@/types/chat';
 
 interface MessageBubbleProps {
   message: ChatMessage;
   perspective: 'self' | 'other';
   variant?: 'client-app' | 'admin-app';
   showLabel?: boolean;
+  /** True if this is the last bubble of a same-sender sequence — pour la "queue" */
+  isLastInGroup?: boolean;
   quotedMessage?: ChatMessage | null;
   onReply?: (message: ChatMessage) => void;
   onQuoteClick?: (quotedMessageId: string) => void;
-  // Réactions
   reactions?: ChatMessageReaction[];
   supabaseClient?: SupabaseClient;
   selfReactorId?: string | null;
@@ -33,6 +35,7 @@ export function MessageBubble({
   perspective,
   variant = 'client-app',
   showLabel = false,
+  isLastInGroup = true,
   quotedMessage,
   onReply,
   onQuoteClick,
@@ -60,22 +63,34 @@ export function MessageBubble({
   const isFile = mediaType === 'file';
   const hasQuote = !!quotedMessage;
 
+  // Padding logique selon le type de contenu
+  const bubblePadding = hasQuote
+    ? 'px-2 pt-2 pb-2.5'
+    : isMediaOnly && isImageOrVideo
+    ? 'p-[3px]'
+    : isMediaOnly && (isVoice || isFile)
+    ? 'p-0'
+    : 'px-2.5 py-1.5';
+
+  // Queue uniquement sur la dernière bulle d'une séquence
+  const tailRadius = isSelf
+    ? isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl'
+    : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl';
+
+  // Couleurs : tint très léger pour self (à la WhatsApp avec son mint),
+  // blanc pur pour other. Pas de gradient.
+  const bubbleColors = isSelf
+    ? 'bg-[hsl(258_100%_97%)] text-[hsl(258_50%_28%)] dark:bg-[hsl(258_45%_22%)] dark:text-[hsl(258_100%_92%)]'
+    : 'bg-background text-foreground';
+
   const bubble = (
     <div
       className={cn(
-        'max-w-[80%] rounded-2xl text-sm shadow-sm',
-        isSelf
-          ? 'rounded-br-md bg-bonzini-violet text-white'
-          : 'rounded-bl-md bg-muted text-foreground',
-        hasQuote
-          ? 'px-2 pt-2 pb-2.5'
-          : isMediaOnly && isImageOrVideo
-          ? 'overflow-hidden p-1'
-          : isMediaOnly && isVoice
-          ? 'px-2.5 py-1.5'
-          : isMediaOnly && isFile
-          ? 'p-1'
-          : 'px-3.5 py-2.5'
+        'max-w-[80%] text-[15px] leading-[1.42] tracking-[-0.005em]',
+        'shadow-[0_0_0_1px_hsl(var(--border))]',
+        bubblePadding,
+        tailRadius,
+        bubbleColors
       )}
     >
       {quotedMessage && (
@@ -122,7 +137,7 @@ export function MessageBubble({
         />
       )}
       {message.content && (
-        <p className="whitespace-pre-wrap break-words leading-relaxed">
+        <p className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
           {message.content}
         </p>
       )}
@@ -130,20 +145,18 @@ export function MessageBubble({
   );
 
   return (
-    <div
+    <motion.div
       data-message-id={message.id}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
       className={cn(
-        'flex w-full flex-col gap-1 scroll-mt-12',
+        'flex w-full flex-col gap-0.5 scroll-mt-12',
         isSelf ? 'items-end' : 'items-start'
       )}
     >
-      {showLabel && (
-        <span
-          className={cn(
-            'px-2 text-[10px] font-semibold uppercase tracking-wider',
-            isSelf ? 'text-bonzini-violet' : 'text-bonzini-orange'
-          )}
-        >
+      {showLabel && !isSelf && (
+        <span className="px-3 pb-0.5 text-[11px] font-medium text-muted-foreground">
           {label}
         </span>
       )}
@@ -177,10 +190,17 @@ export function MessageBubble({
         />
       )}
 
-      <div className={cn('flex items-center gap-2 px-2', isSelf ? 'justify-end' : 'justify-start')}>
-        <span className="text-[10px] text-muted-foreground">{time}</span>
-        {isSelf && <ReadReceiptIndicator readAt={message.read_at} />}
-      </div>
-    </div>
+      {isLastInGroup && (
+        <div
+          className={cn(
+            'flex items-center gap-1.5 px-2 mt-0.5',
+            isSelf ? 'justify-end' : 'justify-start'
+          )}
+        >
+          <span className="text-[10px] text-muted-foreground tabular-nums">{time}</span>
+          {isSelf && <ReadReceiptIndicator readAt={message.read_at} />}
+        </div>
+      )}
+    </motion.div>
   );
 }

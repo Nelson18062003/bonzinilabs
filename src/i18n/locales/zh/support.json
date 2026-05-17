@@ -45,6 +45,7 @@
     "releaseToCancel": "松开取消",
     "cancel": "取消",
     "maxDurationReached": "最长 60 秒",
+    "lockedHint": "录音已锁定 · 点击发送",
     "permissionHelp": "请在设置中允许使用麦克风",
     "errors": {
       "permissionDenied": "麦克风访问被拒绝。请在浏览器设置中启用。",
