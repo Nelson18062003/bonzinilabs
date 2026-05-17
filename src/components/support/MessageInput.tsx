@@ -166,11 +166,15 @@ export function MessageInput({
 
   return (
     <div
-      className={cn('flex flex-col bg-background', className)}
+      className={cn('relative flex flex-col bg-background', className)}
       style={{
-        // safe-area pour la home bar iPhone ; le clavier est géré par
-        // le PARENT qui ajuste son height via useKeyboardInset.
+        // safe-area pour la home bar iPhone
         paddingBottom: 'env(safe-area-inset-bottom)',
+        // Ombre élevée vers le haut — donne l'effet "panneau flottant"
+        // au-dessus du chat, à la WhatsApp/iMessage. Pas de border-top
+        // dur (qui faisait plat), juste la lumière qui suggère l'élévation.
+        boxShadow:
+          '0 -8px 24px -8px rgba(15, 23, 42, 0.08), 0 -1px 0 hsl(var(--border) / 0.5)',
       }}
     >
       {/* Reply preview */}
@@ -269,8 +273,9 @@ export function MessageInput({
         )}
       </AnimatePresence>
 
-      {/* La barre input principale */}
-      <div className="relative flex items-end gap-2 border-t border-border bg-background px-2 py-2">
+      {/* La barre input principale — pas de border-top : la box-shadow
+          externe sur le parent fait déjà la séparation visuelle */}
+      <div className="relative flex items-end gap-2 bg-background px-2 py-2">
         {/* Templates (admin uniquement) — à gauche, neutre */}
         {showCannedResponses && !isRecording && (
           <button

@@ -120,6 +120,7 @@ const SupportPage = () => {
             clientForReactions={supabase}
             selfReactorId={clientId}
             selfReactorType="client"
+            typingIndicatorSlot={otherIsTyping ? <TypingIndicator who="admin" /> : null}
           />
         )}
       </div>
@@ -127,8 +128,6 @@ const SupportPage = () => {
       {conversation?.status === 'closed' && (
         <ClosedBanner message={t('detail.closedHint')} />
       )}
-
-      {otherIsTyping && <TypingIndicator who="admin" />}
 
       {conversationId && (
         <MessageInput

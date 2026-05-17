@@ -285,6 +285,7 @@ export function MobileSupportConversationScreen() {
             clientForReactions={supabaseAdmin}
             selfReactorId={adminId}
             selfReactorType="admin"
+            typingIndicatorSlot={otherIsTyping ? <TypingIndicator who="client" /> : null}
           />
         )}
       </div>
@@ -292,8 +293,6 @@ export function MobileSupportConversationScreen() {
       {conversation?.status === 'closed' && (
         <ClosedBanner message={t('admin.closedHint')} />
       )}
-
-      {otherIsTyping && <TypingIndicator who="client" />}
 
       {conversationId && (
         <MessageInput
