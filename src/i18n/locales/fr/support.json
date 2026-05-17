@@ -8,7 +8,8 @@
   },
   "empty": {
     "title": "L'équipe Bonzini est là pour vous aider",
-    "subtitle": "Posez vos questions sur un paiement, un taux ou autre. On vous répond rapidement."
+    "subtitle": "Posez vos questions sur un paiement, un taux ou autre. On vous répond rapidement.",
+    "quickRepliesTitle": "Démarrer rapidement"
   },
   "input": {
     "placeholder": "Écrivez votre message…",
@@ -71,13 +72,50 @@
     "reply": "Répondre",
     "copy": "Copier",
     "copied": "Texte copié",
-    "copyFailed": "Impossible de copier"
+    "copyFailed": "Impossible de copier",
+    "react": "Réagir"
   },
   "quoted": {
     "image": "Photo",
     "voice": "Message vocal",
     "video": "Vidéo",
     "file": "Fichier"
+  },
+  "list": {
+    "newConversation": "Nouvelle conversation",
+    "newConversationHint": "Sur un sujet spécifique",
+    "newSubjectLabel": "Sujet de votre conversation",
+    "newSubjectPlaceholder": "Ex: Question sur un paiement…",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "empty": "Aucune conversation pour le moment",
+    "defaultSubject": "Discussion générale",
+    "closedBadge": "Conversation fermée"
+  },
+  "detail": {
+    "back": "Retour",
+    "bonziniTeam": "Équipe Bonzini",
+    "closedHint": "Cette conversation est fermée. Envoyez un message pour la rouvrir."
+  },
+  "templates": {
+    "pickerTitle": "Réponses pré-enregistrées",
+    "searchPlaceholder": "Rechercher un template…",
+    "empty": "Aucun template pour l'instant",
+    "emptyHint": "Touchez + pour créer votre premier template",
+    "noMatch": "Aucun résultat",
+    "screenTitle": "Templates de réponses",
+    "create": "Créer un template",
+    "createTitle": "Nouveau template",
+    "editTitle": "Modifier le template",
+    "labelField": "Libellé court",
+    "labelPlaceholder": "Ex: Dépôt validé",
+    "contentField": "Contenu du message",
+    "contentPlaceholder": "Le message qui sera injecté quand l'admin choisit ce template",
+    "save": "Enregistrer",
+    "created": "Template créé",
+    "updated": "Template mis à jour",
+    "confirmDelete": "Supprimer ce template ?",
+    "readOnlyHint": "Seul un super_admin peut créer ou modifier les templates."
   },
   "day": {
     "today": "Aujourd'hui",
@@ -92,14 +130,48 @@
     "listTitle": "Conversations",
     "listEmpty": "Aucune conversation en cours",
     "filterAll": "Toutes",
+    "filterMine": "Mes convs",
+    "filterUnassigned": "Non assignées",
+    "filterOpen": "Ouvertes",
+    "filterClosed": "Fermées",
+    "filterAllStatus": "Toutes",
     "filterUnread": "Non lus",
-    "searchPlaceholder": "Rechercher un client…",
+    "searchPlaceholder": "Rechercher un client ou un mot…",
     "unreadBadge": "{{count}} non lu",
     "unreadBadgePlural": "{{count}} non lus",
     "openChat": "Ouvrir le chat",
     "noClientName": "Client sans nom",
     "clientLink": "Voir la fiche client",
-    "lastActivity": "Dernière activité"
+    "lastActivity": "Dernière activité",
+    "assignedToLabel": "Pris par",
+    "noMatch": "Aucun résultat pour cette recherche",
+    "statsLink": "Statistiques",
+    "statsTitle": "Statistiques support",
+    "statsPeriod7d": "7 jours",
+    "statsPeriod14d": "14 jours",
+    "statsPeriod30d": "30 jours",
+    "statsOpenConvs": "Conv. ouvertes",
+    "statsTotalMessages": "Messages",
+    "statsUnassigned": "Non assignées",
+    "statsAvgResponse": "Réponse moy.",
+    "statsPerAdmin": "Performance par admin",
+    "statsReplies": "réponses",
+    "statsNoData": "Pas encore de données sur cette période",
+    "statsLegendTitle": "Note",
+    "statsLegend": "Le temps de réponse moyen est calculé sur les paires message client → première réponse admin.",
+    "closedHint": "Conversation fermée — sera rouverte automatiquement au prochain message du client.",
+    "actions": {
+      "claim": "Je prends",
+      "claimed": "Conversation prise en charge",
+      "assigned": "Assignation mise à jour",
+      "assignTo": "Assigner à un admin",
+      "assignedToMe": "À vous",
+      "unassign": "Personne (désassigner)",
+      "close": "Clore la conversation",
+      "closed": "Conversation fermée",
+      "reopen": "Rouvrir la conversation",
+      "reopened": "Conversation rouverte"
+    }
   },
   "bubble": {
     "you": "Vous",

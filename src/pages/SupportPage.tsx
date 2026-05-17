@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ChatThread } from '@/components/support/ChatThread';
 import { MessageInput } from '@/components/support/MessageInput';
 import { ResponseTimeBadge } from '@/components/support/ResponseTimeBadge';
 import { TypingIndicator } from '@/components/support/TypingIndicator';
+import { ClosedBanner } from '@/components/support/ClosedBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -23,9 +25,10 @@ import type { ChatMessage } from '@/types/chat';
 
 const SupportPage = () => {
   const { t } = useTranslation('support');
+  const { conversationId } = useParams<{ conversationId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: conversation, isLoading: isLoadingConv } = useMyChatConversation();
-  const conversationId = conversation?.id ?? null;
+  const { data: conversation, isLoading: isLoadingConv } = useMyChatConversation(conversationId);
   const { data: messages, isLoading: isLoadingMsgs } = useChatMessages(conversationId);
   const sendText = useSendClientMessage();
   const sendImage = useSendClientImage();
@@ -48,7 +51,7 @@ const SupportPage = () => {
 
   const { otherIsTyping, notifyTyping, notifyStop } = useTypingIndicator({
     client: supabase,
-    conversationId,
+    conversationId: conversationId ?? null,
     selfSenderType: 'client',
     selfSenderId: clientId,
   });
@@ -70,16 +73,23 @@ const SupportPage = () => {
   }, [messages?.length, conversationId]);
 
   const replyToId = replyTo?.id ?? null;
+  const headerTitle = conversation?.subject || t('list.defaultSubject');
 
   return (
     <MobileLayout>
       <div className="flex h-[calc(100dvh-3.5rem-5rem)] flex-col lg:h-[calc(100dvh-3rem)]">
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
-          <div>
-            <h1 className="text-base font-semibold text-foreground">
-              {t('page.title')}
-            </h1>
-            <p className="text-xs text-muted-foreground">{t('page.subtitle')}</p>
+        <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => navigate('/support')}
+            className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted"
+            aria-label={t('detail.back')}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-sm font-semibold text-foreground">{headerTitle}</h1>
+            <p className="truncate text-xs text-muted-foreground">{t('detail.bonziniTeam')}</p>
           </div>
           <ResponseTimeBadge compact />
         </header>
@@ -95,9 +105,17 @@ const SupportPage = () => {
               selfSenderType="client"
               variant="client-app"
               onReply={setReplyTo}
+              conversationId={conversationId ?? null}
+              clientForReactions={supabase}
+              selfReactorId={clientId}
+              selfReactorType="client"
             />
           )}
         </div>
+
+        {conversation?.status === 'closed' && (
+          <ClosedBanner message={t('detail.closedHint')} />
+        )}
 
         {otherIsTyping && <TypingIndicator who="admin" />}
 

@@ -38,6 +38,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 // LandingPage is eagerly loaded (first route, no lazy delay)
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -68,6 +69,8 @@ const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m =>
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
 const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
 const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
+const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
+const MobileCannedResponsesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileCannedResponsesScreen })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
@@ -148,7 +151,8 @@ const App = () => (
                 <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />
                 <Route path="/rates" element={<ProtectedRoute><ClientRatesPage /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-                <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
+                <Route path="/support" element={<ProtectedRoute><SupportListPage /></ProtectedRoute>} />
+                <Route path="/support/:conversationId" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
 
                 {/* Mobile Admin Routes */}
                 <Route path="/m/login" element={<MobileRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></MobileRouteWrapper>} />
@@ -177,7 +181,9 @@ const App = () => (
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
                 <Route path="/m/support" element={<MobileRouteWrapper><MobileSupportListScreen /></MobileRouteWrapper>} />
+                <Route path="/m/support/stats" element={<MobileRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/support/:conversationId" element={<MobileRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></MobileRouteWrapper>} />
+                <Route path="/m/more/canned-responses" element={<MobileRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></MobileRouteWrapper>} />
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/more/treasury" element={<MobileRouteWrapper><MobileTreasuryHome /></MobileRouteWrapper>} />

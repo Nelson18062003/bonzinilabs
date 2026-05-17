@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { ChatImage } from './ChatImage';
 import { VoiceMessage } from './VoiceMessage';
 import { VideoMessage } from './VideoMessage';
@@ -7,18 +8,24 @@ import { FileMessage } from './FileMessage';
 import { ReadReceiptIndicator } from './ReadReceiptIndicator';
 import { QuotedMessage } from './QuotedMessage';
 import { MessageContextMenu } from './MessageContextMenu';
+import { ReactionPills } from './ReactionPills';
 import { cn } from '@/lib/utils';
-import type { ChatMessage } from '@/types/chat';
+import type { ChatMessage, ChatMessageReaction, ChatReactionEmoji } from '@/types/chat';
 
 interface MessageBubbleProps {
   message: ChatMessage;
   perspective: 'self' | 'other';
   variant?: 'client-app' | 'admin-app';
   showLabel?: boolean;
-  // Message cité (résolu dans le parent pour éviter un fetch par bulle)
   quotedMessage?: ChatMessage | null;
   onReply?: (message: ChatMessage) => void;
   onQuoteClick?: (quotedMessageId: string) => void;
+  // Réactions
+  reactions?: ChatMessageReaction[];
+  supabaseClient?: SupabaseClient;
+  selfReactorId?: string | null;
+  selfReactorType?: 'client' | 'admin';
+  conversationId?: string | null;
 }
 
 export function MessageBubble({
@@ -29,6 +36,11 @@ export function MessageBubble({
   quotedMessage,
   onReply,
   onQuoteClick,
+  reactions = [],
+  supabaseClient,
+  selfReactorId,
+  selfReactorType,
+  conversationId,
 }: MessageBubbleProps) {
   const { t } = useTranslation('support');
   const isSelf = perspective === 'self';
@@ -46,8 +58,6 @@ export function MessageBubble({
   const isImageOrVideo = mediaType === 'image' || mediaType === 'video';
   const isVoice = mediaType === 'voice';
   const isFile = mediaType === 'file';
-
-  // Si la bulle a une citation, on doit garder un peu de padding même pour les médias purs
   const hasQuote = !!quotedMessage;
 
   const bubble = (
@@ -57,7 +67,6 @@ export function MessageBubble({
         isSelf
           ? 'rounded-br-md bg-bonzini-violet text-white'
           : 'rounded-bl-md bg-muted text-foreground',
-        // Padding logic
         hasQuote
           ? 'px-2 pt-2 pb-2.5'
           : isMediaOnly && isImageOrVideo
@@ -139,16 +148,33 @@ export function MessageBubble({
         </span>
       )}
 
-      {onReply ? (
+      {onReply || supabaseClient ? (
         <MessageContextMenu
           message={message}
           side={isSelf ? 'right' : 'left'}
-          onReply={() => onReply(message)}
+          onReply={onReply ? () => onReply(message) : undefined}
+          supabaseClient={supabaseClient}
+          selfReactorId={selfReactorId ?? null}
+          selfReactorType={selfReactorType}
+          conversationId={conversationId ?? null}
+          existingReactions={reactions}
         >
           {bubble}
         </MessageContextMenu>
       ) : (
         bubble
+      )}
+
+      {reactions.length > 0 && (
+        <ReactionPills
+          reactions={reactions}
+          selfReactorId={selfReactorId ?? null}
+          align={isSelf ? 'right' : 'left'}
+          supabaseClient={supabaseClient}
+          messageId={message.id}
+          conversationId={conversationId ?? null}
+          selfReactorType={selfReactorType}
+        />
       )}
 
       <div className={cn('flex items-center gap-2 px-2', isSelf ? 'justify-end' : 'justify-start')}>

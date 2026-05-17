@@ -8,7 +8,8 @@
   },
   "empty": {
     "title": "The Bonzini team is here for you",
-    "subtitle": "Ask us about a payment, an exchange rate, or anything else. We reply quickly."
+    "subtitle": "Ask us about a payment, an exchange rate, or anything else. We reply quickly.",
+    "quickRepliesTitle": "Quick start"
   },
   "input": {
     "placeholder": "Write your message…",
@@ -71,13 +72,50 @@
     "reply": "Reply",
     "copy": "Copy",
     "copied": "Text copied",
-    "copyFailed": "Unable to copy"
+    "copyFailed": "Unable to copy",
+    "react": "React"
   },
   "quoted": {
     "image": "Photo",
     "voice": "Voice message",
     "video": "Video",
     "file": "File"
+  },
+  "list": {
+    "newConversation": "New conversation",
+    "newConversationHint": "On a specific topic",
+    "newSubjectLabel": "Conversation subject",
+    "newSubjectPlaceholder": "e.g. Question about a payment…",
+    "cancel": "Cancel",
+    "create": "Create",
+    "empty": "No conversations yet",
+    "defaultSubject": "General discussion",
+    "closedBadge": "Conversation closed"
+  },
+  "detail": {
+    "back": "Back",
+    "bonziniTeam": "Bonzini Team",
+    "closedHint": "This conversation is closed. Send a message to reopen it."
+  },
+  "templates": {
+    "pickerTitle": "Saved replies",
+    "searchPlaceholder": "Search a template…",
+    "empty": "No templates yet",
+    "emptyHint": "Tap + to create your first template",
+    "noMatch": "No results",
+    "screenTitle": "Reply templates",
+    "create": "Create template",
+    "createTitle": "New template",
+    "editTitle": "Edit template",
+    "labelField": "Short label",
+    "labelPlaceholder": "e.g. Deposit validated",
+    "contentField": "Message content",
+    "contentPlaceholder": "The message that will be injected when admin picks this template",
+    "save": "Save",
+    "created": "Template created",
+    "updated": "Template updated",
+    "confirmDelete": "Delete this template?",
+    "readOnlyHint": "Only a super_admin can create or modify templates."
   },
   "day": {
     "today": "Today",
@@ -92,14 +130,48 @@
     "listTitle": "Conversations",
     "listEmpty": "No active conversations",
     "filterAll": "All",
+    "filterMine": "Mine",
+    "filterUnassigned": "Unassigned",
+    "filterOpen": "Open",
+    "filterClosed": "Closed",
+    "filterAllStatus": "All",
     "filterUnread": "Unread",
-    "searchPlaceholder": "Search a client…",
+    "searchPlaceholder": "Search client or keyword…",
     "unreadBadge": "{{count}} unread",
     "unreadBadgePlural": "{{count}} unread",
     "openChat": "Open chat",
     "noClientName": "Unnamed client",
     "clientLink": "View client profile",
-    "lastActivity": "Last activity"
+    "lastActivity": "Last activity",
+    "assignedToLabel": "Taken by",
+    "noMatch": "No results for this search",
+    "statsLink": "Statistics",
+    "statsTitle": "Support statistics",
+    "statsPeriod7d": "7 days",
+    "statsPeriod14d": "14 days",
+    "statsPeriod30d": "30 days",
+    "statsOpenConvs": "Open convs",
+    "statsTotalMessages": "Messages",
+    "statsUnassigned": "Unassigned",
+    "statsAvgResponse": "Avg response",
+    "statsPerAdmin": "Per-admin performance",
+    "statsReplies": "replies",
+    "statsNoData": "No data yet for this period",
+    "statsLegendTitle": "Note",
+    "statsLegend": "Average response time is computed on client message → first admin reply pairs.",
+    "closedHint": "Conversation closed — will auto-reopen on the client's next message.",
+    "actions": {
+      "claim": "Take it",
+      "claimed": "Conversation claimed",
+      "assigned": "Assignment updated",
+      "assignTo": "Assign to an admin",
+      "assignedToMe": "Yours",
+      "unassign": "Nobody (unassign)",
+      "close": "Close conversation",
+      "closed": "Conversation closed",
+      "reopen": "Reopen conversation",
+      "reopened": "Conversation reopened"
+    }
   },
   "bubble": {
     "you": "You",

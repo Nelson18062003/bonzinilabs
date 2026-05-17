@@ -15,6 +15,7 @@ import {
   Settings,
   Coins,
   MessageCircle,
+  MessageSquareQuote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -147,6 +148,14 @@ export function MobileMoreScreen() {
               description="Conversations avec les clients"
               onClick={() => navigate('/m/support')}
               badge={supportUnreadTotal > 0 ? String(supportUnreadTotal) : undefined}
+            />
+          )}
+          {canAccessSupportChat && (
+            <MenuItem
+              icon={MessageSquareQuote}
+              label="Templates support"
+              description="Réponses pré-enregistrées"
+              onClick={() => navigate('/m/more/canned-responses')}
             />
           )}
           {canManageUsers && (
