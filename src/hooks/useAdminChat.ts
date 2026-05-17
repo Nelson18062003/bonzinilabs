@@ -33,21 +33,23 @@ type AnyTable = never;
 
 // ── Liste des conversations (admin) avec infos client ───────
 
-export function useAdminConversations() {
+export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 'open') {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['admin-chat-conversations'],
+    queryKey: ['admin-chat-conversations', statusFilter],
     staleTime: 10_000,
     queryFn: async (): Promise<ChatConversationWithClient[]> => {
-      // 1. Récupère les conversations
-      const { data: convs, error } = await supabaseAdmin
+      let q = supabaseAdmin
         .from('chat_conversations' as AnyTable)
         .select('*')
-        .eq('status', 'open')
         .order('unread_count_admin', { ascending: false })
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(500);
+      if (statusFilter !== 'all') {
+        q = q.eq('status', statusFilter);
+      }
+      const { data: convs, error } = await q;
       if (error) throw error;
 
       const list = (convs ?? []) as unknown as ChatConversation[];

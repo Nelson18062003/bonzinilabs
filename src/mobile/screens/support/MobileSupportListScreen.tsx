@@ -1,57 +1,77 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, Loader2, BarChart3 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
 import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { SearchField } from '@/components/form';
+import { HighlightedSnippet } from '@/components/support/HighlightedSnippet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminConversations } from '@/hooks/useAdminChat';
+import { useSearchConversations, useSupportAdmins } from '@/hooks/useAdminChatTools';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getDateFnsLocale } from '@/i18n';
-import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
+
+type StatusFilter = 'open' | 'all' | 'closed';
+type AssignFilter = 'all' | 'mine' | 'unassigned';
 
 export function MobileSupportListScreen() {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
-  const { hasPermission } = useAdminAuth();
+  const { hasPermission, currentUser } = useAdminAuth();
   const canAccess = hasPermission('canAccessSupportChat');
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const { data: conversations, isLoading } = useAdminConversations();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
+  const [assignFilter, setAssignFilter] = useState<AssignFilter>('all');
+
+  const { data: conversations, isLoading } = useAdminConversations(statusFilter);
+  const { data: searchResults, isLoading: isSearchLoading } = useSearchConversations(
+    debouncedSearch.length >= 2 ? debouncedSearch : ''
+  );
+  const { data: admins } = useSupportAdmins();
   const [locale, setLocale] = useState<Locale | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
-    getDateFnsLocale().then((l) => {
-      if (!cancelled) setLocale(l);
-    });
+    getDateFnsLocale().then((l) => !cancelled && setLocale(l));
     return () => {
       cancelled = true;
     };
   }, []);
 
+  const myUserRoleId = admins?.find((a) => a.user_id === currentUser?.id)?.id ?? null;
+
+  const searchSnippetByConv = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of searchResults ?? []) map.set(r.conversation_id, r.snippet);
+    return map;
+  }, [searchResults]);
+
   const filtered = useMemo(() => {
     let list = conversations ?? [];
-    if (filter === 'unread') {
-      list = list.filter((c) => c.unread_count_admin > 0);
+
+    if (assignFilter === 'mine' && myUserRoleId) {
+      list = list.filter((c) => c.assigned_admin_id === myUserRoleId);
+    } else if (assignFilter === 'unassigned') {
+      list = list.filter((c) => !c.assigned_admin_id);
     }
-    if (debouncedSearch.trim()) {
-      const q = debouncedSearch.trim().toLowerCase();
-      list = list.filter((c) => {
-        const name = `${c.client_first_name ?? ''} ${c.client_last_name ?? ''}`.toLowerCase();
-        const phone = (c.client_phone ?? '').toLowerCase();
-        return name.includes(q) || phone.includes(q);
-      });
+
+    // Quand on recherche, on intersecte
+    if (debouncedSearch.trim().length >= 2 && searchResults) {
+      const matchingIds = new Set(searchResults.map((r) => r.conversation_id));
+      list = list.filter((c) => matchingIds.has(c.id));
     }
+
     return list;
-  }, [conversations, filter, debouncedSearch]);
+  }, [conversations, assignFilter, myUserRoleId, debouncedSearch, searchResults]);
+
+  const isSearching = debouncedSearch.trim().length >= 2;
 
   if (!canAccess) {
     return (
@@ -63,7 +83,19 @@ export function MobileSupportListScreen() {
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background">
-      <MobileHeader title={t('admin.listTitle')} />
+      <MobileHeader
+        title={t('admin.listTitle')}
+        rightElement={
+          <button
+            type="button"
+            onClick={() => navigate('/m/support/stats')}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-bonzini-violet hover:bg-bonzini-violet/10"
+            aria-label={t('admin.statsLink')}
+          >
+            <BarChart3 className="h-4 w-4" />
+          </button>
+        }
+      />
 
       <div className="px-4 py-3 space-y-3 border-b border-border">
         <SearchField
@@ -73,24 +105,35 @@ export function MobileSupportListScreen() {
           placeholder={t('admin.searchPlaceholder')}
         />
 
-        <MobileFilterChips<'all' | 'unread'>
+        <MobileFilterChips<AssignFilter>
           filters={[
             { value: 'all', label: t('admin.filterAll') },
-            { value: 'unread', label: t('admin.filterUnread') },
+            { value: 'mine', label: t('admin.filterMine') },
+            { value: 'unassigned', label: t('admin.filterUnassigned') },
           ]}
-          activeKey={filter}
-          onChange={setFilter}
+          activeKey={assignFilter}
+          onChange={setAssignFilter}
+        />
+
+        <MobileFilterChips<StatusFilter>
+          filters={[
+            { value: 'open', label: t('admin.filterOpen') },
+            { value: 'all', label: t('admin.filterAllStatus') },
+            { value: 'closed', label: t('admin.filterClosed') },
+          ]}
+          activeKey={statusFilter}
+          onChange={setStatusFilter}
         />
       </div>
 
-      {isLoading ? (
+      {isLoading || (debouncedSearch.length >= 2 && isSearchLoading) ? (
         <div className="flex flex-1 items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
         <MobileEmptyState
           icon={MessageCircle}
-          title={t('admin.listEmpty')}
+          title={debouncedSearch.length >= 2 ? t('admin.noMatch') : t('admin.listEmpty')}
         />
       ) : (
         <ul className="divide-y divide-border">
@@ -105,6 +148,11 @@ export function MobileSupportListScreen() {
                   locale,
                 })
               : '';
+            const assignedAdmin = admins?.find((a) => a.id === c.assigned_admin_id);
+            const assignedName = assignedAdmin
+              ? `${assignedAdmin.first_name ?? ''} ${assignedAdmin.last_name ?? ''}`.trim()
+              : null;
+            const subject = c.subject;
 
             return (
               <li key={c.id}>
@@ -116,6 +164,7 @@ export function MobileSupportListScreen() {
                   <div
                     className={cn(
                       'flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-semibold',
+                      c.status === 'closed' && 'opacity-50',
                       unread > 0
                         ? 'bg-bonzini-violet text-white'
                         : 'bg-muted text-muted-foreground'
@@ -126,16 +175,36 @@ export function MobileSupportListScreen() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className={cn('truncate text-sm', unread > 0 ? 'font-semibold text-foreground' : 'font-medium text-foreground')}>
+                      <span className={cn('truncate text-sm', unread > 0 ? 'font-semibold' : 'font-medium', c.status === 'closed' && 'text-muted-foreground')}>
                         {name}
                       </span>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">
-                        {time}
-                      </span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{time}</span>
                     </div>
-                    <p className={cn('truncate text-xs mt-0.5', unread > 0 ? 'text-foreground' : 'text-muted-foreground')}>
-                      {c.last_message_preview || '—'}
-                    </p>
+                    {subject && (
+                      <p className="truncate text-[11px] font-medium text-bonzini-violet">
+                        {subject}
+                      </p>
+                    )}
+                    {isSearching && searchSnippetByConv.has(c.id) ? (
+                      <HighlightedSnippet
+                        text={searchSnippetByConv.get(c.id) ?? ''}
+                        query={debouncedSearch}
+                        maxLength={100}
+                        className={cn(
+                          'truncate text-xs mt-0.5',
+                          unread > 0 ? 'text-foreground' : 'text-muted-foreground'
+                        )}
+                      />
+                    ) : (
+                      <p className={cn('truncate text-xs mt-0.5', unread > 0 ? 'text-foreground' : 'text-muted-foreground')}>
+                        {c.last_message_preview || '—'}
+                      </p>
+                    )}
+                    {assignedName && (
+                      <p className="mt-0.5 text-[10px] text-bonzini-amber">
+                        {t('admin.assignedToLabel')} {assignedName}
+                      </p>
+                    )}
                   </div>
 
                   {unread > 0 && (

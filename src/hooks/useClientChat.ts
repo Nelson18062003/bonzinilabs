@@ -39,56 +39,50 @@ async function getCurrentClientId(): Promise<string | null> {
   return data?.id ?? null;
 }
 
-// ── Récupère ou crée la conversation du client courant ──────
+// ── Liste de TOUTES les conversations du client (multi-thread) ──
 
-export function useMyChatConversation() {
+export function useMyChatConversations() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['my-chat-conversation'],
-    staleTime: 30_000,
-    queryFn: async (): Promise<ChatConversation | null> => {
+    queryKey: ['my-chat-conversations'],
+    staleTime: 15_000,
+    queryFn: async (): Promise<ChatConversation[]> => {
       const clientId = await getCurrentClientId();
-      if (!clientId) return null;
+      if (!clientId) return [];
 
-      // 1. Tente de récupérer la conversation existante
-      const { data: existing } = await supabase
+      const { data, error } = await supabase
         .from('chat_conversations' as AnyTable)
         .select('*')
         .eq('client_id', clientId)
-        .maybeSingle();
-
-      if (existing) return existing as unknown as ChatConversation;
-
-      // 2. Sinon en crée une
-      const { data: created, error } = await supabase
-        .from('chat_conversations' as AnyTable)
-        .insert({ client_id: clientId })
-        .select('*')
-        .single();
+        .order('last_message_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      return created as unknown as ChatConversation;
+      const list = (data ?? []) as unknown as ChatConversation[];
+
+      // Si aucune conversation, en créer une par défaut (subject null)
+      if (list.length === 0) {
+        const { data: created, error: createErr } = await supabase
+          .from('chat_conversations' as AnyTable)
+          .insert({ client_id: clientId })
+          .select('*')
+          .single();
+        if (createErr) throw createErr;
+        return [created as unknown as ChatConversation];
+      }
+      return list;
     },
   });
 
-  // Subscribe Realtime sur les updates de la conversation (compteurs non-lus)
+  // Subscribe Realtime : nouvelles convs créées + updates compteurs
   useEffect(() => {
-    const convId = query.data?.id;
-    if (!convId) return;
-
     const channel = supabase
-      .channel(`client-chat-conv-${convId}`)
+      .channel('client-chat-conv-list')
       .on(
         'postgres_changes' as never,
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'chat_conversations',
-          filter: `id=eq.${convId}`,
-        },
-        (payload: { new: ChatConversation }) => {
-          queryClient.setQueryData(['my-chat-conversation'], payload.new);
+        { event: '*', schema: 'public', table: 'chat_conversations' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['my-chat-conversations'] });
         }
       )
       .subscribe();
@@ -96,9 +90,55 @@ export function useMyChatConversation() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [query.data?.id, queryClient]);
+  }, [queryClient]);
 
   return query;
+}
+
+// ── Détail d'UNE conversation spécifique ────────────────────
+
+export function useMyChatConversation(conversationId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['my-chat-conversation', conversationId],
+    enabled: !!conversationId,
+    staleTime: 15_000,
+    queryFn: async (): Promise<ChatConversation | null> => {
+      if (!conversationId) return null;
+      const { data, error } = await supabase
+        .from('chat_conversations' as AnyTable)
+        .select('*')
+        .eq('id', conversationId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as unknown as ChatConversation) ?? null;
+    },
+  });
+}
+
+// ── Création explicite d'une nouvelle conversation ──────────
+
+export function useCreateChatConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { subject: string }): Promise<ChatConversation> => {
+      const clientId = await getCurrentClientId();
+      if (!clientId) throw new Error('Not authenticated');
+      const trimmed = input.subject.trim();
+      if (!trimmed) throw new Error('Subject required');
+
+      const { data, error } = await supabase
+        .from('chat_conversations' as AnyTable)
+        .insert({ client_id: clientId, subject: trimmed })
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return data as unknown as ChatConversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-chat-conversations'] });
+    },
+  });
 }
 
 // ── Messages d'une conversation + Realtime ──────────────────

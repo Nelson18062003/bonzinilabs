@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { isSameDay } from 'date-fns';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { MessageBubble } from './MessageBubble';
 import { DateSeparator } from './DateSeparator';
 import { EmptyChatState } from './EmptyChatState';
+import { useReactionsForMessages } from '@/hooks/useMessageReactions';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/types/chat';
 
@@ -13,6 +15,13 @@ interface ChatThreadProps {
   isLoading?: boolean;
   emptyState?: React.ReactNode;
   onReply?: (message: ChatMessage) => void;
+  // Réactions
+  conversationId?: string | null;
+  clientForReactions?: SupabaseClient;
+  selfReactorId?: string | null;
+  selfReactorType?: 'client' | 'admin';
+  // Quick replies (côté client uniquement, dans EmptyChatState)
+  onQuickReply?: (content: string) => void;
   className?: string;
 }
 
@@ -23,19 +32,41 @@ export function ChatThread({
   isLoading = false,
   emptyState,
   onReply,
+  conversationId,
+  clientForReactions,
+  selfReactorId,
+  selfReactorType,
+  onQuickReply,
   className,
 }: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Index pour résoudre les quotes en O(1)
   const messagesById = useMemo(() => {
     const map = new Map<string, ChatMessage>();
     for (const m of messages) map.set(m.id, m);
     return map;
   }, [messages]);
 
-  // Auto-scroll au mount et à chaque nouveau message
+  const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
+
+  const { data: reactions } = useReactionsForMessages(
+    clientForReactions as SupabaseClient,
+    conversationId,
+    messageIds
+  );
+
+  // Index réactions par message
+  const reactionsByMsg = useMemo(() => {
+    const map = new Map<string, typeof reactions>();
+    for (const r of reactions ?? []) {
+      const arr = map.get(r.message_id) ?? [];
+      arr.push(r);
+      map.set(r.message_id, arr);
+    }
+    return map;
+  }, [reactions]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
@@ -44,7 +75,6 @@ export function ChatThread({
     const el = containerRef.current?.querySelector(`[data-message-id="${id}"]`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Flash visuel pour faire remarquer
       el.classList.add('animate-pulse');
       window.setTimeout(() => el.classList.remove('animate-pulse'), 1200);
     }
@@ -53,7 +83,7 @@ export function ChatThread({
   if (!isLoading && messages.length === 0) {
     return (
       <div className={cn('flex flex-1 items-center justify-center p-6', className)}>
-        {emptyState ?? <EmptyChatState />}
+        {emptyState ?? <EmptyChatState onQuickReply={onQuickReply} />}
       </div>
     );
   }
@@ -80,6 +110,11 @@ export function ChatThread({
               quotedMessage={quoted}
               onReply={onReply}
               onQuoteClick={scrollToMessage}
+              reactions={reactionsByMsg.get(m.id) ?? []}
+              supabaseClient={clientForReactions}
+              selfReactorId={selfReactorId ?? null}
+              selfReactorType={selfReactorType}
+              conversationId={conversationId ?? null}
             />
           </div>
         );

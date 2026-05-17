@@ -1,11 +1,13 @@
-import { useRef, useState, KeyboardEvent, useCallback } from 'react';
+import { useRef, useState, KeyboardEvent, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImagePlus, Send, Loader2, Plus, Video, FileText, X } from 'lucide-react';
+import { ImagePlus, Send, Loader2, Plus, Video, FileText, X, MessageSquareQuote } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { VoiceRecorder, type VoiceBlobPayload } from './VoiceRecorder';
 import { QuotedMessage } from './QuotedMessage';
+import { CannedResponsesPicker } from './CannedResponsesPicker';
 import type { ChatMessage } from '@/types/chat';
+import type { TemplateContext } from '@/lib/template-vars';
 
 interface MessageInputProps {
   onSendText: (text: string) => Promise<void> | void;
@@ -14,10 +16,13 @@ interface MessageInputProps {
   onSendVideo?: (file: File) => Promise<void> | void;
   onSendFile?: (file: File) => Promise<void> | void;
   onTextChange?: (value: string) => void;
-  // Reply : si défini, on affiche la preview au-dessus de l'input et on inclut
-  // le reply_to_message_id à l'envoi (géré côté parent via les callbacks).
+  // Reply
   replyTo?: ChatMessage | null;
   onCancelReply?: () => void;
+  // Templates admin
+  showCannedResponses?: boolean;
+  cannedContext?: TemplateContext;
+  initialText?: string;
   disabled?: boolean;
   className?: string;
 }
@@ -45,14 +50,25 @@ export function MessageInput({
   onTextChange,
   replyTo,
   onCancelReply,
+  showCannedResponses = false,
+  cannedContext,
+  initialText,
   disabled = false,
   className,
 }: MessageInputProps) {
   const { t } = useTranslation('support');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText ?? '');
   const [sendingText, setSendingText] = useState(false);
   const [sendingMedia, setSendingMedia] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cannedOpen, setCannedOpen] = useState(false);
+
+  // Quand le parent fournit un initialText non vide (ex: quick reply ou template), on l'injecte
+  useEffect(() => {
+    if (initialText && initialText.length > 0) {
+      setText(initialText);
+    }
+  }, [initialText]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,6 +209,35 @@ export function MessageInput({
           className="hidden"
           onChange={handleFileChange}
         />
+      )}
+
+      {showCannedResponses && (
+        <CannedResponsesPicker
+          open={cannedOpen}
+          onClose={() => setCannedOpen(false)}
+          context={cannedContext}
+          onPick={(content) => {
+            setText(content);
+            onTextChange?.(content);
+          }}
+        />
+      )}
+
+      {showCannedResponses && (
+        <button
+          type="button"
+          onClick={() => setCannedOpen(true)}
+          disabled={sending || disabled}
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+            'bg-bonzini-violet/15 text-bonzini-violet transition-colors',
+            'hover:bg-bonzini-violet/25 active:scale-95',
+            'disabled:opacity-50'
+          )}
+          aria-label={t('templates.pickerTitle')}
+        >
+          <MessageSquareQuote className="h-5 w-5" />
+        </button>
       )}
 
       {/* Bouton "+" qui ouvre un mini menu vidéo + fichier (+ photo direct) */}

@@ -2,7 +2,7 @@ import { LiquidTabBar } from '@/components/navigation/LiquidTabBar';
 import { Wallet, ArrowDownToLine, Send, History, User, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
-import { useMyChatConversation } from '@/hooks/useClientChat';
+import { useMyChatConversations } from '@/hooks/useClientChat';
 import { cn } from '@/lib/utils';
 import type { TabItem } from '@/components/navigation/types';
 
@@ -14,8 +14,11 @@ export const BottomNav = ({ className }: BottomNavProps) => {
   const { t } = useTranslation('client');
   const { t: tSupport } = useTranslation('support');
   const { data: unreadCount } = useUnreadNotificationCount();
-  const { data: chatConv } = useMyChatConversation();
-  const supportUnread = chatConv?.unread_count_client ?? 0;
+  const { data: chatConvs } = useMyChatConversations();
+  const supportUnread = (chatConvs ?? []).reduce(
+    (sum, c) => sum + (c.unread_count_client ?? 0),
+    0
+  );
 
   const navItems: TabItem[] = [
     { to: '/wallet', icon: Wallet, label: t('nav.wallet'), end: true },
