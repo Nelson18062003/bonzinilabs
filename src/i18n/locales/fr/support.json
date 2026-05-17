@@ -14,6 +14,9 @@
     "placeholder": "Écrivez votre message…",
     "send": "Envoyer",
     "sendImage": "Envoyer une image",
+    "sendVideo": "Envoyer une vidéo",
+    "sendFile": "Envoyer un fichier",
+    "attachMenu": "Joindre un média",
     "sending": "Envoi…"
   },
   "responseTime": {
@@ -25,10 +28,56 @@
   "errors": {
     "imageTooLarge": "Image trop volumineuse (max 5 Mo)",
     "imageWrongFormat": "Format non supporté (JPG, PNG ou WebP uniquement)",
+    "videoTooLarge": "Vidéo trop volumineuse (max 25 Mo)",
+    "videoWrongFormat": "Format vidéo non supporté (MP4 uniquement)",
+    "videoTooLong": "Vidéo trop longue (max 30 secondes)",
+    "fileTooLarge": "Fichier trop volumineux (max 10 Mo)",
+    "fileWrongFormat": "Format non supporté (PDF, DOC, DOCX, XLS, XLSX uniquement)",
     "messageEmpty": "Le message ne peut pas être vide",
     "messageTooLong": "Message trop long (2000 caractères max)",
     "sendFailed": "Échec d'envoi, réessayez",
     "loadFailed": "Impossible de charger la conversation"
+  },
+  "voice": {
+    "startRecording": "Maintenez pour enregistrer",
+    "slideToCancel": "← Glissez pour annuler",
+    "releaseToCancel": "Relâchez pour annuler",
+    "cancel": "Annuler",
+    "maxDurationReached": "Maximum 60 secondes",
+    "permissionHelp": "Autorisez le micro dans les réglages",
+    "errors": {
+      "permissionDenied": "Autorisation micro refusée. Activez-la dans les réglages du navigateur.",
+      "noMicrophone": "Aucun micro détecté sur cet appareil",
+      "microphoneBusy": "Micro occupé par une autre application",
+      "unknownStart": "Impossible de démarrer l'enregistrement"
+    }
+  },
+  "video": {
+    "error": "Vidéo indisponible"
+  },
+  "file": {
+    "download": "Télécharger"
+  },
+  "typing": {
+    "adminWriting": "L'équipe Bonzini écrit…",
+    "clientWriting": "Le client écrit…"
+  },
+  "receipt": {
+    "sent": "Envoyé",
+    "seen": "Vu",
+    "seenAt": "Vu à {{time}}"
+  },
+  "contextMenu": {
+    "reply": "Répondre",
+    "copy": "Copier",
+    "copied": "Texte copié",
+    "copyFailed": "Impossible de copier"
+  },
+  "quoted": {
+    "image": "Photo",
+    "voice": "Message vocal",
+    "video": "Vidéo",
+    "file": "Fichier"
   },
   "day": {
     "today": "Aujourd'hui",

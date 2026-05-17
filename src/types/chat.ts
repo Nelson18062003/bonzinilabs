@@ -1,7 +1,7 @@
-// Types métier du module Chat Support (Lot 1 : texte + photos uniquement)
+// Types métier du module Chat Support
 
 export type ChatSenderType = 'client' | 'admin';
-export type ChatMediaType = 'image';
+export type ChatMediaType = 'image' | 'voice' | 'video' | 'file';
 
 export interface ChatConversation {
   id: string;
@@ -24,8 +24,22 @@ export interface ChatMessage {
   content: string | null;
   media_url: string | null;
   media_type: ChatMediaType | null;
+  media_duration_seconds: number | null;
+  media_size_bytes: number | null;
+  media_filename: string | null;
+  media_waveform_peaks: number[] | null;
+  reply_to_message_id: string | null;
   read_at: string | null;
   created_at: string;
+}
+
+/** Preview synthétique du message cité (utilisé dans la bulle pour afficher la citation) */
+export interface QuotedMessagePreview {
+  id: string;
+  sender_type: ChatSenderType;
+  content: string | null;
+  media_type: ChatMediaType | null;
+  media_filename: string | null;
 }
 
 // Conversation enrichie avec le nom du client (côté liste admin)
