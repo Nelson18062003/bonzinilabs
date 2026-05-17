@@ -5,9 +5,7 @@ import type { ChatMessage } from '@/types/chat';
 
 interface QuotedMessageProps {
   message: ChatMessage;
-  // Variante affichée DANS une bulle (réponse à ce message)
   variant: 'in-bubble' | 'in-input';
-  // Couleur de la barre verticale : violet par défaut, blanc dans une bulle self
   accent?: 'violet' | 'white';
   onCancel?: () => void;
   onClick?: () => void;
@@ -30,24 +28,35 @@ export function QuotedMessage({
   const Icon = mediaIcon(message.media_type);
   const preview = previewText(message, t);
 
-  const barColor = accent === 'white' ? 'bg-white/70' : 'bg-bonzini-violet';
-  const bgColor = variant === 'in-bubble'
-    ? accent === 'white' ? 'bg-white/15' : 'bg-muted/60'
-    : 'bg-muted/60';
-  const senderColor = accent === 'white' ? 'text-white' : 'text-bonzini-violet';
+  // En in-bubble : on adapte au fond de la bulle parent
+  // En in-input : background subtil violet
+  const bgClass = variant === 'in-bubble'
+    ? accent === 'white'
+      ? 'bg-white/20'
+      : 'bg-muted/60 dark:bg-muted/40'
+    : '';
+
+  const barClass = variant === 'in-bubble' && accent === 'white'
+    ? 'bg-white/70'
+    : 'bg-bonzini-violet';
 
   const content = (
     <div
       className={cn(
         'flex items-stretch gap-2 overflow-hidden rounded-lg pr-2',
-        bgColor,
+        bgClass,
         variant === 'in-bubble' ? 'mb-1.5' : '',
         className
       )}
     >
-      <div className={cn('w-1 shrink-0 rounded-l-lg', barColor)} />
+      <div className={cn('w-[3px] shrink-0 rounded-l-lg', barClass)} />
       <div className="min-w-0 flex-1 py-1.5">
-        <p className={cn('truncate text-[11px] font-semibold', senderColor)}>
+        <p
+          className={cn(
+            'truncate text-[11px] font-semibold',
+            variant === 'in-bubble' && accent === 'white' ? 'text-white/90' : 'text-bonzini-violet'
+          )}
+        >
           {senderLabel}
         </p>
         <p className="flex items-center gap-1 truncate text-xs opacity-80">
@@ -59,7 +68,7 @@ export function QuotedMessage({
         <button
           type="button"
           onClick={onCancel}
-          className="flex shrink-0 items-center justify-center self-center rounded-full p-1 hover:bg-background"
+          className="flex shrink-0 items-center justify-center self-center rounded-full p-1.5 text-muted-foreground hover:bg-muted"
           aria-label="Cancel reply"
         >
           <X className="h-3.5 w-3.5" />

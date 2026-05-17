@@ -1,9 +1,20 @@
-import { useRef, useState, KeyboardEvent, useCallback, useEffect } from 'react';
+import { useEffect, useRef, useState, useCallback, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImagePlus, Send, Loader2, Plus, Video, FileText, X, MessageSquareQuote } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Paperclip,
+  Send,
+  Loader2,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  FileText,
+  X,
+  MessageSquareQuote,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { VoiceRecorder, type VoiceBlobPayload } from './VoiceRecorder';
+import { useKeyboardHeight } from '@/hooks/keyboard/useKeyboardHeight';
+import { VoiceRecorder, VoiceRecorderInline, type VoiceBlobPayload } from './VoiceRecorder';
 import { QuotedMessage } from './QuotedMessage';
 import { CannedResponsesPicker } from './CannedResponsesPicker';
 import type { ChatMessage } from '@/types/chat';
@@ -16,10 +27,8 @@ interface MessageInputProps {
   onSendVideo?: (file: File) => Promise<void> | void;
   onSendFile?: (file: File) => Promise<void> | void;
   onTextChange?: (value: string) => void;
-  // Reply
   replyTo?: ChatMessage | null;
   onCancelReply?: () => void;
-  // Templates admin
   showCannedResponses?: boolean;
   cannedContext?: TemplateContext;
   initialText?: string;
@@ -34,11 +43,7 @@ const FILE_MIME = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/msword',
   'application/vnd.ms-excel',
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.xls',
-  '.xlsx',
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx',
 ].join(',');
 
 export function MessageInput({
@@ -57,21 +62,21 @@ export function MessageInput({
   className,
 }: MessageInputProps) {
   const { t } = useTranslation('support');
+  const kbHeight = useKeyboardHeight();
   const [text, setText] = useState(initialText ?? '');
   const [sendingText, setSendingText] = useState(false);
   const [sendingMedia, setSendingMedia] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cannedOpen, setCannedOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
-  // Quand le parent fournit un initialText non vide (ex: quick reply ou template), on l'injecte
-  useEffect(() => {
-    if (initialText && initialText.length > 0) {
-      setText(initialText);
-    }
-  }, [initialText]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialText && initialText.length > 0) setText(initialText);
+  }, [initialText]);
 
   const sending = sendingText || sendingMedia;
   const hasText = text.trim().length > 0;
@@ -105,7 +110,6 @@ export function MessageInput({
     }
   };
 
-  // Génère un handler générique pour les uploads (image/video/file)
   const makeUploadHandler = useCallback(
     (
       onSend: (file: File) => Promise<void> | void,
@@ -119,8 +123,8 @@ export function MessageInput({
       try {
         await onSend(file);
       } catch (err) {
-        const errName = (err as Error)?.message ?? '';
-        toast.error(errorKeyByName(errName));
+        const msg = (err as Error)?.message ?? '';
+        toast.error(errorKeyByName(msg));
         console.error(err);
       } finally {
         setSendingMedia(false);
@@ -134,7 +138,6 @@ export function MessageInput({
     if (msg.includes('volumineuse') || msg.includes('large')) return t('errors.imageTooLarge');
     return t('errors.sendFailed');
   });
-
   const handleVideoChange = onSendVideo
     ? makeUploadHandler(onSendVideo, (msg = '') => {
         if (msg.includes('Format')) return t('errors.videoWrongFormat');
@@ -143,7 +146,6 @@ export function MessageInput({
         return t('errors.sendFailed');
       })
     : undefined;
-
   const handleFileChange = onSendFile
     ? makeUploadHandler(onSendFile, (msg = '') => {
         if (msg.includes('Format')) return t('errors.fileWrongFormat');
@@ -155,34 +157,58 @@ export function MessageInput({
   const handleVoice = onSendVoice
     ? async (payload: VoiceBlobPayload) => {
         setSendingMedia(true);
-        try {
-          await onSendVoice(payload);
-        } catch (err) {
-          toast.error(t('errors.sendFailed'));
-          console.error(err);
-        } finally {
-          setSendingMedia(false);
-        }
+        try { await onSendVoice(payload); }
+        catch (err) { toast.error(t('errors.sendFailed')); console.error(err); }
+        finally { setSendingMedia(false); }
       }
     : undefined;
 
+  const showSendBtn = hasText && !isRecording;
+  const showMicBtn = !hasText && !!handleVoice;
+
   return (
     <div
-      className={cn(
-        'flex flex-col border-t border-border bg-background/95 backdrop-blur',
-        className
-      )}
+      className={cn('flex flex-col bg-background', className)}
+      style={{
+        paddingBottom: `calc(${kbHeight}px + env(safe-area-inset-bottom))`,
+        transition: 'padding-bottom 220ms cubic-bezier(0.2, 0, 0, 1)',
+      }}
     >
-      {replyTo && (
-        <div className="px-3 pt-2.5">
-          <QuotedMessage
-            message={replyTo}
-            variant="in-input"
-            onCancel={onCancelReply}
-          />
-        </div>
+      {/* Reply preview */}
+      <AnimatePresence>
+        {replyTo && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden border-t border-border bg-[hsl(258_100%_97%)] dark:bg-[hsl(258_45%_16%)]"
+          >
+            <div className="px-3 py-2">
+              <QuotedMessage
+                message={replyTo}
+                variant="in-input"
+                onCancel={onCancelReply}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cannned responses modal */}
+      {showCannedResponses && (
+        <CannedResponsesPicker
+          open={cannedOpen}
+          onClose={() => setCannedOpen(false)}
+          context={cannedContext}
+          onPick={(content) => {
+            setText(content);
+            onTextChange?.(content);
+          }}
+        />
       )}
-      <div className="relative flex items-end gap-2 p-3">
+
+      {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
         type="file"
@@ -211,132 +237,138 @@ export function MessageInput({
         />
       )}
 
-      {showCannedResponses && (
-        <CannedResponsesPicker
-          open={cannedOpen}
-          onClose={() => setCannedOpen(false)}
-          context={cannedContext}
-          onPick={(content) => {
-            setText(content);
-            onTextChange?.(content);
-          }}
-        />
-      )}
-
-      {showCannedResponses && (
-        <button
-          type="button"
-          onClick={() => setCannedOpen(true)}
-          disabled={sending || disabled}
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-            'bg-bonzini-violet/15 text-bonzini-violet transition-colors',
-            'hover:bg-bonzini-violet/25 active:scale-95',
-            'disabled:opacity-50'
-          )}
-          aria-label={t('templates.pickerTitle')}
-        >
-          <MessageSquareQuote className="h-5 w-5" />
-        </button>
-      )}
-
-      {/* Bouton "+" qui ouvre un mini menu vidéo + fichier (+ photo direct) */}
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={() => setMenuOpen((o) => !o)}
-          disabled={sending || disabled}
-          className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-full',
-            'bg-bonzini-amber/15 text-bonzini-amber transition-colors',
-            'hover:bg-bonzini-amber/25 active:scale-95',
-            'disabled:opacity-50'
-          )}
-          aria-label={t('input.attachMenu')}
-        >
-          {menuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-        </button>
-
+      {/* Attach menu popover */}
+      <AnimatePresence>
         {menuOpen && (
-          <div className="absolute bottom-12 left-0 z-20 flex w-48 flex-col gap-1 rounded-2xl border border-border bg-popover p-1.5 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-[56px] left-3 z-20 flex w-48 flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1 shadow-lg"
+          >
             <MenuButton
-              icon={ImagePlus}
+              icon={ImageIcon}
               label={t('input.sendImage')}
-              onClick={() => {
-                setMenuOpen(false);
-                imageInputRef.current?.click();
-              }}
+              onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }}
             />
             {handleVideoChange && (
               <MenuButton
-                icon={Video}
+                icon={VideoIcon}
                 label={t('input.sendVideo')}
-                onClick={() => {
-                  setMenuOpen(false);
-                  videoInputRef.current?.click();
-                }}
+                onClick={() => { setMenuOpen(false); videoInputRef.current?.click(); }}
               />
             )}
             {handleFileChange && (
               <MenuButton
                 icon={FileText}
                 label={t('input.sendFile')}
-                onClick={() => {
-                  setMenuOpen(false);
-                  fileInputRef.current?.click();
-                }}
+                onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }}
               />
             )}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {/* Voice recorder ou textarea (le recorder remplace TOUTE l'input zone pendant l'enregistrement) */}
-      {handleVoice && !hasText ? (
-        <div className="flex flex-1 items-end gap-2">
-          <TextZone
-            text={text}
-            setText={setText}
-            onTextChange={onTextChange}
-            onKeyDown={handleKeyDown}
-            sending={sending}
-            disabled={disabled}
-            t={t}
+      {/* La barre input principale */}
+      <div className="relative flex items-end gap-2 border-t border-border bg-background px-2 py-2">
+        {/* Templates (admin uniquement) — à gauche, neutre */}
+        {showCannedResponses && !isRecording && (
+          <button
+            type="button"
+            onClick={() => setCannedOpen(true)}
+            disabled={sending || disabled}
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+              'text-muted-foreground hover:bg-muted active:scale-95 transition',
+              'disabled:opacity-50'
+            )}
+            aria-label={t('templates.pickerTitle')}
+          >
+            <MessageSquareQuote className="h-5 w-5" />
+          </button>
+        )}
+
+        {/* Bouton + attach (caché pendant recording) */}
+        {!isRecording && (
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            disabled={sending || disabled}
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+              'text-muted-foreground hover:bg-muted active:scale-95 transition',
+              'disabled:opacity-50'
+            )}
+            aria-label={t('input.attachMenu')}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Paperclip className="h-5 w-5" />}
+          </button>
+        )}
+
+        {/* Zone centrale : soit textarea (idle), soit voice recorder inline (recording) */}
+        {!isRecording ? (
+          <div className="flex flex-1 items-end rounded-full bg-muted pl-3 pr-1.5 min-h-[40px]">
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <textarea
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                onTextChange?.(e.target.value);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder={t('input.placeholder')}
+              rows={1}
+              maxLength={2000}
+              disabled={sending || disabled}
+              className={cn(
+                'min-h-[28px] max-h-[110px] w-full resize-none bg-transparent py-1.5 text-[16px] leading-[1.35]',
+                'placeholder:text-muted-foreground focus:outline-none'
+              )}
+              onInput={(e) => {
+                const t = e.currentTarget;
+                t.style.height = 'auto';
+                t.style.height = Math.min(t.scrollHeight, 110) + 'px';
+              }}
+            />
+          </div>
+        ) : (
+          // Pendant l'enregistrement, on rend l'UI inline du recorder à la place
+          // (le composant VoiceRecorder s'occupe d'appeler renderInline via state)
+          null
+        )}
+
+        {/* Bouton micro ou send (selon état) */}
+        {handleVoice && !showSendBtn && (
+          <VoiceRecorder
+            onSend={handleVoice}
+            onRecordingChange={setIsRecording}
+            disabled={sending || disabled}
+            renderInline={(state) => <VoiceRecorderInline state={state} />}
           />
-          <VoiceRecorder onSend={handleVoice} disabled={sending || disabled} />
-        </div>
-      ) : (
-        <TextZone
-          text={text}
-          setText={setText}
-          onTextChange={onTextChange}
-          onKeyDown={handleKeyDown}
-          sending={sending}
-          disabled={disabled}
-          t={t}
-        />
-      )}
+        )}
 
-      {hasText && (
-        <button
-          type="button"
-          onClick={() => void handleSend()}
-          disabled={!canSend}
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition',
-            canSend
-              ? 'bg-bonzini-violet text-white hover:bg-bonzini-violet/90 active:scale-95'
-              : 'bg-muted text-muted-foreground'
-          )}
-          aria-label={t('input.send')}
-        >
-          {sendingText ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </button>
-      )}
+        {showSendBtn && (
+          <motion.button
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={!canSend}
+            whileTap={{ scale: 0.92 }}
+            className={cn(
+              'flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full transition',
+              canSend
+                ? 'bg-bonzini-violet text-white shadow-[0_6px_18px_hsl(258_95%_60%/_0.22)]'
+                : 'bg-muted text-muted-foreground'
+            )}
+            aria-label={t('input.send')}
+          >
+            {sendingText ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-[18px] w-[18px] -rotate-12" />
+            )}
+          </motion.button>
+        )}
       </div>
     </div>
   );
@@ -352,48 +384,10 @@ function MenuButton({ icon: Icon, label, onClick }: MenuButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-muted"
+      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-muted"
     >
       <Icon className="h-4 w-4 text-bonzini-violet" />
       <span>{label}</span>
     </button>
-  );
-}
-
-interface TextZoneProps {
-  text: string;
-  setText: (s: string) => void;
-  onTextChange?: (s: string) => void;
-  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
-  sending: boolean;
-  disabled: boolean;
-  t: (key: string) => string;
-}
-function TextZone({ text, setText, onTextChange, onKeyDown, sending, disabled, t }: TextZoneProps) {
-  return (
-    <div className="flex flex-1 items-end rounded-2xl border border-border bg-background pl-3 pr-1.5 py-1.5">
-      {/* eslint-disable-next-line no-restricted-syntax */}
-      <textarea
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          onTextChange?.(e.target.value);
-        }}
-        onKeyDown={onKeyDown}
-        placeholder={t('input.placeholder')}
-        rows={1}
-        maxLength={2000}
-        disabled={sending || disabled}
-        className={cn(
-          'min-h-[36px] max-h-32 w-full resize-none bg-transparent py-1 text-base leading-snug',
-          'placeholder:text-muted-foreground focus:outline-none'
-        )}
-        onInput={(e) => {
-          const target = e.currentTarget;
-          target.style.height = 'auto';
-          target.style.height = Math.min(target.scrollHeight, 128) + 'px';
-        }}
-      />
-    </div>
   );
 }

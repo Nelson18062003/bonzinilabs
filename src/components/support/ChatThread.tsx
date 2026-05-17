@@ -15,12 +15,10 @@ interface ChatThreadProps {
   isLoading?: boolean;
   emptyState?: React.ReactNode;
   onReply?: (message: ChatMessage) => void;
-  // Réactions
   conversationId?: string | null;
   clientForReactions?: SupabaseClient;
   selfReactorId?: string | null;
   selfReactorType?: 'client' | 'admin';
-  // Quick replies (côté client uniquement, dans EmptyChatState)
   onQuickReply?: (content: string) => void;
   className?: string;
 }
@@ -56,7 +54,6 @@ export function ChatThread({
     messageIds
   );
 
-  // Index réactions par message
   const reactionsByMsg = useMemo(() => {
     const map = new Map<string, typeof reactions>();
     for (const r of reactions ?? []) {
@@ -82,40 +79,54 @@ export function ChatThread({
 
   if (!isLoading && messages.length === 0) {
     return (
-      <div className={cn('flex flex-1 items-center justify-center p-6', className)}>
+      <div className={cn('flex flex-1 items-center justify-center', className)}>
         {emptyState ?? <EmptyChatState onQuickReply={onQuickReply} />}
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className={cn('flex flex-col gap-2 px-3 py-4', className)}>
+    <div
+      ref={containerRef}
+      className={cn('flex flex-col gap-[2px] px-3 py-3', className)}
+    >
       {messages.map((m, i) => {
         const prev = messages[i - 1];
+        const next = messages[i + 1];
         const showDate =
           !prev || !isSameDay(new Date(prev.created_at), new Date(m.created_at));
-        const prevSameSender = prev && prev.sender_type === m.sender_type;
+        const prevSameSender = prev && prev.sender_type === m.sender_type && !showDate;
+        const nextSameSender = next && next.sender_type === m.sender_type
+          && isSameDay(new Date(next.created_at), new Date(m.created_at));
         const quoted = m.reply_to_message_id
           ? messagesById.get(m.reply_to_message_id) ?? null
           : null;
 
+        const item = (
+          <MessageBubble
+            message={m}
+            perspective={m.sender_type === selfSenderType ? 'self' : 'other'}
+            variant={variant}
+            showLabel={!prevSameSender}
+            isLastInGroup={!nextSameSender}
+            quotedMessage={quoted}
+            onReply={onReply}
+            onQuoteClick={scrollToMessage}
+            reactions={reactionsByMsg.get(m.id) ?? []}
+            supabaseClient={clientForReactions}
+            selfReactorId={selfReactorId ?? null}
+            selfReactorType={selfReactorType}
+            conversationId={conversationId ?? null}
+          />
+        );
+
+        // Marge un peu plus large entre groupes (= changement de sender)
+        const marginClass = !nextSameSender ? 'mb-2' : '';
+
         return (
-          <div key={m.id} className="flex flex-col gap-2">
+          <div key={m.id} className={cn('flex flex-col gap-[2px]', marginClass)}>
             {showDate && <DateSeparator isoDate={m.created_at} />}
-            <MessageBubble
-              message={m}
-              perspective={m.sender_type === selfSenderType ? 'self' : 'other'}
-              variant={variant}
-              showLabel={!prevSameSender || showDate}
-              quotedMessage={quoted}
-              onReply={onReply}
-              onQuoteClick={scrollToMessage}
-              reactions={reactionsByMsg.get(m.id) ?? []}
-              supabaseClient={clientForReactions}
-              selfReactorId={selfReactorId ?? null}
-              selfReactorType={selfReactorType}
-              conversationId={conversationId ?? null}
-            />
+            {item}
           </div>
         );
       })}

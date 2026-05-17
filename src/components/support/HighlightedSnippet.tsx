@@ -7,26 +7,21 @@ interface HighlightedSnippetProps {
   className?: string;
 }
 
-/**
- * Affiche un extrait du texte avec les occurrences de `query` surlignées en `<mark>`.
- * Si le texte est plus long que maxLength, on cadre autour de la première occurrence.
- */
 export function HighlightedSnippet({
   text,
   query,
   maxLength = 140,
   className,
 }: HighlightedSnippetProps) {
-  const { displayText, parts } = useMemo(() => {
-    if (!text) return { displayText: '', parts: [] as Array<{ value: string; mark: boolean }> };
+  const { parts } = useMemo(() => {
+    if (!text) return { parts: [] as Array<{ value: string; mark: boolean }> };
 
     const q = query.trim();
     if (!q) {
       const truncated = text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
-      return { displayText: truncated, parts: [{ value: truncated, mark: false }] };
+      return { parts: [{ value: truncated, mark: false }] };
     }
 
-    // Centrage de la fenêtre autour de la première occurrence
     let snippet = text;
     const firstMatchIdx = text.toLowerCase().indexOf(q.toLowerCase());
     if (firstMatchIdx > 30 && text.length > maxLength) {
@@ -37,15 +32,14 @@ export function HighlightedSnippet({
       snippet = text.slice(0, maxLength) + '…';
     }
 
-    // Split case-insensitive autour de chaque occurrence de q
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escaped})`, 'gi');
     const split = snippet.split(regex);
     const parts = split.map((value, i) => ({ value, mark: i % 2 === 1 }));
-    return { displayText: snippet, parts };
+    return { parts };
   }, [text, query, maxLength]);
 
-  if (!displayText) return null;
+  if (parts.length === 0) return null;
 
   return (
     <p className={className}>
@@ -53,7 +47,7 @@ export function HighlightedSnippet({
         p.mark ? (
           <mark
             key={i}
-            className="rounded bg-bonzini-amber/30 px-0.5 font-medium text-bonzini-amber"
+            className="rounded bg-[hsl(258_100%_97%)] px-0.5 font-medium text-bonzini-violet dark:bg-[hsl(258_45%_22%)]"
           >
             {p.value}
           </mark>

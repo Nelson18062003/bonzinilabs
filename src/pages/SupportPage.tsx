@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ChevronLeft } from 'lucide-react';
-import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ChatThread } from '@/components/support/ChatThread';
 import { MessageInput } from '@/components/support/MessageInput';
 import { ResponseTimeBadge } from '@/components/support/ResponseTimeBadge';
@@ -76,82 +75,88 @@ const SupportPage = () => {
   const headerTitle = conversation?.subject || t('list.defaultSubject');
 
   return (
-    <MobileLayout>
-      <div className="flex h-[calc(100dvh-3.5rem-5rem)] flex-col lg:h-[calc(100dvh-3rem)]">
-        <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
-          <button
-            type="button"
-            onClick={() => navigate('/support')}
-            className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted"
-            aria-label={t('detail.back')}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-sm font-semibold text-foreground">{headerTitle}</h1>
-            <p className="truncate text-xs text-muted-foreground">{t('detail.bonziniTeam')}</p>
-          </div>
-          <ResponseTimeBadge compact />
-        </header>
-
-        <div className="flex-1 overflow-y-auto">
-          {isLoadingConv || isLoadingMsgs ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <ChatThread
-              messages={messages ?? []}
-              selfSenderType="client"
-              variant="client-app"
-              onReply={setReplyTo}
-              conversationId={conversationId ?? null}
-              clientForReactions={supabase}
-              selfReactorId={clientId}
-              selfReactorType="client"
-            />
-          )}
+    <div className="flex h-[100dvh] flex-col bg-background">
+      <header className="flex items-center gap-2 border-b border-border bg-background px-2 py-2.5"
+              style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}>
+        <button
+          type="button"
+          onClick={() => navigate('/support')}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted -ml-1"
+          aria-label={t('detail.back')}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-sm font-semibold text-white">
+          B
         </div>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+            {headerTitle}
+          </h1>
+          <p className="truncate text-[11px] leading-tight text-muted-foreground">
+            {t('detail.bonziniTeam')}
+          </p>
+        </div>
+        <ResponseTimeBadge compact />
+      </header>
 
-        {conversation?.status === 'closed' && (
-          <ClosedBanner message={t('detail.closedHint')} />
-        )}
-
-        {otherIsTyping && <TypingIndicator who="admin" />}
-
-        {conversationId && (
-          <MessageInput
-            replyTo={replyTo}
-            onCancelReply={() => setReplyTo(null)}
-            onSendText={async (text) => {
-              notifyStop();
-              await sendText.mutateAsync({ conversationId, content: text, replyToMessageId: replyToId });
-              setReplyTo(null);
-            }}
-            onSendImage={async (file) => {
-              await sendImage.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
-              setReplyTo(null);
-            }}
-            onSendVoice={async (payload) => {
-              await sendVoice.mutateAsync({ conversationId, ...payload, replyToMessageId: replyToId });
-              setReplyTo(null);
-            }}
-            onSendVideo={async (file) => {
-              await sendVideo.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
-              setReplyTo(null);
-            }}
-            onSendFile={async (file) => {
-              await sendFile.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
-              setReplyTo(null);
-            }}
-            onTextChange={(v) => {
-              if (v.length > 0) notifyTyping();
-              else notifyStop();
-            }}
+      <div className="flex-1 overflow-y-auto bg-[hsl(30_8%_96%)] dark:bg-[hsl(220_20%_11%)]">
+        {isLoadingConv || isLoadingMsgs ? (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <ChatThread
+            messages={messages ?? []}
+            selfSenderType="client"
+            variant="client-app"
+            onReply={setReplyTo}
+            conversationId={conversationId ?? null}
+            clientForReactions={supabase}
+            selfReactorId={clientId}
+            selfReactorType="client"
           />
         )}
       </div>
-    </MobileLayout>
+
+      {conversation?.status === 'closed' && (
+        <ClosedBanner message={t('detail.closedHint')} />
+      )}
+
+      {otherIsTyping && <TypingIndicator who="admin" />}
+
+      {conversationId && (
+        <MessageInput
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
+          onSendText={async (text) => {
+            notifyStop();
+            await sendText.mutateAsync({ conversationId, content: text, replyToMessageId: replyToId });
+            setReplyTo(null);
+          }}
+          onSendImage={async (file) => {
+            await sendImage.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
+            setReplyTo(null);
+          }}
+          onSendVoice={async (payload) => {
+            await sendVoice.mutateAsync({ conversationId, ...payload, replyToMessageId: replyToId });
+            setReplyTo(null);
+          }}
+          onSendVideo={async (file) => {
+            await sendVideo.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
+            setReplyTo(null);
+          }}
+          onSendFile={async (file) => {
+            await sendFile.mutateAsync({ conversationId, file, replyToMessageId: replyToId });
+            setReplyTo(null);
+          }}
+          onTextChange={(v) => {
+            if (v.length > 0) notifyTyping();
+            else notifyStop();
+          }}
+        />
+      )}
+    </div>
   );
 };
 

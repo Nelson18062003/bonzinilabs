@@ -17,11 +17,11 @@ export function ReadReceiptIndicator({ readAt, className }: ReadReceiptIndicator
   if (!readAt) {
     return (
       <span
-        className={cn('inline-flex items-center gap-1 text-[10px] text-muted-foreground', className)}
+        className={cn('inline-flex items-center text-muted-foreground', className)}
         title={t('receipt.sent')}
+        aria-label={t('receipt.sent')}
       >
-        <Check className="h-3 w-3" />
-        {t('receipt.sent')}
+        <Check className="h-3.5 w-3.5" />
       </span>
     );
   }
@@ -39,14 +39,11 @@ export function ReadReceiptIndicator({ readAt, className }: ReadReceiptIndicator
     <button
       type="button"
       onClick={handleClick}
-      className={cn(
-        'inline-flex items-center gap-1 text-[10px] text-bonzini-violet',
-        className
-      )}
+      className={cn('inline-flex items-center text-bonzini-violet transition-colors', className)}
       title={t('receipt.seenAt', { time })}
+      aria-label={t('receipt.seen')}
     >
-      <CheckCheck className="h-3 w-3" />
-      {showTime ? time : t('receipt.seen')}
+      <CheckCheck className="h-3.5 w-3.5" />
     </button>
   );
 }

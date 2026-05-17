@@ -45,6 +45,7 @@
     "releaseToCancel": "Release to cancel",
     "cancel": "Cancel",
     "maxDurationReached": "Maximum 60 seconds",
+    "lockedHint": "Recording locked · tap to send",
     "permissionHelp": "Allow microphone access in settings",
     "errors": {
       "permissionDenied": "Microphone access denied. Enable it in browser settings.",
