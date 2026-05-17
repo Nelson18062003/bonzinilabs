@@ -2,1218 +2,1174 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <!-- Critical : interactive-widget=resizes-content fait que iOS 16.4+ et
-       Chrome 108+ resize le layout viewport quand le clavier s'ouvre,
-       au lieu de le faire flotter par-dessus. Combiné avec 100dvh, ça
-       résout 90% du bug clavier. Le fallback JS gère iOS Safari < 16.4. -->
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-  <title>Bonzini Chat — Mockup UI/UX v2</title>
+  <title>Bonzini Chat — Mockup v3</title>
+  <!--
+    Direction redesign v3 (feedback utilisateur) :
+    - UNE seule couleur d'accent (violet Bonzini), utilisée parcimonieusement
+    - Tout le reste : neutres (grays + blanc). Pas d'ambre ni orange.
+    - Inspirations : WhatsApp 2024 (épuré, sent bubble teintée légère),
+      iMessage (bulles compactes, hiérarchie typo), Signal (sobriété)
+    - Voice recording : INLINE dans la barre d'input (pas d'overlay)
+    - Bulles avec queue uniquement sur le dernier message d'une séquence
+    - Background unique gris très clair (pas de pattern bavard)
+    - Ombres quasi-imperceptibles, plutôt des hairlines 1px
+    - Typographie système, hiérarchie par tailles + poids
+  -->
   <style>
     /* ─────────────────────────────────────────────────────────
-       DESIGN SYSTEM — Bonzini Chat v2
-       Inspiration WhatsApp avec twist Bonzini (violet/ambre/orange)
+       SYSTEM v3 — minimalisme premium, une seule couleur d'accent
        ───────────────────────────────────────────────────────── */
     :root {
-      /* Bonzini palette — depuis le logo */
-      --violet: 258 100% 60%;
-      --violet-deep: 258 90% 52%;
-      --violet-light: 258 100% 96%;
-      --amber: 36 100% 55%;
-      --amber-light: 36 100% 95%;
-      --orange: 16 100% 55%;
-      --orange-light: 16 100% 95%;
+      /* UNE SEULE couleur de marque, utilisée parcimonieusement */
+      --accent: 258 95% 60%;       /* Bonzini violet — bulles sent + CTAs clés */
+      --accent-soft: 258 100% 97%; /* Tint très léger pour bulle sent */
+      --accent-fg: 258 50% 28%;    /* Texte sur bulle sent (lisible sur tint) */
 
-      /* Surfaces — light mode */
-      --bg: 60 30% 98%;
-      --bg-elevated: 0 0% 100%;
-      --bg-pattern: 250 30% 95%;
-      --surface-1: 0 0% 100%;
+      /* Sémantique uniquement */
+      --success: 142 71% 45%;      /* Vert : status online + read receipts seulement */
+      --danger: 0 84% 60%;         /* Rouge : recording dot uniquement */
+
+      /* Neutres (font 95% du travail visuel) */
+      --bg: 0 0% 100%;
+      --bg-chat: 30 8% 96%;        /* Off-white doux pour fond chat */
+      --bg-elev: 0 0% 100%;
+      --bg-input: 220 13% 95%;     /* Pour la pill-bar de l'input */
+      --surface: 0 0% 100%;
       --surface-2: 220 14% 96%;
-      --border: 220 13% 91%;
-      --border-strong: 220 13% 82%;
+      --hairline: 220 13% 91%;
+      --hairline-strong: 220 13% 82%;
 
-      /* Text */
-      --text-primary: 224 71% 12%;
-      --text-secondary: 220 9% 46%;
-      --text-tertiary: 220 9% 60%;
-      --text-on-violet: 0 0% 100%;
+      /* Texte */
+      --text-1: 220 22% 12%;       /* Primaire */
+      --text-2: 220 9% 46%;        /* Secondaire */
+      --text-3: 220 9% 65%;        /* Tertiaire */
 
-      /* Bubbles */
-      --bubble-self-bg-1: 258 100% 60%;
-      --bubble-self-bg-2: 258 100% 65%;
-      --bubble-self-text: 0 0% 100%;
-      --bubble-other-bg: 0 0% 100%;
-      --bubble-other-text: 224 71% 12%;
-      --bubble-other-border: 220 13% 91%;
+      /* Type scale — système Apple/Google */
+      --t-xs: 11px;
+      --t-sm: 13px;
+      --t-base: 15px;
+      --t-input: 16px;             /* Anti-zoom iOS */
+      --t-lg: 17px;
+      --t-xl: 20px;
+      --t-2xl: 24px;
+      --t-3xl: 28px;
+      --lh-tight: 1.25;
+      --lh-body: 1.42;             /* Sweet spot lisibilité chat */
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+              "Segoe UI", Roboto, "Helvetica Neue", system-ui, sans-serif;
 
-      /* Typography scale — anti-zoom iOS sur les inputs */
-      --text-xs: 11px;
-      --text-sm: 13px;
-      --text-base: 15px;
-      --text-input: 16px;
-      --text-lg: 17px;
-      --text-xl: 20px;
-      --text-2xl: 24px;
-      --leading-body: 1.45;
-      --leading-tight: 1.25;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                   "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-
-      /* Spacing rhythm 4/8/12/16/24/32 */
-      --space-1: 4px;
-      --space-2: 8px;
-      --space-3: 12px;
-      --space-4: 16px;
-      --space-5: 20px;
-      --space-6: 24px;
-      --space-8: 32px;
+      /* Spacing rhythm 2/4/8/12/16/24/32 */
+      --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+      --s-5: 20px; --s-6: 24px; --s-8: 32px;
 
       /* Radii */
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 20px;
-      --radius-bubble: 18px;
-      --radius-bubble-corner: 6px;
-      --radius-full: 999px;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+      --r-bubble: 18px;
+      --r-bubble-tail: 6px;
+      --r-full: 999px;
 
-      /* Shadows — subtiles, premium */
-      --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06);
-      --shadow-2: 0 4px 12px rgba(15, 23, 42, 0.08);
-      --shadow-3: 0 8px 24px rgba(15, 23, 42, 0.12);
+      /* Ombres quasi-imperceptibles — préférer hairlines */
+      --shadow-1: 0 0 0 1px hsl(var(--hairline));
+      --shadow-2: 0 1px 2px rgba(15,23,42,0.04), 0 0 0 1px hsl(var(--hairline));
+      --shadow-fab: 0 6px 18px hsl(var(--accent) / 0.22);
 
       /* Motion */
-      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease: cubic-bezier(0.2, 0, 0, 1);
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-      --duration-fast: 150ms;
-      --duration-base: 250ms;
-      --duration-slow: 400ms;
+      --dur-1: 120ms;
+      --dur-2: 220ms;
+      --dur-3: 360ms;
 
-      /* Mockup chrome */
-      --mockup-header-h: 52px;
-      --mockup-tabs-h: 48px;
+      /* Mockup chrome (en dehors de l'app) */
+      --chrome-h: 48px;
 
-      /* Hauteur clavier dynamique (fallback JS) — 0 quand fermé */
+      /* Hauteur clavier dynamique (fallback JS pour iOS Safari < 16.4) */
       --kbh: 0px;
     }
 
     [data-theme="dark"] {
-      --bg: 224 71% 6%;
-      --bg-elevated: 224 71% 10%;
-      --bg-pattern: 224 71% 12%;
-      --surface-1: 224 71% 10%;
-      --surface-2: 220 14% 16%;
-      --border: 220 13% 22%;
-      --border-strong: 220 13% 32%;
-      --text-primary: 0 0% 98%;
-      --text-secondary: 220 9% 65%;
-      --text-tertiary: 220 9% 50%;
-      --bubble-other-bg: 224 71% 14%;
-      --bubble-other-text: 0 0% 98%;
-      --bubble-other-border: 220 13% 22%;
-      --violet-light: 258 60% 14%;
-      --amber-light: 36 60% 14%;
-      --orange-light: 16 60% 14%;
+      --bg: 220 20% 8%;
+      --bg-chat: 220 20% 11%;
+      --bg-elev: 220 20% 13%;
+      --bg-input: 220 14% 17%;
+      --surface: 220 20% 13%;
+      --surface-2: 220 14% 17%;
+      --hairline: 220 14% 22%;
+      --hairline-strong: 220 14% 30%;
+      --text-1: 0 0% 96%;
+      --text-2: 220 9% 65%;
+      --text-3: 220 9% 50%;
+      --accent-soft: 258 50% 22%;
+      --accent-fg: 258 100% 90%;
     }
 
-    /* Font size override par toggle a11y */
-    [data-fontsize="small"]  { --text-base: 13px; --text-input: 14px; --text-sm: 11px; }
-    [data-fontsize="large"]  { --text-base: 17px; --text-input: 18px; --text-sm: 15px; }
+    [data-fontsize="small"]  { --t-base: 13px; --t-input: 14px; --t-sm: 11px; }
+    [data-fontsize="large"]  { --t-base: 17px; --t-input: 18px; --t-sm: 15px; }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
     html, body {
       margin: 0; padding: 0;
       width: 100%; height: 100%;
-      font-family: var(--font-sans);
-      font-size: var(--text-base);
-      color: hsl(var(--text-primary));
+      font-family: var(--font);
+      font-size: var(--t-base);
+      color: hsl(var(--text-1));
       background: hsl(var(--bg));
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
-
     body {
       display: flex; flex-direction: column;
       min-height: 100dvh;
       overflow: hidden;
     }
-
-    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-    a { color: inherit; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
     input, textarea { font: inherit; }
 
-    /* ─── Chrome du mockup (header + tabs) ─── */
-    .mockup-header {
-      display: flex; align-items: center; gap: var(--space-3);
-      height: var(--mockup-header-h);
-      padding: 0 var(--space-4);
-      background: linear-gradient(135deg, hsl(var(--violet)) 0%, hsl(var(--orange)) 100%);
-      color: white;
+    /* ─── Chrome mockup ─── */
+    .chrome {
+      display: flex; align-items: center; gap: var(--s-3);
+      height: var(--chrome-h);
+      padding: 0 var(--s-4);
+      background: hsl(var(--bg-elev));
+      border-bottom: 1px solid hsl(var(--hairline));
       flex-shrink: 0;
     }
-    .mockup-header h1 {
-      margin: 0; font-size: var(--text-base); font-weight: 600; letter-spacing: -0.01em;
+    .chrome h1 {
+      margin: 0; font-size: var(--t-sm); font-weight: 600;
+      color: hsl(var(--text-2));
+      letter-spacing: -0.005em;
       flex: 1;
     }
-    .mockup-header .header-toggle {
-      width: 34px; height: 34px;
+    .chrome .icon-btn {
+      width: 32px; height: 32px; border-radius: var(--r-full);
       display: flex; align-items: center; justify-content: center;
-      border-radius: var(--radius-full);
-      background: rgba(255,255,255,0.18);
-      transition: background var(--duration-fast);
+      color: hsl(var(--text-2));
+      transition: background var(--dur-1) var(--ease);
     }
-    .mockup-header .header-toggle:active { background: rgba(255,255,255,0.32); }
+    .chrome .icon-btn:active { background: hsl(var(--surface-2)); }
 
-    .mockup-toolbar {
-      display: flex; gap: var(--space-2); align-items: center;
-      padding: var(--space-2) var(--space-3);
-      background: hsl(var(--surface-2));
-      border-bottom: 1px solid hsl(var(--border));
-      flex-shrink: 0;
+    .controls {
+      display: flex; gap: var(--s-2);
+      padding: var(--s-2) var(--s-3);
+      background: hsl(var(--bg-elev));
+      border-bottom: 1px solid hsl(var(--hairline));
       overflow-x: auto;
       scrollbar-width: none;
+      flex-shrink: 0;
     }
-    .mockup-toolbar::-webkit-scrollbar { display: none; }
-    .toolbar-group {
-      display: inline-flex; gap: var(--space-1);
-      background: hsl(var(--surface-1));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius-md);
+    .controls::-webkit-scrollbar { display: none; }
+    .seg {
+      display: inline-flex; gap: 2px;
+      background: hsl(var(--surface-2));
+      border-radius: var(--r-md);
       padding: 2px;
       flex-shrink: 0;
     }
-    .toolbar-btn {
+    .seg button {
       padding: 4px 10px;
-      font-size: var(--text-xs);
+      font-size: var(--t-xs);
       font-weight: 500;
-      color: hsl(var(--text-secondary));
-      border-radius: calc(var(--radius-md) - 2px);
-      white-space: nowrap;
-      transition: all var(--duration-fast);
+      color: hsl(var(--text-2));
+      border-radius: calc(var(--r-md) - 2px);
+      transition: all var(--dur-1) var(--ease);
     }
-    .toolbar-btn[aria-pressed="true"] {
-      background: hsl(var(--violet));
-      color: white;
+    .seg button[aria-pressed="true"] {
+      background: hsl(var(--bg-elev));
+      color: hsl(var(--text-1));
+      box-shadow: var(--shadow-1);
     }
 
-    .mockup-tabs {
-      display: flex; gap: var(--space-1);
+    .tabs {
+      display: flex; gap: 4px;
+      padding: var(--s-2) var(--s-3);
+      background: hsl(var(--bg-elev));
+      border-bottom: 1px solid hsl(var(--hairline));
       overflow-x: auto;
       scrollbar-width: none;
-      padding: var(--space-2) var(--space-3);
-      background: hsl(var(--surface-1));
-      border-bottom: 1px solid hsl(var(--border));
       flex-shrink: 0;
     }
-    .mockup-tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
       flex-shrink: 0;
-      padding: var(--space-2) var(--space-3);
-      border-radius: var(--radius-full);
-      font-size: var(--text-sm);
+      padding: 6px 12px;
+      border-radius: var(--r-full);
+      font-size: var(--t-sm);
       font-weight: 500;
-      color: hsl(var(--text-secondary));
-      transition: all var(--duration-fast);
-      border: 1px solid transparent;
+      color: hsl(var(--text-2));
+      transition: all var(--dur-1) var(--ease);
     }
-    .tab-btn[aria-current="true"] {
-      background: hsl(var(--violet) / 0.1);
-      color: hsl(var(--violet));
-      border-color: hsl(var(--violet) / 0.3);
+    .tab[aria-current="true"] {
+      background: hsl(var(--text-1));
+      color: hsl(var(--bg));
     }
 
-    /* ─── Conteneur scène ─── */
-    .scene-host {
+    /* ─── Scène (cadre device) ─── */
+    .stage {
       flex: 1;
       min-height: 0;
-      background: hsl(var(--bg-pattern));
-      position: relative;
+      background: hsl(var(--bg-chat));
+      display: flex; align-items: stretch; justify-content: center;
       overflow: hidden;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
     }
     .scene {
-      width: 100%;
-      max-width: 420px;
+      width: 100%; max-width: 420px;
       height: 100%;
       background: hsl(var(--bg));
       display: none;
       flex-direction: column;
       overflow: hidden;
       position: relative;
-      box-shadow: var(--shadow-3);
     }
     .scene[data-active="true"] { display: flex; }
 
-    /* ═══════════════════════════════════════════════════
-       BUBBLE PATTERN — WhatsApp-style avec twist Bonzini
-       ═══════════════════════════════════════════════════ */
-    .chat-bg {
+    /* ═══════════════════════════════════════════════
+       CHAT HEADER — clean, sans gradient
+       ═══════════════════════════════════════════════ */
+    .ch-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px var(--s-3);
+      padding-top: calc(10px + env(safe-area-inset-top));
+      background: hsl(var(--bg-elev));
+      border-bottom: 1px solid hsl(var(--hairline));
+      flex-shrink: 0;
+    }
+    .ch-back {
+      width: 36px; height: 36px;
+      border-radius: var(--r-full);
+      display: flex; align-items: center; justify-content: center;
+      color: hsl(var(--text-2));
+      flex-shrink: 0;
+      margin-left: -8px;
+    }
+    .ch-back:active { background: hsl(var(--surface-2)); }
+    .ch-avatar {
+      width: 36px; height: 36px;
+      border-radius: var(--r-full);
+      background: hsl(var(--accent));
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 13px;
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
+    .ch-info { flex: 1; min-width: 0; }
+    .ch-name {
+      font-size: var(--t-base);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: hsl(var(--text-1));
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ch-sub {
+      font-size: var(--t-xs);
+      color: hsl(var(--text-2));
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 1px;
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: var(--r-full);
+      background: hsl(var(--success));
+    }
+    .ch-action {
+      width: 36px; height: 36px;
+      border-radius: var(--r-full);
+      display: flex; align-items: center; justify-content: center;
+      color: hsl(var(--text-2));
+      flex-shrink: 0;
+    }
+    .ch-action:active { background: hsl(var(--surface-2)); }
+
+    /* ═══════════════════════════════════════════════
+       CHAT BG & BULLES — WhatsApp-clean
+       ═══════════════════════════════════════════════ */
+    .ch-body {
       flex: 1;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      background-color: hsl(var(--bg));
-      background-image:
-        radial-gradient(circle at 1px 1px, hsl(var(--violet) / 0.04) 1px, transparent 1px),
-        radial-gradient(circle at 24px 24px, hsl(var(--amber) / 0.03) 1px, transparent 1px),
-        radial-gradient(circle at 36px 12px, hsl(var(--orange) / 0.03) 1px, transparent 1px);
-      background-size: 48px 48px;
-      padding: var(--space-3) var(--space-3) var(--space-2);
+      background: hsl(var(--bg-chat));
+      padding: var(--s-3) var(--s-3) var(--s-2);
     }
 
-    .msg-group {
+    .grp {
       display: flex; flex-direction: column;
-      gap: 3px;
-      margin-bottom: var(--space-3);
+      gap: 2px;
+      margin-bottom: var(--s-3);
     }
-    .msg-group[data-side="self"]  { align-items: flex-end; }
-    .msg-group[data-side="other"] { align-items: flex-start; }
+    .grp[data-side="self"]  { align-items: flex-end; }
+    .grp[data-side="other"] { align-items: flex-start; }
 
-    .msg-sender-label {
-      font-size: var(--text-xs);
-      color: hsl(var(--text-tertiary));
-      padding: 0 var(--space-3);
-      margin-bottom: var(--space-1);
+    .grp .sender {
+      font-size: var(--t-xs);
+      color: hsl(var(--text-3));
+      padding: 0 var(--s-3) 2px;
       font-weight: 500;
     }
-    .msg-group[data-side="self"] .msg-sender-label { color: hsl(var(--violet)); }
-    .msg-group[data-side="other"] .msg-sender-label { color: hsl(var(--orange)); }
 
-    .bubble {
-      max-width: 78%;
-      padding: var(--space-2) var(--space-3);
-      font-size: var(--text-base);
-      line-height: var(--leading-body);
-      word-wrap: break-word;
-      overflow-wrap: anywhere;
+    .bb {
+      max-width: 80%;
+      padding: 6px 10px;
+      font-size: var(--t-base);
+      line-height: var(--lh-body);
+      letter-spacing: -0.005em;
       box-shadow: var(--shadow-1);
       position: relative;
-      animation: bubble-in var(--duration-base) var(--ease-out);
+      animation: bbIn var(--dur-2) var(--ease);
     }
-    @keyframes bubble-in {
-      from { opacity: 0; transform: translateY(8px) scale(0.97); }
-      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    @keyframes bbIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .bubble p { margin: 0; }
+    .bb p { margin: 0; word-wrap: break-word; overflow-wrap: anywhere; }
 
-    /* Self : bulle violette avec dégradé, queue à droite */
-    .msg-group[data-side="self"] .bubble {
-      background: linear-gradient(135deg,
-        hsl(var(--bubble-self-bg-1)) 0%,
-        hsl(var(--bubble-self-bg-2)) 100%);
-      color: hsl(var(--bubble-self-text));
-      border-radius: var(--radius-bubble) var(--radius-bubble)
-                     var(--radius-bubble-corner) var(--radius-bubble);
+    /* Sent : tint violet très léger (à la WhatsApp avec son vert mint) */
+    .grp[data-side="self"] .bb {
+      background: hsl(var(--accent-soft));
+      color: hsl(var(--accent-fg));
+      border-radius: var(--r-bubble);
     }
-    .msg-group[data-side="self"] .bubble:first-of-type {
-      border-top-right-radius: var(--radius-bubble);
+    /* La queue (tail) seulement sur la dernière bulle de la séquence */
+    .grp[data-side="self"] .bb:last-of-type {
+      border-bottom-right-radius: var(--r-bubble-tail);
     }
-    .msg-group[data-side="self"] .bubble:last-of-type {
-      border-bottom-right-radius: var(--radius-bubble-corner);
+    .grp[data-side="self"] .bb:not(:last-of-type) {
+      border-radius: var(--r-bubble);
     }
 
-    /* Other : bulle blanche avec ombre + queue à gauche */
-    .msg-group[data-side="other"] .bubble {
-      background: hsl(var(--bubble-other-bg));
-      color: hsl(var(--bubble-other-text));
-      border: 1px solid hsl(var(--bubble-other-border));
-      border-radius: var(--radius-bubble) var(--radius-bubble)
-                     var(--radius-bubble) var(--radius-bubble-corner);
+    .grp[data-side="other"] .bb {
+      background: hsl(var(--bg-elev));
+      color: hsl(var(--text-1));
+      border-radius: var(--r-bubble);
     }
-    .msg-group[data-side="other"] .bubble:last-of-type {
-      border-bottom-left-radius: var(--radius-bubble-corner);
+    .grp[data-side="other"] .bb:last-of-type {
+      border-bottom-left-radius: var(--r-bubble-tail);
     }
 
-    /* Timestamp + read receipt sous la bulle */
-    .msg-meta {
+    /* Meta sous la bulle : timestamp + read receipt */
+    .meta {
       display: flex; align-items: center; gap: 4px;
-      padding: 0 var(--space-2);
+      padding: 0 6px;
       font-size: 10px;
-      color: hsl(var(--text-tertiary));
+      color: hsl(var(--text-3));
       margin-top: 2px;
     }
-    .read-check {
-      display: inline-flex; align-items: center;
-      color: hsl(var(--text-tertiary));
-      transition: color var(--duration-slow);
+    .check {
+      display: inline-flex;
+      color: hsl(var(--text-3));
+      transition: color var(--dur-3) var(--ease);
     }
-    .read-check[data-seen="true"] { color: hsl(var(--violet)); }
-    .read-check svg { width: 14px; height: 14px; }
+    .check[data-seen="true"] { color: hsl(var(--accent)); }
+    .check svg { width: 14px; height: 14px; }
 
-    /* Date separator centré avec lignes */
+    /* Date separator — discret, central */
     .date-sep {
-      display: flex; align-items: center; gap: var(--space-3);
-      margin: var(--space-4) 0;
-    }
-    .date-sep::before, .date-sep::after {
-      content: ''; flex: 1; height: 1px;
-      background: hsl(var(--border));
+      display: flex; justify-content: center;
+      margin: var(--s-3) 0 var(--s-2);
     }
     .date-sep span {
-      font-size: var(--text-xs);
-      color: hsl(var(--text-tertiary));
-      padding: 3px var(--space-3);
-      background: hsl(var(--surface-2));
-      border-radius: var(--radius-full);
-      font-weight: 500;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: hsl(var(--text-3));
+      padding: 4px 10px;
+      background: hsl(var(--bg-elev));
+      border-radius: var(--r-full);
+      box-shadow: var(--shadow-1);
     }
 
-    /* ═══════════════════════════════════════════════════
-       MEDIA BUBBLES
-       ═══════════════════════════════════════════════════ */
-    .bubble.bubble-image {
-      padding: 4px;
-      max-width: 240px;
-      overflow: hidden;
-    }
-    .bubble.bubble-image img {
-      width: 100%; border-radius: 14px; display: block;
-    }
-
-    .bubble.bubble-voice {
-      padding: 8px 12px;
-      display: flex; align-items: center; gap: 10px;
-      min-width: 180px;
-    }
-    .voice-play {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-full);
-      background: rgba(255,255,255,0.2);
-      display: flex; align-items: center; justify-content: center;
+    /* ═══════════════════════════════════════════════
+       INPUT BAR — minimal, WhatsApp-like
+       ═══════════════════════════════════════════════ */
+    .input {
+      display: flex; align-items: flex-end; gap: var(--s-2);
+      padding: var(--s-2) var(--s-3);
+      padding-bottom: calc(var(--s-2) + env(safe-area-inset-bottom) + var(--kbh));
+      background: hsl(var(--bg-elev));
+      border-top: 1px solid hsl(var(--hairline));
       flex-shrink: 0;
-      transition: transform var(--duration-fast);
+      transition: padding-bottom var(--dur-2) var(--ease);
     }
-    .voice-play:active { transform: scale(0.95); }
-    .msg-group[data-side="other"] .voice-play {
-      background: hsl(var(--violet) / 0.12);
-      color: hsl(var(--violet));
+    .input.recording {
+      background: hsl(var(--bg-elev));
     }
-    .waveform {
-      flex: 1; height: 24px;
-      display: flex; align-items: center; gap: 2px;
-    }
-    .waveform .bar {
+
+    .input-pill {
       flex: 1;
-      background: currentColor;
-      border-radius: 1px;
-      opacity: 0.5;
-      transition: opacity var(--duration-fast);
+      display: flex; align-items: center; gap: 6px;
+      background: hsl(var(--bg-input));
+      border-radius: var(--r-full);
+      padding: 6px 6px 6px 8px;
+      min-height: 38px;
+      min-width: 0;
+      transition: background var(--dur-2) var(--ease);
     }
-    .waveform .bar[data-played="true"] { opacity: 1; }
-    .voice-duration {
-      font-size: 11px; font-variant-numeric: tabular-nums;
-      opacity: 0.85;
-    }
-
-    .bubble.bubble-video {
-      padding: 4px;
-      max-width: 260px;
-      overflow: hidden;
-      position: relative;
-    }
-    .bubble.bubble-video .video-thumb {
-      width: 100%; aspect-ratio: 4/3;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #4a5568, #2d3748);
-      position: relative;
+    .input-pill .pill-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--r-full);
       display: flex; align-items: center; justify-content: center;
-    }
-    .bubble.bubble-video .video-play-overlay {
-      width: 56px; height: 56px;
-      border-radius: var(--radius-full);
-      background: rgba(255,255,255,0.95);
-      color: hsl(var(--violet));
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: var(--shadow-2);
-    }
-    .video-duration-badge {
-      position: absolute; right: 8px; bottom: 8px;
-      background: rgba(0,0,0,0.6); color: white;
-      padding: 2px 6px; border-radius: 4px;
-      font-size: 11px; font-variant-numeric: tabular-nums;
-    }
-
-    .bubble.bubble-file {
-      padding: 10px 12px;
-      display: flex; align-items: center; gap: 10px;
-      min-width: 220px;
-    }
-    .file-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      background: hsl(var(--orange) / 0.15);
-      color: hsl(var(--orange));
-      display: flex; align-items: center; justify-content: center;
+      color: hsl(var(--text-2));
       flex-shrink: 0;
     }
-    .msg-group[data-side="self"] .file-icon {
-      background: rgba(255,255,255,0.2);
-      color: white;
+    .input-pill .pill-icon:active { background: hsl(var(--surface-2)); }
+    .input-pill textarea {
+      flex: 1; min-width: 0;
+      min-height: 26px;
+      max-height: 110px;
+      border: 0; background: transparent;
+      outline: none; resize: none;
+      font-size: var(--t-input);
+      line-height: 1.35;
+      color: hsl(var(--text-1));
+      padding: 4px 4px;
+      font-family: inherit;
     }
-    .file-info { flex: 1; min-width: 0; }
-    .file-name {
-      font-size: 13px; font-weight: 500;
+    .input-pill textarea::placeholder { color: hsl(var(--text-3)); }
+
+    .mic-btn {
+      width: 42px; height: 42px;
+      border-radius: var(--r-full);
+      background: hsl(var(--accent));
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: transform var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+      box-shadow: var(--shadow-fab);
+    }
+    .mic-btn:active { transform: scale(0.92); }
+    .mic-btn[data-mode="send"] {
+      transform: rotate(-10deg);
+    }
+    .mic-btn[data-mode="send"]:active {
+      transform: rotate(-10deg) scale(0.92);
+    }
+
+    /* ─── Voice recording INLINE (style WhatsApp) ─── */
+    .input.recording .input-pill {
+      background: hsl(var(--bg-input));
+      gap: var(--s-2);
+      padding: 0 var(--s-2) 0 12px;
+    }
+    .rec-dot {
+      width: 10px; height: 10px;
+      border-radius: var(--r-full);
+      background: hsl(var(--danger));
+      flex-shrink: 0;
+      animation: rec-blink 1s ease-in-out infinite;
+    }
+    @keyframes rec-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .rec-timer {
+      font-size: var(--t-sm);
+      font-variant-numeric: tabular-nums;
+      color: hsl(var(--text-1));
+      font-weight: 500;
+      flex-shrink: 0;
+      min-width: 38px;
+    }
+    .rec-hint {
+      flex: 1;
+      font-size: var(--t-sm);
+      color: hsl(var(--text-2));
+      display: flex; align-items: center; gap: 4px;
+      animation: hint-slide 1.8s ease-in-out infinite;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    @keyframes hint-slide {
+      0%, 100% { transform: translateX(0); opacity: 0.8; }
+      50% { transform: translateX(-4px); opacity: 1; }
+    }
+    .rec-lock-hint {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      color: hsl(var(--text-3));
+      font-size: 10px;
+      flex-shrink: 0;
+      padding-right: 2px;
+    }
+
+    /* État au-delà du seuil (release-to-cancel) */
+    .input.cancel-armed .input-pill { background: hsl(var(--danger) / 0.1); }
+    .input.cancel-armed .rec-hint { color: hsl(var(--danger)); font-weight: 600; }
+
+    /* Bouton micro pendant recording */
+    .input.recording .mic-btn {
+      background: hsl(var(--danger));
+      animation: mic-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes mic-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 hsl(var(--danger) / 0.4); }
+      50% { box-shadow: 0 0 0 10px hsl(var(--danger) / 0); }
+    }
+
+    /* État verrouillé (lock mode) — bar prend des contrôles différents */
+    .input.locked .input-pill { background: hsl(var(--bg-input)); }
+    .input.locked .rec-lock-hint { color: hsl(var(--accent)); }
+    .input.locked .mic-btn {
+      background: hsl(var(--accent));
+      animation: none;
+    }
+
+    /* Reply preview au-dessus de l'input */
+    .reply-prev {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px var(--s-3);
+      background: hsl(var(--accent-soft));
+      border-top: 1px solid hsl(var(--hairline));
+      animation: rp-in var(--dur-2) var(--ease);
+    }
+    @keyframes rp-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .reply-prev .bar {
+      width: 3px; align-self: stretch;
+      background: hsl(var(--accent));
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .reply-prev .content { flex: 1; min-width: 0; }
+    .reply-prev .sender {
+      font-size: var(--t-xs);
+      font-weight: 600;
+      color: hsl(var(--accent));
+    }
+    .reply-prev .text {
+      font-size: var(--t-sm);
+      color: hsl(var(--text-2));
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .file-size { font-size: 11px; opacity: 0.7; }
-    .file-download {
-      width: 32px; height: 32px;
-      border-radius: var(--radius-full);
-      background: rgba(255,255,255,0.2);
-      color: inherit;
+    .reply-prev .close {
+      width: 26px; height: 26px;
+      border-radius: var(--r-full);
       display: flex; align-items: center; justify-content: center;
+      color: hsl(var(--text-2));
       flex-shrink: 0;
     }
+    .reply-prev .close:active { background: hsl(var(--surface-2)); }
 
-    /* Quoted reply dans la bulle */
-    .bubble .quoted {
-      margin: -4px -4px 8px;
-      padding: 6px 8px 6px 10px;
-      background: rgba(255,255,255,0.18);
-      border-radius: 10px;
-      border-left: 3px solid rgba(255,255,255,0.7);
+    /* Quote dans une bulle */
+    .quoted {
+      margin: 0 0 6px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.05);
+      border-left: 3px solid hsl(var(--accent));
+      border-radius: 6px;
     }
-    .msg-group[data-side="other"] .bubble .quoted {
-      background: hsl(var(--violet) / 0.08);
-      border-left-color: hsl(var(--violet));
+    .grp[data-side="other"] .quoted { background: hsl(var(--surface-2)); }
+    .quoted .qs {
+      font-size: var(--t-xs);
+      font-weight: 600;
+      color: hsl(var(--accent));
     }
-    .quoted-sender {
-      font-size: 11px; font-weight: 600;
-      opacity: 0.85;
-    }
-    .quoted-text {
-      font-size: 12px; opacity: 0.8;
+    .quoted .qt {
+      font-size: var(--t-sm);
+      color: hsl(var(--text-2));
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
 
-    /* Reactions pills */
-    .reactions {
-      display: flex; gap: 4px; padding: 0 var(--space-2); margin-top: 4px;
-    }
-    .reaction-pill {
-      background: hsl(var(--surface-1));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius-full);
-      padding: 2px 8px;
-      font-size: 12px;
-      display: inline-flex; align-items: center; gap: 3px;
-      box-shadow: var(--shadow-1);
-      transition: transform var(--duration-fast);
-    }
-    .reaction-pill[data-mine="true"] {
-      border-color: hsl(var(--violet));
-      background: hsl(var(--violet-light));
-      color: hsl(var(--violet));
-    }
-    .reaction-pill:active { transform: scale(0.92); }
-    .reaction-pill .count { font-size: 11px; font-weight: 600; }
-
-    /* ═══════════════════════════════════════════════════
-       HEADER & INPUT BAR — fix du clavier
-       ═══════════════════════════════════════════════════ */
-    .chat-header {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px var(--space-3);
-      background: hsl(var(--bg-elevated));
-      border-bottom: 1px solid hsl(var(--border));
-      box-shadow: var(--shadow-1);
-      flex-shrink: 0;
-      padding-top: calc(10px + env(safe-area-inset-top));
-    }
-    .chat-header .back-btn,
-    .chat-header .action-btn {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-full);
-      display: flex; align-items: center; justify-content: center;
-      color: hsl(var(--text-secondary));
-      flex-shrink: 0;
-      transition: background var(--duration-fast);
-    }
-    .chat-header .back-btn:active,
-    .chat-header .action-btn:active { background: hsl(var(--surface-2)); }
-    .chat-header .avatar {
-      width: 38px; height: 38px;
-      border-radius: var(--radius-full);
-      background: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--amber)));
-      color: white;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 600; font-size: 14px;
-      flex-shrink: 0;
-    }
-    .chat-header .info {
-      flex: 1; min-width: 0;
-    }
-    .chat-header .name {
-      font-size: 14px; font-weight: 600;
-      color: hsl(var(--text-primary));
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .chat-header .subtitle {
-      font-size: 11px; color: hsl(var(--text-secondary));
-      display: flex; align-items: center; gap: 4px;
-    }
-    .chat-header .status-dot {
-      width: 6px; height: 6px;
-      border-radius: var(--radius-full);
-      background: #22c55e;
-    }
-
-    /* Response time chip */
-    .rt-chip {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 8px;
-      border-radius: var(--radius-full);
-      background: hsl(var(--amber-light));
-      color: hsl(var(--amber));
-      font-size: 11px; font-weight: 600;
-    }
-    .rt-chip svg { width: 12px; height: 12px; }
-
-    /* Input bar — clé du fix clavier */
-    .input-bar {
-      position: relative;
-      display: flex; align-items: flex-end; gap: 8px;
-      padding: 8px var(--space-3);
-      padding-bottom: calc(8px + env(safe-area-inset-bottom) + var(--kbh));
-      background: hsl(var(--bg-elevated));
-      border-top: 1px solid hsl(var(--border));
-      flex-shrink: 0;
-      transition: padding-bottom var(--duration-base) var(--ease-out);
-    }
-    .input-bar .icon-btn {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-full);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: all var(--duration-fast);
-    }
-    .input-bar .icon-btn.attach {
-      background: hsl(var(--amber-light));
-      color: hsl(var(--amber));
-    }
-    .input-bar .icon-btn.templates {
-      background: hsl(var(--violet-light));
-      color: hsl(var(--violet));
-    }
-    .input-bar .icon-btn:active { transform: scale(0.92); }
-
-    .input-textwrap {
-      flex: 1;
-      display: flex; align-items: flex-end;
-      background: hsl(var(--surface-2));
-      border-radius: var(--radius-xl);
-      padding: 6px 6px 6px 12px;
-      min-height: 40px;
-      min-width: 0;
-    }
-    .input-textarea {
-      flex: 1;
-      min-width: 0;
-      min-height: 28px;
-      max-height: 120px;
-      padding: 4px 0;
-      border: 0;
-      background: transparent;
-      resize: none;
-      font-size: var(--text-input);
-      line-height: 1.4;
-      color: hsl(var(--text-primary));
-      outline: none;
-      font-family: inherit;
-    }
-    .input-textarea::placeholder { color: hsl(var(--text-tertiary)); }
-
-    .input-bar .send-btn {
-      width: 32px; height: 32px;
-      border-radius: var(--radius-full);
-      background: hsl(var(--violet));
-      color: white;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: all var(--duration-fast);
-      margin-left: 4px;
-    }
-    .input-bar .send-btn[data-disabled="true"] {
-      background: hsl(var(--surface-1));
-      color: hsl(var(--text-tertiary));
-      opacity: 0.6;
-    }
-    .input-bar .send-btn:not([data-disabled="true"]):active {
-      transform: scale(0.92);
-    }
-    .input-bar .send-btn svg {
-      transition: transform var(--duration-fast);
-    }
-    .input-bar .send-btn:hover svg {
-      transform: rotate(-15deg);
-    }
-
-    .input-bar .mic-btn {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-full);
-      background: hsl(var(--orange-light));
-      color: hsl(var(--orange));
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: all var(--duration-fast);
-    }
-    .input-bar .mic-btn:active { transform: scale(0.92); }
-
-    /* Reply preview au-dessus de l'input */
-    .reply-preview {
-      padding: 8px var(--space-3);
-      border-top: 1px solid hsl(var(--border));
-      background: hsl(var(--violet-light));
-      display: flex; align-items: center; gap: 8px;
-      animation: slide-up var(--duration-base) var(--ease-out);
-    }
-    @keyframes slide-up {
-      from { transform: translateY(100%); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-    .reply-preview .bar {
-      width: 3px; align-self: stretch;
-      background: hsl(var(--violet));
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-    .reply-preview .content { flex: 1; min-width: 0; }
-    .reply-preview .sender {
-      font-size: 11px; font-weight: 600;
-      color: hsl(var(--violet));
-    }
-    .reply-preview .text {
-      font-size: 12px; color: hsl(var(--text-secondary));
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .reply-preview .close {
-      width: 24px; height: 24px;
-      border-radius: var(--radius-full);
-      display: flex; align-items: center; justify-content: center;
-      color: hsl(var(--text-secondary));
-      flex-shrink: 0;
-    }
-
-    /* Typing indicator */
-    .typing-indicator {
+    /* Typing indicator — discret, dans le flow */
+    .typing {
       align-self: flex-start;
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 12px;
-      background: hsl(var(--bubble-other-bg));
-      border: 1px solid hsl(var(--bubble-other-border));
-      border-radius: var(--radius-bubble) var(--radius-bubble) var(--radius-bubble) var(--radius-bubble-corner);
+      background: hsl(var(--bg-elev));
+      border-radius: var(--r-bubble) var(--r-bubble) var(--r-bubble) var(--r-bubble-tail);
       box-shadow: var(--shadow-1);
-      margin: 0 var(--space-3) var(--space-3);
-      font-size: 11px;
-      color: hsl(var(--text-secondary));
+      margin: 2px var(--s-3) var(--s-3);
+      font-size: var(--t-xs);
+      color: hsl(var(--text-2));
     }
     .typing-dots { display: inline-flex; gap: 3px; }
     .typing-dots .dot {
-      width: 5px; height: 5px;
-      border-radius: var(--radius-full);
-      background: hsl(var(--text-tertiary));
-      animation: typing-bounce 1.2s var(--ease-out) infinite;
+      width: 4px; height: 4px;
+      border-radius: var(--r-full);
+      background: hsl(var(--text-3));
+      animation: t-bounce 1.2s var(--ease) infinite;
     }
     .typing-dots .dot:nth-child(2) { animation-delay: 150ms; }
     .typing-dots .dot:nth-child(3) { animation-delay: 300ms; }
-    @keyframes typing-bounce {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-      30% { transform: translateY(-4px); opacity: 1; }
+    @keyframes t-bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-3px); opacity: 1; }
     }
 
-    /* ═══════════════════════════════════════════════════
-       EMPTY STATE — chaleur Bonzini
-       ═══════════════════════════════════════════════════ */
-    .empty-state {
+    /* Reactions — neutres */
+    .reactions {
+      display: flex; gap: 4px; padding: 0 var(--s-2); margin-top: 4px;
+    }
+    .reaction {
+      background: hsl(var(--bg-elev));
+      border: 1px solid hsl(var(--hairline));
+      border-radius: var(--r-full);
+      padding: 2px 7px;
+      font-size: 11px;
+      display: inline-flex; align-items: center; gap: 3px;
+      box-shadow: var(--shadow-1);
+      transition: transform var(--dur-1) var(--ease);
+    }
+    .reaction[data-mine="true"] {
+      border-color: hsl(var(--accent));
+      background: hsl(var(--accent-soft));
+    }
+    .reaction:active { transform: scale(0.92); }
+    .reaction .n {
+      font-size: 10px;
+      font-weight: 600;
+      color: hsl(var(--text-2));
+    }
+    .reaction[data-mine="true"] .n { color: hsl(var(--accent)); }
+
+    /* ═══════════════════════════════════════════════
+       MEDIA BUBBLES (image / voice / video / file)
+       ═══════════════════════════════════════════════ */
+    .bb.media-img {
+      padding: 3px;
+      max-width: 240px;
+      overflow: hidden;
+    }
+    .bb.media-img img {
+      width: 100%; display: block;
+      border-radius: 14px;
+    }
+
+    .bb.media-voice {
+      padding: 6px 8px;
+      display: flex; align-items: center; gap: 8px;
+      min-width: 180px;
+    }
+    .voice-play {
+      width: 32px; height: 32px;
+      border-radius: var(--r-full);
+      background: rgba(0, 0, 0, 0.06);
+      color: hsl(var(--text-1));
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .grp[data-side="self"] .voice-play {
+      background: rgba(0, 0, 0, 0.08);
+      color: hsl(var(--accent-fg));
+    }
+    .voice-play:active { transform: scale(0.92); }
+    .wf {
+      flex: 1; height: 22px;
+      display: flex; align-items: center; gap: 2px;
+    }
+    .wf .bar {
+      flex: 1;
+      background: currentColor;
+      border-radius: 1px;
+      opacity: 0.4;
+    }
+    .wf .bar[data-played="true"] { opacity: 1; }
+    .voice-dur {
+      font-size: 11px; font-variant-numeric: tabular-nums;
+      color: hsl(var(--text-2));
+      flex-shrink: 0;
+    }
+
+    .bb.media-video {
+      padding: 3px;
+      max-width: 240px;
+      position: relative;
+      overflow: hidden;
+    }
+    .video-thumb {
+      width: 100%; aspect-ratio: 4/3;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1f2937, #374151);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .video-play {
+      width: 44px; height: 44px;
+      border-radius: var(--r-full);
+      background: rgba(0,0,0,0.55);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .video-dur {
+      position: absolute; right: 6px; bottom: 6px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px; font-variant-numeric: tabular-nums;
+    }
+
+    .bb.media-file {
+      padding: 8px 10px;
+      display: flex; align-items: center; gap: 10px;
+      min-width: 220px;
+    }
+    .file-ico {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      background: rgba(0,0,0,0.06);
+      color: hsl(var(--text-1));
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .grp[data-side="self"] .file-ico {
+      background: rgba(0,0,0,0.08);
+      color: hsl(var(--accent-fg));
+    }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: var(--t-sm);
+      font-weight: 500;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .file-size {
+      font-size: 11px;
+      color: hsl(var(--text-2));
+    }
+    .file-dl {
+      width: 28px; height: 28px;
+      border-radius: var(--r-full);
+      background: rgba(0,0,0,0.06);
+      display: flex; align-items: center; justify-content: center;
+      color: hsl(var(--text-1));
+      flex-shrink: 0;
+    }
+    .grp[data-side="self"] .file-dl {
+      background: rgba(0,0,0,0.08);
+      color: hsl(var(--accent-fg));
+    }
+
+    /* ═══════════════════════════════════════════════
+       EMPTY STATE — épuré, monochrome
+       ═══════════════════════════════════════════════ */
+    .empty {
       flex: 1;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: var(--space-6) var(--space-4);
+      padding: var(--s-6) var(--s-4);
       text-align: center;
+      background: hsl(var(--bg-chat));
       overflow-y: auto;
     }
-    .empty-illustration {
-      width: 140px; height: 140px;
-      margin-bottom: var(--space-5);
-      animation: gentle-float 4s ease-in-out infinite;
+    .empty-ill {
+      width: 88px; height: 88px;
+      margin-bottom: var(--s-4);
+      color: hsl(var(--accent));
+      opacity: 0.85;
     }
-    @keyframes gentle-float {
-      0%, 100% { transform: translateY(0) rotate(-2deg); }
-      50% { transform: translateY(-6px) rotate(2deg); }
+    .empty h2 {
+      font-size: var(--t-xl);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--s-2);
+      color: hsl(var(--text-1));
+      max-width: 300px;
     }
-    .empty-title {
-      font-size: var(--text-lg); font-weight: 700;
-      color: hsl(var(--text-primary));
-      margin: 0 0 var(--space-2);
-      letter-spacing: -0.01em;
-    }
-    .empty-subtitle {
-      font-size: var(--text-sm);
-      color: hsl(var(--text-secondary));
-      margin: 0 0 var(--space-4);
-      line-height: 1.5;
+    .empty p {
+      font-size: var(--t-sm);
+      color: hsl(var(--text-2));
+      margin: 0 0 var(--s-5);
       max-width: 280px;
+      line-height: 1.5;
     }
-    .quick-replies {
-      display: flex; flex-direction: column; gap: var(--space-2);
+    .qr-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: hsl(var(--text-3));
+      margin-bottom: var(--s-2);
       width: 100%; max-width: 320px;
-      margin-top: var(--space-4);
+      text-align: left;
     }
-    .quick-replies-title {
-      font-size: 10px; font-weight: 600;
-      color: hsl(var(--text-tertiary));
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: var(--space-1);
+    .qr-list {
+      display: flex; flex-direction: column; gap: 6px;
+      width: 100%; max-width: 320px;
     }
-    .quick-reply-chip {
+    .qr-item {
       width: 100%;
       padding: 12px 14px;
       text-align: left;
-      background: hsl(var(--bg-elevated));
-      border: 1px solid hsl(var(--violet) / 0.2);
-      border-radius: var(--radius-md);
-      font-size: var(--text-sm); font-weight: 500;
-      color: hsl(var(--violet));
-      box-shadow: var(--shadow-1);
-      transition: all var(--duration-fast);
-      display: flex; align-items: center; gap: 8px;
+      background: hsl(var(--bg-elev));
+      border: 1px solid hsl(var(--hairline));
+      border-radius: var(--r-md);
+      font-size: var(--t-sm);
+      color: hsl(var(--text-1));
+      transition: all var(--dur-1) var(--ease);
+      display: flex; align-items: center; gap: 10px;
     }
-    .quick-reply-chip:active {
-      transform: scale(0.98);
-      background: hsl(var(--violet-light));
+    .qr-item:active {
+      transform: scale(0.99);
+      background: hsl(var(--surface-2));
     }
-    .quick-reply-chip .icon { opacity: 0.6; }
+    .qr-item svg {
+      width: 16px; height: 16px;
+      color: hsl(var(--text-3));
+      flex-shrink: 0;
+    }
 
-    /* ═══════════════════════════════════════════════════
+    /* Response time chip — discret */
+    .rt-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--r-full);
+      background: hsl(var(--surface-2));
+      color: hsl(var(--text-2));
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .rt-chip svg { width: 11px; height: 11px; }
+
+    /* ═══════════════════════════════════════════════
        LISTE CONVERSATIONS
-       ═══════════════════════════════════════════════════ */
-    .conv-list {
+       ═══════════════════════════════════════════════ */
+    .list-body {
       flex: 1;
       overflow-y: auto;
-      background: hsl(var(--bg-elevated));
+      background: hsl(var(--bg));
     }
-    .new-conv-card {
+    .new-conv {
       display: flex; align-items: center; gap: 12px;
-      padding: 14px var(--space-4);
-      background: linear-gradient(135deg, hsl(var(--violet) / 0.06), hsl(var(--orange) / 0.06));
-      border-bottom: 1px solid hsl(var(--border));
-      transition: background var(--duration-fast);
+      padding: 12px var(--s-4);
+      border-bottom: 1px solid hsl(var(--hairline));
     }
-    .new-conv-card:active { background: hsl(var(--violet) / 0.1); }
-    .new-conv-card .plus-circle {
-      width: 44px; height: 44px;
-      border-radius: var(--radius-full);
-      background: hsl(var(--violet));
+    .new-conv:active { background: hsl(var(--surface-2)); }
+    .new-conv .nc-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--r-full);
+      background: hsl(var(--accent));
       color: white;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px hsl(var(--violet) / 0.3);
     }
-    .new-conv-card .text { flex: 1; }
-    .new-conv-card .title-text { font-size: 14px; font-weight: 600; }
-    .new-conv-card .subtitle-text { font-size: 12px; color: hsl(var(--text-secondary)); }
-
-    .conv-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px var(--space-4);
-      border-bottom: 1px solid hsl(var(--border));
-      transition: background var(--duration-fast);
-    }
-    .conv-item:active { background: hsl(var(--surface-2)); }
-    .conv-item .conv-icon {
-      width: 44px; height: 44px;
-      border-radius: var(--radius-full);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+    .new-conv .nc-text { flex: 1; min-width: 0; }
+    .new-conv .nc-title {
+      font-size: var(--t-base);
       font-weight: 600;
-      font-size: 14px;
+      color: hsl(var(--text-1));
     }
-    .conv-item[data-unread="true"] .conv-icon {
-      background: hsl(var(--violet));
+    .new-conv .nc-sub {
+      font-size: var(--t-xs);
+      color: hsl(var(--text-2));
+    }
+    .new-conv .nc-arrow {
+      color: hsl(var(--text-3));
+      flex-shrink: 0;
+    }
+
+    .conv-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px var(--s-4);
+      border-bottom: 1px solid hsl(var(--hairline));
+    }
+    .conv-row:active { background: hsl(var(--surface-2)); }
+    .conv-row .cr-avatar {
+      width: 44px; height: 44px;
+      border-radius: var(--r-full);
+      background: hsl(var(--surface-2));
+      color: hsl(var(--text-2));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .conv-row[data-unread="true"] .cr-avatar {
+      background: hsl(var(--accent));
       color: white;
     }
-    .conv-item[data-unread="false"] .conv-icon {
-      background: hsl(var(--surface-2));
-      color: hsl(var(--text-secondary));
-    }
-    .conv-item .conv-body {
-      flex: 1; min-width: 0;
-    }
-    .conv-item .conv-top {
+    .conv-row .cr-body { flex: 1; min-width: 0; }
+    .conv-row .cr-top {
       display: flex; justify-content: space-between; gap: 8px;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
-    .conv-item .conv-name {
-      font-size: 14px;
-      color: hsl(var(--text-primary));
+    .conv-row .cr-name {
+      font-size: var(--t-base);
+      color: hsl(var(--text-1));
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .conv-item[data-unread="true"] .conv-name { font-weight: 600; }
-    .conv-item .conv-time {
-      font-size: 11px;
-      color: hsl(var(--text-tertiary));
+    .conv-row[data-unread="true"] .cr-name { font-weight: 600; }
+    .conv-row .cr-time {
+      font-size: var(--t-xs);
+      color: hsl(var(--text-3));
       flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
-    .conv-item .conv-subject {
-      font-size: 11px; font-weight: 500;
-      color: hsl(var(--violet));
-      margin-bottom: 2px;
+    .conv-row[data-unread="true"] .cr-time { color: hsl(var(--accent)); font-weight: 500; }
+    .conv-row .cr-subject {
+      font-size: 11px;
+      font-weight: 500;
+      color: hsl(var(--accent));
+      margin-bottom: 1px;
     }
-    .conv-item .conv-preview {
-      font-size: 12px;
-      color: hsl(var(--text-secondary));
+    .conv-row .cr-preview {
+      font-size: var(--t-sm);
+      color: hsl(var(--text-2));
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
     }
-    .conv-item[data-unread="true"] .conv-preview { color: hsl(var(--text-primary)); }
-    .conv-item .conv-assigned {
+    .conv-row[data-unread="true"] .cr-preview { color: hsl(var(--text-1)); }
+    .conv-row .cr-assigned {
       font-size: 10px;
-      color: hsl(var(--amber));
-      margin-top: 2px;
+      color: hsl(var(--text-3));
+      margin-top: 1px;
     }
-    .conv-item .unread-badge {
-      background: hsl(var(--orange));
+    .conv-row .cr-badge {
+      background: hsl(var(--accent));
       color: white;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      font-size: 11px; font-weight: 700;
+      padding: 1px 7px;
+      border-radius: var(--r-full);
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 20px; text-align: center;
       flex-shrink: 0;
-      animation: pulse-soft 2s ease-in-out infinite;
     }
-    @keyframes pulse-soft {
-      0%, 100% { box-shadow: 0 0 0 0 hsl(var(--orange) / 0.4); }
-      50% { box-shadow: 0 0 0 6px hsl(var(--orange) / 0); }
-    }
-
-    /* Closed conversation */
-    .conv-item[data-closed="true"] .conv-icon { opacity: 0.5; }
-    .conv-item[data-closed="true"] .conv-name { color: hsl(var(--text-secondary)); }
-    .closed-badge {
+    .conv-row[data-closed="true"] .cr-avatar { opacity: 0.4; }
+    .conv-row[data-closed="true"] .cr-name { color: hsl(var(--text-2)); }
+    .closed-tag {
       font-size: 10px;
-      color: hsl(var(--text-tertiary));
+      color: hsl(var(--text-3));
       font-style: italic;
     }
 
-    /* Search highlight */
     mark.hl {
-      background: hsl(var(--amber) / 0.35);
-      color: hsl(var(--text-primary));
-      padding: 1px 2px;
+      background: hsl(var(--accent-soft));
+      color: hsl(var(--accent));
+      padding: 0 2px;
       border-radius: 3px;
       font-weight: 500;
     }
 
-    /* ═══════════════════════════════════════════════════
-       LISTE ADMIN — SearchField + chips de filtres
-       ═══════════════════════════════════════════════════ */
-    .admin-toolbar {
-      padding: var(--space-3) var(--space-3);
-      background: hsl(var(--bg-elevated));
-      border-bottom: 1px solid hsl(var(--border));
+    /* Admin toolbar */
+    .adm-tools {
+      padding: var(--s-3);
+      background: hsl(var(--bg-elev));
+      border-bottom: 1px solid hsl(var(--hairline));
       display: flex; flex-direction: column; gap: 10px;
       flex-shrink: 0;
     }
     .search-wrap {
-      position: relative;
-      display: flex; align-items: center;
-      background: hsl(var(--surface-2));
-      border-radius: var(--radius-md);
+      display: flex; align-items: center; gap: 8px;
+      background: hsl(var(--bg-input));
+      border-radius: var(--r-md);
       padding: 0 12px;
     }
-    .search-wrap svg.icon-left {
-      width: 16px; height: 16px;
-      color: hsl(var(--text-tertiary));
-      flex-shrink: 0;
-    }
+    .search-wrap svg.l { width: 16px; height: 16px; color: hsl(var(--text-3)); flex-shrink: 0; }
     .search-wrap input {
       flex: 1;
-      padding: 10px;
-      font-size: var(--text-input);
+      padding: 9px 0;
+      font-size: var(--t-input);
       border: 0; background: transparent; outline: none;
-      color: hsl(var(--text-primary));
+      color: hsl(var(--text-1));
     }
-    .filter-chips {
+    .chips {
       display: flex; gap: 6px;
       overflow-x: auto;
       scrollbar-width: none;
-      margin: 0 calc(var(--space-3) * -1);
-      padding: 0 var(--space-3);
+      margin: 0 calc(var(--s-3) * -1);
+      padding: 0 var(--s-3);
     }
-    .filter-chips::-webkit-scrollbar { display: none; }
-    .filter-chip {
-      padding: 6px 12px;
-      border-radius: var(--radius-full);
-      font-size: 12px;
-      background: hsl(var(--surface-2));
-      color: hsl(var(--text-secondary));
-      flex-shrink: 0;
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      padding: 5px 11px;
+      border-radius: var(--r-full);
+      font-size: var(--t-xs);
       font-weight: 500;
-      transition: all var(--duration-fast);
+      background: hsl(var(--surface-2));
+      color: hsl(var(--text-2));
+      flex-shrink: 0;
     }
-    .filter-chip[aria-pressed="true"] {
-      background: hsl(var(--violet));
-      color: white;
+    .chip[aria-pressed="true"] {
+      background: hsl(var(--text-1));
+      color: hsl(var(--bg));
     }
 
-    /* ═══════════════════════════════════════════════════
-       VOICE RECORDER OVERLAY
-       ═══════════════════════════════════════════════════ */
-    .voice-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg,
-        hsl(var(--bg)) 0%,
-        hsl(var(--orange) / 0.05) 100%);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: var(--space-6);
-      animation: fade-in var(--duration-base) var(--ease-out);
-    }
-    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-    .voice-pulse {
-      width: 120px; height: 120px;
-      border-radius: var(--radius-full);
-      background: hsl(var(--orange));
-      color: white;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: var(--space-5);
-      box-shadow: 0 0 0 0 hsl(var(--orange) / 0.4);
-      animation: pulse-rec 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse-rec {
-      0%, 100% { box-shadow: 0 0 0 0 hsl(var(--orange) / 0.4); transform: scale(1); }
-      50% { box-shadow: 0 0 0 24px hsl(var(--orange) / 0); transform: scale(1.04); }
-    }
-    .voice-timer {
-      font-size: 28px; font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      color: hsl(var(--text-primary));
-      margin-bottom: var(--space-2);
-    }
-    .voice-waveform-live {
-      width: 100%; max-width: 260px;
-      height: 48px;
-      display: flex; align-items: center; justify-content: center;
-      gap: 3px;
-      margin-bottom: var(--space-5);
-    }
-    .voice-waveform-live .live-bar {
-      width: 3px;
-      background: hsl(var(--orange));
-      border-radius: 2px;
-      animation: wave 1s ease-in-out infinite;
-    }
-    @keyframes wave {
-      0%, 100% { height: 20%; }
-      50% { height: 100%; }
-    }
-    .voice-hint {
-      color: hsl(var(--text-secondary));
-      font-size: 13px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .voice-actions {
-      display: flex; gap: 16px; margin-top: var(--space-5);
-    }
-    .voice-action-btn {
-      width: 56px; height: 56px;
-      border-radius: var(--radius-full);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: var(--shadow-2);
-    }
-    .voice-action-btn.cancel { background: hsl(var(--surface-2)); color: hsl(var(--text-primary)); }
-    .voice-action-btn.send { background: hsl(var(--violet)); color: white; }
-
-    /* ═══════════════════════════════════════════════════
-       ADMIN STATS
-       ═══════════════════════════════════════════════════ */
-    .stats-container {
+    /* ═══════════════════════════════════════════════
+       STATS — sobre, monochrome
+       ═══════════════════════════════════════════════ */
+    .stats {
       flex: 1; overflow-y: auto;
-      padding: var(--space-3) var(--space-3) var(--space-6);
-      display: flex; flex-direction: column; gap: var(--space-3);
+      padding: var(--s-3);
+      display: flex; flex-direction: column; gap: var(--s-3);
+      background: hsl(var(--bg));
     }
-    .stats-period {
-      display: flex; gap: 6px;
-      padding: var(--space-2);
-      background: hsl(var(--surface-1));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius-md);
+    .period {
+      display: flex; gap: 2px;
+      padding: 2px;
+      background: hsl(var(--surface-2));
+      border-radius: var(--r-md);
     }
-    .stats-period button {
+    .period button {
       flex: 1;
-      padding: 6px;
-      font-size: 12px; font-weight: 500;
-      border-radius: var(--radius-sm);
-      color: hsl(var(--text-secondary));
+      padding: 7px;
+      font-size: var(--t-sm);
+      font-weight: 500;
+      border-radius: calc(var(--r-md) - 2px);
+      color: hsl(var(--text-2));
     }
-    .stats-period button[aria-pressed="true"] {
-      background: hsl(var(--violet));
-      color: white;
+    .period button[aria-pressed="true"] {
+      background: hsl(var(--bg-elev));
+      color: hsl(var(--text-1));
+      box-shadow: var(--shadow-1);
     }
 
-    .kpi-grid {
+    .kpis {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: var(--space-3);
+      gap: var(--s-3);
     }
-    .kpi-card {
-      padding: var(--space-3);
-      background: hsl(var(--bg-elevated));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius-lg);
+    .kpi {
+      padding: var(--s-3);
+      background: hsl(var(--bg-elev));
+      border-radius: var(--r-lg);
       box-shadow: var(--shadow-1);
-      transition: transform var(--duration-base) var(--ease-spring);
     }
-    .kpi-card:active { transform: scale(0.98); }
     .kpi-icon {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-full);
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: hsl(var(--surface-2));
+      color: hsl(var(--text-2));
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: var(--space-2);
+      margin-bottom: var(--s-2);
     }
-    .kpi-icon.violet { background: hsl(var(--violet-light)); color: hsl(var(--violet)); }
-    .kpi-icon.amber { background: hsl(var(--amber-light)); color: hsl(var(--amber)); }
-    .kpi-icon.orange { background: hsl(var(--orange-light)); color: hsl(var(--orange)); }
-    .kpi-label { font-size: 11px; color: hsl(var(--text-secondary)); margin-bottom: 2px; }
-    .kpi-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-    .kpi-hint { font-size: 10px; color: hsl(var(--text-tertiary)); margin-top: 2px; }
+    .kpi-label {
+      font-size: var(--t-xs);
+      color: hsl(var(--text-2));
+      margin-bottom: 2px;
+    }
+    .kpi-value {
+      font-size: var(--t-2xl);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: hsl(var(--text-1));
+    }
+    .kpi-hint {
+      font-size: 10px;
+      color: hsl(var(--text-3));
+      margin-top: 2px;
+    }
 
     .chart-card {
-      padding: var(--space-3);
-      background: hsl(var(--bg-elevated));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius-lg);
+      padding: var(--s-3);
+      background: hsl(var(--bg-elev));
+      border-radius: var(--r-lg);
       box-shadow: var(--shadow-1);
     }
     .chart-title {
-      font-size: 13px; font-weight: 600;
-      color: hsl(var(--text-primary));
-      margin: 0 0 2px;
+      font-size: var(--t-sm);
+      font-weight: 600;
+      margin: 0 0 1px;
     }
-    .chart-subtitle {
-      font-size: 11px; color: hsl(var(--text-secondary));
-      margin: 0 0 var(--space-3);
+    .chart-sub {
+      font-size: 11px;
+      color: hsl(var(--text-2));
+      margin: 0 0 var(--s-3);
     }
     .legend {
-      display: flex; gap: 16px;
-      font-size: 11px; color: hsl(var(--text-secondary));
+      display: flex; gap: 14px;
+      font-size: 11px;
+      color: hsl(var(--text-2));
       justify-content: center;
-      margin-top: 8px;
+      margin-top: 6px;
     }
-    .legend .swatch {
-      display: inline-block; width: 10px; height: 10px;
-      border-radius: 2px; margin-right: 4px; vertical-align: middle;
-    }
-
-    /* ═══════════════════════════════════════════════════
-       UTILS
-       ═══════════════════════════════════════════════════ */
-    .sr-only {
-      position: absolute; width: 1px; height: 1px;
-      padding: 0; margin: -1px; overflow: hidden;
-      clip: rect(0,0,0,0); border: 0;
+    .legend .sw {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      margin-right: 4px;
+      vertical-align: middle;
     }
 
-    /* Annotation overlay (notes du designer dans le mockup) */
-    .note {
-      position: absolute;
-      background: hsl(var(--amber));
-      color: white;
-      font-size: 10px; font-weight: 600;
-      padding: 3px 8px;
-      border-radius: var(--radius-full);
-      box-shadow: var(--shadow-2);
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    /* Banner closed */
     .closed-banner {
       display: flex; align-items: center; gap: 8px;
-      padding: 10px var(--space-3);
+      padding: 10px var(--s-3);
       background: hsl(var(--surface-2));
-      border-top: 1px solid hsl(var(--border));
-      font-size: 12px;
-      color: hsl(var(--text-secondary));
+      border-top: 1px solid hsl(var(--hairline));
+      font-size: var(--t-xs);
+      color: hsl(var(--text-2));
       flex-shrink: 0;
     }
 
-    /* Action badge admin */
-    .pill-action {
+    .pill-claim {
       display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px;
-      border-radius: var(--radius-full);
-      font-size: 11px; font-weight: 600;
-    }
-    .pill-action.claim {
-      background: hsl(var(--violet));
+      padding: 5px 10px;
+      border-radius: var(--r-full);
+      font-size: var(--t-xs);
+      font-weight: 600;
+      background: hsl(var(--accent));
       color: white;
     }
-    .pill-action.assigned-other {
-      background: hsl(var(--amber-light));
-      color: hsl(var(--amber));
+    .pill-mine {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 8px;
+      border-radius: var(--r-full);
+      font-size: 10px;
+      font-weight: 600;
+      background: hsl(var(--accent-soft));
+      color: hsl(var(--accent));
     }
-    .pill-action.assigned-me {
-      background: hsl(var(--violet-light));
-      color: hsl(var(--violet));
+
+    /* Indication test (note jaune sur la scène 4 par exemple) */
+    .test-note {
+      background: hsl(var(--surface-2));
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: hsl(var(--text-2));
+      margin: 6px 0;
+      border-left: 3px solid hsl(var(--accent));
+    }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); border: 0;
     }
   </style>
 </head>
 <body>
-  <!-- ═══════════════════════════════════════════════════
-       MOCKUP CHROME (en-tête, toolbar, tabs)
-       ═══════════════════════════════════════════════════ -->
-  <div class="mockup-header">
-    <h1>Bonzini Chat — Mockup UI/UX v2</h1>
-    <button class="header-toggle" id="toggle-theme" title="Light / Dark">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <!-- Chrome du mockup -->
+  <div class="chrome">
+    <h1>Bonzini Chat — Mockup v3</h1>
+    <button class="icon-btn" id="toggle-theme" title="Theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
   </div>
 
-  <div class="mockup-toolbar">
-    <div class="toolbar-group" role="group" aria-label="Taille texte">
-      <button class="toolbar-btn" data-fontsize="small">A</button>
-      <button class="toolbar-btn" data-fontsize="default" aria-pressed="true">A</button>
-      <button class="toolbar-btn" data-fontsize="large">A</button>
+  <div class="controls">
+    <div class="seg">
+      <button data-fontsize="small">a</button>
+      <button data-fontsize="default" aria-pressed="true">A</button>
+      <button data-fontsize="large">A</button>
     </div>
-    <div class="toolbar-group" role="group" aria-label="OS preview">
-      <button class="toolbar-btn" data-os="ios" aria-pressed="true">iOS</button>
-      <button class="toolbar-btn" data-os="android">Android</button>
+    <div class="seg">
+      <button data-os="ios" aria-pressed="true">iOS</button>
+      <button data-os="android">Android</button>
     </div>
-    <div class="toolbar-group">
-      <button class="toolbar-btn" id="kb-sim" aria-pressed="false">⌨ Simuler clavier</button>
+    <div class="seg">
+      <button id="kb-sim">⌨ Clavier</button>
     </div>
   </div>
 
-  <nav class="mockup-tabs" role="tablist" id="scene-tabs">
-    <button class="tab-btn" data-scene="1" aria-current="true">1. Empty + Quick replies</button>
-    <button class="tab-btn" data-scene="2">2. Conv pleine (client)</button>
-    <button class="tab-btn" data-scene="3">3. Avec reply</button>
-    <button class="tab-btn" data-scene="4">4. Clavier ouvert</button>
-    <button class="tab-btn" data-scene="5">5. Voice recorder</button>
-    <button class="tab-btn" data-scene="6">6. Media (img/vidéo/fichier)</button>
-    <button class="tab-btn" data-scene="7">7. Liste convs client</button>
-    <button class="tab-btn" data-scene="8">8. Conv admin + actions</button>
-    <button class="tab-btn" data-scene="9">9. Liste admin + search</button>
-    <button class="tab-btn" data-scene="10">10. Stats admin</button>
+  <nav class="tabs" role="tablist">
+    <button class="tab" data-scene="1" aria-current="true">1. Empty</button>
+    <button class="tab" data-scene="2">2. Conv pleine</button>
+    <button class="tab" data-scene="3">3. Reply</button>
+    <button class="tab" data-scene="4">4. Clavier</button>
+    <button class="tab" data-scene="5">5. Voice rec (inline)</button>
+    <button class="tab" data-scene="6">6. Media</button>
+    <button class="tab" data-scene="7">7. Liste convs</button>
+    <button class="tab" data-scene="8">8. Admin actions</button>
+    <button class="tab" data-scene="9">9. Admin liste</button>
+    <button class="tab" data-scene="10">10. Stats</button>
   </nav>
 
-  <!-- ═══════════════════════════════════════════════════
-       SCÈNES (1 à 10)
-       ═══════════════════════════════════════════════════ -->
-  <div class="scene-host" id="scene-host">
+  <div class="stage">
 
-    <!-- ═══════ SCÈNE 1 : Empty state + quick replies ═══════ -->
+    <!-- ═══════ SCÈNE 1 : Empty state épuré ═══════ -->
     <section class="scene" data-scene="1" data-active="true">
-      <header class="chat-header">
-        <button class="back-btn" aria-label="Retour">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div class="avatar">EB</div>
-        <div class="info">
-          <div class="name">Équipe Bonzini</div>
-          <div class="subtitle"><span class="status-dot"></span> En ligne maintenant</div>
+      <header class="ch-header">
+        <button class="ch-back" aria-label="Retour"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">B</div>
+        <div class="ch-info">
+          <div class="ch-name">Équipe Bonzini</div>
+          <div class="ch-sub"><span class="status-dot"></span> En ligne</div>
         </div>
         <span class="rt-chip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -1221,73 +1177,336 @@
         </span>
       </header>
 
-      <div class="empty-state">
-        <svg class="empty-illustration" viewBox="0 0 140 140">
-          <defs>
-            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="hsl(258 100% 60%)"/>
-              <stop offset="100%" stop-color="hsl(16 100% 55%)"/>
-            </linearGradient>
-            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="hsl(36 100% 55%)"/>
-              <stop offset="100%" stop-color="hsl(16 100% 55%)"/>
-            </linearGradient>
-          </defs>
-          <!-- Bulle de chat principale (violet/orange) -->
-          <path d="M30 25 Q30 15, 40 15 L110 15 Q120 15, 120 25 L120 75 Q120 85, 110 85 L70 85 L55 100 L55 85 L40 85 Q30 85, 30 75 Z" fill="url(#grad1)" opacity="0.9"/>
-          <!-- Coeur stylisé (amber) -->
-          <path d="M75 35 C72 32, 65 32, 65 40 C65 48, 75 55, 75 55 C75 55, 85 48, 85 40 C85 32, 78 32, 75 35 Z" fill="url(#grad2)"/>
-          <!-- Petites bulles autour -->
-          <circle cx="20" cy="60" r="6" fill="hsl(36 100% 55%)" opacity="0.6"/>
-          <circle cx="130" cy="40" r="4" fill="hsl(258 100% 60%)" opacity="0.5"/>
-          <circle cx="125" cy="100" r="8" fill="hsl(16 100% 55%)" opacity="0.4"/>
+      <div class="empty">
+        <svg class="empty-ill" viewBox="0 0 64 64" fill="none">
+          <!-- Bulle de chat minimaliste, mono ligne -->
+          <path d="M14 18 Q14 12, 20 12 L44 12 Q50 12, 50 18 L50 36 Q50 42, 44 42 L28 42 L20 50 L20 42 Q14 42, 14 36 Z"
+                stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="none"/>
+          <!-- Petit B au centre -->
+          <text x="32" y="32" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif"
+                font-size="18" font-weight="700" fill="currentColor">B</text>
         </svg>
-        <h2 class="empty-title">Discutons de votre prochain paiement</h2>
-        <p class="empty-subtitle">L'équipe Bonzini répond en moins de 7 minutes en moyenne. Posez votre question, on s'occupe du reste.</p>
+        <h2>Discutons de votre paiement</h2>
+        <p>L'équipe Bonzini répond en moins de 7 minutes en moyenne.</p>
 
-        <div class="quick-replies">
-          <div class="quick-replies-title">Démarrer rapidement</div>
-          <button class="quick-reply-chip">
-            <span class="icon">💳</span>
-            <span>Vérifier l'état de mon paiement</span>
+        <div class="qr-title">Démarrer</div>
+        <div class="qr-list">
+          <button class="qr-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Vérifier l'état de mon paiement
           </button>
-          <button class="quick-reply-chip">
-            <span class="icon">💱</span>
-            <span>Question sur le taux de change</span>
+          <button class="qr-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            Question sur le taux du jour
           </button>
-          <button class="quick-reply-chip">
-            <span class="icon">📄</span>
-            <span>Envoyer un bordereau</span>
+          <button class="qr-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Envoyer un bordereau
           </button>
-          <button class="quick-reply-chip">
-            <span class="icon">💬</span>
-            <span>Autre question</span>
+          <button class="qr-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Autre question
           </button>
         </div>
       </div>
 
-      <!-- Input bar même sur empty state -->
-      <div class="input-bar">
-        <button class="icon-btn attach" aria-label="Joindre">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-        <div class="input-textwrap">
-          <textarea class="input-textarea" rows="1" placeholder="Écrivez votre message…"></textarea>
+      <div class="input">
+        <div class="input-pill">
+          <button class="pill-icon" aria-label="Joindre">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <textarea class="ta" rows="1" placeholder="Message"></textarea>
         </div>
         <button class="mic-btn" aria-label="Vocal">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg>
         </button>
       </div>
     </section>
 
     <!-- ═══════ SCÈNE 2 : Conv pleine ═══════ -->
     <section class="scene" data-scene="2">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="avatar">EB</div>
-        <div class="info">
-          <div class="name">Équipe Bonzini</div>
-          <div class="subtitle"><span class="status-dot"></span> Marie écrit…</div>
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">B</div>
+        <div class="ch-info">
+          <div class="ch-name">Équipe Bonzini</div>
+          <div class="ch-sub"><span class="status-dot"></span> Marie écrit…</div>
+        </div>
+      </header>
+
+      <div class="ch-body">
+        <div class="date-sep"><span>Hier</span></div>
+
+        <div class="grp" data-side="self">
+          <div class="bb"><p>Bonjour, j'ai effectué un virement de 250 000 XAF ce matin. Vous l'avez bien reçu ?</p></div>
+          <div class="meta">10:24 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="24 6 13 17 11 15" opacity="0.55"/></svg></span></div>
+        </div>
+
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb"><p>Bonjour Jean 👋 Oui votre virement est arrivé, je traite votre dossier.</p></div>
+          <div class="bb"><p>Le paiement sera exécuté dans les 2 prochaines heures.</p></div>
+          <div class="meta">10:31</div>
+        </div>
+
+        <div class="date-sep"><span>Aujourd'hui</span></div>
+
+        <div class="grp" data-side="self">
+          <div class="bb"><p>Parfait, merci !</p></div>
+          <div class="bb"><p>Hello</p></div>
+          <div class="bb"><p>Une question : le taux d'hier (88.5) est-il toujours valable aujourd'hui ?</p></div>
+          <div class="meta">09:12 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="24 6 13 17 11 15" opacity="0.55"/></svg></span></div>
+        </div>
+
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb"><p>Bonjour 👋</p></div>
+          <div class="bb"><p>Oui le taux reste à 88.5 XAF/CNY jusqu'à 18h.</p></div>
+          <div class="reactions">
+            <button class="reaction" data-mine="true">👍 <span class="n">1</span></button>
+          </div>
+          <div class="meta">09:14</div>
+        </div>
+      </div>
+
+      <div class="input">
+        <div class="input-pill">
+          <button class="pill-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+          <textarea class="ta" rows="1" placeholder="Message"></textarea>
+        </div>
+        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ═══════ SCÈNE 3 : Avec reply ═══════ -->
+    <section class="scene" data-scene="3">
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">B</div>
+        <div class="ch-info">
+          <div class="ch-name">Équipe Bonzini</div>
+          <div class="ch-sub">Réponse moyenne 5 min</div>
+        </div>
+      </header>
+
+      <div class="ch-body">
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb"><p>Votre paiement vers Shenzhen Tech Ltd est confirmé. Le bénéficiaire reçoit dans 30 min.</p></div>
+          <div class="meta">10:42</div>
+        </div>
+
+        <div class="grp" data-side="self">
+          <div class="bb"><p>Super merci !</p></div>
+          <div class="meta">10:43 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="24 6 13 17 11 15" opacity="0.55"/></svg></span></div>
+        </div>
+
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb">
+            <div class="quoted">
+              <div class="qs">Marie</div>
+              <div class="qt">Le taux reste à 88.5 XAF/CNY jusqu'à 18h.</div>
+            </div>
+            <p>Petit update : on a revu le taux à 88.3 pour ce soir.</p>
+          </div>
+          <div class="meta">11:08</div>
+        </div>
+      </div>
+
+      <div class="reply-prev">
+        <div class="bar"></div>
+        <div class="content">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="text">Petit update : on a revu le taux à 88.3 pour ce soir.</div>
+        </div>
+        <button class="close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+
+      <div class="input">
+        <div class="input-pill">
+          <button class="pill-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+          <textarea class="ta" rows="1">Merci pour l'info</textarea>
+        </div>
+        <button class="mic-btn" data-mode="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ═══════ SCÈNE 4 : Clavier ouvert (test critique) ═══════ -->
+    <section class="scene" data-scene="4">
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">B</div>
+        <div class="ch-info">
+          <div class="ch-name">Équipe Bonzini</div>
+          <div class="ch-sub"><span class="status-dot"></span> En ligne</div>
+        </div>
+      </header>
+
+      <div class="ch-body">
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb"><p>Bonjour, comment puis-je vous aider ?</p></div>
+          <div class="meta">14:22</div>
+        </div>
+        <div class="grp" data-side="self">
+          <div class="bb"><p>OK</p></div>
+          <div class="meta">14:24 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
+        </div>
+
+        <div class="test-note">
+          <strong>Test critique :</strong> Active "⌨ Clavier" en haut OU touche l'input ci-dessous sur ton téléphone réel. La barre d'input doit rester visible au-dessus du clavier, jamais cachée.
+        </div>
+      </div>
+
+      <div class="typing">
+        <div class="typing-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        écrit…
+      </div>
+
+      <div class="input">
+        <div class="input-pill">
+          <button class="pill-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+          <textarea class="ta" rows="1" placeholder="Tape ici pour ouvrir le clavier" autofocus></textarea>
+        </div>
+        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ═══════ SCÈNE 5 : Voice recording INLINE (style WhatsApp) ═══════ -->
+    <section class="scene" data-scene="5">
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">B</div>
+        <div class="ch-info">
+          <div class="ch-name">Équipe Bonzini</div>
+          <div class="ch-sub"><span class="status-dot"></span> En ligne</div>
+        </div>
+      </header>
+
+      <div class="ch-body">
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb"><p>Comment puis-je vous aider ?</p></div>
+          <div class="meta">14:22</div>
+        </div>
+
+        <div class="test-note">
+          <strong>3 sous-états — toggle ci-dessous :</strong>
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button class="chip" data-rec-state="recording" aria-pressed="true" style="font-size: 11px;">Enregistre</button>
+            <button class="chip" data-rec-state="cancel" style="font-size: 11px;">Annule (release)</button>
+            <button class="chip" data-rec-state="locked" style="font-size: 11px;">Verrouillé</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- État A : recording inline (par défaut) -->
+      <div class="input recording" id="rec-bar">
+        <div class="input-pill">
+          <span class="rec-dot"></span>
+          <span class="rec-timer">0:08</span>
+          <span class="rec-hint">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            Glissez pour annuler
+          </span>
+          <div class="rec-lock-hint" id="lock-hint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Verrouille</span>
+          </div>
+        </div>
+        <button class="mic-btn" id="rec-mic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ═══════ SCÈNE 6 : Media ═══════ -->
+    <section class="scene" data-scene="6">
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">B</div>
+        <div class="ch-info">
+          <div class="ch-name">Équipe Bonzini</div>
+          <div class="ch-sub"><span class="status-dot"></span> En ligne</div>
+        </div>
+      </header>
+
+      <div class="ch-body">
+        <div class="grp" data-side="self">
+          <div class="bb media-img">
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 280'><rect fill='%23e2e8f0' width='400' height='280'/><rect fill='%23cbd5e1' x='40' y='40' width='320' height='200' rx='8'/><text x='200' y='150' font-family='sans-serif' font-size='18' fill='%2364748b' text-anchor='middle'>Bordereau virement</text></svg>" alt="" />
+          </div>
+          <div class="bb"><p>Voici le bordereau de mon virement</p></div>
+          <div class="meta">10:24 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
+        </div>
+
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb media-voice">
+            <button class="voice-play">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="wf">
+              <span class="bar" data-played="true" style="height:30%"></span>
+              <span class="bar" data-played="true" style="height:60%"></span>
+              <span class="bar" data-played="true" style="height:80%"></span>
+              <span class="bar" data-played="true" style="height:45%"></span>
+              <span class="bar" data-played="true" style="height:70%"></span>
+              <span class="bar" style="height:55%"></span>
+              <span class="bar" style="height:75%"></span>
+              <span class="bar" style="height:35%"></span>
+              <span class="bar" style="height:60%"></span>
+              <span class="bar" style="height:85%"></span>
+              <span class="bar" style="height:40%"></span>
+              <span class="bar" style="height:70%"></span>
+              <span class="bar" style="height:55%"></span>
+              <span class="bar" style="height:80%"></span>
+            </div>
+            <span class="voice-dur">0:24</span>
+          </div>
+          <div class="meta">10:26</div>
+        </div>
+
+        <div class="grp" data-side="self">
+          <div class="bb media-video">
+            <div class="video-thumb">
+              <div class="video-play"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+              <span class="video-dur">0:18</span>
+            </div>
+          </div>
+          <div class="meta">10:30 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
+        </div>
+
+        <div class="grp" data-side="other">
+          <div class="sender">Marie · Équipe Bonzini</div>
+          <div class="bb media-file">
+            <div class="file-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="file-info">
+              <div class="file-name">facture-mars.pdf</div>
+              <div class="file-size">2,3 Mo</div>
+            </div>
+            <button class="file-dl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+          </div>
+          <div class="meta">10:35</div>
+        </div>
+      </div>
+
+      <div class="input">
+        <div class="input-pill">
+          <button class="pill-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+          <textarea class="ta" rows="1" placeholder="Message"></textarea>
+        </div>
+        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ═══════ SCÈNE 7 : Liste convs client ═══════ -->
+    <section class="scene" data-scene="7">
+      <header class="ch-header">
+        <div class="ch-info">
+          <div class="ch-name">Support</div>
+          <div class="ch-sub">Vos conversations</div>
         </div>
         <span class="rt-chip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -1295,636 +1514,305 @@
         </span>
       </header>
 
-      <div class="chat-bg">
-        <div class="date-sep"><span>Hier</span></div>
-
-        <!-- Groupe : moi (client) -->
-        <div class="msg-group" data-side="self">
-          <div class="bubble"><p>Bonjour, j'ai effectué un virement de 250 000 XAF ce matin pour mon fournisseur à Guangzhou. Pouvez-vous vérifier que vous avez bien reçu ?</p></div>
-          <div class="msg-meta">10:24 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="24 6 13 17 11 15" opacity="0.5"/></svg></span></div>
-        </div>
-
-        <!-- Groupe : autre (admin) -->
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini · Marie</div>
-          <div class="bubble"><p>Bonjour Jean ! Oui, je viens de voir votre virement arriver. Je traite votre dossier maintenant 🚀</p></div>
-          <div class="bubble"><p>Votre paiement sera exécuté dans les 2 prochaines heures, je vous tiens au courant dès qu'il est confirmé côté Alipay.</p></div>
-          <div class="msg-meta">10:31</div>
-        </div>
-
-        <div class="date-sep"><span>Aujourd'hui</span></div>
-
-        <!-- Groupe : moi -->
-        <div class="msg-group" data-side="self">
-          <div class="bubble"><p>Parfait, merci beaucoup ! 🙏</p></div>
-          <div class="bubble"><p>Hello</p></div>
-          <div class="bubble"><p>Une question : le taux que vous m'avez donné hier (88.5) est-il toujours valable aujourd'hui ?</p></div>
-          <div class="msg-meta">09:12 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="24 6 13 17 11 15" opacity="0.5"/></svg></span></div>
-        </div>
-
-        <!-- Groupe : autre -->
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini · Marie</div>
-          <div class="bubble"><p>Bonjour Jean 👋</p></div>
-          <div class="bubble"><p>Oui le taux reste à 88.5 XAF/CNY jusqu'à ce soir 18h. Après on rebalance selon Binance P2P.</p></div>
-          <div class="reactions">
-            <button class="reaction-pill" data-mine="true">👍 <span class="count">1</span></button>
+      <div class="list-body">
+        <div class="new-conv">
+          <div class="nc-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           </div>
-          <div class="msg-meta">09:14</div>
-        </div>
-      </div>
-
-      <div class="input-bar">
-        <button class="icon-btn attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-        <div class="input-textwrap">
-          <textarea class="input-textarea" rows="1" placeholder="Écrivez votre message…"></textarea>
-        </div>
-        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg></button>
-      </div>
-    </section>
-
-    <!-- ═══════ SCÈNE 3 : Avec reply en cours ═══════ -->
-    <section class="scene" data-scene="3">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="avatar">EB</div>
-        <div class="info">
-          <div class="name">Équipe Bonzini</div>
-          <div class="subtitle">Réponse moyenne 5 min</div>
-        </div>
-      </header>
-
-      <div class="chat-bg">
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini</div>
-          <div class="bubble"><p>Votre paiement de 250 000 XAF vers Shenzhen Tech Ltd a été confirmé. Le bénéficiaire recevra les fonds dans les 30 prochaines minutes.</p></div>
-          <div class="msg-meta">10:42</div>
-        </div>
-
-        <div class="msg-group" data-side="self">
-          <div class="bubble"><p>Super merci !</p></div>
-          <div class="msg-meta">10:43 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="24 6 13 17 11 15" opacity="0.5"/></svg></span></div>
-        </div>
-
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini</div>
-          <div class="bubble">
-            <div class="quoted">
-              <div class="quoted-sender">Marie · Équipe Bonzini</div>
-              <div class="quoted-text">Le taux reste à 88.5 XAF/CNY jusqu'à ce soir 18h…</div>
-            </div>
-            <p>Petit update : on a revu le taux à 88.3 pour ce soir. Bonne nouvelle pour vos prochains paiements ⤴</p>
+          <div class="nc-text">
+            <div class="nc-title">Nouvelle conversation</div>
+            <div class="nc-sub">Sur un sujet spécifique</div>
           </div>
-          <div class="msg-meta">11:08</div>
-        </div>
-      </div>
-
-      <!-- Reply preview au-dessus de l'input -->
-      <div class="reply-preview">
-        <div class="bar"></div>
-        <div class="content">
-          <div class="sender">Équipe Bonzini</div>
-          <div class="text">Petit update : on a revu le taux à 88.3 pour ce soir…</div>
-        </div>
-        <button class="close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="input-bar">
-        <button class="icon-btn attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-        <div class="input-textwrap">
-          <textarea class="input-textarea" rows="1">Merci pour l'info, je note pour mon prochain</textarea>
-        </div>
-        <button class="send-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
-        </button>
-      </div>
-    </section>
-
-    <!-- ═══════ SCÈNE 4 : Clavier OUVERT — test critique ═══════ -->
-    <section class="scene" data-scene="4">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="avatar">EB</div>
-        <div class="info">
-          <div class="name">Équipe Bonzini</div>
-          <div class="subtitle"><span class="status-dot"></span> En ligne</div>
-        </div>
-      </header>
-
-      <div class="chat-bg" id="chat-bg-kb">
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini</div>
-          <div class="bubble"><p>Bonjour ! Comment puis-je vous aider aujourd'hui ?</p></div>
-          <div class="msg-meta">14:22</div>
-        </div>
-        <div class="msg-group" data-side="self">
-          <div class="bubble"><p>OK</p></div>
-          <div class="msg-meta">14:24 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
+          <span class="nc-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
         </div>
 
-        <!-- Note critique pour le designer/dev -->
-        <div style="background: hsl(var(--amber) / 0.15); padding: 8px; border-radius: 8px; font-size: 11px; color: hsl(var(--amber)); margin: 8px 0; border-left: 3px solid hsl(var(--amber));">
-          ⚠️ <strong>Test critique</strong> : Active "⌨ Simuler clavier" en haut. L'input doit rester visible au-dessus du clavier simulé. Sur device réel, focus l'input ci-dessous → le clavier natif s'ouvre → l'input doit rester visible.
-        </div>
-      </div>
-
-      <div class="typing-indicator">
-        <div class="typing-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-        Équipe Bonzini écrit…
-      </div>
-
-      <div class="input-bar">
-        <button class="icon-btn attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-        <div class="input-textwrap">
-          <textarea class="input-textarea" rows="1" placeholder="Touchez ici puis ouvrez le clavier" autofocus></textarea>
-        </div>
-        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg></button>
-      </div>
-    </section>
-
-    <!-- ═══════ SCÈNE 5 : Voice recorder ═══════ -->
-    <section class="scene" data-scene="5">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="avatar">EB</div>
-        <div class="info">
-          <div class="name">Équipe Bonzini</div>
-          <div class="subtitle"><span class="status-dot"></span> En ligne</div>
-        </div>
-      </header>
-
-      <div class="chat-bg" style="position: relative;">
-        <div class="msg-group" data-side="other">
-          <div class="bubble"><p>Comment puis-je vous aider ?</p></div>
-        </div>
-
-        <!-- Overlay enregistrement vocal -->
-        <div class="voice-overlay">
-          <div class="voice-pulse">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+        <div class="conv-row" data-unread="true">
+          <div class="cr-avatar">B</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Équipe Bonzini</span><span class="cr-time">2 min</span></div>
+            <div class="cr-subject">Paiement Shenzhen Tech</div>
+            <div class="cr-preview">Votre paiement a été confirmé, les fonds arrivent dans 30 min.</div>
           </div>
-          <div class="voice-timer">0:08</div>
-          <div class="voice-waveform-live">
-            <div class="live-bar" style="height: 30%; animation-delay: 0ms;"></div>
-            <div class="live-bar" style="height: 80%; animation-delay: 60ms;"></div>
-            <div class="live-bar" style="height: 50%; animation-delay: 120ms;"></div>
-            <div class="live-bar" style="height: 90%; animation-delay: 180ms;"></div>
-            <div class="live-bar" style="height: 60%; animation-delay: 240ms;"></div>
-            <div class="live-bar" style="height: 100%; animation-delay: 300ms;"></div>
-            <div class="live-bar" style="height: 40%; animation-delay: 360ms;"></div>
-            <div class="live-bar" style="height: 70%; animation-delay: 420ms;"></div>
-            <div class="live-bar" style="height: 85%; animation-delay: 480ms;"></div>
-            <div class="live-bar" style="height: 50%; animation-delay: 540ms;"></div>
-            <div class="live-bar" style="height: 75%; animation-delay: 600ms;"></div>
-            <div class="live-bar" style="height: 95%; animation-delay: 660ms;"></div>
+          <span class="cr-badge">2</span>
+        </div>
+
+        <div class="conv-row">
+          <div class="cr-avatar">B</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Équipe Bonzini</span><span class="cr-time">1 h</span></div>
+            <div class="cr-subject">Taux du jour</div>
+            <div class="cr-preview">88.5 XAF/CNY jusqu'à 18h, ensuite on rebalance.</div>
           </div>
-          <div class="voice-hint">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            Glissez pour annuler · max 60s
+        </div>
+
+        <div class="conv-row">
+          <div class="cr-avatar">B</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Équipe Bonzini</span><span class="cr-time">hier</span></div>
+            <div class="cr-subject">Demande KYC</div>
+            <div class="cr-preview">Documents reçus, vous serez vérifié sous 24h.</div>
           </div>
-          <div class="voice-actions">
-            <button class="voice-action-btn cancel" aria-label="Annuler">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-            </button>
-            <button class="voice-action-btn send" aria-label="Envoyer">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
-            </button>
+        </div>
+
+        <div class="conv-row" data-closed="true">
+          <div class="cr-avatar">B</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Équipe Bonzini</span><span class="cr-time">15 mai</span></div>
+            <div class="cr-subject">Facturation</div>
+            <div class="cr-preview">De rien, n'hésitez pas pour d'autres questions.</div>
+            <div class="closed-tag">Fermée</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ═══════ SCÈNE 6 : Media (image + vidéo + fichier) ═══════ -->
-    <section class="scene" data-scene="6">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="avatar">EB</div>
-        <div class="info">
-          <div class="name">Équipe Bonzini</div>
-          <div class="subtitle"><span class="status-dot"></span> En ligne</div>
-        </div>
-      </header>
-
-      <div class="chat-bg">
-        <div class="msg-group" data-side="self">
-          <div class="bubble bubble-image">
-            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'><rect fill='%23667eea' width='400' height='300'/><text x='200' y='160' font-family='sans-serif' font-size='24' fill='white' text-anchor='middle'>Bordereau virement</text></svg>" alt="" />
-          </div>
-          <div class="bubble"><p>Voici le bordereau de mon virement de 250 000 XAF</p></div>
-          <div class="msg-meta">10:24 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
-        </div>
-
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini</div>
-          <div class="bubble bubble-voice">
-            <button class="voice-play">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <div class="waveform">
-              <span class="bar" data-played="true" style="height: 30%"></span>
-              <span class="bar" data-played="true" style="height: 60%"></span>
-              <span class="bar" data-played="true" style="height: 80%"></span>
-              <span class="bar" data-played="true" style="height: 45%"></span>
-              <span class="bar" data-played="true" style="height: 70%"></span>
-              <span class="bar" data-played="true" style="height: 90%"></span>
-              <span class="bar" style="height: 55%"></span>
-              <span class="bar" style="height: 75%"></span>
-              <span class="bar" style="height: 35%"></span>
-              <span class="bar" style="height: 60%"></span>
-              <span class="bar" style="height: 85%"></span>
-              <span class="bar" style="height: 40%"></span>
-              <span class="bar" style="height: 70%"></span>
-              <span class="bar" style="height: 55%"></span>
-              <span class="bar" style="height: 80%"></span>
-            </div>
-            <span class="voice-duration">0:24</span>
-          </div>
-          <div class="msg-meta">10:26</div>
-        </div>
-
-        <div class="msg-group" data-side="self">
-          <div class="bubble bubble-video">
-            <div class="video-thumb">
-              <div class="video-play-overlay">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-              </div>
-              <span class="video-duration-badge">0:18</span>
-            </div>
-          </div>
-          <div class="msg-meta">10:30 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
-        </div>
-
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Équipe Bonzini</div>
-          <div class="bubble bubble-file">
-            <div class="file-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>
-            <div class="file-info">
-              <div class="file-name">facture-fournisseur-mars.pdf</div>
-              <div class="file-size">2.3 Mo</div>
-            </div>
-            <button class="file-download">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            </button>
-          </div>
-          <div class="msg-meta">10:35</div>
-        </div>
-      </div>
-
-      <div class="input-bar">
-        <button class="icon-btn attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-        <div class="input-textwrap">
-          <textarea class="input-textarea" rows="1" placeholder="Écrivez votre message…"></textarea>
-        </div>
-        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></button>
-      </div>
-    </section>
-
-    <!-- ═══════ SCÈNE 7 : Liste conversations client (multi-thread) ═══════ -->
-    <section class="scene" data-scene="7">
-      <header class="chat-header" style="background: linear-gradient(135deg, hsl(var(--violet)) 0%, hsl(var(--orange)) 100%); color: white; border-bottom: 0;">
-        <div class="info">
-          <div class="name" style="color: white;">Support Bonzini</div>
-          <div class="subtitle" style="color: rgba(255,255,255,0.85);">Vos conversations</div>
-        </div>
-        <span class="rt-chip" style="background: rgba(255,255,255,0.18); color: white;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          5 min
-        </span>
-      </header>
-
-      <div class="conv-list">
-        <div class="new-conv-card">
-          <div class="plus-circle">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          </div>
-          <div class="text">
-            <div class="title-text">Nouvelle conversation</div>
-            <div class="subtitle-text">Sur un sujet spécifique</div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--violet))" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>
-
-        <div class="conv-item" data-unread="true">
-          <div class="conv-icon">M</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Équipe Bonzini</span>
-              <span class="conv-time">il y a 2 min</span>
-            </div>
-            <div class="conv-subject">Paiement Shenzhen Tech Ltd</div>
-            <div class="conv-preview">Votre paiement a été confirmé, les fonds arrivent dans 30 min.</div>
-          </div>
-          <span class="unread-badge">2</span>
-        </div>
-
-        <div class="conv-item" data-unread="false">
-          <div class="conv-icon">M</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Équipe Bonzini</span>
-              <span class="conv-time">il y a 1 h</span>
-            </div>
-            <div class="conv-subject">Question sur le taux du jour</div>
-            <div class="conv-preview">88.5 jusqu'à ce soir 18h, ensuite on rebalance.</div>
-          </div>
-        </div>
-
-        <div class="conv-item" data-unread="false">
-          <div class="conv-icon">M</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Équipe Bonzini</span>
-              <span class="conv-time">hier</span>
-            </div>
-            <div class="conv-subject">Demande KYC</div>
-            <div class="conv-preview">Vos documents ont bien été reçus, sous 24h vous serez vérifié.</div>
-          </div>
-        </div>
-
-        <div class="conv-item" data-unread="false" data-closed="true">
-          <div class="conv-icon">M</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Équipe Bonzini</span>
-              <span class="conv-time">15 mai</span>
-            </div>
-            <div class="conv-subject">Question facturation</div>
-            <div class="conv-preview">De rien, n'hésitez pas si vous avez d'autres questions !</div>
-            <div class="closed-badge">Conversation fermée</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════ SCÈNE 8 : Conv admin avec actions ═══════ -->
+    <!-- ═══════ SCÈNE 8 : Admin actions ═══════ -->
     <section class="scene" data-scene="8">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="avatar" style="background: linear-gradient(135deg, hsl(var(--amber)), hsl(var(--orange)));">JD</div>
-        <div class="info">
-          <div class="name">Jean Dupont</div>
-          <div class="subtitle">+237 6XX XX XX XX</div>
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-avatar">JD</div>
+        <div class="ch-info">
+          <div class="ch-name">Jean Dupont</div>
+          <div class="ch-sub">+237 6XX XX XX XX</div>
         </div>
-        <span class="pill-action assigned-me">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span class="pill-mine">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           À vous
         </span>
-        <button class="action-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        <button class="ch-action">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
         </button>
       </header>
 
-      <div class="chat-bg">
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Jean Dupont</div>
-          <div class="bubble"><p>Bonjour, j'ai un souci avec mon dernier paiement, le bénéficiaire dit qu'il n'a rien reçu</p></div>
-          <div class="msg-meta">14:02</div>
+      <div class="ch-body">
+        <div class="grp" data-side="other">
+          <div class="sender">Jean Dupont</div>
+          <div class="bb"><p>Bonjour, j'ai un souci avec mon dernier paiement, le bénéficiaire dit qu'il n'a rien reçu.</p></div>
+          <div class="meta">14:02</div>
         </div>
 
-        <div class="msg-group" data-side="self">
-          <div class="bubble"><p>Bonjour Jean, je vérifie tout de suite votre dossier 🔍</p></div>
-          <div class="bubble"><p>Pouvez-vous me confirmer le nom du bénéficiaire et le montant exact ?</p></div>
-          <div class="msg-meta">14:03 <span class="read-check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
+        <div class="grp" data-side="self">
+          <div class="bb"><p>Bonjour Jean, je vérifie votre dossier tout de suite 🔍</p></div>
+          <div class="bb"><p>Pouvez-vous me confirmer le nom du bénéficiaire et le montant ?</p></div>
+          <div class="meta">14:03 <span class="check" data-seen="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span></div>
         </div>
 
-        <div class="msg-group" data-side="other">
-          <div class="msg-sender-label">Jean Dupont</div>
-          <div class="bubble"><p>Shenzhen Tech Ltd, 450 000 XAF, virement de ce matin 9h30</p></div>
-          <div class="msg-meta">14:04</div>
+        <div class="grp" data-side="other">
+          <div class="sender">Jean Dupont</div>
+          <div class="bb"><p>Shenzhen Tech Ltd, 450 000 XAF, virement de ce matin 9h30</p></div>
+          <div class="meta">14:04</div>
         </div>
       </div>
 
-      <div class="input-bar">
-        <button class="icon-btn templates" aria-label="Templates">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-        </button>
-        <button class="icon-btn attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-        <div class="input-textwrap">
-          <textarea class="input-textarea" rows="1" placeholder="Écrivez votre réponse…"></textarea>
+      <div class="input">
+        <div class="input-pill">
+          <button class="pill-icon" aria-label="Templates">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+          </button>
+          <textarea class="ta" rows="1" placeholder="Votre réponse"></textarea>
         </div>
-        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></button>
+        <button class="mic-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg></button>
       </div>
     </section>
 
-    <!-- ═══════ SCÈNE 9 : Liste admin + search avec highlight ═══════ -->
+    <!-- ═══════ SCÈNE 9 : Liste admin ═══════ -->
     <section class="scene" data-scene="9">
-      <header class="chat-header" style="padding-top: calc(10px + env(safe-area-inset-top));">
-        <div class="info">
-          <div class="name">Conversations support</div>
-          <div class="subtitle">12 ouvertes · 3 non lues</div>
+      <header class="ch-header">
+        <div class="ch-info">
+          <div class="ch-name">Conversations</div>
+          <div class="ch-sub">12 ouvertes · 3 non lues</div>
         </div>
-        <button class="action-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        <button class="ch-action">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
         </button>
       </header>
 
-      <div class="admin-toolbar">
+      <div class="adm-tools">
         <div class="search-wrap">
-          <svg class="icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <input type="search" value="shenzhen" placeholder="Rechercher un client ou un mot…" />
+          <svg class="l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="search" value="shenzhen" placeholder="Rechercher" />
         </div>
-        <div class="filter-chips">
-          <button class="filter-chip" aria-pressed="true">Toutes</button>
-          <button class="filter-chip">Mes convs</button>
-          <button class="filter-chip">Non assignées</button>
-        </div>
-        <div class="filter-chips">
-          <button class="filter-chip" aria-pressed="true">Ouvertes</button>
-          <button class="filter-chip">Toutes</button>
-          <button class="filter-chip">Fermées</button>
+        <div class="chips">
+          <button class="chip" aria-pressed="true">Toutes</button>
+          <button class="chip">Mes convs</button>
+          <button class="chip">Non assignées</button>
         </div>
       </div>
 
-      <div class="conv-list">
-        <div class="conv-item" data-unread="true">
-          <div class="conv-icon">JD</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Jean Dupont</span>
-              <span class="conv-time">2 min</span>
-            </div>
-            <div class="conv-subject">Paiement Shenzhen Tech Ltd</div>
-            <div class="conv-preview">…bénéficiaire <mark class="hl">Shenzhen</mark> Tech Ltd, 450 000 XAF, virement de ce matin…</div>
-            <div class="conv-assigned">Pris par Marie</div>
+      <div class="list-body">
+        <div class="conv-row" data-unread="true">
+          <div class="cr-avatar">JD</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Jean Dupont</span><span class="cr-time">2 min</span></div>
+            <div class="cr-subject">Paiement Shenzhen Tech</div>
+            <div class="cr-preview">…bénéficiaire <mark class="hl">Shenzhen</mark> Tech Ltd, 450 000 XAF…</div>
+            <div class="cr-assigned">Pris par Marie</div>
           </div>
-          <span class="unread-badge">3</span>
+          <span class="cr-badge">3</span>
         </div>
-        <div class="conv-item" data-unread="false">
-          <div class="conv-icon">PB</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Pierre Bibo</span>
-              <span class="conv-time">18 min</span>
-            </div>
-            <div class="conv-preview">…livraison à <mark class="hl">Shenzhen</mark> prévue le 22 mai…</div>
-            <div class="conv-assigned">Pris par Nelson</div>
+        <div class="conv-row">
+          <div class="cr-avatar">PB</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Pierre Bibo</span><span class="cr-time">18 min</span></div>
+            <div class="cr-preview">…livraison à <mark class="hl">Shenzhen</mark> prévue le 22 mai…</div>
+            <div class="cr-assigned">Pris par Nelson</div>
           </div>
         </div>
-        <div class="conv-item" data-unread="false">
-          <div class="conv-icon">AM</div>
-          <div class="conv-body">
-            <div class="conv-top">
-              <span class="conv-name">Aïcha Mballa</span>
-              <span class="conv-time">1 h</span>
-            </div>
-            <div class="conv-preview">…fournisseur à <mark class="hl">Shenzhen</mark>, je vous tiens au courant…</div>
+        <div class="conv-row">
+          <div class="cr-avatar">AM</div>
+          <div class="cr-body">
+            <div class="cr-top"><span class="cr-name">Aïcha Mballa</span><span class="cr-time">1 h</span></div>
+            <div class="cr-preview">…fournisseur à <mark class="hl">Shenzhen</mark>, je vous tiens au courant…</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ═══════ SCÈNE 10 : Stats admin avec charts ═══════ -->
+    <!-- ═══════ SCÈNE 10 : Stats ═══════ -->
     <section class="scene" data-scene="10">
-      <header class="chat-header">
-        <button class="back-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <div class="info">
-          <div class="name">Statistiques support</div>
-          <div class="subtitle">Performance équipe</div>
+      <header class="ch-header">
+        <button class="ch-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ch-info">
+          <div class="ch-name">Statistiques</div>
+          <div class="ch-sub">7 derniers jours</div>
         </div>
       </header>
 
-      <div class="stats-container">
-        <div class="stats-period">
+      <div class="stats">
+        <div class="period">
           <button aria-pressed="true">7 jours</button>
           <button>14 jours</button>
           <button>30 jours</button>
         </div>
 
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-icon violet">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div class="kpi-label">Conv. ouvertes</div>
             <div class="kpi-value">12</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-icon amber">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div class="kpi">
+            <div class="kpi-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
             <div class="kpi-label">Messages</div>
             <div class="kpi-value">248</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-icon orange">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
+          <div class="kpi">
+            <div class="kpi-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
             </div>
             <div class="kpi-label">Non assignées</div>
             <div class="kpi-value">3</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-icon violet">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div class="kpi">
+            <div class="kpi-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
             <div class="kpi-label">Réponse moy.</div>
             <div class="kpi-value">5:42</div>
-            <div class="kpi-hint">Médian : 3:18</div>
+            <div class="kpi-hint">Médian 3:18</div>
           </div>
         </div>
 
         <div class="chart-card">
           <h3 class="chart-title">Volume quotidien</h3>
-          <p class="chart-subtitle">Messages par jour, par côté</p>
-          <svg viewBox="0 0 320 160" style="width: 100%; height: 160px;">
-            <line x1="20" y1="140" x2="320" y2="140" stroke="hsl(var(--border))" stroke-width="1"/>
-            <line x1="20" y1="100" x2="320" y2="100" stroke="hsl(var(--border))" stroke-width="1" stroke-dasharray="2 2"/>
-            <line x1="20" y1="60" x2="320" y2="60" stroke="hsl(var(--border))" stroke-width="1" stroke-dasharray="2 2"/>
-            <line x1="20" y1="20" x2="320" y2="20" stroke="hsl(var(--border))" stroke-width="1" stroke-dasharray="2 2"/>
-            <text x="0" y="142" font-size="9" fill="hsl(var(--text-tertiary))">0</text>
-            <text x="0" y="100" font-size="9" fill="hsl(var(--text-tertiary))">15</text>
-            <text x="0" y="60" font-size="9" fill="hsl(var(--text-tertiary))">30</text>
-            <text x="0" y="20" font-size="9" fill="hsl(var(--text-tertiary))">45</text>
+          <p class="chart-sub">Messages par jour</p>
+          <svg viewBox="0 0 320 140" style="width: 100%; height: 140px;">
+            <line x1="20" y1="120" x2="320" y2="120" stroke="hsl(var(--hairline))" stroke-width="1"/>
+            <line x1="20" y1="85"  x2="320" y2="85"  stroke="hsl(var(--hairline))" stroke-width="1" stroke-dasharray="2 3"/>
+            <line x1="20" y1="50"  x2="320" y2="50"  stroke="hsl(var(--hairline))" stroke-width="1" stroke-dasharray="2 3"/>
+            <line x1="20" y1="15"  x2="320" y2="15"  stroke="hsl(var(--hairline))" stroke-width="1" stroke-dasharray="2 3"/>
+            <text x="0"  y="122" font-size="9" fill="hsl(var(--text-3))">0</text>
+            <text x="0"  y="87"  font-size="9" fill="hsl(var(--text-3))">15</text>
+            <text x="0"  y="52"  font-size="9" fill="hsl(var(--text-3))">30</text>
+            <text x="0"  y="17"  font-size="9" fill="hsl(var(--text-3))">45</text>
 
-            <polyline points="40,120 80,90 120,75 160,55 200,35 240,50 280,30" fill="none" stroke="hsl(var(--orange))" stroke-width="2.5" stroke-linejoin="round"/>
-            <circle cx="40" cy="120" r="3" fill="hsl(var(--orange))"/>
-            <circle cx="80" cy="90" r="3" fill="hsl(var(--orange))"/>
-            <circle cx="120" cy="75" r="3" fill="hsl(var(--orange))"/>
-            <circle cx="160" cy="55" r="3" fill="hsl(var(--orange))"/>
-            <circle cx="200" cy="35" r="3" fill="hsl(var(--orange))"/>
-            <circle cx="240" cy="50" r="3" fill="hsl(var(--orange))"/>
-            <circle cx="280" cy="30" r="3" fill="hsl(var(--orange))"/>
+            <polyline points="40,100 80,80 120,68 160,48 200,30 240,42 280,25"
+              fill="none" stroke="hsl(var(--accent))" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="40" cy="100" r="2.5" fill="hsl(var(--accent))"/>
+            <circle cx="80" cy="80" r="2.5" fill="hsl(var(--accent))"/>
+            <circle cx="120" cy="68" r="2.5" fill="hsl(var(--accent))"/>
+            <circle cx="160" cy="48" r="2.5" fill="hsl(var(--accent))"/>
+            <circle cx="200" cy="30" r="2.5" fill="hsl(var(--accent))"/>
+            <circle cx="240" cy="42" r="2.5" fill="hsl(var(--accent))"/>
+            <circle cx="280" cy="25" r="2.5" fill="hsl(var(--accent))"/>
 
-            <polyline points="40,115 80,80 120,68 160,48 200,30 240,42 280,25" fill="none" stroke="hsl(var(--violet))" stroke-width="2.5" stroke-linejoin="round"/>
-            <circle cx="40" cy="115" r="3" fill="hsl(var(--violet))"/>
-            <circle cx="80" cy="80" r="3" fill="hsl(var(--violet))"/>
-            <circle cx="120" cy="68" r="3" fill="hsl(var(--violet))"/>
-            <circle cx="160" cy="48" r="3" fill="hsl(var(--violet))"/>
-            <circle cx="200" cy="30" r="3" fill="hsl(var(--violet))"/>
-            <circle cx="240" cy="42" r="3" fill="hsl(var(--violet))"/>
-            <circle cx="280" cy="25" r="3" fill="hsl(var(--violet))"/>
+            <polyline points="40,110 80,92 120,78 160,58 200,42 240,55 280,38"
+              fill="none" stroke="hsl(var(--text-3))" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="3 3"/>
 
-            <g font-size="9" fill="hsl(var(--text-tertiary))" text-anchor="middle">
-              <text x="40" y="155">L</text>
-              <text x="80" y="155">M</text>
-              <text x="120" y="155">M</text>
-              <text x="160" y="155">J</text>
-              <text x="200" y="155">V</text>
-              <text x="240" y="155">S</text>
-              <text x="280" y="155">D</text>
+            <g font-size="9" fill="hsl(var(--text-3))" text-anchor="middle">
+              <text x="40" y="135">L</text>
+              <text x="80" y="135">M</text>
+              <text x="120" y="135">M</text>
+              <text x="160" y="135">J</text>
+              <text x="200" y="135">V</text>
+              <text x="240" y="135">S</text>
+              <text x="280" y="135">D</text>
             </g>
           </svg>
           <div class="legend">
-            <span><span class="swatch" style="background: hsl(var(--orange));"></span>Client</span>
-            <span><span class="swatch" style="background: hsl(var(--violet));"></span>Bonzini</span>
+            <span><span class="sw" style="background: hsl(var(--accent));"></span>Bonzini</span>
+            <span><span class="sw" style="background: hsl(var(--text-3));"></span>Clients</span>
           </div>
         </div>
 
         <div class="chart-card">
-          <h3 class="chart-title">Distribution temps de réponse</h3>
-          <p class="chart-subtitle">Répartition par tranche</p>
-          <svg viewBox="0 0 320 140" style="width: 100%; height: 140px;">
-            <rect x="40" y="40" width="50" height="80" fill="hsl(var(--violet))" rx="6"/>
-            <text x="65" y="35" font-size="10" fill="hsl(var(--text-primary))" text-anchor="middle" font-weight="600">42</text>
-            <rect x="100" y="60" width="50" height="60" fill="hsl(var(--violet))" rx="6" opacity="0.85"/>
-            <text x="125" y="55" font-size="10" fill="hsl(var(--text-primary))" text-anchor="middle" font-weight="600">31</text>
-            <rect x="160" y="80" width="50" height="40" fill="hsl(var(--amber))" rx="6"/>
-            <text x="185" y="75" font-size="10" fill="hsl(var(--text-primary))" text-anchor="middle" font-weight="600">18</text>
-            <rect x="220" y="100" width="50" height="20" fill="hsl(var(--orange))" rx="6"/>
-            <text x="245" y="95" font-size="10" fill="hsl(var(--text-primary))" text-anchor="middle" font-weight="600">7</text>
-            <g font-size="9" fill="hsl(var(--text-tertiary))" text-anchor="middle">
-              <text x="65" y="135">&lt; 1 min</text>
-              <text x="125" y="135">1-5 min</text>
-              <text x="185" y="135">5-15 min</text>
-              <text x="245" y="135">&gt; 15 min</text>
+          <h3 class="chart-title">Temps de réponse</h3>
+          <p class="chart-sub">Répartition par tranche</p>
+          <svg viewBox="0 0 320 130" style="width: 100%; height: 130px;">
+            <rect x="40"  y="30" width="50" height="80" fill="hsl(var(--accent))" rx="5"/>
+            <text x="65"  y="25" font-size="10" font-weight="600" fill="hsl(var(--text-1))" text-anchor="middle">42</text>
+            <rect x="100" y="50" width="50" height="60" fill="hsl(var(--accent))" rx="5" opacity="0.75"/>
+            <text x="125" y="45" font-size="10" font-weight="600" fill="hsl(var(--text-1))" text-anchor="middle">31</text>
+            <rect x="160" y="70" width="50" height="40" fill="hsl(var(--accent))" rx="5" opacity="0.5"/>
+            <text x="185" y="65" font-size="10" font-weight="600" fill="hsl(var(--text-1))" text-anchor="middle">18</text>
+            <rect x="220" y="90" width="50" height="20" fill="hsl(var(--accent))" rx="5" opacity="0.3"/>
+            <text x="245" y="85" font-size="10" font-weight="600" fill="hsl(var(--text-1))" text-anchor="middle">7</text>
+            <g font-size="9" fill="hsl(var(--text-3))" text-anchor="middle">
+              <text x="65" y="125">&lt; 1 min</text>
+              <text x="125" y="125">1-5</text>
+              <text x="185" y="125">5-15</text>
+              <text x="245" y="125">&gt; 15</text>
             </g>
           </svg>
         </div>
 
         <div class="chart-card">
-          <h3 class="chart-title">Top admins par volume</h3>
-          <p class="chart-subtitle">5 admins les plus actifs</p>
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          <h3 class="chart-title">Top admins</h3>
+          <p class="chart-sub">Volume sur la période</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 60px; font-size: 12px; color: hsl(var(--text-secondary));">Marie</span>
-              <div style="flex: 1; background: hsl(var(--surface-2)); height: 18px; border-radius: 6px; overflow: hidden;">
-                <div style="background: hsl(var(--violet)); height: 100%; width: 92%; border-radius: 6px;"></div>
+              <span style="width: 56px; font-size: 12px; color: hsl(var(--text-2));">Marie</span>
+              <div style="flex: 1; background: hsl(var(--surface-2)); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: hsl(var(--accent)); height: 100%; width: 92%; border-radius: 4px;"></div>
               </div>
-              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--violet));">68</span>
+              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--text-1)); min-width: 24px; text-align: right;">68</span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 60px; font-size: 12px; color: hsl(var(--text-secondary));">Nelson</span>
-              <div style="flex: 1; background: hsl(var(--surface-2)); height: 18px; border-radius: 6px; overflow: hidden;">
-                <div style="background: hsl(var(--violet)); height: 100%; width: 72%; border-radius: 6px;"></div>
+              <span style="width: 56px; font-size: 12px; color: hsl(var(--text-2));">Nelson</span>
+              <div style="flex: 1; background: hsl(var(--surface-2)); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: hsl(var(--accent)); height: 100%; width: 72%; border-radius: 4px;"></div>
               </div>
-              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--violet));">52</span>
+              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--text-1)); min-width: 24px; text-align: right;">52</span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 60px; font-size: 12px; color: hsl(var(--text-secondary));">Pierre</span>
-              <div style="flex: 1; background: hsl(var(--surface-2)); height: 18px; border-radius: 6px; overflow: hidden;">
-                <div style="background: hsl(var(--violet)); height: 100%; width: 45%; border-radius: 6px;"></div>
+              <span style="width: 56px; font-size: 12px; color: hsl(var(--text-2));">Pierre</span>
+              <div style="flex: 1; background: hsl(var(--surface-2)); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: hsl(var(--accent)); height: 100%; width: 45%; border-radius: 4px;"></div>
               </div>
-              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--violet));">32</span>
+              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--text-1)); min-width: 24px; text-align: right;">32</span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 60px; font-size: 12px; color: hsl(var(--text-secondary));">Aïcha</span>
-              <div style="flex: 1; background: hsl(var(--surface-2)); height: 18px; border-radius: 6px; overflow: hidden;">
-                <div style="background: hsl(var(--violet)); height: 100%; width: 28%; border-radius: 6px;"></div>
+              <span style="width: 56px; font-size: 12px; color: hsl(var(--text-2));">Aïcha</span>
+              <div style="flex: 1; background: hsl(var(--surface-2)); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: hsl(var(--accent)); height: 100%; width: 28%; border-radius: 4px;"></div>
               </div>
-              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--violet));">20</span>
+              <span style="font-size: 11px; font-weight: 600; color: hsl(var(--text-1)); min-width: 24px; text-align: right;">20</span>
             </div>
           </div>
         </div>
@@ -1935,31 +1823,31 @@
 
   <script>
     // ─── Tabs ───
-    const tabs = document.querySelectorAll('[data-scene]');
-    const scenes = document.querySelectorAll('section.scene');
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        const sceneId = btn.dataset.scene;
-        document.querySelectorAll('.tab-btn').forEach(b => b.removeAttribute('aria-current'));
+        const id = btn.dataset.scene;
+        document.querySelectorAll('.tab').forEach(b => b.removeAttribute('aria-current'));
         btn.setAttribute('aria-current', 'true');
-        scenes.forEach(s => s.dataset.active = (s.dataset.scene === sceneId) ? 'true' : 'false');
+        document.querySelectorAll('section.scene').forEach(s => {
+          s.dataset.active = (s.dataset.scene === id) ? 'true' : 'false';
+        });
       });
     });
 
-    // ─── Theme toggle ───
+    // ─── Theme ───
     document.getElementById('toggle-theme').addEventListener('click', () => {
       const cur = document.documentElement.dataset.theme;
       document.documentElement.dataset.theme = (cur === 'dark') ? 'light' : 'dark';
     });
 
-    // ─── Font size toggle ───
+    // ─── Font size ───
     document.querySelectorAll('[data-fontsize]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-fontsize]').forEach(b => b.removeAttribute('aria-pressed'));
         btn.setAttribute('aria-pressed', 'true');
-        const size = btn.dataset.fontsize;
-        if (size === 'default') document.documentElement.removeAttribute('data-fontsize');
-        else document.documentElement.dataset.fontsize = size;
+        const s = btn.dataset.fontsize;
+        if (s === 'default') document.documentElement.removeAttribute('data-fontsize');
+        else document.documentElement.dataset.fontsize = s;
       });
     });
 
@@ -1972,62 +1860,83 @@
     });
 
     // ─── Auto-grow textarea ───
-    document.querySelectorAll('.input-textarea').forEach(ta => {
+    document.querySelectorAll('.ta').forEach(ta => {
       const grow = () => {
         ta.style.height = 'auto';
-        ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+        ta.style.height = Math.min(ta.scrollHeight, 110) + 'px';
       };
       ta.addEventListener('input', grow);
       grow();
     });
 
-    // ─── Simulate keyboard (test scène 4) ───
-    const kbBtn = document.getElementById('kb-sim');
+    // ─── Simulate keyboard ───
     let kbOn = false;
-    kbBtn.addEventListener('click', () => {
+    document.getElementById('kb-sim').addEventListener('click', () => {
       kbOn = !kbOn;
-      kbBtn.setAttribute('aria-pressed', kbOn ? 'true' : 'false');
+      document.getElementById('kb-sim').setAttribute('aria-pressed', kbOn ? 'true' : 'false');
       document.documentElement.style.setProperty('--kbh', kbOn ? '280px' : '0px');
     });
 
-    // ─── FALLBACK iOS Safari < 16.4 : VisualViewport API pour fix clavier ───
-    // Sur iOS récent + Chrome, interactive-widget=resizes-content fait le boulot.
-    // Sur les vieux iOS, on calcule la hauteur du clavier nous-mêmes.
+    // ─── VisualViewport fallback (iOS Safari < 16.4) ───
     if (window.visualViewport) {
-      const updateKbHeight = () => {
+      const upd = () => {
+        if (kbOn) return; // priorité au toggle manuel
         const vv = window.visualViewport;
-        const layoutHeight = window.innerHeight;
-        const diff = Math.max(0, layoutHeight - vv.height - vv.offsetTop);
-        // Seulement si différence significative (clavier ouvert)
-        if (diff > 120 && !kbOn) {
-          document.documentElement.style.setProperty('--kbh', diff + 'px');
-        } else if (diff <= 120 && !kbOn) {
-          document.documentElement.style.setProperty('--kbh', '0px');
-        }
+        const diff = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        document.documentElement.style.setProperty('--kbh', (diff > 120 ? diff : 0) + 'px');
       };
-      window.visualViewport.addEventListener('resize', updateKbHeight);
-      window.visualViewport.addEventListener('scroll', updateKbHeight);
+      window.visualViewport.addEventListener('resize', upd);
+      window.visualViewport.addEventListener('scroll', upd);
     }
 
-    // ─── Reactions toggle (visual only) ───
-    document.querySelectorAll('.reaction-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        const mine = pill.dataset.mine === 'true';
-        pill.dataset.mine = mine ? 'false' : 'true';
-        const count = pill.querySelector('.count');
-        if (count) {
-          const n = parseInt(count.textContent, 10);
-          count.textContent = mine ? Math.max(0, n - 1) : (n + 1);
+    // ─── Reactions toggle ───
+    document.querySelectorAll('.reaction').forEach(p => {
+      p.addEventListener('click', () => {
+        const mine = p.dataset.mine === 'true';
+        p.dataset.mine = mine ? 'false' : 'true';
+        const n = p.querySelector('.n');
+        if (n) {
+          const v = parseInt(n.textContent, 10);
+          n.textContent = mine ? Math.max(0, v - 1) : (v + 1);
         }
       });
     });
 
-    // ─── Voice play toggle (visual only) ───
+    // ─── Voice play toggle ───
     document.querySelectorAll('.voice-play').forEach(btn => {
-      const bars = btn.parentElement?.querySelectorAll('.waveform .bar');
+      const bars = btn.parentElement?.querySelectorAll('.wf .bar');
       if (!bars) return;
       btn.addEventListener('click', () => {
         bars.forEach(b => b.dataset.played = (b.dataset.played === 'true') ? 'false' : 'true');
+      });
+    });
+
+    // ─── Scene 5 : voice recording states ───
+    document.querySelectorAll('[data-rec-state]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-rec-state]').forEach(b => b.removeAttribute('aria-pressed'));
+        btn.setAttribute('aria-pressed', 'true');
+        const state = btn.dataset.recState;
+        const bar = document.getElementById('rec-bar');
+        const lockHint = document.getElementById('lock-hint');
+        const hint = bar.querySelector('.rec-hint');
+        const mic = document.getElementById('rec-mic');
+        bar.classList.remove('cancel-armed', 'locked');
+        if (state === 'cancel') {
+          bar.classList.add('cancel-armed');
+          hint.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Relâchez pour annuler';
+        } else if (state === 'locked') {
+          bar.classList.add('locked');
+          hint.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Enregistrement verrouillé · touchez le micro pour envoyer';
+          lockHint.style.display = 'none';
+          mic.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>';
+          mic.dataset.mode = 'send';
+        } else {
+          hint.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Glissez pour annuler';
+          lockHint.style.display = '';
+          mic.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3"/></svg>';
+          mic.dataset.mode = '';
+        }
       });
     });
   </script>

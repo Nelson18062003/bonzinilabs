@@ -1,112 +1,127 @@
-# Mockup UI/UX Chat — Phase A
+# Mockup UI/UX Chat — v3 (refonte sérieuse)
 
-Fichier autonome HTML, à tester sur téléphone réel avant qu'on parte sur l'implémentation React.
+Suite à ton feedback ("trop de couleurs arc-en-ciel, effet IA, voice recording mauvais"), j'ai refait le mockup en profondeur.
 
 ## URL d'accès
-
-Une fois la branche déployée par ton hébergeur (Vercel/Netlify), le mockup est accessible à :
 
 ```
 https://[ton-app-url]/chat-mockup.html
 ```
 
-Exemple : `https://app.bonzini.com/chat-mockup.html`
+Le fichier est dans `public/` donc déployé automatiquement à chaque push.
 
-C'est un fichier statique servi depuis `public/`, donc aucune action serveur à faire — il devient dispo dès que la branche est mergée et redéployée.
+## Ce qui a changé vs v1
 
-**Test local sans déployer** : clique sur le fichier sur GitHub, puis "View raw" puis "Download" → ouvre le `.html` téléchargé directement sur ton téléphone (Chrome/Safari supportent l'ouverture de fichiers locaux).
+### Couleurs : drastiquement réduites
+- **AVANT** : violet + ambre + orange utilisés partout (badges, illustrations, headers, accents). Effet "arc-en-ciel IA".
+- **MAINTENANT** : **UNE seule couleur d'accent** = violet Bonzini, utilisée parcimonieusement :
+  - Bulles envoyées (tint violet TRÈS léger, à la WhatsApp avec son vert mint)
+  - Avatar de l'équipe (rond plein violet)
+  - Bouton micro/envoi (FAB violet)
+  - Status "À vous", read receipt vu, search highlight, CTAs clés
+- **Tout le reste** : neutres (blanc, gris très clair, gris moyen, gris foncé)
+- **Rouge** : uniquement pour le point recording
+- **Vert** : uniquement pour le status dot "en ligne"
+- **Pas d'ambre, pas d'orange** dans le chat
 
-## Ce que tu testes
+### Voice recording : INLINE comme WhatsApp (plus d'overlay)
+- **AVANT** : tu appuies sur le micro → ça prend tout l'écran avec un overlay rouge plein largeur, avec waveform live. Mauvaise UX.
+- **MAINTENANT** (scène 5) : la barre d'input se transforme **inline** :
+  - `🔴 0:08    ← Glissez pour annuler    🔒 Verrouille    🎤`
+  - Tout dans la même barre où était le textarea
+  - Le micro reste à sa place (passe en rouge, pulse subtil)
+  - 3 sous-états testables via toggle dans la scène : recording / cancel-armed / locked
+- **Comportement attendu en React** (Phase B) :
+  - Appui long sur micro → enregistre + bar passe inline
+  - Slide à gauche → annule (au-delà de 80px de slide)
+  - Slide en haut → verrouille (mode mains-libres avec bouton stop/envoyer)
+  - Lever doigt sans slide → envoie immédiatement
 
-10 scénarios navigables via les onglets en haut :
+### Empty state : épuré
+- **AVANT** : illustration SVG avec 3 gradients violet/ambre/orange + petites bulles colorées partout
+- **MAINTENANT** : icône monoligne mono-couleur (violet) avec un "B" centré. Simple, mémorable, premium.
+
+### Headers : sans gradient
+- **AVANT** : gradient violet→orange dans certains headers
+- **MAINTENANT** : header blanc/clair uniforme avec hairline 1px en bas, avatar circulaire violet, c'est tout.
+
+### Background du chat
+- **AVANT** : pattern de petits points violet+ambre+orange à 4% d'opacité, busy
+- **MAINTENANT** : off-white doux uniforme (`hsl(30 8% 96%)`), comme WhatsApp
+
+### Quick replies
+- **AVANT** : grosses cartes violettes avec emoji
+- **MAINTENANT** : cartes blanches avec subtile bordure, icône grise minimaliste, libellé sobre
+
+### Stats
+- **AVANT** : 4 cards KPI avec icônes colorées (violet/ambre/orange)
+- **MAINTENANT** : 4 cards KPI avec **icône grise uniforme**, valeur en noir, hint en gris. Charts en violet uniquement (avec opacités 100/75/50/30% pour la distribution).
+
+### Bulles
+- **AVANT** : gradient violet→violet-clair sur bulle envoyée, bordure visible sur bulle reçue
+- **MAINTENANT** : bulle envoyée = **tint violet très léger** (`hsl(258 100% 97%)` quasi blanc avec teinte) + texte foncé. Bulle reçue = blanc pur avec ombre 1px. Queue (tail) uniquement sur la **dernière bulle d'une séquence**, pas toutes.
+
+### Typographie
+- **AVANT** : `leading-snug` (1.275) trop serré, padding `py-1.5` + `py-1` empilés
+- **MAINTENANT** : `line-height 1.42` (sweet spot lisibilité), padding bulle `6px 10px`. Le mot "Hello" tient sur 1 ligne (vérifie scène 2).
+
+## Les 10 scénarios à tester
 
 | # | Scénario | Ce qu'il valide |
 |---|---|---|
-| 1 | **Empty + Quick replies** (client) | Empty state avec illustration custom + chips suggérées + chaleur du copy |
-| 2 | **Conv pleine** (client) | Bulles avec queue WhatsApp-style, groupage par sender, séparateurs date, accusés de lecture, **vérifie "Hello" sur 1 ligne** |
-| 3 | **Avec reply en cours** | Preview du message cité au-dessus de l'input, citation dans bulle |
-| 4 | **Clavier ouvert** ⚠️ test critique | Active le toggle "⌨ Simuler clavier" en haut → l'input reste visible. Ou focus l'input → clavier natif → input doit rester visible |
-| 5 | **Voice recorder actif** | Overlay rouge, waveform pulsante, hint "glissez pour annuler", boutons annuler/envoyer |
-| 6 | **Media (img + vidéo + fichier)** | 3 types de bulles média avec leur design respectif, voice playback waveform avec progress |
-| 7 | **Liste convs client** (multi-thread) | Cards conversations, badge non-lus animé, bouton "Nouvelle conversation" dégradé |
-| 8 | **Conv admin + actions** | Header avec badge "À vous", menu actions, bouton templates en plus du + |
-| 9 | **Liste admin + search** | SearchField actif, snippets surlignés en jaune ambre, chips de filtres |
-| 10 | **Stats admin** | 4 KPI cards, line chart volume, bar chart distribution, barres horizontales top admins |
+| 1 | Empty + Quick replies | Empty state épuré, illustration monoligne, quick replies neutres |
+| 2 | Conv pleine | Bulles avec queue uniquement en bas de séquence, "Hello" sur 1 ligne |
+| 3 | Avec reply | Preview du message cité, citation dans bulle, tout cohérent |
+| 4 | Clavier ouvert ⚠️ | Active "⌨ Clavier" → input reste visible. Sur device : focus input → clavier natif → input visible. |
+| 5 | **Voice recording INLINE** ⭐ | 3 sous-états togglables : recording / cancel-armed / locked. Tout reste dans la barre d'input. |
+| 6 | Media | Image, voice (waveform), vidéo (poster + bouton play overlay), fichier (icône grise) |
+| 7 | Liste convs client | Avatar violet plein pour non-lus, neutre sinon, badge violet compact |
+| 8 | Admin actions | Badge "À vous" en pill violet, menu ⋮ en haut à droite, bouton templates dans la pill input |
+| 9 | Admin liste | SearchField clean, snippets surlignés en violet light + texte violet (au lieu de jaune ambre), chips noires |
+| 10 | Stats | KPI cards monochromes, line chart violet, distribution en dégradé d'opacité, top admins barres simples |
 
-## Contrôles globaux (en haut)
+## Décisions techniques pour Phase B (implémentation React)
 
-- **Toggle lune** : Light/Dark mode
-- **A petit/normal/grand** : taille de texte (accessibility)
-- **iOS/Android** : preview différents OS (subtil)
-- **⌨ Simuler clavier** : pour tester scène 4 sans avoir à focus un vrai input
+Quand tu valides le mockup, l'implémentation React utilisera :
+- **Framer Motion** pour :
+  - `<AnimatePresence>` sur bulles (fade-in + slide-up)
+  - Gesture `drag` pour swipe-to-cancel sur voice recording (avec spring back animation)
+  - Transition entre les 3 états du voice recorder (recording → cancel-armed → locked)
+  - Subtle layout animations sur la barre d'input quand elle change de mode
+- **CSS uniquement** pour :
+  - Transitions d'état simple (hover, active, focus)
+  - L'animation rec-blink du point rouge
+  - Le pulse du bouton micro pendant recording
+- **`KeyboardSafeArea`** (déjà dans la codebase) sur les 2 pages chat (client + admin)
+- **`useKeyboardHeight`** (déjà dans la codebase) en fallback iOS Safari < 16.4
+- **Hook custom `useVoiceRecorderGesture`** : encapsule touchstart/touchmove/touchend + état recording/cancel/locked + appel `MediaRecorder` réel
+- Composants v2 dans `src/components/support/v2/` (pas de breaking change pendant le dev)
+- Migration progressive des imports une fois v2 stable
 
 ## Checklist de validation
 
-### Bugs critiques fixés (les 3 principaux)
+### Bugs critiques
+- [ ] Clavier (scène 4) : input bar reste visible sur device réel iOS + Android
+- [ ] "Hello" (scène 2) : tient sur 1 seule ligne
+- [ ] Layout petit écran (320px) : aucun débordement
 
-- [ ] **Bug clavier** (scène 4) : Active "⌨ Simuler clavier" — l'input bar reste visible, ne se cache pas. Sur device réel, focus l'input → clavier natif s'ouvre → input toujours visible.
-- [ ] **Bug typographie** (scène 2) : Le mot "Hello" tient sur **une seule ligne** dans la bulle (pas 2). Vérifie aussi tous les messages courts.
-- [ ] **Bug layout petit écran** : Ouvre les DevTools, simule largeur 320px (iPhone SE) — aucun élément déborde, tout reste utilisable.
+### Direction visuelle
+- [ ] Ressemble plus à WhatsApp / Signal qu'à un "site IA arc-en-ciel"
+- [ ] Identité Bonzini présente mais discrète (violet pour les moments clés uniquement)
+- [ ] Pas d'effet "trop de couleurs"
+- [ ] Premium, épuré, calme
 
-### Validation esthétique
+### Voice recording (scène 5)
+- [ ] L'enregistrement reste **dans la barre d'input**, pas d'overlay plein écran
+- [ ] Le micro reste en place (juste pulse en rouge)
+- [ ] Toggle entre 3 sous-états fonctionne
+- [ ] Comportement attendu réel : appui long → enregistre → relâche → envoie. Slide à gauche → annule.
 
-- [ ] Reconnaissable comme Bonzini (violet/ambre/orange du logo présents partout sans saturer)
-- [ ] Empty state (scène 1) donne envie de discuter (illustration custom + copy chaleureux)
-- [ ] Bulles avec queue (asymétriques) donnent personnalité (vs flat rectangles)
-- [ ] Background subtil avec motif aux 3 couleurs (visible si tu plisses les yeux)
-- [ ] Dark mode (toggle lune) — contrastes OK, lisible
-- [ ] Tu trouves ça **beau et fluide**, pas "généré par IA"
+### Si tu valides
+Réponds-moi **"GO Phase B"** → je code les vrais composants React (avec Framer Motion, KeyboardSafeArea, gesture handlers), tests sur device réel, migration progressive de la v1.
 
-### Interactions
+### Si tu veux encore ajuster
+Décris ce que tu veux changer (couleurs, layout, copy, etc.) et j'itère sur le HTML. Itération illimitée avant React.
 
-- [ ] Boutons : feedback visuel au tap (scale subtle)
-- [ ] Réactions emoji (scène 2) : tap dessus → on/off avec compteur qui change
-- [ ] Voice playback (scène 6) : tap play → barres deviennent opaques
-- [ ] Quick replies (scène 1) : tap → effet visuel
-- [ ] Onglets : navigation fluide entre scénarios
-
-### Sur device réel (le plus important)
-
-- [ ] Ouvre `chat-mockup.html` sur ton iPhone Safari
-- [ ] Va scène 4 → tape sur le textarea → le clavier iOS s'ouvre → vérifie que tu vois encore l'input
-- [ ] Ferme le clavier → tout revient bien en place
-- [ ] Pareil sur un Android (Chrome)
-- [ ] Pareil sur un petit Android (genre Galaxy A) — pas de débordement
-
-## Ce qui n'est PAS dans le mockup (volontairement)
-
-- ❌ Animations Framer Motion (CSS suffit pour valider le LOOK ; Framer arrive en Phase B implémentation)
-- ❌ Vraies données depuis Supabase (tout est mocké)
-- ❌ Vrais uploads, voix réelle, etc. (juste visualisation)
-- ❌ Toutes les variantes responsive desktop (focus mobile-first ici)
-- ❌ Le bottom nav de l'app (le mockup chrome remplace ça pour navigation entre scénarios)
-
-## Comment tu réagis
-
-### Si tu valides → GO Phase B (implémentation React)
-
-Réponds-moi "GO Phase B" et je code les vrais composants React :
-- Refonte `src/components/support/*` (gardée propre, parallèle aux anciens via `v2/`)
-- Framer Motion pour les anims clés (fade-in bulles, swipe-to-reply, etc.)
-- `KeyboardSafeArea` partout
-- Fix du `leading-snug` et du padding pour "Hello" 1 ligne
-- Tests sur device réel
-- Swap progressif des imports une fois validé
-- Suppression de la v1
-- ~3-5 jours de dev
-
-### Si tu veux ajustements → on itère sur le HTML
-
-Décris ce que tu veux changer (couleurs, layout, copy, illustrations, taille de bulles, etc.) et je modifie le `chat-mockup.html` directement. On peut itérer autant que nécessaire avant de toucher au React.
-
-### Si tu rejettes la direction visuelle → retour en plan mode
-
-Si le style WhatsApp-twist-Bonzini ne te plaît pas, dis-le et je propose une autre direction (iMessage / Slack / autre).
-
-## État Git
-
-Branche : `claude/chat-solution-evaluation-ReKZS`
-Fichier : `public/chat-mockup.html`
-Doc : `docs/refonte-ui-chat-mockup.md`
-
-Le mockup ne touche AUCUN code React existant. Aucun risque pour la prod.
+### Si la direction visuelle ne convient toujours pas
+On retourne en plan mode pour explorer une autre direction (style Signal ultra-sobre / iMessage minimaliste / autre).
