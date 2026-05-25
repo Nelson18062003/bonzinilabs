@@ -247,18 +247,6 @@ export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(functio
                   XAF
                 </span>
               </div>
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 10,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 90,
-                  height: 3,
-                  borderRadius: 1.5,
-                  background: COLORS.greenAccent,
-                }}
-              />
             </div>
           </>
         );
