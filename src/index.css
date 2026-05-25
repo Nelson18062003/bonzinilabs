@@ -5,6 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Libre Baskerville — used by the Treasury balance-dashboard generator. */
+@font-face {
+  font-family: 'Libre Baskerville';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/treasury-dashboard/fonts/LibreBaskerville-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Libre Baskerville';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/treasury-dashboard/fonts/LibreBaskerville-Bold.ttf') format('truetype');
+}
+
 @layer base {
   :root {
     /* Bonzini Brand Colors */

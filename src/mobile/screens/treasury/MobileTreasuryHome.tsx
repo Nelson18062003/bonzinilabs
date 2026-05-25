@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   BarChart3,
   History,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -198,6 +199,13 @@ export function MobileTreasuryHome() {
               description="Toutes les opérations + voiding"
               onClick={() => navigate('/m/more/treasury/operations')}
               tone="neutral"
+            />
+            <ActionTile
+              icon={ImageIcon}
+              label="Dashboard soldes (PNG/PDF)"
+              description="Générer le visuel des soldes par compte"
+              onClick={() => navigate('/m/more/treasury/balance-dashboard')}
+              tone="orange"
             />
           </div>
         </section>
