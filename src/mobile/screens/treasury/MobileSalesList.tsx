@@ -1,18 +1,25 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowUpFromLine, Trash2, Ban, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowUpFromLine, Trash2, Ban, ChevronRight, AlertTriangle, SlidersHorizontal, X } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/form';
+import { DateField, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useTreasuryOperations, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
+import { useCounterparties, useTreasuryAccounts, useTreasuryOperations, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 
-type Preset = '7d' | '30d' | '90d' | 'all';
+type Preset = '7d' | '30d' | '90d' | 'all' | 'custom';
+type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc';
 
-function getRange(preset: Preset): { from: Date; to: Date } {
+function getRange(preset: Preset, customFrom?: string, customTo?: string): { from: Date; to: Date } {
   const to = new Date();
   const from = new Date(to);
+  if (preset === 'custom') {
+    return {
+      from: customFrom ? new Date(customFrom + 'T00:00:00') : new Date(to.getFullYear(), to.getMonth(), 1),
+      to: customTo ? new Date(customTo + 'T23:59:59') : to,
+    };
+  }
   if (preset === 'all') {
     from.setFullYear(2020, 0, 1);
   } else {
@@ -41,19 +48,52 @@ export function MobileSalesList() {
   const { hasPermission, currentUser } = useAdminAuth();
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const [preset, setPreset] = useState<Preset>('30d');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [showVoided, setShowVoided] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [buyerId, setBuyerId] = useState('');
+  const [cnyAccountId, setCnyAccountId] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('date_desc');
   const [confirmDelete, setConfirmDelete] = useState<OperationRow | null>(null);
-  const range = useMemo(() => getRange(preset), [preset]);
+  const range = useMemo(() => getRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
   const { data, isLoading } = useTreasuryOperations(range.from.toISOString(), range.to.toISOString());
+  const { data: buyers } = useCounterparties('cny_buyer', true);
+  const { data: cnyAccounts } = useTreasuryAccounts('CNY');
 
   if (!hasPermission('canViewTreasury')) {
     return <Navigate to="/m/more" replace />;
   }
 
-  const sales = (data ?? []).filter((op) => {
+  const activeFilterCount = (buyerId ? 1 : 0) + (cnyAccountId ? 1 : 0) + (sortBy !== 'date_desc' ? 1 : 0);
+  const resetFilters = () => {
+    setBuyerId('');
+    setCnyAccountId('');
+    setSortBy('date_desc');
+  };
+
+  let sales = (data ?? []).filter((op): op is Extract<OperationRow, { kind: 'sale' }> => {
     if (op.kind !== 'sale') return false;
     if (!showVoided && op.voided_at) return false;
+    if (buyerId && op.buyer_id !== buyerId) return false;
+    if (cnyAccountId) {
+      if (cnyAccountId === 'none' && op.cny_account_id) return false;
+      if (cnyAccountId !== 'none' && op.cny_account_id !== cnyAccountId) return false;
+    }
     return true;
+  });
+
+  sales = [...sales].sort((a, b) => {
+    switch (sortBy) {
+      case 'date_asc':
+        return (a.occurred_at ?? '').localeCompare(b.occurred_at ?? '');
+      case 'amount_desc':
+        return Number(b.usdt_amount) - Number(a.usdt_amount);
+      case 'amount_asc':
+        return Number(a.usdt_amount) - Number(b.usdt_amount);
+      default:
+        return (b.occurred_at ?? '').localeCompare(a.occurred_at ?? '');
+    }
   });
 
   return (
@@ -67,6 +107,7 @@ export function MobileSalesList() {
             { value: '30d' as const, label: '30 j' },
             { value: '90d' as const, label: '90 j' },
             { value: 'all' as const, label: 'Tout' },
+            { value: 'custom' as const, label: 'Perso' },
           ]).map((p) => (
             <button
               key={p.value}
@@ -81,13 +122,95 @@ export function MobileSalesList() {
           ))}
         </div>
 
-        <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
-          Afficher les opérations supprimées
-        </label>
+        {preset === 'custom' && (
+          <div className="grid grid-cols-2 gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+            <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={cn(
+              'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
+              activeFilterCount > 0
+                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                : 'border-border bg-white text-muted-foreground',
+            )}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          </button>
+          <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+            Supprimées
+          </label>
+        </div>
+
+        {showFilters && (
+          <div className="bg-white border border-border rounded-2xl p-3 space-y-3">
+            <div>
+              <label className="block text-[12px] font-semibold mb-1.5">Acheteur</label>
+              <select
+                value={buyerId}
+                onChange={(e) => setBuyerId(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
+              >
+                <option value="">Tous les acheteurs</option>
+                {(buyers ?? []).map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.short_id} · {b.display_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-semibold mb-1.5">Compte CNY crédité</label>
+              <select
+                value={cnyAccountId}
+                onChange={(e) => setCnyAccountId(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
+              >
+                <option value="">Tous</option>
+                <option value="none">Aucun compte Bonzini</option>
+                {(cnyAccounts ?? []).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-semibold mb-1.5">Trier par</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
+              >
+                <option value="date_desc">Date (plus récent)</option>
+                <option value="date_asc">Date (plus ancien)</option>
+                <option value="amount_desc">Montant USDT (plus grand)</option>
+                <option value="amount_asc">Montant USDT (plus petit)</option>
+              </select>
+            </div>
+
+            {activeFilterCount > 0 && (
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600"
+              >
+                <X className="w-3.5 h-3.5" />
+                Réinitialiser les filtres
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px]">
-          <span className="text-muted-foreground">Total ventes actives : </span>
+          <span className="text-muted-foreground">Total ({sales.filter((s) => !s.voided_at).length} ventes) : </span>
           <span className="font-bold">
             {fmt(
               sales.filter((s) => !s.voided_at).reduce((sum, s) => sum + Number(s.usdt_amount ?? 0), 0),
@@ -98,7 +221,7 @@ export function MobileSalesList() {
           <span className="text-muted-foreground"> → </span>
           <span className="font-bold">
             {fmt(
-              sales.filter((s) => !s.voided_at).reduce((sum, s) => sum + Number((s as { cny_amount: number }).cny_amount ?? 0), 0),
+              sales.filter((s) => !s.voided_at).reduce((sum, s) => sum + Number(s.cny_amount ?? 0), 0),
               2,
             )}{' '}
             CNY
@@ -111,14 +234,14 @@ export function MobileSalesList() {
           </div>
         ) : sales.length === 0 ? (
           <div className="text-center text-muted-foreground text-[13px] py-8">
-            Aucune vente sur cette période.
+            Aucune vente avec ces critères.
           </div>
         ) : (
           <div className="space-y-2">
             {sales.map((op) => (
               <SaleCard
                 key={op.id}
-                op={op as Extract<OperationRow, { kind: 'sale' }>}
+                op={op}
                 canDelete={isSuperAdmin}
                 onDelete={() => setConfirmDelete(op)}
                 onClick={() => navigate(`/m/more/treasury/sales/${op.id}`)}
