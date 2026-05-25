@@ -80,7 +80,6 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
         <img
           src={account.logo}
           alt={account.name}
-          crossOrigin="anonymous"
           style={{ width: 36, height: 36, objectFit: 'contain', opacity: isZero ? 0.55 : 1 }}
         />
       </div>
