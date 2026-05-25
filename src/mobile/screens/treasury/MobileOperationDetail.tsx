@@ -5,7 +5,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { usePurchase, useSale, useVoidTreasuryOperation } from '@/hooks/useTreasury';
+import { usePurchase, usePurchaseSplits, useSale, useVoidTreasuryOperation } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -33,6 +33,7 @@ export function MobileOperationDetail({ kind }: Props) {
 
   const purchase = usePurchase(kind === 'purchase' ? operationId : undefined);
   const sale = useSale(kind === 'sale' ? operationId : undefined);
+  const splits = usePurchaseSplits(kind === 'purchase' ? operationId : undefined);
   const op = kind === 'purchase' ? purchase.data : sale.data;
   const isLoading = kind === 'purchase' ? purchase.isLoading : sale.isLoading;
   const voidOp = useVoidTreasuryOperation();
@@ -158,8 +159,28 @@ export function MobileOperationDetail({ kind }: Props) {
                   (op as { supplier?: { display_name: string; phone?: string | null } }).supplier?.display_name ?? '—'
                 }
               />
-              <Row label="Compte XAF débité" value={(op as { xaf_account?: { label: string } }).xaf_account?.label ?? '—'} />
-              <Row label="Canal" value={(op as { channel: string }).channel} />
+              {(splits.data?.length ?? 0) > 1 ? (
+                <div className="py-2 border-b border-border/60">
+                  <div className="text-[12px] text-muted-foreground mb-1.5">Comptes XAF débités</div>
+                  <div className="space-y-1">
+                    {(splits.data ?? []).map((s) => (
+                      <div key={s.id} className="flex items-center justify-between text-[13px]">
+                        <span>{s.account?.label ?? '—'}</span>
+                        <span className="font-semibold tabular-nums">{fmt(Math.abs(Number(s.amount)), 0)} XAF</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Row
+                  label="Compte XAF débité"
+                  value={
+                    (op as { xaf_account?: { label: string } }).xaf_account?.label
+                    ?? splits.data?.[0]?.account?.label
+                    ?? '—'
+                  }
+                />
+              )}
             </>
           ) : (
             <>
