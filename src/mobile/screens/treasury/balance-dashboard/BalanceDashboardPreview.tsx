@@ -32,8 +32,8 @@ function GradientLine({ width }: { width: number }) {
 }
 
 function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS)[number]; balance: number }) {
-  const isZero = !balance || balance === 0;
-  const accent = isZero ? darken(account.color, 0.5) : account.color;
+  // All cards render at full brightness regardless of balance (zero-dimming removed per request).
+  const accent = account.color;
 
   return (
     <div
@@ -41,7 +41,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
         position: 'relative',
         width: LAYOUT.cardWidth,
         height: LAYOUT.cardHeight,
-        background: isZero ? COLORS.cardBgZero : COLORS.cardBg,
+        background: COLORS.cardBg,
         border: `0.5px solid ${COLORS.cardBorder}`,
         borderRadius: LAYOUT.cardRadius,
         boxSizing: 'border-box',
@@ -80,7 +80,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
         <img
           src={account.logo}
           alt={account.name}
-          style={{ width: 36, height: 36, objectFit: 'contain', opacity: isZero ? 0.55 : 1 }}
+          style={{ width: 36, height: 36, objectFit: 'contain' }}
         />
       </div>
 
@@ -94,7 +94,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
           fontFamily: FONT,
           fontWeight: 700,
           fontSize: 14,
-          color: isZero ? COLORS.textDimmed : COLORS.textWhite,
+          color: COLORS.textWhite,
           whiteSpace: 'nowrap',
         }}
       >
@@ -137,7 +137,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
             fontFamily: FONT,
             fontWeight: 700,
             fontSize: 22,
-            color: isZero ? COLORS.textDimmed : COLORS.textWhite,
+            color: COLORS.textWhite,
           }}
         >
           {formatXAF(balance)}
@@ -148,7 +148,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
             fontWeight: 400,
             fontSize: 13,
             marginLeft: 4,
-            color: isZero ? COLORS.textVeryDim : COLORS.textMuted,
+            color: COLORS.textMuted,
           }}
         >
           XAF
