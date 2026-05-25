@@ -32,6 +32,8 @@ export type { AmountFieldProps } from './AmountField';
 
 export { PhoneInputWithCountry } from './PhoneInputWithCountry';
 
+export { OccurredAtField } from './OccurredAtField';
+
 export { PhoneField } from './PhoneField';
 export type { PhoneFieldProps } from './PhoneField';
 

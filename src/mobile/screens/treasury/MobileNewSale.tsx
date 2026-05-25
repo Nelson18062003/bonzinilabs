@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, Plus, AlertTriangle } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { AmountField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -42,6 +42,7 @@ export function MobileNewSale() {
   const [buyerId, setBuyerId] = useState('');
   // Empty string = no Bonzini CNY account credited (the most common case).
   const [cnyAccountId, setCnyAccountId] = useState<string>('');
+  const [occurredAt, setOccurredAt] = useState<string>(() => new Date().toISOString());
   const [usdtAmount, setUsdtAmount] = useState<number | null>(null);
   const [cnyAmount, setCnyAmount] = useState<number | null>(null);
   const [rate, setRate] = useState<number | null>(null);
@@ -87,6 +88,7 @@ export function MobileNewSale() {
       cny_account_id: cnyAccountId || null,
       usdt_amount: resolved.usdt,
       cny_amount: resolved.cny,
+      occurred_at: occurredAt,
       external_ref: externalRef || undefined,
       notes: notes || undefined,
     });
@@ -184,6 +186,9 @@ export function MobileNewSale() {
             cash via « Approvisionner » plus tard.
           </p>
         </div>
+
+        {/* Date / heure */}
+        <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
 
         {/* Mode toggle */}
         <div>

@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, Plus } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { AmountField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -49,6 +49,7 @@ export function MobileNewPurchase() {
   const [supplierId, setSupplierId] = useState('');
   const [accountId, setAccountId] = useState('');
   const [channel, setChannel] = useState<ChannelXaf>('bank_transfer');
+  const [occurredAt, setOccurredAt] = useState<string>(() => new Date().toISOString());
   const [xafAmount, setXafAmount] = useState<number | null>(null);
   const [usdtAmount, setUsdtAmount] = useState<number | null>(null);
   const [rate, setRate] = useState<number | null>(null);
@@ -91,6 +92,7 @@ export function MobileNewPurchase() {
       xaf_amount: resolved.xaf,
       usdt_amount: resolved.usdt,
       channel,
+      occurred_at: occurredAt,
       external_ref: externalRef || undefined,
       notes: notes || undefined,
     });
@@ -184,6 +186,9 @@ export function MobileNewPurchase() {
             ))}
           </div>
         </div>
+
+        {/* Date / heure */}
+        <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
 
         {/* XAF account */}
         <div>
