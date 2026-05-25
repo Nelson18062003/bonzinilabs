@@ -1042,7 +1042,7 @@ export type Database = {
       }
       usdt_purchases: {
         Row: {
-          channel: Database["public"]["Enums"]["treasury_channel_xaf"]
+          channel: Database["public"]["Enums"]["treasury_channel_xaf"] | null
           created_at: string
           created_by: string
           external_ref: string | null
@@ -1056,11 +1056,11 @@ export type Database = {
           void_reason: string | null
           voided_at: string | null
           voided_by: string | null
-          xaf_account_id: string
+          xaf_account_id: string | null
           xaf_amount: number
         }
         Insert: {
-          channel: Database["public"]["Enums"]["treasury_channel_xaf"]
+          channel?: Database["public"]["Enums"]["treasury_channel_xaf"] | null
           created_at?: string
           created_by: string
           external_ref?: string | null
@@ -1073,11 +1073,11 @@ export type Database = {
           void_reason?: string | null
           voided_at?: string | null
           voided_by?: string | null
-          xaf_account_id: string
+          xaf_account_id?: string | null
           xaf_amount: number
         }
         Update: {
-          channel?: Database["public"]["Enums"]["treasury_channel_xaf"]
+          channel?: Database["public"]["Enums"]["treasury_channel_xaf"] | null
           created_at?: string
           created_by?: string
           external_ref?: string | null
@@ -1090,7 +1090,7 @@ export type Database = {
           void_reason?: string | null
           voided_at?: string | null
           voided_by?: string | null
-          xaf_account_id?: string
+          xaf_account_id?: string | null
           xaf_amount?: number
         }
         Relationships: [
@@ -1649,14 +1649,12 @@ export type Database = {
       }
       record_usdt_purchase: {
         Args: {
-          p_channel: Database["public"]["Enums"]["treasury_channel_xaf"]
+          p_account_splits: Json
           p_external_ref?: string
           p_notes?: string
           p_occurred_at?: string
           p_supplier_id: string
           p_usdt_amount: number
-          p_xaf_account_id: string
-          p_xaf_amount: number
         }
         Returns: Json
       }

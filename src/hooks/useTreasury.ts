@@ -4,7 +4,6 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type CounterpartyType = Database['public']['Enums']['treasury_counterparty_type'];
-type ChannelXaf = Database['public']['Enums']['treasury_channel_xaf'];
 type LedgerSourceTable = Database['public']['Enums']['treasury_ledger_source_table'];
 
 export type TreasuryAccount = Database['public']['Tables']['treasury_accounts']['Row'];
@@ -182,12 +181,16 @@ export function useUsdtStock() {
 
 // ─── Purchases ──────────────────────────────────────────────
 
+export interface AccountSplit {
+  account_id: string;
+  xaf_amount: number;
+}
+
 interface RecordPurchaseArgs {
   supplier_id: string;
-  xaf_account_id: string;
-  xaf_amount: number;
   usdt_amount: number;
-  channel: ChannelXaf;
+  /** One or more XAF accounts debited; total = sum of xaf_amount. */
+  account_splits: AccountSplit[];
   occurred_at?: string;
   external_ref?: string;
   notes?: string;
@@ -197,6 +200,8 @@ interface PurchaseResult {
   success: boolean;
   error?: string;
   purchase_id?: string;
+  total_xaf?: number;
+  account_count?: number;
   implicit_rate?: number;
   new_wac?: number;
 }
@@ -207,10 +212,8 @@ export function useRecordUsdtPurchase() {
     mutationFn: async (args: RecordPurchaseArgs) => {
       const { data, error } = await supabaseAdmin.rpc('record_usdt_purchase', {
         p_supplier_id: args.supplier_id,
-        p_xaf_account_id: args.xaf_account_id,
-        p_xaf_amount: args.xaf_amount,
         p_usdt_amount: args.usdt_amount,
-        p_channel: args.channel,
+        p_account_splits: args.account_splits as unknown as Database['public']['Tables']['treasury_ledger_entries']['Row']['metadata'],
         p_occurred_at: args.occurred_at,
         p_external_ref: args.external_ref,
         p_notes: args.notes,
@@ -225,6 +228,28 @@ export function useRecordUsdtPurchase() {
       toast.success(`Achat enregistré. Nouveau WAC: ${r.new_wac?.toFixed(4)} XAF/USDT`);
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** XAF debit ledger lines of a purchase, with account labels — for the multi-account breakdown. */
+export function usePurchaseSplits(purchaseId: string | undefined) {
+  return useQuery({
+    queryKey: ['treasury', 'purchase-splits', purchaseId],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('treasury_ledger_entries')
+        .select('id, amount, account:treasury_accounts!account_id(id,label,kind)')
+        .eq('source_table', 'usdt_purchase')
+        .eq('source_id', purchaseId!)
+        .eq('entry_kind', 'usdt_purchase_debit_xaf');
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        amount: number;
+        account: { id: string; label: string; kind: string } | null;
+      }>;
+    },
+    enabled: !!purchaseId,
   });
 }
 

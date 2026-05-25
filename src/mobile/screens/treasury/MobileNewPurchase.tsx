@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
@@ -11,19 +11,18 @@ import {
   useRecordUsdtPurchase,
   useTreasuryAccounts,
   useUsdtWac,
+  type AccountSplit,
 } from '@/hooks/useTreasury';
-import type { Database } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
 
-type ChannelXaf = Database['public']['Enums']['treasury_channel_xaf'];
 type InputMode = 'xaf_usdt' | 'xaf_rate' | 'usdt_rate';
+type AccountMode = 'single' | 'multi';
 
-const CHANNELS: { value: ChannelXaf; label: string }[] = [
-  { value: 'bank_transfer', label: 'Virement' },
-  { value: 'mobile_money', label: 'Mobile Money' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'other', label: 'Autre' },
-];
+interface SplitRow {
+  key: string;
+  accountId: string;
+  amount: number | null;
+}
 
 const MODES: { value: InputMode; label: string; hint: string }[] = [
   { value: 'xaf_usdt', label: 'XAF + USDT', hint: 'Taux calculé' },
@@ -36,6 +35,9 @@ function fmt(n: number | null, decimals = 2): string {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+let splitKeyCounter = 0;
+const newSplit = (): SplitRow => ({ key: `s${splitKeyCounter++}`, accountId: '', amount: null });
+
 export function MobileNewPurchase() {
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
@@ -47,8 +49,9 @@ export function MobileNewPurchase() {
 
   const [mode, setMode] = useState<InputMode>('xaf_usdt');
   const [supplierId, setSupplierId] = useState('');
-  const [accountId, setAccountId] = useState('');
-  const [channel, setChannel] = useState<ChannelXaf>('bank_transfer');
+  const [accountMode, setAccountMode] = useState<AccountMode>('single');
+  const [singleAccountId, setSingleAccountId] = useState('');
+  const [splits, setSplits] = useState<SplitRow[]>([newSplit()]);
   const [occurredAt, setOccurredAt] = useState<string>(() => new Date().toISOString());
   const [xafAmount, setXafAmount] = useState<number | null>(null);
   const [usdtAmount, setUsdtAmount] = useState<number | null>(null);
@@ -60,7 +63,7 @@ export function MobileNewPurchase() {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState<string | null>(null);
 
-  // Resolve the 3 values from the 2 user-typed inputs.
+  // Resolve XAF / USDT / rate from the 2 typed inputs (same logic single & multi).
   const resolved = useMemo(() => {
     if (mode === 'xaf_usdt') {
       const r = xafAmount && usdtAmount && usdtAmount > 0 ? xafAmount / usdtAmount : null;
@@ -74,24 +77,36 @@ export function MobileNewPurchase() {
     return { xaf: x, usdt: usdtAmount, rate };
   }, [mode, xafAmount, usdtAmount, rate]);
 
+  const allocated = useMemo(
+    () => splits.reduce((s, r) => s + (r.amount ?? 0), 0),
+    [splits],
+  );
+  const remaining = (resolved.xaf ?? 0) - allocated;
+  const allocationOk = resolved.xaf !== null && Math.abs(remaining) < 1; // 1 XAF tolerance
+
   if (!hasPermission('canManageTreasury')) {
     return <Navigate to="/m/more" replace />;
   }
 
   const valid =
     !!supplierId &&
-    !!accountId &&
     resolved.xaf !== null && resolved.xaf > 0 &&
-    resolved.usdt !== null && resolved.usdt > 0;
+    resolved.usdt !== null && resolved.usdt > 0 &&
+    (accountMode === 'single'
+      ? !!singleAccountId
+      : allocationOk && splits.every((r) => r.accountId && (r.amount ?? 0) > 0));
 
   const handleSubmit = async () => {
     if (!valid || resolved.xaf === null || resolved.usdt === null) return;
+    const accountSplits: AccountSplit[] =
+      accountMode === 'single'
+        ? [{ account_id: singleAccountId, xaf_amount: resolved.xaf }]
+        : splits.map((r) => ({ account_id: r.accountId, xaf_amount: r.amount ?? 0 }));
+
     const result = await submit.mutateAsync({
       supplier_id: supplierId,
-      xaf_account_id: accountId,
-      xaf_amount: resolved.xaf,
       usdt_amount: resolved.usdt,
-      channel,
+      account_splits: accountSplits,
       occurred_at: occurredAt,
       external_ref: externalRef || undefined,
       notes: notes || undefined,
@@ -114,6 +129,9 @@ export function MobileNewPurchase() {
     }
   };
 
+  const updateSplit = (key: string, patch: Partial<SplitRow>) =>
+    setSplits((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Nouvel achat USDT" showBack backTo="/m/more/treasury" />
@@ -131,8 +149,7 @@ export function MobileNewPurchase() {
               <option value="">Sélectionner…</option>
               {(suppliers ?? []).map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.display_name}
-                  {s.phone ? ` · ${s.phone}` : ''}
+                  {s.short_id} · {s.display_name}
                 </option>
               ))}
             </select>
@@ -166,48 +183,10 @@ export function MobileNewPurchase() {
           )}
         </div>
 
-        {/* Channel */}
-        <div>
-          <label className="block text-[13px] font-semibold mb-1.5">Canal de paiement XAF *</label>
-          <div className="grid grid-cols-4 gap-1.5">
-            {CHANNELS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setChannel(c.value)}
-                className={cn(
-                  'h-10 rounded-xl text-[12px] font-semibold border-2 transition-colors',
-                  channel === c.value
-                    ? 'border-violet-600 bg-violet-50 text-violet-700'
-                    : 'border-border bg-white text-muted-foreground',
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Date / heure */}
         <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
 
-        {/* XAF account */}
-        <div>
-          <label className="block text-[13px] font-semibold mb-1.5">Compte XAF débité *</label>
-          <select
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="w-full h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
-          >
-            <option value="">Sélectionner…</option>
-            {(xafAccounts ?? []).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Mode toggle */}
+        {/* Mode de saisie (montants) */}
         <div>
           <label className="block text-[13px] font-semibold mb-1.5">Mode de saisie</label>
           <div className="grid grid-cols-3 gap-1.5">
@@ -229,51 +208,122 @@ export function MobileNewPurchase() {
           </div>
         </div>
 
-        {/* Amount inputs (2 active, 1 read-only computed) */}
+        {/* Amount inputs */}
         <div className="space-y-3">
           {(mode === 'xaf_usdt' || mode === 'xaf_rate') && (
-            <AmountField
-              label="XAF payé *"
-              currency="XAF"
-              value={xafAmount}
-              onValueChange={setXafAmount}
-              allowDecimal
-              decimals={0}
-              max={null}
-            />
+            <AmountField label="XAF payé *" currency="XAF" value={xafAmount} onValueChange={setXafAmount} allowDecimal decimals={0} max={null} />
           )}
           {(mode === 'xaf_usdt' || mode === 'usdt_rate') && (
-            <AmountField
-              label="USDT reçu *"
-              currency="USDT"
-              value={usdtAmount}
-              onValueChange={setUsdtAmount}
-              allowDecimal
-              decimals={4}
-              max={null}
-            />
+            <AmountField label="USDT reçu *" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
           )}
           {(mode === 'xaf_rate' || mode === 'usdt_rate') && (
-            <AmountField
-              label="Taux *"
-              currency="XAF/USDT"
-              value={rate}
-              onValueChange={setRate}
-              allowDecimal
-              decimals={4}
-              max={null}
-            />
+            <AmountField label="Taux *" currency="XAF/USDT" value={rate} onValueChange={setRate} allowDecimal decimals={4} max={null} />
           )}
 
-          {/* Computed display */}
-          {mode === 'xaf_rate' && (
-            <ComputedRow label="USDT reçu (calculé)" value={resolved.usdt} unit="USDT" decimals={4} />
-          )}
-          {mode === 'usdt_rate' && (
-            <ComputedRow label="XAF payé (calculé)" value={resolved.xaf} unit="XAF" decimals={0} />
-          )}
-          {mode === 'xaf_usdt' && (
-            <ComputedRow label="Taux implicite" value={resolved.rate} unit="XAF/USDT" decimals={4} />
+          {mode === 'xaf_rate' && <ComputedRow label="USDT reçu (calculé)" value={resolved.usdt} unit="USDT" decimals={4} />}
+          {mode === 'usdt_rate' && <ComputedRow label="XAF payé (calculé)" value={resolved.xaf} unit="XAF" decimals={0} />}
+          {mode === 'xaf_usdt' && <ComputedRow label="Taux implicite" value={resolved.rate} unit="XAF/USDT" decimals={4} />}
+        </div>
+
+        {/* Account mode toggle */}
+        <div>
+          <label className="block text-[13px] font-semibold mb-1.5">Compte(s) XAF débité(s) *</label>
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
+            <button
+              onClick={() => setAccountMode('single')}
+              className={cn(
+                'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors',
+                accountMode === 'single'
+                  ? 'border-violet-600 bg-violet-50 text-violet-700'
+                  : 'border-border bg-white text-muted-foreground',
+              )}
+            >
+              Compte unique
+            </button>
+            <button
+              onClick={() => setAccountMode('multi')}
+              className={cn(
+                'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors',
+                accountMode === 'multi'
+                  ? 'border-violet-600 bg-violet-50 text-violet-700'
+                  : 'border-border bg-white text-muted-foreground',
+              )}
+            >
+              Multi-comptes
+            </button>
+          </div>
+
+          {accountMode === 'single' ? (
+            <select
+              value={singleAccountId}
+              onChange={(e) => setSingleAccountId(e.target.value)}
+              className="w-full h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
+            >
+              <option value="">Sélectionner…</option>
+              {(xafAccounts ?? []).map((a) => (
+                <option key={a.id} value={a.id}>{a.label}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="space-y-2">
+              {splits.map((row) => (
+                <div key={row.key} className="flex gap-2 items-start">
+                  <select
+                    value={row.accountId}
+                    onChange={(e) => updateSplit(row.key, { accountId: e.target.value })}
+                    className="flex-1 h-11 px-2 rounded-xl border border-border bg-white text-[14px]"
+                  >
+                    <option value="">Compte…</option>
+                    {(xafAccounts ?? []).map((a) => (
+                      <option key={a.id} value={a.id}>{a.label}</option>
+                    ))}
+                  </select>
+                  <div className="w-[120px]">
+                    <AmountField
+                      currency="XAF"
+                      value={row.amount}
+                      onValueChange={(v) => updateSplit(row.key, { amount: v })}
+                      allowDecimal
+                      decimals={0}
+                      max={null}
+                    />
+                  </div>
+                  {splits.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))}
+                      className="h-11 w-9 flex items-center justify-center text-red-600 flex-shrink-0"
+                      aria-label="Retirer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setSplits((rows) => [...rows, newSplit()])}
+                className="w-full h-10 rounded-xl border-2 border-dashed border-border text-[13px] font-semibold text-muted-foreground flex items-center justify-center gap-1.5 active:bg-muted/40"
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter un compte
+              </button>
+
+              {/* Allocation status */}
+              <div
+                className={cn(
+                  'rounded-xl px-3 py-2.5 text-[12px] font-semibold flex items-center justify-between',
+                  resolved.xaf === null
+                    ? 'bg-muted text-muted-foreground'
+                    : allocationOk
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-red-50 text-red-700 border border-red-200',
+                )}
+              >
+                <span>Réparti : {fmt(allocated, 0)} / {fmt(resolved.xaf, 0)} XAF</span>
+                <span>{resolved.xaf === null ? '—' : allocationOk ? '✓ OK' : `reste ${fmt(remaining, 0)}`}</span>
+              </div>
+            </div>
           )}
         </div>
 
@@ -283,11 +333,7 @@ export function MobileNewPurchase() {
           <span className="font-bold">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
         </div>
 
-        <TextField
-          label="Référence externe (Binance, hash…)"
-          value={externalRef}
-          onChange={(e) => setExternalRef(e.target.value)}
-        />
+        <TextField label="Référence externe (Binance, hash…)" value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
         <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
         <Button
