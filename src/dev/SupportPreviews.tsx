@@ -4,7 +4,7 @@
 // src/types/chat.ts) and the FR copy from src/i18n/locales/fr/support.json.
 // Client side: client ↔ "Équipe Bonzini". Accent = violet (bonzini-violet).
 import {
-  ChevronRight, Plus, Search, Zap, Headset,
+  ChevronRight, ChevronLeft, Plus, Search, Zap, Headset, CheckCheck, FileText, Smile, Paperclip,
   Home, ArrowDownToLine, Send, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -157,7 +157,129 @@ function EmptyScreen() {
   );
 }
 
+/* ── conversation thread ───────────────────────────────────────────
+ * Mirrors ChatMessage / ChatThread: client bubbles (right, violet) vs
+ * admin "Équipe Bonzini" (left, grey), date separator, read receipts
+ * (Vu), emoji reactions, a quoted reply, a media (proof) message, and a
+ * typing indicator. 'closed' swaps the input for the reopen banner. */
+type Bubble = {
+  from: 'client' | 'admin';
+  text?: string;
+  time: string;
+  seen?: boolean;
+  reactions?: string[];
+  quote?: { from: 'client' | 'admin'; text: string };
+  media?: { kind: 'file' | 'image'; name: string; meta: string };
+};
+const thread: Bubble[] = [
+  { from: 'admin', text: 'Bonjour Aristide 👋 Comment pouvons-nous vous aider aujourd\'hui ?', time: '09:30' },
+  { from: 'client', text: 'Bonjour, mon paiement vers Shenzhen Tech est-il bien parti ?', time: '09:38', seen: true },
+  { from: 'client', media: { kind: 'file', name: 'recu-paiement.pdf', meta: 'PDF · 248 Ko' }, time: '09:38', seen: true },
+  { from: 'admin', text: 'Oui, je vérifie tout de suite votre référence PAY-2024-0117.', time: '09:40' },
+  { from: 'admin', text: 'C\'est réglé ✅ Votre fournisseur a bien reçu ¥ 38 236.', time: '09:41', reactions: ['👍', '🙏'],
+    quote: { from: 'client', text: 'mon paiement vers Shenzhen Tech est-il bien parti ?' } },
+];
+
+function ReadReceipt() {
+  return <span className="ml-1 inline-flex items-center gap-0.5 text-[10px] text-white/70"><CheckCheck className="h-3 w-3" /> Vu</span>;
+}
+function ReactionPills({ items }: { items: string[] }) {
+  return (
+    <div className="mt-1 flex gap-1">
+      {items.map((e) => (
+        <span key={e} className="rounded-full border border-white/10 bg-[#0A0C12] px-1.5 py-0.5 text-[12px] shadow-sm">{e}</span>
+      ))}
+    </div>
+  );
+}
+function ConversationScreen({ closed = false }: { closed?: boolean }) {
+  return (
+    <Shell>
+      {/* header */}
+      <header className="flex items-center gap-2.5 border-b border-white/10 px-3 py-2.5" style={{ paddingTop: 'calc(10px + max(env(safe-area-inset-top), 16px))' }}>
+        <button className="grid h-9 w-9 place-items-center rounded-full text-slate-300"><ChevronLeft className="h-5 w-5" /></button>
+        <TeamAvatar size={38} />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[15px] font-semibold leading-tight">Équipe Bonzini</h1>
+          <p className="truncate text-[11px] text-slate-400">Question sur un paiement</p>
+        </div>
+      </header>
+
+      {/* messages */}
+      <div className="mx-auto max-w-[480px] px-4 pb-40 pt-4">
+        {/* date separator */}
+        <div className="mb-4 flex justify-center"><span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] font-medium text-slate-400">Aujourd'hui</span></div>
+
+        <div className="space-y-2.5">
+          {thread.map((m, i) => {
+            const mine = m.from === 'client';
+            return (
+              <div key={i} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] ${mine ? 'items-end' : 'items-start'} flex flex-col`}>
+                  <div
+                    className={`rounded-2xl px-3.5 py-2.5 text-[14px] leading-snug ${mine ? 'rounded-br-md text-white' : 'rounded-bl-md bg-white/[0.07] text-slate-100'}`}
+                    style={mine ? { background: ACCENT } : undefined}
+                  >
+                    {/* quoted reply */}
+                    {m.quote && (
+                      <div className={`mb-1.5 border-l-2 pl-2 ${mine ? 'border-white/50' : 'border-white/20'}`}>
+                        <p className={`text-[11px] font-semibold ${mine ? 'text-white/80' : 'text-slate-300'}`}>{m.quote.from === 'client' ? 'Vous' : 'Équipe Bonzini'}</p>
+                        <p className={`truncate text-[11.5px] ${mine ? 'text-white/70' : 'text-slate-400'}`}>{m.quote.text}</p>
+                      </div>
+                    )}
+                    {/* media */}
+                    {m.media && (
+                      <div className={`mb-1 flex items-center gap-2.5 rounded-xl p-2 ${mine ? 'bg-white/15' : 'bg-white/[0.06]'}`}>
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15"><FileText className="h-[18px] w-[18px]" /></span>
+                        <div className="min-w-0"><p className="truncate text-[12.5px] font-semibold">{m.media.name}</p><p className="text-[10.5px] opacity-70">{m.media.meta}</p></div>
+                      </div>
+                    )}
+                    {m.text && <p>{m.text}</p>}
+                    <div className={`mt-0.5 flex items-center justify-end text-[10px] ${mine ? 'text-white/70' : 'text-slate-500'}`}>
+                      {m.time}{mine && m.seen && <ReadReceipt />}
+                    </div>
+                  </div>
+                  {m.reactions && <ReactionPills items={m.reactions} />}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* typing indicator */}
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-white/[0.07] px-3.5 py-3">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '0ms' }} />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '150ms' }} />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '300ms' }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* composer / closed banner */}
+      {closed ? (
+        <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-[#0A0C12]/95 px-5 py-4 backdrop-blur-xl" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 14px)' }}>
+          <p className="text-center text-[13px] text-slate-400">Cette conversation est fermée. <span className="font-semibold text-slate-200">Envoyez un message pour la rouvrir.</span></p>
+        </div>
+      ) : (
+        <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-[#0A0C12]/95 px-3 py-2.5 backdrop-blur-xl" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}>
+          <div className="mx-auto flex max-w-[480px] items-center gap-2">
+            <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate-400"><Paperclip className="h-[20px] w-[20px]" /></button>
+            <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2.5">
+              <span className="flex-1 text-[14px] text-slate-500">Écrivez votre message…</span>
+              <Smile className="h-[19px] w-[19px] text-slate-500" />
+            </div>
+            <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white" style={{ background: ACCENT }}><Send className="h-[18px] w-[18px]" /></button>
+          </div>
+        </div>
+      )}
+    </Shell>
+  );
+}
+
 export default function SupportPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
+  if (screen === 'conversation') return <ConversationScreen />;
+  if (screen === 'closed') return <ConversationScreen closed />;
   return <ListScreen />;
 }
