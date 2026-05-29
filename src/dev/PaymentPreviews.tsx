@@ -5,7 +5,7 @@
 // src/i18n/locales/fr/payments.json. Activity = paying Chinese suppliers.
 import {
   ArrowLeft, Plus, ChevronRight, Check, Send, Building2, Banknote,
-  Delete, Wallet, ArrowUpDown, QrCode, Info, Users,
+  Delete, Wallet, ArrowUpDown, QrCode, Info, Users, CheckCircle2, FileText,
   Home, ArrowDownToLine, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -518,6 +518,95 @@ function BeneficiaryCashScreen() {
   );
 }
 
+/* ── wizard ④ — confirm (summary before creating the payment) ──────
+ * Real copy from form.confirm.*: méthode, bénéficiaire, montant débité,
+ * nouveau solde + debit notice. Scenario: Shenzhen Tech / Alipay. */
+function ConfirmScreen() {
+  const amountXAF = 3_250_000;
+  const balanceAfter = WALLET_XAF - amountXAF;
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={3} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 text-[16px] font-semibold">Récapitulatif</p>
+
+        {/* hero conversion */}
+        <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+          <p className="text-[13px] font-medium text-slate-400">Vous payez</p>
+          <p className="mt-1.5 text-[36px] font-extrabold leading-none tracking-tight tabular-nums">{groupFr(amountXAF)} <span className="text-[16px] font-semibold text-slate-500">XAF</span></p>
+          <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5" style={{ background: 'hsl(258 100% 60% / 0.12)' }}>
+            <span className="text-[12.5px] text-slate-300">Fournisseur reçoit</span>
+            <span className="text-[14px] font-bold tabular-nums" style={{ color: ACCENT }}>¥ {xafToRmb(amountXAF)}</span>
+          </div>
+        </div>
+
+        {/* details */}
+        <div className="mt-5 divide-y divide-white/[0.06] rounded-2xl border border-white/10 bg-white/[0.04] px-4">
+          <div className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-[13.5px] text-slate-400">Mode de paiement</span>
+            <span className="flex items-center gap-2 text-[14px] font-semibold"><MethodMark method="alipay" size={24} /> Alipay</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-[13.5px] text-slate-400">Bénéficiaire</span>
+            <span className="truncate text-[14px] font-semibold">Shenzhen Tech Co.</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-[13.5px] text-slate-400">Taux appliqué</span>
+            <span className="text-[14px] font-semibold tabular-nums">1 000 000 XAF = {xafToRmb(1_000_000)} CNY</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-[13.5px] text-slate-400">Montant débité</span>
+            <span className="text-[14px] font-bold tabular-nums">{groupFr(amountXAF)} XAF</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-[13.5px] text-slate-400">Nouveau solde</span>
+            <span className="text-[14px] font-semibold tabular-nums text-slate-200">{groupFr(balanceAfter)} XAF</span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+          <Info className="mt-0.5 h-[16px] w-[16px] shrink-0" style={{ color: ACCENT }} />
+          <p className="text-[12.5px] leading-snug text-slate-400">Votre solde sera débité à la confirmation.</p>
+        </div>
+
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}><Check className="h-[18px] w-[18px]" /> Confirmer le paiement</button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
+/* ── success — payment created (success.* copy) ───────────────────── */
+function SuccessScreen() {
+  const amountXAF = 3_250_000;
+  return (
+    <Shell>
+      <div className="mx-auto flex min-h-[100dvh] max-w-[480px] flex-col px-5 pb-10" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <span className="grid h-24 w-24 place-items-center rounded-full" style={{ background: 'hsl(258 100% 60% / 0.14)', color: ACCENT }}><CheckCircle2 className="h-12 w-12" /></span>
+          <p className="mt-6 text-[24px] font-extrabold tracking-tight">Paiement créé !</p>
+          <p className="mt-1.5 text-[14px] text-slate-400">Votre demande a été enregistrée</p>
+
+          <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="flex items-center justify-center gap-2">
+              <MethodMark method="alipay" size={28} />
+              <span className="text-[14px] font-semibold">Shenzhen Tech Co.</span>
+            </div>
+            <p className="mt-3 text-[28px] font-extrabold leading-none tracking-tight tabular-nums">{groupFr(amountXAF)} <span className="text-[14px] font-semibold text-slate-500">XAF</span></p>
+            <p className="mt-1.5 text-[12.5px] text-slate-400">débités · fournisseur reçoit <span className="font-semibold" style={{ color: ACCENT }}>¥ {xafToRmb(amountXAF)}</span></p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <button className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}><FileText className="h-[18px] w-[18px]" /> Voir la fiche</button>
+          <button className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 py-4 text-[14.5px] font-semibold text-slate-200"><Plus className="h-[17px] w-[17px]" /> Nouveau paiement</button>
+          <button className="flex w-full items-center justify-center gap-2 py-1.5 text-[13.5px] font-semibold text-slate-400"><Home className="h-[16px] w-[16px]" /> Retour à l'accueil</button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'method') return <MethodScreen />;
@@ -526,5 +615,7 @@ export default function PaymentPreviews({ screen = 'list' }: { screen?: string }
   if (screen === 'beneficiary-alipay') return <BeneficiaryAlipayScreen />;
   if (screen === 'beneficiary-bank') return <BeneficiaryBankScreen />;
   if (screen === 'beneficiary-cash') return <BeneficiaryCashScreen />;
+  if (screen === 'confirm') return <ConfirmScreen />;
+  if (screen === 'success') return <SuccessScreen />;
   return <ListScreen />;
 }
