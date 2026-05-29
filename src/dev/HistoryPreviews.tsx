@@ -5,7 +5,7 @@
 // running balance (balanceAfter). Deposits in, payments out.
 import {
   ArrowDownCircle, ArrowUpCircle, XCircle, RefreshCw, PlusCircle, MinusCircle,
-  Clock, Search, ChevronRight, FileText, Download, Calendar, Check,
+  Clock, Search, ChevronRight, FileText, Download, Calendar, Check, ArrowRight, Info,
   Home, ArrowDownToLine, Send, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -235,8 +235,83 @@ function StatementScreen() {
   );
 }
 
+/* ── movement detail (fiche d'une entrée du ledger) ────────────────
+ * Shows the signed amount + type, balance-before → balance-after, the
+ * description, date, source reference and a link to the related deposit
+ * / payment. Informational rows (refused deposit, executed payment) get
+ * the "aucun impact sur le solde" note (mirrors isInformational). */
+type MovementKind = 'payment' | 'refused';
+function MovementDetailScreen({ kind }: { kind: MovementKind }) {
+  const isPayment = kind === 'payment';
+  const type: LedgerType = isPayment ? 'PAYMENT_RESERVED' : 'DEPOSIT_REFUSED';
+  const c = ENTRY[type];
+  const amount = isPayment ? 3_250_000 : 900_000;
+  const balanceBefore = isPayment ? 13_700_000 : 8_250_000;
+  const balanceAfter = isPayment ? 10_450_000 : 8_250_000; // refused → unchanged
+  const reference = isPayment ? 'PAY-2024-0117' : 'DEP-2024-0051';
+  const linkLabel = isPayment ? 'Voir le paiement' : 'Voir le dépôt';
+  const desc = isPayment ? 'Paiement Shenzhen Tech Co. · Alipay' : 'Dépôt cash — preuve illisible';
+
+  return (
+    <Shell>
+      <header className="flex items-center gap-3 px-5" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><ChevronRight className="h-[19px] w-[19px] rotate-180 text-slate-200" /></button>
+        <div className="pt-1"><h1 className="text-[18px] font-bold leading-none tracking-tight">Mouvement</h1><p className="mt-1 font-mono text-[12px] text-slate-500">{reference}</p></div>
+      </header>
+
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        {/* amount card */}
+        <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+          <span className={`mx-auto grid h-14 w-14 place-items-center rounded-full ${c.tint}`}><c.Icon className={`h-7 w-7 ${c.ring}`} /></span>
+          <p className={`mt-3 text-[36px] font-extrabold leading-none tracking-tight tabular-nums ${c.amount}`}>{c.prefix}{groupFr(amount)} <span className="text-[15px] font-semibold text-slate-500">XAF</span></p>
+          <p className="mt-2 text-[14px] font-semibold text-slate-200">{c.label}</p>
+          {c.informational && (
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1 text-[12px] font-semibold text-slate-400"><Info className="h-3.5 w-3.5" /> Aucun impact sur le solde</span>
+          )}
+        </div>
+
+        {/* balance before → after (only when it impacts the balance) */}
+        {!c.informational && (
+          <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4">
+            <div><p className="text-[11px] text-slate-500">Solde avant</p><p className="mt-0.5 text-[15px] font-semibold tabular-nums text-slate-300">{groupFr(balanceBefore)}</p></div>
+            <ArrowRight className="h-5 w-5 text-slate-500" />
+            <div className="text-right"><p className="text-[11px] text-slate-500">Solde après</p><p className="mt-0.5 text-[15px] font-bold tabular-nums" style={{ color: ACCENT }}>{groupFr(balanceAfter)}</p></div>
+          </div>
+        )}
+
+        {/* details */}
+        <div className="mt-6">
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-500">Détails</p>
+          <div className="divide-y divide-white/[0.06]">
+            {[
+              { k: 'Type', v: c.label },
+              { k: 'Description', v: desc },
+              { k: 'Référence', v: reference, mono: true },
+              { k: 'Date', v: '29 mai 2026 · 09:14' },
+            ].map((r) => (
+              <div key={r.k} className="flex items-start justify-between gap-3 py-3"><span className="shrink-0 text-[13.5px] text-slate-400">{r.k}</span><span className={`text-right text-[14px] font-semibold ${r.mono ? 'font-mono' : ''}`}>{r.v}</span></div>
+            ))}
+          </div>
+        </div>
+
+        {/* link to the source operation */}
+        <button className="mt-6 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
+          <span className="flex items-center gap-2.5 text-[14px] font-semibold">
+            <span className={`grid h-8 w-8 place-items-center rounded-lg ${c.tint}`}><c.Icon className={`h-[18px] w-[18px] ${c.ring}`} /></span>
+            {linkLabel}
+          </span>
+          <ChevronRight className="h-5 w-5 text-slate-500" />
+        </button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function HistoryPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'statement') return <StatementScreen />;
+  if (screen === 'detail-payment') return <MovementDetailScreen kind="payment" />;
+  if (screen === 'detail-refused') return <MovementDetailScreen kind="refused" />;
   return <ListScreen />;
 }
