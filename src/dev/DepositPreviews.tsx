@@ -3,7 +3,7 @@
 // info rows + a COLLAPSIBLE "Suivi" (collapsed by default → complete yet clean).
 import {
   ArrowLeft, Plus, ChevronRight, ChevronDown, Clock, Check, Camera, Upload,
-  Delete, Banknote, Landmark, FileText, Download, Copy, ArrowLeftRight, Search,
+  Delete, Banknote, Landmark, FileText, Download, Copy, ArrowLeftRight,
   Home, ArrowDownToLine, Send, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -260,44 +260,6 @@ function SubMethodScreen() {
   );
 }
 
-/* ── bank sub-flow: choix de la banque ─────────────────────── */
-const banks: { code: string; name: string; bg: string; logo?: string }[] = [
-  { code: 'Eco', name: 'Ecobank Cameroun', bg: '#0066b3', logo: '/assets/methods/ecobank.png' },
-  { code: 'UBA', name: 'United Bank for Africa', bg: '#c8102e' },
-  { code: 'AFB', name: 'Afriland First Bank', bg: '#0a7d34' },
-  { code: 'BIC', name: 'BICEC', bg: '#1b3a8c' },
-  { code: 'SGC', name: 'Société Générale Cameroun', bg: '#111827' },
-  { code: 'Ora', name: 'Orabank', bg: '#e87211' },
-];
-function BankScreen() {
-  return (
-    <Shell>
-      <AppBar title="Ajouter de l'argent" progress={1} />
-      <div className="mx-auto max-w-[480px] px-5 pb-28">
-        <p className="mt-6 text-[16px] font-semibold">Choisissez votre banque</p>
-        <div className="mt-3 flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-          <Search className="h-[18px] w-[18px] text-slate-500" />
-          <span className="text-[14px] text-slate-500">Rechercher une banque…</span>
-        </div>
-        <ul className="mt-2 divide-y divide-white/[0.06]">
-          {banks.map((b) => (
-            <li key={b.code}>
-              <button className="flex w-full items-center gap-4 py-3.5 text-left">
-                {b.logo
-                  ? <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5"><img src={b.logo} alt="" className="h-7 w-7 object-contain" /></span>
-                  : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[12px] font-extrabold text-white" style={{ background: b.bg }}>{b.code}</span>}
-                <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{b.name}</span>
-                <ChevronRight className="h-5 w-5 text-slate-500" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <NavBar />
-    </Shell>
-  );
-}
-
 /* ── bank sub-flow: coordonnées (RIB + instructions) ───────── */
 function CoordinatesScreen() {
   const rows = [
@@ -371,7 +333,6 @@ export default function DepositPreviews({ screen = 'list' }: { screen?: string }
   if (screen === 'amount') return <AmountScreen />;
   if (screen === 'method') return <MethodScreen />;
   if (screen === 'submethod') return <SubMethodScreen />;
-  if (screen === 'bank') return <BankScreen />;
   if (screen === 'coordinates') return <CoordinatesScreen />;
   if (screen === 'detail') return <DetailScreen sent={false} />;
   if (screen === 'detail-sent') return <DetailScreen sent />;
