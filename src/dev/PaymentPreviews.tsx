@@ -6,6 +6,7 @@
 import {
   ArrowLeft, Plus, ChevronRight, Check, Send, Building2, Banknote,
   Delete, Wallet, ArrowUpDown, QrCode, Info, Users, CheckCircle2, FileText,
+  Clock, ChevronDown, Download, AlertTriangle, X,
   Home, ArrowDownToLine, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -607,6 +608,126 @@ function SuccessScreen() {
   );
 }
 
+/* ── payment detail (fiche) — standard statuses ────────────────────
+ * Mirrors the real payment_status values + detail.* copy. Scenario:
+ * paying Shenzhen Tech Co. via Alipay, 3 250 000 XAF. */
+type PStatus = 'ready' | 'processing' | 'completed' | 'rejected';
+const P_STATUS_CFG: Record<PStatus, { label: string; pill: string; Icon: typeof Clock }> = {
+  ready: { label: 'Prêt à payer', pill: 'bg-purple-400/15 text-purple-300', Icon: Check },
+  processing: { label: 'En cours', pill: 'bg-amber-400/15 text-amber-300', Icon: Clock },
+  completed: { label: 'Effectué', pill: 'bg-emerald-400/15 text-emerald-300', Icon: Check },
+  rejected: { label: 'Refusé', pill: 'bg-rose-400/15 text-rose-300', Icon: X },
+};
+function PaymentDetailScreen({ status }: { status: PStatus }) {
+  const c = P_STATUS_CFG[status];
+  const amountXAF = 3_250_000;
+  const dateLabel = status === 'completed' ? 'Traité le' : status === 'rejected' ? 'Refusé le' : 'Créé le';
+  return (
+    <Shell>
+      <header className="flex items-center justify-between px-5" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+        <div className="flex items-center gap-3 pt-1">
+          <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><ArrowLeft className="h-[19px] w-[19px] text-slate-200" /></button>
+          <div><h1 className="text-[18px] font-bold leading-none tracking-tight">Paiement</h1><p className="mt-1 text-[12px] font-medium text-slate-500">PAY-2024-0117</p></div>
+        </div>
+        {status === 'completed' && <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><Download className="h-[18px] w-[18px] text-slate-200" /></button>}
+      </header>
+
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        {/* amount card */}
+        <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+          <span className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-300"><MethodMark method="alipay" size={22} /> Shenzhen Tech Co.</span>
+          <p className="mt-3 text-[38px] font-extrabold leading-none tracking-tight tabular-nums">{groupFr(amountXAF)} <span className="text-[16px] font-semibold text-slate-400">XAF</span></p>
+          <p className="mt-2 text-[12.5px] text-slate-400">Fournisseur reçoit <span className="font-bold" style={{ color: ACCENT }}>¥ {xafToRmb(amountXAF)}</span></p>
+          <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-bold ${c.pill}`}><c.Icon className="h-3.5 w-3.5" /> {c.label}</span>
+        </div>
+
+        {/* status banner */}
+        {status === 'ready' && (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border p-4" style={{ borderColor: 'hsl(258 100% 60% / 0.35)', background: 'hsl(258 100% 60% / 0.08)' }}>
+            <Check className="mt-0.5 h-5 w-5 shrink-0" style={{ color: ACCENT }} />
+            <div><p className="text-[14px] font-bold text-purple-200">Prêt à être traité</p><p className="mt-0.5 text-[12.5px] text-purple-100/70">Bonzini va régler votre fournisseur rapidement.</p></div>
+          </div>
+        )}
+        {status === 'processing' && (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border p-4" style={{ borderColor: 'rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.08)' }}>
+            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+            <div><p className="text-[14px] font-bold text-amber-300">Règlement en cours</p><p className="mt-0.5 text-[12.5px] text-amber-100/70">Bonzini prépare le paiement de votre fournisseur.</p></div>
+          </div>
+        )}
+        {status === 'completed' && (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border p-4" style={{ borderColor: 'rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.08)' }}>
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+            <div><p className="text-[14px] font-bold text-emerald-300">Fournisseur payé</p><p className="mt-0.5 text-[12.5px] text-emerald-100/70">Le règlement a été effectué. Consultez les preuves ci-dessous.</p></div>
+          </div>
+        )}
+        {status === 'rejected' && (
+          <div className="mt-5 rounded-2xl border p-4" style={{ borderColor: 'rgba(244,63,94,0.35)', background: 'rgba(244,63,94,0.08)' }}>
+            <div className="flex items-center gap-2"><AlertTriangle className="h-[18px] w-[18px] text-rose-400" /><p className="text-[14px] font-bold text-rose-300">Paiement refusé</p></div>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-rose-100/80"><span className="font-semibold text-rose-200">Motif :</span> compte bancaire incorrect. Le montant a été recrédité sur votre solde.</p>
+          </div>
+        )}
+
+        {/* Bonzini proofs (completed only) */}
+        {status === 'completed' && (
+          <div className="mt-6">
+            <SectionLabel>Preuves Bonzini (2)</SectionLabel>
+            <div className="flex gap-3">
+              <div className="grid h-[76px] w-[76px] place-items-center rounded-2xl bg-white/[0.06] text-slate-400"><FileText className="h-7 w-7" /></div>
+              <div className="grid h-[76px] w-[76px] place-items-center rounded-2xl bg-white/[0.06] text-slate-400"><FileText className="h-7 w-7" /></div>
+            </div>
+          </div>
+        )}
+
+        {/* beneficiary */}
+        <div className="mt-6">
+          <SectionLabel>Bénéficiaire</SectionLabel>
+          <div className="divide-y divide-white/[0.06] rounded-2xl border border-white/10 bg-white/[0.04] px-4">
+            {[
+              { k: 'Nom', v: 'Shenzhen Tech Co.' },
+              { k: 'Identifiant', v: 'shenzhen_tech', mono: true },
+              { k: 'Téléphone', v: '+86 138 0000 8821' },
+            ].map((r) => (
+              <div key={r.k} className="flex items-center justify-between py-3"><span className="text-[13.5px] text-slate-400">{r.k}</span><span className={`text-[14px] font-semibold ${r.mono ? 'font-mono' : ''}`}>{r.v}</span></div>
+            ))}
+          </div>
+        </div>
+
+        {/* informations */}
+        <div className="mt-6">
+          <SectionLabel>Informations</SectionLabel>
+          <div className="divide-y divide-white/[0.06]">
+            {[
+              { k: 'Mode', v: 'Alipay' },
+              { k: 'Référence', v: 'PAY-2024-0117', mono: true },
+              { k: 'Taux de change', v: `1 000 000 XAF = ${xafToRmb(1_000_000)} CNY` },
+              { k: 'Montant XAF', v: `${groupFr(amountXAF)} XAF` },
+              { k: 'Montant RMB', v: `¥ ${xafToRmb(amountXAF)}` },
+              { k: dateLabel, v: '29 mai 2026 · 09:14' },
+            ].map((r) => (
+              <div key={r.k} className="flex items-center justify-between py-3"><span className="text-[13.5px] text-slate-400">{r.k}</span><span className={`text-[14px] font-semibold ${r.mono ? 'font-mono' : ''}`}>{r.v}</span></div>
+            ))}
+          </div>
+        </div>
+
+        {/* primary action by status */}
+        {status === 'completed' && (
+          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14.5px] font-bold text-white" style={{ background: '#059669' }}><Download className="h-[18px] w-[18px]" /> Télécharger le reçu</button>
+        )}
+        {status === 'rejected' && (
+          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14.5px] font-bold text-white" style={{ background: ACCENT }}><Send className="h-[17px] w-[17px]" /> Refaire ce paiement</button>
+        )}
+
+        {/* suivi — collapsible */}
+        <button className="mt-6 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
+          <span className="flex items-center gap-2.5 text-[14px] font-semibold"><Clock className="h-[18px] w-[18px] text-purple-300" /> Suivi du paiement</span>
+          <ChevronDown className="h-5 w-5 text-slate-400" />
+        </button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'method') return <MethodScreen />;
@@ -617,5 +738,9 @@ export default function PaymentPreviews({ screen = 'list' }: { screen?: string }
   if (screen === 'beneficiary-cash') return <BeneficiaryCashScreen />;
   if (screen === 'confirm') return <ConfirmScreen />;
   if (screen === 'success') return <SuccessScreen />;
+  if (screen === 'detail-ready') return <PaymentDetailScreen status="ready" />;
+  if (screen === 'detail-processing') return <PaymentDetailScreen status="processing" />;
+  if (screen === 'detail-completed') return <PaymentDetailScreen status="completed" />;
+  if (screen === 'detail-rejected') return <PaymentDetailScreen status="rejected" />;
   return <ListScreen />;
 }
