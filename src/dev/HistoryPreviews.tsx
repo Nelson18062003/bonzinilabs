@@ -5,7 +5,7 @@
 // running balance (balanceAfter). Deposits in, payments out.
 import {
   ArrowDownCircle, ArrowUpCircle, XCircle, RefreshCw, PlusCircle, MinusCircle,
-  Clock, Search, ChevronRight,
+  Clock, Search, ChevronRight, FileText, Download, Calendar, Check,
   Home, ArrowDownToLine, Send, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -79,9 +79,14 @@ function ListScreen() {
   return (
     <Shell>
       <div className="mx-auto max-w-[480px] px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
-        <header className="pt-2">
-          <h1 className="text-[26px] font-extrabold tracking-tight">Historique</h1>
-          <p className="mt-0.5 text-[13.5px] text-slate-400">Tous vos mouvements de solde</p>
+        <header className="flex items-start justify-between gap-3 pt-2">
+          <div>
+            <h1 className="text-[26px] font-extrabold tracking-tight">Historique</h1>
+            <p className="mt-0.5 text-[13.5px] text-slate-400">Tous vos mouvements de solde</p>
+          </div>
+          <button className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3.5 py-2 text-[13px] font-semibold text-slate-100">
+            <FileText className="h-[16px] w-[16px]" style={{ color: ACCENT }} /> Relevé
+          </button>
         </header>
 
         {/* search */}
@@ -148,7 +153,90 @@ function EmptyScreen() {
   );
 }
 
+/* ── statement — period picker + preview before PDF download ───────
+ * Triggers the existing ClientStatementPDF (generateClientStatement.ts).
+ * Reflects its real structure: brand palette (gold/violet/orange),
+ * 3 summary blocks (deposits/payments/final balance), column preview. */
+const PERIODS = ['30 derniers jours', 'Ce mois-ci', '3 derniers mois', 'Cette année', 'Personnalisée'];
+function StatementScreen() {
+  // Statement excludes informational rows (e.g. DEPOSIT_REFUSED), mirroring
+  // shouldIncludeLedgerEntry — so totals here use the real-impact entries.
+  const totalDeposits = 7_000_000;   // 2M + 5M validated deposits
+  const totalPayments = 3_250_000;   // reserved payment
+  const finalBalance = 12_450_000;
+  return (
+    <Shell>
+      <header className="flex items-center gap-3 px-5" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><ChevronRight className="h-[19px] w-[19px] rotate-180 text-slate-200" /></button>
+        <div className="pt-1"><h1 className="text-[19px] font-bold leading-none tracking-tight">Relevé de compte</h1><p className="mt-1 text-[12px] text-slate-500">Document officiel · PDF</p></div>
+      </header>
+
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        {/* period selection */}
+        <div className="mt-5">
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-500">Période</p>
+          <div className="space-y-2.5">
+            {PERIODS.map((p, i) => {
+              const on = i === 0;
+              return (
+                <button key={p} className="flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left" style={on ? { borderColor: ACCENT, background: 'rgba(255,255,255,0.04)' } : { borderColor: 'rgba(255,255,255,0.10)' }}>
+                  <Calendar className={`h-[18px] w-[18px] ${on ? '' : 'text-slate-500'}`} style={on ? { color: ACCENT } : undefined} />
+                  <span className="flex-1 text-[14.5px] font-semibold">{p}</span>
+                  {on
+                    ? <span className="grid h-5 w-5 place-items-center rounded-full text-white" style={{ background: ACCENT }}><Check className="h-3.5 w-3.5" /></span>
+                    : <span className="h-5 w-5 rounded-full border-2 border-white/15" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* preview of what the PDF contains */}
+        <div className="mt-6">
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-500">Aperçu du relevé</p>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+            {/* brand header strip (gold/violet/orange — matches the PDF) */}
+            <div className="flex items-center justify-between bg-[#1a1028] px-4 py-3">
+              <div><p className="text-[13px] font-extrabold text-white">Bonzini</p><p className="text-[10px] text-white/45">Paiements CEMAC › Chine</p></div>
+              <div className="text-right"><p className="text-[8px] font-bold uppercase tracking-widest text-white/40">Document</p><p className="text-[11px] font-bold text-white">Relevé de compte</p></div>
+            </div>
+            <div className="flex h-[3px]"><span className="flex-[2]" style={{ background: '#f3a745' }} /><span className="flex-[3]" style={{ background: '#a64af7' }} /><span className="flex-[2]" style={{ background: '#fe560d' }} /></div>
+
+            {/* 3 summary blocks */}
+            <div className="grid grid-cols-3 divide-x divide-white/[0.06] border-b border-white/[0.06]">
+              <div className="px-2 py-3 text-center"><p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Dépôts</p><p className="mt-1 text-[14px] font-extrabold tabular-nums text-emerald-400">+{groupFr(totalDeposits)}</p></div>
+              <div className="px-2 py-3 text-center"><p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Paiements</p><p className="mt-1 text-[14px] font-extrabold tabular-nums" style={{ color: '#fe560d' }}>-{groupFr(totalPayments)}</p></div>
+              <div className="px-2 py-3 text-center"><p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Solde final</p><p className="mt-1 text-[14px] font-extrabold tabular-nums" style={{ color: '#a64af7' }}>{groupFr(finalBalance)}</p></div>
+            </div>
+
+            {/* column header + a couple of skeleton rows */}
+            <div className="px-4 py-2.5">
+              <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wide text-slate-500"><span>Date · Réf · Type</span><span>Débit / Crédit · Solde</span></div>
+              {[
+                { t: 'Dépôt', c: 'text-emerald-400', a: '+2 000 000' },
+                { t: 'Paiement', c: 'text-orange-400', a: '-3 250 000' },
+                { t: 'Dépôt', c: 'text-emerald-400', a: '+5 000 000' },
+              ].map((r, i) => (
+                <div key={i} className="mt-2 flex items-center justify-between border-t border-white/[0.05] pt-2 text-[11px]">
+                  <span className="text-slate-400">{r.t} · 29/05/2026</span>
+                  <span className={`font-bold tabular-nums ${r.c}`}>{r.a}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="mt-2 text-center text-[11.5px] text-slate-500">PDF A4 · en-tête Bonzini, totaux et solde courant inclus.</p>
+        </div>
+
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}><Download className="h-[18px] w-[18px]" /> Télécharger le relevé (PDF)</button>
+        <p className="mt-3 text-center text-[12px] text-slate-500">Les dépôts refusés et opérations de test sont exclus du relevé officiel.</p>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function HistoryPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
+  if (screen === 'statement') return <StatementScreen />;
   return <ListScreen />;
 }
