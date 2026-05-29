@@ -5,7 +5,7 @@
 // src/i18n/locales/fr/payments.json. Activity = paying Chinese suppliers.
 import {
   ArrowLeft, Plus, ChevronRight, Check, Send, Building2, Banknote,
-  Delete, Wallet, ArrowUpDown,
+  Delete, Wallet, ArrowUpDown, QrCode, Info,
   Home, ArrowDownToLine, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -205,6 +205,40 @@ function WizardHeader({ title, step }: { title: string; step: number }) {
   );
 }
 
+/* ── shared wizard bits (beneficiary context, fields, toggle) ── */
+function ContextChip({ method, name, sub }: { method: PMethod; name: string; sub: string }) {
+  return (
+    <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <MethodMark method={method} size={36} />
+      <div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold leading-tight">{name}</p><p className="text-[12px] text-slate-400">{sub}</p></div>
+    </div>
+  );
+}
+function Field({ label, value, optional, placeholder }: { label: string; value?: string; optional?: boolean; placeholder?: string }) {
+  return (
+    <label className="block">
+      <span className="text-[12.5px] font-medium text-slate-400">{label}{optional && <span className="text-slate-600"> (optionnel)</span>}</span>
+      <div className="mt-1.5 flex h-[50px] items-center rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-[14.5px]">
+        {value ? <span className="font-medium text-white">{value}</span> : <span className="text-slate-500">{placeholder}</span>}
+      </div>
+    </label>
+  );
+}
+function BenefToggle({ tab }: { tab: 'existing' | 'new' }) {
+  return (
+    <div className="mt-5 inline-flex w-full rounded-2xl bg-white/[0.06] p-1">
+      {(['existing', 'new'] as const).map((t) => {
+        const on = t === tab;
+        return (
+          <span key={t} className="flex-1 rounded-xl py-2 text-center text-[13.5px] font-semibold" style={on ? { background: ACCENT, color: '#fff' } : { color: '#94a3b8' }}>
+            {t === 'existing' ? 'Enregistré' : 'Nouveau'}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── wizard ① — method (real labels/desc + brand selection border) ── */
 const methodCards: { method: PMethod; label: string; desc: string; ring: string }[] = [
   { method: 'alipay', label: 'Alipay', desc: 'Paiement via Alipay', ring: '#1677FF' },
@@ -264,11 +298,7 @@ function AmountScreen() {
     <Shell>
       <WizardHeader title="Nouveau paiement" step={1} />
       <div className="mx-auto max-w-[480px] px-5 pb-28">
-        {/* beneficiary + method context chip */}
-        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-          <MethodMark method="alipay" size={36} />
-          <div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold leading-tight">Shenzhen Tech Co.</p><p className="text-[12px] text-slate-400">Alipay</p></div>
-        </div>
+        <ContextChip method="alipay" name="Shenzhen Tech Co." sub="Alipay" />
 
         {/* currency toggle */}
         <div className="mt-5 flex justify-center">
@@ -318,9 +348,98 @@ function AmountScreen() {
   );
 }
 
+/* ── wizard ③ — beneficiary (saved list) ───────────────────────────
+ * "Enregistré" tab: pick a saved supplier or skip ("Compléter plus
+ * tard"). Real copy from form.beneficiary.* */
+const savedBenefs: { method: PMethod; name: string; sub: string }[] = [
+  { method: 'alipay', name: 'Shenzhen Tech Co.', sub: 'Alipay · 138****8821' },
+  { method: 'wechat', name: 'Guangzhou Textiles', sub: 'WeChat · wxid_g7t2x' },
+  { method: 'bank_transfer', name: 'Ningbo Imp. & Exp.', sub: 'Bank of China · ****4011' },
+];
+function BeneficiaryExistingScreen() {
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={2} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 text-[16px] font-semibold">À qui voulez-vous payer ?</p>
+        <p className="mt-1 text-[13px] text-slate-400">Choisissez un bénéficiaire enregistré ou créez-en un nouveau.</p>
+        <BenefToggle tab="existing" />
+        <ul className="mt-4 space-y-2.5">
+          {savedBenefs.map((b) => {
+            const on = b.name === 'Shenzhen Tech Co.';
+            return (
+              <li key={b.name}>
+                <button className="flex w-full items-center gap-3.5 rounded-2xl border-2 p-3.5 text-left" style={on ? { borderColor: ACCENT, background: 'rgba(255,255,255,0.04)' } : { borderColor: 'rgba(255,255,255,0.10)' }}>
+                  <MethodMark method={b.method} size={42} />
+                  <div className="min-w-0 flex-1"><p className="truncate text-[14.5px] font-semibold leading-tight">{b.name}</p><p className="mt-0.5 truncate text-[12px] text-slate-400">{b.sub}</p></div>
+                  {on
+                    ? <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white" style={{ background: ACCENT }}><Check className="h-4 w-4" /></span>
+                    : <span className="h-6 w-6 shrink-0 rounded-full border-2 border-white/15" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}>Continuer <ChevronRight className="h-[18px] w-[18px]" /></button>
+        <button className="mt-3 w-full text-center text-[13.5px] font-semibold text-slate-400">Compléter plus tard</button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
+/* ── wizard ③ — new beneficiary, Alipay/WeChat variant ─────────────
+ * QR upload OR id/phone/email — at least one channel
+ * (validateBeneficiaryStep: alipay/wechat). */
+function BeneficiaryAlipayScreen() {
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={2} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 text-[16px] font-semibold">À qui voulez-vous payer ?</p>
+        <BenefToggle tab="new" />
+
+        <ContextChip method="alipay" name="Nouveau bénéficiaire Alipay" sub="Indiquez au moins un canal" />
+
+        {/* QR upload */}
+        <div className="mt-5">
+          <SectionLabel>Ajouter le QR Code</SectionLabel>
+          <div className="rounded-3xl border-2 border-dashed p-6 text-center" style={{ borderColor: 'hsl(258 100% 60% / 0.45)', background: 'hsl(258 100% 60% / 0.06)' }}>
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full" style={{ background: 'hsl(258 100% 60% / 0.16)', color: ACCENT }}><QrCode className="h-7 w-7" /></span>
+            <p className="mt-3 text-[15px] font-bold text-white">Ajouter le QR Code du bénéficiaire</p>
+            <p className="mx-auto mt-1 max-w-[250px] text-[12.5px] text-slate-400">Capture du QR Alipay ou WeChat de votre fournisseur.</p>
+            <button className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13.5px] font-bold text-white" style={{ background: ACCENT }}><Plus className="h-[16px] w-[16px]" /> Ajouter</button>
+          </div>
+        </div>
+
+        {/* OR separator */}
+        <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-white/10" /><span className="text-[12px] font-medium text-slate-500">ou renseignez ses coordonnées</span><span className="h-px flex-1 bg-white/10" /></div>
+
+        {/* manual channels */}
+        <div className="space-y-3.5">
+          <Field label="Identifiant Alipay ou WeChat" placeholder="ex. shenzhen_tech" />
+          <Field label="Numéro de téléphone" placeholder="+86 138 0000 0000" />
+          <Field label="Email" optional placeholder="contact@exemple.com" />
+        </div>
+
+        <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+          <Info className="mt-0.5 h-[16px] w-[16px] shrink-0" style={{ color: ACCENT }} />
+          <p className="text-[12.5px] leading-snug text-slate-400">Fournissez au moins un canal (QR Code, téléphone ou email) pour que Bonzini puisse régler votre fournisseur.</p>
+        </div>
+
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}>Continuer <ChevronRight className="h-[18px] w-[18px]" /></button>
+        <button className="mt-3 w-full text-center text-[13.5px] font-semibold text-slate-400">Compléter plus tard</button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'method') return <MethodScreen />;
   if (screen === 'amount') return <AmountScreen />;
+  if (screen === 'beneficiary-existing') return <BeneficiaryExistingScreen />;
+  if (screen === 'beneficiary-alipay') return <BeneficiaryAlipayScreen />;
   return <ListScreen />;
 }
