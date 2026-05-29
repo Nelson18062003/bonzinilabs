@@ -3,7 +3,7 @@
 // info rows + a COLLAPSIBLE "Suivi" (collapsed by default → complete yet clean).
 import {
   ArrowLeft, Plus, ChevronRight, ChevronDown, Clock, Check, Camera, Upload,
-  Delete, Banknote, Landmark, FileText, Download, Copy, ArrowLeftRight,
+  Delete, Banknote, Landmark, FileText, Download, Copy, ArrowLeftRight, X, CheckCircle, AlertTriangle,
   Home, ArrowDownToLine, Send, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -162,11 +162,19 @@ function MethodScreen() {
   );
 }
 
-/* ── detail (fiche) — complete, admin-inspired, collapsible suivi ── */
-function DetailScreen({ sent = false }: { sent?: boolean }) {
+/* ── detail (fiche) — complete, admin-inspired, 4 statuses ─── */
+type DStatus = 'awaiting' | 'verifying' | 'validated' | 'rejected';
+const STATUS_CFG: Record<DStatus, { label: string; pill: string; Icon: typeof Clock }> = {
+  awaiting: { label: 'Preuve à envoyer', pill: 'bg-white/[0.06] text-slate-300', Icon: Clock },
+  verifying: { label: 'En vérification', pill: 'bg-amber-400/15 text-amber-300', Icon: Clock },
+  validated: { label: 'Validé', pill: 'bg-emerald-400/15 text-emerald-300', Icon: Check },
+  rejected: { label: 'Rejeté', pill: 'bg-rose-400/15 text-rose-300', Icon: X },
+};
+function DetailScreen({ status = 'awaiting' }: { status?: DStatus }) {
+  const c = STATUS_CFG[status];
+  const dateLabel = status === 'validated' ? 'Validé le' : status === 'rejected' ? 'Rejeté le' : 'Date';
   return (
     <Shell>
-      {/* Header: ref + receipt action */}
       <header className="flex items-center justify-between px-5" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
         <div className="flex items-center gap-3 pt-1">
           <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><ArrowLeft className="h-[19px] w-[19px] text-slate-200" /></button>
@@ -176,25 +184,36 @@ function DetailScreen({ sent = false }: { sent?: boolean }) {
       </header>
 
       <div className="mx-auto max-w-[480px] px-5 pb-28">
-        {/* Amount card (centered) */}
+        {/* Amount card */}
         <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
           <span className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-300"><MethodMark kind="orange" size={22} /> Orange Money</span>
           <p className="mt-3 text-[40px] font-extrabold leading-none tracking-tight tabular-nums">2 000 000 <span className="text-[16px] font-semibold text-slate-400">XAF</span></p>
-          <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-bold ${sent ? 'bg-amber-400/15 text-amber-300' : 'bg-white/[0.06] text-slate-300'}`}><Clock className="h-3.5 w-3.5" /> {sent ? 'En vérification' : 'Preuve à envoyer'}</span>
+          <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-bold ${c.pill}`}><c.Icon className="h-3.5 w-3.5" /> {c.label}</span>
         </div>
 
-        {/* Preuve — clear, prominent */}
+        {/* Status banner */}
+        {status === 'validated' && (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border p-4" style={{ borderColor: 'rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.08)' }}>
+            <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+            <div><p className="text-[14px] font-bold text-emerald-300">Compte crédité</p><p className="mt-0.5 text-[12.5px] text-emerald-100/70">Votre solde a été augmenté de 2 000 000 XAF.</p></div>
+          </div>
+        )}
+        {status === 'rejected' && (
+          <div className="mt-5 rounded-2xl border p-4" style={{ borderColor: 'rgba(244,63,94,0.35)', background: 'rgba(244,63,94,0.08)' }}>
+            <div className="flex items-center gap-2"><AlertTriangle className="h-[18px] w-[18px] text-rose-400" /><p className="text-[14px] font-bold text-rose-300">Dépôt rejeté</p></div>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-rose-100/80"><span className="font-semibold text-rose-200">Motif :</span> la preuve fournie est illisible. Merci de renvoyer une capture nette du reçu.</p>
+          </div>
+        )}
+
+        {/* Preuve */}
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <SectionLabel>Preuve de paiement</SectionLabel>
-            {sent && <span className="mb-2 text-[12px] font-semibold text-emerald-300">Envoyée</span>}
+            {status === 'verifying' && <span className="mb-2 text-[12px] font-semibold text-emerald-300">Envoyée</span>}
+            {status === 'validated' && <span className="mb-2 text-[12px] font-semibold text-emerald-300">Validée</span>}
+            {status === 'rejected' && <span className="mb-2 text-[12px] font-semibold text-rose-300">Refusée</span>}
           </div>
-          {sent ? (
-            <div className="flex gap-3">
-              <div className="grid h-[76px] w-[76px] place-items-center rounded-2xl bg-white/[0.06] text-slate-400"><FileText className="h-7 w-7" /></div>
-              <button className="grid h-[76px] w-[76px] place-items-center rounded-2xl border-2 border-dashed border-white/15 text-slate-400"><Plus className="h-6 w-6" /></button>
-            </div>
-          ) : (
+          {status === 'awaiting' ? (
             <div className="rounded-3xl border-2 border-dashed p-6 text-center" style={{ borderColor: 'hsl(16 100% 55% / 0.45)', background: 'hsl(16 100% 55% / 0.06)' }}>
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full" style={{ background: 'hsl(16 100% 55% / 0.16)', color: ACCENT }}><Camera className="h-7 w-7" /></span>
               <p className="mt-3 text-[15.5px] font-bold text-white">Ajoutez votre preuve de paiement</p>
@@ -203,6 +222,13 @@ function DetailScreen({ sent = false }: { sent?: boolean }) {
                 <button className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-[13.5px] font-bold text-white" style={{ background: ACCENT }}><Camera className="h-[17px] w-[17px]" /> Photo</button>
                 <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 py-3 text-[13.5px] font-semibold text-slate-200"><Upload className="h-[17px] w-[17px]" /> Importer</button>
               </div>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <div className={`grid h-[76px] w-[76px] place-items-center rounded-2xl bg-white/[0.06] text-slate-400 ${status === 'rejected' ? 'ring-1 ring-rose-400/50' : ''}`}><FileText className="h-7 w-7" /></div>
+              {status === 'rejected'
+                ? <button className="flex h-[76px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed text-[12px] font-bold" style={{ borderColor: 'hsl(16 100% 55% / 0.5)', color: ACCENT }}><Camera className="h-5 w-5" /> Renvoyer</button>
+                : <button className="grid h-[76px] w-[76px] place-items-center rounded-2xl border-2 border-dashed border-white/15 text-slate-400"><Plus className="h-6 w-6" /></button>}
             </div>
           )}
         </div>
@@ -215,14 +241,22 @@ function DetailScreen({ sent = false }: { sent?: boolean }) {
               { k: 'Méthode', v: 'Orange Money' },
               { k: 'Référence', v: 'DEP-2024-0042', mono: true },
               { k: 'Montant', v: '2 000 000 XAF' },
-              { k: 'Date', v: '29 mai 2026 · 09:14' },
+              { k: dateLabel, v: '29 mai 2026 · 09:14' },
             ].map((r) => (
               <div key={r.k} className="flex items-center justify-between py-3"><span className="text-[13.5px] text-slate-400">{r.k}</span><span className={`text-[14px] font-semibold ${r.mono ? 'font-mono' : ''}`}>{r.v}</span></div>
             ))}
           </div>
         </div>
 
-        {/* Suivi — collapsible (collapsed by default → keeps it clean) */}
+        {/* Primary action by status */}
+        {status === 'validated' && (
+          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14.5px] font-bold text-white" style={{ background: '#059669' }}><Download className="h-[18px] w-[18px]" /> Télécharger le reçu</button>
+        )}
+        {status === 'rejected' && (
+          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14.5px] font-bold text-white" style={{ background: ACCENT }}><Camera className="h-[18px] w-[18px]" /> Renvoyer une preuve</button>
+        )}
+
+        {/* Suivi — collapsible */}
         <button className="mt-6 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
           <span className="flex items-center gap-2.5 text-[14px] font-semibold"><Clock className="h-[18px] w-[18px] text-amber-300" /> Suivi du dépôt</span>
           <ChevronDown className="h-5 w-5 text-slate-400" />
@@ -334,7 +368,9 @@ export default function DepositPreviews({ screen = 'list' }: { screen?: string }
   if (screen === 'method') return <MethodScreen />;
   if (screen === 'submethod') return <SubMethodScreen />;
   if (screen === 'coordinates') return <CoordinatesScreen />;
-  if (screen === 'detail') return <DetailScreen sent={false} />;
-  if (screen === 'detail-sent') return <DetailScreen sent />;
+  if (screen === 'detail') return <DetailScreen status="awaiting" />;
+  if (screen === 'detail-sent') return <DetailScreen status="verifying" />;
+  if (screen === 'detail-validated') return <DetailScreen status="validated" />;
+  if (screen === 'detail-rejected') return <DetailScreen status="rejected" />;
   return <ListScreen />;
 }
