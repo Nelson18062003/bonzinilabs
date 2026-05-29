@@ -13,13 +13,32 @@ import { fontStack } from './walletFixtures';
 // to China) from Dépôts (orange, money in).
 const ACCENT = 'hsl(258 100% 60%)';
 
-/* ── method marks: real brand colours, matches PaymentMethodLogo.tsx ── */
+/* ── method marks ──────────────────────────────────────────────────
+ * Alipay / WeChat: real brand SVGs from public/assets/methods. The files
+ * are monochrome Simple Icons, so we render them white via CSS mask over
+ * the brand-coloured gradient tile (keeps the logo crisp at any size).
+ * Bank transfer / Cash are generic rails, not brands → lucide glyphs,
+ * matching the real PaymentMethodLogo.tsx. */
 type PMethod = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
+function BrandGlyph({ src, size }: { src: string; size: number }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: size, height: size, backgroundColor: '#fff',
+        WebkitMaskImage: `url(${src})`, maskImage: `url(${src})`,
+        WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center', maskPosition: 'center',
+        WebkitMaskSize: 'contain', maskSize: 'contain',
+      }}
+    />
+  );
+}
 function MethodMark({ method, size = 44 }: { method: PMethod; size?: number }) {
   const px = `${size}px`;
   const base = 'grid shrink-0 place-items-center rounded-xl shadow-sm';
-  if (method === 'alipay') return <span className={`${base} font-bold text-white`} style={{ width: px, height: px, background: 'linear-gradient(135deg,#1677FF,#0958d9)', fontSize: size * 0.45 }}>支</span>;
-  if (method === 'wechat') return <span className={`${base} font-bold text-white`} style={{ width: px, height: px, background: 'linear-gradient(135deg,#07C160,#06ae56)', fontSize: size * 0.45 }}>微</span>;
+  if (method === 'alipay') return <span className={base} style={{ width: px, height: px, background: 'linear-gradient(135deg,#1677FF,#0958d9)' }}><BrandGlyph src="/assets/methods/alipay.svg" size={size * 0.56} /></span>;
+  if (method === 'wechat') return <span className={base} style={{ width: px, height: px, background: 'linear-gradient(135deg,#07C160,#06ae56)' }}><BrandGlyph src="/assets/methods/wechat.svg" size={size * 0.58} /></span>;
   if (method === 'bank_transfer') return <span className={`${base} bg-gradient-to-br from-slate-600 to-slate-800`} style={{ width: px, height: px }}><Building2 className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} /></span>;
   return <span className={base} style={{ width: px, height: px, background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}><Banknote className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} /></span>;
 }
