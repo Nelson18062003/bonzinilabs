@@ -13,6 +13,7 @@ import S1 from './WalletPreviewS1';
 import S2 from './WalletPreviewS2';
 import Premium from './WalletPreviewPremium';
 import DepositPreviews from './DepositPreviews';
+import PaymentPreviews from './PaymentPreviews';
 
 const params = new URLSearchParams(location.search);
 const v = params.get('v') ?? '1';
@@ -20,6 +21,7 @@ const theme = (params.get('t') ?? 'light') as 'light' | 'dark';
 
 let node;
 if (v.startsWith('dep-')) node = <DepositPreviews screen={v.slice(4)} />;
+else if (v.startsWith('pay-')) node = <PaymentPreviews screen={v.slice(4)} />;
 else if (v === 'p1') node = <Premium theme={theme} card="1" />;
 else if (v === 'p2') node = <Premium theme={theme} card="2" />;
 else if (v === '2') node = <S2 theme={theme} />;
