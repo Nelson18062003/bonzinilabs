@@ -3,7 +3,7 @@
 // info rows + a COLLAPSIBLE "Suivi" (collapsed by default → complete yet clean).
 import {
   ArrowLeft, Plus, ChevronRight, ChevronDown, Clock, Check, Camera, Upload,
-  Delete, Banknote, Landmark, FileText, Download, Copy, ArrowLeftRight, X, CheckCircle, AlertTriangle,
+  Delete, Banknote, Landmark, FileText, Download, Copy, ArrowLeftRight, Search, X, CheckCircle, AlertTriangle,
   Home, ArrowDownToLine, Send, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -294,12 +294,47 @@ function SubMethodScreen() {
   );
 }
 
+/* ── bank sub-flow: choix de la banque (REAL data from depositMethodsData) ── */
+const banks = [
+  { key: 'ECOBANK', name: 'Ecobank Cameroun', logo: '/treasury-dashboard/logos/ecobank.png' },
+  { key: 'CCA', name: 'CCA-BANK Cameroun', logo: '/treasury-dashboard/logos/cca-bank.jpg' },
+  { key: 'UBA', name: 'UBA Cameroun', logo: '/treasury-dashboard/logos/uba.png' },
+  { key: 'AFRILAND', name: 'Afriland First Bank', logo: '/treasury-dashboard/logos/afriland-icon.png' },
+];
+function BankScreen() {
+  return (
+    <Shell>
+      <AppBar title="Ajouter de l'argent" progress={1} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 text-[16px] font-semibold">Choisissez votre banque</p>
+        <p className="mt-1 text-[13px] text-slate-400">Le compte Bonzini de la banque choisie s'affichera.</p>
+        <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <Search className="h-[18px] w-[18px] text-slate-500" />
+          <span className="text-[14px] text-slate-500">Rechercher une banque…</span>
+        </div>
+        <ul className="mt-2 divide-y divide-white/[0.06]">
+          {banks.map((b) => (
+            <li key={b.key}>
+              <button className="flex w-full items-center gap-4 py-4 text-left">
+                <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5"><img src={b.logo} alt="" className="h-8 w-8 object-contain" /></span>
+                <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{b.name}</span>
+                <ChevronRight className="h-5 w-5 text-slate-500" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 /* ── bank sub-flow: coordonnées (RIB + instructions) ───────── */
 function CoordinatesScreen() {
   const rows = [
-    { k: 'Titulaire', v: 'BONZINI SARL' },
-    { k: 'Banque', v: 'Ecobank Cameroun' },
-    { k: 'N° de compte', v: '10005 00012 49500012345 67', copy: true },
+    { k: 'Titulaire', v: 'NORTON GAUSS BONZINI SARL' },
+    { k: 'Banque', v: 'Ecobank Cameroun SA' },
+    { k: 'IBAN', v: 'CM21 10029 00002 30245039710 53', copy: true },
     { k: 'Code SWIFT', v: 'ECOCCMCX', copy: true },
   ];
   const steps = [
@@ -322,7 +357,7 @@ function CoordinatesScreen() {
           <SectionLabel>Compte bénéficiaire</SectionLabel>
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
             <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-black/5"><img src="/assets/methods/ecobank.png" alt="" className="h-6 w-6 object-contain" /></span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-black/5"><img src="/treasury-dashboard/logos/ecobank.png" alt="" className="h-6 w-6 object-contain" /></span>
               <span className="text-[14.5px] font-semibold">Ecobank Cameroun</span>
             </div>
             <div className="divide-y divide-white/[0.06] px-4">
@@ -367,6 +402,7 @@ export default function DepositPreviews({ screen = 'list' }: { screen?: string }
   if (screen === 'amount') return <AmountScreen />;
   if (screen === 'method') return <MethodScreen />;
   if (screen === 'submethod') return <SubMethodScreen />;
+  if (screen === 'bank') return <BankScreen />;
   if (screen === 'coordinates') return <CoordinatesScreen />;
   if (screen === 'detail') return <DetailScreen status="awaiting" />;
   if (screen === 'detail-sent') return <DetailScreen status="verifying" />;
