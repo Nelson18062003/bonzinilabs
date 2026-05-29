@@ -4,7 +4,7 @@
 // XAF↔RMB amounts, the 9 payment_status values, and the FR copy from
 // src/i18n/locales/fr/payments.json. Activity = paying Chinese suppliers.
 import {
-  ArrowLeft, Plus, ChevronRight, Send, Building2, Banknote,
+  ArrowLeft, Plus, ChevronRight, Check, Send, Building2, Banknote,
   Home, ArrowDownToLine, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -149,7 +149,99 @@ function EmptyScreen() {
   );
 }
 
+/* ── wizard chrome ─────────────────────────────────────────────────
+ * 4 named steps mirror form.steps in payments.json:
+ * Mode · Montant · Bénéf. · Résumé. */
+const WIZARD_STEPS = ['Mode', 'Montant', 'Bénéf.', 'Résumé'] as const;
+function WizardBar({ current }: { current: number }) {
+  return (
+    <div className="mt-4 flex items-center gap-1.5">
+      {WIZARD_STEPS.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
+            <div className="flex w-full items-center gap-1.5">
+              <span
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold"
+                style={
+                  active ? { background: ACCENT, color: '#fff' }
+                  : done ? { background: 'hsl(258 100% 60% / 0.18)', color: ACCENT }
+                  : { background: 'rgba(255,255,255,0.06)', color: '#64748b' }
+                }
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </span>
+              {i < WIZARD_STEPS.length - 1 && (
+                <span className="h-[2px] flex-1 rounded-full" style={{ background: i < current ? ACCENT : 'rgba(255,255,255,0.10)' }} />
+              )}
+            </div>
+            <span className={`text-[10.5px] ${active ? 'font-bold' : 'font-medium'}`} style={{ color: active ? ACCENT : done ? '#94a3b8' : '#64748b' }}>{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+function WizardHeader({ title, step }: { title: string; step: number }) {
+  return (
+    <header className="px-5" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+      <div className="flex items-center gap-3 pt-1">
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><ArrowLeft className="h-[19px] w-[19px] text-slate-200" /></button>
+        <h1 className="text-[19px] font-bold tracking-tight">{title}</h1>
+      </div>
+      <WizardBar current={step} />
+    </header>
+  );
+}
+
+/* ── wizard ① — method (real labels/desc + brand selection border) ── */
+const methodCards: { method: PMethod; label: string; desc: string; ring: string }[] = [
+  { method: 'alipay', label: 'Alipay', desc: 'Paiement via Alipay', ring: '#1677FF' },
+  { method: 'wechat', label: 'WeChat Pay', desc: 'Paiement via WeChat', ring: '#07C160' },
+  { method: 'bank_transfer', label: 'Virement bancaire', desc: 'Transfert vers compte bancaire', ring: '#64748b' },
+  { method: 'cash', label: 'Cash', desc: 'Retrait au bureau Bonzini', ring: '#dc2626' },
+];
+function MethodScreen() {
+  const selected: PMethod = 'alipay';
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={0} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 mb-1 text-[15px] font-semibold">Comment votre fournisseur reçoit-il l'argent ?</p>
+        <p className="text-[13px] text-slate-400">Choisissez un mode de paiement.</p>
+        <div className="mt-4 space-y-3">
+          {methodCards.map((m) => {
+            const on = m.method === selected;
+            return (
+              <button
+                key={m.method}
+                className="flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all"
+                style={on
+                  ? { borderColor: m.ring, background: 'rgba(255,255,255,0.04)' }
+                  : { borderColor: 'rgba(255,255,255,0.10)' }}
+              >
+                <MethodMark method={m.method} size={48} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15.5px] font-semibold leading-tight">{m.label}</p>
+                  <p className="mt-0.5 text-[13px] text-slate-400">{m.desc}</p>
+                </div>
+                {on
+                  ? <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white" style={{ background: m.ring }}><Check className="h-4 w-4" /></span>
+                  : <span className="h-6 w-6 shrink-0 rounded-full border-2 border-white/15" />}
+              </button>
+            );
+          })}
+        </div>
+        <button className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}>Continuer <ChevronRight className="h-[18px] w-[18px]" /></button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
+  if (screen === 'method') return <MethodScreen />;
   return <ListScreen />;
 }
