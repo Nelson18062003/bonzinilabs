@@ -5,7 +5,7 @@
 // src/i18n/locales/fr/payments.json. Activity = paying Chinese suppliers.
 import {
   ArrowLeft, Plus, ChevronRight, Check, Send, Building2, Banknote,
-  Delete, Wallet, ArrowUpDown, QrCode, Info,
+  Delete, Wallet, ArrowUpDown, QrCode, Info, Users,
   Home, ArrowDownToLine, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -435,11 +435,96 @@ function BeneficiaryAlipayScreen() {
   );
 }
 
+/* ── wizard ③ — new beneficiary, bank-transfer variant ─────────────
+ * name + bank + account required, SWIFT/IBAN optional
+ * (validateBeneficiaryStep: bank_transfer). */
+function BeneficiaryBankScreen() {
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={2} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 text-[16px] font-semibold">À qui voulez-vous payer ?</p>
+        <BenefToggle tab="new" />
+
+        <ContextChip method="bank_transfer" name="Nouveau bénéficiaire" sub="Virement bancaire" />
+
+        <div className="mt-5 space-y-3.5">
+          <Field label="Nom du titulaire du compte" value="Ningbo Imp. & Exp. Co." />
+          <Field label="Nom de la banque" value="Bank of China" />
+          <Field label="Numéro de compte" value="6217 0000 1234 4011" />
+          <Field label="SWIFT / IBAN / agence" optional placeholder="BKCHCNBJ" />
+        </div>
+
+        <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+          <Info className="mt-0.5 h-[16px] w-[16px] shrink-0" style={{ color: ACCENT }} />
+          <p className="text-[12.5px] leading-snug text-slate-400">Renseignez les coordonnées bancaires complètes pour que Bonzini puisse régler votre fournisseur.</p>
+        </div>
+
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}>Continuer <ChevronRight className="h-[18px] w-[18px]" /></button>
+        <button className="mt-3 w-full text-center text-[13.5px] font-semibold text-slate-400">Compléter plus tard</button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
+/* ── wizard ③ — cash variant: who picks up the funds ───────────────
+ * self / other; if other → name + phone. QR presented at the office
+ * (validateBeneficiaryStep: cash). */
+function BeneficiaryCashScreen() {
+  const choices = [
+    { key: 'self', Icon: User, title: 'Moi-même', desc: 'Je retire les fonds au bureau Bonzini' },
+    { key: 'other', Icon: Users, title: 'Une autre personne', desc: 'Indiquez son nom et son téléphone' },
+  ];
+  const picked = 'other';
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={2} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        <p className="mt-6 text-[16px] font-semibold">Qui retire les fonds ?</p>
+        <p className="mt-1 text-[13px] text-slate-400">Le bénéficiaire devra présenter un QR Code à l'agent Bonzini.</p>
+
+        <div className="mt-5 space-y-3">
+          {choices.map((c) => {
+            const on = c.key === picked;
+            return (
+              <button key={c.key} className="flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left" style={on ? { borderColor: ACCENT, background: 'rgba(255,255,255,0.04)' } : { borderColor: 'rgba(255,255,255,0.10)' }}>
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl" style={{ background: 'hsl(258 100% 60% / 0.14)', color: ACCENT }}><c.Icon className="h-6 w-6" /></span>
+                <div className="min-w-0 flex-1"><p className="text-[15.5px] font-semibold leading-tight">{c.title}</p><p className="mt-0.5 text-[13px] text-slate-400">{c.desc}</p></div>
+                {on
+                  ? <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white" style={{ background: ACCENT }}><Check className="h-4 w-4" /></span>
+                  : <span className="h-6 w-6 shrink-0 rounded-full border-2 border-white/15" />}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* other-person fields appear when "Une autre personne" is picked */}
+        <div className="mt-5 space-y-3.5">
+          <Field label="Nom complet" value="Mei Lin" />
+          <Field label="Téléphone" value="+86 139 8888 8821" />
+          <Field label="Email" optional placeholder="contact@exemple.com" />
+        </div>
+
+        <div className="mt-5 flex items-start gap-2.5 rounded-2xl border p-3.5" style={{ borderColor: 'hsl(258 100% 60% / 0.3)', background: 'hsl(258 100% 60% / 0.06)' }}>
+          <QrCode className="mt-0.5 h-[16px] w-[16px] shrink-0" style={{ color: ACCENT }} />
+          <p className="text-[12.5px] leading-snug text-slate-300">Un QR Code sera généré dès la validation. Le bénéficiaire devra le présenter à l'agent Bonzini pour retirer les fonds.</p>
+        </div>
+
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}>Continuer <ChevronRight className="h-[18px] w-[18px]" /></button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'method') return <MethodScreen />;
   if (screen === 'amount') return <AmountScreen />;
   if (screen === 'beneficiary-existing') return <BeneficiaryExistingScreen />;
   if (screen === 'beneficiary-alipay') return <BeneficiaryAlipayScreen />;
+  if (screen === 'beneficiary-bank') return <BeneficiaryBankScreen />;
+  if (screen === 'beneficiary-cash') return <BeneficiaryCashScreen />;
   return <ListScreen />;
 }
