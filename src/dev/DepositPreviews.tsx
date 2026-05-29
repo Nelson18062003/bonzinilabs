@@ -261,8 +261,8 @@ function SubMethodScreen() {
 }
 
 /* ── bank sub-flow: choix de la banque ─────────────────────── */
-const banks = [
-  { code: 'Eco', name: 'Ecobank Cameroun', bg: '#0066b3' },
+const banks: { code: string; name: string; bg: string; logo?: string }[] = [
+  { code: 'Eco', name: 'Ecobank Cameroun', bg: '#0066b3', logo: '/assets/methods/ecobank.png' },
   { code: 'UBA', name: 'United Bank for Africa', bg: '#c8102e' },
   { code: 'AFB', name: 'Afriland First Bank', bg: '#0a7d34' },
   { code: 'BIC', name: 'BICEC', bg: '#1b3a8c' },
@@ -283,7 +283,9 @@ function BankScreen() {
           {banks.map((b) => (
             <li key={b.code}>
               <button className="flex w-full items-center gap-4 py-3.5 text-left">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[12px] font-extrabold text-white" style={{ background: b.bg }}>{b.code}</span>
+                {b.logo
+                  ? <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5"><img src={b.logo} alt="" className="h-7 w-7 object-contain" /></span>
+                  : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[12px] font-extrabold text-white" style={{ background: b.bg }}>{b.code}</span>}
                 <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{b.name}</span>
                 <ChevronRight className="h-5 w-5 text-slate-500" />
               </button>
@@ -324,7 +326,7 @@ function CoordinatesScreen() {
           <SectionLabel>Compte bénéficiaire</SectionLabel>
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
             <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold text-white" style={{ background: '#0066b3' }}>Eco</span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-black/5"><img src="/assets/methods/ecobank.png" alt="" className="h-6 w-6 object-contain" /></span>
               <span className="text-[14.5px] font-semibold">Ecobank Cameroun</span>
             </div>
             <div className="divide-y divide-white/[0.06] px-4">
