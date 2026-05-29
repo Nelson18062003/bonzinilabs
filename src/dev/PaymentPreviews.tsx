@@ -728,6 +728,101 @@ function PaymentDetailScreen({ status }: { status: PStatus }) {
   );
 }
 
+/* ── cash payment detail — QR pending / scanned-signed ─────────────
+ * Cash flow is method-specific (detail.*: cashPayment, qrScannedAtOffice,
+ * signedBy, beneficiarySignature). Scenario: Mei Lin retrait, 900 000 XAF.
+ * - 'pending'  → QR to present at the Bonzini office + download.
+ * - 'signed'   → QR scanned, beneficiary signature recorded. */
+type CashStatus = 'pending' | 'signed';
+function CashDetailScreen({ status }: { status: CashStatus }) {
+  const amountXAF = 900_000;
+  const pending = status === 'pending';
+  return (
+    <Shell>
+      <header className="flex items-center justify-between px-5" style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+        <div className="flex items-center gap-3 pt-1">
+          <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><ArrowLeft className="h-[19px] w-[19px] text-slate-200" /></button>
+          <div><h1 className="text-[18px] font-bold leading-none tracking-tight">Paiement cash</h1><p className="mt-1 text-[12px] font-medium text-slate-500">PAY-2024-0124</p></div>
+        </div>
+        {!pending && <button className="grid h-10 w-10 place-items-center rounded-full bg-white/5"><Download className="h-[18px] w-[18px] text-slate-200" /></button>}
+      </header>
+
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        {/* amount card */}
+        <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+          <span className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-300"><MethodMark method="cash" size={22} /> Mei Lin · retrait</span>
+          <p className="mt-3 text-[38px] font-extrabold leading-none tracking-tight tabular-nums">{groupFr(amountXAF)} <span className="text-[16px] font-semibold text-slate-400">XAF</span></p>
+          <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-bold ${pending ? 'bg-cyan-400/15 text-cyan-300' : 'bg-emerald-400/15 text-emerald-300'}`}>
+            {pending ? <QrCode className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />} {pending ? 'QR généré' : 'Effectué'}
+          </span>
+        </div>
+
+        {pending ? (
+          <>
+            {/* QR to present */}
+            <div className="mt-6">
+              <SectionLabel>QR Code de retrait</SectionLabel>
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+                <div className="mx-auto grid h-48 w-48 place-items-center rounded-2xl bg-white p-3">
+                  <QrCode className="h-full w-full text-[#0A0C12]" strokeWidth={1.1} />
+                </div>
+                <p className="mt-4 text-[14.5px] font-bold text-white">Présentez ce QR Code à l'agent Bonzini</p>
+                <p className="mx-auto mt-1 max-w-[270px] text-[12.5px] text-slate-400">Le bénéficiaire le présente au bureau Bonzini pour retirer les fonds en espèces.</p>
+              </div>
+            </div>
+            <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14.5px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}><Download className="h-[18px] w-[18px]" /> Télécharger le QR Code</button>
+          </>
+        ) : (
+          <>
+            {/* scanned + signature */}
+            <div className="mt-5 flex items-start gap-3 rounded-2xl border p-4" style={{ borderColor: 'rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.08)' }}>
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+              <div><p className="text-[14px] font-bold text-emerald-300">QR scanné au bureau</p><p className="mt-0.5 text-[12.5px] text-emerald-100/70">Le bénéficiaire a retiré les fonds en espèces.</p></div>
+            </div>
+            <div className="mt-6">
+              <SectionLabel>Signature du bénéficiaire</SectionLabel>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                <div className="grid h-28 place-items-center rounded-xl bg-white/[0.04]">
+                  <span className="text-[30px] italic text-slate-200" style={{ fontFamily: 'cursive' }}>Mei&nbsp;Lin</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[12.5px]">
+                  <span className="text-slate-400">Signé par</span><span className="font-semibold">Mei Lin</span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-[12.5px]">
+                  <span className="text-slate-400">Signature enregistrée le</span><span className="font-semibold tabular-nums">29 mai 2026 · 11:05</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* informations */}
+        <div className="mt-6">
+          <SectionLabel>Informations</SectionLabel>
+          <div className="divide-y divide-white/[0.06]">
+            {[
+              { k: 'Mode', v: 'Cash · retrait au bureau' },
+              { k: 'Référence', v: 'PAY-2024-0124', mono: true },
+              { k: 'Bénéficiaire', v: 'Mei Lin' },
+              { k: 'Montant', v: `${groupFr(amountXAF)} XAF` },
+              { k: pending ? 'Créé le' : 'Retiré le', v: '29 mai 2026 · 11:05' },
+            ].map((r) => (
+              <div key={r.k} className="flex items-center justify-between py-3"><span className="text-[13.5px] text-slate-400">{r.k}</span><span className={`text-[14px] font-semibold ${r.mono ? 'font-mono' : ''}`}>{r.v}</span></div>
+            ))}
+          </div>
+        </div>
+
+        {/* suivi — collapsible */}
+        <button className="mt-6 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
+          <span className="flex items-center gap-2.5 text-[14px] font-semibold"><Clock className="h-[18px] w-[18px] text-purple-300" /> Suivi du paiement</span>
+          <ChevronDown className="h-5 w-5 text-slate-400" />
+        </button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'method') return <MethodScreen />;
@@ -742,5 +837,7 @@ export default function PaymentPreviews({ screen = 'list' }: { screen?: string }
   if (screen === 'detail-processing') return <PaymentDetailScreen status="processing" />;
   if (screen === 'detail-completed') return <PaymentDetailScreen status="completed" />;
   if (screen === 'detail-rejected') return <PaymentDetailScreen status="rejected" />;
+  if (screen === 'detail-cash-pending') return <CashDetailScreen status="pending" />;
+  if (screen === 'detail-cash-signed') return <CashDetailScreen status="signed" />;
   return <ListScreen />;
 }
