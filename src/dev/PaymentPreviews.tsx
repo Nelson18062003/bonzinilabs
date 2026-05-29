@@ -5,6 +5,7 @@
 // src/i18n/locales/fr/payments.json. Activity = paying Chinese suppliers.
 import {
   ArrowLeft, Plus, ChevronRight, Check, Send, Building2, Banknote,
+  Delete, Wallet, ArrowUpDown,
   Home, ArrowDownToLine, History, MessageCircle, User,
 } from 'lucide-react';
 import { fontStack } from './walletFixtures';
@@ -12,6 +13,13 @@ import { fontStack } from './walletFixtures';
 // Module accent: violet (logo wings) — distinguishes Paiements (money out
 // to China) from Dépôts (orange, money in).
 const ACCENT = 'hsl(258 100% 60%)';
+
+// Single display rate for the whole module so list + amount screen agree.
+// Headline 1 000 000 XAF = 11 765 CNY ≈ the FALLBACK_RATE in
+// paymentRateLogic.ts and the walletFixtures rate line.
+const RATE = 0.011765;
+const groupFr = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const xafToRmb = (xaf: number) => groupFr(xaf * RATE);
 
 /* ── method marks ──────────────────────────────────────────────────
  * Alipay / WeChat: real brand SVGs from public/assets/methods. The files
@@ -43,16 +51,18 @@ function MethodMark({ method, size = 44 }: { method: PMethod; size?: number }) {
   return <span className={base} style={{ width: px, height: px, background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}><Banknote className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} /></span>;
 }
 
-/* ── fixtures (FR, paying Chinese suppliers) ───────────────── */
+/* ── fixtures (FR, paying Chinese suppliers) ───────────────────────
+ * xaf is the source of truth; ¥ is derived from the shared RATE so the
+ * list and the amount screen never disagree. */
 const payments: {
-  method: PMethod; beneficiary: string; date: string; xaf: string; rmb: string;
+  method: PMethod; beneficiary: string; date: string; xaf: number;
   status: string; tone: string; dot: string;
 }[] = [
-  { method: 'alipay', beneficiary: 'Shenzhen Tech Co.', date: "Aujourd'hui · 16:42", xaf: '3 250 000', rmb: '18 950', status: 'En cours', tone: 'text-purple-300', dot: 'bg-purple-400' },
-  { method: 'wechat', beneficiary: 'Guangzhou Textiles', date: '12 mai · 11:20', xaf: '1 800 000', rmb: '10 500', status: 'Effectué', tone: 'text-emerald-300', dot: 'bg-emerald-400' },
-  { method: 'bank_transfer', beneficiary: 'Ningbo Imp. & Exp.', date: '9 mai · 14:05', xaf: '7 400 000', rmb: '43 160', status: 'Prêt', tone: 'text-blue-300', dot: 'bg-blue-400' },
-  { method: 'cash', beneficiary: 'Mei Lin (retrait)', date: '5 mai · 09:30', xaf: '900 000', rmb: '5 250', status: 'QR généré', tone: 'text-cyan-300', dot: 'bg-cyan-400' },
-  { method: 'alipay', beneficiary: 'Yiwu Trading Ltd.', date: '2 mai · 17:48', xaf: '2 100 000', rmb: '12 250', status: 'Refusé', tone: 'text-rose-300', dot: 'bg-rose-400' },
+  { method: 'alipay', beneficiary: 'Shenzhen Tech Co.', date: "Aujourd'hui · 16:42", xaf: 3_250_000, status: 'En cours', tone: 'text-purple-300', dot: 'bg-purple-400' },
+  { method: 'wechat', beneficiary: 'Guangzhou Textiles', date: '12 mai · 11:20', xaf: 1_800_000, status: 'Effectué', tone: 'text-emerald-300', dot: 'bg-emerald-400' },
+  { method: 'bank_transfer', beneficiary: 'Ningbo Imp. & Exp.', date: '9 mai · 14:05', xaf: 7_400_000, status: 'Prêt', tone: 'text-blue-300', dot: 'bg-blue-400' },
+  { method: 'cash', beneficiary: 'Mei Lin (retrait)', date: '5 mai · 09:30', xaf: 900_000, status: 'QR généré', tone: 'text-cyan-300', dot: 'bg-cyan-400' },
+  { method: 'alipay', beneficiary: 'Yiwu Trading Ltd.', date: '2 mai · 17:48', xaf: 2_100_000, status: 'Refusé', tone: 'text-rose-300', dot: 'bg-rose-400' },
 ];
 
 const tabs = [
@@ -115,8 +125,8 @@ function ListScreen() {
                   <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-slate-400"><span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} /><span className={p.tone}>{p.status}</span><span className="text-slate-600">·</span>{p.date}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[15.5px] font-bold tabular-nums">− {p.xaf}</p>
-                  <p className="mt-0.5 text-[12px] text-slate-500 tabular-nums">¥ {p.rmb}</p>
+                  <p className="text-[15.5px] font-bold tabular-nums">− {groupFr(p.xaf)}</p>
+                  <p className="mt-0.5 text-[12px] text-slate-500 tabular-nums">¥ {xafToRmb(p.xaf)}</p>
                 </div>
               </li>
             ))}
@@ -240,8 +250,77 @@ function MethodScreen() {
   );
 }
 
+/* ── wizard ② — amount (XAF↔RMB, rate, balance, keypad) ────────────
+ * Mirrors paymentRateLogic.ts: user types in one currency, the other is
+ * derived from RATE; cap 50M XAF; balance check. Scenario: paying
+ * Shenzhen Tech Co. via Alipay, entering XAF. */
+const QUICK_XAF = [100_000, 250_000, 500_000, 1_000_000];
+const keypad = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0', 'back'];
+const WALLET_XAF = 12_450_000;
+function AmountScreen() {
+  const amountXAF = 3_250_000;             // typed amount
+  const balanceAfter = WALLET_XAF - amountXAF;
+  return (
+    <Shell>
+      <WizardHeader title="Nouveau paiement" step={1} />
+      <div className="mx-auto max-w-[480px] px-5 pb-28">
+        {/* beneficiary + method context chip */}
+        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <MethodMark method="alipay" size={36} />
+          <div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold leading-tight">Shenzhen Tech Co.</p><p className="text-[12px] text-slate-400">Alipay</p></div>
+        </div>
+
+        {/* currency toggle */}
+        <div className="mt-5 flex justify-center">
+          <div className="inline-flex rounded-full bg-white/[0.06] p-1">
+            <span className="rounded-full px-5 py-1.5 text-[13px] font-bold text-white" style={{ background: ACCENT }}>En XAF</span>
+            <span className="flex items-center gap-1 px-5 py-1.5 text-[13px] font-semibold text-slate-400"><ArrowUpDown className="h-3.5 w-3.5" /> En RMB</span>
+          </div>
+        </div>
+
+        {/* amount + derived supplier-receives */}
+        <div className="mt-5 text-center">
+          <p className="text-[13px] font-medium text-slate-400">Vous payez</p>
+          <p className="mt-1.5 text-[44px] font-extrabold leading-none tracking-tight tabular-nums">{groupFr(amountXAF)} <span className="text-[18px] font-semibold text-slate-500">XAF</span></p>
+          <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5" style={{ background: 'hsl(258 100% 60% / 0.12)' }}>
+            <span className="text-[12.5px] text-slate-300">Fournisseur reçoit</span>
+            <span className="text-[14px] font-bold tabular-nums" style={{ color: ACCENT }}>¥ {xafToRmb(amountXAF)}</span>
+          </div>
+        </div>
+
+        {/* rate + balance line */}
+        <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[12.5px]">
+          <span className="text-slate-400">Taux appliqué</span>
+          <span className="font-semibold tabular-nums">1 000 000 XAF = {xafToRmb(1_000_000)} CNY</span>
+        </div>
+        <div className="mt-2 flex items-center justify-between px-1 text-[12.5px]">
+          <span className="flex items-center gap-1.5 text-slate-400"><Wallet className="h-[15px] w-[15px]" /> Solde après débit</span>
+          <span className="font-semibold tabular-nums text-slate-200">{groupFr(balanceAfter)} XAF</span>
+        </div>
+
+        {/* quick amounts */}
+        <div className="mt-5 grid grid-cols-4 gap-2">
+          {QUICK_XAF.map((q) => {
+            const on = q === 500_000;
+            return <button key={q} className="rounded-xl py-2 text-center text-[12px] font-bold" style={on ? { background: 'hsl(258 100% 60% / 0.16)', color: ACCENT, boxShadow: 'inset 0 0 0 1.5px hsl(258 100% 60% / 0.4)' } : { background: 'rgba(255,255,255,0.05)', color: '#cbd5e1' }}>{groupFr(q)}</button>;
+          })}
+        </div>
+
+        {/* keypad */}
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
+          {keypad.map((k) => <button key={k} className="grid h-[52px] place-items-center rounded-2xl bg-white/[0.06] text-[21px] font-semibold text-white active:bg-white/[0.12]">{k === 'back' ? <Delete className="h-[22px] w-[22px] text-slate-300" /> : k}</button>)}
+        </div>
+
+        <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold text-white" style={{ background: ACCENT, boxShadow: '0 16px 36px -14px hsl(258 90% 55% / 0.7)' }}>Continuer <ChevronRight className="h-[18px] w-[18px]" /></button>
+      </div>
+      <NavBar />
+    </Shell>
+  );
+}
+
 export default function PaymentPreviews({ screen = 'list' }: { screen?: string }) {
   if (screen === 'empty') return <EmptyScreen />;
   if (screen === 'method') return <MethodScreen />;
+  if (screen === 'amount') return <AmountScreen />;
   return <ListScreen />;
 }
