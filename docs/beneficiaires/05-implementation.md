@@ -90,9 +90,17 @@ Lot 2→6 ; la régénération réelle se fera au déploiement (diff attendu nul
   filtre par mode, ajout/édition plein écran, archivage + bandeau snapshot, empty/skeleton.
 - Design thinking consigné (`lot3-design-thinking.md`).
 - Vérif : type-check 0 · build OK · 81/81 tests · messaging conforme.
-- **Reste (Lot 3 bis, optionnel)** : refonte de l'**étape bénéficiaire dans le wizard de paiement
-  client** (self tous modes, save non silencieux, alias). Le wizard actuel fonctionne (call-site
-  adapté au Lot 2) ; cette refonte UX est séparée pour livrer le carnet d'abord.
+## Lot 3 bis — Étape bénéficiaire du wizard paiement client · ✅ (commit `0c7686f`)
+- `NewPaymentBeneficiaryStep.tsx` réécrit : réutilise `BeneficiaryForm` (DRY), onglets
+  Existant/Nouveau, toggle **self/other tous modes**, carte cash+self, bandeau anti-doublon.
+- `NewPaymentPage.tsx` recâblé : état consolidé `BeneficiaryFormValues` (remplace 8 `useState`),
+  `useSelf` (tous modes), `dontSave`, détection de doublon (`getBeneficiaryNaturalKey`), **save non
+  silencieux** (toast.warning), **dedup-link** (relie l'existant au lieu de créer).
+  **Payload `createPayment` identique → contrat snapshot intact.**
+- i18n fr/en/zh : `form.beneficiary.dontSave` + `saveFailedPaymentContinues`.
+- Vérif : type-check 0 · lint clean · 81/81 tests · build OK.
+- Corrige **G7** (save best-effort silencieux) ; complète **G4** (alias au wizard) et le « self
+  tous modes » du design §B3.
 
 ## Lot 4 — UI admin (paiement + fiche client) · ⏳
 ## Lot 5 — Snapshot + complétion · ⏳
