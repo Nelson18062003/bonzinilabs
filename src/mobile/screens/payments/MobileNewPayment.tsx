@@ -9,8 +9,14 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
+import {
+  useAdminClientBeneficiaries,
+  useAdminCreateBeneficiary,
+  type Beneficiary,
+} from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
 import type { PaymentMethodKey } from '@/types/rates';
+import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 
 // ── Design tokens ─────────────────────────────────────────────
 const V = '#A947FE';
@@ -139,6 +145,23 @@ export function MobileNewPayment() {
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
   const qrRef = useRef<HTMLInputElement>(null);
+  // Carnet du client (Lot 4): onglet "enregistré" vs "nouveau", + sélection.
+  const [benefTab, setBenefTab] = useState<'existing' | 'new'>('existing');
+  const [selectedBenef, setSelectedBenef] = useState<Beneficiary | null>(null);
+  const [saveToCarnet, setSaveToCarnet] = useState(true);
+  const createBeneficiary = useAdminCreateBeneficiary();
+
+  // mode.id 'virement' → 'bank_transfer' (valeur canonique DB du carnet).
+  const dbMode: BeneficiaryMode | null = mode
+    ? mode.id === 'virement'
+      ? 'bank_transfer'
+      : (mode.id as BeneficiaryMode)
+    : null;
+  // Bénéficiaires enregistrés DE CE CLIENT, scopés (client_id + RLS admin).
+  const { data: clientBeneficiaries } = useAdminClientBeneficiaries(
+    client?.user_id,
+    dbMode ?? undefined,
+  );
 
   // Succès
   const [done, setDone] = useState<{ paymentId: string; cny: number; xaf: number } | null>(null);
@@ -164,6 +187,8 @@ export function MobileNewPayment() {
   const benef4Valid =
     skipBenef
       ? true
+      : benefTab === 'existing'
+      ? !!selectedBenef
       : mode?.id === 'cash' && benef.isClient
       ? true
       : benef.name.trim().length > 0 &&
@@ -184,6 +209,7 @@ export function MobileNewPayment() {
     setInputCurrency('xaf'); setRawAmount('');
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
     setBenef(BENEF0); setSkipBenef(false);
+    setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
     setQrFile(null); setQrPreview(null); setDone(null);
   }
 
@@ -203,31 +229,99 @@ export function MobileNewPayment() {
 
   // ── Soumission ────────────────────────────────────────────────
   async function handleConfirm() {
-    if (!client || !mode) return;
+    if (!client || !mode || !dbMode) return;
 
     // virement → bank_transfer pour la DB
-    const dbMethod = (mode.id === 'virement' ? 'bank_transfer' : mode.id) as
-      'alipay' | 'wechat' | 'bank_transfer' | 'cash';
+    const dbMethod = dbMode;
 
     const autoName =
       mode.id === 'cash' && benef.isClient
         ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
         : undefined;
 
-    const benefPayload = skipBenef
-      ? {}
-      : {
-          beneficiary_name: autoName ?? (benef.name || undefined),
+    // ── Build the beneficiary payload + frozen snapshot ──────────
+    let benefPayload: Record<string, unknown> = {};
+    let beneficiaryId: string | undefined;
+    let snapshot: Record<string, unknown> | undefined;
+
+    if (!skipBenef) {
+      if (benefTab === 'existing' && selectedBenef) {
+        // Pick from the client's carnet → snapshot copies the saved record.
+        beneficiaryId = selectedBenef.id;
+        snapshot = {
+          id: selectedBenef.id,
+          alias: selectedBenef.alias ?? selectedBenef.name,
+          name: selectedBenef.name,
+          payment_method: selectedBenef.payment_method,
+          identifier: selectedBenef.identifier,
+          identifier_type: selectedBenef.identifier_type,
+          phone: selectedBenef.phone,
+          email: selectedBenef.email,
+          bank_name: selectedBenef.bank_name,
+          bank_account: selectedBenef.bank_account,
+          bank_extra: selectedBenef.bank_extra,
+          relation_type: selectedBenef.relation_type,
+        };
+        benefPayload = {
+          beneficiary_name: selectedBenef.name || undefined,
+          beneficiary_phone: selectedBenef.phone || undefined,
+          beneficiary_email: selectedBenef.email || undefined,
+          beneficiary_bank_name: selectedBenef.bank_name || undefined,
+          beneficiary_bank_account: selectedBenef.bank_account || undefined,
+          beneficiary_bank_extra: selectedBenef.bank_extra || undefined,
+          beneficiary_identifier: selectedBenef.identifier || undefined,
+          beneficiary_identifier_type: selectedBenef.identifier_type || undefined,
+          beneficiary_qr_code_url: selectedBenef.qr_code_url || undefined,
+        };
+      } else {
+        // New beneficiary typed by the admin.
+        const isCashSelf = mode.id === 'cash' && benef.isClient;
+        const resolvedName = autoName ?? (benef.name || undefined);
+
+        // Save to the CLIENT's carnet (unless cash+self — that's the client).
+        if (saveToCarnet && !isCashSelf && benef.name.trim()) {
+          try {
+            const created = await createBeneficiary.mutateAsync({
+              client_id: client.user_id,
+              payment_method: dbMode,
+              alias: benef.name.trim(),
+              name: benef.name.trim(),
+              identifier: benef.ident || undefined,
+              identifier_type: benef.ident ? 'id' : undefined,
+              phone: benef.phone || undefined,
+              email: benef.email || undefined,
+              bank_name: benef.bank || undefined,
+              bank_account: benef.account || undefined,
+              qr_code_file: qrFile || undefined,
+            });
+            beneficiaryId = created.id;
+          } catch {
+            // Non-silent (hook toasts); the payment still proceeds.
+          }
+        }
+
+        snapshot = {
+          relation_type: isCashSelf ? 'self' : 'other',
+          name: resolvedName,
+          identifier: benef.ident || undefined,
+          identifier_type: benef.ident ? 'id' : undefined,
+          phone: benef.phone || undefined,
+          email: benef.email || undefined,
+          bank_name: benef.bank || undefined,
+          bank_account: benef.account || undefined,
+        };
+        benefPayload = {
+          beneficiary_name: resolvedName,
           beneficiary_phone: benef.phone || undefined,
           beneficiary_email: benef.email || undefined,
           beneficiary_bank_name: benef.bank || undefined,
           beneficiary_bank_account: benef.account || undefined,
           beneficiary_identifier: benef.ident || undefined,
-          beneficiary_identifier_type: benef.ident
-            ? ('id' as const)
-            : undefined,
+          beneficiary_identifier_type: benef.ident ? ('id' as const) : undefined,
           qr_code_files: qrFile ? [qrFile] : undefined,
         };
+      }
+    }
 
     try {
       const res = await createPayment.mutateAsync({
@@ -237,6 +331,8 @@ export function MobileNewPayment() {
         exchange_rate: rate,
         method: dbMethod,
         rate_is_custom: useCustomRate,
+        beneficiary_id: beneficiaryId,
+        beneficiary_details: snapshot,
         ...benefPayload,
       });
       setDone({ paymentId: res.payment_id ?? '', cny, xaf });
@@ -250,12 +346,13 @@ export function MobileNewPayment() {
   // ══════════════════════════════════════════════════════════════
   if (done) {
     const clientName = `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim();
-    const benefLabel =
-      !skipBenef && benef.name
-        ? benef.isClient ? clientName : benef.name
-        : !skipBenef && mode?.id === 'cash' && benef.isClient
-        ? clientName
-        : '';
+    const benefLabel = skipBenef
+      ? ''
+      : selectedBenef
+      ? selectedBenef.alias || selectedBenef.name
+      : benef.isClient
+      ? clientName
+      : benef.name || '';
 
     return (
       <div
@@ -779,6 +876,88 @@ export function MobileNewPayment() {
 
             {!skipBenef && (
               <>
+                {/* Onglets : carnet du client (enregistré) vs nouveau */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: t.bg, borderRadius: 10, padding: 4 }}>
+                  {(['existing', 'new'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setBenefTab(tab)}
+                      style={{
+                        flex: 1, padding: 10, borderRadius: 8,
+                        background: benefTab === tab ? t.card : 'transparent',
+                        border: 'none', fontFamily: FONT,
+                        fontSize: 13, fontWeight: 700,
+                        color: benefTab === tab ? t.text : t.sub,
+                        boxShadow: benefTab === tab ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {tab === 'existing' ? 'Enregistré' : 'Nouveau'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* CARNET DU CLIENT — liste scopée (client_id + RLS admin) */}
+                {benefTab === 'existing' && (
+                  <div style={{ marginBottom: 8 }}>
+                    {!clientBeneficiaries || clientBeneficiaries.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '28px 0', color: t.sub }}>
+                        <div style={{ fontSize: 13, marginBottom: 8 }}>
+                          Aucun bénéficiaire {mode?.name} enregistré pour ce client
+                        </div>
+                        <button
+                          onClick={() => setBenefTab('new')}
+                          style={{ background: 'none', border: 'none', color: V, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: FONT }}
+                        >
+                          + Créer un bénéficiaire
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {clientBeneficiaries.map((b) => {
+                          const sel = selectedBenef?.id === b.id;
+                          return (
+                            <button
+                              key={b.id}
+                              onClick={() => setSelectedBenef(sel ? null : b)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 12,
+                                padding: 14, borderRadius: 12, textAlign: 'left',
+                                background: sel ? `${V}08` : t.card,
+                                border: `1.5px solid ${sel ? V : t.border}`,
+                                cursor: 'pointer', fontFamily: FONT,
+                              }}
+                            >
+                              <div style={{
+                                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                                background: `${mode?.color ?? V}14`, color: mode?.color ?? V,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 14, fontWeight: 800,
+                              }}>
+                                {(b.alias || b.name)[0]?.toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                {/* alias-first : repère lisible en titre */}
+                                <div style={{ fontSize: 15, fontWeight: 700, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {b.alias || b.name}
+                                </div>
+                                <div style={{ fontSize: 12, color: t.sub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {b.identifier || b.phone || b.bank_account || b.name || ''}
+                                </div>
+                              </div>
+                              {sel && <div style={{ color: V, fontWeight: 800, flexShrink: 0 }}>✓</div>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {!skipBenef && benefTab === 'new' && (
+              <>
                 {/* CASH : choix "le client lui-même" ou "quelqu'un d'autre" */}
                 {mode?.id === 'cash' && (
                   <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
@@ -1004,6 +1183,35 @@ export function MobileNewPayment() {
                     </div>
                   </>
                 )}
+
+                {/* Enregistrer au carnet du client (sauf cash + client lui-même) */}
+                {!(mode?.id === 'cash' && benef.isClient) && (
+                  <button
+                    onClick={() => setSaveToCarnet(!saveToCarnet)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '12px 14px', borderRadius: 12, marginTop: 4,
+                      background: saveToCarnet ? `${V}08` : t.card,
+                      border: `1.5px solid ${saveToCarnet ? V : t.border}`,
+                      cursor: 'pointer', textAlign: 'left', fontFamily: FONT,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                        border: `2px solid ${saveToCarnet ? V : t.dim}`,
+                        background: saveToCarnet ? V : 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, color: '#fff', fontWeight: 800,
+                      }}
+                    >
+                      {saveToCarnet ? '✓' : ''}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>
+                      Enregistrer dans le carnet du client
+                    </div>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1040,16 +1248,29 @@ export function MobileNewPayment() {
                 { l: 'Mode', v: mode?.name },
                 skipBenef
                   ? { l: 'Bénéficiaire', v: 'À remplir plus tard' }
+                  : selectedBenef
+                  ? { l: 'Bénéficiaire', v: selectedBenef.alias || selectedBenef.name }
                   : mode?.id === 'cash' && benef.isClient
                   ? { l: 'Bénéficiaire', v: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim() + ' (le client)' }
                   : benef.name
                   ? { l: 'Bénéficiaire', v: benef.name }
                   : null,
-                !skipBenef && benef.ident ? { l: `ID ${mode?.name}`, v: benef.ident } : null,
-                !skipBenef && benef.bank ? { l: 'Banque', v: benef.bank } : null,
-                !skipBenef && benef.account ? { l: 'Compte', v: benef.account } : null,
-                !skipBenef && benef.phone ? { l: 'Téléphone', v: benef.phone } : null,
-                !skipBenef && benef.email ? { l: 'Email', v: benef.email } : null,
+                // Détails : bénéficiaire enregistré sélectionné OU saisi manuellement
+                !skipBenef && (selectedBenef?.identifier || (!selectedBenef && benef.ident))
+                  ? { l: `ID ${mode?.name}`, v: selectedBenef?.identifier || benef.ident }
+                  : null,
+                !skipBenef && (selectedBenef?.bank_name || (!selectedBenef && benef.bank))
+                  ? { l: 'Banque', v: selectedBenef?.bank_name || benef.bank }
+                  : null,
+                !skipBenef && (selectedBenef?.bank_account || (!selectedBenef && benef.account))
+                  ? { l: 'Compte', v: selectedBenef?.bank_account || benef.account }
+                  : null,
+                !skipBenef && (selectedBenef?.phone || (!selectedBenef && benef.phone))
+                  ? { l: 'Téléphone', v: selectedBenef?.phone || benef.phone }
+                  : null,
+                !skipBenef && (selectedBenef?.email || (!selectedBenef && benef.email))
+                  ? { l: 'Email', v: selectedBenef?.email || benef.email }
+                  : null,
                 { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : ''}` },
               ] as ({ l: string; v: string | undefined } | null)[])
                 .filter((r): r is { l: string; v: string } => !!r && !!r.v)

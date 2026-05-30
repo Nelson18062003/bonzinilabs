@@ -36,6 +36,7 @@ import {
   MapPin,
   Trash2,
   Link2,
+  Users,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { Button } from '@/components/ui/button';
@@ -429,6 +430,22 @@ export function MobileClientDetail() {
               <div className="text-left">
                 <p className="font-medium">{t('declareDeposit', { defaultValue: 'Déclarer un dépôt' })}</p>
                 <p className="text-xs text-muted-foreground">{t('createNewDeposit', { defaultValue: 'Créer un nouveau dépôt' })}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+
+          <button
+            onClick={() => navigate(`/m/clients/${client.id}/beneficiaries`)}
+            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-violet-500" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">{t('beneficiaries', { defaultValue: 'Bénéficiaires' })}</p>
+                <p className="text-xs text-muted-foreground">{t('manageBeneficiaries', { defaultValue: 'Gérer le carnet du client' })}</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
