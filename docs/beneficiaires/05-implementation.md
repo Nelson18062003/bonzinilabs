@@ -70,8 +70,30 @@ Lot 2→6 ; la régénération réelle se fera au déploiement (diff attendu nul
 
 ---
 
-## Lot 2 — Hooks consolidés · ⏳ (bloqué par le gate)
-## Lot 3 — UI client (carnet + paiement) · ⏳
+## Gate contourné (décision : coder sur types étendus à la main)
+`src/integrations/supabase/types.ts` étendu **à la main** (additif : `alias`/`relation_type`/
+`notes`/`created_by`/`created_by_role`), identique à ce que `gen-types` produira après migration.
+→ Lots 2→6 codés/compilés sans toucher la prod. La régénération réelle se fera au déploiement
+(diff attendu nul).
+
+## Lot 2 — Hooks consolidés · ✅ (commit `ff35e34`)
+- `src/hooks/useBeneficiaries.ts` réécrit : 4 hooks client + 4 admin, tous câblés (fin du code mort).
+- Archivage (`is_active=false`), trace `created_by`/`created_by_role`, violation unicité (23505) →
+  message doublon. Réutilise signed-URL QR + compression.
+- Call-site `NewPaymentPage` adapté (`alias` défaut = nom, jusqu'au Lot 4).
+- Vérif : type-check 0 · 81/81 tests · build OK.
+
+## Lot 3 — UI client (carnet) · ✅ (commit `0a37e8a`)
+- `src/components/beneficiary/BeneficiaryForm.tsx` : formulaire mode-aware, alias-first, Zod dur,
+  QR, CJK, relation/notes.
+- `src/pages/BeneficiariesPage.tsx` : remplace le stub — liste alias-first + couleur mode, recherche,
+  filtre par mode, ajout/édition plein écran, archivage + bandeau snapshot, empty/skeleton.
+- Design thinking consigné (`lot3-design-thinking.md`).
+- Vérif : type-check 0 · build OK · 81/81 tests · messaging conforme.
+- **Reste (Lot 3 bis, optionnel)** : refonte de l'**étape bénéficiaire dans le wizard de paiement
+  client** (self tous modes, save non silencieux, alias). Le wizard actuel fonctionne (call-site
+  adapté au Lot 2) ; cette refonte UX est séparée pour livrer le carnet d'abord.
+
 ## Lot 4 — UI admin (paiement + fiche client) · ⏳
 ## Lot 5 — Snapshot + complétion · ⏳
 ## Lot 6 — Tests E2E + vérif · ⏳
