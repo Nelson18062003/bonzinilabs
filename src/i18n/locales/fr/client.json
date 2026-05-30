@@ -70,6 +70,7 @@
     "allModes": "Tous",
     "emptyHint": "Enregistrez vos destinataires pour ne plus ressaisir leurs informations \u00e0 chaque paiement.",
     "addedByTeam": "Ajout\u00e9 par l'\u00e9quipe Bonzini",
+    "saveToCarnet": "Enregistrer aussi dans mon carnet",
     "actions": {
       "save": "Enregistrer",
       "cancel": "Annuler",

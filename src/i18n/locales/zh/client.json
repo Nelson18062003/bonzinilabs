@@ -70,6 +70,7 @@
     "allModes": "全部",
     "emptyHint": "保存您的收款人，无需每次付款时重新输入信息。",
     "addedByTeam": "由Bonzini团队添加",
+    "saveToCarnet": "同时保存到我的收款人列表",
     "actions": {
       "save": "保存",
       "cancel": "取消",

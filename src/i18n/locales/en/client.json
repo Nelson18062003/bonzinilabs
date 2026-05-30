@@ -70,6 +70,7 @@
     "allModes": "All",
     "emptyHint": "Save your recipients so you don't have to re-enter their details on every payment.",
     "addedByTeam": "Added by the Bonzini team",
+    "saveToCarnet": "Also save to my address book",
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
