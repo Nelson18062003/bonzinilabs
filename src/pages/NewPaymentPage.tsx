@@ -21,7 +21,6 @@ import {
   STEP_KEYS,
   type Currency,
   type IdentificationType,
-  type NewBeneficiaryDraft,
   type PaymentMethodType,
   type Step,
 } from '@/components/payment-form/types';
@@ -32,8 +31,13 @@ import {
 import {
   makeAmountStepSchema,
   methodStepSchema,
-  validateBeneficiaryStep,
 } from '@/components/payment-form/paymentSchemas';
+import {
+  emptyBeneficiaryForm,
+  isBeneficiaryFormValid,
+  type BeneficiaryFormValues,
+} from '@/components/beneficiary/BeneficiaryForm';
+import { getBeneficiaryNaturalKey, type IdentifierType } from '@/lib/beneficiaries/spec';
 import { useMyWallet } from '@/hooks/useWallet';
 import { useClientRates } from '@/hooks/useDailyRates';
 import { useMyProfile } from '@/hooks/useProfile';
@@ -75,30 +79,52 @@ const NewPaymentPage = () => {
   const [beneficiaryTab, setBeneficiaryTab] = useState<'existing' | 'new'>('existing');
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<Beneficiary | null>(null);
   const [skipBeneficiary, setSkipBeneficiary] = useState(false);
-  const [cashBenefType, setCashBenefType] = useState<'self' | 'other'>('self');
-  const [draftName, setDraftName] = useState('');
-  const [draftPhone, setDraftPhone] = useState('');
-  const [draftEmail, setDraftEmail] = useState('');
-  const [draftIdType, setDraftIdType] = useState<IdentificationType>('qr');
-  const [draftIdentifier, setDraftIdentifier] = useState('');
-  const [draftBankName, setDraftBankName] = useState('');
-  const [draftBankAccount, setDraftBankAccount] = useState('');
-  const [draftBankExtra, setDraftBankExtra] = useState('');
+  // "Me payer moi-même" — applies to ALL modes (cash prefills from profile;
+  // alipay/wechat/bank just tag relation=self and keep the account fields).
+  const [useSelf, setUseSelf] = useState(false);
+  const [dontSave, setDontSave] = useState(false);
+  const [form, setForm] = useState<BeneficiaryFormValues>(() => emptyBeneficiaryForm('cash'));
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
   const [qrCodePreview, setQrCodePreview] = useState<string | null>(null);
 
-  const draft: NewBeneficiaryDraft = {
-    name: draftName,
-    phone: draftPhone,
-    email: draftEmail,
-    idType: draftIdType,
-    identifier: draftIdentifier,
-    bankName: draftBankName,
-    bankAccount: draftBankAccount,
-    bankExtra: draftBankExtra,
-  };
-
   const { data: existingBeneficiaries } = useBeneficiaries(selectedMethod || undefined);
+
+  // Keep the form's mode in sync with the wizard's selected method, and
+  // reset the per-method draft when the method changes.
+  const formMode = form.payment_method;
+  if (selectedMethod && selectedMethod !== formMode) {
+    setForm(emptyBeneficiaryForm(selectedMethod));
+    setSelectedBeneficiary(null);
+    setUseSelf(false);
+  }
+
+  // Soft duplicate detection against the client's saved beneficiaries for
+  // this mode (mirrors the DB unique index; cash has no hard key).
+  const duplicateMatch = useMemo<Beneficiary | null>(() => {
+    if (!selectedMethod || useSelf || selectedBeneficiary) return null;
+    const key = getBeneficiaryNaturalKey({
+      payment_method: form.payment_method,
+      alias: form.alias,
+      name: form.name,
+      identifier: form.identifier,
+      bank_account: form.bank_account,
+      bank_name: form.bank_name,
+    });
+    if (!key) return null;
+    return (
+      existingBeneficiaries?.find((b) => {
+        const bKey = getBeneficiaryNaturalKey({
+          payment_method: b.payment_method,
+          alias: b.alias ?? b.name,
+          name: b.name,
+          identifier: b.identifier,
+          bank_account: b.bank_account,
+          bank_name: b.bank_name,
+        });
+        return bKey && bKey.column === key.column && bKey.value === key.value;
+      }) ?? null
+    );
+  }, [selectedMethod, useSelf, selectedBeneficiary, form, existingBeneficiaries]);
 
   // ── Computed values (pure) ─────────────────────────────────
   const clientCountryKey = useMemo(
@@ -132,12 +158,19 @@ const NewPaymentPage = () => {
     setQrCodePreview(null);
   };
 
+  // Resolved beneficiary fields for cash+self (prefilled from the profile).
+  const selfCashName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
+  const isCashSelf = selectedMethod === 'cash' && useSelf;
+
   // ── Submit ─────────────────────────────────────────────────
+  // The snapshot is the FROZEN copy stored on the payment. It NEVER reads
+  // back the live beneficiary row afterwards (immutable history).
   const buildBeneficiarySnapshot = (): Record<string, unknown> | undefined => {
     if (skipBeneficiary) return undefined;
     if (selectedBeneficiary) {
       return {
         id: selectedBeneficiary.id,
+        alias: selectedBeneficiary.alias ?? selectedBeneficiary.name,
         name: selectedBeneficiary.name,
         payment_method: selectedBeneficiary.payment_method,
         identifier: selectedBeneficiary.identifier,
@@ -146,33 +179,41 @@ const NewPaymentPage = () => {
         email: selectedBeneficiary.email,
         bank_name: selectedBeneficiary.bank_name,
         bank_account: selectedBeneficiary.bank_account,
+        bank_extra: selectedBeneficiary.bank_extra,
+        relation_type: selectedBeneficiary.relation_type,
       };
+    }
+    if (isCashSelf) {
+      return { relation_type: 'self', name: selfCashName, phone: profile?.phone };
     }
     if (selectedMethod === 'cash') {
       return {
-        type: cashBenefType,
-        name:
-          cashBenefType === 'self'
-            ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
-            : draftName,
-        phone: cashBenefType === 'self' ? profile?.phone : draftPhone,
+        relation_type: form.relation_type,
+        alias: form.alias,
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
       };
     }
     if (selectedMethod === 'alipay' || selectedMethod === 'wechat') {
       return {
-        name: draftName,
-        identifier: draftIdentifier,
-        identifier_type: draftIdType,
-        phone: draftPhone,
-        email: draftEmail,
+        relation_type: useSelf ? 'self' : form.relation_type,
+        alias: form.alias,
+        name: form.name,
+        identifier: form.identifier,
+        identifier_type: form.identifier_type,
+        phone: form.phone,
+        email: form.email,
       };
     }
     if (selectedMethod === 'bank_transfer') {
       return {
-        name: draftName,
-        bank_name: draftBankName,
-        bank_account: draftBankAccount,
-        bank_extra: draftBankExtra,
+        relation_type: useSelf ? 'self' : form.relation_type,
+        alias: form.alias,
+        name: form.name,
+        bank_name: form.bank_name,
+        bank_account: form.bank_account,
+        bank_extra: form.bank_extra,
       };
     }
     return undefined;
@@ -199,49 +240,62 @@ const NewPaymentPage = () => {
         qrCodeUrl = `payment-proofs/${filePath}`;
       }
 
-      // 2. Save the new beneficiary master record (best-effort).
-      if (!skipBeneficiary && !selectedBeneficiary && draftName) {
-        try {
-          const newBenef = await createBeneficiary.mutateAsync({
-            payment_method: selectedMethod,
-            // alias defaults to the name here; Lot 4 adds a dedicated alias field.
-            alias: draftName,
-            name: draftName,
-            identifier: draftIdentifier || undefined,
-            identifier_type: draftIdType || undefined,
-            phone: draftPhone || undefined,
-            email: draftEmail || undefined,
-            bank_name: draftBankName || undefined,
-            bank_account: draftBankAccount || undefined,
-            bank_extra: draftBankExtra || undefined,
-            qr_code_file: qrCodeFile || undefined,
-          });
-          beneficiaryId = newBenef.id;
-        } catch {
-          /* keep going — payment creation is the priority */
+      // 2. Save the new beneficiary to the carnet, unless: skipped, a saved
+      //    one is selected, cash+self (it's the client), or "don't save".
+      //    Non-silent: a save failure is surfaced but the PAYMENT still
+      //    proceeds (the frozen snapshot below keeps it complete).
+      if (
+        !skipBeneficiary &&
+        !selectedBeneficiary &&
+        !dontSave &&
+        !isCashSelf &&
+        isBeneficiaryFormValid(form, { hasQr: !!qrCodeFile })
+      ) {
+        if (duplicateMatch) {
+          // A matching saved beneficiary already exists → link it instead
+          // of creating a duplicate (the DB unique index would reject it).
+          beneficiaryId = duplicateMatch.id;
+        } else {
+          try {
+            const newBenef = await createBeneficiary.mutateAsync({
+              payment_method: selectedMethod,
+              alias: form.alias,
+              name: form.name,
+              identifier: form.identifier || undefined,
+              identifier_type: form.identifier_type || undefined,
+              phone: form.phone || undefined,
+              email: form.email || undefined,
+              bank_name: form.bank_name || undefined,
+              bank_account: form.bank_account || undefined,
+              bank_extra: form.bank_extra || undefined,
+              relation_type: useSelf ? 'self' : form.relation_type,
+              notes: form.notes || undefined,
+              qr_code_file: qrCodeFile || undefined,
+            });
+            beneficiaryId = newBenef.id;
+          } catch {
+            // The hook already toasts the cause; tell the user the carnet
+            // save failed but the payment will still go through.
+            toast.warning(t('form.beneficiary.saveFailedPaymentContinues'));
+          }
         }
       }
 
       // 3. Build the snapshot fields and create the payment.
       const snapshot = buildBeneficiarySnapshot();
       const isCash = selectedMethod === 'cash';
-      const legacyBenefName = isCash
-        ? cashBenefType === 'self'
-          ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
-          : draftName
-        : ((snapshot?.name as string) ?? undefined);
+      const benefName = isCashSelf ? selfCashName : ((snapshot?.name as string) ?? undefined);
+      const benefPhone = isCashSelf
+        ? profile?.phone || undefined
+        : ((snapshot?.phone as string) ?? undefined);
 
       const result = await createPayment.mutateAsync({
         amount_xaf: computed.amountXAF,
         amount_rmb: computed.amountRMB,
         exchange_rate: Math.round(computed.rate * 1_000_000),
         method: selectedMethod,
-        beneficiary_name: legacyBenefName || undefined,
-        beneficiary_phone: isCash
-          ? cashBenefType === 'self'
-            ? profile?.phone || undefined
-            : draftPhone || undefined
-          : ((snapshot?.phone as string) ?? undefined),
+        beneficiary_name: benefName || undefined,
+        beneficiary_phone: benefPhone,
         beneficiary_email: (snapshot?.email as string) ?? undefined,
         beneficiary_qr_code_url: qrCodeUrl || undefined,
         beneficiary_bank_name: (snapshot?.bank_name as string) ?? undefined,
@@ -249,22 +303,18 @@ const NewPaymentPage = () => {
         beneficiary_bank_extra: (snapshot?.bank_extra as string) ?? undefined,
         beneficiary_identifier: (snapshot?.identifier as string) ?? undefined,
         beneficiary_identifier_type: snapshot?.identifier_type as IdentificationType | undefined,
-        cash_beneficiary_type: isCash ? cashBenefType : undefined,
+        cash_beneficiary_type: isCash ? (useSelf ? 'self' : 'other') : undefined,
         cash_beneficiary_first_name: isCash
-          ? cashBenefType === 'self'
+          ? useSelf
             ? profile?.first_name
-            : draftName.split(' ')[0]
+            : form.name.split(' ')[0]
           : undefined,
         cash_beneficiary_last_name: isCash
-          ? cashBenefType === 'self'
+          ? useSelf
             ? profile?.last_name
-            : draftName.split(' ').slice(1).join(' ')
+            : form.name.split(' ').slice(1).join(' ')
           : undefined,
-        cash_beneficiary_phone: isCash
-          ? cashBenefType === 'self'
-            ? profile?.phone || undefined
-            : draftPhone || undefined
-          : undefined,
+        cash_beneficiary_phone: benefPhone,
         beneficiary_id: beneficiaryId,
         beneficiary_details: snapshot,
         rate_is_custom: false,
@@ -303,20 +353,13 @@ const NewPaymentPage = () => {
   // ── Step validation (Zod-backed) ───────────────────────────
   // Each step has its own schema; the wizard footer disables the
   // "Continuer" CTA when the current step doesn't parse. The
-  // beneficiary step exposes a soft error (informational only;
-  // navigation is always allowed thanks to "compléter plus tard").
+  // beneficiary step is informational only (navigation always allowed
+  // thanks to "compléter plus tard").
   const stepValidations = {
     method: methodStepSchema.safeParse({ selectedMethod }),
     amount: makeAmountStepSchema({
       walletBalanceXaf: wallet?.balance_xaf ?? 0,
     }).safeParse({ amountXAF: computed.amountXAF }),
-    beneficiarySoftError: validateBeneficiaryStep({
-      method: selectedMethod ?? 'cash',
-      draft,
-      hasQrFile: !!qrCodeFile,
-      cashType: cashBenefType,
-      hasSelectedBeneficiary: !!selectedBeneficiary,
-    }),
   };
 
   // ── Footer button ──────────────────────────────────────────
@@ -362,11 +405,7 @@ const NewPaymentPage = () => {
   const confirmSnapshot = step === 'confirm' ? buildBeneficiarySnapshot() : undefined;
   const hasBeneficiary =
     !skipBeneficiary &&
-    !!(
-      selectedBeneficiary ||
-      draftName ||
-      (selectedMethod === 'cash' && cashBenefType === 'self')
-    );
+    !!(selectedBeneficiary || isCashSelf || form.name);
 
   return (
     <MobileLayout showNav={false}>
@@ -417,19 +456,13 @@ const NewPaymentPage = () => {
             onBeneficiaryTabChange={setBeneficiaryTab}
             selectedBeneficiary={selectedBeneficiary}
             onSelectedBeneficiaryChange={setSelectedBeneficiary}
-            cashBenefType={cashBenefType}
-            onCashBenefTypeChange={setCashBenefType}
-            draft={draft}
-            setters={{
-              setName: setDraftName,
-              setPhone: setDraftPhone,
-              setEmail: setDraftEmail,
-              setIdType: setDraftIdType,
-              setIdentifier: setDraftIdentifier,
-              setBankName: setDraftBankName,
-              setBankAccount: setDraftBankAccount,
-              setBankExtra: setDraftBankExtra,
-            }}
+            useSelf={useSelf}
+            onUseSelfChange={setUseSelf}
+            formValues={form}
+            onFormChange={setForm}
+            dontSave={dontSave}
+            onDontSaveChange={setDontSave}
+            duplicateMatch={duplicateMatch}
             qrCodePreview={qrCodePreview}
             onQrFileSelect={handleQrFileSelect}
             onQrFileRemove={handleQrFileRemove}
