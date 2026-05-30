@@ -127,7 +127,9 @@
       "accountNumber": "Account number",
       "swiftAgency": "SWIFT / IBAN / branch (optional)",
       "additionalInfo": "Additional information",
-      "addLater": "Complete later"
+      "addLater": "Complete later",
+      "dontSave": "Don't save this beneficiary",
+      "saveFailedPaymentContinues": "Beneficiary not saved to your list — the payment continues"
     },
     "confirm": {
       "method": "Payment method",

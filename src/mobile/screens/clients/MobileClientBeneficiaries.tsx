@@ -1,23 +1,24 @@
 // ============================================================
-// BeneficiariesPage — the client's reusable address book (carnet).
-// Replaces the previous stub. List + search + per-mode filter, plus a
-// full-screen add/edit sub-view and archive confirmation.
+// MobileClientBeneficiaries — ADMIN view of a client's carnet.
 //
-// Alias-first display: the latin nickname is the title, the (often
-// Chinese) identifier/name is the subtitle. "Delete" = archive (the
-// snapshot rule means past payments are never affected).
+// Lets an admin list / add / edit / archive the beneficiaries of ONE
+// client, OUTSIDE a payment (Phase 3 §D). Strictly scoped to the
+// :clientId from the route (admin RLS + explicit client_id filter →
+// no cross-client leak). Reuses the shared <BeneficiaryForm/> and the
+// admin beneficiary hooks. Alias-first display; "delete" = archive.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import { Plus, Search, User, Pencil, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { cn } from '@/lib/utils';
+import { useClient } from '@/hooks/useClientManagement';
 import {
-  useBeneficiaries,
-  useCreateBeneficiary,
-  useUpdateBeneficiary,
-  useArchiveBeneficiary,
+  useAdminClientBeneficiaries,
+  useAdminCreateBeneficiary,
+  useAdminUpdateBeneficiary,
+  useAdminArchiveBeneficiary,
   type Beneficiary,
 } from '@/hooks/useBeneficiaries';
 import {
@@ -53,17 +54,24 @@ function toFormValues(b: Beneficiary): BeneficiaryFormValues {
   };
 }
 
-const BeneficiariesPage = () => {
+export default function MobileClientBeneficiaries() {
   const { t } = useTranslation('client');
+  const { clientId } = useParams();
+  const { data: client } = useClient(clientId || '');
+
   const [view, setView] = useState<View>({ kind: 'list' });
   const [search, setSearch] = useState('');
   const [modeFilter, setModeFilter] = useState<BeneficiaryMode | 'all'>('all');
   const [confirmArchive, setConfirmArchive] = useState<Beneficiary | null>(null);
 
-  const { data: beneficiaries, isLoading } = useBeneficiaries();
-  const createBeneficiary = useCreateBeneficiary();
-  const updateBeneficiary = useUpdateBeneficiary();
-  const archiveBeneficiary = useArchiveBeneficiary();
+  const { data: beneficiaries, isLoading } = useAdminClientBeneficiaries(clientId || undefined);
+  const createBeneficiary = useAdminCreateBeneficiary();
+  const updateBeneficiary = useAdminUpdateBeneficiary();
+  const archiveBeneficiary = useAdminArchiveBeneficiary();
+
+  const clientName = client
+    ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
+    : '';
 
   const filtered = useMemo(() => {
     let list = beneficiaries ?? [];
@@ -80,7 +88,7 @@ const BeneficiariesPage = () => {
   }, [beneficiaries, modeFilter, search]);
 
   // ── Add / Edit sub-view ──────────────────────────────────────
-  if (view.kind === 'add' || view.kind === 'edit') {
+  if ((view.kind === 'add' || view.kind === 'edit') && clientId) {
     return (
       <BeneficiaryEditor
         initial={
@@ -111,6 +119,7 @@ const BeneficiariesPage = () => {
             });
           } else {
             await createBeneficiary.mutateAsync({
+              client_id: clientId,
               payment_method: vals.payment_method,
               alias: vals.alias,
               name: vals.name,
@@ -134,16 +143,17 @@ const BeneficiariesPage = () => {
 
   // ── List view ────────────────────────────────────────────────
   return (
-    <MobileLayout>
-      <PageHeader
+    <div className="min-h-screen bg-background">
+      <MobileHeader
         title={t('beneficiaries.title')}
-        subtitle={t('beneficiaries.subtitle')}
+        subtitle={clientName || undefined}
         showBack
+        backTo={`/m/clients/${clientId}`}
         rightElement={
           <button
             onClick={() => setView({ kind: 'add' })}
             aria-label={t('beneficiaries.add')}
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-purple"
+            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -151,7 +161,6 @@ const BeneficiariesPage = () => {
       />
 
       <div className="px-4 py-3 space-y-3">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -163,7 +172,6 @@ const BeneficiariesPage = () => {
           />
         </div>
 
-        {/* Mode filter (segmented) */}
         <div className="flex gap-1 overflow-x-auto pb-1">
           <FilterChip active={modeFilter === 'all'} onClick={() => setModeFilter('all')}>
             {t('beneficiaries.allModes')}
@@ -180,7 +188,6 @@ const BeneficiariesPage = () => {
           ))}
         </div>
 
-        {/* List */}
         {isLoading ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
@@ -194,20 +201,14 @@ const BeneficiariesPage = () => {
             </div>
             <p className="text-muted-foreground mb-2">{t('beneficiaries.noBeneficiary')}</p>
             <p className="text-sm text-muted-foreground mb-4">{t('beneficiaries.emptyHint')}</p>
-            <button
-              onClick={() => setView({ kind: 'add' })}
-              className="text-sm text-primary font-medium"
-            >
+            <button onClick={() => setView({ kind: 'add' })} className="text-sm text-primary font-medium">
               {t('beneficiaries.add')}
             </button>
           </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((b) => (
-              <div
-                key={b.id}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border"
-              >
+              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl border border-border">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0"
                   style={{ backgroundColor: modeColor(b.payment_method) }}
@@ -246,14 +247,11 @@ const BeneficiariesPage = () => {
         )}
       </div>
 
-      {/* Archive confirmation */}
       {confirmArchive && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-background p-5 space-y-4">
             <h3 className="text-lg font-semibold">{t('beneficiaries.actions.confirmArchiveTitle')}</h3>
-            <p className="text-sm text-muted-foreground">
-              {t('beneficiaries.actions.confirmArchiveBody')}
-            </p>
+            <p className="text-sm text-muted-foreground">{t('beneficiaries.actions.confirmArchiveBody')}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmArchive(null)}
@@ -276,11 +274,9 @@ const BeneficiariesPage = () => {
           </div>
         </div>
       )}
-    </MobileLayout>
+    </div>
   );
-};
-
-// ── Sub-components ─────────────────────────────────────────────
+}
 
 function FilterChip({
   active,
@@ -327,12 +323,12 @@ function BeneficiaryEditor({
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
 
-  const hasQr = !!qrFile || (existingQr && !qrPreview ? existingQr : !!qrPreview);
+  const hasQr = !!qrFile || existingQr;
   const valid = isBeneficiaryFormValid(values, { hasQr });
 
   return (
-    <MobileLayout showNav={false}>
-      <PageHeader
+    <div className="min-h-screen bg-background flex flex-col">
+      <MobileHeader
         title={isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}
         showBack
         onBack={onCancel}
@@ -382,8 +378,6 @@ function BeneficiaryEditor({
           {t('beneficiaries.actions.save')}
         </button>
       </div>
-    </MobileLayout>
+    </div>
   );
 }
-
-export default BeneficiariesPage;

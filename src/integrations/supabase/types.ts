@@ -70,54 +70,69 @@ export type Database = {
       }
       beneficiaries: {
         Row: {
+          alias: string
           bank_account: string | null
           bank_extra: string | null
           bank_name: string | null
           client_id: string
           created_at: string
+          created_by: string | null
+          created_by_role: string | null
           email: string | null
           id: string
           identifier: string | null
           identifier_type: string | null
           is_active: boolean
           name: string
+          notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           phone: string | null
           qr_code_url: string | null
+          relation_type: string | null
           updated_at: string
         }
         Insert: {
+          alias?: string
           bank_account?: string | null
           bank_extra?: string | null
           bank_name?: string | null
           client_id: string
           created_at?: string
+          created_by?: string | null
+          created_by_role?: string | null
           email?: string | null
           id?: string
           identifier?: string | null
           identifier_type?: string | null
           is_active?: boolean
           name: string
+          notes?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           phone?: string | null
           qr_code_url?: string | null
+          relation_type?: string | null
           updated_at?: string
         }
         Update: {
+          alias?: string
           bank_account?: string | null
           bank_extra?: string | null
           bank_name?: string | null
           client_id?: string
           created_at?: string
+          created_by?: string | null
+          created_by_role?: string | null
           email?: string | null
           id?: string
           identifier?: string | null
           identifier_type?: string | null
           is_active?: boolean
           name?: string
+          notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           phone?: string | null
           qr_code_url?: string | null
+          relation_type?: string | null
           updated_at?: string
         }
         Relationships: []

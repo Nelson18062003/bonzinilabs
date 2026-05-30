@@ -58,6 +58,7 @@ const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
+const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
@@ -171,6 +172,7 @@ const App = () => (
                 <Route path="/m/clients/new" element={<MobileRouteWrapper showTabBar={false}><MobileCreateClient /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<MobileRouteWrapper showTabBar={false}><MobileClientDetail /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<MobileRouteWrapper><MobileClientLedger /></MobileRouteWrapper>} />
+                <Route path="/m/clients/:clientId/beneficiaries" element={<MobileRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></MobileRouteWrapper>} />
                 <Route path="/m/more" element={<MobileRouteWrapper><MobileMoreScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/rates" element={<MobileRouteWrapper><MobileRatesScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<MobileRouteWrapper><MobileProofsScreen /></MobileRouteWrapper>} />

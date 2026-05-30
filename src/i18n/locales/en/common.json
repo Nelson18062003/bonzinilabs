@@ -320,6 +320,8 @@
   "debitLabel": "Debit",
   "totalDeposits": "Total deposits",
   "totalPayments": "Total payments",
+  "beneficiaries": "Beneficiaries",
+  "manageBeneficiaries": "Manage the client's address book",
   "movementHistory": "Movement history",
   "viewFullLedger": "View full ledger",
   "declareDeposit": "Declare a deposit",
