@@ -20,45 +20,51 @@
 --   alipay/wechat : (client_id, payment_method, identifier)
 --   bank_transfer : (client_id, bank_account, bank_name)
 --   cash          : no hard key (soft UX warning only)
+--
+-- NOTE: uses the `WHERE id IN (SELECT ...)` form (not UPDATE..FROM with
+-- aliased self-join) so the SQL is robust to copy/paste in the web SQL
+-- editor, and avoids the `<>` operator entirely.
 -- ============================================================
 
 -- 1a. Archive duplicate account-identifier rows (Alipay/WeChat), keeping
 --     the freshest. Case/space-insensitive match (mirrors the app's
 --     natural-key normalisation).
-WITH ranked AS (
-  SELECT id,
-         row_number() OVER (
-           PARTITION BY client_id, payment_method, lower(btrim(identifier))
-           ORDER BY updated_at DESC, created_at DESC
-         ) AS rn
-  FROM public.beneficiaries
-  WHERE is_active
-    AND payment_method IN ('alipay', 'wechat')
-    AND identifier IS NOT NULL
-    AND btrim(identifier) <> ''
-)
-UPDATE public.beneficiaries b
+UPDATE public.beneficiaries
 SET is_active = false, updated_at = now()
-FROM ranked r
-WHERE b.id = r.id AND r.rn > 1;
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+           row_number() OVER (
+             PARTITION BY client_id, payment_method, lower(btrim(identifier))
+             ORDER BY updated_at DESC, created_at DESC
+           ) AS rn
+    FROM public.beneficiaries
+    WHERE is_active
+      AND payment_method IN ('alipay', 'wechat')
+      AND identifier IS NOT NULL
+      AND length(btrim(identifier)) > 0
+  ) d
+  WHERE d.rn > 1
+);
 
 -- 1b. Archive duplicate bank rows (account + bank name), keeping freshest.
-WITH ranked AS (
-  SELECT id,
-         row_number() OVER (
-           PARTITION BY client_id, lower(btrim(bank_account)), lower(btrim(coalesce(bank_name, '')))
-           ORDER BY updated_at DESC, created_at DESC
-         ) AS rn
-  FROM public.beneficiaries
-  WHERE is_active
-    AND payment_method = 'bank_transfer'
-    AND bank_account IS NOT NULL
-    AND btrim(bank_account) <> ''
-)
-UPDATE public.beneficiaries b
+UPDATE public.beneficiaries
 SET is_active = false, updated_at = now()
-FROM ranked r
-WHERE b.id = r.id AND r.rn > 1;
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+           row_number() OVER (
+             PARTITION BY client_id, lower(btrim(bank_account)), lower(btrim(coalesce(bank_name, '')))
+             ORDER BY updated_at DESC, created_at DESC
+           ) AS rn
+    FROM public.beneficiaries
+    WHERE is_active
+      AND payment_method = 'bank_transfer'
+      AND bank_account IS NOT NULL
+      AND length(btrim(bank_account)) > 0
+  ) d
+  WHERE d.rn > 1
+);
 
 -- 2a. UNIQUE index for Alipay/WeChat account identifier (active rows only).
 CREATE UNIQUE INDEX IF NOT EXISTS uq_benef_account
