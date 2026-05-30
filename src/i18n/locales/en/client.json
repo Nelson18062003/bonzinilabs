@@ -63,7 +63,59 @@
     "title": "Beneficiaries",
     "subtitle": "Your recipients in China",
     "noBeneficiary": "No beneficiaries",
-    "comingSoon": "Beneficiaries feature coming soon"
+    "comingSoon": "Beneficiaries feature coming soon",
+    "add": "Add a beneficiary",
+    "edit": "Edit beneficiary",
+    "search": "Search (nickname, account…)",
+    "allModes": "All",
+    "emptyHint": "Save your recipients so you don't have to re-enter their details on every payment.",
+    "addedByTeam": "Added by the Bonzini team",
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "archive": "Delete",
+      "useThis": "Use",
+      "confirmArchiveTitle": "Delete this beneficiary?",
+      "confirmArchiveBody": "It will be removed from your list. Your existing payments are not affected.",
+      "confirmArchive": "Delete"
+    },
+    "fields": {
+      "alias": "Nickname (label)",
+      "aliasPlaceholder": "e.g. Yiwu shoe supplier",
+      "name": "Account holder name",
+      "namePlaceholder": "Real name (may be in Chinese)",
+      "identifier": "Identifier",
+      "identifierType": "Identifier type",
+      "phone": "Phone",
+      "email": "Email (optional)",
+      "bankName": "Bank name",
+      "bankAccount": "Account number",
+      "bankExtra": "Additional info (SWIFT / CNAPS / branch)",
+      "qrCode": "QR Code",
+      "relationType": "Relationship",
+      "notes": "Note (optional)"
+    },
+    "relations": {
+      "self": "Myself",
+      "supplier": "Supplier",
+      "other": "Other"
+    },
+    "snapshotNotice": "Existing payments are not affected.",
+    "duplicate": {
+      "title": "Beneficiary already saved",
+      "body": "You already have \"{{alias}}\" with this account. Use it?"
+    },
+    "errors": {
+      "aliasRequired": "Nickname is required",
+      "nameRequired": "Account holder name is required",
+      "phoneRequired": "Phone is required",
+      "bank_nameRequired": "Bank name is required",
+      "bank_accountRequired": "Account number is required",
+      "accountChannelRequired": "Provide an identifier or a QR code",
+      "emailInvalid": "Invalid email",
+      "tooLong": "Text too long",
+      "invalid": "Invalid details"
+    }
   },
   "notifications": {
     "title": "Notifications",
