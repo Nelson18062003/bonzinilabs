@@ -204,6 +204,8 @@ const NewPaymentPage = () => {
         try {
           const newBenef = await createBeneficiary.mutateAsync({
             payment_method: selectedMethod,
+            // alias defaults to the name here; Lot 4 adds a dedicated alias field.
+            alias: draftName,
             name: draftName,
             identifier: draftIdentifier || undefined,
             identifier_type: draftIdType || undefined,
