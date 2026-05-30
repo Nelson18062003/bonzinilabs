@@ -249,6 +249,19 @@ en Phase 1, mais c'est avant tout une décision produit.)*
 
 ---
 
+## Validations du porteur produit (reçues après rendu)
+
+- **QC1** — Ne pas inventer le schéma : le **dériver des mini-formulaires de paiement existants**
+  (un par mode). → fait en Phase 1 ; le schéma vit déjà dans la table `beneficiaries` + les forms.
+- **QC3** — Jugée évidente : carnet **par client** (« seulement créé par le client »). → confirmé
+  par le code (RLS `client_id`). Réglé.
+- **QC4** — **Pas de conformité/KYC** sur le bénéficiaire. Réglé (pas de `verification_status`).
+- **QC5** — Laissée à ma proposition. → faite en Phase 1 §7 (réutiliser les états existants ;
+  édition carnet toujours permise grâce au snapshot ; archivage via `is_active`).
+- **8 recos de conception** — pas d'objection spécifique ; considérées valides, à confronter au réel
+  en Phase 1 (plusieurs sont **déjà** satisfaites par le code : Q1 table polymorphe, Q4 snapshot,
+  Q5/Q8 scoping, Q7 encodage).
+
 ## Auto-contrôle Phase 0
 
 - ✅ **Lecture seule respectée** : aucun code applicatif écrit ; seuls des fichiers de

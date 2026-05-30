@@ -10,9 +10,9 @@ Carnet de bénéficiaires réutilisables par mode de paiement, côté client **e
 
 | Phase | Objet | Fichier | Statut |
 |------:|-------|---------|--------|
-| 0 | Cadrage : reformulation, 8 questions de conception + reco, 5 questions critiques | [`00-cadrage.md`](./00-cadrage.md) | ✅ Rendu — **en attente de validation** |
-| 1 | Audit codebase (lecture seule) : stack, modèle actuel paiement/destinataire, flow, points d'extension, code mort | `01-audit-codebase.md` | ⏳ Bloqué par validation Phase 0 |
-| 2 | Modélisation des données (schéma, contraintes, RLS, snapshot) | `02-modele-donnees.md` | ⏳ |
+| 0 | Cadrage : reformulation, 8 questions de conception + reco, 5 questions critiques | [`00-cadrage.md`](./00-cadrage.md) | ✅ Validé (QC1/3/4/5 tranchés) |
+| 1 | Audit codebase (lecture seule) : stack, modèle actuel paiement/destinataire, flow, points d'extension, code mort | [`01-audit-codebase.md`](./01-audit-codebase.md) | ✅ Rendu — **feature déjà ~70 % implémentée** |
+| 2 | Modélisation des données (= **design de delta**, pas greenfield) | `02-modele-donnees.md` | ⏳ En attente décision de direction |
 | 3 | Design des parcours (tous les cas, client + admin) | `03-parcours.md` | ⏳ |
 | 4 | Plan d'implémentation (lots, estimations, critères de validation) | `04-plan-implementation.md` | ⏳ |
 | 5 | Implémentation (par lots, après validation) | `05-implementation.md` | ⏳ |
