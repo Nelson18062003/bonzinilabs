@@ -15,7 +15,7 @@ Carnet de bénéficiaires réutilisables par mode de paiement, côté client **e
 | 2 | Modélisation des données (= **design de delta**, DB préservée + étendue) | [`02-modele-donnees.md`](./02-modele-donnees.md) | ✅ Validé (DB préservée, doublons auto-archivés) |
 | 3 | Design des parcours (tous les cas, client + admin) | [`03-parcours.md`](./03-parcours.md) | ✅ Validé (carnet admin retenu) |
 | 4 | Plan d'implémentation (lots, estimations, critères de validation) | [`04-plan-implementation.md`](./04-plan-implementation.md) | ✅ Rendu — **en attente du GO Phase 5** |
-| 5 | Implémentation (par lots, après validation) | `05-implementation.md` | ⏳ Bloqué par GO |
+| 5 | Implémentation (par lots, après validation) | [`05-implementation.md`](./05-implementation.md) | 🔵 Lots 0–1 ✅ livrés — **gate déploiement avant Lot 2** |
 | 6 | Vérification (jeu de test + scénario bout-en-bout par mode) | `06-verification.md` | ⏳ |
 
 ## Règles de travail (rappel)
