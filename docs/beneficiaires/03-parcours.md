@@ -149,11 +149,12 @@
 
 ---
 
-## D. ADMIN — Carnet d'un client hors paiement *(optionnel MVP+)*
-- Section « Bénéficiaires » dans `MobileClientDetail.tsx` (réutilise `useAdminClientBeneficiaries`
-  + create/edit/archive admin). **Hors périmètre strict de l'`exigence_admin`** (qui vise le
-  paiement) → **proposé en option**, à activer si tu veux que l'admin gère le carnet en dehors d'un
-  paiement. *(À confirmer [?].)*
+## D. ADMIN — Carnet d'un client hors paiement *(RETENU ✅)*
+- **Décision porteur produit : inclus.** Section « Bénéficiaires » dans `MobileClientDetail.tsx`
+  (réutilise `useAdminClientBeneficiaries` + create/edit/archive admin) : l'admin liste / ajoute /
+  édite / archive le carnet d'un client **hors d'un paiement**.
+- Même scoping strict (`client_id` du client affiché) ; thème admin (dark) ; recherche/filtre par
+  mode comme §A1. → +1 écran à bâtir (Lot 4, Phase 4).
 
 ---
 
