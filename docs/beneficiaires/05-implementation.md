@@ -102,9 +102,26 @@ Lot 2→6 ; la régénération réelle se fera au déploiement (diff attendu nul
 - Corrige **G7** (save best-effort silencieux) ; complète **G4** (alias au wizard) et le « self
   tous modes » du design §B3.
 
-## Lot 4 — UI admin (paiement + fiche client) · ⏳
-## Lot 5 — Snapshot + complétion · ⏳
-## Lot 6 — Tests E2E + vérif · ⏳
+## Lot 4 — UI admin (paiement + fiche client) · ✅ (commit `0c006ec`)
+- **(C)** `MobileNewPayment` étape 4 : onglets Enregistré/Nouveau + **sélecteur des bénéficiaires du
+  client** (`useAdminClientBeneficiaries`, scope `client.user_id` + RLS → zéro fuite cross-client),
+  enregistrement au carnet (`useAdminCreateBeneficiary`), snapshot `beneficiary_id`+`beneficiary_details`,
+  résumé/succès reflètent le choix, mapping `virement`→`bank_transfer`.
+- **(D)** Nouvelle page `/m/clients/:clientId/beneficiaries` (liste/recherche/filtre/ajout/édition/
+  archivage, réutilise `BeneficiaryForm`) + bouton dans `MobileClientDetail` + route + barrel.
+- i18n fr/en/zh (`common.beneficiaries`/`manageBeneficiaries`).
+- Vérif : type-check 0 · lint 0 erreur · 81/81 tests · build OK. Satisfait **exigence_admin** (G2).
+
+## Lot 5 — Snapshot + complétion « enregistrer au carnet » · ✅ (commit `285f45f`)
+- `EditBeneficiaryPage` (complétion d'un paiement `waiting_beneficiary_info` côté client) : case
+  **« Enregistrer aussi dans mon carnet »** → `useCreateBeneficiary` si coché + non lié + complet
+  pour le mode. Non-bloquant (échec carnet n'annule pas le snapshot).
+- **Test d'immuabilité snapshot** (`beneficiarySnapshot.test.ts`, 4 cas) : copie de valeur, édition
+  source sans effet, lien `beneficiary_id` conservé, CJK préservé, fallback alias.
+- i18n fr/en/zh : `beneficiaries.saveToCarnet`.
+- Vérif : type-check 0 · **85/85 tests** · build OK.
+
+## Lot 6 — Tests + vérif finale · 🔵 (voir `06-verification.md`)
 
 ---
 
