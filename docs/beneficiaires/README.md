@@ -13,8 +13,8 @@ Carnet de bénéficiaires réutilisables par mode de paiement, côté client **e
 | 0 | Cadrage : reformulation, 8 questions de conception + reco, 5 questions critiques | [`00-cadrage.md`](./00-cadrage.md) | ✅ Validé (QC1/3/4/5 tranchés) |
 | 1 | Audit codebase (lecture seule) : stack, modèle actuel paiement/destinataire, flow, points d'extension, code mort | [`01-audit-codebase.md`](./01-audit-codebase.md) | ✅ Rendu — **feature déjà ~70 % implémentée** |
 | 2 | Modélisation des données (= **design de delta**, DB préservée + étendue) | [`02-modele-donnees.md`](./02-modele-donnees.md) | ✅ Rendu — **en attente validation** |
-| 3 | Design des parcours (tous les cas, client + admin) | `03-parcours.md` | ⏳ Bloqué par validation Phase 2 |
-| 4 | Plan d'implémentation (lots, estimations, critères de validation) | `04-plan-implementation.md` | ⏳ |
+| 3 | Design des parcours (tous les cas, client + admin) | [`03-parcours.md`](./03-parcours.md) | ✅ Rendu — **en attente validation** |
+| 4 | Plan d'implémentation (lots, estimations, critères de validation) | `04-plan-implementation.md` | ⏳ Bloqué par validation Phase 3 |
 | 5 | Implémentation (par lots, après validation) | `05-implementation.md` | ⏳ |
 | 6 | Vérification (jeu de test + scénario bout-en-bout par mode) | `06-verification.md` | ⏳ |
 
