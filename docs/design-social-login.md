@@ -14,7 +14,7 @@
 ## 0. TL;DR — les 7 décisions
 
 1. **Google seul**, via `supabase.auth.signInWithOAuth` (flux **redirect + PKCE**), aucun SDK tiers. **[DÉCISION]**
-2. **Config client à modifier** : `flowType:'pkce'` + `detectSessionInUrl:true` sur `supabase` ; **`detectSessionInUrl:false` sur `supabaseAdmin`** (sinon les 2 clients se battent pour le `?code=` du callback). **[DÉCISION/VÉRIFIÉ]**
+2. **Config client à modifier** : `flowType:'pkce'` + `detectSessionInUrl:true` sur `supabase`. ⚠️ Mitigation multi-clients = **ne PAS monter `supabaseAdmin` sur la route `/auth/callback`** (le `detectSessionInUrl:false` seul **ne suffit pas** — bug supabase-js #931 : le code PKCE est traité quoi qu'il arrive). **[DÉCISION/VÉRIFIÉ]**
 3. **Pas de table `oauth_accounts`** : `auth.identities` (built-in Supabase) stocke déjà provider + `sub`. **[DÉCISION]**
 4. **Le trigger `handle_new_user` est étendu** pour créer `clients`+`wallets` aussi pour un user OAuth (sinon ils ne sont jamais créés). **[DÉCISION]**
 5. **Linking = auto-link natif Supabase (vérifié↔vérifié uniquement)** + blocage explicite des cas non vérifiés. **Pré-requis sécurité : "Confirm email" ON.** **[DÉCISION/VÉRIFIÉ]**
@@ -38,7 +38,7 @@
 
 ## 2. Configuration client Supabase (à modifier)
 
-> Aujourd'hui `src/integrations/supabase/client.ts:10-36` ne définit ni `flowType` ni `detectSessionInUrl`. Défauts v2 : `detectSessionInUrl:true`, `flowType:'implicit'` (**[À CONFIRMER]** pour 2.97 — on impose `pkce` explicitement, donc sans impact).
+> Aujourd'hui `src/integrations/supabase/client.ts:10-36` ne définit ni `flowType` ni `detectSessionInUrl`. Défauts v2 **[VÉRIFIÉ — source GoTrueClient]** : `detectSessionInUrl:true`, `flowType:'implicit'` — on impose `pkce` explicitement.
 
 **[DÉCISION]** — design cible (à implémenter en Phase 5) :
 ```
@@ -48,10 +48,10 @@ supabase (app client)
 
 supabaseAdmin (app admin)
   auth: { storageKey:'bonzini-admin-auth', persistSession:true, autoRefreshToken:true,
-          detectSessionInUrl:false }          ◄── empêche la course sur le callback OAuth
+          detectSessionInUrl:false }          ◄── complément ; le vrai fix = ne pas monter ce client sur /auth/callback
 ```
 
-**Pourquoi `detectSessionInUrl:false` sur l'admin :** au retour OAuth, la page `/auth/callback` contient `?code=`. Si les deux `GoTrueClient` ont `detectSessionInUrl:true`, **les deux** tentent l'échange ; or **seul** le client initiateur (`supabase`) possède le *code verifier* PKCE dans son storage → l'autre échoue/consomme le code. **[VÉRIFIÉ — gotcha multi-instances documenté]** **[À CONFIRMER]** : l'app admin et l'app client partagent-elles le même onglet/arbre de routes ? (si jamais montées ensemble, le fix est obligatoire ; sinon c'est une ceinture-bretelles prudente.)
+**Le vrai risque multi-clients (corrigé après recherche) :** au retour OAuth, `/auth/callback` contient `?code=`. Si **les deux** `GoTrueClient` sont instanciés sur cette page, les deux tentent l'échange ; or le *code verifier* PKCE n'existe que sous le storageKey du client initiateur (`bonzini-client-auth`), et un code PKCE n'est échangeable **qu'une seule fois** → l'autre client échoue. **`detectSessionInUrl:false` NE suffit PAS** à bloquer ça (bug supabase-js #931 : le code PKCE est traité indépendamment de ce flag). **Mitigation primaire = isolation de route : ne jamais importer/monter `supabaseAdmin` sur `/auth/callback`** (l'app admin reste en mot de passe → aucune raison de l'y monter). `detectSessionInUrl:false` sur l'admin = ceinture-bretelles complémentaire. **[VÉRIFIÉ]** **[À CONFIRMER]** : aucune page partagée n'importe `supabaseAdmin` sur la route callback.
 
 ---
 
@@ -102,15 +102,15 @@ supabase.auth.signInWithOAuth({ provider:'google',
 | Donnée | Google la fournit ? | Requise au signup actuel ? | Action |
 |---|---|---|---|
 | email | ✅ (`email`, `email_verified`) | ✅ | Identité — vient de Google |
-| prénom | ✅ (`given_name`) — *usuellement* | ✅ | Pré-rempli |
-| nom | ⚠️ (`family_name`) — *parfois absent* | ✅ | Pré-rempli, éditable (fallback vide) |
+| nom complet | ✅ (`full_name` / `name`, **chaîne unique**) | ✅ (prénom+nom) | Pré-rempli, **éditable** à l'onboarding |
+| prénom / nom séparés | ❌ Supabase **ne mappe PAS** `given_name`/`family_name` | ✅ | Découpe heuristique de `full_name` → corrigé par l'user |
 | photo | ✅ (`picture`/`avatar_url`) | ❌ | Optionnel → `clients.avatar_url` |
 | **téléphone** | ❌ | ✅ (`phoneSchema.min(8)`) | **Onboarding (bloquant)** |
 | **pays** | ❌ | ✅ | **Onboarding (bloquant)** |
 | société, secteur, adresse, date naiss. | ❌ | ❌ (optionnels) | Onboarding (optionnels / plus tard) |
 
 **[VÉRIFIÉ]** champs requis actuels = `firstName,lastName,country,phone,email,password` (`src/pages/AuthPage.tsx` steps 0-1-4). En OAuth, pas de password ; **seuls `phone` + `country` manquent** réellement.
-**[VÉRIFIÉ]** Lire les claims fiables depuis `user.identities[].identity_data` (plus stable que `user_metadata`, écrasable). `sub` = clé provider stable ; `family_name`/`locale` non garantis.
+**[VÉRIFIÉ]** Google via Supabase fournit `full_name`/`name` (**pas** de prénom/nom séparés dans `user_metadata` — Supabase les écarte). Claims bruts dans `user.identities[].identity_data` ; `sub` = clé provider stable.
 
 ---
 
@@ -132,10 +132,12 @@ IF NEW.raw_user_meta_data->>'is_client' = 'true'
   INSERT INTO public.clients (user_id, first_name, last_name, phone, email)
   VALUES (
     NEW.id,
+    -- OAuth Google: pas de prénom/nom séparés → full_name dans first_name,
+    -- l'onboarding laisse l'user corriger prénom/nom
     COALESCE(NEW.raw_user_meta_data->>'first_name',
-             NEW.raw_user_meta_data->>'given_name', 'Utilisateur'),
-    COALESCE(NEW.raw_user_meta_data->>'last_name',
-             NEW.raw_user_meta_data->>'family_name', ''),
+             NEW.raw_user_meta_data->>'full_name',
+             NEW.raw_user_meta_data->>'name', 'Utilisateur'),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
     NEW.raw_user_meta_data->>'phone',     -- NULL en OAuth → complété à l'onboarding
     NEW.email
   ) ON CONFLICT (user_id) DO NOTHING;     -- idempotent (ajout vs version actuelle)
@@ -165,6 +167,8 @@ Supabase **auto-lie** une nouvelle identité (Google) à un user existant **si e
 | **B** | true | email/mdp **NON vérifié** (legacy) | **Pas d'auto-link** (Supabase refuse). On affiche : « connecte-toi par mot de passe puis lie Google depuis ton profil ». **Aucun 2e compte créé.** |
 | **C** | true | aucun | **Nouveau user** Google → trigger crée client+wallet → onboarding phone/country → actif. |
 | **D** | **false** | quelconque | **Blocage** : `signOut()` + erreur. Jamais de création/lien. (Fintech : un email non vérifié n'atteint pas le KYC.) |
+
+> **Nuance [VÉRIFIÉ] :** pour un compte Google dont l'email n'est **pas** `@gmail.com` et sans claim `hd` (Workspace), `email_verified=true` ne signifie PAS que Google fait autorité sur cet email. On s'appuie donc sur la confirmation côté Supabase, pas seulement sur le claim Google. (Cas rare pour la cible CEMAC, majoritairement Gmail.)
 
 ### 6.3 Pré-requis non négociable : "Confirm email" ON **[DÉCISION/sécurité]**
 Si "Confirm email" est **OFF**, un attaquant peut créer `victime@gmail.com` par mot de passe (compte considéré "confirmé" sans preuve) ; au login Google de la victime, l'auto-link pourrait rattacher son identité Google au compte de l'attaquant. **→ Garder/activer "Confirm email" ON** rend le cas B impossible en régime permanent (plus de squatteur non vérifié).
@@ -254,7 +258,8 @@ Un client connecté sans `phone`+`country` → redirigé vers `/onboarding` avan
 
 **Google Cloud Console** (je ne peux pas le faire) :
 1. OAuth consent screen : External, scopes `openid/email/profile`, privacy policy + homepage, **publier en Production** (évite l'avertissement "app non vérifiée" + le cap 100 users). Astuce : **pas de logo custom** au début (déclenche une revue brand de plusieurs jours). **[VÉRIFIÉ]**
-2. Credentials → OAuth client ID **Web application** → Authorized redirect URI = **`https://fmhsohrgbznqmcvqktjw.supabase.co/auth/v1/callback`**. **[VÉRIFIÉ]**
+2. Credentials → OAuth client ID **Web application** → Authorized redirect URI = **`https://fmhsohrgbznqmcvqktjw.supabase.co/auth/v1/callback`** (+ `http://127.0.0.1:54321/auth/v1/callback` en dev). Ajouter aussi le domaine de l'app en **Authorized JavaScript origins** (défensif). **[VÉRIFIÉ]**
+   - *Recommandé (confiance + cohérence avec l'email)* : domaine d'auth custom **`auth.bonzinilabs.com`**, sinon Google affiche `fmhsohrgbznqmcvqktjw.supabase.co` sur l'écran de consentement.
 
 **Supabase Dashboard** :
 3. Authentication → Providers → **Google** : coller Client ID + Client Secret.
@@ -266,8 +271,7 @@ Un client connecté sans `phone`+`country` → redirigé vers `/onboarding` avan
 ## 10. Points à confirmer / tester (Phase 6)
 - **[À CONFIRMER]** Comportement exact de GoTrue au **cas B** (erreur renvoyée vs création d'un user séparé) → à tester réellement.
 - **[À CONFIRMER]** "Confirm email" actuellement ON ou OFF (dashboard).
-- **[À CONFIRMER]** App admin & app client jamais montées dans le même onglet (sinon `detectSessionInUrl:false` admin obligatoire).
-- **[À CONFIRMER]** `flowType` défaut en supabase-js 2.97 (sans impact, on force `pkce`).
+- **[À CONFIRMER]** Aucune page n'importe `supabaseAdmin` sur `/auth/callback` (isolation de route — cf. §2, bug supabase-js #931).
 
 ---
 
@@ -281,6 +285,9 @@ Un client connecté sans `phone`+`country` → redirigé vers `/onboarding` avan
 - Google — OpenID Connect claims : https://developers.google.com/identity/openid-connect/openid-connect
 - Google — OAuth scopes : https://developers.google.com/identity/protocols/oauth2/scopes
 - Google — App verification / production : https://support.google.com/cloud/answer/13463073
+- supabase-js #931 — detectSessionInUrl ignoré en PKCE : https://github.com/supabase/supabase-js/issues/931
+- Supabase — pré-account-takeover si "Confirm email" OFF : https://github.com/orgs/supabase/discussions/29327
+- Supabase — Google ne renvoie pas given_name/family_name : https://github.com/orgs/supabase/discussions/28415
 
 ---
 
