@@ -10,7 +10,7 @@ create table if not exists public.assistant_pending_actions (
   tool            text not null,
   args            jsonb not null default '{}'::jsonb,
   summary         jsonb not null default '{}'::jsonb,
-  status          text not null default 'pending' check (status in ('pending','executed','cancelled','failed')),
+  status          text not null default 'pending' check (status in ('pending','executing','executed','cancelled','failed')),
   result          jsonb,
   created_at      timestamptz not null default now(),
   resolved_at     timestamptz

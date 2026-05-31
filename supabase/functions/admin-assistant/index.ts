@@ -93,7 +93,10 @@ const READ_TOOLS: ReadTool[] = [
     description: "Rechercher des clients par nom, prénom, téléphone ou entreprise. Renvoie id, user_id, nom, téléphone, pays, statut KYC.",
     input_schema: { type: "object", properties: { query: { type: "string" }, limit: { type: "number" } }, required: ["query"] },
     execute: async (admin, { query, limit }) => {
-      const term = `%${String(query ?? "").trim()}%`;
+      // Nettoyage : retire les caractères de structure PostgREST ( , ) : * % ) du terme
+      const clean = String(query ?? "").trim().replace(/[,():*%]/g, " ").replace(/\s+/g, " ").trim();
+      if (!clean) return { count: 0, clients: [] };
+      const term = `%${clean}%`;
       const { data, error } = await admin
         .from("clients")
         .select("id, user_id, first_name, last_name, phone, company_name, country, city, status, kyc_verified")
@@ -386,6 +389,8 @@ interface PrepareErr { ok: false; error: string; }
 interface WriteTool {
   name: string;
   permission: PermKey;
+  /** Défense en profondeur : action réservée au super_admin (en plus de la garde DB). */
+  superAdminOnly?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
@@ -667,6 +672,7 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "cancel_payment",
     permission: "canProcessPayments",
+    superAdminOnly: true,
     description: "Annuler un paiement non finalisé (par référence ou payment_id) → REMBOURSE le wallet du client. Réservé au super_admin (vérifié côté serveur).",
     input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
     prepare: async (admin, a) => {
@@ -710,6 +716,7 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "delete_client",
     permission: "canManageUsers",
+    superAdminOnly: true,
     description: "⚠️ SUPPRESSION DÉFINITIVE d'un client et de tout son historique (wallet, dépôts, paiements). Irréversible. Réservé au super_admin. À n'utiliser qu'en dernier recours.",
     input_schema: { type: "object", properties: { client_user_id: { type: "string" } }, required: ["client_user_id"] },
     prepare: async (admin, a) => {
@@ -810,6 +817,20 @@ serve(async (req) => {
       const tool = WRITE_TOOLS.find((t) => t.name === pa.tool);
       if (!tool) return json({ success: false, error: "Outil inconnu" }, 400);
       if (!perms[tool.permission]) return json({ success: false, error: "Permission insuffisante pour exécuter cette action." }, 403);
+      // Défense en profondeur : super_admin requis pour les actions les plus sensibles
+      if (tool.superAdminOnly && role !== "super_admin") {
+        return json({ success: false, error: "Action réservée au super administrateur." }, 403);
+      }
+
+      // Prise ATOMIQUE de l'action (pending → executing) : empêche le double-tap concurrent
+      const { data: claimed } = await admin
+        .from("assistant_pending_actions")
+        .update({ status: "executing" })
+        .eq("id", actionId).eq("status", "pending")
+        .select("id");
+      if (!claimed || claimed.length === 0) {
+        return json({ success: false, error: "Cette action est déjà en cours ou traitée." }, 409);
+      }
 
       let result: Record<string, unknown>;
       try { result = await tool.execute(userClient, pa.args); }
