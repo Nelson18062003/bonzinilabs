@@ -24,6 +24,7 @@ interface AuthContextType {
   isLoading: boolean;
   signUp: (data: SignUpData) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
@@ -125,7 +126,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    
+
+    return { error: error as Error | null };
+  };
+
+  // Social login Google (flux redirect + PKCE).
+  // Le retour se fait sur /auth/callback (cf. AuthCallbackPage), où la
+  // session est établie puis l'utilisateur est routé vers l'onboarding
+  // (champs métier manquants : téléphone, pays) ou l'app.
+  const signInWithGoogle = async () => {
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        scopes: 'openid email profile',
+      },
+    });
+    // En cas de succès, le navigateur est déjà en train de rediriger.
     return { error: error as Error | null };
   };
 
@@ -156,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         resetPassword,
         updatePassword,

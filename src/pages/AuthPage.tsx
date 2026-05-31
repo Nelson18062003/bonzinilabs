@@ -9,6 +9,7 @@ import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { PhoneCountryInput, COUNTRIES } from '@/components/auth/PhoneCountryInput';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
@@ -44,8 +45,9 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation('auth');
-  const { signIn, signUp, resetPassword, updatePassword, isLoading: authLoading, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, isLoading: authLoading, user } = useAuth();
 
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [mode, setMode] = useState<AuthMode>('login');
   const [loginStep, setLoginStep] = useState<0 | 1>(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
@@ -182,6 +184,19 @@ export default function AuthPage() {
     toast.success(t('toast.welcome'));
     setIsFadingOut(true);
     setTimeout(() => navigate('/wallet'), 300);
+  };
+
+  // Social login Google : redirige vers Google ; le retour est géré par
+  // /auth/callback (session + routage onboarding/app).
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    track('client_google_signin_click');
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setGoogleLoading(false);
+      toast.error(t('validation.loginError', { defaultValue: 'Connexion impossible. Réessayez.' }));
+    }
+    // En cas de succès, le navigateur redirige : on laisse le spinner actif.
   };
 
   // Forgot password
@@ -439,6 +454,23 @@ export default function AuthPage() {
                   >
                     {t('login.continue')}
                   </button>
+                </div>
+
+                {/* Social login Google */}
+                <div
+                  className="animate-slide-up"
+                  style={{ animationDelay: '320ms', animationFillMode: 'both' }}
+                >
+                  <div className="flex items-center gap-3 my-5">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-muted-foreground">{t('login.or', { defaultValue: 'ou' })}</span>
+                    <Separator className="flex-1" />
+                  </div>
+                  <GoogleButton
+                    onClick={handleGoogleSignIn}
+                    loading={googleLoading}
+                    label={t('login.continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
+                  />
                 </div>
               </form>
             ) : (
@@ -791,6 +823,19 @@ export default function AuthPage() {
                   >
                     {t('common:continue')}
                   </button>
+
+                  {/* Social login Google — raccourci d'inscription */}
+                  <div className="flex items-center gap-3 my-1">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-muted-foreground">{t('login.or', { defaultValue: 'ou' })}</span>
+                    <Separator className="flex-1" />
+                  </div>
+                  <GoogleButton
+                    onClick={handleGoogleSignIn}
+                    loading={googleLoading}
+                    disabled={isSubmitting}
+                    label={t('signup.continueWithGoogle', { defaultValue: 'S\'inscrire avec Google' })}
+                  />
                 </form>
               )}
 
