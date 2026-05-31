@@ -12,8 +12,10 @@
 --     par RPC avec provider='email' et sans is_client → ils ne matchent pas.
 --   - Donc provider='google' ⇒ c'est un client. Aucun risque d'escalade
 --     (un user OAuth n'obtient jamais de ligne user_roles).
---   - Le blocage email_verified=false (cas D) se fait au niveau applicatif
---     (callback) ; créer ici une coquille vide (wallet à 0) est inoffensif.
+--   - email_verified=false (cas D) : on REFUSE de créer clients+wallets côté
+--     serveur (defense-in-depth, en plus du blocage dans le callback). Ainsi,
+--     même si un attaquant ignore la redirection client, aucune coquille de
+--     compte n'est matérialisée pour un email Google non vérifié.
 --
 -- IDEMPOTENCE : ON CONFLICT (user_id) DO NOTHING sur clients ET wallets
 -- (la version précédente ne l'avait que sur wallets).
@@ -29,9 +31,20 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_is_oauth   BOOLEAN := (NEW.raw_app_meta_data ->> 'provider' = 'google');
+  v_is_client  BOOLEAN := (NEW.raw_user_meta_data ->> 'is_client' = 'true');
+  -- Pour un signup OAuth Google, n'accepter que les emails vérifiés
+  -- (defense-in-depth, miroir du cas D du callback). GoTrue place le claim
+  -- dans raw_user_meta_data.email_verified.
+  v_oauth_email_verified BOOLEAN := (NEW.raw_user_meta_data ->> 'email_verified' = 'true');
 BEGIN
-  IF NEW.raw_user_meta_data ->> 'is_client' = 'true'
-     OR NEW.raw_app_meta_data ->> 'provider' = 'google' THEN
+  -- Bloc OAuth : on exige un email vérifié.
+  IF v_is_oauth AND NOT v_is_client AND NOT v_oauth_email_verified THEN
+    RETURN NEW;  -- email Google non vérifié → aucune création (cas D, côté serveur)
+  END IF;
+
+  IF v_is_client OR v_is_oauth THEN
 
     -- clients : source de vérité côté métier
     INSERT INTO public.clients (user_id, first_name, last_name, phone, email, avatar_url)

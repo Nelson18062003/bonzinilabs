@@ -31,10 +31,15 @@ export function ProtectedRoute({ children, requireComplete = true }: ProtectedRo
     return <Navigate to="/auth" replace />;
   }
 
-  // Garde de complétion : phone + country sont les champs métier bloquants
-  // (un compte Google fraîchement créé ne les a pas encore). On bloque l'accès
-  // aux fonctions financières tant qu'ils manquent.
-  if (requireComplete && profile && (!profile.phone || !profile.country)) {
+  // Garde de complétion : le TÉLÉPHONE est le champ métier bloquant.
+  // C'est le seul champ requis dans les DEUX parcours de création existants
+  // (self-signup ET création admin), donc tous les clients legacy l'ont ; et
+  // c'est précisément ce qu'un compte Google n'a pas. On NE gate PAS sur le
+  // pays : il est optionnel pour les clients créés par un admin (défaut NULL),
+  // gater dessus enfermerait des clients legacy hors de leur app.
+  // FAIL-CLOSED : profil absent/en erreur → on renvoie vers l'onboarding
+  // plutôt que d'exposer l'UI financière sur un fetch raté.
+  if (requireComplete && (!profile || !profile.phone)) {
     return <Navigate to="/onboarding" replace />;
   }
 

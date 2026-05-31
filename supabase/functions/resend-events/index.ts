@@ -86,6 +86,9 @@ serve(async (req) => {
     return new Response("DB error", { status: 500 });
   }
 
-  console.log(`resend-events: ${evt.type} ${messageId ?? ""} ${recipient ?? ""}`);
+  // Log sans PII ni caractères de contrôle (anti log-injection) :
+  // type + message_id seulement, pas l'email destinataire en clair.
+  const safe = (s: string) => s.replace(/[\r\n\t]/g, " ").slice(0, 120);
+  console.log(`resend-events: ${safe(evt.type)} ${safe(messageId ?? "")}`);
   return new Response("OK", { status: 200 });
 });

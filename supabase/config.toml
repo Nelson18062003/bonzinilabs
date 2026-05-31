@@ -10,3 +10,9 @@ verify_jwt = false
 # Authenticity is enforced via Svix signature verification inside the function.
 [functions.resend-events]
 verify_jwt = false
+
+# send-email is driven by pg_cron via pg_net (no Supabase user JWT).
+# Authenticity is enforced via the mandatory EMAIL_DRAINER_SECRET bearer check
+# inside the function (constant-time compare).
+[functions.send-email]
+verify_jwt = false

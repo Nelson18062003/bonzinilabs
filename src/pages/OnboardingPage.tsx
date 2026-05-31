@@ -43,10 +43,13 @@ export default function OnboardingPage() {
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
-    if (profile?.phone && profile?.country) {
+    // Le téléphone est le champ bloquant (cf. ProtectedRoute) : s'il est déjà
+    // présent (client legacy / déjà onboardé), on ne reste pas sur l'onboarding.
+    if (profile?.phone) {
       navigate('/wallet', { replace: true });
     }
     // Pré-remplir si des valeurs existent déjà partiellement.
+    if (profile?.country) setCountry(profile.country);
     if (profile?.company_name) setCompanyName(profile.company_name);
     if (profile?.activity_sector) setActivitySector(profile.activity_sector);
   }, [profile, navigate]);
@@ -82,6 +85,10 @@ export default function OnboardingPage() {
       toast.error("Échec de l'enregistrement. Veuillez réessayer.");
       return;
     }
+
+    // Email de bienvenue (best-effort, non bloquant ; no-op tant que le
+    // template welcome n'est pas activé côté serveur).
+    void supabase.rpc('enqueue_welcome_email');
 
     await queryClient.invalidateQueries({ queryKey: ['my-profile', user.id] });
     toast.success('Profil complété 🎉');

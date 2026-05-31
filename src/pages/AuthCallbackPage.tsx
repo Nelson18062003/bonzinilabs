@@ -28,23 +28,36 @@ export default function AuthCallbackPage() {
     // Erreur renvoyée directement par Supabase/Google dans l'URL.
     const urlError = searchParams.get('error_description') || searchParams.get('error');
 
-    const routeAfterSession = async (userId: string, email: string | undefined,
-                                      emailVerified: boolean) => {
+    // Lit le claim email_verified de façon AUTORITAIRE depuis l'identité du
+    // provider (et non depuis user_metadata, modifiable, ni email_confirmed_at,
+    // que Supabase positionne en OAuth indépendamment de la vérif Google).
+    // Fail-closed : tout ce qui n'est pas strictement vérifié est rejeté.
+    const isProviderEmailVerified = (
+      user: { identities?: Array<{ provider: string; identity_data?: Record<string, unknown> }> },
+    ): boolean => {
+      const ids = user.identities ?? [];
+      // S'il existe au moins une identité OAuth, exiger email_verified===true sur l'une d'elles.
+      const oauth = ids.filter((i) => i.provider !== 'email');
+      if (oauth.length === 0) return true; // compte email/mdp classique : géré par Supabase
+      return oauth.some((i) => i.identity_data?.email_verified === true);
+    };
+
+    const routeAfterSession = async (userId: string, verified: boolean) => {
       // Cas D — email non vérifié : on bloque (fintech : pas de KYC sur email non sûr).
-      if (email && emailVerified === false) {
+      if (!verified) {
         await supabase.auth.signOut();
         setError('email_unverified');
         return;
       }
 
-      // Profil : phone + country sont les champs métier bloquants.
+      // Profil : le téléphone est le champ métier bloquant (cf. ProtectedRoute).
       const { data: client } = await supabase
         .from('clients')
-        .select('phone, country')
+        .select('phone')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const complete = !!client?.phone && !!client?.country;
+      const complete = !!client?.phone;
       navigate(complete ? '/wallet' : '/onboarding', { replace: true });
     };
 
@@ -62,10 +75,7 @@ export default function AuthCallbackPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const u = session.user;
-        await routeAfterSession(
-          u.id, u.email,
-          (u.user_metadata?.email_verified ?? u.email_confirmed_at != null) as boolean,
-        );
+        await routeAfterSession(u.id, isProviderEmailVerified(u));
       }
     };
 
@@ -73,10 +83,7 @@ export default function AuthCallbackPage() {
       if (event === 'SIGNED_IN' && session?.user && !handled.current) {
         handled.current = true;
         const u = session.user;
-        void routeAfterSession(
-          u.id, u.email,
-          (u.user_metadata?.email_verified ?? u.email_confirmed_at != null) as boolean,
-        );
+        void routeAfterSession(u.id, isProviderEmailVerified(u));
       }
     });
 

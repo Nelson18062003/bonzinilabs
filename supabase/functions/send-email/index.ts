@@ -181,13 +181,27 @@ async function sendViaResend(
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
+// Comparaison à temps constant (évite un canal temporel sur le secret).
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  if (ab.length !== bb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
+
 serve(async (req) => {
-  // Auth interne : le cron passe le secret en Bearer.
+  // POST uniquement (un GET ne doit pas déclencher un run d'envoi).
+  if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+
+  // Auth interne OBLIGATOIRE : le cron passe le secret en Bearer.
+  // Si le secret n'est pas configuré, on refuse (fail-closed) — jamais ouvert.
   const secret = Deno.env.get("EMAIL_DRAINER_SECRET");
-  if (secret) {
-    const incoming = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (incoming !== secret) return new Response("Unauthorized", { status: 401 });
-  }
+  if (!secret) return new Response("Missing EMAIL_DRAINER_SECRET", { status: 500 });
+  const incoming = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!timingSafeEqual(incoming, secret)) return new Response("Unauthorized", { status: 401 });
 
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return new Response("Missing RESEND_API_KEY", { status: 500 });
@@ -255,7 +269,7 @@ serve(async (req) => {
         next_attempt_at: new Date(Date.now() + backoffMin * 60_000).toISOString(),
       }).eq("id", id);
       failed++;
-      console.error(`send-email ${id}: ${result.error}`);
+      console.error(`send-email ${id}: ${(result.error ?? "").replace(/[\r\n\t]/g, " ").slice(0, 200)}`);
     }
   }
 
