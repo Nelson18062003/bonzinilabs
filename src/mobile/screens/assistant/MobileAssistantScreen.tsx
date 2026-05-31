@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Bot, Loader2, Paperclip, X, FileText } from 'lucide-react';
+import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useAdminAssistant } from '@/hooks/useAdminAssistant';
+import { useAdminAssistant, type AssistantProposal } from '@/hooks/useAdminAssistant';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { validateUploadFile, cn } from '@/lib/utils';
 
@@ -24,9 +24,90 @@ interface PendingFile {
   isPdf: boolean;
 }
 
+// Carte de confirmation d'une action sensible (créer/valider dépôt, paiement, taux…)
+function ConfirmationCard({
+  proposal,
+  onConfirm,
+  onCancel,
+}: {
+  proposal: AssistantProposal;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { summary, state } = proposal;
+  const accent = summary.danger ? 'hsl(16,100%,55%)' : 'hsl(258,100%,60%)';
+  const resolved = state === 'done' || state === 'cancelled' || state === 'failed';
+
+  return (
+    <div
+      className="w-full max-w-[92%] rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
+      style={{ borderLeftWidth: 4, borderLeftColor: accent }}
+    >
+      <div className="px-4 pt-3 pb-2">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          {summary.danger ? 'Action sensible' : 'À confirmer'}
+        </p>
+        <p className="font-semibold text-[15px]">{summary.title}</p>
+        {summary.subtitle && <p className="text-xs text-muted-foreground mt-0.5">{summary.subtitle}</p>}
+      </div>
+
+      {summary.amount && (
+        <div className="px-4 pb-1">
+          <span className="text-2xl font-extrabold tracking-tight">{summary.amount}</span>
+        </div>
+      )}
+
+      <div className="px-4 py-2 space-y-1.5">
+        {summary.lines.map((l, i) => (
+          <div key={i} className="flex items-center justify-between gap-3 text-[13px]">
+            <span className="text-muted-foreground shrink-0">{l.label}</span>
+            <span className="font-medium text-right">{l.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Zone d'action / état */}
+      {state === 'pending' && (
+        <div className="flex gap-2 p-3">
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-xl py-3 text-sm font-bold text-white"
+            style={{ background: `linear-gradient(135deg, ${accent}, hsl(16,100%,55%))` }}
+          >
+            {summary.confirmLabel}
+          </button>
+          <button onClick={onCancel} className="px-4 rounded-xl py-3 text-sm font-semibold bg-muted text-foreground">
+            Annuler
+          </button>
+        </div>
+      )}
+      {state === 'executing' && (
+        <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
+          <Loader className="w-4 h-4 animate-spin" /> Exécution…
+        </div>
+      )}
+      {state === 'done' && (
+        <div className="flex items-center gap-2 p-3 text-sm font-medium text-green-600 dark:text-green-400">
+          <Check className="w-4 h-4" /> {proposal.resultText || 'Action exécutée'}
+        </div>
+      )}
+      {state === 'cancelled' && (
+        <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
+          <X className="w-4 h-4" /> Action annulée
+        </div>
+      )}
+      {state === 'failed' && (
+        <div className="flex items-center gap-2 p-3 text-sm text-destructive">
+          <AlertTriangle className="w-4 h-4" /> {proposal.resultText || 'Échec'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MobileAssistantScreen() {
   const { profile } = useAdminAuth();
-  const { messages, isLoading, sendMessage } = useAdminAssistant();
+  const { messages, isLoading, sendMessage, confirmProposal, cancelProposal } = useAdminAssistant();
   const [input, setInput] = useState('');
   const [pending, setPending] = useState<PendingFile[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -125,7 +206,7 @@ export function MobileAssistantScreen() {
         ) : (
           <div className="space-y-3">
             {messages.map((m) => (
-              <div key={m.id} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
+              <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'items-start')}>
                 <div
                   className={cn(
                     'max-w-[85%] px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words rounded-2xl',
@@ -157,6 +238,14 @@ export function MobileAssistantScreen() {
                   ) : null}
                   {m.text}
                 </div>
+                {m.proposals?.map((p) => (
+                  <ConfirmationCard
+                    key={p.id}
+                    proposal={p}
+                    onConfirm={() => confirmProposal(p.id)}
+                    onCancel={() => cancelProposal(p.id)}
+                  />
+                ))}
               </div>
             ))}
             {isLoading && (
