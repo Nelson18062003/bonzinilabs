@@ -5,3 +5,8 @@ project_id = "fmhsohrgbznqmcvqktjw"
 # with a 401 before the function code is even reached.
 [functions.generate-flyer]
 verify_jwt = false
+
+# resend-events receives Resend webhooks (external, no Supabase JWT).
+# Authenticity is enforced via Svix signature verification inside the function.
+[functions.resend-events]
+verify_jwt = false

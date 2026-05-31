@@ -15,6 +15,9 @@ export const supabase = createClient<Database>(
       storageKey: 'bonzini-client-auth',
       persistSession: true,
       autoRefreshToken: true,
+      // OAuth (Google): PKCE + lecture du ?code= au retour sur /auth/callback.
+      flowType: 'pkce',
+      detectSessionInUrl: true,
     },
   }
 );
@@ -31,6 +34,11 @@ export const supabaseAdmin = createClient<Database>(
       storageKey: 'bonzini-admin-auth',
       persistSession: true,
       autoRefreshToken: true,
+      // L'app admin n'utilise PAS l'OAuth. On désactive la détection du
+      // ?code= pour éviter toute course avec le client sur /auth/callback.
+      // (Mitigation complémentaire ; la garde primaire est de ne jamais
+      // monter supabaseAdmin sur la route de callback — cf. design-social-login.md §2.)
+      detectSessionInUrl: false,
     },
   }
 );
