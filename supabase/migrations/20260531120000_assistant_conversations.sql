@@ -29,6 +29,7 @@ alter table public.assistant_conversations enable row level security;
 alter table public.assistant_messages enable row level security;
 
 -- Conversations : propriétaire uniquement, et doit être un admin actif (non désactivé)
+drop policy if exists "assistant_conversations_owner_select" on public.assistant_conversations;
 create policy "assistant_conversations_owner_select"
   on public.assistant_conversations for select
   using (
@@ -39,6 +40,7 @@ create policy "assistant_conversations_owner_select"
     )
   );
 
+drop policy if exists "assistant_conversations_owner_insert" on public.assistant_conversations;
 create policy "assistant_conversations_owner_insert"
   on public.assistant_conversations for insert
   with check (
@@ -49,16 +51,19 @@ create policy "assistant_conversations_owner_insert"
     )
   );
 
+drop policy if exists "assistant_conversations_owner_update" on public.assistant_conversations;
 create policy "assistant_conversations_owner_update"
   on public.assistant_conversations for update
   using (admin_user_id = auth.uid())
   with check (admin_user_id = auth.uid());
 
+drop policy if exists "assistant_conversations_owner_delete" on public.assistant_conversations;
 create policy "assistant_conversations_owner_delete"
   on public.assistant_conversations for delete
   using (admin_user_id = auth.uid());
 
 -- Messages : visibles/insérables si on possède la conversation parente
+drop policy if exists "assistant_messages_owner_select" on public.assistant_messages;
 create policy "assistant_messages_owner_select"
   on public.assistant_messages for select
   using (
@@ -68,6 +73,7 @@ create policy "assistant_messages_owner_select"
     )
   );
 
+drop policy if exists "assistant_messages_owner_insert" on public.assistant_messages;
 create policy "assistant_messages_owner_insert"
   on public.assistant_messages for insert
   with check (
