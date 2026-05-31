@@ -145,6 +145,18 @@ function render(template: string, payload: Record<string, unknown>): Rendered {
         html: layout({ heading: "Paiement rejeté", bodyHtml: body, accent: "hsl(258 100% 60%)" }),
         text: `Votre paiement a été rejeté et remboursé.\n${message}` };
     }
+    case "welcome": {
+      // Le payload de bienvenue porte first_name à la racine (cf. enqueue_welcome_email).
+      const first = esc((payload.first_name as string) ?? meta.first_name ?? "");
+      const greet = first ? `Bienvenue ${first} 👋` : "Bienvenue 👋";
+      const body =
+        `<p>Votre compte Bonzini est prêt.</p>` +
+        `<p>Vous pouvez dès maintenant <b>régler vos fournisseurs chinois en XAF</b>, suivre vos paiements et consulter le taux du jour — directement depuis l'application.</p>` +
+        `<div style="margin:20px 0 4px;"><a href="https://www.bonzinilabs.com/auth" style="display:inline-block;background:hsl(36 100% 55%);color:#1a1a1a;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px;">Accéder à mon espace</a></div>`;
+      return { subject: first ? `Bienvenue chez Bonzini, ${first}` : "Bienvenue chez Bonzini",
+        html: layout({ heading: greet, bodyHtml: body, accent: "hsl(36 100% 55%)" }),
+        text: `${greet}\n\nVotre compte Bonzini est prêt. Vous pouvez désormais régler vos fournisseurs chinois en XAF depuis l'application : https://www.bonzinilabs.com/auth` };
+    }
     default: {
       // Fallback robuste : utilise title/message déjà localisés par la RPC.
       const body = `<p>${message || "Vous avez une nouvelle notification."}</p>` + refLine;
