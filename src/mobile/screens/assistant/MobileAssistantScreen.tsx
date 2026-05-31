@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle } from 'lucide-react';
+import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, SquarePen } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAssistant, type AssistantProposal } from '@/hooks/useAdminAssistant';
@@ -24,6 +24,21 @@ interface PendingFile {
   isPdf: boolean;
 }
 
+// Rendu léger du texte : **gras** → <strong>. Le reste en texte brut
+// (whitespace-pre-wrap gère les retours à la ligne). Pas de HTML injecté.
+function RichText({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((p, i) =>
+        /^\*\*[^*]+\*\*$/.test(p)
+          ? <strong key={i}>{p.slice(2, -2)}</strong>
+          : <span key={i}>{p}</span>,
+      )}
+    </>
+  );
+}
+
 // Carte de confirmation d'une action sensible (créer/valider dépôt, paiement, taux…)
 function ConfirmationCard({
   proposal,
@@ -36,7 +51,6 @@ function ConfirmationCard({
 }) {
   const { summary, state } = proposal;
   const accent = summary.danger ? 'hsl(16,100%,55%)' : 'hsl(258,100%,60%)';
-  const resolved = state === 'done' || state === 'cancelled' || state === 'failed';
 
   return (
     <div
@@ -107,11 +121,34 @@ function ConfirmationCard({
 
 export function MobileAssistantScreen() {
   const { profile } = useAdminAuth();
-  const { messages, isLoading, sendMessage, confirmProposal, cancelProposal } = useAdminAssistant();
+  const { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset, loadHistory } = useAdminAssistant();
   const [input, setInput] = useState('');
   const [pending, setPending] = useState<PendingFile[]>([]);
+  // Hauteur du viewport VISIBLE (au-dessus du clavier) — comportement type WhatsApp.
+  const [viewportH, setViewportH] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reprend la dernière conversation au montage (historique)
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  // Suit le clavier via visualViewport : la zone se réduit à l'espace visible,
+  // donc la barre d'écriture reste juste au-dessus du clavier (et ne "saute" plus).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      setViewportH(vv.height);
+      requestAnimationFrame(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; });
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -170,12 +207,36 @@ export function MobileAssistantScreen() {
     }
   };
 
+  const handleNew = () => {
+    if (isLoading) return;
+    reset();
+    setInput('');
+    pending.forEach((p) => URL.revokeObjectURL(p.url));
+    setPending([]);
+  };
+
   const canSend = (!!input.trim() || pending.length > 0) && !isLoading;
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background">
-      <MobileHeader title="Assistant" subtitle="Directeur des Opérations" showBack />
+    <div
+      className="flex flex-col bg-background overflow-hidden"
+      style={{ height: viewportH ? `${viewportH}px` : '100dvh' }}
+    >
+      <MobileHeader
+        title="Assistant"
+        subtitle="Directeur des Opérations"
+        showBack
+        rightElement={
+          <button
+            onClick={handleNew}
+            aria-label="Nouvelle conversation"
+            className="flex items-center justify-center w-10 h-10 -mr-2 rounded-full active:bg-muted transition-colors"
+          >
+            <SquarePen className="w-5 h-5" />
+          </button>
+        }
+      />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
         {isEmpty ? (
@@ -236,7 +297,7 @@ export function MobileAssistantScreen() {
                       )}
                     </div>
                   ) : null}
-                  {m.text}
+                  {m.text && <RichText text={m.text} />}
                 </div>
                 {m.proposals?.map((p) => (
                   <ConfirmationCard
@@ -318,7 +379,7 @@ export function MobileAssistantScreen() {
             className={cn(
               'w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-opacity',
               BRAND_GRADIENT,
-              !canSend && 'opacity-40',
+              (!canSend) && 'opacity-40',
             )}
           >
             <Send className="w-5 h-5" />

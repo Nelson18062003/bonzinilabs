@@ -205,5 +205,57 @@ export function useAdminAssistant() {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset };
+  // Reprend la dernière conversation de l'admin (transcript + actions encore en attente).
+  const loadHistory = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabaseAdmin.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data: conv } = await supabaseAdmin
+        .from('assistant_conversations')
+        .select('id')
+        .eq('admin_user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conv) return;
+      conversationIdRef.current = conv.id;
+
+      const { data: msgs } = await supabaseAdmin
+        .from('assistant_messages')
+        .select('role, content')
+        .eq('conversation_id', conv.id)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      const mapped: AssistantMessage[] = (msgs ?? [])
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => {
+          const c = (m.content ?? {}) as { text?: string; attachments?: Array<{ name: string; mime: string }> };
+          const atts = Array.isArray(c.attachments) && c.attachments.length
+            ? c.attachments.map((a) => ({ name: a.name, kind: attachmentKind(a.mime) }))
+            : undefined;
+          return { id: crypto.randomUUID(), role: m.role as 'user' | 'assistant', text: c.text ?? '', attachments: atts };
+        })
+        .filter((m) => m.text || m.attachments);
+
+      // Actions encore en attente de confirmation → ré-affichées comme cartes actionnables
+      const { data: pending } = await supabaseAdmin
+        .from('assistant_pending_actions')
+        .select('id, tool, summary')
+        .eq('conversation_id', conv.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+      if (pending && pending.length) {
+        mapped.push({
+          id: crypto.randomUUID(), role: 'assistant', text: 'Action(s) en attente de confirmation :',
+          proposals: pending.map((p) => ({ id: p.id, tool: p.tool as string, summary: p.summary as unknown as ProposalSummary, state: 'pending' as const })),
+        });
+      }
+
+      if (mapped.length) setMessages(mapped);
+    } catch { /* historique best-effort */ }
+  }, []);
+
+  return { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset, loadHistory };
 }

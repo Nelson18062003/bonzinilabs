@@ -21,9 +21,9 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-// Haiku par défaut (rapide), Sonnet automatiquement dès qu'une action d'écriture
-// est en jeu (plus "réfléchi" pour les opérations sensibles). Surchargables par secret.
-const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5";
+// Sonnet par défaut (qualité de compréhension). Le streaming assure la rapidité
+// ressentie. Surchargables par secret si besoin (ex. Haiku pour la vitesse pure).
+const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-sonnet-4-6";
 const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 8;
 const MIN_PAYMENT_XAF = 10_000;
@@ -772,6 +772,9 @@ function buildSystemPrompt(role: string): string {
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
     ``,
     `Tu peux recevoir des images (captures, QR codes) et des PDF (relevés) joints par l'admin : analyse-les et exploite leur contenu (ex. lire un montant sur une capture).`,
+    `IMPORTANT pièces jointes : si l'admin a DÉJÀ joint une capture/reçu dans le message, considère que la preuve est fournie — ne redemande JAMAIS le reçu. De toute façon la preuve est optionnelle pour valider un dépôt. Lis directement le montant/la référence sur l'image jointe.`,
+    ``,
+    `STYLE : réponds en texte simple et naturel. N'utilise PAS de markdown lourd (pas de ** pour le gras, pas de # de titres, pas de tableaux). Des phrases courtes et des listes avec un tiret suffisent. Mets toujours un espace après les deux-points.`,
     ``,
     `RÈGLES :`,
     `- Formate les montants en XAF avec séparateurs (ex : 10 000 000 XAF). Les taux sont en CNY (¥) pour 1 000 000 XAF.`,
