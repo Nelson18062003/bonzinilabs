@@ -25,7 +25,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API = "https://api.resend.com/emails";
-const FROM = Deno.env.get("RESEND_FROM") ?? "Bonzini <noreply@send.bonzinilabs.com>";
+const FROM = Deno.env.get("RESEND_FROM") ?? "Bonzini <noreply@bonzinilabs.com>";
 const BATCH = Number(Deno.env.get("EMAIL_BATCH_SIZE") ?? "20");
 
 // ─── Helpers de formatage (alignés sur notify-admin) ───────────────────────────
