@@ -21,7 +21,10 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? "claude-sonnet-4-6";
+// Haiku par défaut (rapide), Sonnet automatiquement dès qu'une action d'écriture
+// est en jeu (plus "réfléchi" pour les opérations sensibles). Surchargables par secret.
+const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5";
+const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 8;
 const MIN_PAYMENT_XAF = 10_000;
 
@@ -412,6 +415,26 @@ function validIntAmount(v: unknown): number | null {
   return n;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Vérifie qu'un client_user_id est un VRAI UUID existant dans `clients`.
+ * Empêche l'IA d'inventer un identifiant (ex. "user_cmr_jonas_002").
+ * Renvoie le nom du client si trouvé, sinon un message qui pousse l'IA
+ * à d'abord retrouver le client via search_clients.
+ */
+async function resolveClient(admin: AnyClient, rawId: unknown): Promise<{ ok: true; uid: string; name: string } | { ok: false; error: string }> {
+  const id = String(rawId ?? "").trim();
+  if (!UUID_RE.test(id)) {
+    return { ok: false, error: `client_user_id invalide ("${id}"). N'invente pas d'identifiant : utilise d'abord l'outil search_clients pour récupérer le vrai user_id (un UUID) du client.` };
+  }
+  const { data, error } = await admin.from("clients").select("first_name, last_name").eq("user_id", id).maybeSingle();
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: false, error: `Aucun client avec ce user_id. Utilise search_clients pour trouver le bon client puis reprends avec son user_id réel.` };
+  return { ok: true, uid: id, name: `${data.first_name} ${data.last_name}` };
+}
+
+
 const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_client",
@@ -462,16 +485,17 @@ const WRITE_TOOLS: WriteTool[] = [
       },
       required: ["client_user_id"],
     },
-    prepare: (_admin, a) => {
-      if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
+    prepare: async (admin, a) => {
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
       const editable = ["first_name", "last_name", "phone", "email", "company_name", "country", "city", "kyc_verified", "notes", "status"];
       const fields: Record<string, unknown> = {};
-      const lines: Line[] = [];
+      const lines: Line[] = [{ label: "Client", value: c.name }];
       for (const k of editable) {
         if (a[k] !== undefined && a[k] !== null) { fields[k] = a[k]; lines.push({ label: k, value: String(a[k]) }); }
       }
-      if (lines.length === 0) return Promise.resolve({ ok: false, error: "Aucun champ à modifier fourni." });
-      return Promise.resolve({ ok: true, args: { client_user_id: a.client_user_id, fields }, summary: { title: "Modifier un client", lines, confirmLabel: "Enregistrer les modifications" } });
+      if (Object.keys(fields).length === 0) return { ok: false, error: "Aucun champ à modifier fourni." };
+      return { ok: true, args: { client_user_id: c.uid, fields }, summary: { title: "Modifier un client", subtitle: c.name, lines, confirmLabel: "Enregistrer les modifications" } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.from("clients").update(args.fields).eq("user_id", args.client_user_id).select("id");
@@ -492,16 +516,17 @@ const WRITE_TOOLS: WriteTool[] = [
       },
       required: ["client_user_id", "amount_xaf", "method"],
     },
-    prepare: (_admin, a) => {
+    prepare: async (admin, a) => {
       const amt = validIntAmount(a.amount_xaf);
-      if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
-      if (!amt) return Promise.resolve({ ok: false, error: "Montant invalide." });
-      const args = { p_user_id: a.client_user_id, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null };
-      const lines: Line[] = [{ label: "Moyen", value: String(a.method) }];
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!amt) return { ok: false, error: "Montant invalide." };
+      const args = { p_user_id: c.uid, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null };
+      const lines: Line[] = [{ label: "Client", value: c.name }, { label: "Moyen", value: String(a.method) }];
       if (a.bank_name) lines.push({ label: "Banque", value: String(a.bank_name) });
       if (a.agency_name) lines.push({ label: "Agence", value: String(a.agency_name) });
       lines.push({ label: "Wallet", value: "non crédité (en attente)" });
-      return Promise.resolve({ ok: true, args, summary: { title: "Créer un dépôt (en attente)", amount: fmtXAF(amt), lines, confirmLabel: "Créer le dépôt" } });
+      return { ok: true, args, summary: { title: "Créer un dépôt (en attente)", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Créer le dépôt" } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("create_client_deposit", args);
@@ -521,13 +546,14 @@ const WRITE_TOOLS: WriteTool[] = [
       },
       required: ["client_user_id", "amount_xaf", "method"],
     },
-    prepare: (_admin, a) => {
+    prepare: async (admin, a) => {
       const amt = validIntAmount(a.amount_xaf);
-      if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
-      if (!amt) return Promise.resolve({ ok: false, error: "Montant invalide." });
-      const args = { create: { p_user_id: a.client_user_id, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null }, comment: a.comment || null, amount: amt };
-      const lines: Line[] = [{ label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
-      return Promise.resolve({ ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: "Crédite le wallet immédiatement", amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } });
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!amt) return { ok: false, error: "Montant invalide." };
+      const args = { create: { p_user_id: c.uid, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null }, comment: a.comment || null, amount: amt };
+      const lines: Line[] = [{ label: "Client", value: c.name }, { label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
+      return { ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } };
     },
     execute: async (userClient, args) => {
       const r1 = await userClient.rpc("create_client_deposit", args.create);
@@ -598,14 +624,15 @@ const WRITE_TOOLS: WriteTool[] = [
     },
     prepare: async (admin, a) => {
       const amt = validIntAmount(a.amount_xaf);
-      if (!a.client_user_id) return { ok: false, error: "client_user_id requis." };
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
       if (!amt) return { ok: false, error: "Montant invalide." };
       if (amt < MIN_PAYMENT_XAF) return { ok: false, error: `Montant minimum ${fmtXAF(MIN_PAYMENT_XAF)}.` };
       const rateMethod = PAYMENT_METHOD_TO_RATE[a.method];
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
       const countryKey = (a.country_key || "cameroun").toLowerCase();
       // Vérifier le solde du client
-      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", a.client_user_id).maybeSingle();
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
       if (Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
       // Calculer le taux du jour (jamais inventé par l'IA)
@@ -615,19 +642,20 @@ const WRITE_TOOLS: WriteTool[] = [
       const amountRmb = Number(rate.amount_cny);
       const exchangeRate = Number(rate.final_rate);
       const args = {
-        p_user_id: a.client_user_id, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_method: a.method,
+        p_user_id: c.uid, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_method: a.method,
         p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null,
         p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null,
         p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null,
       };
       const lines: Line[] = [
+        { label: "Client", value: c.name },
         { label: "Mode", value: PAYMENT_METHOD_LABEL[a.method] || a.method },
         { label: "Montant fournisseur", value: `≈ ¥ ${amountRmb.toLocaleString("fr-FR")}` },
         { label: "Solde après", value: fmtXAF(Number(wallet.balance_xaf) - amt) },
       ];
       if (a.beneficiary_name) lines.push({ label: "Bénéficiaire", value: String(a.beneficiary_name) });
       lines.push({ label: "Effet", value: "⚠️ débite le wallet du client" });
-      return { ok: true, args, summary: { title: "Créer un paiement fournisseur", subtitle: "Débite le wallet du client", amount: fmtXAF(amt), lines, confirmLabel: "Confirmer le paiement" } };
+      return { ok: true, args, summary: { title: "Créer un paiement fournisseur", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer le paiement" } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("create_admin_payment", args);
@@ -717,10 +745,9 @@ const WRITE_TOOLS: WriteTool[] = [
     description: "⚠️ SUPPRESSION DÉFINITIVE d'un client et de tout son historique (wallet, dépôts, paiements). Irréversible. Réservé au super_admin. À n'utiliser qu'en dernier recours.",
     input_schema: { type: "object", properties: { client_user_id: { type: "string" } }, required: ["client_user_id"] },
     prepare: async (admin, a) => {
-      if (!a.client_user_id) return { ok: false, error: "client_user_id requis." };
-      const { data: c } = await admin.from("clients").select("first_name, last_name, phone").eq("user_id", a.client_user_id).maybeSingle();
-      const name = c ? `${c.first_name} ${c.last_name} (${c.phone})` : a.client_user_id;
-      return { ok: true, args: { p_user_id: a.client_user_id }, summary: { title: "SUPPRIMER un client", subtitle: "⚠️ irréversible — efface tout l'historique", lines: [{ label: "Client", value: name }], confirmLabel: "Supprimer définitivement", danger: true } };
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      return { ok: true, args: { p_user_id: c.uid }, summary: { title: "SUPPRIMER un client", subtitle: "⚠️ irréversible — efface tout l'historique", lines: [{ label: "Client", value: c.name }], confirmLabel: "Supprimer définitivement", danger: true } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("admin_delete_client", args);
@@ -739,7 +766,7 @@ function buildSystemPrompt(role: string): string {
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
-    `- Avant de proposer une action, rassemble les infos nécessaires en posant des questions et en utilisant les outils de lecture (ex. retrouver le client via search_clients pour obtenir son user_id).`,
+    `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
     `- N'invente jamais un montant, un taux ou un user_id : récupère-les. Le taux RMB des paiements est calculé automatiquement par l'outil, ne le calcule pas toi-même.`,
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
@@ -764,6 +791,74 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>) {
     throw new Error(`Anthropic ${res.status}: ${txt.slice(0, 400)}`);
   }
   return await res.json();
+}
+
+/**
+ * Appel Anthropic en STREAMING. Reconstruit le message complet (texte + tool_use)
+ * tout en invoquant onText(delta) à chaque fragment de texte — pour l'affichage
+ * mot-à-mot côté client.
+ */
+// deno-lint-ignore no-explicit-any
+async function streamAnthropic(apiKey: string, body: Record<string, unknown>, onText: (delta: string) => void): Promise<{ content: any[]; stop_reason: string }> {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ ...body, stream: true }),
+  });
+  if (!res.ok || !res.body) {
+    const txt = res.body ? await res.text() : "";
+    throw new Error(`Anthropic ${res.status}: ${txt.slice(0, 400)}`);
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const blocks: any[] = [];
+  let stopReason = "end_turn";
+  const jsonBuf: Record<number, string> = {}; // accumulation des input_json_delta par index
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+    for (const line of lines) {
+      const l = line.trim();
+      if (!l.startsWith("data:")) continue;
+      const payload = l.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let ev: AnyClient;
+      try { ev = JSON.parse(payload); } catch { continue; }
+      if (ev.type === "content_block_start") {
+        blocks[ev.index] = ev.content_block?.type === "tool_use"
+          ? { type: "tool_use", id: ev.content_block.id, name: ev.content_block.name, input: {} }
+          : { type: "text", text: "" };
+        if (ev.content_block?.type === "tool_use") jsonBuf[ev.index] = "";
+      } else if (ev.type === "content_block_delta") {
+        if (ev.delta?.type === "text_delta") {
+          blocks[ev.index].text += ev.delta.text;
+          onText(ev.delta.text);
+        } else if (ev.delta?.type === "input_json_delta") {
+          jsonBuf[ev.index] = (jsonBuf[ev.index] ?? "") + (ev.delta.partial_json ?? "");
+        }
+      } else if (ev.type === "content_block_stop") {
+        const b = blocks[ev.index];
+        if (b?.type === "tool_use") {
+          try { b.input = jsonBuf[ev.index] ? JSON.parse(jsonBuf[ev.index]) : {}; } catch { b.input = {}; }
+        }
+      } else if (ev.type === "message_delta" && ev.delta?.stop_reason) {
+        stopReason = ev.delta.stop_reason;
+      }
+    }
+  }
+  return { content: blocks.filter(Boolean), stop_reason: stopReason };
+}
+
+// Encode un événement SSE pour notre propre flux vers le client.
+function sse(obj: Record<string, unknown>): Uint8Array {
+  return new TextEncoder().encode(`data: ${JSON.stringify(obj)}\n\n`);
 }
 
 serve(async (req) => {
@@ -902,76 +997,104 @@ serve(async (req) => {
     ];
 
     const system = buildSystemPrompt(role);
-    let finalText = "";
-    const usedTools: string[] = [];
-    // deno-lint-ignore no-explicit-any
-    const proposals: any[] = [];
 
-    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-      const resp = await callAnthropic(apiKey, {
-        model: MODEL,
-        max_tokens: 1500,
-        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-        tools: toolDefs,
-        messages,
-      });
-      const content = resp.content ?? [];
-      // deno-lint-ignore no-explicit-any
-      const toolUses = content.filter((b: any) => b.type === "tool_use");
-
-      if (resp.stop_reason === "tool_use" && toolUses.length > 0) {
-        messages.push({ role: "assistant", content });
+    // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
+    // Haiku par défaut (rapide) ; on bascule sur Sonnet dès qu'une action
+    // d'écriture est proposée (les opérations sensibles méritent plus de "réflexion").
+    const convId = conversationId;
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (o: Record<string, unknown>) => { try { controller.enqueue(sse(o)); } catch (_) { /* client parti */ } };
+        let finalText = "";
+        const usedTools: string[] = [];
         // deno-lint-ignore no-explicit-any
-        const results: any[] = [];
-        for (const tu of toolUses) {
-          usedTools.push(tu.name);
-          const readTool = allowedRead.find((t) => t.name === tu.name);
-          const writeTool = allowedWrite.find((t) => t.name === tu.name);
-          let result: Record<string, unknown>;
-          if (readTool) {
-            try { result = await readTool.execute(admin, tu.input ?? {}); }
-            catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
-          } else if (writeTool) {
-            // ÉCRITURE : on ne fait que PROPOSER — pas d'exécution ici.
-            try {
-              const prep = await writeTool.prepare(admin, tu.input ?? {});
-              if (!prep.ok) {
-                result = { error: prep.error };
-              } else {
-                const { data: pa } = await admin.from("assistant_pending_actions").insert({
-                  conversation_id: conversationId, admin_user_id: user.id, tool: writeTool.name, args: prep.args, summary: prep.summary, status: "pending",
-                }).select("id").single();
-                proposals.push({ id: pa?.id, tool: writeTool.name, summary: prep.summary });
-                result = { status: "proposition_creee", message: "Carte de confirmation présentée à l'admin. En attente de son tap. Ne ré-exécute pas." };
+        const proposals: any[] = [];
+        let model = MODEL_FAST;
+
+        send({ type: "start", conversationId: convId });
+
+        try {
+          for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+            const resp = await streamAnthropic(
+              apiKey,
+              { model, max_tokens: 1500, system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }], tools: toolDefs, messages },
+              (delta) => send({ type: "delta", text: delta }),
+            );
+            const content = resp.content ?? [];
+            // deno-lint-ignore no-explicit-any
+            const toolUses = content.filter((b: any) => b.type === "tool_use");
+
+            if (resp.stop_reason === "tool_use" && toolUses.length > 0) {
+              messages.push({ role: "assistant", content });
+              // Si une action d'ÉCRITURE est demandée, on passe au modèle "smart" pour la suite.
+              if (toolUses.some((tu: AnyClient) => allowedWrite.find((t) => t.name === tu.name))) model = MODEL_SMART;
+              // deno-lint-ignore no-explicit-any
+              const results: any[] = [];
+              for (const tu of toolUses) {
+                usedTools.push(tu.name);
+                const readTool = allowedRead.find((t) => t.name === tu.name);
+                const writeTool = allowedWrite.find((t) => t.name === tu.name);
+                let result: Record<string, unknown>;
+                if (readTool) {
+                  try { result = await readTool.execute(admin, tu.input ?? {}); }
+                  catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
+                } else if (writeTool) {
+                  try {
+                    const prep = await writeTool.prepare(admin, tu.input ?? {});
+                    if (!prep.ok) { result = { error: prep.error }; }
+                    else {
+                      const { data: pa } = await admin.from("assistant_pending_actions").insert({
+                        conversation_id: convId, admin_user_id: user.id, tool: writeTool.name, args: prep.args, summary: prep.summary, status: "pending",
+                      }).select("id").single();
+                      const proposal = { id: pa?.id, tool: writeTool.name, summary: prep.summary };
+                      proposals.push(proposal);
+                      send({ type: "proposal", proposal });
+                      result = { status: "proposition_creee", message: "Carte de confirmation présentée à l'admin. En attente de son tap. Ne ré-exécute pas." };
+                    }
+                  } catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
+                } else {
+                  result = { error: "outil indisponible pour ce rôle" };
+                }
+                results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result) });
               }
-            } catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
-          } else {
-            result = { error: "outil indisponible pour ce rôle" };
+              messages.push({ role: "user", content: results });
+              continue;
+            }
+
+            // deno-lint-ignore no-explicit-any
+            finalText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+            break;
           }
-          results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result) });
+
+          if (!finalText) {
+            finalText = proposals.length ? "J'ai préparé l'action ci-dessous — confirme pour l'exécuter." : "Je n'ai pas pu formuler de réponse. Peux-tu reformuler ?";
+            send({ type: "delta", text: finalText });
+          }
+
+          // Persistance + audit (après le stream)
+          await admin.from("assistant_messages").insert([
+            { conversation_id: convId, role: "user", content: { text: message, attachments: acceptedAttachments } },
+            { conversation_id: convId, role: "assistant", content: { text: finalText } },
+          ]);
+          await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+          await admin.from("admin_audit_logs").insert({
+            admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: convId,
+            details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length },
+          }).then(() => {}, () => {});
+
+          send({ type: "done", conversationId: convId });
+        } catch (e) {
+          console.error("admin-assistant stream error:", (e as Error)?.message ?? e);
+          send({ type: "error", error: "Erreur de l'assistant" });
+        } finally {
+          controller.close();
         }
-        messages.push({ role: "user", content: results });
-        continue;
-      }
+      },
+    });
 
-      // deno-lint-ignore no-explicit-any
-      finalText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
-      break;
-    }
-
-    if (!finalText) finalText = proposals.length ? "J'ai préparé l'action ci-dessous — confirme pour l'exécuter." : "Je n'ai pas pu formuler de réponse. Peux-tu reformuler ?";
-
-    await admin.from("assistant_messages").insert([
-      { conversation_id: conversationId, role: "user", content: { text: message, attachments: acceptedAttachments } },
-      { conversation_id: conversationId, role: "assistant", content: { text: finalText } },
-    ]);
-    await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
-    await admin.from("admin_audit_logs").insert({
-      admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: conversationId,
-      details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length },
-    }).then(() => {}, () => {});
-
-    return json({ success: true, conversationId, reply: finalText, tools: usedTools, proposals });
+    return new Response(stream, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+    });
   } catch (error) {
     console.error("admin-assistant error:", (error as Error)?.message ?? error);
     return json({ success: false, error: "Erreur inattendue de l'assistant" }, 500);
