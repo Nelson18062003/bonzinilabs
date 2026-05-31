@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { isProviderEmailVerified, isProfileComplete } from '@/lib/authGate';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,20 +29,8 @@ export default function AuthCallbackPage() {
     // Erreur renvoyée directement par Supabase/Google dans l'URL.
     const urlError = searchParams.get('error_description') || searchParams.get('error');
 
-    // Lit le claim email_verified de façon AUTORITAIRE depuis l'identité du
-    // provider (et non depuis user_metadata, modifiable, ni email_confirmed_at,
-    // que Supabase positionne en OAuth indépendamment de la vérif Google).
-    // Fail-closed : tout ce qui n'est pas strictement vérifié est rejeté.
-    const isProviderEmailVerified = (
-      user: { identities?: Array<{ provider: string; identity_data?: Record<string, unknown> }> },
-    ): boolean => {
-      const ids = user.identities ?? [];
-      // S'il existe au moins une identité OAuth, exiger email_verified===true sur l'une d'elles.
-      const oauth = ids.filter((i) => i.provider !== 'email');
-      if (oauth.length === 0) return true; // compte email/mdp classique : géré par Supabase
-      return oauth.some((i) => i.identity_data?.email_verified === true);
-    };
-
+    // Email vérifié = lecture autoritaire depuis identities[] (cf. @/lib/authGate,
+    // finding H2). Fail-closed.
     const routeAfterSession = async (userId: string, verified: boolean) => {
       // Cas D — email non vérifié : on bloque (fintech : pas de KYC sur email non sûr).
       if (!verified) {
@@ -50,15 +39,14 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      // Profil : le téléphone est le champ métier bloquant (cf. ProtectedRoute).
+      // Profil : le téléphone est le champ métier bloquant (cf. @/lib/authGate).
       const { data: client } = await supabase
         .from('clients')
         .select('phone')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const complete = !!client?.phone;
-      navigate(complete ? '/wallet' : '/onboarding', { replace: true });
+      navigate(isProfileComplete(client) ? '/wallet' : '/onboarding', { replace: true });
     };
 
     const run = async () => {

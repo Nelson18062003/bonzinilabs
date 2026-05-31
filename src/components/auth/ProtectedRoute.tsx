@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfile';
+import { isProfileComplete } from '@/lib/authGate';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -31,15 +32,9 @@ export function ProtectedRoute({ children, requireComplete = true }: ProtectedRo
     return <Navigate to="/auth" replace />;
   }
 
-  // Garde de complétion : le TÉLÉPHONE est le champ métier bloquant.
-  // C'est le seul champ requis dans les DEUX parcours de création existants
-  // (self-signup ET création admin), donc tous les clients legacy l'ont ; et
-  // c'est précisément ce qu'un compte Google n'a pas. On NE gate PAS sur le
-  // pays : il est optionnel pour les clients créés par un admin (défaut NULL),
-  // gater dessus enfermerait des clients legacy hors de leur app.
-  // FAIL-CLOSED : profil absent/en erreur → on renvoie vers l'onboarding
-  // plutôt que d'exposer l'UI financière sur un fetch raté.
-  if (requireComplete && (!profile || !profile.phone)) {
+  // Garde de complétion (cf. @/lib/authGate, finding M1) : le TÉLÉPHONE est le
+  // champ métier bloquant. Fail-closed : profil absent/en erreur → onboarding.
+  if (requireComplete && !isProfileComplete(profile)) {
     return <Navigate to="/onboarding" replace />;
   }
 
