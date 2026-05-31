@@ -12,6 +12,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,11 @@ const corsHeaders = {
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 8;
+
+// Pièces jointes (images analysées par vision + PDF lus comme documents)
+const ATTACHMENT_BUCKET = "assistant-attachments";
+const ALLOWED_ATTACHMENT_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
+const MAX_ATTACHMENTS = 5;
 
 // Permissions par rôle — miroir (lecture) de src/contexts/AdminAuthContext.tsx
 type PermKey = "canViewClients" | "canViewDeposits" | "canViewPayments" | "canViewTreasury" | "canViewLogs" | "canManageUsers";
@@ -506,6 +512,7 @@ function buildSystemPrompt(role: string): string {
     ``,
     `RÈGLES :`,
     `- N'invente JAMAIS de chiffres ni de données : utilise systématiquement tes outils, puis cite les valeurs réelles.`,
+    `- Tu peux recevoir des images (captures d'écran, QR codes) et des PDF (relevés bancaires) joints par l'admin : analyse-les et exploite leur contenu.`,
     `- Enchaîne plusieurs outils si nécessaire (ex. trouver un client puis lire ses dépôts).`,
     `- Formate les montants en XAF avec séparateurs (ex : 10 000 000 XAF). Les taux sont en CNY (¥) pour 1 000 000 XAF.`,
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision plutôt que de deviner.`,
@@ -568,14 +575,19 @@ serve(async (req) => {
     const perms = ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS["customer_success"];
 
     // 3) Corps de la requête
-    let body: { conversationId?: string | null; message?: string };
+    let body: {
+      conversationId?: string | null;
+      message?: string;
+      attachments?: Array<{ path: string; mime: string; name: string }>;
+    };
     try {
       body = await req.json();
     } catch {
       return json({ success: false, error: "Corps de requête invalide" }, 400);
     }
     const message = String(body.message ?? "").trim();
-    if (!message) return json({ success: false, error: "Message vide" }, 400);
+    const attachments = Array.isArray(body.attachments) ? body.attachments.slice(0, MAX_ATTACHMENTS) : [];
+    if (!message && attachments.length === 0) return json({ success: false, error: "Message vide" }, 400);
 
     // 4) Conversation (créer ou vérifier la propriété)
     let conversationId = body.conversationId ?? null;
@@ -601,18 +613,50 @@ serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     const history = (hist ?? [])
       .filter((m: any) => m.role === "user" || m.role === "assistant")
-      .map((m: any) => ({
-        role: m.role,
-        content: typeof m.content?.text === "string" ? m.content.text : JSON.stringify(m.content),
-      }));
+      .map((m: any) => {
+        let text = typeof m.content?.text === "string" ? m.content.text : "";
+        const atts = Array.isArray(m.content?.attachments) ? m.content.attachments : [];
+        if (atts.length) {
+          text += `\n[pièces jointes précédentes : ${atts.map((a: any) => a?.name).filter(Boolean).join(", ")}]`;
+        }
+        return { role: m.role, content: text || "(message vide)" };
+      });
 
     // 6) Outils autorisés pour ce rôle
     const allowedTools = TOOLS.filter((t) => perms[t.permission]);
     const toolDefs = allowedTools.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema }));
 
     // 7) Boucle agentique
+    // Télécharger les pièces jointes (service role) et construire le message multimodal
     // deno-lint-ignore no-explicit-any
-    const messages: any[] = [...history, { role: "user", content: message }];
+    const attachmentBlocks: any[] = [];
+    const acceptedAttachments: Array<{ path: string; mime: string; name: string }> = [];
+    for (const att of attachments) {
+      if (!att?.path || !ALLOWED_ATTACHMENT_MIME.has(att?.mime)) continue;
+      // Le service role contourne la RLS : on n'autorise QUE le dossier de l'appelant.
+      if (!att.path.startsWith(`${user.id}/`)) continue;
+      try {
+        const { data: blob, error: dlErr } = await admin.storage.from(ATTACHMENT_BUCKET).download(att.path);
+        if (dlErr || !blob) continue;
+        const b64 = encodeBase64(new Uint8Array(await blob.arrayBuffer()));
+        if (att.mime === "application/pdf") {
+          attachmentBlocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
+        } else {
+          attachmentBlocks.push({ type: "image", source: { type: "base64", media_type: att.mime, data: b64 } });
+        }
+        acceptedAttachments.push({ path: att.path, mime: att.mime, name: att.name });
+      } catch (_) { /* pièce jointe illisible : ignorée */ }
+    }
+
+    // deno-lint-ignore no-explicit-any
+    let userContent: any;
+    if (attachmentBlocks.length > 0) {
+      userContent = [...attachmentBlocks, { type: "text", text: message || "Analyse la ou les pièces jointes." }];
+    } else {
+      userContent = message;
+    }
+    // deno-lint-ignore no-explicit-any
+    const messages: any[] = [...history, { role: "user", content: userContent }];
     const system = buildSystemPrompt(role);
     let finalText = "";
     const usedTools: string[] = [];
@@ -621,7 +665,9 @@ serve(async (req) => {
       const resp = await callAnthropic(apiKey, {
         model: MODEL,
         max_tokens: 1500,
-        system,
+        // cache_control : met en cache le prompt système + les définitions d'outils
+        // (gros préfixe stable) pour réduire le coût à chaque tour de la boucle.
+        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
         tools: toolDefs,
         messages,
       });
@@ -657,7 +703,7 @@ serve(async (req) => {
 
     // 8) Persistance + audit
     await admin.from("assistant_messages").insert([
-      { conversation_id: conversationId, role: "user", content: { text: message } },
+      { conversation_id: conversationId, role: "user", content: { text: message, attachments: acceptedAttachments } },
       { conversation_id: conversationId, role: "assistant", content: { text: finalText } },
     ]);
     await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
@@ -667,7 +713,7 @@ serve(async (req) => {
         action_type: "assistant_query",
         target_type: "assistant",
         target_id: conversationId,
-        details: { message: message.slice(0, 200), tools: usedTools },
+        details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length },
       });
     } catch (_) { /* audit non bloquant */ }
 
