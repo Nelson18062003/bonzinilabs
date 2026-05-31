@@ -23,7 +23,6 @@ const corsHeaders = {
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 8;
-const MAX_AMOUNT_XAF = 50_000_000;
 const MIN_PAYMENT_XAF = 10_000;
 
 // Pièces jointes (images analysées par vision + PDF lus comme documents)
@@ -407,8 +406,9 @@ const PAYMENT_METHOD_TO_RATE: Record<string, string> = { alipay: "alipay", wecha
 const PAYMENT_METHOD_LABEL: Record<string, string> = { alipay: "Alipay", wechat: "WeChat", cash: "Cash", bank_transfer: "Virement" };
 
 function validIntAmount(v: unknown): number | null {
+  // Vérif minimale anti-saisie cassée (pas une limite de montant) : entier positif.
   const n = Number(v);
-  if (!Number.isFinite(n) || !Number.isInteger(n) || !Number.isSafeInteger(n) || n <= 0) return null;
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return null;
   return n;
 }
 
@@ -496,7 +496,6 @@ const WRITE_TOOLS: WriteTool[] = [
       const amt = validIntAmount(a.amount_xaf);
       if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
       if (!amt) return Promise.resolve({ ok: false, error: "Montant invalide." });
-      if (amt > MAX_AMOUNT_XAF) return Promise.resolve({ ok: false, error: `Montant au-dessus du plafond (${fmtXAF(MAX_AMOUNT_XAF)}).` });
       const args = { p_user_id: a.client_user_id, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null };
       const lines: Line[] = [{ label: "Moyen", value: String(a.method) }];
       if (a.bank_name) lines.push({ label: "Banque", value: String(a.bank_name) });
@@ -526,7 +525,6 @@ const WRITE_TOOLS: WriteTool[] = [
       const amt = validIntAmount(a.amount_xaf);
       if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
       if (!amt) return Promise.resolve({ ok: false, error: "Montant invalide." });
-      if (amt > MAX_AMOUNT_XAF) return Promise.resolve({ ok: false, error: `Montant au-dessus du plafond (${fmtXAF(MAX_AMOUNT_XAF)}).` });
       const args = { create: { p_user_id: a.client_user_id, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null }, comment: a.comment || null, amount: amt };
       const lines: Line[] = [{ label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
       return Promise.resolve({ ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: "Crédite le wallet immédiatement", amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } });
@@ -603,7 +601,6 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!a.client_user_id) return { ok: false, error: "client_user_id requis." };
       if (!amt) return { ok: false, error: "Montant invalide." };
       if (amt < MIN_PAYMENT_XAF) return { ok: false, error: `Montant minimum ${fmtXAF(MIN_PAYMENT_XAF)}.` };
-      if (amt > MAX_AMOUNT_XAF) return { ok: false, error: `Montant au-dessus du plafond (${fmtXAF(MAX_AMOUNT_XAF)}).` };
       const rateMethod = PAYMENT_METHOD_TO_RATE[a.method];
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
       const countryKey = (a.country_key || "cameroun").toLowerCase();
