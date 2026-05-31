@@ -323,7 +323,7 @@ const TOOLS: Tool[] = [
     execute: async (admin) => {
       const { data, error } = await admin
         .from("rate_adjustments")
-        .select("type, key, label, percentage, is_active")
+        .select("type, key, label, percentage, is_reference, sort_order")
         .order("type", { ascending: true });
       if (error) return { error: error.message };
       return { count: data?.length ?? 0, adjustments: data ?? [] };
@@ -397,33 +397,56 @@ const TOOLS: Tool[] = [
   {
     name: "get_treasury_summary",
     permission: "canViewTreasury",
-    description: "Résumé trésorerie : inventaire USDT (quantité, coût moyen) et comptes actifs.",
+    description: "Résumé trésorerie : soldes des comptes, stock USDT, totaux achats/ventes USDT.",
     input_schema: { type: "object", properties: {} },
     execute: async (admin) => {
-      const { data: inv } = await admin
-        .from("treasury_inventory")
-        .select("total_usdt, average_cost_xaf, total_cost_xaf, last_updated")
-        .maybeSingle();
       const { data: accounts } = await admin
-        .from("treasury_accounts")
-        .select("name, type, currency, balance, is_active")
+        .from("treasury_account_balances")
+        .select("label, code, kind, currency, balance, is_active")
         .eq("is_active", true);
-      return { inventory: inv ?? null, accounts: accounts ?? [] };
+      const { data: purchases } = await admin
+        .from("usdt_purchases")
+        .select("usdt_amount, xaf_amount")
+        .is("voided_at", null)
+        .limit(5000);
+      const { data: sales } = await admin
+        .from("usdt_sales")
+        .select("usdt_amount")
+        .is("voided_at", null)
+        .limit(5000);
+      const boughtUsdt = (purchases ?? []).reduce((s: number, p: AnyClient) => s + Number(p.usdt_amount ?? 0), 0);
+      const soldUsdt = (sales ?? []).reduce((s: number, p: AnyClient) => s + Number(p.usdt_amount ?? 0), 0);
+      const xafSpent = (purchases ?? []).reduce((s: number, p: AnyClient) => s + Number(p.xaf_amount ?? 0), 0);
+      return {
+        accounts: accounts ?? [],
+        usdt_stock: boughtUsdt - soldUsdt,
+        usdt_bought_total: boughtUsdt,
+        usdt_sold_total: soldUsdt,
+        xaf_spent_on_usdt: xafSpent,
+        xaf_spent_formatted: fmtXAF(xafSpent),
+      };
     },
   },
   {
-    name: "list_treasury_transactions",
+    name: "list_treasury_operations",
     permission: "canViewTreasury",
-    description: "Dernières opérations de trésorerie (achats/ventes USDT).",
+    description: "Dernières opérations de trésorerie : achats USDT (XAF→USDT) et ventes USDT (USDT→CNY).",
     input_schema: { type: "object", properties: { limit: { type: "number" } } },
     execute: async (admin, { limit }) => {
-      const { data, error } = await admin
-        .from("treasury_transactions")
-        .select("transaction_type, usdt_amount, xaf_amount, rate, status, payment_status, reference, transaction_date")
-        .order("transaction_date", { ascending: false })
-        .limit(clamp(limit, 10, 25));
-      if (error) return { error: error.message };
-      return { count: data?.length ?? 0, transactions: data ?? [] };
+      const n = clamp(limit, 10, 25);
+      const { data: purchases } = await admin
+        .from("usdt_purchases")
+        .select("usdt_amount, xaf_amount, implicit_rate, channel, occurred_at")
+        .is("voided_at", null)
+        .order("occurred_at", { ascending: false })
+        .limit(n);
+      const { data: sales } = await admin
+        .from("usdt_sales")
+        .select("usdt_amount, cny_amount, implicit_rate, occurred_at")
+        .is("voided_at", null)
+        .order("occurred_at", { ascending: false })
+        .limit(n);
+      return { purchases: purchases ?? [], sales: sales ?? [] };
     },
   },
   // ─────────────────────── AUDIT / ADMINS ───────────────────────
