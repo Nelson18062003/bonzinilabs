@@ -74,6 +74,9 @@ const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").t
 const MobileCannedResponsesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileCannedResponsesScreen })));
 const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileQuickRepliesScreen })));
 
+// ── AI Assistant (Directeur des Opérations) ────────────────────
+const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").then(m => ({ default: m.MobileAssistantScreen })));
+
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
@@ -173,6 +176,7 @@ const App = () => (
                 <Route path="/m/clients/:clientId" element={<MobileRouteWrapper showTabBar={false}><MobileClientDetail /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<MobileRouteWrapper><MobileClientLedger /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<MobileRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></MobileRouteWrapper>} />
+                <Route path="/m/assistant" element={<MobileRouteWrapper showTabBar={false}><MobileAssistantScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more" element={<MobileRouteWrapper><MobileMoreScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/rates" element={<MobileRouteWrapper><MobileRatesScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<MobileRouteWrapper><MobileProofsScreen /></MobileRouteWrapper>} />

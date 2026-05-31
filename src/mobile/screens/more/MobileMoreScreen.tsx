@@ -10,6 +10,7 @@ import {
   Bell,
   UserCog,
   BarChart3,
+  Bot,
   LogOut,
   ChevronRight,
   Settings,
@@ -103,6 +104,12 @@ export function MobileMoreScreen() {
 
         {/* Menu Items */}
         <div className="divide-y divide-border">
+          <MenuItem
+            icon={Bot}
+            label="Assistant"
+            description="Pose une question sur la plateforme"
+            onClick={() => navigate('/m/assistant')}
+          />
           <MenuItem
             icon={BarChart3}
             label="Dashboard"
