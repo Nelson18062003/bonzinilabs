@@ -412,6 +412,26 @@ function validIntAmount(v: unknown): number | null {
   return n;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Vérifie qu'un client_user_id est un VRAI UUID existant dans `clients`.
+ * Empêche l'IA d'inventer un identifiant (ex. "user_cmr_jonas_002").
+ * Renvoie le nom du client si trouvé, sinon un message qui pousse l'IA
+ * à d'abord retrouver le client via search_clients.
+ */
+async function resolveClient(admin: AnyClient, rawId: unknown): Promise<{ ok: true; uid: string; name: string } | { ok: false; error: string }> {
+  const id = String(rawId ?? "").trim();
+  if (!UUID_RE.test(id)) {
+    return { ok: false, error: `client_user_id invalide ("${id}"). N'invente pas d'identifiant : utilise d'abord l'outil search_clients pour récupérer le vrai user_id (un UUID) du client.` };
+  }
+  const { data, error } = await admin.from("clients").select("first_name, last_name").eq("user_id", id).maybeSingle();
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: false, error: `Aucun client avec ce user_id. Utilise search_clients pour trouver le bon client puis reprends avec son user_id réel.` };
+  return { ok: true, uid: id, name: `${data.first_name} ${data.last_name}` };
+}
+
+
 const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_client",
@@ -462,16 +482,17 @@ const WRITE_TOOLS: WriteTool[] = [
       },
       required: ["client_user_id"],
     },
-    prepare: (_admin, a) => {
-      if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
+    prepare: async (admin, a) => {
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
       const editable = ["first_name", "last_name", "phone", "email", "company_name", "country", "city", "kyc_verified", "notes", "status"];
       const fields: Record<string, unknown> = {};
-      const lines: Line[] = [];
+      const lines: Line[] = [{ label: "Client", value: c.name }];
       for (const k of editable) {
         if (a[k] !== undefined && a[k] !== null) { fields[k] = a[k]; lines.push({ label: k, value: String(a[k]) }); }
       }
-      if (lines.length === 0) return Promise.resolve({ ok: false, error: "Aucun champ à modifier fourni." });
-      return Promise.resolve({ ok: true, args: { client_user_id: a.client_user_id, fields }, summary: { title: "Modifier un client", lines, confirmLabel: "Enregistrer les modifications" } });
+      if (Object.keys(fields).length === 0) return { ok: false, error: "Aucun champ à modifier fourni." };
+      return { ok: true, args: { client_user_id: c.uid, fields }, summary: { title: "Modifier un client", subtitle: c.name, lines, confirmLabel: "Enregistrer les modifications" } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.from("clients").update(args.fields).eq("user_id", args.client_user_id).select("id");
@@ -492,16 +513,17 @@ const WRITE_TOOLS: WriteTool[] = [
       },
       required: ["client_user_id", "amount_xaf", "method"],
     },
-    prepare: (_admin, a) => {
+    prepare: async (admin, a) => {
       const amt = validIntAmount(a.amount_xaf);
-      if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
-      if (!amt) return Promise.resolve({ ok: false, error: "Montant invalide." });
-      const args = { p_user_id: a.client_user_id, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null };
-      const lines: Line[] = [{ label: "Moyen", value: String(a.method) }];
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!amt) return { ok: false, error: "Montant invalide." };
+      const args = { p_user_id: c.uid, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null };
+      const lines: Line[] = [{ label: "Client", value: c.name }, { label: "Moyen", value: String(a.method) }];
       if (a.bank_name) lines.push({ label: "Banque", value: String(a.bank_name) });
       if (a.agency_name) lines.push({ label: "Agence", value: String(a.agency_name) });
       lines.push({ label: "Wallet", value: "non crédité (en attente)" });
-      return Promise.resolve({ ok: true, args, summary: { title: "Créer un dépôt (en attente)", amount: fmtXAF(amt), lines, confirmLabel: "Créer le dépôt" } });
+      return { ok: true, args, summary: { title: "Créer un dépôt (en attente)", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Créer le dépôt" } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("create_client_deposit", args);
@@ -521,13 +543,14 @@ const WRITE_TOOLS: WriteTool[] = [
       },
       required: ["client_user_id", "amount_xaf", "method"],
     },
-    prepare: (_admin, a) => {
+    prepare: async (admin, a) => {
       const amt = validIntAmount(a.amount_xaf);
-      if (!a.client_user_id) return Promise.resolve({ ok: false, error: "client_user_id requis." });
-      if (!amt) return Promise.resolve({ ok: false, error: "Montant invalide." });
-      const args = { create: { p_user_id: a.client_user_id, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null }, comment: a.comment || null, amount: amt };
-      const lines: Line[] = [{ label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
-      return Promise.resolve({ ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: "Crédite le wallet immédiatement", amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } });
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!amt) return { ok: false, error: "Montant invalide." };
+      const args = { create: { p_user_id: c.uid, p_amount_xaf: amt, p_method: a.method, p_bank_name: a.bank_name || null, p_agency_name: a.agency_name || null, p_client_phone: a.client_phone || null }, comment: a.comment || null, amount: amt };
+      const lines: Line[] = [{ label: "Client", value: c.name }, { label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
+      return { ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } };
     },
     execute: async (userClient, args) => {
       const r1 = await userClient.rpc("create_client_deposit", args.create);
@@ -598,14 +621,15 @@ const WRITE_TOOLS: WriteTool[] = [
     },
     prepare: async (admin, a) => {
       const amt = validIntAmount(a.amount_xaf);
-      if (!a.client_user_id) return { ok: false, error: "client_user_id requis." };
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
       if (!amt) return { ok: false, error: "Montant invalide." };
       if (amt < MIN_PAYMENT_XAF) return { ok: false, error: `Montant minimum ${fmtXAF(MIN_PAYMENT_XAF)}.` };
       const rateMethod = PAYMENT_METHOD_TO_RATE[a.method];
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
       const countryKey = (a.country_key || "cameroun").toLowerCase();
       // Vérifier le solde du client
-      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", a.client_user_id).maybeSingle();
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
       if (Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
       // Calculer le taux du jour (jamais inventé par l'IA)
@@ -615,19 +639,20 @@ const WRITE_TOOLS: WriteTool[] = [
       const amountRmb = Number(rate.amount_cny);
       const exchangeRate = Number(rate.final_rate);
       const args = {
-        p_user_id: a.client_user_id, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_method: a.method,
+        p_user_id: c.uid, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_method: a.method,
         p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null,
         p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null,
         p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null,
       };
       const lines: Line[] = [
+        { label: "Client", value: c.name },
         { label: "Mode", value: PAYMENT_METHOD_LABEL[a.method] || a.method },
         { label: "Montant fournisseur", value: `≈ ¥ ${amountRmb.toLocaleString("fr-FR")}` },
         { label: "Solde après", value: fmtXAF(Number(wallet.balance_xaf) - amt) },
       ];
       if (a.beneficiary_name) lines.push({ label: "Bénéficiaire", value: String(a.beneficiary_name) });
       lines.push({ label: "Effet", value: "⚠️ débite le wallet du client" });
-      return { ok: true, args, summary: { title: "Créer un paiement fournisseur", subtitle: "Débite le wallet du client", amount: fmtXAF(amt), lines, confirmLabel: "Confirmer le paiement" } };
+      return { ok: true, args, summary: { title: "Créer un paiement fournisseur", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer le paiement" } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("create_admin_payment", args);
@@ -717,10 +742,9 @@ const WRITE_TOOLS: WriteTool[] = [
     description: "⚠️ SUPPRESSION DÉFINITIVE d'un client et de tout son historique (wallet, dépôts, paiements). Irréversible. Réservé au super_admin. À n'utiliser qu'en dernier recours.",
     input_schema: { type: "object", properties: { client_user_id: { type: "string" } }, required: ["client_user_id"] },
     prepare: async (admin, a) => {
-      if (!a.client_user_id) return { ok: false, error: "client_user_id requis." };
-      const { data: c } = await admin.from("clients").select("first_name, last_name, phone").eq("user_id", a.client_user_id).maybeSingle();
-      const name = c ? `${c.first_name} ${c.last_name} (${c.phone})` : a.client_user_id;
-      return { ok: true, args: { p_user_id: a.client_user_id }, summary: { title: "SUPPRIMER un client", subtitle: "⚠️ irréversible — efface tout l'historique", lines: [{ label: "Client", value: name }], confirmLabel: "Supprimer définitivement", danger: true } };
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      return { ok: true, args: { p_user_id: c.uid }, summary: { title: "SUPPRIMER un client", subtitle: "⚠️ irréversible — efface tout l'historique", lines: [{ label: "Client", value: c.name }], confirmLabel: "Supprimer définitivement", danger: true } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("admin_delete_client", args);
@@ -739,7 +763,7 @@ function buildSystemPrompt(role: string): string {
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
-    `- Avant de proposer une action, rassemble les infos nécessaires en posant des questions et en utilisant les outils de lecture (ex. retrouver le client via search_clients pour obtenir son user_id).`,
+    `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
     `- N'invente jamais un montant, un taux ou un user_id : récupère-les. Le taux RMB des paiements est calculé automatiquement par l'outil, ne le calcule pas toi-même.`,
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
