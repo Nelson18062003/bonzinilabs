@@ -104,25 +104,60 @@ export function useAdminAssistant() {
         uploaded.push({ path, mime: file.type, name: file.name });
       }
 
-      const { ok, status, data } = await authedFetch({
-        conversationId: conversationIdRef.current,
-        message: text,
-        attachments: uploaded,
+      // Réponse en STREAMING : on crée une bulle assistant vide qu'on remplit au fil de l'eau.
+      const assistantId = crypto.randomUUID();
+      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
+
+      const res = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ conversationId: conversationIdRef.current, message: text, attachments: uploaded }),
       });
-      if (!ok || data?.success === false) throw new Error(data?.error || `Erreur ${status}`);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `Erreur ${res.status}`);
+      }
 
-      if (data.conversationId) conversationIdRef.current = data.conversationId;
-      // deno-lint-ignore no-explicit-any
-      const proposals: AssistantProposal[] = Array.isArray(data.proposals)
-        ? data.proposals
-            .filter((p: { id?: string }) => p?.id)
-            .map((p: { id: string; tool: string; summary: ProposalSummary }) => ({ id: p.id, tool: p.tool, summary: p.summary, state: 'pending' as const }))
-        : [];
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let streamErr: string | null = null;
 
-      setMessages((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), role: 'assistant', text: data.reply || '…', proposals: proposals.length ? proposals : undefined },
-      ]);
+      const apply = (patch: (m: AssistantMessage) => AssistantMessage) =>
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? patch(m) : m)));
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          const l = line.trim();
+          if (!l.startsWith('data:')) continue;
+          const payload = l.slice(5).trim();
+          if (!payload) continue;
+          let ev: { type: string; text?: string; conversationId?: string; error?: string; proposal?: { id: string; tool: string; summary: ProposalSummary } };
+          try { ev = JSON.parse(payload); } catch { continue; }
+          if (ev.type === 'start' && ev.conversationId) {
+            conversationIdRef.current = ev.conversationId;
+          } else if (ev.type === 'delta' && ev.text) {
+            apply((m) => ({ ...m, text: m.text + ev.text }));
+          } else if (ev.type === 'proposal' && ev.proposal?.id) {
+            const p: AssistantProposal = { id: ev.proposal.id, tool: ev.proposal.tool, summary: ev.proposal.summary, state: 'pending' };
+            apply((m) => ({ ...m, proposals: [...(m.proposals ?? []), p] }));
+          } else if (ev.type === 'error') {
+            streamErr = ev.error || 'Erreur de l\'assistant';
+          }
+        }
+      }
+
+      if (streamErr) apply((m) => ({ ...m, text: m.text || `⚠️ ${streamErr}`, error: !m.text }));
+      else apply((m) => (m.text || m.proposals?.length ? m : { ...m, text: '…' }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Une erreur est survenue';
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: `⚠️ ${msg}`, error: true }]);

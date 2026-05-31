@@ -21,7 +21,10 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? "claude-sonnet-4-6";
+// Haiku par défaut (rapide), Sonnet automatiquement dès qu'une action d'écriture
+// est en jeu (plus "réfléchi" pour les opérations sensibles). Surchargables par secret.
+const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5";
+const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 8;
 const MIN_PAYMENT_XAF = 10_000;
 
@@ -790,6 +793,74 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>) {
   return await res.json();
 }
 
+/**
+ * Appel Anthropic en STREAMING. Reconstruit le message complet (texte + tool_use)
+ * tout en invoquant onText(delta) à chaque fragment de texte — pour l'affichage
+ * mot-à-mot côté client.
+ */
+// deno-lint-ignore no-explicit-any
+async function streamAnthropic(apiKey: string, body: Record<string, unknown>, onText: (delta: string) => void): Promise<{ content: any[]; stop_reason: string }> {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ ...body, stream: true }),
+  });
+  if (!res.ok || !res.body) {
+    const txt = res.body ? await res.text() : "";
+    throw new Error(`Anthropic ${res.status}: ${txt.slice(0, 400)}`);
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const blocks: any[] = [];
+  let stopReason = "end_turn";
+  const jsonBuf: Record<number, string> = {}; // accumulation des input_json_delta par index
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+    for (const line of lines) {
+      const l = line.trim();
+      if (!l.startsWith("data:")) continue;
+      const payload = l.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let ev: AnyClient;
+      try { ev = JSON.parse(payload); } catch { continue; }
+      if (ev.type === "content_block_start") {
+        blocks[ev.index] = ev.content_block?.type === "tool_use"
+          ? { type: "tool_use", id: ev.content_block.id, name: ev.content_block.name, input: {} }
+          : { type: "text", text: "" };
+        if (ev.content_block?.type === "tool_use") jsonBuf[ev.index] = "";
+      } else if (ev.type === "content_block_delta") {
+        if (ev.delta?.type === "text_delta") {
+          blocks[ev.index].text += ev.delta.text;
+          onText(ev.delta.text);
+        } else if (ev.delta?.type === "input_json_delta") {
+          jsonBuf[ev.index] = (jsonBuf[ev.index] ?? "") + (ev.delta.partial_json ?? "");
+        }
+      } else if (ev.type === "content_block_stop") {
+        const b = blocks[ev.index];
+        if (b?.type === "tool_use") {
+          try { b.input = jsonBuf[ev.index] ? JSON.parse(jsonBuf[ev.index]) : {}; } catch { b.input = {}; }
+        }
+      } else if (ev.type === "message_delta" && ev.delta?.stop_reason) {
+        stopReason = ev.delta.stop_reason;
+      }
+    }
+  }
+  return { content: blocks.filter(Boolean), stop_reason: stopReason };
+}
+
+// Encode un événement SSE pour notre propre flux vers le client.
+function sse(obj: Record<string, unknown>): Uint8Array {
+  return new TextEncoder().encode(`data: ${JSON.stringify(obj)}\n\n`);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ success: false, error: "Méthode non autorisée" }, 405);
@@ -926,76 +997,104 @@ serve(async (req) => {
     ];
 
     const system = buildSystemPrompt(role);
-    let finalText = "";
-    const usedTools: string[] = [];
-    // deno-lint-ignore no-explicit-any
-    const proposals: any[] = [];
 
-    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-      const resp = await callAnthropic(apiKey, {
-        model: MODEL,
-        max_tokens: 1500,
-        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-        tools: toolDefs,
-        messages,
-      });
-      const content = resp.content ?? [];
-      // deno-lint-ignore no-explicit-any
-      const toolUses = content.filter((b: any) => b.type === "tool_use");
-
-      if (resp.stop_reason === "tool_use" && toolUses.length > 0) {
-        messages.push({ role: "assistant", content });
+    // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
+    // Haiku par défaut (rapide) ; on bascule sur Sonnet dès qu'une action
+    // d'écriture est proposée (les opérations sensibles méritent plus de "réflexion").
+    const convId = conversationId;
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (o: Record<string, unknown>) => { try { controller.enqueue(sse(o)); } catch (_) { /* client parti */ } };
+        let finalText = "";
+        const usedTools: string[] = [];
         // deno-lint-ignore no-explicit-any
-        const results: any[] = [];
-        for (const tu of toolUses) {
-          usedTools.push(tu.name);
-          const readTool = allowedRead.find((t) => t.name === tu.name);
-          const writeTool = allowedWrite.find((t) => t.name === tu.name);
-          let result: Record<string, unknown>;
-          if (readTool) {
-            try { result = await readTool.execute(admin, tu.input ?? {}); }
-            catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
-          } else if (writeTool) {
-            // ÉCRITURE : on ne fait que PROPOSER — pas d'exécution ici.
-            try {
-              const prep = await writeTool.prepare(admin, tu.input ?? {});
-              if (!prep.ok) {
-                result = { error: prep.error };
-              } else {
-                const { data: pa } = await admin.from("assistant_pending_actions").insert({
-                  conversation_id: conversationId, admin_user_id: user.id, tool: writeTool.name, args: prep.args, summary: prep.summary, status: "pending",
-                }).select("id").single();
-                proposals.push({ id: pa?.id, tool: writeTool.name, summary: prep.summary });
-                result = { status: "proposition_creee", message: "Carte de confirmation présentée à l'admin. En attente de son tap. Ne ré-exécute pas." };
+        const proposals: any[] = [];
+        let model = MODEL_FAST;
+
+        send({ type: "start", conversationId: convId });
+
+        try {
+          for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+            const resp = await streamAnthropic(
+              apiKey,
+              { model, max_tokens: 1500, system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }], tools: toolDefs, messages },
+              (delta) => send({ type: "delta", text: delta }),
+            );
+            const content = resp.content ?? [];
+            // deno-lint-ignore no-explicit-any
+            const toolUses = content.filter((b: any) => b.type === "tool_use");
+
+            if (resp.stop_reason === "tool_use" && toolUses.length > 0) {
+              messages.push({ role: "assistant", content });
+              // Si une action d'ÉCRITURE est demandée, on passe au modèle "smart" pour la suite.
+              if (toolUses.some((tu: AnyClient) => allowedWrite.find((t) => t.name === tu.name))) model = MODEL_SMART;
+              // deno-lint-ignore no-explicit-any
+              const results: any[] = [];
+              for (const tu of toolUses) {
+                usedTools.push(tu.name);
+                const readTool = allowedRead.find((t) => t.name === tu.name);
+                const writeTool = allowedWrite.find((t) => t.name === tu.name);
+                let result: Record<string, unknown>;
+                if (readTool) {
+                  try { result = await readTool.execute(admin, tu.input ?? {}); }
+                  catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
+                } else if (writeTool) {
+                  try {
+                    const prep = await writeTool.prepare(admin, tu.input ?? {});
+                    if (!prep.ok) { result = { error: prep.error }; }
+                    else {
+                      const { data: pa } = await admin.from("assistant_pending_actions").insert({
+                        conversation_id: convId, admin_user_id: user.id, tool: writeTool.name, args: prep.args, summary: prep.summary, status: "pending",
+                      }).select("id").single();
+                      const proposal = { id: pa?.id, tool: writeTool.name, summary: prep.summary };
+                      proposals.push(proposal);
+                      send({ type: "proposal", proposal });
+                      result = { status: "proposition_creee", message: "Carte de confirmation présentée à l'admin. En attente de son tap. Ne ré-exécute pas." };
+                    }
+                  } catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
+                } else {
+                  result = { error: "outil indisponible pour ce rôle" };
+                }
+                results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result) });
               }
-            } catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
-          } else {
-            result = { error: "outil indisponible pour ce rôle" };
+              messages.push({ role: "user", content: results });
+              continue;
+            }
+
+            // deno-lint-ignore no-explicit-any
+            finalText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+            break;
           }
-          results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result) });
+
+          if (!finalText) {
+            finalText = proposals.length ? "J'ai préparé l'action ci-dessous — confirme pour l'exécuter." : "Je n'ai pas pu formuler de réponse. Peux-tu reformuler ?";
+            send({ type: "delta", text: finalText });
+          }
+
+          // Persistance + audit (après le stream)
+          await admin.from("assistant_messages").insert([
+            { conversation_id: convId, role: "user", content: { text: message, attachments: acceptedAttachments } },
+            { conversation_id: convId, role: "assistant", content: { text: finalText } },
+          ]);
+          await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+          await admin.from("admin_audit_logs").insert({
+            admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: convId,
+            details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length },
+          }).then(() => {}, () => {});
+
+          send({ type: "done", conversationId: convId });
+        } catch (e) {
+          console.error("admin-assistant stream error:", (e as Error)?.message ?? e);
+          send({ type: "error", error: "Erreur de l'assistant" });
+        } finally {
+          controller.close();
         }
-        messages.push({ role: "user", content: results });
-        continue;
-      }
+      },
+    });
 
-      // deno-lint-ignore no-explicit-any
-      finalText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
-      break;
-    }
-
-    if (!finalText) finalText = proposals.length ? "J'ai préparé l'action ci-dessous — confirme pour l'exécuter." : "Je n'ai pas pu formuler de réponse. Peux-tu reformuler ?";
-
-    await admin.from("assistant_messages").insert([
-      { conversation_id: conversationId, role: "user", content: { text: message, attachments: acceptedAttachments } },
-      { conversation_id: conversationId, role: "assistant", content: { text: finalText } },
-    ]);
-    await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
-    await admin.from("admin_audit_logs").insert({
-      admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: conversationId,
-      details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length },
-    }).then(() => {}, () => {});
-
-    return json({ success: true, conversationId, reply: finalText, tools: usedTools, proposals });
+    return new Response(stream, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+    });
   } catch (error) {
     console.error("admin-assistant error:", (error as Error)?.message ?? error);
     return json({ success: false, error: "Erreur inattendue de l'assistant" }, 500);
