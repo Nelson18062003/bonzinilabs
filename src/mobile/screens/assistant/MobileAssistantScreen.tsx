@@ -49,9 +49,10 @@ export function MobileAssistantScreen() {
     }
     const next: PendingFile[] = [];
     for (const file of Array.from(list).slice(0, room)) {
-      const v = validateUploadFile(file);
-      if (!v.valid) {
-        toast.error(v.error);
+      try {
+        validateUploadFile(file); // lève une erreur si invalide (taille / type)
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Fichier non autorisé');
         continue;
       }
       next.push({
