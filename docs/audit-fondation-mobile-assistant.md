@@ -1,0 +1,242 @@
+# Chantier fondation mobile — Audit & architecture (focus Assistant)
+
+> **Nature** : ce n'est pas un bug fix. C'est un audit de *qualité d'exécution* qui remonte à
+> la cause racine **architecturale** de l'instabilité mobile, en partant du module Assistant
+> (chat directeur d'opération) et en posant des principes **généralisables à toute la plateforme**.
+>
+> **Méthode** : lecture seule du code réel + vérification des APIs web sur caniuse/MDN
+> (anti-hallucination). Aucune conclusion n'est tirée d'une intuition non vérifiée.
+>
+> **Plan de chantier (une phase à la fois)** :
+> - **Phase 1 — Diagnostic / cause racine** ← *ce document* (lecture seule) ✅
+> - **Phase 2 — Benchmark** des références (ChatGPT, Claude.ai, Linear, Vercel) — observation
+> - **Phase 3 — Architecture cible** : app-shell, scroll containers, design tokens layout
+> - **Phase 4 — Plan de remédiation** détaillé + procédures de test sur device réel
+> - **Phase 5 — Implémentation** (Assistant d'abord, puis généralisation) — *écriture*
+>
+> **Légende confiance** : 🟢 haute · 🟡 modérée · 🔴 hypothèse à valider sur device.
+
+---
+
+## 0. TL;DR — la conclusion en cinq phrases
+
+1. **Ton hypothèse de départ est fausse pour ce codebase.** `dvh`/`svh`/`lvh`, `visualViewport`
+   et `env(safe-area-inset-*)` sont **déjà présents partout**. Le problème n'est pas un *manque*
+   de primitives.
+2. La vraie maladie est un **excès non gouverné** : **7+ implémentations concurrentes** de la
+   gestion clavier/viewport, à moitié abandonnées, qui se contredisent — et l'Assistant en
+   réimplémente une **8ᵉ, dégradée, en inline**.
+3. Le défaut **structurel** : il n'existe **aucune distinction** entre « écrans à scroll-document »
+   (formulaires, listes) et « écrans app-shell » (chat = viewport verrouillé, scroll interne). Le
+   chat tente d'être un app-shell **à l'intérieur d'un shell `min-h-screen` qui scrolle comme un
+   document**. Les deux modèles de layout sont incompatibles → header qui disparaît, blanc en bas.
+4. Un **modèle mental erroné est gravé dans le code ET dans la doc** : « `interactive-widget` fait
+   shrink le layout sur iOS ». **iOS ignore `interactive-widget`** (vérifié). Cette croyance fausse
+   est la justification d'une décision d'architecture (« on a abandonné `calc(100dvh - inset)` »).
+5. La différence avec Vercel/Linear/Claude.ai **n'est pas du CSS** (`dvh` vs `vh`). C'est qu'ils ont
+   **un seul app-shell discipliné** et **une seule source de vérité** pour le viewport. Bonzini a
+   huit demi-solutions. **On arrête de patcher : on pose la fondation une fois.**
+
+---
+
+## 1. Démontage de l'hypothèse initiale
+
+L'hypothèse fournie était : (1) `100vh` sans `100dvh`, (2) pas de `visualViewport`, (3) pas de
+`safe-area`. **Les trois sont contredites par le code.**
+
+| Hypothèse | Réalité dans le code | Preuve |
+|---|---|---|
+| `100vh` sans fallback `dvh` | `dvh`/`svh`/`lvh` utilisés dans ~30 endroits | `MobileAssistantScreen.tsx:224`, `MobileLayout.tsx:15`, `ui/sidebar.tsx`, etc. |
+| Pas de `visualViewport` | API utilisée dans **7 hooks** dédiés + inline dans l'Assistant | `src/hooks/keyboard/*`, `MobileAssistantScreen.tsx:138` |
+| Pas de `safe-area` | `env(safe-area-inset-*)` dans ~20 endroits | `index.css:203,752,939-940,1194,1198`, `MobileHeader.tsx:42`, etc. |
+| (implicite) zoom = font < 16px non géré | `font-size:16px !important` global sur mobile | `index.css:184-192` |
+| (implicite) pas de `interactive-widget` | Présent dans le meta | `index.html:5` |
+
+🟢 **Conclusion** : l'équipe **connaît** les pièges mobiles et a posé de vraies défenses. Le
+problème n'est **pas un déficit de connaissance**, c'est un **déficit de gouvernance** : les
+défenses vivent dans N endroits déconnectés et certains écrans (l'Assistant) les contournent.
+
+### Correction d'une de mes propres hypothèses de travail
+J'avais d'abord noté que le `textarea` de l'Assistant est en `text-[15px]` (`MobileAssistantScreen.tsx:388`)
+→ déclencheur de zoom iOS (< 16px). **C'est faux** : la règle globale `index.css:189-191`
+(`font-size:16px !important` sous 767px) **écrase** ce 15px sur device réel. Le `text-[15px]`
+reste un *code smell* (il bypasse le design system, ce qui est exactement le pattern de la maladie)
+**mais il ne provoque pas de zoom**. Retiré des causes. 🟢
+
+---
+
+## 2. Faits API vérifiés (caniuse / MDN — juin 2026)
+
+| API / feature | Support réel | Implication pour Bonzini | Conf. |
+|---|---|---|---|
+| `dvh` / `svh` / `lvh` | Safari **15.4+**, Chrome **108+**, **93%** global | Sûr à utiliser. Fallback nécessaire seulement < iOS 15.4 (négligeable) | 🟢 |
+| VirtualKeyboard API (`navigator.virtualKeyboard`) | **Chromium uniquement** (Chrome/Edge 94+). **PAS Safari (aucune), PAS Firefox**. 76% global | `overlaysContent=true` n'agit **que** sur Chrome/Edge Android | 🟢 |
+| `interactive-widget` (meta viewport) | Chrome **108+**, Firefox **132+**. **PAS WebKit/Safari** ([WebKit request #65](https://github.com/WebKit/standards-positions/issues/65)) | **iOS ignore le tag**. La croyance « iOS shrink via interactive-widget » est **fausse** | 🟢 |
+| Zoom focus iOS | Déclenché si **font-size calculé < 16px** | Défendu par `index.css:184-192`. OK | 🟢 |
+
+**Corollaire dérangeant** : `interactive-widget=resizes-content` (`index.html:5`) est un **no-op sur
+les deux plateformes** : ignoré sur iOS, et **écrasé sur Android** par `overlaysContent=true` (qui
+force le mode *overlay*, l'inverse de *resizes*). Le tag ne fait rien d'utile et **induit en erreur
+quiconque le lit** — c'est précisément ce qui a produit le commentaire faux ci-dessous.
+
+---
+
+## 3. La vraie cause racine — en couches
+
+> Principe : on ne s'arrête pas au niveau 1 (CSS). On remonte jusqu'au niveau architectural.
+
+### Couche 0 — Aucun verrou de document (le socle manquant)
+`html`, `body`, `#root` n'ont **aucune** règle de `height`/`overflow` (`index.css:170-178` ne pose
+que la police et la couleur). Donc **le document peut toujours scroller**. Les apps premium
+verrouillent le document (`html,body,#root { height:100%; overflow:hidden }` ou un conteneur app
+`position:fixed`) pour que **seuls des conteneurs internes** scrollent. Ici, rien ne l'empêche →
+chaque écran est à la merci du *document scroll* + de la danse de la barre d'URL iOS. 🟢
+
+### Couche 1 — Nesting de hauteurs incompatibles (le smoking gun structurel)
+Pile DOM réelle de l'Assistant :
+
+```
+<div min-h-screen flex flex-col>             ← MobileAppShell (min-height: 100vh)
+  <main flex-1>
+    <div animate-fade-in>                    ← AnimatedPage (opacity only, pas de transform)
+      <div style="height: vv.height" overflow-hidden flex flex-col>   ← Assistant root
+        <header sticky top-0>                ← MobileHeader
+        <div flex-1 overflow-y-auto>…msgs…</div>
+        <div>…barre de saisie…</div>
+```
+
+- Le **parent** (`MobileAppShell.tsx:22-26`) est `min-h-screen` = `min-height:100vh`. Sur iOS, `100vh`
+  = *large viewport* (barre d'URL masquée). Quand la barre d'URL est **visible**, le shell est **plus
+  haut que la zone visible** → **le document devient scrollable**.
+- L'**enfant** (`MobileAssistantScreen.tsx:222-224`) est `height: vv.height` + `overflow-hidden` : il
+  veut être un app-shell à hauteur fixe.
+- **Un conteneur à hauteur fixe `overflow-hidden` posé dans un document scrollable `min-h-screen` :
+  les deux modèles de layout s'excluent.** Le `overflow-hidden` du root n'empêche pas le **document**
+  de scroller. Donc tout scroll (doigt, scroll-au-focus du navigateur, ou le `window.scrollBy` global,
+  cf. couche 5) **translate tout le root** — header compris.
+- Le header `sticky top-0` (`MobileHeader.tsx:38-44`) colle dans le contexte de scroll du **root**
+  (qui ne scrolle pas), **pas** du document → quand le document bouge, le header **part avec** →
+  **« header se cache »**. Le blanc en bas = le fond du shell `min-h-screen` qui dépasse sous le
+  conteneur `vv.height`. 🟢 (mécanisme structurel) / 🟡 (manifestation exacte au pixel : dépend du
+  timing de scroll iOS — à confirmer device).
+
+> Note : `AnimatedPage` n'applique **que** `opacity` (`animate-fade-in`, cf. `tailwind.config.ts:105`),
+> **pas** de `transform`. Donc il **ne casse pas** sticky/fixed. Hypothèse « transform » écartée. 🟢
+
+### Couche 2 — Sept implémentations concurrentes, sans source de vérité
+`src/hooks/keyboard/` contient :
+
+| Hook | Rôle | Seuil clavier | Remarque |
+|---|---|---|---|
+| `useVisualViewport` | géométrie vv brute | — | OK, primitive saine |
+| `useKeyboardInset` | hauteur clavier (VK API + vv) | **100** | pour `calc(100dvh - inset)` |
+| `useKeyboardHeight` / `useKeyboardOpen` | hauteur clavier (vv only) | **120** | duplique `useKeyboardInset`, **désaccord de seuil** |
+| `useViewportContainerHeight` | string de hauteur CSS | — (vv.height brut) | **« abandonne » `calc(100dvh - inset)`** sur un commentaire faux |
+| `useVirtualKeyboardOverlay` | `overlaysContent=true` | — | Chromium only |
+| `useScrollIntoViewOnFocus` | `window.scrollBy` au focus | — | global, **scrolle le document** |
+| `useKeyboardSafePadding` | `paddingBottom = kbHeight` | 120 (via useKeyboardHeight) | encore une autre voie |
+
+**Trois** façons différentes de répondre à « quelle est la hauteur du clavier ? » (`useKeyboardInset`
+seuil 100, `useKeyboardHeight` seuil 120, `useViewportContainerHeight` brut) qui **renvoient des
+nombres différents pour le même état physique**. Aucune n'est faisant autorité. C'est pire que de
+n'avoir rien : elles **interagissent de façon imprévisible** selon l'écran qui en pioche une. 🟢
+
+### Couche 3 — Un modèle mental faux, gravé dans le code ET la doc
+`useViewportContainerHeight.ts:24-28` :
+
+> *« Why we abandoned `calc(100dvh - useKeyboardInset())` : On iOS Safari 16.4+, the meta tag
+> `interactive-widget=resizes-content` makes 100dvh ALREADY shrink when the keyboard opens. »*
+
+**Faux** (vérifié §2) : iOS n'implémente pas `interactive-widget` ; `100dvh` **ne shrink pas** à
+l'ouverture du clavier sur iOS (le clavier ne réduit que le *visual viewport*, pas le *layout
+viewport* auquel `dvh` est lié). La même croyance est répétée dans `refonte-ui-chat-implementation.md:35`.
+**Une décision d'architecture (« abandonner X ») repose sur une prémisse fausse.** C'est la racine de
+la dérive « patch sur patch » : on corrige les symptômes d'un modèle mental incorrect. 🟢
+
+### Couche 4 — L'Assistant : copie dégradée d'un pattern qui existe déjà
+Il existe **deux** surfaces de chat, traitées différemment :
+
+| | Support (`MobileSupportConversationScreen`) | Assistant (`MobileAssistantScreen`) |
+|---|---|---|
+| Hauteur conteneur | `useViewportContainerHeight()` (`:43,176`) | **inline** `vv.height` (`:137-151,224`) |
+| Gère Android (overlay) | **Oui** (`calc(100dvh - vkHeight)`) | **NON** → bug Android |
+| Gère iOS | Oui (`vv.height`) | Oui (`vv.height`) |
+| Auto-grow du textarea | **Oui** (`MessageInput.tsx:332-336`) | **NON** (`:382-389`) → champ ne grandit pas |
+| Issu de la refonte clavier | Oui (`refonte-ui-chat-implementation.md`) | **Non** (construit séparément après) |
+
+**L'Assistant n'implémente que la moitié iOS** de ce que `useViewportContainerHeight` fait déjà.
+Sur **Android**, `overlaysContent=true` (global) empêche le *visual viewport* de shrink → `vv.height`
+reste plein → **le conteneur ne rétrécit jamais → le clavier recouvre la saisie**. C'est *exactement*
+le symptôme Android rapporté. Et le textarea n'a **pas** le handler `onInput` d'auto-grow présent à 40
+fichiers de là → *exactement* le « champ qui ne s'agrandit pas ». 🟢
+
+### Couche 5 — Conflits actifs entre mécanismes globaux et locaux
+`KeyboardFocusManager` est monté globalement (`App.tsx:138`) et active **deux** choses pour tous :
+1. `overlaysContent=true` (Android) → le vv ne shrink pas → casse l'approche `height:vv.height` de l'Assistant (couche 4).
+2. `useScrollIntoViewOnFocus` → au focus, après **320 ms**, fait `window.scrollBy` (`useScrollIntoViewOnFocus.ts:38-51`) → **scrolle le document** sous un conteneur qui, lui, se redimensionne via `vv.resize`. Deux mouvements qui se superposent en deux temps → **« ça part dans tous les sens »**. 🟡 (mécanisme 🟢, ampleur à confirmer device)
+
+---
+
+## 4. Mapping symptôme rapporté → cause → confiance
+
+| Symptôme (rapporté) | Plateforme | Cause racine (couche) | Conf. |
+|---|---|---|---|
+| Grand blanc en bas au scroll | iOS | Shell `min-h-screen`(100vh) > visible → document scroll sous conteneur `vv.height` (C0,C1) | 🟢 |
+| Header « Assistant » se cache | iOS | Sticky dans root `overflow-hidden` qui translate avec le document (C1) | 🟢 |
+| Saisie + boutons remontent, blanc en bas | iOS | `offsetTop` du visual viewport **ignoré** par l'inline (`:140-141` lit `vv.height`, pas `offsetTop`) (C4) | 🟢 |
+| Difficile de scroller la conversation | iOS | Conflit scroll document vs scroll interne `flex-1 overflow-y-auto` (C0,C1,C5) | 🟡 |
+| Clavier cache la saisie | **Android** | `overlaysContent=true` → vv ne shrink pas → conteneur reste plein (C4,C5) | 🟢 |
+| Champ ne grandit pas avec le texte | iOS+Android | Pas de handler `onInput` d'auto-grow sur le textarea (C4) | 🟢 |
+| Zoom involontaire | iOS | **Déjà défendu** (`index.css` 16px). Probablement **non reproductible** | 🟡 (penche « non-bug ») |
+| Comportement radicalement différent iOS↔Android | les deux | Config globale + code local font des **hypothèses opposées par plateforme** (C3,C4,C5) | 🟢 |
+
+---
+
+## 5. Ce qui est DÉJÀ bon (à NE PAS jeter)
+
+- `useVisualViewport` : primitive propre et correcte (gère `offsetTop`, fallback resize). **Base de la future source unique.**
+- `env(safe-area-inset-*)` : appliqué correctement à plusieurs endroits.
+- Garde-fou global anti-zoom 16px (`index.css:184-192`).
+- `dvh` partout (support navigateur OK).
+- Le pattern `useViewportContainerHeight` du Support est la **bonne direction** (gère les 2 plateformes) — il faut le **généraliser et le durcir** (offsetTop, nesting), pas le réécrire.
+
+## 6. Ce qui doit disparaître / converger (dette à éliminer en Phase 5)
+
+- Les **doublons** de calcul de hauteur clavier (`useKeyboardInset` vs `useKeyboardHeight` vs inline) → **une** source de vérité.
+- La logique **inline** de l'Assistant (`:137-151`) → supprimée au profit du système.
+- Le commentaire/doc faux sur `interactive-widget` iOS (C3) → corrigé.
+- Le `interactive-widget=resizes-content` no-op → décision explicite (le garder seulement si on documente *pourquoi*, sinon le retirer pour ne plus tromper).
+- Le mélange `min-h-screen`(100vh) / `100dvh` / `vv.height` → **convention unique** (cf. Phase 3).
+
+---
+
+## 7. Pourquoi Vercel/Linear/Claude.ai « jouent dans une autre cour »
+
+Ce n'est **pas** parce qu'ils ont écrit `dvh` au lieu de `vh`. C'est parce qu'ils ont :
+1. **Un seul app-shell** : document verrouillé (`overflow:hidden` sur la racine), un conteneur racine
+   qui occupe le viewport visible, des **scroll containers internes** explicites. Le chat *possède* le
+   viewport — il n'est pas un invité dans une page qui scrolle.
+2. **Une seule source de vérité viewport/clavier**, pas sept.
+3. **Le même contrat sur tous les écrans** : header ancré, zone de scroll au milieu, composeur ancré au
+   *visual viewport*. Cohérence = sensation de calme.
+
+→ Ces trois points deviennent les **principes de la Phase 3**, conçus pour être **généralisables à
+toute la plateforme**, pas seulement à l'Assistant.
+
+## 8. Limites de cet audit (honnêteté)
+
+- 🔴 **Aucun test sur device réel n'a encore été fait** (DevTools desktop ne montre pas ces bugs). Les
+  mécanismes structurels sont 🟢 par lecture de code + specs vérifiées ; l'ampleur/pixel exact de
+  certaines manifestations iOS reste 🟡 jusqu'à validation sur iPhone (Safari) + Android (Chrome) réels.
+- Je n'ai pas encore profilé le comportement runtime (pas d'exécution). Phase 4 définira le protocole de
+  test sur device (Web Inspector iOS, Chrome remote debugging) — obligatoire avant et après tout fix.
+- Le Support chat partage des risques latents (offsetTop, nesting) même s'il n'est pas l'objet de la
+  plainte : la fondation Phase 3 doit le couvrir aussi.
+
+## 9. Prochaine étape
+
+**Phase 2 — Benchmark** (observation, lecture seule) : disséquer ChatGPT, Claude.ai, Linear, Vercel sur
+mobile (header au scroll, composeur au clavier iOS/Android, champ qui grandit, stabilité, safe-areas,
+patterns CSS/HTML observables) et en extraire le **contrat d'app-shell** à reproduire.
+
+*→ En attente de ton GO pour lancer la Phase 2.*
