@@ -27,6 +27,16 @@ const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6"
 const MAX_TOOL_ITERATIONS = 8;
 const MIN_PAYMENT_XAF = 10_000;
 
+// Liste blanche pour les actions wallet (crédit/débit manuel) : e-mails ou user_id
+// autorisés EN PLUS des super_admin. Configuré via secret (ex. "jonas@bonzini.com").
+const WALLET_ADMINS = (Deno.env.get("ASSISTANT_WALLET_ADMINS") ?? "")
+  .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+function canAdjustWallet(role: string, email: string | undefined, userId: string): boolean {
+  if (role === "super_admin") return true;
+  const e = (email ?? "").toLowerCase();
+  return WALLET_ADMINS.includes(e) || WALLET_ADMINS.includes(userId.toLowerCase());
+}
+
 // Pièces jointes (images analysées par vision + PDF lus comme documents)
 const ATTACHMENT_BUCKET = "assistant-attachments";
 const ALLOWED_ATTACHMENT_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
@@ -775,6 +785,8 @@ interface WriteTool {
   permission: PermKey;
   /** Défense en profondeur : action réservée au super_admin (en plus de la garde DB). */
   superAdminOnly?: boolean;
+  /** Réservé aux super_admin + liste blanche WALLET_ADMINS (ex. ajustement de wallet). */
+  walletAdminsOnly?: boolean;
   /** Si vrai, les pièces jointes du message (captures/PDF) sont attachées comme preuve. */
   acceptsProof?: boolean;
   description: string;
@@ -1204,6 +1216,42 @@ const WRITE_TOOLS: WriteTool[] = [
     },
   },
   {
+    name: "adjust_wallet",
+    permission: "canProcessDeposits",
+    walletAdminsOnly: true,
+    description: "Créditer ou débiter MANUELLEMENT le wallet d'un client, avec un motif obligatoire. type = 'credit' (ajoute) ou 'debit' (retire, refusé si solde insuffisant). Action réservée (super_admin + liste autorisée). À utiliser pour corriger/ajuster un solde.",
+    input_schema: {
+      type: "object",
+      properties: { client_user_id: { type: "string" }, type: { type: "string", enum: ["credit", "debit"] }, amount_xaf: { type: "number" }, reason: { type: "string" } },
+      required: ["client_user_id", "type", "amount_xaf", "reason"],
+    },
+    prepare: async (admin, a) => {
+      const amt = validIntAmount(a.amount_xaf);
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!amt) return { ok: false, error: "Montant invalide." };
+      if (a.type !== "credit" && a.type !== "debit") return { ok: false, error: "type doit être 'credit' ou 'debit'." };
+      if (!a.reason || String(a.reason).trim().length < 3) return { ok: false, error: "Motif obligatoire." };
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
+      if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
+      if (a.type === "debit" && Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
+      const after = a.type === "credit" ? Number(wallet.balance_xaf) + amt : Number(wallet.balance_xaf) - amt;
+      const lines: Line[] = [
+        { label: "Client", value: c.name },
+        { label: "Type", value: a.type === "credit" ? "Crédit (ajout)" : "Débit (retrait)" },
+        { label: "Solde actuel", value: fmtXAF(wallet.balance_xaf) },
+        { label: "Solde après", value: fmtXAF(after) },
+        { label: "Motif", value: String(a.reason) },
+      ];
+      return { ok: true, args: { p_user_id: c.uid, p_amount: amt, p_adjustment_type: a.type, p_reason: String(a.reason) }, summary: { title: a.type === "credit" ? "Créditer un wallet" : "Débiter un wallet", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: a.type === "credit" ? "Confirmer le crédit" : "Confirmer le débit", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("admin_adjust_wallet", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
     name: "delete_client",
     permission: "canManageUsers",
     superAdminOnly: true,
@@ -1383,6 +1431,10 @@ serve(async (req) => {
       if (tool.superAdminOnly && role !== "super_admin") {
         return json({ success: false, error: "Action réservée au super administrateur." }, 403);
       }
+      // Actions wallet : super_admin OU liste blanche (ex. Jonas)
+      if (tool.walletAdminsOnly && !canAdjustWallet(role, user.email, user.id)) {
+        return json({ success: false, error: "Action réservée aux administrateurs autorisés (ajustement de wallet)." }, 403);
+      }
 
       // Prise ATOMIQUE de l'action (pending → executing) : empêche le double-tap concurrent
       const { data: claimed } = await admin
@@ -1453,7 +1505,12 @@ serve(async (req) => {
 
     // Outils autorisés pour ce rôle (lecture + écriture)
     const allowedRead = READ_TOOLS.filter((t) => perms[t.permission]);
-    const allowedWrite = WRITE_TOOLS.filter((t) => perms[t.permission]);
+    const allowedWrite = WRITE_TOOLS.filter((t) => {
+      if (!perms[t.permission]) return false;
+      if (t.superAdminOnly && role !== "super_admin") return false;
+      if (t.walletAdminsOnly && !canAdjustWallet(role, user.email, user.id)) return false;
+      return true;
+    });
     // deno-lint-ignore no-explicit-any
     const toolDefs: any[] = [
       ...allowedRead.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
