@@ -14,6 +14,7 @@ export interface AdminUser {
   firstName: string;
   lastName: string;
   role: AppRole;
+  avatarUrl?: string;
 }
 
 export interface RolePermission {
@@ -138,7 +139,8 @@ interface AdminAuthContextType {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logAction: (actionType: string, targetType: string, description: string, targetId?: string, metadata?: Record<string, any>) => void;
   // Convenience properties
-  profile: { first_name: string; last_name: string } | null;
+  profile: { first_name: string; last_name: string; avatar_url?: string | null } | null;
+  refreshProfile: () => Promise<void>;
   canManageUsers: boolean;
 }
 
@@ -164,7 +166,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       const { data: roleData, error: roleError } = await withTimeout(
         supabaseAdmin
           .from('user_roles')
-          .select('role, first_name, last_name, is_disabled')
+          .select('role, first_name, last_name, avatar_url, is_disabled')
           .eq('user_id', user.id)
           .maybeSingle(),
         10000,
@@ -192,6 +194,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         firstName: roleData.first_name || 'Admin',
         lastName: roleData.last_name || '',
         role: roleData.role as AppRole,
+        avatarUrl: roleData.avatar_url || undefined,
       };
 
       return adminUser;
@@ -326,9 +329,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   // Convenience properties
   const profile = currentUser
-    ? { first_name: currentUser.firstName, last_name: currentUser.lastName }
+    ? { first_name: currentUser.firstName, last_name: currentUser.lastName, avatar_url: currentUser.avatarUrl ?? null }
     : null;
   const canManageUsers = hasPermission('canManageUsers');
+
+  // Re-charge la fiche admin (ex. après édition du profil).
+  const refreshProfile = async () => {
+    if (!session?.user) return;
+    const result = await fetchAdminData(session.user);
+    if (result && !('disabled' in result)) setCurrentUser(result as AdminUser);
+  };
 
   return (
     <AdminAuthContext.Provider
@@ -343,6 +353,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         logAction,
         profile,
         canManageUsers,
+        refreshProfile,
       }}
     >
       {children}

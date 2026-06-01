@@ -70,6 +70,7 @@ const MobileAdminsScreen = lazy(() => import("./mobile/screens/admins").then(m =
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
+const MobileAdminProfile = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileAdminProfile })));
 const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
 const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
 const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
@@ -190,6 +191,7 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<MobileRouteWrapper><MobileCreateAdmin /></MobileRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<MobileRouteWrapper><MobileAdminDetail /></MobileRouteWrapper>} />
                 <Route path="/m/more/settings" element={<MobileRouteWrapper><MobileSettingsScreen /></MobileRouteWrapper>} />
+                <Route path="/m/more/profile" element={<MobileRouteWrapper><MobileAdminProfile /></MobileRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
                 <Route path="/m/support" element={<MobileRouteWrapper><MobileSupportListScreen /></MobileRouteWrapper>} />

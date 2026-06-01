@@ -86,21 +86,26 @@ export function MobileMoreScreen() {
       <MobileHeader title={t('more', { defaultValue: 'Plus' })} />
 
       <div className="flex-1">
-        {/* Profile Section */}
-        <div className="px-4 py-6 border-b border-border">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-xl font-semibold text-primary">
-              {profile?.first_name?.[0] || '?'}
-              {profile?.last_name?.[0] || ''}
-            </div>
-            <div>
-              <p className="text-lg font-semibold">
-                {profile?.first_name} {profile?.last_name}
-              </p>
-              <p className="text-sm text-muted-foreground">Admin</p>
-            </div>
+        {/* Profile Section — cliquable pour éditer */}
+        <button
+          onClick={() => navigate('/m/more/profile')}
+          className="w-full px-4 py-6 border-b border-border flex items-center gap-4 text-left active:bg-muted/50 transition-colors"
+        >
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-xl font-semibold text-primary flex-shrink-0">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <>{profile?.first_name?.[0] || '?'}{profile?.last_name?.[0] || ''}</>
+            )}
           </div>
-        </div>
+          <div className="flex-1">
+            <p className="text-lg font-semibold">
+              {profile?.first_name || 'Mon profil'} {profile?.last_name}
+            </p>
+            <p className="text-sm text-muted-foreground">Modifier mes informations</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
 
         {/* Menu Items */}
         <div className="divide-y divide-border">
