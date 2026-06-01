@@ -12,7 +12,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -86,6 +85,35 @@ interface ReadTool {
   input_schema: Record<string, any>;
   // deno-lint-ignore no-explicit-any
   execute: (admin: AnyClient, args: any) => Promise<Record<string, unknown>>;
+}
+
+/**
+ * Retrouve des clients par NOM (gère "prénom nom", "nom prénom", un seul mot).
+ * Utilisé par les outils "par nom de client". Renvoie au plus `max` clients.
+ */
+// deno-lint-ignore no-explicit-any
+async function findClientsByName(admin: AnyClient, name: unknown, max = 10): Promise<any[]> {
+  const clean = String(name ?? "").trim().replace(/[,():*%]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  const cols = "user_id, first_name, last_name, phone";
+  const words = clean.split(" ").filter(Boolean).slice(0, 4);
+  // deno-lint-ignore no-explicit-any
+  let q: any = admin.from("clients").select(cols);
+  for (const w of words) {
+    const t = `%${w}%`;
+    q = q.or(`first_name.ilike.${t},last_name.ilike.${t},phone.ilike.${t}`);
+  }
+  const { data } = await q.limit(max);
+  if ((data?.length ?? 0) > 0 || words.length <= 1) return data ?? [];
+  // Filet : nom complet concaténé (ordre indifférent)
+  const { data: all } = await admin.from("clients").select(cols).limit(500);
+  const needle = clean.toLowerCase();
+  // deno-lint-ignore no-explicit-any
+  return (all ?? []).filter((c: any) => {
+    const full = `${c.first_name ?? ""} ${c.last_name ?? ""}`.toLowerCase();
+    const rev = `${c.last_name ?? ""} ${c.first_name ?? ""}`.toLowerCase();
+    return full.includes(needle) || rev.includes(needle);
+  }).slice(0, max);
 }
 
 const READ_TOOLS: ReadTool[] = [
@@ -496,6 +524,146 @@ const READ_TOOLS: ReadTool[] = [
         .is("deleted_at", null).order("uploaded_at", { ascending: false }).limit(clamp(limit, 10, 25));
       if (error) return { error: error.message };
       return { count: data?.length ?? 0, proofs: data ?? [] };
+    },
+  },
+  {
+    name: "find_deposits_by_client_name",
+    permission: "canViewDeposits",
+    description: "Trouver les dépôts d'un client en donnant son NOM (ex. 'Jonas Boco'). Pratique quand on n'a pas l'user_id. Filtre optionnel: status.",
+    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
+    execute: async (admin, { name, status, limit }) => {
+      const clients = await findClientsByName(admin, name, 10);
+      if (clients.length === 0) return { found: false, message: "Aucun client à ce nom." };
+      const ids = clients.map((c) => c.user_id);
+      let q = admin.from("deposits").select("reference, amount_xaf, confirmed_amount_xaf, method, status, created_at, user_id")
+        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(limit, 15, 40));
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, deposits: data ?? [] };
+    },
+  },
+  {
+    name: "find_payments_by_client_name",
+    permission: "canViewPayments",
+    description: "Trouver les paiements d'un client en donnant son NOM (ex. 'Jonas Boco'). Filtre optionnel: status.",
+    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
+    execute: async (admin, { name, status, limit }) => {
+      const clients = await findClientsByName(admin, name, 10);
+      if (clients.length === 0) return { found: false, message: "Aucun client à ce nom." };
+      const ids = clients.map((c) => c.user_id);
+      let q = admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
+        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(limit, 15, 40));
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, payments: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_report",
+    permission: "canViewTreasury",
+    description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. period = 'today' | 'week' | 'month' | 'all' (défaut 'month').",
+    input_schema: { type: "object", properties: { period: { type: "string", enum: ["today", "week", "month", "all"] } } },
+    execute: async (admin, { period }) => {
+      const to = new Date();
+      const from = new Date();
+      if (period === "today") from.setHours(0, 0, 0, 0);
+      else if (period === "week") from.setDate(from.getDate() - 7);
+      else if (period === "all") from.setFullYear(from.getFullYear() - 10);
+      else from.setDate(from.getDate() - 30);
+      const { data, error } = await admin.rpc("get_treasury_dashboard", { p_from_date: from.toISOString(), p_to_date: to.toISOString() });
+      if (error) return { error: error.message };
+      return { period: period ?? "month", report: data };
+    },
+  },
+  {
+    name: "treasury_top_counterparties",
+    permission: "canViewTreasury",
+    description: "Top fournisseurs USDT ou acheteurs CNY par volume sur une période. type = 'usdt_supplier' | 'cny_buyer'. period = 'week' | 'month' | 'all' (défaut 'month').",
+    input_schema: { type: "object", properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, period: { type: "string", enum: ["week", "month", "all"] }, limit: { type: "number" } }, required: ["type"] },
+    execute: async (admin, { type, period, limit }) => {
+      const to = new Date();
+      const from = new Date();
+      if (period === "week") from.setDate(from.getDate() - 7);
+      else if (period === "all") from.setFullYear(from.getFullYear() - 10);
+      else from.setDate(from.getDate() - 30);
+      const { data, error } = await admin.rpc("get_top_counterparties", { p_type: type, p_from_date: from.toISOString(), p_to_date: to.toISOString(), p_limit: clamp(limit, 5, 20) });
+      if (error) return { error: error.message };
+      return { type, period: period ?? "month", counterparties: data };
+    },
+  },
+  {
+    name: "treasury_list_counterparties",
+    permission: "canViewTreasury",
+    description: "Lister les contreparties de la trésorerie : fournisseurs USDT (type 'usdt_supplier') ou acheteurs CNY (type 'cny_buyer'). Donne nom, téléphone, WeChat, statut actif. Optionnel: query (filtre par nom), type.",
+    input_schema: { type: "object", properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, query: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, { type, query, limit }) => {
+      let q = admin.from("treasury_counterparties")
+        .select("short_id, display_name, legal_name, type, phone, wechat_id, is_active, notes, created_at")
+        .is("archived_at", null).order("created_at", { ascending: false }).limit(clamp(limit, 20, 100));
+      if (type) q = q.eq("type", type);
+      if (query) {
+        const t = `%${String(query).replace(/[,():*%]/g, "")}%`;
+        q = q.or(`display_name.ilike.${t},legal_name.ilike.${t},phone.ilike.${t},wechat_id.ilike.${t}`);
+      }
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, counterparties: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_accounts_balances",
+    permission: "canViewTreasury",
+    description: "Soldes de TOUS les comptes de trésorerie (banque, mobile money, cash, crypto, Alipay, WeChat…) avec leur devise (XAF/USDT/CNY), le nombre d'écritures et la dernière activité.",
+    input_schema: { type: "object", properties: { only_active: { type: "boolean" } } },
+    execute: async (admin, { only_active }) => {
+      let q = admin.from("treasury_account_balances").select("label, code, kind, currency, balance, entry_count, last_entry_at, is_active").order("sort_order", { ascending: true });
+      if (only_active !== false) q = q.eq("is_active", true);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      // Regroupe les totaux par devise pour un aperçu rapide
+      const byCurrency: Record<string, number> = {};
+      for (const a of data ?? []) byCurrency[a.currency] = (byCurrency[a.currency] ?? 0) + Number(a.balance ?? 0);
+      return { count: data?.length ?? 0, totals_by_currency: byCurrency, accounts: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_usdt_position",
+    permission: "canViewTreasury",
+    description: "Position USDT actuelle : stock en inventaire (get_usdt_stock) et coût moyen pondéré par USDT en XAF (get_wac_usdt). Pour savoir combien d'USDT on détient et à quel prix de revient.",
+    input_schema: { type: "object", properties: {} },
+    execute: async (admin) => {
+      const now = new Date().toISOString();
+      const { data: stock } = await admin.rpc("get_usdt_stock", { p_at: now });
+      const { data: wac } = await admin.rpc("get_wac_usdt", { p_at: now });
+      return { usdt_stock: Number(stock ?? 0), wac_xaf_per_usdt: Number(wac ?? 0), at: now };
+    },
+  },
+  {
+    name: "treasury_inventory_snapshots",
+    permission: "canViewTreasury",
+    description: "Derniers relevés d'inventaire de trésorerie (snapshots) : solde théorique vs réel, écart (variance) et raison. Pour suivre les contrôles d'inventaire.",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("treasury_inventory_snapshots")
+        .select("account_id, theoretical_balance, actual_balance, variance, variance_reason, snapshot_at")
+        .order("snapshot_at", { ascending: false }).limit(clamp(limit, 10, 30));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, snapshots: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_ledger",
+    permission: "canViewTreasury",
+    description: "Grand livre de la trésorerie : dernières écritures comptables (achats/ventes USDT, ajustements, annulations) avec compte, devise, montant et date.",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("treasury_ledger_entries")
+        .select("entry_kind, currency, amount, account_id, source_table, occurred_at")
+        .order("occurred_at", { ascending: false }).limit(clamp(limit, 15, 50));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, entries: data ?? [] };
     },
   },
 ];
@@ -977,10 +1145,9 @@ function buildSystemPrompt(role: string): string {
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
     ``,
-    `Tu peux recevoir des images (captures, QR codes) et des PDF (relevés) joints par l'admin : analyse-les et exploite leur contenu (ex. lire un montant sur une capture).`,
-    `IMPORTANT pièces jointes : si l'admin a DÉJÀ joint une capture/reçu dans le message, considère que la preuve est fournie — ne redemande JAMAIS le reçu. De toute façon la preuve est optionnelle pour valider un dépôt. Lis directement le montant/la référence sur l'image jointe.`,
-    `WORKFLOW CAPTURE → DÉPÔT (très important) : quand l'admin joint une capture et te demande de créer le dépôt d'un client, tu DOIS : 1) lire le montant et le moyen de paiement sur la capture, 2) appeler search_clients pour retrouver le client (son user_id réel), 3) proposer directement l'action create_and_validate_deposit avec ces infos. NE CONTESTE PAS la capture, ne dis pas "la capture n'est pas bonne", ne demande pas d'autorisation pour la lire : l'admin te l'a donnée exprès. Si une info précise manque vraiment sur l'image (ex. montant illisible), demande UNIQUEMENT cette info, brièvement.`,
-    `Si l'admin te dit explicitement un montant ou un moyen de paiement, fais-lui confiance même si la capture est ambiguë.`,
+    `PIÈCES JOINTES — RÈGLE ABSOLUE : NE LIS PAS, N'ANALYSE PAS les captures. Tu n'as pas à savoir ce qu'il y a dessus. L'admin te donne lui-même les infos (client, montant, mode de paiement) dans son message. Les captures servent UNIQUEMENT de preuves à attacher. Ne commente jamais le contenu d'une image, ne dis jamais "la capture n'est pas bonne", ne demande jamais à quoi elle correspond. Il peut y en avoir plusieurs : toutes sont attachées automatiquement.`,
+    `Exemple : "Dépôt de 5M pour Jonas Boco par Orange Money, voici les preuves" → tu retrouves Jonas via search_clients, puis tu proposes create_and_validate_deposit avec montant=5000000 et method=om_transfer. Les captures jointes deviennent automatiquement les preuves. Tu ne regardes pas les images.`,
+    `Fie-toi TOUJOURS aux montants et infos donnés par l'admin dans le texte, jamais à une image.`,
     ``,
     `STYLE : réponds en texte simple et naturel. N'utilise PAS de markdown lourd (pas de ** pour le gras, pas de # de titres, pas de tableaux). Des phrases courtes et des listes avec un tiret suffisent. Mets toujours un espace après les deux-points.`,
     ``,
@@ -1175,37 +1342,33 @@ serve(async (req) => {
       return { role: m.role, content: text || "(message vide)" };
     });
 
-    // Pièces jointes → blocs multimodaux
-    // deno-lint-ignore no-explicit-any
-    const attachmentBlocks: any[] = [];
+    // Pièces jointes : on NE LES ENVOIE PAS au modèle (pas d'analyse demandée).
+    // On valide juste qu'elles existent et appartiennent à l'admin, puis on les
+    // garde pour les attacher comme preuves. → bien plus rapide et moins cher.
     const acceptedAttachments: Array<{ path: string; mime: string; name: string }> = [];
     for (const att of attachments) {
       if (!att?.path || !ALLOWED_ATTACHMENT_MIME.has(att?.mime)) continue;
       if (!String(att.path).startsWith(`${user.id}/`)) continue; // restreint au dossier de l'appelant
-      try {
-        const { data: blob, error: dlErr } = await admin.storage.from(ATTACHMENT_BUCKET).download(att.path);
-        if (dlErr || !blob) continue;
-        const b64 = encodeBase64(new Uint8Array(await blob.arrayBuffer()));
-        if (att.mime === "application/pdf") attachmentBlocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
-        else attachmentBlocks.push({ type: "image", source: { type: "base64", media_type: att.mime, data: b64 } });
-        acceptedAttachments.push({ path: att.path, mime: att.mime, name: att.name });
-      } catch (_) { /* illisible : ignorée */ }
+      acceptedAttachments.push({ path: att.path, mime: att.mime, name: att.name });
     }
 
+    // Le modèle reçoit seulement le texte + une note sur le nombre de preuves jointes.
+    const attachNote = acceptedAttachments.length
+      ? `\n[${acceptedAttachments.length} preuve(s) jointe(s) par l'admin — à attacher à l'action, NE PAS analyser]`
+      : "";
     // deno-lint-ignore no-explicit-any
-    const userContent: any = attachmentBlocks.length > 0
-      ? [...attachmentBlocks, { type: "text", text: message || "Analyse la ou les pièces jointes." }]
-      : message;
-    // deno-lint-ignore no-explicit-any
-    const messages: any[] = [...history, { role: "user", content: userContent }];
+    const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
     // Outils autorisés pour ce rôle (lecture + écriture)
     const allowedRead = READ_TOOLS.filter((t) => perms[t.permission]);
     const allowedWrite = WRITE_TOOLS.filter((t) => perms[t.permission]);
-    const toolDefs = [
+    // deno-lint-ignore no-explicit-any
+    const toolDefs: any[] = [
       ...allowedRead.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
       ...allowedWrite.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
     ];
+    // Cache du bloc d'outils (gros préfixe stable) → tours suivants plus rapides/moins chers.
+    if (toolDefs.length) toolDefs[toolDefs.length - 1].cache_control = { type: "ephemeral" };
 
     const system = buildSystemPrompt(role);
 
