@@ -304,6 +304,28 @@ function render(template, p = {}) {
            <p style="margin:18px 0 0;font-size:13.5px;color:${MUTED};">Répondez directement depuis l'application pour poursuivre la conversation.</p>`,
       });
     }
+    case "deposit_reminder":
+      return layout({
+        preview: "Votre dépôt n'est pas encore finalisé — il ne manque qu'une étape.",
+        accent: AMBER, emoji: "⏰",
+        heading: "Finalisez votre dépôt", subhead: "Il ne manque qu'une étape.",
+        bodyHtml:
+          `<p style="margin:0 0 4px;">Vous avez commencé un dépôt qui n'est pas encore finalisé. Ajoutez votre <b>preuve de virement</b> pour qu'on puisse le créditer sur votre solde.</p>` +
+          detailsCard([m.amount_xaf ? ["Montant", formatXAF(m.amount_xaf)] : null, refRow]) +
+          button("Finaliser mon dépôt", APP, AMBER),
+      });
+    case "onboarding_reminder": {
+      const first = esc(p.first_name ?? m.first_name ?? "");
+      return layout({
+        preview: "Une dernière étape pour activer tous vos paiements.",
+        accent: VIOLET, emoji: "👤",
+        heading: first ? `${first}, complétez votre profil` : "Complétez votre profil",
+        subhead: "Une dernière étape pour démarrer.",
+        bodyHtml:
+          `<p style="margin:0 0 4px;">Il ne manque qu'une étape pour profiter pleinement de Bonzini : complétez votre profil (téléphone, pays) afin de pouvoir <b>régler vos fournisseurs chinois</b>.</p>` +
+          button("Compléter mon profil", APP, VIOLET),
+      });
+    }
     default:
       return layout({ preview: "Notification Bonzini", accent: VIOLET, emoji: "🔔",
         heading: esc(p.title ?? "Notification"), subhead: "", bodyHtml: `<p>${esc(p.message ?? "")}</p>` });
@@ -324,6 +346,8 @@ const samples = [
   ["deposit_created", { metadata: { reference: "DEP-2026-0420", amount_xaf: 3000000 } }],
   ["payment_processing", { metadata: { reference: "PAY-2026-1190", amount_rmb: 18500 } }],
   ["password_changed", { changed_at: "2026-06-01 14:32 UTC" }],
+  ["deposit_reminder", { metadata: { reference: "DEP-2026-0431", amount_xaf: 2000000 } }],
+  ["onboarding_reminder", { first_name: "Aminata" }],
 ];
 const labels = {
   welcome: "① Bienvenue", deposit_validated: "② Dépôt crédité", payment_created: "③ Demande de paiement reçue",
@@ -331,6 +355,7 @@ const labels = {
   deposit_rejected: "⑥ Dépôt non validé", reset_password: "⑦ Mot de passe oublié (sécurité)",
   confirm_signup: "⑧ Vérification email — code OTP (inscription)", support_message: "⑨ Nouveau message support",
   deposit_created: "⑩ Accusé de dépôt", payment_processing: "⑪ Paiement en cours", password_changed: "⑫ Mot de passe modifié",
+  deposit_reminder: "⑬ Relance dépôt non finalisé", onboarding_reminder: "⑭ Relance profil incomplet",
 };
 
 mkdirSync(OUT, { recursive: true });

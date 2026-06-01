@@ -344,6 +344,37 @@ function render(template: string, payload: Record<string, unknown>): Rendered {
         text: `Vous avez un nouveau message de l'équipe Bonzini. Ouvrez l'application pour le lire et répondre : ${APP}`,
       };
     }
+    case "deposit_reminder": {
+      return {
+        subject: `Finalisez votre dépôt${refSuffix}`,
+        html: layout({
+          preview: "Votre dépôt n'est pas encore finalisé — il ne manque qu'une étape.",
+          accent: AMBER, emoji: "⏰",
+          heading: "Finalisez votre dépôt", subhead: "Il ne manque qu'une étape.",
+          bodyHtml:
+            `<p style="margin:0 0 4px;">Vous avez commencé un dépôt qui n'est pas encore finalisé. Ajoutez votre <b>preuve de virement</b> pour qu'on puisse le créditer sur votre solde.</p>` +
+            detailsCard([m.amount_xaf ? ["Montant", formatXAF(m.amount_xaf)] : null, refRow]) +
+            button("Finaliser mon dépôt", APP, AMBER),
+        }),
+        text: `Votre dépôt n'est pas encore finalisé. Ajoutez votre preuve de virement pour le créditer : ${APP}`,
+      };
+    }
+    case "onboarding_reminder": {
+      const first = esc((payload.first_name as string) ?? m.first_name ?? "");
+      return {
+        subject: "Complétez votre profil Bonzini",
+        html: layout({
+          preview: "Une dernière étape pour activer tous vos paiements.",
+          accent: VIOLET, emoji: "👤",
+          heading: first ? `${first}, complétez votre profil` : "Complétez votre profil",
+          subhead: "Une dernière étape pour démarrer.",
+          bodyHtml:
+            `<p style="margin:0 0 4px;">Il ne manque qu'une étape pour profiter pleinement de Bonzini : complétez votre profil (téléphone, pays) afin de pouvoir <b>régler vos fournisseurs chinois</b>.</p>` +
+            button("Compléter mon profil", APP, VIOLET),
+        }),
+        text: `Complétez votre profil Bonzini (téléphone, pays) pour commencer à régler vos fournisseurs : ${APP}`,
+      };
+    }
     default: {
       // Fallback robuste : title/message déjà localisés par la RPC.
       const title = esc(payload.title ?? "Notification Bonzini");
