@@ -365,6 +365,45 @@ const READ_TOOLS: ReadTool[] = [
     },
   },
   {
+    name: "generate_rate_flyer",
+    permission: "canViewPayments",
+    description: "Générer le FLYER (image PNG) du taux du jour, prêt à partager. Utilise le taux actif. Optionnel: dark (true pour la version sombre). L'image est renvoyée directement dans le chat, téléchargeable.",
+    input_schema: { type: "object", properties: { dark: { type: "boolean" } } },
+    execute: async (admin, { dark }) => {
+      // 1) Taux du jour actif
+      const { data: rate, error } = await admin.from("daily_rates")
+        .select("rate_cash, rate_alipay, rate_wechat, rate_virement")
+        .eq("is_active", true).order("effective_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) return { error: error.message };
+      if (!rate) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
+
+      // 2) Appel de l'Edge Function generate-flyer (PNG). rates attendu: {alipay, wechat, bank, cash}
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const rates = { alipay: Number(rate.rate_alipay), wechat: Number(rate.rate_wechat), bank: Number(rate.rate_virement), cash: Number(rate.rate_cash) };
+      let pngBytes: Uint8Array;
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/generate-flyer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
+          body: JSON.stringify({ rates, dark: dark === true }),
+        });
+        if (!res.ok) return { error: `Génération du flyer échouée (${res.status}).` };
+        pngBytes = new Uint8Array(await res.arrayBuffer());
+      } catch (e) { return { error: `Génération du flyer: ${String((e as Error)?.message ?? e)}` }; }
+
+      // 3) Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
+      const path = `flyers/${Date.now()}-taux.png`;
+      const up = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, pngBytes, { contentType: "image/png", upsert: true });
+      if (up.error) return { error: `Stockage du flyer: ${up.error.message}` };
+      const signed = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(path, 3600);
+      if (signed.error || !signed.data?.signedUrl) return { error: "URL du flyer indisponible." };
+
+      // __image renvoie l'image au chat ; le texte sert au modèle.
+      return { success: true, rates, __image: { url: signed.data.signedUrl, name: "Flyer taux du jour", kind: "image" }, message: "Flyer du taux du jour généré et affiché dans le chat." };
+    },
+  },
+  {
     name: "get_rate_history",
     permission: "canViewPayments",
     description: "Historique des taux du jour (les plus récents).",
@@ -1833,6 +1872,15 @@ serve(async (req) => {
                   // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
                   try { result = await readTool.execute(admin, tu.input ?? {}, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
+                  // Si l'outil a produit une image (ex. flyer), on l'envoie au chat.
+                  // deno-lint-ignore no-explicit-any
+                  const img = (result as any)?.__image;
+                  if (img?.url) {
+                    send({ type: "image", image: { url: img.url, name: img.name ?? "Image" } });
+                    // On retire l'image du résultat transmis au modèle (inutile en texte).
+                    // deno-lint-ignore no-explicit-any
+                    delete (result as any).__image;
+                  }
                 } else if (writeTool) {
                   try {
                     const prep = await writeTool.prepare(admin, tu.input ?? {});

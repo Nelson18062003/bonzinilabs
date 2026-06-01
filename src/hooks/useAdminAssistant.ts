@@ -27,6 +27,11 @@ export interface AssistantProposal {
   resultText?: string;
 }
 
+export interface AssistantGeneratedImage {
+  url: string;
+  name: string;
+}
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -34,6 +39,8 @@ export interface AssistantMessage {
   error?: boolean;
   attachments?: AssistantAttachment[];
   proposals?: AssistantProposal[];
+  /** Images générées par l'agent (ex. flyer du taux du jour). */
+  images?: AssistantGeneratedImage[];
 }
 
 const FUNCTION_URL = `${VITE_SUPABASE_URL}/functions/v1/admin-assistant`;
@@ -144,7 +151,7 @@ export function useAdminAssistant() {
           if (!l.startsWith('data:')) continue;
           const payload = l.slice(5).trim();
           if (!payload) continue;
-          let ev: { type: string; text?: string; conversationId?: string; error?: string; proposal?: { id: string; tool: string; summary: ProposalSummary } };
+          let ev: { type: string; text?: string; conversationId?: string; error?: string; proposal?: { id: string; tool: string; summary: ProposalSummary }; image?: { url: string; name: string } };
           try { ev = JSON.parse(payload); } catch { continue; }
           if (ev.type === 'start' && ev.conversationId) {
             conversationIdRef.current = ev.conversationId;
@@ -153,6 +160,9 @@ export function useAdminAssistant() {
           } else if (ev.type === 'proposal' && ev.proposal?.id) {
             const p: AssistantProposal = { id: ev.proposal.id, tool: ev.proposal.tool, summary: ev.proposal.summary, state: 'pending' };
             apply((m) => ({ ...m, proposals: [...(m.proposals ?? []), p] }));
+          } else if (ev.type === 'image' && ev.image?.url) {
+            const img = ev.image;
+            apply((m) => ({ ...m, images: [...(m.images ?? []), { url: img.url, name: img.name }] }));
           } else if (ev.type === 'error') {
             streamErr = ev.error || 'Erreur de l\'assistant';
           }
