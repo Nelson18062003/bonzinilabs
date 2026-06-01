@@ -92,19 +92,39 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "search_clients",
     permission: "canViewClients",
-    description: "Rechercher des clients par nom, prénom, téléphone ou entreprise. Renvoie id, user_id, nom, téléphone, pays, statut KYC.",
+    description: "Rechercher des clients par nom, prénom, nom complet, téléphone ou entreprise. Fonctionne avec 'Jonas', 'Jonas Boco', 'Boco Jonas', un numéro de téléphone, etc. Renvoie id, user_id, nom, téléphone, pays, statut KYC.",
     input_schema: { type: "object", properties: { query: { type: "string" }, limit: { type: "number" } }, required: ["query"] },
     execute: async (admin, { query, limit }) => {
-      // Nettoyage : retire les caractères de structure PostgREST ( , ) : * % ) du terme
+      // Nettoyage : retire les caractères de structure PostgREST du terme
       const clean = String(query ?? "").trim().replace(/[,():*%]/g, " ").replace(/\s+/g, " ").trim();
       if (!clean) return { count: 0, clients: [] };
-      const term = `%${clean}%`;
-      const { data, error } = await admin
-        .from("clients")
-        .select("id, user_id, first_name, last_name, phone, company_name, country, city, status, kyc_verified")
-        .or(`first_name.ilike.${term},last_name.ilike.${term},phone.ilike.${term},company_name.ilike.${term}`)
-        .limit(clamp(limit, 10, 25));
+      const n = clamp(limit, 10, 25);
+      const cols = "id, user_id, first_name, last_name, phone, company_name, country, city, status, kyc_verified";
+
+      // Découpe en mots. Pour "Jonas Boco", chaque mot doit apparaître quelque part
+      // (prénom, nom OU téléphone) → gère "prénom nom", "nom prénom", un seul mot, un numéro.
+      const words = clean.split(" ").filter(Boolean).slice(0, 4);
+      // deno-lint-ignore no-explicit-any
+      let q: any = admin.from("clients").select(cols);
+      for (const w of words) {
+        const t = `%${w}%`;
+        q = q.or(`first_name.ilike.${t},last_name.ilike.${t},phone.ilike.${t},company_name.ilike.${t}`);
+      }
+      const { data, error } = await q.limit(n);
       if (error) return { error: error.message };
+
+      // Filet de sécurité : si rien (ex. ordre des mots), on retente sur le nom complet concaténé.
+      if ((data?.length ?? 0) === 0 && words.length > 1) {
+        const { data: all } = await admin.from("clients").select(cols).limit(500);
+        const needle = clean.toLowerCase();
+        // deno-lint-ignore no-explicit-any
+        const hits = (all ?? []).filter((c: any) => {
+          const full = `${c.first_name ?? ""} ${c.last_name ?? ""}`.toLowerCase();
+          const rev = `${c.last_name ?? ""} ${c.first_name ?? ""}`.toLowerCase();
+          return full.includes(needle) || rev.includes(needle);
+        }).slice(0, n);
+        return { count: hits.length, clients: hits };
+      }
       return { count: data?.length ?? 0, clients: data ?? [] };
     },
   },
@@ -773,6 +793,8 @@ function buildSystemPrompt(role: string): string {
     ``,
     `Tu peux recevoir des images (captures, QR codes) et des PDF (relevés) joints par l'admin : analyse-les et exploite leur contenu (ex. lire un montant sur une capture).`,
     `IMPORTANT pièces jointes : si l'admin a DÉJÀ joint une capture/reçu dans le message, considère que la preuve est fournie — ne redemande JAMAIS le reçu. De toute façon la preuve est optionnelle pour valider un dépôt. Lis directement le montant/la référence sur l'image jointe.`,
+    `WORKFLOW CAPTURE → DÉPÔT (très important) : quand l'admin joint une capture et te demande de créer le dépôt d'un client, tu DOIS : 1) lire le montant et le moyen de paiement sur la capture, 2) appeler search_clients pour retrouver le client (son user_id réel), 3) proposer directement l'action create_and_validate_deposit avec ces infos. NE CONTESTE PAS la capture, ne dis pas "la capture n'est pas bonne", ne demande pas d'autorisation pour la lire : l'admin te l'a donnée exprès. Si une info précise manque vraiment sur l'image (ex. montant illisible), demande UNIQUEMENT cette info, brièvement.`,
+    `Si l'admin te dit explicitement un montant ou un moyen de paiement, fais-lui confiance même si la capture est ambiguë.`,
     ``,
     `STYLE : réponds en texte simple et naturel. N'utilise PAS de markdown lourd (pas de ** pour le gras, pas de # de titres, pas de tableaux). Des phrases courtes et des listes avec un tiret suffisent. Mets toujours un espace après les deux-points.`,
     ``,
