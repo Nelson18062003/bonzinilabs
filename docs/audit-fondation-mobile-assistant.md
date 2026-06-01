@@ -502,4 +502,74 @@ Une seule barre, partagée par Assistant **et** Support. Réunit ce qui marche d
 - 🟡 **Safe-area bas quand clavier ouvert** : léger sur-espace possible ; décider si on le neutralise.
 - 🟡 **Transitions de page** (`AnimatedPage`) autour d'un shell `position:fixed` : vérifier l'entrée/sortie.
 
-*→ En attente de ton GO pour la Phase 4 (plan de remédiation détaillé + protocole de test device).*
+*Phase 5 livrée ci-dessous (l'utilisateur a demandé « répare-le » directement).*
+
+---
+
+# Phase 5 — Implémentation (Assistant) + protocole de test device
+
+## 5.1 Ce qui a été construit
+
+| Fichier | Nature | Rôle |
+|---|---|---|
+| `src/hooks/keyboard/useVisibleViewportSync.ts` | **nouveau** | Source de vérité unique : pose `--vvh`/`--vvt` sur `:root` via **1** écouteur throttlé `rAF`. **Zéro re-render React** sur l'animation clavier. |
+| `src/components/layout/ViewportShell.tsx` | **nouveau** | Le « cadre verrouillé » : `position:fixed` (échappe au parent `min-h-screen`), ancré au viewport visible (`--vvh`/`--vvt`), verrouille le document, 3 zones (header / scroll / footer). |
+| `src/components/form/KeyboardFocusManager.tsx` | modifié | **Retrait de `useVirtualKeyboardOverlay`** (overlay → resize) + ajout de `useVisibleViewportSync`. |
+| `src/index.css` | modifié | Repli `--vvh:100dvh` / `--vvt:0px` + classe `.viewport-locked` (verrou document iOS/Android). |
+| `src/mobile/screens/assistant/MobileAssistantScreen.tsx` | réécrit | Reconstruit sur `<ViewportShell>` ; composeur avec **auto-grow** + **16px** ; suppression de la logique `visualViewport` inline. |
+| `src/hooks/keyboard/index.ts` | modifié | Export de `useVisibleViewportSync`. |
+
+> Rendu visuel **préservé à l'identique** (couleurs, bulles, cartes de confirmation, pièces jointes,
+> dégradé de marque). Seuls la **structure du cadre** et le **champ de saisie** changent.
+
+## 5.2 Symptôme → correctif
+
+| Symptôme (Phase 1) | Correctif |
+|---|---|
+| Blanc en bas / page qui glisse (iOS) | Document verrouillé (`.viewport-locked`) + shell `position:fixed` → plus de scroll-document |
+| Header se cache | Header dans la zone fixe d'un shell `position:fixed` → ne défile plus |
+| Clavier cache la saisie (Android) | Retrait de l'overlay → `visualViewport.height` rétrécit → `--vvh` suit le clavier |
+| Champ ne grandit pas | `onInput` auto-grow ajouté (min(scrollHeight, 128)) |
+| « Ça part dans tous les sens » | Hauteur en variables CSS (0 re-render) ; un seul mécanisme au lieu de 8 |
+
+## 5.3 Vérifications machine (faites)
+
+- **Type-check** (`tsc --noEmit`, TS 6.0.2) : **exit 0, aucune erreur sur le code**. *(Note : `tsc`
+  émet une dépréciation `baseUrl` au niveau de `tsconfig.json` — **pré-existante**, liée à la version
+  d'avant-garde du conteneur, contournée ici via `--ignoreDeprecations 6.0` sans modifier le repo.)*
+- **Build** (`vite build`) : **exit 0**, `✓ built in ~28s`. *(Seuls avertissements : tailles de
+  chunks pdf/charts — pré-existants.)*
+- **Lint** (`eslint`) : **exit 0**, propre (le `<textarea>` brut suit le même précédent que
+  `MessageInput.tsx`).
+
+## 5.4 ⚠️ Vérifications IMPOSSIBLES sans device réel — À FAIRE par l'utilisateur
+
+> Rappel : ces bugs **ne se voient pas** sur un ordinateur. Tester sur **iPhone (Safari)** ET
+> **Android (Chrome)**, connecté en admin, sur `/m/assistant`.
+
+1. **Ouverture** : titre en haut, barre d'écriture en bas, pas de blanc, rien ne dépasse.
+2. **Focus clavier** : touche le champ → la barre reste **collée juste au-dessus du clavier**, sans saut ni blanc.
+3. **Champ qui grandit** : écris 5+ lignes → le champ grandit puis défile à l'intérieur (~5 lignes max).
+4. **Défilement** : remonte la conversation → le **titre reste en haut**, pas de blanc en bas, pas de « page qui glisse ».
+5. **Après envoi** : le champ **revient à 1 ligne**, la conversation colle au bas.
+6. **Fermeture clavier** : la barre redescend proprement, pas de blanc résiduel.
+7. **Régression formulaire** (changement global) : `/m/deposits/new` ou `/m/payments/new` → toucher un champ → il reste visible au-dessus du clavier.
+8. **Régression Support** : `/m/support/[conv]` → toucher le champ → reste au-dessus du clavier sur iPhone **et** Android.
+
+→ Si une étape échoue : indiquer **le numéro d'étape + le téléphone** concerné.
+
+## 5.5 Périmètre — fait / pas encore (généralisation future)
+
+- ✅ **Fait** : l'Assistant (priorité bloquante) + les 2 primitives réutilisables (`ViewportShell`,
+  `useVisibleViewportSync`) + bascule globale en mode resize.
+- ⏳ **Pas encore (volontairement, pour limiter le rayon d'impact)** :
+  - Migrer le **Support** (`MobileSupportConversationScreen` + `MessageInput`) vers `ViewportShell` +
+    un `<ChatComposer>` mutualisé. *(Le Support bénéficie déjà du mode resize ; à tester — étape 8.)*
+  - **Supprimer les hooks redondants** (`useKeyboardInset`, `useKeyboardHeight`,
+    `useViewportContainerHeight` une fois le Support migré).
+  - Convertir les `min-h-screen` (100vh) restants en `min-h-[100dvh]`.
+- 🔴 **Risque connu à valider** : le retrait de `overlaysContent` change le mode clavier **global** →
+  d'où les étapes de régression 7 & 8.
+
+*Fondation posée. La suite (généralisation Support + nettoyage dette) se fera une fois l'Assistant
+validé sur device.*
