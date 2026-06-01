@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
   workflow_dispatch: {} # permet aussi un déclenchement manuel depuis l'onglet Actions
 
 jobs:
