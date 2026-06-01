@@ -850,7 +850,7 @@ const READ_TOOLS: ReadTool[] = [
         supplierId = r.id; supplierName = r.name;
       }
       let q = admin.from("usdt_purchases")
-        .select("supplier_id, usdt_amount, xaf_amount, implicit_rate, channel, external_ref, occurred_at, voided_at")
+        .select("id, supplier_id, usdt_amount, xaf_amount, implicit_rate, channel, external_ref, occurred_at, voided_at")
         .order("occurred_at", { ascending: false }).limit(clamp(limit, 10, 50));
       if (supplierId) q = q.eq("supplier_id", supplierId);
       if (!include_voided) q = q.is("voided_at", null);
@@ -862,6 +862,7 @@ const READ_TOOLS: ReadTool[] = [
       const byId: Record<string, any> = {};
       for (const c of cps ?? []) byId[c.id] = c;
       const rows = (data ?? []).map((p: AnyClient) => ({
+        id: p.id,
         fournisseur: byId[p.supplier_id] ? `${byId[p.supplier_id].short_id} ${byId[p.supplier_id].display_name}` : p.supplier_id,
         usdt: p.usdt_amount, xaf: p.xaf_amount, xaf_formatted: fmtXAF(p.xaf_amount),
         taux_implicite: p.implicit_rate, canal: p.channel, ref: p.external_ref, date: p.occurred_at, annule: p.voided_at ? true : undefined,
@@ -882,7 +883,7 @@ const READ_TOOLS: ReadTool[] = [
         buyerId = r.id; buyerName = r.name;
       }
       let q = admin.from("usdt_sales")
-        .select("buyer_id, usdt_amount, cny_amount, implicit_rate, wac_at_sale, external_ref, occurred_at, voided_at")
+        .select("id, buyer_id, usdt_amount, cny_amount, implicit_rate, wac_at_sale, external_ref, occurred_at, voided_at")
         .order("occurred_at", { ascending: false }).limit(clamp(limit, 10, 50));
       if (buyerId) q = q.eq("buyer_id", buyerId);
       if (!include_voided) q = q.is("voided_at", null);
@@ -894,11 +895,45 @@ const READ_TOOLS: ReadTool[] = [
       const byId: Record<string, any> = {};
       for (const c of cps ?? []) byId[c.id] = c;
       const rows = (data ?? []).map((p: AnyClient) => ({
+        id: p.id,
         acheteur: byId[p.buyer_id] ? `${byId[p.buyer_id].short_id} ${byId[p.buyer_id].display_name}` : p.buyer_id,
         usdt: p.usdt_amount, cny: p.cny_amount, taux_implicite: p.implicit_rate,
         cout_revient_usdt: p.wac_at_sale, ref: p.external_ref, date: p.occurred_at, annule: p.voided_at ? true : undefined,
       }));
       return { buyer: buyerName, count: rows.length, sales: rows };
+    },
+  },
+  {
+    name: "get_purchase_splits",
+    permission: "canViewTreasury",
+    description: "Détail de la répartition multi-comptes d'un achat USDT (quels comptes XAF ont payé, et combien chacun). Fournir purchase_id (UUID, depuis list_usdt_purchases).",
+    input_schema: { type: "object", properties: { purchase_id: { type: "string" } }, required: ["purchase_id"] },
+    execute: async (admin, { purchase_id }) => {
+      if (!purchase_id) return { error: "purchase_id requis." };
+      const { data, error } = await admin.from("treasury_ledger_entries")
+        .select("account_id, amount, currency, occurred_at")
+        .eq("source_table", "usdt_purchase").eq("source_id", purchase_id).eq("entry_kind", "usdt_purchase_debit_xaf");
+      if (error) return { error: error.message };
+      const ids = [...new Set((data ?? []).map((e: AnyClient) => e.account_id))];
+      const { data: accs } = await admin.from("treasury_accounts").select("id, code, label").in("id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const ac of accs ?? []) byId[ac.id] = ac;
+      const splits = (data ?? []).map((e: AnyClient) => ({ compte: byId[e.account_id] ? `${byId[e.account_id].code}/${byId[e.account_id].label}` : e.account_id, montant_xaf: Math.abs(Number(e.amount)), montant_formatted: fmtXAF(Math.abs(Number(e.amount))) }));
+      return { count: splits.length, splits };
+    },
+  },
+  {
+    name: "list_treasury_accounts",
+    permission: "canViewTreasury",
+    description: "Lister les comptes de trésorerie configurés (code, libellé, devise, type/kind, actif). Pour connaître les comptes disponibles avant un achat/ajustement/inventaire.",
+    input_schema: { type: "object", properties: { currency: { type: "string", enum: ["XAF", "USDT", "CNY"] } } },
+    execute: async (admin, { currency }) => {
+      let q = admin.from("treasury_accounts").select("code, label, currency, kind, is_active").order("sort_order", { ascending: true });
+      if (currency) q = q.eq("currency", currency);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, accounts: data ?? [] };
     },
   },
 ];
@@ -1555,6 +1590,106 @@ const WRITE_TOOLS: WriteTool[] = [
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("adjust_treasury_account", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "void_treasury_operation",
+    permission: "canViewTreasury",
+    superAdminOnly: true,
+    description: "ANNULER / contre-passer une opération de trésorerie (achat USDT, vente USDT, ajustement). Crée des écritures inverses traçables (pas de suppression). C'est ainsi qu'on 'corrige' une opération : on l'annule puis on la recrée. source_type ∈ usdt_purchase | usdt_sale | manual_adjustment. Fournir source_type, et source_ref (référence externe ou identifiant) OU on retrouve via les outils de liste. reason obligatoire (≥10 caractères). Réservé super_admin.",
+    input_schema: {
+      type: "object",
+      properties: {
+        source_type: { type: "string", enum: ["usdt_purchase", "usdt_sale", "manual_adjustment", "inventory_snapshot"] },
+        source_id: { type: "string", description: "UUID de l'opération (depuis list_usdt_purchases/list_usdt_sales/treasury_ledger)" },
+        reason: { type: "string" },
+      },
+      required: ["source_type", "source_id", "reason"],
+    },
+    prepare: (_admin, a) => {
+      if (!a.source_id || !UUID_RE.test(String(a.source_id))) return Promise.resolve({ ok: false, error: "source_id (UUID) requis. Récupère-le via list_usdt_purchases / list_usdt_sales / treasury_ledger." });
+      if (!["usdt_purchase", "usdt_sale", "manual_adjustment", "inventory_snapshot"].includes(a.source_type)) return Promise.resolve({ ok: false, error: "source_type invalide." });
+      if (!a.reason || String(a.reason).trim().length < 10) return Promise.resolve({ ok: false, error: "Motif obligatoire (≥10 caractères)." });
+      const label: Record<string, string> = { usdt_purchase: "Achat USDT", usdt_sale: "Vente USDT", manual_adjustment: "Ajustement", inventory_snapshot: "Inventaire" };
+      return Promise.resolve({ ok: true, args: { p_source_table: a.source_type, p_source_id: a.source_id, p_void_reason: String(a.reason) }, summary: { title: "Annuler une opération trésorerie", subtitle: label[a.source_type], lines: [{ label: "Type", value: label[a.source_type] }, { label: "Effet", value: "↩️ écritures inverses (traçable)" }, { label: "Motif", value: String(a.reason) }], confirmLabel: "Annuler l'opération", danger: true } });
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("void_treasury_operation", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "update_treasury_counterparty",
+    permission: "canViewTreasury",
+    description: "Modifier un fournisseur USDT / acheteur CNY (nom, nom légal, téléphone, WeChat, notes) OU l'archiver/réactiver (is_active). Fournir counterparty (nom/short_id/UUID) + les champs à changer.",
+    input_schema: {
+      type: "object",
+      properties: {
+        counterparty: { type: "string" }, type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] },
+        display_name: { type: "string" }, legal_name: { type: "string" }, phone: { type: "string" }, wechat_id: { type: "string" }, notes: { type: "string" }, is_active: { type: "boolean" },
+      },
+      required: ["counterparty"],
+    },
+    prepare: async (admin, a) => {
+      // type optionnel : on tente fournisseur puis acheteur si non précisé
+      let cp = await resolveCounterparty(admin, a.counterparty, a.type || "usdt_supplier");
+      if (!cp.ok && !a.type) cp = await resolveCounterparty(admin, a.counterparty, "cny_buyer");
+      if (!cp.ok) return { ok: false, error: cp.error };
+      const lines: Line[] = [{ label: "Contrepartie", value: cp.name }];
+      const fields: Record<string, unknown> = { p_id: cp.id };
+      const map: Record<string, string> = { display_name: "p_display_name", legal_name: "p_legal_name", phone: "p_phone", wechat_id: "p_wechat_id", notes: "p_notes" };
+      for (const k of Object.keys(map)) { if (a[k] != null) { fields[map[k]] = a[k]; lines.push({ label: k, value: String(a[k]) }); } }
+      if (typeof a.is_active === "boolean") { fields.p_is_active = a.is_active; lines.push({ label: "Statut", value: a.is_active ? "Actif" : "Archivé" }); }
+      if (Object.keys(fields).length === 1) return { ok: false, error: "Aucun champ à modifier fourni." };
+      return { ok: true, args: fields, summary: { title: "Modifier une contrepartie", subtitle: cp.name, lines, confirmLabel: "Enregistrer" } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("update_treasury_counterparty", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "delete_treasury_counterparty",
+    permission: "canViewTreasury",
+    superAdminOnly: true,
+    description: "Supprimer définitivement un fournisseur/acheteur — UNIQUEMENT s'il n'a AUCUNE opération (sinon la base refuse, utilise plutôt l'archivage via update_treasury_counterparty). Fournir counterparty (nom/short_id/UUID).",
+    input_schema: { type: "object", properties: { counterparty: { type: "string" }, type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] } }, required: ["counterparty"] },
+    prepare: async (admin, a) => {
+      let cp = await resolveCounterparty(admin, a.counterparty, a.type || "usdt_supplier");
+      if (!cp.ok && !a.type) cp = await resolveCounterparty(admin, a.counterparty, "cny_buyer");
+      if (!cp.ok) return { ok: false, error: cp.error };
+      return { ok: true, args: { p_id: cp.id }, summary: { title: "Supprimer une contrepartie", subtitle: cp.name, lines: [{ label: "Contrepartie", value: cp.name }, { label: "Condition", value: "refusé si elle a des opérations" }], confirmLabel: "Supprimer", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("delete_treasury_counterparty", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "record_inventory_snapshot",
+    permission: "canViewTreasury",
+    description: "Enregistrer un inventaire physique (comptage réel) d'un compte de trésorerie. La base calcule l'écart vs le solde théorique et crée l'ajustement si besoin. Fournir account (nom/code), actual_balance (montant compté). Optionnel: variance_reason.",
+    input_schema: { type: "object", properties: { account: { type: "string" }, actual_balance: { type: "number" }, variance_reason: { type: "string" } }, required: ["account", "actual_balance"] },
+    prepare: async (admin, a) => {
+      const acc = await resolveTreasuryAccount(admin, a.account, null);
+      if (!acc.ok) return { ok: false, error: acc.error };
+      const bal = Number(a.actual_balance);
+      if (!Number.isFinite(bal) || bal < 0) return { ok: false, error: "Solde compté invalide." };
+      const lines: Line[] = [
+        { label: "Compte", value: acc.label },
+        { label: "Solde compté", value: `${bal.toLocaleString("fr-FR")} ${acc.currency ?? ""}` },
+        { label: "Effet", value: "écart calculé + ajustement auto si besoin" },
+      ];
+      if (a.variance_reason) lines.push({ label: "Raison écart", value: String(a.variance_reason) });
+      return { ok: true, args: { p_account_id: acc.id, p_actual_balance: bal, p_variance_reason: a.variance_reason || null }, summary: { title: "Enregistrer un inventaire", subtitle: acc.label, lines, confirmLabel: "Confirmer l'inventaire", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("record_inventory_snapshot", args);
       if (error) return { success: false, error: error.message };
       return data;
     },
