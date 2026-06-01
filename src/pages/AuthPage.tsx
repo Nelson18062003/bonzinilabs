@@ -400,7 +400,7 @@ export default function AuthPage() {
     setOtpError('');
     const code = otpCode.trim();
     if (code.length < 6) {
-      setOtpError(t('verifyEmail.invalidCode', { defaultValue: 'Entrez le code à 6 chiffres reçu par email.' }));
+      setOtpError(t('verifyEmail.invalidCode', { defaultValue: 'Entrez le code reçu par email.' }));
       return;
     }
     setIsSubmitting(true);
@@ -651,7 +651,7 @@ export default function AuthPage() {
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-1">{t('verifyEmail.title', { defaultValue: 'Vérifiez votre email' })}</h1>
               <p className="text-muted-foreground text-sm">
-                {t('verifyEmail.subtitle', { defaultValue: 'Saisissez le code à 6 chiffres envoyé à' })}{' '}
+                {t('verifyEmail.subtitle', { defaultValue: 'Saisissez le code reçu par email à' })}{' '}
                 <span className="font-medium text-foreground">{maskEmail(email)}</span>
               </p>
             </div>
@@ -662,9 +662,9 @@ export default function AuthPage() {
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                maxLength={6}
+                maxLength={8}
                 value={otpCode}
-                onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpError(''); }}
+                onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8)); setOtpError(''); }}
                 autoFocus
                 placeholder="••••••"
                 className="w-full h-16 text-center text-3xl font-bold tracking-[0.4em] rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none transition-colors"
