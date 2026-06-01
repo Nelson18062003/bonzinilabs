@@ -299,6 +299,21 @@ export function MobileAssistantScreen() {
                   ) : null}
                   {m.text && <RichText text={m.text} />}
                 </div>
+                {m.images?.map((img, i) => (
+                  <a
+                    key={i}
+                    href={img.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={img.name}
+                    className="block max-w-[85%] rounded-2xl overflow-hidden border border-border bg-card"
+                  >
+                    <img src={img.url} alt={img.name} className="w-full h-auto" />
+                    <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5" /> {img.name} — appuyer pour ouvrir / télécharger
+                    </div>
+                  </a>
+                ))}
                 {m.proposals?.map((p) => (
                   <ConfirmationCard
                     key={p.id}
