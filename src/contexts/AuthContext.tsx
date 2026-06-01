@@ -22,7 +22,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (data: SignUpData) => Promise<{ error: Error | null }>;
+  signUp: (data: SignUpData) => Promise<{ error: Error | null; needsVerification?: boolean }>;
+  verifyEmailOtp: (email: string, token: string, data?: SignUpData) => Promise<{ error: Error | null }>;
+  resendSignupOtp: (email: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -57,6 +59,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Complète la fiche client avec les champs additionnels du formulaire.
+  // Le trigger handle_new_user a déjà créé client + wallet (minimum) ; cette
+  // mise à jour requiert une session active (RLS) → appelée une fois
+  // l'utilisateur authentifié (signup sans confirmation, OU après l'OTP).
+  const updateClientProfile = async (userId: string, data: SignUpData) => {
+    const { error: clientError } = await supabase
+      .from('clients')
+      .update({
+        first_name: data.firstName,
+        last_name: data.lastName,
+        phone: data.phone,
+        email: data.email,
+        date_of_birth: data.dateOfBirth || null,
+        company_name: data.companyName || null,
+        activity_sector: data.activitySector || null,
+        neighborhood: data.neighborhood || null,
+        city: data.city || null,
+        country: data.country || null,
+        utm_source:   data.utm?.utm_source   ?? null,
+        utm_medium:   data.utm?.utm_medium   ?? null,
+        utm_campaign: data.utm?.utm_campaign ?? null,
+        utm_content:  data.utm?.utm_content  ?? null,
+        utm_term:     data.utm?.utm_term     ?? null,
+      })
+      .eq('user_id', userId);
+    if (clientError) console.error('Error updating client:', clientError);
+  };
+
   const signUp = async (data: SignUpData) => {
     const redirectUrl = `${window.location.origin}/`;
 
@@ -85,40 +115,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: error as Error };
     }
 
-    // Update client record with additional info
-    if (authData.user) {
-      const { error: clientError } = await supabase
-        .from('clients')
-        .update({
-          first_name: data.firstName,
-          last_name: data.lastName,
-          phone: data.phone,
-          email: data.email,
-          date_of_birth: data.dateOfBirth || null,
-          company_name: data.companyName || null,
-          activity_sector: data.activitySector || null,
-          neighborhood: data.neighborhood || null,
-          city: data.city || null,
-          country: data.country || null,
-          utm_source:   data.utm?.utm_source   ?? null,
-          utm_medium:   data.utm?.utm_medium   ?? null,
-          utm_campaign: data.utm?.utm_campaign ?? null,
-          utm_content:  data.utm?.utm_content  ?? null,
-          utm_term:     data.utm?.utm_term     ?? null,
-        })
-        .eq('user_id', authData.user.id);
-
-      if (clientError) {
-        console.error('Error updating client:', clientError);
-      }
+    // Cas A — confirmation email DÉSACTIVÉE : Supabase ouvre une session
+    // immédiatement. On complète la fiche puis on déconnecte pour forcer une
+    // connexion manuelle (comportement historique + écran de succès).
+    if (authData.session) {
+      if (authData.user) await updateClientProfile(authData.user.id, data);
+      await supabase.auth.signOut();
+      return { error: null, needsVerification: false };
     }
 
-    // Sign out immediately so the user must log in manually after account creation.
-    // Without this, Supabase auto-creates a session which triggers onAuthStateChange
-    // and redirects the user to the home page before they see the success screen.
-    await supabase.auth.signOut();
+    // Cas B — confirmation email ACTIVÉE (OTP) : aucune session tant que le
+    // code n'est pas vérifié. La fiche client sera complétée après l'OTP.
+    return { error: null, needsVerification: true };
+  };
 
+  // Vérifie le code (OTP) reçu par email à l'inscription. En cas de succès,
+  // l'utilisateur est authentifié → on complète alors sa fiche client.
+  const verifyEmailOtp = async (email: string, token: string, data?: SignUpData) => {
+    const { data: res, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    });
+    if (error) return { error: error as Error };
+    if (res.user && data) await updateClientProfile(res.user.id, data);
     return { error: null };
+  };
+
+  // Renvoie un nouveau code de confirmation d'inscription.
+  const resendSignupOtp = async (email: string) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    return { error: error as Error | null };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -173,6 +200,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         isLoading,
         signUp,
+        verifyEmailOtp,
+        resendSignupOtp,
         signIn,
         signInWithGoogle,
         signOut,
