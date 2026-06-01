@@ -51,3 +51,18 @@ jobs:
           supabase functions deploy admin-assistant \
             --project-ref "$PROJECT_REF" \
             --no-verify-jwt=false
+
+      # Fonctions emails : appelées par pg_cron / webhook Resend (pas un JWT
+      # utilisateur) → verify_jwt désactivé. Elles vérifient elles-mêmes l'appelant
+      # (secret du drainer / signature Svix).
+      - name: Déployer la fonction send-email
+        run: |
+          supabase functions deploy send-email \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      - name: Déployer la fonction resend-events
+        run: |
+          supabase functions deploy resend-events \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt

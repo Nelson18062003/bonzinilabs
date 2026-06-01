@@ -24,6 +24,8 @@ import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
 
 // ── Lazy-loaded Client Pages ───────────────────────────────────
 const AuthPage = lazy(() => import("./pages/AuthPage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
 const DepositsPage = lazy(() => import("./pages/DepositsPage"));
@@ -138,7 +140,9 @@ const App = () => (
               <Routes>
                 {/* Auth Routes */}
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/onboarding" element={<ProtectedRoute requireComplete={false}><OnboardingPage /></ProtectedRoute>} />
 
                 {/* Landing Page (public) */}
                 <Route path="/" element={<LandingPage />} />
