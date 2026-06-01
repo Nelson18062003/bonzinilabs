@@ -27,6 +27,16 @@ const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6"
 const MAX_TOOL_ITERATIONS = 8;
 const MIN_PAYMENT_XAF = 10_000;
 
+// Liste blanche pour les actions wallet (crédit/débit manuel) : e-mails ou user_id
+// autorisés EN PLUS des super_admin. Configuré via secret (ex. "jonas@bonzini.com").
+const WALLET_ADMINS = (Deno.env.get("ASSISTANT_WALLET_ADMINS") ?? "")
+  .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+function canAdjustWallet(role: string, email: string | undefined, userId: string): boolean {
+  if (role === "super_admin") return true;
+  const e = (email ?? "").toLowerCase();
+  return WALLET_ADMINS.includes(e) || WALLET_ADMINS.includes(userId.toLowerCase());
+}
+
 // Pièces jointes (images analysées par vision + PDF lus comme documents)
 const ATTACHMENT_BUCKET = "assistant-attachments";
 const ALLOWED_ATTACHMENT_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
@@ -73,6 +83,39 @@ function periodStartISO(period?: string): string {
   return d.toISOString();
 }
 
+/**
+ * Résout une plage de dates flexible à partir de :
+ *  - from_date / to_date explicites (ISO ou YYYY-MM-DD), OU
+ *  - year + month (1-12) → le mois entier, OU
+ *  - period nommée (today/week/month/year/all).
+ * Renvoie { from, to } en ISO. Défaut : 30 derniers jours.
+ */
+function resolveRange(a: { from_date?: string; to_date?: string; year?: number; month?: number; period?: string }): { from: string; to: string; label: string } {
+  // Mois précis (ex. avril 2026 → year=2026, month=4)
+  if (a.year && a.month) {
+    const y = Number(a.year), m = Number(a.month);
+    const from = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+    const to = new Date(Date.UTC(y, m, 1, 0, 0, 0)); // début du mois suivant
+    return { from: from.toISOString(), to: to.toISOString(), label: `${String(m).padStart(2, "0")}/${y}` };
+  }
+  // Dates explicites
+  if (a.from_date || a.to_date) {
+    const from = a.from_date ? new Date(a.from_date) : new Date("2020-01-01");
+    const to = a.to_date ? new Date(a.to_date) : new Date();
+    return { from: from.toISOString(), to: to.toISOString(), label: `${a.from_date ?? "…"} → ${a.to_date ?? "auj."}` };
+  }
+  // Période nommée
+  const to = new Date();
+  const from = new Date();
+  const p = a.period ?? "month";
+  if (p === "today") from.setHours(0, 0, 0, 0);
+  else if (p === "week") from.setDate(from.getDate() - 7);
+  else if (p === "year") from.setFullYear(from.getFullYear() - 1);
+  else if (p === "all") from.setFullYear(from.getFullYear() - 20);
+  else from.setDate(from.getDate() - 30);
+  return { from: from.toISOString(), to: to.toISOString(), label: p };
+}
+
 // deno-lint-ignore no-explicit-any
 type AnyClient = any;
 
@@ -80,11 +123,14 @@ type AnyClient = any;
 interface ReadTool {
   name: string;
   permission: PermKey;
+  /** Si vrai, l'outil reçoit le client AUTHENTIFIÉ (JWT admin) en 2e arg —
+   *  nécessaire pour les RPC qui vérifient auth.uid() (ex. trésorerie). */
+  needsAuth?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
   // deno-lint-ignore no-explicit-any
-  execute: (admin: AnyClient, args: any) => Promise<Record<string, unknown>>;
+  execute: (admin: AnyClient, args: any, userClient?: AnyClient) => Promise<Record<string, unknown>>;
 }
 
 /**
@@ -212,17 +258,20 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "list_deposits",
     permission: "canViewDeposits",
-    description: "Lister les derniers dépôts. Filtres optionnels: status (created, awaiting_proof, proof_submitted, admin_review, validated, rejected, cancelled), client_user_id.",
-    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, limit: { type: "number" } } },
-    execute: async (admin, { status, client_user_id, limit }) => {
+    description: "Lister les dépôts, filtrables par DATES. Filtres optionnels: status, client_user_id, et une période : from_date+to_date (YYYY-MM-DD) OU year+month (ex. avril 2026 = year 2026, month 4) OU period (today/week/month/year/all).",
+    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
       let q = admin.from("deposits")
         .select("reference, amount_xaf, confirmed_amount_xaf, method, status, bank_name, agency_name, created_at, user_id")
-        .order("created_at", { ascending: false }).limit(clamp(limit, 10, 25));
-      if (status) q = q.eq("status", status);
-      if (client_user_id) q = q.eq("user_id", client_user_id);
+        .order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+      if (a.status) q = q.eq("status", a.status);
+      if (a.client_user_id) q = q.eq("user_id", a.client_user_id);
+      let label: string | undefined;
+      if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { count: data?.length ?? 0, deposits: data ?? [] };
+      return { period: label, count: data?.length ?? 0, deposits: data ?? [] };
     },
   },
   {
@@ -250,17 +299,20 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "list_payments",
     permission: "canViewPayments",
-    description: "Lister les derniers paiements fournisseurs. Filtres optionnels: status (created, waiting_beneficiary_info, ready_for_payment, processing, completed, rejected, cash_pending, cash_scanned), client_user_id.",
-    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, limit: { type: "number" } } },
-    execute: async (admin, { status, client_user_id, limit }) => {
+    description: "Lister les paiements fournisseurs, filtrables par DATES. Filtres optionnels: status (created, waiting_beneficiary_info, ready_for_payment, processing, completed, rejected, cash_pending, cash_scanned), client_user_id, et une période : from_date+to_date OU year+month OU period (today/week/month/year/all).",
+    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
       let q = admin.from("payments")
         .select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
-        .order("created_at", { ascending: false }).limit(clamp(limit, 10, 25));
-      if (status) q = q.eq("status", status);
-      if (client_user_id) q = q.eq("user_id", client_user_id);
+        .order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+      if (a.status) q = q.eq("status", a.status);
+      if (a.client_user_id) q = q.eq("user_id", a.client_user_id);
+      let label: string | undefined;
+      if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { count: data?.length ?? 0, payments: data ?? [] };
+      return { period: label, count: data?.length ?? 0, payments: data ?? [] };
     },
   },
   {
@@ -546,50 +598,99 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "find_payments_by_client_name",
     permission: "canViewPayments",
-    description: "Trouver les paiements d'un client en donnant son NOM (ex. 'Jonas Boco'). Filtre optionnel: status.",
-    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
-    execute: async (admin, { name, status, limit }) => {
-      const clients = await findClientsByName(admin, name, 10);
+    description: "Trouver les paiements d'un client en donnant son NOM (ex. 'Jonas Boco'), avec filtre de DATES. Optionnels: status, et période : from_date+to_date OU year+month OU period.",
+    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
+    execute: async (admin, a) => {
+      const clients = await findClientsByName(admin, a.name, 10);
       if (clients.length === 0) return { found: false, message: "Aucun client à ce nom." };
       const ids = clients.map((c) => c.user_id);
       let q = admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
-        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(limit, 15, 40));
-      if (status) q = q.eq("status", status);
+        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+      if (a.status) q = q.eq("status", a.status);
+      const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
+      let label: string | undefined;
+      if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, payments: data ?? [] };
+      return { period: label, matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, payments: data ?? [] };
+    },
+  },
+  {
+    name: "top_clients_by_volume",
+    permission: "canViewClients",
+    description: "Classement des clients par VOLUME de transactions sur une période (le vrai 'top clients'). metric = 'payments' (volume payé), 'deposits' (volume déposé validé) ou 'both' (défaut). Période : from_date+to_date OU year+month (ex. avril 2026) OU period (week/month/year/all). Renvoie les N premiers clients avec leur volume.",
+    input_schema: { type: "object", properties: { metric: { type: "string", enum: ["payments", "deposits", "both"] }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      const r = resolveRange(a);
+      const metric = a.metric ?? "both";
+      const topN = clamp(a.limit, 5, 20);
+      const vol: Record<string, number> = {};
+      if (metric === "payments" || metric === "both") {
+        const { data } = await admin.from("payments").select("user_id, amount_xaf, status, created_at").gte("created_at", r.from).lt("created_at", r.to).limit(10000);
+        for (const p of data ?? []) { if (p.status !== "rejected" && p.status !== "cancelled_by_admin") vol[p.user_id] = (vol[p.user_id] ?? 0) + Number(p.amount_xaf ?? 0); }
+      }
+      if (metric === "deposits" || metric === "both") {
+        const { data } = await admin.from("deposits").select("user_id, amount_xaf, confirmed_amount_xaf, status, created_at").eq("status", "validated").gte("created_at", r.from).lt("created_at", r.to).limit(10000);
+        for (const d of data ?? []) vol[d.user_id] = (vol[d.user_id] ?? 0) + Number(d.confirmed_amount_xaf ?? d.amount_xaf ?? 0);
+      }
+      const sorted = Object.entries(vol).sort((x, y) => y[1] - x[1]).slice(0, topN);
+      if (sorted.length === 0) return { period: r.label, metric, count: 0, clients: [], note: "Aucune transaction sur cette période." };
+      const ids = sorted.map(([id]) => id);
+      const { data: clients } = await admin.from("clients").select("user_id, first_name, last_name, phone").in("user_id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of clients ?? []) byId[c.user_id] = c;
+      const rows = sorted.map(([id, v], i) => ({
+        rank: i + 1,
+        name: byId[id] ? `${byId[id].first_name} ${byId[id].last_name}` : "—",
+        phone: byId[id]?.phone ?? null,
+        volume_xaf: v, volume_formatted: fmtXAF(v), user_id: id,
+      }));
+      return { period: r.label, metric, count: rows.length, clients: rows };
+    },
+  },
+  {
+    name: "get_dashboard",
+    permission: "canViewDeposits",
+    description: "Tableau de bord global de la plateforme (vue d'ensemble) : nombre de clients, clients actifs, solde total des wallets, dépôts en attente, paiements en attente, taux actuel, volume du jour, volume de la semaine.",
+    input_schema: { type: "object", properties: {} },
+    execute: async (admin) => {
+      const { data, error } = await admin.rpc("get_dashboard_stats");
+      if (error) return { error: error.message };
+      return { dashboard: data };
     },
   },
   {
     name: "treasury_report",
     permission: "canViewTreasury",
-    description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. period = 'today' | 'week' | 'month' | 'all' (défaut 'month').",
-    input_schema: { type: "object", properties: { period: { type: "string", enum: ["today", "week", "month", "all"] } } },
-    execute: async (admin, { period }) => {
-      const to = new Date();
-      const from = new Date();
-      if (period === "today") from.setHours(0, 0, 0, 0);
-      else if (period === "week") from.setDate(from.getDate() - 7);
-      else if (period === "all") from.setFullYear(from.getFullYear() - 10);
-      else from.setDate(from.getDate() - 30);
-      const { data, error } = await admin.rpc("get_treasury_dashboard", { p_from_date: from.toISOString(), p_to_date: to.toISOString() });
+    needsAuth: true,
+    description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. Période flexible : from_date+to_date OU year+month (ex. avril 2026) OU period (today/week/month/year/all).",
+    input_schema: { type: "object", properties: { from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" } } },
+    execute: async (admin, a, userClient) => {
+      const db = userClient ?? admin;
+      const r = resolveRange(a);
+      const { data, error } = await db.rpc("get_treasury_dashboard", { p_from_date: r.from, p_to_date: r.to });
       if (error) return { error: error.message };
-      return { period: period ?? "month", report: data };
+      if (data?.success === false) return { error: data.error };
+      return { period: r.label, report: data };
     },
   },
   {
     name: "treasury_top_counterparties",
     permission: "canViewTreasury",
+    needsAuth: true,
     description: "Top fournisseurs USDT ou acheteurs CNY par volume sur une période. type = 'usdt_supplier' | 'cny_buyer'. period = 'week' | 'month' | 'all' (défaut 'month').",
     input_schema: { type: "object", properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, period: { type: "string", enum: ["week", "month", "all"] }, limit: { type: "number" } }, required: ["type"] },
-    execute: async (admin, { type, period, limit }) => {
+    execute: async (admin, { type, period, limit }, userClient) => {
+      const db = userClient ?? admin;
       const to = new Date();
       const from = new Date();
       if (period === "week") from.setDate(from.getDate() - 7);
       else if (period === "all") from.setFullYear(from.getFullYear() - 10);
       else from.setDate(from.getDate() - 30);
-      const { data, error } = await admin.rpc("get_top_counterparties", { p_type: type, p_from_date: from.toISOString(), p_to_date: to.toISOString(), p_limit: clamp(limit, 5, 20) });
+      const { data, error } = await db.rpc("get_top_counterparties", { p_type: type, p_from_date: from.toISOString(), p_to_date: to.toISOString(), p_limit: clamp(limit, 5, 20) });
       if (error) return { error: error.message };
+      if (data?.success === false) return { error: data.error };
       return { type, period: period ?? "month", counterparties: data };
     },
   },
@@ -684,6 +785,8 @@ interface WriteTool {
   permission: PermKey;
   /** Défense en profondeur : action réservée au super_admin (en plus de la garde DB). */
   superAdminOnly?: boolean;
+  /** Réservé aux super_admin + liste blanche WALLET_ADMINS (ex. ajustement de wallet). */
+  walletAdminsOnly?: boolean;
   /** Si vrai, les pièces jointes du message (captures/PDF) sont attachées comme preuve. */
   acceptsProof?: boolean;
   description: string;
@@ -1113,6 +1216,42 @@ const WRITE_TOOLS: WriteTool[] = [
     },
   },
   {
+    name: "adjust_wallet",
+    permission: "canProcessDeposits",
+    walletAdminsOnly: true,
+    description: "Créditer ou débiter MANUELLEMENT le wallet d'un client, avec un motif obligatoire. type = 'credit' (ajoute) ou 'debit' (retire, refusé si solde insuffisant). Action réservée (super_admin + liste autorisée). À utiliser pour corriger/ajuster un solde.",
+    input_schema: {
+      type: "object",
+      properties: { client_user_id: { type: "string" }, type: { type: "string", enum: ["credit", "debit"] }, amount_xaf: { type: "number" }, reason: { type: "string" } },
+      required: ["client_user_id", "type", "amount_xaf", "reason"],
+    },
+    prepare: async (admin, a) => {
+      const amt = validIntAmount(a.amount_xaf);
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!amt) return { ok: false, error: "Montant invalide." };
+      if (a.type !== "credit" && a.type !== "debit") return { ok: false, error: "type doit être 'credit' ou 'debit'." };
+      if (!a.reason || String(a.reason).trim().length < 3) return { ok: false, error: "Motif obligatoire." };
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
+      if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
+      if (a.type === "debit" && Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
+      const after = a.type === "credit" ? Number(wallet.balance_xaf) + amt : Number(wallet.balance_xaf) - amt;
+      const lines: Line[] = [
+        { label: "Client", value: c.name },
+        { label: "Type", value: a.type === "credit" ? "Crédit (ajout)" : "Débit (retrait)" },
+        { label: "Solde actuel", value: fmtXAF(wallet.balance_xaf) },
+        { label: "Solde après", value: fmtXAF(after) },
+        { label: "Motif", value: String(a.reason) },
+      ];
+      return { ok: true, args: { p_user_id: c.uid, p_amount: amt, p_adjustment_type: a.type, p_reason: String(a.reason) }, summary: { title: a.type === "credit" ? "Créditer un wallet" : "Débiter un wallet", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: a.type === "credit" ? "Confirmer le crédit" : "Confirmer le débit", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("admin_adjust_wallet", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
     name: "delete_client",
     permission: "canManageUsers",
     superAdminOnly: true,
@@ -1136,7 +1275,8 @@ function buildSystemPrompt(role: string): string {
     `Tu es l'assistant "Directeur des Opérations" de BonziniLabs, une fintech qui permet aux importateurs africains de régler leurs fournisseurs chinois en XAF.`,
     `Tu assistes un administrateur (rôle: ${role}). Réponds en français, de façon concise, claire et professionnelle.`,
     ``,
-    `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, trésorerie, audit) via tes outils de lecture.`,
+    `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
+    `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
@@ -1291,6 +1431,10 @@ serve(async (req) => {
       if (tool.superAdminOnly && role !== "super_admin") {
         return json({ success: false, error: "Action réservée au super administrateur." }, 403);
       }
+      // Actions wallet : super_admin OU liste blanche (ex. Jonas)
+      if (tool.walletAdminsOnly && !canAdjustWallet(role, user.email, user.id)) {
+        return json({ success: false, error: "Action réservée aux administrateurs autorisés (ajustement de wallet)." }, 403);
+      }
 
       // Prise ATOMIQUE de l'action (pending → executing) : empêche le double-tap concurrent
       const { data: claimed } = await admin
@@ -1361,7 +1505,12 @@ serve(async (req) => {
 
     // Outils autorisés pour ce rôle (lecture + écriture)
     const allowedRead = READ_TOOLS.filter((t) => perms[t.permission]);
-    const allowedWrite = WRITE_TOOLS.filter((t) => perms[t.permission]);
+    const allowedWrite = WRITE_TOOLS.filter((t) => {
+      if (!perms[t.permission]) return false;
+      if (t.superAdminOnly && role !== "super_admin") return false;
+      if (t.walletAdminsOnly && !canAdjustWallet(role, user.email, user.id)) return false;
+      return true;
+    });
     // deno-lint-ignore no-explicit-any
     const toolDefs: any[] = [
       ...allowedRead.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
@@ -1410,7 +1559,8 @@ serve(async (req) => {
                 const writeTool = allowedWrite.find((t) => t.name === tu.name);
                 let result: Record<string, unknown>;
                 if (readTool) {
-                  try { result = await readTool.execute(admin, tu.input ?? {}); }
+                  // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
+                  try { result = await readTool.execute(admin, tu.input ?? {}, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
                 } else if (writeTool) {
                   try {

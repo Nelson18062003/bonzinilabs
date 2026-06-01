@@ -217,9 +217,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setCurrentUser(adminData && !('disabled' in adminData) ? adminData : null);
       }
       setIsLoading(false);
+    }).catch((err) => {
+      // Ne JAMAIS laisser le spinner tourner indéfiniment si getSession/fetch échoue.
+      console.error('Admin auth init error:', err);
+      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Filet de sécurité : au pire, on débloque l'écran après 8s (puis l'app
+    // redirigera vers /m/login si la session n'a pas pu être chargée).
+    const safety = setTimeout(() => setIsLoading(false), 8000);
+
+    return () => {
+      clearTimeout(safety);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
