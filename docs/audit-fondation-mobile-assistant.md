@@ -348,4 +348,158 @@ Phase 3 va le matérialiser en **un seul app-shell + un seul composeur**, conçu
 par tout Bonzini** (pas seulement l'Assistant). On ne réinvente rien : on **applique proprement, une
 fois**, ce que la doc web et les meilleures apps font déjà.
 
-*→ En attente de ton GO pour lancer la Phase 3 (dessiner le cadre cible).*
+*Phase 3 lancée ci-dessous.*
+
+---
+
+# Phase 3 — Architecture cible : la « recette unique »
+
+> Objectif : matérialiser le contrat R1→R4 (Phase 2) en **un seul app-shell + un seul composeur**,
+> réutilisables par **toute la plateforme**, et **supprimer** les 8 demi-implémentations.
+> Tout le code ci-dessous est une **spécification** (Phase 5 = écriture réelle).
+
+## 3.1 La décision structurante : DEUX archétypes d'écran, et un seul
+
+Aujourd'hui le code n'a **aucune** distinction explicite entre un écran qui doit défiler et un écran
+qui doit verrouiller le viewport. C'est la racine du chaos. La cible impose **deux archétypes, et
+chaque écran déclare lequel il est** :
+
+| Archétype | Pour quoi | Comportement | Hauteur |
+|---|---|---|---|
+| **`<DocumentScreen>`** | listes, formulaires, tableaux de bord, détails | la **page défile** naturellement (barre d'URL se rétracte) | `min-h-[100dvh]` |
+| **`<ViewportShell>`** | chat (Assistant, Support), et tout écran « plein cadre » | la **page est verrouillée**, seul l'intérieur défile, suit le clavier | hauteur visible exacte |
+
+C'est un principe **généralisable** : chaque écran de Bonzini sera l'un ou l'autre, jamais un hybride
+accidentel. Le chat est un `ViewportShell`. La plupart des autres écrans sont des `DocumentScreen`
+(ce qu'ils font déjà via `min-h-screen` — qu'on remplacera par `min-h-[100dvh]`).
+
+## 3.2 La décision clavier UNIQUE : mode « resize », pas mode « overlay »
+
+Rappel Phase 1 : le code active **en même temps** deux mécanismes contradictoires —
+`interactive-widget=resizes-content` (meta) **et** `overlaysContent=true` (runtime). On tranche :
+
+- **On SUPPRIME `overlaysContent=true`** (on retire `useVirtualKeyboardOverlay` du manager global).
+- **Conséquence clé** : une fois le mode overlay retiré, **`window.visualViewport.height` rétrécit de
+  façon fiable à l'ouverture du clavier sur iOS ET Android** (mode par défaut « resizes-visual » ou
+  « resizes-content »). C'est ce qui permet d'avoir **UNE seule source de vérité** pour la hauteur
+  visible, au lieu des 3 calculs divergents actuels. 🟡 *(mécanisme 🟢 ; à valider device)*
+- `interactive-widget=resizes-content` : **gardé** (utile comme repli `dvh` sans JS sur Android),
+  mais le **commentaire faux** sur iOS est corrigé.
+
+## 3.3 La source de vérité unique : `useVisibleViewportHeight`
+
+Remplace `useKeyboardInset`, `useKeyboardHeight`, `useViewportContainerHeight` et la logique inline de
+l'Assistant. Écrit des **variables CSS** sur `:root` via **un seul** écouteur (throttle `rAF`) — donc
+**aucun re-render React** sur l'animation du clavier (≠ le `setState` actuel de l'Assistant qui
+re-render tout le chat à chaque frame → jank).
+
+```ts
+// SPEC — pas encore implémenté
+// Pose --vvh (hauteur visible) et --vvt (offset haut du viewport visuel) sur :root.
+// Le ViewportShell s'y ancre. Un seul listener pour toute l'app.
+function useVisibleViewportSync() {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const root = document.documentElement;
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
+      const h = vv ? vv.height : window.innerHeight;
+      const t = vv ? vv.offsetTop : 0;
+      root.style.setProperty('--vvh', `${Math.round(h)}px`);
+      root.style.setProperty('--vvt', `${Math.round(t)}px`);
+    };
+    const onChange = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    apply();
+    vv?.addEventListener('resize', onChange);
+    vv?.addEventListener('scroll', onChange);
+    window.addEventListener('resize', onChange);
+    return () => { /* cleanup + cancelAnimationFrame */ };
+  }, []);
+}
+```
+
+Fallback : si `--vvh` non posée (avant montage / pas de support), le shell tombe sur `100dvh`.
+
+## 3.4 Le composant `<ViewportShell>` (cadre verrouillé)
+
+Structure invariante en 3 zones (R3). Verrouille le document à l'ouverture (R1), s'ancre au viewport
+visible (R2). En `position: fixed` → il **sort du flux** et neutralise le parent `min-h-screen`
+(c'est ce qui règle le « nesting » de la Phase 1 sans toucher au routage).
+
+```
+position: fixed; left:0; right:0;
+top:    var(--vvt, 0);
+height: var(--vvh, 100dvh);
+display:flex; flex-direction:column; overflow:hidden;
++ verrouille <body> au montage (overflow:hidden; overscroll:none), restaure au démontage.
+```
+
+```
+ ┌─────────────────────────────┐  ← position: fixed, ancré au viewport visible
+ │  HEADER  (slot, shrink-0)    │     padding-top: env(safe-area-inset-top)
+ ├─────────────────────────────┤
+ │  SCROLL REGION (flex-1)      │     overflow-y:auto; overscroll-behavior:contain
+ │     ↕ messages seulement     │     ← seule zone qui défile
+ ├─────────────────────────────┤
+ │  COMPOSER (slot, shrink-0)   │     padding-bottom: env(safe-area-inset-bottom)
+ └─────────────────────────────┘  ← bord inférieur = pile au-dessus du clavier (via --vvh)
+```
+
+API proposée : `<ViewportShell header={…} composer={…}>{messages}</ViewportShell>`.
+
+## 3.5 Le composant `<ChatComposer>` (barre d'écriture unique)
+
+Une seule barre, partagée par Assistant **et** Support. Réunit ce qui marche déjà + ce qui manque :
+
+- **Auto-grow** : recalcul de hauteur à la frappe (`onInput`, `min(scrollHeight, max)`) — repris de
+  `MessageInput.tsx:332-336`, **absent** de l'Assistant aujourd'hui → corrige R3.
+- **≥16px** garanti (anti-zoom iOS, déjà global — on retire le `text-[15px]` smell de l'Assistant).
+- **max-height puis scroll interne** (n'envahit pas l'écran).
+- Slots gauche/droite (pièce jointe, micro, envoyer) configurables selon le contexte.
+- `enterkeyhint`, gestion `Enter`/`Shift+Enter` selon mobile/desktop (déjà présente côté Support).
+
+## 3.6 Ce qui est supprimé / converge (nettoyage de dette)
+
+| Avant (8 voies) | Après |
+|---|---|
+| `useKeyboardInset` (seuil 100) | ❌ supprimé |
+| `useKeyboardHeight`/`useKeyboardOpen` (seuil 120) | ❌ supprimé (ou réécrit au-dessus de `--vvh`) |
+| `useViewportContainerHeight` | ➡️ remplacé par `useVisibleViewportSync` + `<ViewportShell>` |
+| `useVirtualKeyboardOverlay` (overlaysContent) | ❌ supprimé (on passe en mode resize) |
+| `useKeyboardSafePadding` / `KeyboardSafeArea` | conservé pour les `DocumentScreen` (formulaires longs) |
+| logique inline Assistant (`:137-151,224`) | ❌ supprimée → utilise `<ViewportShell>` |
+| `useVisualViewport` | ✅ conservé (primitive bas niveau) |
+| `useScrollIntoViewOnFocus` (global `window.scrollBy`) | conservé **uniquement** pour `DocumentScreen` ; **désactivé** dans un `ViewportShell` (sinon il scrolle un document verrouillé = jank) |
+
+## 3.7 Principes généralisables (à documenter comme standard plateforme)
+
+1. **Tout écran déclare son archétype** : `DocumentScreen` (défile) ou `ViewportShell` (verrouillé).
+2. **Une seule source de vérité viewport** (`--vvh`/`--vvt`), jamais de calcul clavier ad-hoc.
+3. **Un seul mode clavier** : resize (pas overlay).
+4. **Safe-areas gérées par les primitives** (shell/screen), pas écran par écran.
+5. **Inputs ≥ 16px** (déjà global — maintenu).
+6. **Hauteur via variables CSS**, pas via `setState` (zéro re-render sur l'animation clavier).
+7. **Un seul composeur** réutilisé.
+
+## 3.8 Fichiers impactés en Phase 5 (prévision)
+
+- `index.html` : corriger le commentaire/intention du meta (le tag reste).
+- `src/components/form/KeyboardFocusManager.tsx` : retirer `useVirtualKeyboardOverlay`, scoper le scroll-into-view.
+- **Nouveau** `src/components/layout/ViewportShell.tsx` + hook `useVisibleViewportSync`.
+- **Nouveau** `src/components/chat/ChatComposer.tsx` (mutualise Assistant + Support).
+- `MobileAssistantScreen.tsx` : réécrit au-dessus de `<ViewportShell>` + `<ChatComposer>` (supprime l'inline).
+- `MobileSupportConversationScreen.tsx` + `MessageInput.tsx` : migrés vers les mêmes primitives.
+- Suppression des hooks redondants (3.6).
+- `src/index.css` : poser le verrou document (classe `.viewport-locked`) + `--vvh` fallback.
+
+## 3.9 Risques & points à valider sur device (avant de généraliser)
+
+- 🔴 **`visualViewport.height` fiable sur Android après retrait de l'overlay** : mécanisme solide,
+  mais **à confirmer sur Chrome Android + Samsung Internet réels**.
+- 🔴 **Verrou `<body>` iOS** : la technique a des variantes (overflow vs position:fixed) ; valider
+  qu'il n'y a pas de saut de scroll au montage/démontage du chat.
+- 🟡 **Safe-area bas quand clavier ouvert** : léger sur-espace possible ; décider si on le neutralise.
+- 🟡 **Transitions de page** (`AnimatedPage`) autour d'un shell `position:fixed` : vérifier l'entrée/sortie.
+
+*→ En attente de ton GO pour la Phase 4 (plan de remédiation détaillé + protocole de test device).*
