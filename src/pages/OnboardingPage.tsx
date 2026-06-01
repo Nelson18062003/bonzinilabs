@@ -25,7 +25,7 @@ const phoneSchema = z.string().min(8);
  */
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const queryClient = useQueryClient();
 
@@ -69,19 +69,17 @@ export default function OnboardingPage() {
     if (!user) return;
 
     setSubmitting(true);
-    // Liste blanche stricte : aucun champ sensible (kyc_verified/status) ici.
-    const { error } = await supabase
-      .from('clients')
-      .update({
-        phone,
-        country,
-        company_name: companyName || null,
-        activity_sector: activitySector || null,
-      })
-      .eq('user_id', user.id);
+    // RPC robuste : crée la fiche si absente (compte orphelin) PUIS met à jour
+    // les champs métier (liste blanche). Évite la boucle d'onboarding sans fin.
+    const { data, error } = await supabase.rpc('complete_client_onboarding', {
+      p_phone: phone,
+      p_country: country,
+      p_company: companyName || null,
+      p_sector: activitySector || null,
+    });
     setSubmitting(false);
 
-    if (error) {
+    if (error || (data && (data as { success?: boolean }).success === false)) {
       toast.error("Échec de l'enregistrement. Veuillez réessayer.");
       return;
     }
@@ -181,6 +179,15 @@ export default function OnboardingPage() {
             )}
           </Button>
         </form>
+
+        {/* Sortie : ne jamais rester bloqué sur l'onboarding. */}
+        <button
+          type="button"
+          onClick={async () => { await signOut(); navigate('/auth', { replace: true }); }}
+          className="w-full mt-5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Se déconnecter
+        </button>
       </div>
     </div>
   );

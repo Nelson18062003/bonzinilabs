@@ -1,20 +1,10 @@
 -- ============================================================
--- TOUTES les migrations récentes (emails + inscription + suppression)
--- À coller dans Supabase → SQL Editor → Run. 100% idempotent : sûr
--- même si certaines ont déjà été appliquées.
---
--- Contenu (dans l'ordre) :
---   1) message support (déclencheur)
---   2) emails doux (paiement en cours, mot de passe changé, accusé dépôt)
---   3) relances (dépôt non finalisé, profil incomplet)
---   4) bienvenue (déclencheurs, gated sur vérification)
---   5) CRÉATION DIFFÉRÉE jusqu'à la vérification du code
---   6) suppression d'un client LIBÈRE son email
+-- TOUTES les migrations récentes — coller dans SQL Editor → Run.
+-- 100% idempotent. Inclut : message support, emails doux, relances,
+-- bienvenue, création différée (vérif), libération email, onboarding robuste.
 -- ============================================================
 
--- ════════════════════════════════════════════════════════════
--- >>> 20260601121000_email_support_message_trigger.sql
--- ════════════════════════════════════════════════════════════
+-- ════════ 20260601121000_email_support_message_trigger.sql ════════
 -- ============================================================
 -- Chantier B — #3 : notification email quand le SUPPORT écrit au client
 --
@@ -143,9 +133,7 @@ CREATE TRIGGER on_admin_chat_message_enqueue_email
 NOTIFY pgrst, 'reload schema';
 
 
--- ════════════════════════════════════════════════════════════
--- >>> 20260601141000_email_soft_transactional.sql
--- ════════════════════════════════════════════════════════════
+-- ════════ 20260601141000_email_soft_transactional.sql ════════
 -- ============================================================
 -- Emails « doux » transactionnels (incrément 1)
 --   #1 accusé de dépôt    (deposit_created)    — déclencheur sur deposits
@@ -264,9 +252,7 @@ GRANT EXECUTE ON FUNCTION public.enqueue_password_changed_email() TO authenticat
 NOTIFY pgrst, 'reload schema';
 
 
--- ════════════════════════════════════════════════════════════
--- >>> 20260601160000_email_reminders_cron.sql
--- ════════════════════════════════════════════════════════════
+-- ════════ 20260601160000_email_reminders_cron.sql ════════
 -- ============================================================
 -- Relances (incrément 2) — emails de ré-engagement, via pg_cron
 --   #1 deposit_reminder     : dépôt commencé mais non finalisé (status 'created')
@@ -378,9 +364,7 @@ $$;
 NOTIFY pgrst, 'reload schema';
 
 
--- ════════════════════════════════════════════════════════════
--- >>> 20260601170000_welcome_email_on_client_create.sql
--- ════════════════════════════════════════════════════════════
+-- ════════ 20260601170000_welcome_email_on_client_create.sql ════════
 -- ============================================================
 -- Mail de bienvenue — déclenché UNIQUEMENT quand l'email est VÉRIFIÉ.
 --
@@ -498,9 +482,7 @@ CREATE TRIGGER on_user_email_confirmed_welcome
 NOTIFY pgrst, 'reload schema';
 
 
--- ════════════════════════════════════════════════════════════
--- >>> 20260601180000_defer_client_until_verified.sql
--- ════════════════════════════════════════════════════════════
+-- ════════ 20260601180000_defer_client_until_verified.sql ════════
 -- ============================================================
 -- Inscription email : le compte n'est créé qu'APRÈS vérification du code.
 --
@@ -615,9 +597,7 @@ $$;
 NOTIFY pgrst, 'reload schema';
 
 
--- ════════════════════════════════════════════════════════════
--- >>> 20260601190000_delete_client_frees_email.sql
--- ════════════════════════════════════════════════════════════
+-- ════════ 20260601190000_delete_client_frees_email.sql ════════
 -- ============================================================
 -- Correctif : supprimer un client LIBÈRE son email (réutilisable ensuite).
 --
@@ -707,6 +687,68 @@ BEGIN
   );
 END;
 $$;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ════════ 20260601200000_robust_onboarding_rpc.sql ════════
+-- ============================================================
+-- Onboarding ROBUSTE : corrige la « boucle d'onboarding sans fin ».
+--
+-- BUG : si un compte auth existe SANS fiche client (ex. client supprimé par
+-- l'admin puis reconnexion Google), l'onboarding faisait un UPDATE sur une
+-- fiche inexistante → 0 ligne, « profil validé » mais rien ne se passe →
+-- /wallet renvoie vers /onboarding → BOUCLE infinie.
+--
+-- CORRECTIF : une RPC qui CRÉE la fiche si absente (depuis les métadonnées
+-- auth) puis met à jour les champs métier (liste blanche). SECURITY DEFINER
+-- (contourne la RLS, qui n'autorise pas l'INSERT client côté app).
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.complete_client_onboarding(
+  p_phone   TEXT,
+  p_country TEXT,
+  p_company TEXT DEFAULT NULL,
+  p_sector  TEXT DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid   UUID := auth.uid();
+  v_meta  JSONB;
+  v_email TEXT;
+BEGIN
+  IF v_uid IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'non authentifié');
+  END IF;
+
+  -- Filet : fiche client absente (compte orphelin) → on la crée depuis l'auth.
+  IF NOT EXISTS (SELECT 1 FROM public.clients WHERE user_id = v_uid) THEN
+    SELECT raw_user_meta_data, email INTO v_meta, v_email
+      FROM auth.users WHERE id = v_uid;
+    PERFORM public._create_client_and_wallet(v_uid, COALESCE(v_meta, '{}'::jsonb), v_email);
+  END IF;
+
+  -- Champs métier (liste blanche stricte : jamais kyc_verified/status ici).
+  UPDATE public.clients
+     SET phone           = p_phone,
+         country         = p_country,
+         company_name    = NULLIF(p_company, ''),
+         activity_sector = NULLIF(p_sector, '')
+   WHERE user_id = v_uid;
+
+  RETURN json_build_object('success', true);
+END;
+$$;
+
+COMMENT ON FUNCTION public.complete_client_onboarding IS
+  'Finalise l''onboarding client : crée la fiche si absente (compte orphelin) puis met à jour phone/country/company/sector. Corrige la boucle d''onboarding.';
+
+REVOKE ALL ON FUNCTION public.complete_client_onboarding(TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.complete_client_onboarding(TEXT, TEXT, TEXT, TEXT) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';
 
