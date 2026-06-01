@@ -1,4 +1,6 @@
 // Edge Function: admin-assistant
+// Version: 2026-06-01.1 — 47 outils (lecture + écriture), trésorerie complète,
+// top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
