@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface AssistantAttachment {
   name: string;
@@ -92,16 +93,18 @@ export function useAdminAssistant() {
       const userId = session?.user?.id;
       if (!session?.access_token || !userId) throw new Error('Session admin introuvable — reconnecte-toi.');
 
-      // Téléversement des pièces jointes (bucket privé)
+      // Téléversement des pièces jointes (bucket privé). Les images sont compressées
+      // (redimensionnées) avant envoi → l'IA les lit mieux et plus vite.
       const uploaded: Array<{ path: string; mime: string; name: string }> = [];
-      for (const file of files) {
+      for (const raw of files) {
+        const file = raw.type === 'application/pdf' ? raw : await compressImage(raw, 1568, 0.85);
         const ext = file.name.split('.').pop() || 'bin';
         const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: upErr } = await supabaseAdmin.storage
           .from(ATTACHMENT_BUCKET)
           .upload(path, file, { contentType: file.type, upsert: false });
-        if (upErr) throw new Error(`Échec de l'envoi de ${file.name} : ${upErr.message}`);
-        uploaded.push({ path, mime: file.type, name: file.name });
+        if (upErr) throw new Error(`Échec de l'envoi de ${raw.name} : ${upErr.message}`);
+        uploaded.push({ path, mime: file.type, name: raw.name });
       }
 
       // Réponse en STREAMING : on crée une bulle assistant vide qu'on remplit au fil de l'eau.

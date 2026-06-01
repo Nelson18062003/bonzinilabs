@@ -12,7 +12,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,23 +87,72 @@ interface ReadTool {
   execute: (admin: AnyClient, args: any) => Promise<Record<string, unknown>>;
 }
 
+/**
+ * Retrouve des clients par NOM (gère "prénom nom", "nom prénom", un seul mot).
+ * Utilisé par les outils "par nom de client". Renvoie au plus `max` clients.
+ */
+// deno-lint-ignore no-explicit-any
+async function findClientsByName(admin: AnyClient, name: unknown, max = 10): Promise<any[]> {
+  const clean = String(name ?? "").trim().replace(/[,():*%]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  const cols = "user_id, first_name, last_name, phone";
+  const words = clean.split(" ").filter(Boolean).slice(0, 4);
+  // deno-lint-ignore no-explicit-any
+  let q: any = admin.from("clients").select(cols);
+  for (const w of words) {
+    const t = `%${w}%`;
+    q = q.or(`first_name.ilike.${t},last_name.ilike.${t},phone.ilike.${t}`);
+  }
+  const { data } = await q.limit(max);
+  if ((data?.length ?? 0) > 0 || words.length <= 1) return data ?? [];
+  // Filet : nom complet concaténé (ordre indifférent)
+  const { data: all } = await admin.from("clients").select(cols).limit(500);
+  const needle = clean.toLowerCase();
+  // deno-lint-ignore no-explicit-any
+  return (all ?? []).filter((c: any) => {
+    const full = `${c.first_name ?? ""} ${c.last_name ?? ""}`.toLowerCase();
+    const rev = `${c.last_name ?? ""} ${c.first_name ?? ""}`.toLowerCase();
+    return full.includes(needle) || rev.includes(needle);
+  }).slice(0, max);
+}
+
 const READ_TOOLS: ReadTool[] = [
   {
     name: "search_clients",
     permission: "canViewClients",
-    description: "Rechercher des clients par nom, prénom, téléphone ou entreprise. Renvoie id, user_id, nom, téléphone, pays, statut KYC.",
+    description: "Rechercher des clients par nom, prénom, nom complet, téléphone ou entreprise. Fonctionne avec 'Jonas', 'Jonas Boco', 'Boco Jonas', un numéro de téléphone, etc. Renvoie id, user_id, nom, téléphone, pays, statut KYC.",
     input_schema: { type: "object", properties: { query: { type: "string" }, limit: { type: "number" } }, required: ["query"] },
     execute: async (admin, { query, limit }) => {
-      // Nettoyage : retire les caractères de structure PostgREST ( , ) : * % ) du terme
+      // Nettoyage : retire les caractères de structure PostgREST du terme
       const clean = String(query ?? "").trim().replace(/[,():*%]/g, " ").replace(/\s+/g, " ").trim();
       if (!clean) return { count: 0, clients: [] };
-      const term = `%${clean}%`;
-      const { data, error } = await admin
-        .from("clients")
-        .select("id, user_id, first_name, last_name, phone, company_name, country, city, status, kyc_verified")
-        .or(`first_name.ilike.${term},last_name.ilike.${term},phone.ilike.${term},company_name.ilike.${term}`)
-        .limit(clamp(limit, 10, 25));
+      const n = clamp(limit, 10, 25);
+      const cols = "id, user_id, first_name, last_name, phone, company_name, country, city, status, kyc_verified";
+
+      // Découpe en mots. Pour "Jonas Boco", chaque mot doit apparaître quelque part
+      // (prénom, nom OU téléphone) → gère "prénom nom", "nom prénom", un seul mot, un numéro.
+      const words = clean.split(" ").filter(Boolean).slice(0, 4);
+      // deno-lint-ignore no-explicit-any
+      let q: any = admin.from("clients").select(cols);
+      for (const w of words) {
+        const t = `%${w}%`;
+        q = q.or(`first_name.ilike.${t},last_name.ilike.${t},phone.ilike.${t},company_name.ilike.${t}`);
+      }
+      const { data, error } = await q.limit(n);
       if (error) return { error: error.message };
+
+      // Filet de sécurité : si rien (ex. ordre des mots), on retente sur le nom complet concaténé.
+      if ((data?.length ?? 0) === 0 && words.length > 1) {
+        const { data: all } = await admin.from("clients").select(cols).limit(500);
+        const needle = clean.toLowerCase();
+        // deno-lint-ignore no-explicit-any
+        const hits = (all ?? []).filter((c: any) => {
+          const full = `${c.first_name ?? ""} ${c.last_name ?? ""}`.toLowerCase();
+          const rev = `${c.last_name ?? ""} ${c.first_name ?? ""}`.toLowerCase();
+          return full.includes(needle) || rev.includes(needle);
+        }).slice(0, n);
+        return { count: hits.length, clients: hits };
+      }
       return { count: data?.length ?? 0, clients: data ?? [] };
     },
   },
@@ -380,6 +428,244 @@ const READ_TOOLS: ReadTool[] = [
       return { count: data?.length ?? 0, admins: data ?? [] };
     },
   },
+  {
+    name: "count_clients",
+    permission: "canViewClients",
+    description: "Compter le nombre total de clients. Optionnel: pays (filtre), kyc_verified (true/false).",
+    input_schema: { type: "object", properties: { country: { type: "string" }, kyc_verified: { type: "boolean" } } },
+    execute: async (admin, { country, kyc_verified }) => {
+      let q = admin.from("clients").select("id", { count: "exact", head: true });
+      if (country) q = q.ilike("country", `%${String(country).replace(/[,():*%]/g, "")}%`);
+      if (typeof kyc_verified === "boolean") q = q.eq("kyc_verified", kyc_verified);
+      const { count, error } = await q;
+      if (error) return { error: error.message };
+      return { total_clients: count ?? 0 };
+    },
+  },
+  {
+    name: "list_recent_clients",
+    permission: "canViewClients",
+    description: "Lister les clients les plus récemment créés (nouveaux clients).",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("clients")
+        .select("user_id, first_name, last_name, phone, country, created_at")
+        .order("created_at", { ascending: false }).limit(clamp(limit, 10, 30));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, clients: data ?? [] };
+    },
+  },
+  {
+    name: "top_clients_by_balance",
+    permission: "canViewClients",
+    description: "Lister les clients ayant les plus gros soldes de wallet (en XAF). Utile pour voir les principaux clients.",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data: wallets } = await admin.from("wallets").select("user_id, balance_xaf").order("balance_xaf", { ascending: false }).limit(clamp(limit, 10, 25));
+      const ids = (wallets ?? []).map((w: AnyClient) => w.user_id);
+      if (!ids.length) return { count: 0, clients: [] };
+      const { data: clients } = await admin.from("clients").select("user_id, first_name, last_name, phone").in("user_id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of clients ?? []) byId[c.user_id] = c;
+      const rows = (wallets ?? []).map((w: AnyClient) => ({
+        name: byId[w.user_id] ? `${byId[w.user_id].first_name} ${byId[w.user_id].last_name}` : "—",
+        phone: byId[w.user_id]?.phone ?? null,
+        balance_xaf: w.balance_xaf, balance_formatted: fmtXAF(w.balance_xaf), user_id: w.user_id,
+      }));
+      return { count: rows.length, clients: rows };
+    },
+  },
+  {
+    name: "search_deposit_by_amount",
+    permission: "canViewDeposits",
+    description: "Retrouver des dépôts par montant approximatif (à ±2%). Utile quand on connaît le montant mais pas la référence. Optionnel: status.",
+    input_schema: { type: "object", properties: { amount_xaf: { type: "number" }, status: { type: "string" }, limit: { type: "number" } }, required: ["amount_xaf"] },
+    execute: async (admin, { amount_xaf, status, limit }) => {
+      const amt = Number(amount_xaf);
+      if (!amt) return { error: "Montant invalide." };
+      const lo = Math.floor(amt * 0.98), hi = Math.ceil(amt * 1.02);
+      let q = admin.from("deposits").select("reference, amount_xaf, confirmed_amount_xaf, method, status, created_at, user_id")
+        .gte("amount_xaf", lo).lte("amount_xaf", hi).order("created_at", { ascending: false }).limit(clamp(limit, 10, 25));
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, deposits: data ?? [] };
+    },
+  },
+  {
+    name: "get_client_full_activity",
+    permission: "canViewClients",
+    description: "Vue 360° d'un client (par user_id) : solde + ses derniers dépôts + ses derniers paiements + ses bénéficiaires. Idéal pour faire le point sur un client.",
+    input_schema: { type: "object", properties: { client_user_id: { type: "string" }, limit: { type: "number" } }, required: ["client_user_id"] },
+    execute: async (admin, { client_user_id, limit }) => {
+      const n = clamp(limit, 5, 15);
+      const { data: client } = await admin.from("clients").select("first_name, last_name, phone, country, kyc_verified").eq("user_id", client_user_id).maybeSingle();
+      if (!client) return { found: false };
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", client_user_id).maybeSingle();
+      const { data: deposits } = await admin.from("deposits").select("reference, amount_xaf, method, status, created_at").eq("user_id", client_user_id).order("created_at", { ascending: false }).limit(n);
+      const { data: payments } = await admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, created_at").eq("user_id", client_user_id).order("created_at", { ascending: false }).limit(n);
+      const { data: beneficiaries } = await admin.from("beneficiaries").select("alias, name, payment_method").eq("client_id", client_user_id).limit(n);
+      return {
+        found: true, client,
+        wallet_balance_xaf: wallet?.balance_xaf ?? 0, wallet_balance_formatted: fmtXAF(wallet?.balance_xaf ?? 0),
+        deposits: deposits ?? [], payments: payments ?? [], beneficiaries: beneficiaries ?? [],
+      };
+    },
+  },
+  {
+    name: "list_recent_proofs",
+    permission: "canViewDeposits",
+    description: "Lister les dernières preuves de dépôt ajoutées (qui les a ajoutées, sur quel dépôt, quand).",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("deposit_proofs")
+        .select("deposit_id, file_name, file_type, uploaded_by_type, uploaded_at")
+        .is("deleted_at", null).order("uploaded_at", { ascending: false }).limit(clamp(limit, 10, 25));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, proofs: data ?? [] };
+    },
+  },
+  {
+    name: "find_deposits_by_client_name",
+    permission: "canViewDeposits",
+    description: "Trouver les dépôts d'un client en donnant son NOM (ex. 'Jonas Boco'). Pratique quand on n'a pas l'user_id. Filtre optionnel: status.",
+    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
+    execute: async (admin, { name, status, limit }) => {
+      const clients = await findClientsByName(admin, name, 10);
+      if (clients.length === 0) return { found: false, message: "Aucun client à ce nom." };
+      const ids = clients.map((c) => c.user_id);
+      let q = admin.from("deposits").select("reference, amount_xaf, confirmed_amount_xaf, method, status, created_at, user_id")
+        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(limit, 15, 40));
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, deposits: data ?? [] };
+    },
+  },
+  {
+    name: "find_payments_by_client_name",
+    permission: "canViewPayments",
+    description: "Trouver les paiements d'un client en donnant son NOM (ex. 'Jonas Boco'). Filtre optionnel: status.",
+    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
+    execute: async (admin, { name, status, limit }) => {
+      const clients = await findClientsByName(admin, name, 10);
+      if (clients.length === 0) return { found: false, message: "Aucun client à ce nom." };
+      const ids = clients.map((c) => c.user_id);
+      let q = admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
+        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(limit, 15, 40));
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, payments: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_report",
+    permission: "canViewTreasury",
+    description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. period = 'today' | 'week' | 'month' | 'all' (défaut 'month').",
+    input_schema: { type: "object", properties: { period: { type: "string", enum: ["today", "week", "month", "all"] } } },
+    execute: async (admin, { period }) => {
+      const to = new Date();
+      const from = new Date();
+      if (period === "today") from.setHours(0, 0, 0, 0);
+      else if (period === "week") from.setDate(from.getDate() - 7);
+      else if (period === "all") from.setFullYear(from.getFullYear() - 10);
+      else from.setDate(from.getDate() - 30);
+      const { data, error } = await admin.rpc("get_treasury_dashboard", { p_from_date: from.toISOString(), p_to_date: to.toISOString() });
+      if (error) return { error: error.message };
+      return { period: period ?? "month", report: data };
+    },
+  },
+  {
+    name: "treasury_top_counterparties",
+    permission: "canViewTreasury",
+    description: "Top fournisseurs USDT ou acheteurs CNY par volume sur une période. type = 'usdt_supplier' | 'cny_buyer'. period = 'week' | 'month' | 'all' (défaut 'month').",
+    input_schema: { type: "object", properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, period: { type: "string", enum: ["week", "month", "all"] }, limit: { type: "number" } }, required: ["type"] },
+    execute: async (admin, { type, period, limit }) => {
+      const to = new Date();
+      const from = new Date();
+      if (period === "week") from.setDate(from.getDate() - 7);
+      else if (period === "all") from.setFullYear(from.getFullYear() - 10);
+      else from.setDate(from.getDate() - 30);
+      const { data, error } = await admin.rpc("get_top_counterparties", { p_type: type, p_from_date: from.toISOString(), p_to_date: to.toISOString(), p_limit: clamp(limit, 5, 20) });
+      if (error) return { error: error.message };
+      return { type, period: period ?? "month", counterparties: data };
+    },
+  },
+  {
+    name: "treasury_list_counterparties",
+    permission: "canViewTreasury",
+    description: "Lister les contreparties de la trésorerie : fournisseurs USDT (type 'usdt_supplier') ou acheteurs CNY (type 'cny_buyer'). Donne nom, téléphone, WeChat, statut actif. Optionnel: query (filtre par nom), type.",
+    input_schema: { type: "object", properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, query: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, { type, query, limit }) => {
+      let q = admin.from("treasury_counterparties")
+        .select("short_id, display_name, legal_name, type, phone, wechat_id, is_active, notes, created_at")
+        .is("archived_at", null).order("created_at", { ascending: false }).limit(clamp(limit, 20, 100));
+      if (type) q = q.eq("type", type);
+      if (query) {
+        const t = `%${String(query).replace(/[,():*%]/g, "")}%`;
+        q = q.or(`display_name.ilike.${t},legal_name.ilike.${t},phone.ilike.${t},wechat_id.ilike.${t}`);
+      }
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, counterparties: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_accounts_balances",
+    permission: "canViewTreasury",
+    description: "Soldes de TOUS les comptes de trésorerie (banque, mobile money, cash, crypto, Alipay, WeChat…) avec leur devise (XAF/USDT/CNY), le nombre d'écritures et la dernière activité.",
+    input_schema: { type: "object", properties: { only_active: { type: "boolean" } } },
+    execute: async (admin, { only_active }) => {
+      let q = admin.from("treasury_account_balances").select("label, code, kind, currency, balance, entry_count, last_entry_at, is_active").order("sort_order", { ascending: true });
+      if (only_active !== false) q = q.eq("is_active", true);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      // Regroupe les totaux par devise pour un aperçu rapide
+      const byCurrency: Record<string, number> = {};
+      for (const a of data ?? []) byCurrency[a.currency] = (byCurrency[a.currency] ?? 0) + Number(a.balance ?? 0);
+      return { count: data?.length ?? 0, totals_by_currency: byCurrency, accounts: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_usdt_position",
+    permission: "canViewTreasury",
+    description: "Position USDT actuelle : stock en inventaire (get_usdt_stock) et coût moyen pondéré par USDT en XAF (get_wac_usdt). Pour savoir combien d'USDT on détient et à quel prix de revient.",
+    input_schema: { type: "object", properties: {} },
+    execute: async (admin) => {
+      const now = new Date().toISOString();
+      const { data: stock } = await admin.rpc("get_usdt_stock", { p_at: now });
+      const { data: wac } = await admin.rpc("get_wac_usdt", { p_at: now });
+      return { usdt_stock: Number(stock ?? 0), wac_xaf_per_usdt: Number(wac ?? 0), at: now };
+    },
+  },
+  {
+    name: "treasury_inventory_snapshots",
+    permission: "canViewTreasury",
+    description: "Derniers relevés d'inventaire de trésorerie (snapshots) : solde théorique vs réel, écart (variance) et raison. Pour suivre les contrôles d'inventaire.",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("treasury_inventory_snapshots")
+        .select("account_id, theoretical_balance, actual_balance, variance, variance_reason, snapshot_at")
+        .order("snapshot_at", { ascending: false }).limit(clamp(limit, 10, 30));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, snapshots: data ?? [] };
+    },
+  },
+  {
+    name: "treasury_ledger",
+    permission: "canViewTreasury",
+    description: "Grand livre de la trésorerie : dernières écritures comptables (achats/ventes USDT, ajustements, annulations) avec compte, devise, montant et date.",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("treasury_ledger_entries")
+        .select("entry_kind, currency, amount, account_id, source_table, occurred_at")
+        .order("occurred_at", { ascending: false }).limit(clamp(limit, 15, 50));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, entries: data ?? [] };
+    },
+  },
 ];
 
 // ════════════════════════ OUTILS D'ÉCRITURE (proposition → confirmation) ════════════════════════
@@ -388,11 +674,18 @@ interface Proposal { title: string; subtitle?: string; amount?: string; lines: L
 interface PrepareOk { ok: true; summary: Proposal; args: Record<string, unknown>; }
 interface PrepareErr { ok: false; error: string; }
 
+interface ExecCtx {
+  admin: AnyClient;          // client service-role (pour copier les pièces jointes)
+  adminUserId: string;       // l'admin qui confirme (uploaded_by)
+}
+
 interface WriteTool {
   name: string;
   permission: PermKey;
   /** Défense en profondeur : action réservée au super_admin (en plus de la garde DB). */
   superAdminOnly?: boolean;
+  /** Si vrai, les pièces jointes du message (captures/PDF) sont attachées comme preuve. */
+  acceptsProof?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
@@ -401,7 +694,75 @@ interface WriteTool {
   prepare: (admin: AnyClient, args: any) => Promise<PrepareOk | PrepareErr>;
   /** Exécute réellement, APRÈS confirmation. Utilise le client AUTHENTIFIÉ de l'admin (is_admin(auth.uid())). */
   // deno-lint-ignore no-explicit-any
-  execute: (userClient: AnyClient, args: any) => Promise<Record<string, unknown>>;
+  execute: (userClient: AnyClient, args: any, ctx: ExecCtx) => Promise<Record<string, unknown>>;
+}
+
+/**
+ * Attache les pièces jointes du message (captures/PDF) comme PREUVES d'un dépôt :
+ * copie depuis le bucket assistant-attachments vers deposit-proofs et insère la
+ * ligne deposit_proofs (uploaded_by_type='admin'). Best-effort : n'échoue pas le dépôt.
+ */
+async function attachDepositProofs(
+  svc: AnyClient,
+  depositId: string,
+  adminUserId: string,
+  attachments: Array<{ path: string; mime: string; name: string }>,
+): Promise<number> {
+  let attached = 0;
+  for (const att of attachments) {
+    try {
+      const { data: blob, error: dlErr } = await svc.storage.from(ATTACHMENT_BUCKET).download(att.path);
+      if (dlErr || !blob) continue;
+      const ext = (att.name.split(".").pop() || (att.mime === "application/pdf" ? "pdf" : "jpg")).toLowerCase();
+      const filePath = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await svc.storage.from("deposit-proofs").upload(filePath, blob, { contentType: att.mime, upsert: false });
+      if (upErr) continue;
+      const { error: insErr } = await svc.from("deposit_proofs").insert({
+        deposit_id: depositId,
+        file_url: `deposit-proofs/${filePath}`,
+        file_name: att.name,
+        file_type: att.mime,
+        uploaded_by: adminUserId,
+        uploaded_by_type: "admin",
+        is_visible_to_client: true,
+      });
+      if (!insErr) attached++;
+    } catch (_) { /* preuve best-effort */ }
+  }
+  return attached;
+}
+
+/**
+ * Attache les pièces jointes du message comme PREUVES d'un paiement (QR code,
+ * justificatif) : copie vers payment-proofs et insère dans payment_proofs.
+ */
+async function attachPaymentProofs(
+  svc: AnyClient,
+  paymentId: string,
+  adminUserId: string,
+  attachments: Array<{ path: string; mime: string; name: string }>,
+): Promise<number> {
+  let attached = 0;
+  for (const att of attachments) {
+    try {
+      const { data: blob, error: dlErr } = await svc.storage.from(ATTACHMENT_BUCKET).download(att.path);
+      if (dlErr || !blob) continue;
+      const ext = (att.name.split(".").pop() || (att.mime === "application/pdf" ? "pdf" : "jpg")).toLowerCase();
+      const filePath = `admin/${paymentId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await svc.storage.from("payment-proofs").upload(filePath, blob, { contentType: att.mime, upsert: false });
+      if (upErr) continue;
+      const { error: insErr } = await svc.from("payment_proofs").insert({
+        payment_id: paymentId,
+        uploaded_by: adminUserId,
+        uploaded_by_type: "admin",
+        file_name: att.name,
+        file_url: `payment-proofs/${filePath}`,
+        file_type: att.mime,
+      });
+      if (!insErr) attached++;
+    } catch (_) { /* preuve best-effort */ }
+  }
+  return attached;
 }
 
 // payment_method (enum DB) → clé attendue par calculate_final_rate
@@ -507,7 +868,8 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_deposit",
     permission: "canProcessDeposits",
-    description: "Créer un dépôt EN ATTENTE pour un client (statut 'created', SANS créditer le wallet — utile si la preuve viendra plus tard). method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
+    acceptsProof: true,
+    description: "Créer un dépôt EN ATTENTE pour un client (statut 'created', SANS créditer le wallet — utile si la preuve viendra plus tard). Si l'admin a joint une capture, elle est attachée comme preuve. method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
     input_schema: {
       type: "object",
       properties: {
@@ -528,16 +890,19 @@ const WRITE_TOOLS: WriteTool[] = [
       lines.push({ label: "Wallet", value: "non crédité (en attente)" });
       return { ok: true, args, summary: { title: "Créer un dépôt (en attente)", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Créer le dépôt" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("create_client_deposit", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const depId = data?.deposit_id;
+      const proofs = depId && args.proofAttachments?.length ? await attachDepositProofs(ctx.admin, depId, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
     name: "create_and_validate_deposit",
     permission: "canProcessDeposits",
-    description: "Créer un dépôt ET le valider immédiatement → CRÉDITE le wallet du client. C'est l'action typique quand l'argent a déjà été reçu. La capture peut être ajoutée plus tard. method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
+    acceptsProof: true,
+    description: "Créer un dépôt ET le valider immédiatement → CRÉDITE le wallet du client. C'est l'action typique quand l'argent a déjà été reçu. Si l'admin a joint une capture/reçu, elle est AUTOMATIQUEMENT attachée comme preuve du dépôt — pas besoin de la remettre après. method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
     input_schema: {
       type: "object",
       properties: {
@@ -555,20 +920,23 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [{ label: "Client", value: c.name }, { label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
       return { ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const r1 = await userClient.rpc("create_client_deposit", args.create);
       if (r1.error) return { success: false, error: r1.error.message };
       const depId = r1.data?.deposit_id;
       if (!depId) return { success: false, error: "Échec de création du dépôt." };
       const r2 = await userClient.rpc("validate_deposit", { p_deposit_id: depId, p_admin_comment: args.comment, p_confirmed_amount: args.amount, p_send_notification: true });
       if (r2.error) return { success: false, error: `Dépôt créé mais validation échouée: ${r2.error.message}` };
-      return r2.data;
+      // Attache automatiquement les captures jointes comme preuve
+      const proofs = args.proofAttachments?.length ? await attachDepositProofs(ctx.admin, depId, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...r2.data, deposit_id: depId, proofs_attached: proofs };
     },
   },
   {
     name: "validate_deposit",
     permission: "canProcessDeposits",
-    description: "Valider un dépôt EXISTANT (par référence BZ-DP-... ou deposit_id) → crédite le wallet. Optionnel: confirmed_amount (si le montant réel diffère), comment.",
+    acceptsProof: true,
+    description: "Valider un dépôt EXISTANT (par référence BZ-DP-... ou deposit_id) → crédite le wallet. Si l'admin a joint une capture, elle est attachée comme preuve. Optionnel: confirmed_amount (si le montant réel diffère), comment.",
     input_schema: { type: "object", properties: { reference: { type: "string" }, deposit_id: { type: "string" }, confirmed_amount: { type: "number" }, comment: { type: "string" } } },
     prepare: async (admin, a) => {
       let q = admin.from("deposits").select("id, reference, amount_xaf, status, user_id");
@@ -582,10 +950,11 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [{ label: "Référence", value: dep.reference }, { label: "Statut actuel", value: dep.status }, { label: "Effet", value: "✅ crédite le wallet" }];
       return { ok: true, args: { p_deposit_id: dep.id, p_admin_comment: a.comment || null, p_confirmed_amount: confirmed, p_send_notification: true }, summary: { title: "Valider un dépôt", amount: fmtXAF(confirmed), lines, confirmLabel: "Confirmer & créditer" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("validate_deposit", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const proofs = args.proofAttachments?.length ? await attachDepositProofs(ctx.admin, args.p_deposit_id, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
@@ -612,7 +981,8 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_payment",
     permission: "canProcessPayments",
-    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour). Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url. Le montant RMB est calculé automatiquement au taux du jour.",
+    acceptsProof: true,
+    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url. Le montant RMB est calculé automatiquement au taux du jour.",
     input_schema: {
       type: "object",
       properties: {
@@ -657,16 +1027,19 @@ const WRITE_TOOLS: WriteTool[] = [
       lines.push({ label: "Effet", value: "⚠️ débite le wallet du client" });
       return { ok: true, args, summary: { title: "Créer un paiement fournisseur", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer le paiement" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("create_admin_payment", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const payId = data?.payment_id;
+      const proofs = payId && args.proofAttachments?.length ? await attachPaymentProofs(ctx.admin, payId, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
     name: "update_payment_beneficiary",
     permission: "canProcessPayments",
-    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, banque, compte, QR code. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
+    acceptsProof: true,
+    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, banque, compte, QR code. Si l'admin a joint une capture, elle est attachée comme preuve. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
     input_schema: {
       type: "object",
       properties: {
@@ -688,10 +1061,11 @@ const WRITE_TOOLS: WriteTool[] = [
       if (a.beneficiary_qr_code_url) lines.push({ label: "QR code", value: "fourni" });
       return { ok: true, args: { p_payment_id: pay.id, p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null, p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null, p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null }, summary: { title: "Compléter le bénéficiaire", subtitle: pay.reference, lines, confirmLabel: "Enregistrer" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("admin_update_payment_beneficiary", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const proofs = args.proofAttachments?.length ? await attachPaymentProofs(ctx.admin, args.p_payment_id, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
@@ -771,8 +1145,9 @@ function buildSystemPrompt(role: string): string {
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
     ``,
-    `Tu peux recevoir des images (captures, QR codes) et des PDF (relevés) joints par l'admin : analyse-les et exploite leur contenu (ex. lire un montant sur une capture).`,
-    `IMPORTANT pièces jointes : si l'admin a DÉJÀ joint une capture/reçu dans le message, considère que la preuve est fournie — ne redemande JAMAIS le reçu. De toute façon la preuve est optionnelle pour valider un dépôt. Lis directement le montant/la référence sur l'image jointe.`,
+    `PIÈCES JOINTES — RÈGLE ABSOLUE : NE LIS PAS, N'ANALYSE PAS les captures. Tu n'as pas à savoir ce qu'il y a dessus. L'admin te donne lui-même les infos (client, montant, mode de paiement) dans son message. Les captures servent UNIQUEMENT de preuves à attacher. Ne commente jamais le contenu d'une image, ne dis jamais "la capture n'est pas bonne", ne demande jamais à quoi elle correspond. Il peut y en avoir plusieurs : toutes sont attachées automatiquement.`,
+    `Exemple : "Dépôt de 5M pour Jonas Boco par Orange Money, voici les preuves" → tu retrouves Jonas via search_clients, puis tu proposes create_and_validate_deposit avec montant=5000000 et method=om_transfer. Les captures jointes deviennent automatiquement les preuves. Tu ne regardes pas les images.`,
+    `Fie-toi TOUJOURS aux montants et infos donnés par l'admin dans le texte, jamais à une image.`,
     ``,
     `STYLE : réponds en texte simple et naturel. N'utilise PAS de markdown lourd (pas de ** pour le gras, pas de # de titres, pas de tableaux). Des phrases courtes et des listes avec un tiret suffisent. Mets toujours un espace après les deux-points.`,
     ``,
@@ -928,7 +1303,7 @@ serve(async (req) => {
       }
 
       let result: Record<string, unknown>;
-      try { result = await tool.execute(userClient, pa.args); }
+      try { result = await tool.execute(userClient, pa.args, { admin, adminUserId: user.id }); }
       catch (e) { result = { success: false, error: String((e as Error)?.message ?? e) }; }
 
       const ok = result?.success !== false;
@@ -967,37 +1342,33 @@ serve(async (req) => {
       return { role: m.role, content: text || "(message vide)" };
     });
 
-    // Pièces jointes → blocs multimodaux
-    // deno-lint-ignore no-explicit-any
-    const attachmentBlocks: any[] = [];
+    // Pièces jointes : on NE LES ENVOIE PAS au modèle (pas d'analyse demandée).
+    // On valide juste qu'elles existent et appartiennent à l'admin, puis on les
+    // garde pour les attacher comme preuves. → bien plus rapide et moins cher.
     const acceptedAttachments: Array<{ path: string; mime: string; name: string }> = [];
     for (const att of attachments) {
       if (!att?.path || !ALLOWED_ATTACHMENT_MIME.has(att?.mime)) continue;
       if (!String(att.path).startsWith(`${user.id}/`)) continue; // restreint au dossier de l'appelant
-      try {
-        const { data: blob, error: dlErr } = await admin.storage.from(ATTACHMENT_BUCKET).download(att.path);
-        if (dlErr || !blob) continue;
-        const b64 = encodeBase64(new Uint8Array(await blob.arrayBuffer()));
-        if (att.mime === "application/pdf") attachmentBlocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
-        else attachmentBlocks.push({ type: "image", source: { type: "base64", media_type: att.mime, data: b64 } });
-        acceptedAttachments.push({ path: att.path, mime: att.mime, name: att.name });
-      } catch (_) { /* illisible : ignorée */ }
+      acceptedAttachments.push({ path: att.path, mime: att.mime, name: att.name });
     }
 
+    // Le modèle reçoit seulement le texte + une note sur le nombre de preuves jointes.
+    const attachNote = acceptedAttachments.length
+      ? `\n[${acceptedAttachments.length} preuve(s) jointe(s) par l'admin — à attacher à l'action, NE PAS analyser]`
+      : "";
     // deno-lint-ignore no-explicit-any
-    const userContent: any = attachmentBlocks.length > 0
-      ? [...attachmentBlocks, { type: "text", text: message || "Analyse la ou les pièces jointes." }]
-      : message;
-    // deno-lint-ignore no-explicit-any
-    const messages: any[] = [...history, { role: "user", content: userContent }];
+    const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
     // Outils autorisés pour ce rôle (lecture + écriture)
     const allowedRead = READ_TOOLS.filter((t) => perms[t.permission]);
     const allowedWrite = WRITE_TOOLS.filter((t) => perms[t.permission]);
-    const toolDefs = [
+    // deno-lint-ignore no-explicit-any
+    const toolDefs: any[] = [
       ...allowedRead.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
       ...allowedWrite.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
     ];
+    // Cache du bloc d'outils (gros préfixe stable) → tours suivants plus rapides/moins chers.
+    if (toolDefs.length) toolDefs[toolDefs.length - 1].cache_control = { type: "ephemeral" };
 
     const system = buildSystemPrompt(role);
 
@@ -1046,8 +1417,15 @@ serve(async (req) => {
                     const prep = await writeTool.prepare(admin, tu.input ?? {});
                     if (!prep.ok) { result = { error: prep.error }; }
                     else {
+                      // Outils acceptant une preuve : on rattache les captures du message à l'action.
+                      const argsToStore = writeTool.acceptsProof && acceptedAttachments.length
+                        ? { ...prep.args, proofAttachments: acceptedAttachments }
+                        : prep.args;
+                      if (writeTool.acceptsProof && acceptedAttachments.length) {
+                        prep.summary.lines.push({ label: "Preuve", value: `${acceptedAttachments.length} pièce(s) jointe(s) ✅` });
+                      }
                       const { data: pa } = await admin.from("assistant_pending_actions").insert({
-                        conversation_id: convId, admin_user_id: user.id, tool: writeTool.name, args: prep.args, summary: prep.summary, status: "pending",
+                        conversation_id: convId, admin_user_id: user.id, tool: writeTool.name, args: argsToStore, summary: prep.summary, status: "pending",
                       }).select("id").single();
                       const proposal = { id: pa?.id, tool: writeTool.name, summary: prep.summary };
                       proposals.push(proposal);
