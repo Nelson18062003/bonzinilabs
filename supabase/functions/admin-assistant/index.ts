@@ -73,6 +73,39 @@ function periodStartISO(period?: string): string {
   return d.toISOString();
 }
 
+/**
+ * Résout une plage de dates flexible à partir de :
+ *  - from_date / to_date explicites (ISO ou YYYY-MM-DD), OU
+ *  - year + month (1-12) → le mois entier, OU
+ *  - period nommée (today/week/month/year/all).
+ * Renvoie { from, to } en ISO. Défaut : 30 derniers jours.
+ */
+function resolveRange(a: { from_date?: string; to_date?: string; year?: number; month?: number; period?: string }): { from: string; to: string; label: string } {
+  // Mois précis (ex. avril 2026 → year=2026, month=4)
+  if (a.year && a.month) {
+    const y = Number(a.year), m = Number(a.month);
+    const from = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+    const to = new Date(Date.UTC(y, m, 1, 0, 0, 0)); // début du mois suivant
+    return { from: from.toISOString(), to: to.toISOString(), label: `${String(m).padStart(2, "0")}/${y}` };
+  }
+  // Dates explicites
+  if (a.from_date || a.to_date) {
+    const from = a.from_date ? new Date(a.from_date) : new Date("2020-01-01");
+    const to = a.to_date ? new Date(a.to_date) : new Date();
+    return { from: from.toISOString(), to: to.toISOString(), label: `${a.from_date ?? "…"} → ${a.to_date ?? "auj."}` };
+  }
+  // Période nommée
+  const to = new Date();
+  const from = new Date();
+  const p = a.period ?? "month";
+  if (p === "today") from.setHours(0, 0, 0, 0);
+  else if (p === "week") from.setDate(from.getDate() - 7);
+  else if (p === "year") from.setFullYear(from.getFullYear() - 1);
+  else if (p === "all") from.setFullYear(from.getFullYear() - 20);
+  else from.setDate(from.getDate() - 30);
+  return { from: from.toISOString(), to: to.toISOString(), label: p };
+}
+
 // deno-lint-ignore no-explicit-any
 type AnyClient = any;
 
@@ -215,17 +248,20 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "list_deposits",
     permission: "canViewDeposits",
-    description: "Lister les derniers dépôts. Filtres optionnels: status (created, awaiting_proof, proof_submitted, admin_review, validated, rejected, cancelled), client_user_id.",
-    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, limit: { type: "number" } } },
-    execute: async (admin, { status, client_user_id, limit }) => {
+    description: "Lister les dépôts, filtrables par DATES. Filtres optionnels: status, client_user_id, et une période : from_date+to_date (YYYY-MM-DD) OU year+month (ex. avril 2026 = year 2026, month 4) OU period (today/week/month/year/all).",
+    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
       let q = admin.from("deposits")
         .select("reference, amount_xaf, confirmed_amount_xaf, method, status, bank_name, agency_name, created_at, user_id")
-        .order("created_at", { ascending: false }).limit(clamp(limit, 10, 25));
-      if (status) q = q.eq("status", status);
-      if (client_user_id) q = q.eq("user_id", client_user_id);
+        .order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+      if (a.status) q = q.eq("status", a.status);
+      if (a.client_user_id) q = q.eq("user_id", a.client_user_id);
+      let label: string | undefined;
+      if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { count: data?.length ?? 0, deposits: data ?? [] };
+      return { period: label, count: data?.length ?? 0, deposits: data ?? [] };
     },
   },
   {
@@ -253,17 +289,20 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "list_payments",
     permission: "canViewPayments",
-    description: "Lister les derniers paiements fournisseurs. Filtres optionnels: status (created, waiting_beneficiary_info, ready_for_payment, processing, completed, rejected, cash_pending, cash_scanned), client_user_id.",
-    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, limit: { type: "number" } } },
-    execute: async (admin, { status, client_user_id, limit }) => {
+    description: "Lister les paiements fournisseurs, filtrables par DATES. Filtres optionnels: status (created, waiting_beneficiary_info, ready_for_payment, processing, completed, rejected, cash_pending, cash_scanned), client_user_id, et une période : from_date+to_date OU year+month OU period (today/week/month/year/all).",
+    input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
       let q = admin.from("payments")
         .select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
-        .order("created_at", { ascending: false }).limit(clamp(limit, 10, 25));
-      if (status) q = q.eq("status", status);
-      if (client_user_id) q = q.eq("user_id", client_user_id);
+        .order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+      if (a.status) q = q.eq("status", a.status);
+      if (a.client_user_id) q = q.eq("user_id", a.client_user_id);
+      let label: string | undefined;
+      if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { count: data?.length ?? 0, payments: data ?? [] };
+      return { period: label, count: data?.length ?? 0, payments: data ?? [] };
     },
   },
   {
@@ -549,38 +588,81 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "find_payments_by_client_name",
     permission: "canViewPayments",
-    description: "Trouver les paiements d'un client en donnant son NOM (ex. 'Jonas Boco'). Filtre optionnel: status.",
-    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
-    execute: async (admin, { name, status, limit }) => {
-      const clients = await findClientsByName(admin, name, 10);
+    description: "Trouver les paiements d'un client en donnant son NOM (ex. 'Jonas Boco'), avec filtre de DATES. Optionnels: status, et période : from_date+to_date OU year+month OU period.",
+    input_schema: { type: "object", properties: { name: { type: "string" }, status: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } }, required: ["name"] },
+    execute: async (admin, a) => {
+      const clients = await findClientsByName(admin, a.name, 10);
       if (clients.length === 0) return { found: false, message: "Aucun client à ce nom." };
       const ids = clients.map((c) => c.user_id);
       let q = admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
-        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(limit, 15, 40));
-      if (status) q = q.eq("status", status);
+        .in("user_id", ids).order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+      if (a.status) q = q.eq("status", a.status);
+      const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
+      let label: string | undefined;
+      if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, payments: data ?? [] };
+      return { period: label, matched_clients: clients.map((c) => ({ name: `${c.first_name} ${c.last_name}`, user_id: c.user_id })), count: data?.length ?? 0, payments: data ?? [] };
+    },
+  },
+  {
+    name: "top_clients_by_volume",
+    permission: "canViewClients",
+    description: "Classement des clients par VOLUME de transactions sur une période (le vrai 'top clients'). metric = 'payments' (volume payé), 'deposits' (volume déposé validé) ou 'both' (défaut). Période : from_date+to_date OU year+month (ex. avril 2026) OU period (week/month/year/all). Renvoie les N premiers clients avec leur volume.",
+    input_schema: { type: "object", properties: { metric: { type: "string", enum: ["payments", "deposits", "both"] }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      const r = resolveRange(a);
+      const metric = a.metric ?? "both";
+      const topN = clamp(a.limit, 5, 20);
+      const vol: Record<string, number> = {};
+      if (metric === "payments" || metric === "both") {
+        const { data } = await admin.from("payments").select("user_id, amount_xaf, status, created_at").gte("created_at", r.from).lt("created_at", r.to).limit(10000);
+        for (const p of data ?? []) { if (p.status !== "rejected" && p.status !== "cancelled_by_admin") vol[p.user_id] = (vol[p.user_id] ?? 0) + Number(p.amount_xaf ?? 0); }
+      }
+      if (metric === "deposits" || metric === "both") {
+        const { data } = await admin.from("deposits").select("user_id, amount_xaf, confirmed_amount_xaf, status, created_at").eq("status", "validated").gte("created_at", r.from).lt("created_at", r.to).limit(10000);
+        for (const d of data ?? []) vol[d.user_id] = (vol[d.user_id] ?? 0) + Number(d.confirmed_amount_xaf ?? d.amount_xaf ?? 0);
+      }
+      const sorted = Object.entries(vol).sort((x, y) => y[1] - x[1]).slice(0, topN);
+      if (sorted.length === 0) return { period: r.label, metric, count: 0, clients: [], note: "Aucune transaction sur cette période." };
+      const ids = sorted.map(([id]) => id);
+      const { data: clients } = await admin.from("clients").select("user_id, first_name, last_name, phone").in("user_id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of clients ?? []) byId[c.user_id] = c;
+      const rows = sorted.map(([id, v], i) => ({
+        rank: i + 1,
+        name: byId[id] ? `${byId[id].first_name} ${byId[id].last_name}` : "—",
+        phone: byId[id]?.phone ?? null,
+        volume_xaf: v, volume_formatted: fmtXAF(v), user_id: id,
+      }));
+      return { period: r.label, metric, count: rows.length, clients: rows };
+    },
+  },
+  {
+    name: "get_dashboard",
+    permission: "canViewDeposits",
+    description: "Tableau de bord global de la plateforme (vue d'ensemble) : nombre de clients, clients actifs, solde total des wallets, dépôts en attente, paiements en attente, taux actuel, volume du jour, volume de la semaine.",
+    input_schema: { type: "object", properties: {} },
+    execute: async (admin) => {
+      const { data, error } = await admin.rpc("get_dashboard_stats");
+      if (error) return { error: error.message };
+      return { dashboard: data };
     },
   },
   {
     name: "treasury_report",
     permission: "canViewTreasury",
     needsAuth: true,
-    description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. period = 'today' | 'week' | 'month' | 'all' (défaut 'month').",
-    input_schema: { type: "object", properties: { period: { type: "string", enum: ["today", "week", "month", "all"] } } },
-    execute: async (admin, { period }, userClient) => {
+    description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. Période flexible : from_date+to_date OU year+month (ex. avril 2026) OU period (today/week/month/year/all).",
+    input_schema: { type: "object", properties: { from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" } } },
+    execute: async (admin, a, userClient) => {
       const db = userClient ?? admin;
-      const to = new Date();
-      const from = new Date();
-      if (period === "today") from.setHours(0, 0, 0, 0);
-      else if (period === "week") from.setDate(from.getDate() - 7);
-      else if (period === "all") from.setFullYear(from.getFullYear() - 10);
-      else from.setDate(from.getDate() - 30);
-      const { data, error } = await db.rpc("get_treasury_dashboard", { p_from_date: from.toISOString(), p_to_date: to.toISOString() });
+      const r = resolveRange(a);
+      const { data, error } = await db.rpc("get_treasury_dashboard", { p_from_date: r.from, p_to_date: r.to });
       if (error) return { error: error.message };
       if (data?.success === false) return { error: data.error };
-      return { period: period ?? "month", report: data };
+      return { period: r.label, report: data };
     },
   },
   {
@@ -1145,7 +1227,8 @@ function buildSystemPrompt(role: string): string {
     `Tu es l'assistant "Directeur des Opérations" de BonziniLabs, une fintech qui permet aux importateurs africains de régler leurs fournisseurs chinois en XAF.`,
     `Tu assistes un administrateur (rôle: ${role}). Réponds en français, de façon concise, claire et professionnelle.`,
     ``,
-    `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, trésorerie, audit) via tes outils de lecture.`,
+    `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
+    `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
