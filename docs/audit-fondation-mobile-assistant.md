@@ -239,4 +239,113 @@ toute la plateforme**, pas seulement à l'Assistant.
 mobile (header au scroll, composeur au clavier iOS/Android, champ qui grandit, stabilité, safe-areas,
 patterns CSS/HTML observables) et en extraire le **contrat d'app-shell** à reproduire.
 
-*→ En attente de ton GO pour lancer la Phase 2.*
+*Phase 2 lancée ci-dessous.*
+
+---
+
+# Phase 2 — Benchmark : le « contrat du cadre fixe »
+
+## 2.0 Note de méthode (honnêteté)
+
+Depuis cet environnement d'exécution, je **ne peux pas** ouvrir ces apps sur un device réel et
+inspecter leur code en direct. Donc je ne prétends pas l'avoir fait. Méthode :
+1. **Technique universelle vérifiée** contre la documentation officielle + sources d'ingénierie
+   reconnues (citées) → 🟢.
+2. **Comportements connus** de chaque app décrits avec niveau de confiance (jamais présentés comme
+   une inspection que je n'ai pas faite) → 🟡 sauf mention.
+
+## 2.1 Mise au point : Vercel n'est PAS la bonne référence pour CE problème précis
+
+Tu cites Vercel. Important : **la web app de Vercel est un *tableau de bord*, pas un chat.** Elle est
+une excellente référence pour la **sensation générale de calme et de solidité** (un app-shell qui ne
+tremble pas), mais elle ne t'apprend presque **rien** sur le problème précis qui te bloque : *la
+barre d'écriture + le clavier*. Pour ça, les vrais maîtres sont les **messageries** :
+
+| Référence | Bon prof pour… | Pertinence clavier-composeur |
+|---|---|---|
+| **WhatsApp / iMessage** | le composeur (barre qui grandit, collée au clavier) | ⭐ étalon absolu |
+| **ChatGPT / Claude.ai (web mobile)** | chat web dans un navigateur (ton cas exact) | ⭐ très haute |
+| **Telegram Web** | composeur web + défilement | haute |
+| **Linear (mobile)** | l'app-shell (cadre fixe, barres ancrées) | moyenne (pas un chat) |
+| **Vercel (mobile)** | la *finition* générale, le calme visuel | faible (pas un chat) |
+
+→ On benchmarke donc d'abord les **messageries**, et on garde Vercel/Linear pour la finition
+d'app-shell généralisable.
+
+## 2.2 Le contrat universel — 4 règles que toutes les bonnes apps respectent
+
+> C'est la traduction de la métaphore « cadre fixe » en règles concrètes. Chaque règle = un
+> comportement observable + la technique vérifiée qui le produit.
+
+### R1 — Le document ne défile JAMAIS. Seule la zone des messages défile. 🟢
+La page entière est **verrouillée**. Ce qui bouge, c'est uniquement la liste des messages, dans sa
+propre fenêtre interne. C'est ce qui supprime le « tout glisse / header qui part / blanc en bas ».
+- **Technique vérifiée** : verrouillage du défilement de page (racine `overflow:hidden` /
+  `position:fixed`) + `overscroll-behavior` sur la zone de messages pour éviter que le défilement
+  « déborde » sur la page. iOS a historiquement rendu ça difficile — d'où l'importance de le faire
+  **une fois, correctement, au niveau du shell**.
+  Sources : [Locking body scroll iOS — jayfreestone](https://www.jayfreestone.com/writing/locking-body-scroll-ios/),
+  [overscroll-behavior — ishadeed](https://ishadeed.com/article/prevent-scroll-chaining-overscroll-behavior/),
+  [decade-long iOS Safari fix — Medium](https://stripearmy.medium.com/i-fixed-a-decade-long-ios-safari-problem-0d85f76caec0).
+- **Bonzini aujourd'hui** : ❌ rien ne verrouille le document (`html/body/#root` sans règle de
+  hauteur/overflow — cf. Phase 1, Couche 0).
+
+### R2 — Le cadre épouse la zone *visible* et SUIT le clavier. 🟢
+Quand le clavier monte, le cadre se rétrécit pour finir **pile au-dessus du clavier**. Quand la barre
+d'adresse du navigateur apparaît/disparaît, le cadre s'ajuste sans saut.
+- **Technique vérifiée** : `visualViewport` (hauteur visible + position) pour le **clavier**, +
+  unités d'écran dynamiques (`dvh`) pour la **barre d'adresse**. Nuance critique (vérifiée en
+  Phase 1) : `dvh` **seul** suffit pour la barre d'adresse mais **PAS** pour le clavier sur iOS
+  (iOS ne rétrécit pas la page à l'ouverture du clavier). Il faut donc **combiner** les deux.
+  Sources : [VisualViewport — MDN](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport),
+  [fix keyboard overlap — dev.to](https://dev.to/franciscomoretti/fix-mobile-keyboard-overlap-with-visualviewport-3a4a),
+  [fixed elements respect keyboard iOS — saricden](https://saricden.com/how-to-make-fixed-elements-respect-the-virtual-keyboard-on-ios).
+- **Bonzini aujourd'hui** : ⚠️ moitié fait. Le Support utilise un bon hook ; l'Assistant a une copie
+  inline qui ignore la position (`offsetTop`) et ne gère pas Android (cf. Phase 1, Couche 4).
+
+### R3 — Titre ancré en haut, composeur ancré en bas, messages au milieu — et le composeur GRANDIT. 🟢
+Structure invariante : 3 zones. Le titre ne défile pas. Le composeur ne défile pas. Le composeur
+**grandit** ligne par ligne quand le texte est long, jusqu'à une hauteur max, puis défile à
+l'intérieur. C'est le comportement WhatsApp/iMessage.
+- **Technique vérifiée** : layout en colonne (haut fixe / milieu extensible-défilant / bas fixe) +
+  recalcul de la hauteur du composeur à la frappe (le `MessageInput` du Support le fait déjà :
+  `MessageInput.tsx:332-336`).
+- **Bonzini aujourd'hui** : ❌ le composeur de l'Assistant **ne grandit pas** (pas de recalcul de
+  hauteur — cf. Phase 1, Couche 4).
+
+### R4 — UNE seule recette, partagée par tous les écrans. 🟢 (principe)
+Les bonnes apps n'ont pas huit façons de gérer le clavier. Elles ont **un** composant de cadre et
+**un** composant de composeur, réutilisés partout. La cohérence = la sensation de qualité.
+- **Bonzini aujourd'hui** : ❌ 8 implémentations (7 hooks + 1 inline), seuils divergents, modèle
+  mental faux gravé dedans (cf. Phase 1, Couches 2 & 3).
+
+## 2.3 Comportements par référence (connus, avec confiance)
+
+- **WhatsApp / iMessage** (apps natives, étalon du *ressenti* composeur) : composeur collé au clavier,
+  grandit jusqu'à ~5-6 lignes puis défile, titre figé, liste qui défile seule, zéro saut. Comportement
+  universellement observable → 🟢. *Natif ≠ web*, mais c'est la **cible de ressenti** à égaler.
+- **ChatGPT / Claude.ai (web mobile, navigateur)** : c'est **exactement ton cas** (chat web). Composeur
+  qui reste au-dessus du clavier, page qui ne « danse » pas, liste qui défile, composeur extensible.
+  Connu/cohérent avec les techniques R1-R3 → 🟡 (non inspecté ici).
+- **Linear (mobile)** : app-shell exemplaire — barres ancrées, contenu interne défilant, transitions
+  calmes. Bon prof pour le **shell généralisable**, pas pour le composeur → 🟡.
+- **Vercel (mobile)** : finition et calme visuel d'un tableau de bord. Référence de **polish**, pas de
+  chat → 🟡.
+
+## 2.4 Tableau écart : bonne app ↔ Assistant Bonzini (aujourd'hui)
+
+| Règle | Bonne app | Assistant Bonzini actuel | État |
+|---|---|---|---|
+| R1 Document verrouillé | la page ne bouge jamais | document libre de défiler sous un cadre à hauteur fixe | ❌ |
+| R2 Suit le clavier | cadre pile au-dessus du clavier (iOS+Android) | OK iOS partiel, **cassé Android** (clavier recouvre) | ⚠️ |
+| R3 Composeur ancré + grandit | grandit jusqu'à une limite | **ne grandit pas** | ❌ |
+| R4 Une seule recette | 1 cadre + 1 composeur réutilisés | **8 demi-recettes** | ❌ |
+
+## 2.5 Ce que la Phase 2 verrouille pour la suite
+
+La cible n'est pas mystérieuse ni propriétaire : c'est **un contrat public et standard** (R1→R4). La
+Phase 3 va le matérialiser en **un seul app-shell + un seul composeur**, conçus pour être **réutilisés
+par tout Bonzini** (pas seulement l'Assistant). On ne réinvente rien : on **applique proprement, une
+fois**, ce que la doc web et les meilleures apps font déjà.
+
+*→ En attente de ton GO pour lancer la Phase 3 (dessiner le cadre cible).*
