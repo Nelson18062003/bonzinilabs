@@ -769,6 +769,35 @@ const READ_TOOLS: ReadTool[] = [
       return { count: data?.length ?? 0, entries: data ?? [] };
     },
   },
+  {
+    name: "query_database",
+    permission: "canViewLogs",
+    description:
+      "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 200 lignes.\n" +
+      "Tables principales (colonnes utiles) :\n" +
+      "- clients(user_id, first_name, last_name, phone, company_name, country, city, kyc_verified, status, created_at)\n" +
+      "- wallets(user_id, balance_xaf, updated_at)\n" +
+      "- deposits(reference, user_id, amount_xaf, confirmed_amount_xaf, method, status, bank_name, agency_name, created_at, validated_at)\n" +
+      "- payments(reference, user_id, amount_xaf, amount_rmb, exchange_rate, method, status, beneficiary_name, created_at, processed_at)\n" +
+      "- ledger_entries(user_id, entry_type, amount_xaf, balance_after, description, created_at)\n" +
+      "- beneficiaries(client_id, alias, name, payment_method, phone, bank_name)\n" +
+      "- daily_rates(rate_cash, rate_alipay, rate_wechat, rate_virement, is_active, effective_at)\n" +
+      "- rate_adjustments(type, key, label, percentage)\n" +
+      "- treasury_counterparties(id, short_id, type, display_name, phone, wechat_id, is_active)\n" +
+      "- usdt_purchases(supplier_id, usdt_amount, xaf_amount, implicit_rate, occurred_at, voided_at)\n" +
+      "- usdt_sales(buyer_id, usdt_amount, cny_amount, implicit_rate, occurred_at, voided_at)\n" +
+      "- treasury_accounts(id, code, label, currency, kind), treasury_account_balances(label, code, currency, balance)\n" +
+      "- treasury_ledger_entries(account_id, currency, amount, entry_kind, occurred_at)\n" +
+      "- admin_audit_logs(admin_user_id, action_type, target_type, created_at)\n" +
+      "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
+    input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
+    execute: async (admin, { sql }) => {
+      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? "") });
+      if (error) return { error: error.message };
+      if (data?.success === false) return { error: data.error };
+      return { row_count: data?.row_count ?? 0, rows: data?.rows ?? [] };
+    },
+  },
 ];
 
 // ════════════════════════ OUTILS D'ÉCRITURE (proposition → confirmation) ════════════════════════
@@ -898,6 +927,45 @@ async function resolveClient(admin: AnyClient, rawId: unknown): Promise<{ ok: tr
   if (error) return { ok: false, error: error.message };
   if (!data) return { ok: false, error: `Aucun client avec ce user_id. Utilise search_clients pour trouver le bon client puis reprends avec son user_id réel.` };
   return { ok: true, uid: id, name: `${data.first_name} ${data.last_name}` };
+}
+
+/** Résout une contrepartie trésorerie (fournisseur USDT / acheteur CNY) par nom, short_id (F-00x) ou UUID. */
+async function resolveCounterparty(admin: AnyClient, raw: unknown, type: "usdt_supplier" | "cny_buyer"): Promise<{ ok: true; id: string; name: string } | { ok: false; error: string }> {
+  const q = String(raw ?? "").trim();
+  if (!q) return { ok: false, error: "Fournisseur/acheteur manquant." };
+  if (UUID_RE.test(q)) {
+    const { data } = await admin.from("treasury_counterparties").select("id, display_name, type").eq("id", q).maybeSingle();
+    if (data) return { ok: true, id: data.id, name: data.display_name };
+  }
+  const term = `%${q.replace(/[,():*%]/g, "")}%`;
+  const { data, error } = await admin.from("treasury_counterparties")
+    .select("id, display_name, short_id, type, is_active")
+    .eq("type", type).is("archived_at", null)
+    .or(`display_name.ilike.${term},short_id.ilike.${term},legal_name.ilike.${term}`)
+    .limit(8);
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: `Aucun ${type === "usdt_supplier" ? "fournisseur USDT" : "acheteur CNY"} trouvé pour "${q}". Utilise treasury_list_counterparties pour voir la liste.` };
+  if (data.length > 1) return { ok: false, error: `Plusieurs correspondances pour "${q}" : ${data.map((c: AnyClient) => `${c.short_id} ${c.display_name}`).join(", ")}. Précise lequel (short_id).` };
+  return { ok: true, id: data[0].id, name: `${data[0].short_id} ${data[0].display_name}` };
+}
+
+/** Résout un compte de trésorerie par nom, code ou UUID. currency optionnel pour filtrer. */
+async function resolveTreasuryAccount(admin: AnyClient, raw: unknown, currency: string | null): Promise<{ ok: true; id: string; label: string; currency: string | null } | { ok: false; error: string }> {
+  const q = String(raw ?? "").trim();
+  if (!q) return { ok: false, error: "Compte manquant (xaf_account/account). Utilise treasury_accounts_balances pour voir les comptes." };
+  // deno-lint-ignore no-explicit-any
+  let query: any = admin.from("treasury_accounts").select("id, code, label, currency, is_active").eq("is_active", true);
+  if (currency) query = query.eq("currency", currency);
+  if (UUID_RE.test(q)) query = query.eq("id", q);
+  else {
+    const term = `%${q.replace(/[,():*%]/g, "")}%`;
+    query = query.or(`label.ilike.${term},code.ilike.${term}`);
+  }
+  const { data, error } = await query.limit(8);
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: `Aucun compte ${currency ?? ""} trouvé pour "${q}". Utilise treasury_accounts_balances pour voir les comptes.` };
+  if (data.length > 1) return { ok: false, error: `Plusieurs comptes pour "${q}" : ${data.map((c: AnyClient) => `${c.code}/${c.label}`).join(", ")}. Précise le code.` };
+  return { ok: true, id: data[0].id, label: `${data[0].label} (${data[0].code})`, currency: data[0].currency };
 }
 
 
@@ -1254,6 +1322,141 @@ const WRITE_TOOLS: WriteTool[] = [
     },
   },
   {
+    name: "record_usdt_purchase",
+    permission: "canViewTreasury",
+    description: "Enregistrer un ACHAT d'USDT auprès d'un fournisseur (trésorerie). Débite le(s) compte(s) XAF et crédite le pool USDT. Fournir supplier (nom ou short_id F-00x), usdt_amount, et soit xaf_amount + xaf_account (nom/code du compte qui a payé), soit account_splits pour répartir sur plusieurs comptes. Optionnels: occurred_at, external_ref, notes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        supplier: { type: "string", description: "Nom ou short_id (F-00x) du fournisseur USDT" },
+        usdt_amount: { type: "number" },
+        xaf_amount: { type: "number", description: "Montant XAF payé (si un seul compte)" },
+        xaf_account: { type: "string", description: "Nom ou code du compte XAF qui a payé" },
+        external_ref: { type: "string" }, notes: { type: "string" },
+      },
+      required: ["supplier", "usdt_amount"],
+    },
+    prepare: async (admin, a) => {
+      const sup = await resolveCounterparty(admin, a.supplier, "usdt_supplier");
+      if (!sup.ok) return { ok: false, error: sup.error };
+      const usdt = Number(a.usdt_amount);
+      if (!(usdt > 0)) return { ok: false, error: "Quantité USDT invalide." };
+      const xaf = Number(a.xaf_amount);
+      if (!(xaf > 0)) return { ok: false, error: "Montant XAF payé manquant ou invalide (xaf_amount)." };
+      const acc = await resolveTreasuryAccount(admin, a.xaf_account, "XAF");
+      if (!acc.ok) return { ok: false, error: acc.error };
+      const splits = [{ account_id: acc.id, xaf_amount: Math.round(xaf) }];
+      const implied = (xaf / usdt).toFixed(2);
+      const lines: Line[] = [
+        { label: "Fournisseur", value: sup.name },
+        { label: "USDT acheté", value: `${usdt} USDT` },
+        { label: "Payé", value: `${fmtXAF(xaf)} (${acc.label})` },
+        { label: "Taux implicite", value: `${implied} XAF/USDT` },
+      ];
+      if (a.notes) lines.push({ label: "Notes", value: String(a.notes) });
+      return { ok: true, args: { p_supplier_id: sup.id, p_usdt_amount: usdt, p_account_splits: splits, p_external_ref: a.external_ref || null, p_notes: a.notes || null }, summary: { title: "Enregistrer un achat USDT", subtitle: sup.name, amount: `${usdt} USDT`, lines, confirmLabel: "Confirmer l'achat", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("record_usdt_purchase", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "record_usdt_sale",
+    permission: "canViewTreasury",
+    description: "Enregistrer une VENTE d'USDT à un acheteur CNY (trésorerie). Débite le pool USDT et crédite éventuellement un compte CNY. Fournir buyer (nom ou short_id), usdt_amount, cny_amount. Optionnels: cny_account (nom/code), external_ref, notes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        buyer: { type: "string" }, usdt_amount: { type: "number" }, cny_amount: { type: "number" },
+        cny_account: { type: "string" }, external_ref: { type: "string" }, notes: { type: "string" },
+      },
+      required: ["buyer", "usdt_amount", "cny_amount"],
+    },
+    prepare: async (admin, a) => {
+      const buyer = await resolveCounterparty(admin, a.buyer, "cny_buyer");
+      if (!buyer.ok) return { ok: false, error: buyer.error };
+      const usdt = Number(a.usdt_amount), cny = Number(a.cny_amount);
+      if (!(usdt > 0)) return { ok: false, error: "Quantité USDT invalide." };
+      if (!(cny > 0)) return { ok: false, error: "Montant CNY invalide." };
+      let cnyAccountId: string | null = null, cnyAccLabel = "non précisé";
+      if (a.cny_account) {
+        const acc = await resolveTreasuryAccount(admin, a.cny_account, "CNY");
+        if (!acc.ok) return { ok: false, error: acc.error };
+        cnyAccountId = acc.id; cnyAccLabel = acc.label;
+      }
+      const lines: Line[] = [
+        { label: "Acheteur", value: buyer.name },
+        { label: "USDT vendu", value: `${usdt} USDT` },
+        { label: "Reçu", value: `¥ ${cny.toLocaleString("fr-FR")} (${cnyAccLabel})` },
+        { label: "Taux implicite", value: `${(cny / usdt).toFixed(3)} CNY/USDT` },
+      ];
+      return { ok: true, args: { p_buyer_id: buyer.id, p_usdt_amount: usdt, p_cny_amount: cny, p_cny_account_id: cnyAccountId, p_external_ref: a.external_ref || null, p_notes: a.notes || null }, summary: { title: "Enregistrer une vente USDT", subtitle: buyer.name, amount: `${usdt} USDT`, lines, confirmLabel: "Confirmer la vente", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("record_usdt_sale", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "create_treasury_counterparty",
+    permission: "canViewTreasury",
+    description: "Créer un fournisseur USDT (type 'usdt_supplier') ou un acheteur CNY (type 'cny_buyer') dans la trésorerie. Fournir type et display_name. Optionnels: legal_name, phone, wechat_id, notes.",
+    input_schema: {
+      type: "object",
+      properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, display_name: { type: "string" }, legal_name: { type: "string" }, phone: { type: "string" }, wechat_id: { type: "string" }, notes: { type: "string" } },
+      required: ["type", "display_name"],
+    },
+    prepare: (_admin, a) => {
+      if (a.type !== "usdt_supplier" && a.type !== "cny_buyer") return Promise.resolve({ ok: false, error: "type doit être 'usdt_supplier' ou 'cny_buyer'." });
+      if (!a.display_name) return Promise.resolve({ ok: false, error: "Nom (display_name) requis." });
+      const lines: Line[] = [
+        { label: "Type", value: a.type === "usdt_supplier" ? "Fournisseur USDT" : "Acheteur CNY" },
+        { label: "Nom", value: String(a.display_name) },
+      ];
+      if (a.phone) lines.push({ label: "Téléphone", value: String(a.phone) });
+      if (a.wechat_id) lines.push({ label: "WeChat", value: String(a.wechat_id) });
+      return Promise.resolve({ ok: true, args: { p_type: a.type, p_display_name: String(a.display_name).trim(), p_legal_name: a.legal_name || null, p_phone: a.phone || null, p_wechat_id: a.wechat_id || null, p_notes: a.notes || null }, summary: { title: "Créer une contrepartie", subtitle: a.type === "usdt_supplier" ? "Fournisseur USDT" : "Acheteur CNY", lines, confirmLabel: "Créer" } });
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("create_treasury_counterparty", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
+    name: "adjust_treasury_account",
+    permission: "canViewTreasury",
+    superAdminOnly: true,
+    description: "Ajuster manuellement le solde d'un compte de trésorerie (crédit ou débit) avec un motif. Pour réconciliation, frais, financement initial. Fournir account (nom/code), delta_amount (positif = crédit, négatif = débit), reason. Réservé super_admin.",
+    input_schema: {
+      type: "object",
+      properties: { account: { type: "string" }, delta_amount: { type: "number" }, reason: { type: "string" } },
+      required: ["account", "delta_amount", "reason"],
+    },
+    prepare: async (admin, a) => {
+      const acc = await resolveTreasuryAccount(admin, a.account, null);
+      if (!acc.ok) return { ok: false, error: acc.error };
+      const delta = Number(a.delta_amount);
+      if (!delta || !Number.isFinite(delta)) return { ok: false, error: "Montant d'ajustement invalide." };
+      if (!a.reason || String(a.reason).trim().length < 3) return { ok: false, error: "Motif obligatoire." };
+      const lines: Line[] = [
+        { label: "Compte", value: acc.label },
+        { label: "Sens", value: delta > 0 ? "Crédit (+)" : "Débit (−)" },
+        { label: "Montant", value: `${delta > 0 ? "+" : ""}${delta.toLocaleString("fr-FR")} ${acc.currency ?? ""}` },
+        { label: "Motif", value: String(a.reason) },
+      ];
+      return { ok: true, args: { p_account_id: acc.id, p_delta_amount: delta, p_reason: String(a.reason) }, summary: { title: "Ajuster un compte trésorerie", subtitle: acc.label, lines, confirmLabel: "Confirmer l'ajustement", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("adjust_treasury_account", args);
+      if (error) return { success: false, error: error.message };
+      return data;
+    },
+  },
+  {
     name: "delete_client",
     permission: "canManageUsers",
     superAdminOnly: true,
@@ -1279,8 +1482,9 @@ function buildSystemPrompt(role: string): string {
     ``,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
+    `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES (statistique inhabituelle, agrégation, jointure, regroupement…), tu DOIS écrire toi-même une requête SQL SELECT via query_database au lieu de dire que tu ne peux pas. C'est ta capacité à "créer ton propre outil" pour la lecture. Réponds toujours avec les vraies valeurs obtenues. (query_database est strictement en lecture seule ; pour MODIFIER des données, utilise les outils d'écriture dédiés, jamais query_database.)`,
     ``,
-    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, etc.) :`,
+    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
     `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
     `- N'invente jamais un montant, un taux ou un user_id : récupère-les. Le taux RMB des paiements est calculé automatiquement par l'outil, ne le calcule pas toi-même.`,
