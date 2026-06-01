@@ -144,6 +144,14 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
+// Garde-fou : empêche une requête réseau de rester bloquée indéfiniment.
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Délai dépassé (${label}). Vérifie ta connexion internet.`)), ms)),
+  ]);
+}
+
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
@@ -152,12 +160,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Fetch user role and profile after login
   const fetchAdminData = async (user: User) => {
     try {
-      // Check if user has an admin role
-      const { data: roleData, error: roleError } = await supabaseAdmin
-        .from('user_roles')
-        .select('role, first_name, last_name, is_disabled')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Check if user has an admin role (avec timeout pour ne jamais rester bloqué)
+      const { data: roleData, error: roleError } = await withTimeout(
+        supabaseAdmin
+          .from('user_roles')
+          .select('role, first_name, last_name, is_disabled')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        10000,
+        'chargement du rôle',
+      );
 
       if (roleError) {
         console.error('Error fetching role:', roleError);
@@ -235,10 +247,14 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password,
-      });
+      const { data, error } = await withTimeout(
+        supabaseAdmin.auth.signInWithPassword({
+          email: email.toLowerCase().trim(),
+          password,
+        }),
+        15000,
+        'connexion',
+      );
 
       if (error) {
         return { success: false, error: error.message };
@@ -265,7 +281,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'An error occurred' };
+      // Remonter la vraie cause au lieu d'un message générique muet.
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: `Erreur de connexion : ${msg}` };
     }
   };
 
