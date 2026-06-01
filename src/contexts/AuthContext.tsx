@@ -190,6 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = async (newPassword: string) => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (!error) {
+      // Email de sécurité « mot de passe modifié » (best-effort, ne bloque rien).
+      void supabase.rpc('enqueue_password_changed_email');
+    }
     return { error: error as Error | null };
   };
 

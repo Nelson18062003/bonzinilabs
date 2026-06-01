@@ -277,6 +277,54 @@ function render(template: string, payload: Record<string, unknown>): Rendered {
         text: `Votre paiement n'a pas abouti et le montant a été recrédité sur votre solde.${m.reason ? ` Motif : ${esc(m.reason)}.` : ""} ${APP}`,
       };
     }
+    case "deposit_created": {
+      return {
+        subject: `Demande de dépôt reçue${refSuffix}`,
+        html: layout({
+          preview: `Nous avons bien reçu votre demande de dépôt${m.amount_xaf ? ` de ${formatXAF(m.amount_xaf)}` : ""}.`,
+          accent: AMBER, emoji: "📥",
+          heading: "Demande de dépôt reçue", subhead: "Nous vérifions votre dépôt.",
+          bodyHtml:
+            `<p style="margin:0 0 4px;">Nous avons bien reçu votre demande de dépôt. Notre équipe la vérifie ; vous serez notifié dès qu'il sera <b>crédité sur votre solde</b>.</p>` +
+            detailsCard([m.amount_xaf ? ["Montant", formatXAF(m.amount_xaf)] : null, refRow]) +
+            button("Suivre mon dépôt", APP, AMBER),
+        }),
+        text: `Nous avons bien reçu votre demande de dépôt${m.amount_xaf ? ` de ${formatXAF(m.amount_xaf)}` : ""}. Vous serez notifié dès qu'il sera crédité. ${APP}`,
+      };
+    }
+    case "payment_processing": {
+      return {
+        subject: `Paiement en cours${refSuffix}`,
+        html: layout({
+          preview: `Votre paiement${ref ? ` ${ref}` : ""} est en cours de traitement.`,
+          accent: VIOLET, emoji: "⏳",
+          heading: "Paiement en cours", subhead: "Votre règlement est en cours de traitement.",
+          bodyHtml:
+            `<p style="margin:0 0 4px;">Bonne nouvelle : votre paiement est passé en traitement. Vous recevrez une confirmation dès que votre fournisseur aura été réglé.</p>` +
+            detailsCard([m.amount_rmb ? ["Montant", formatRMB(m.amount_rmb)] : null, refRow]) +
+            button("Suivre mon paiement", APP, VIOLET),
+        }),
+        text: `Votre paiement est en cours de traitement. Vous serez notifié dès qu'il sera effectué. ${APP}`,
+      };
+    }
+    case "password_changed": {
+      const when = esc((payload.changed_at as string) ?? m.changed_at ?? "");
+      return {
+        subject: "Votre mot de passe Bonzini a été modifié",
+        html: layout({
+          preview: "Le mot de passe de votre compte Bonzini vient d'être modifié.",
+          accent: SLATE, emoji: "🔑",
+          heading: "Mot de passe modifié", subhead: "La modification a bien été prise en compte.",
+          bodyHtml:
+            `<p style="margin:0 0 4px;">Le mot de passe de votre compte Bonzini vient d'être modifié.</p>` +
+            (when ? detailsCard([["Date", when]]) : "") +
+            `<p style="margin:14px 0 0;font-size:14px;">Si vous êtes à l'origine de ce changement, aucune action n'est nécessaire.</p>` +
+            `<p style="margin:8px 0 14px;font-size:13.5px;color:${MUTED};"><b>Ce n'était pas vous ?</b> Contactez-nous immédiatement pour sécuriser votre compte.</p>` +
+            button("Ouvrir l'application", APP, VIOLET),
+        }),
+        text: `Le mot de passe de votre compte Bonzini vient d'être modifié${when ? ` (${when})` : ""}. Si ce n'était pas vous, contactez-nous immédiatement.`,
+      };
+    }
     case "support_message": {
       const snippet = esc((payload.message_preview as string) ?? m.message_preview ?? "");
       return {

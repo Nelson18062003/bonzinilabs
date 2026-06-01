@@ -256,6 +256,40 @@ function render(template, p = {}) {
            <p style="margin:6px 0 0;font-size:13.5px;color:${MUTED};">Ce code est valable <b>1 heure</b>. Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.</p>`,
       });
     }
+    case "deposit_created":
+      return layout({
+        preview: `Nous avons bien reçu votre demande de dépôt${m.amount_xaf ? ` de ${formatXAF(m.amount_xaf)}` : ""}.`,
+        accent: AMBER, emoji: "📥",
+        heading: "Demande de dépôt reçue", subhead: "Nous vérifions votre dépôt.",
+        bodyHtml:
+          `<p style="margin:0 0 4px;">Nous avons bien reçu votre demande de dépôt. Notre équipe la vérifie ; vous serez notifié dès qu'il sera <b>crédité sur votre solde</b>.</p>` +
+          detailsCard([m.amount_xaf ? ["Montant", formatXAF(m.amount_xaf)] : null, refRow]) +
+          button("Suivre mon dépôt", APP, AMBER),
+      });
+    case "payment_processing":
+      return layout({
+        preview: `Votre paiement${ref ? ` ${ref}` : ""} est en cours de traitement.`,
+        accent: VIOLET, emoji: "⏳",
+        heading: "Paiement en cours", subhead: "Votre règlement est en cours de traitement.",
+        bodyHtml:
+          `<p style="margin:0 0 4px;">Bonne nouvelle : votre paiement est passé en traitement. Vous recevrez une confirmation dès que votre fournisseur aura été réglé.</p>` +
+          detailsCard([m.amount_rmb ? ["Montant", formatRMB(m.amount_rmb)] : null, refRow]) +
+          button("Suivre mon paiement", APP, VIOLET),
+      });
+    case "password_changed": {
+      const when = esc(p.changed_at ?? m.changed_at ?? "");
+      return layout({
+        preview: "Le mot de passe de votre compte Bonzini vient d'être modifié.",
+        accent: SLATE, emoji: "🔑",
+        heading: "Mot de passe modifié", subhead: "La modification a bien été prise en compte.",
+        bodyHtml:
+          `<p style="margin:0 0 4px;">Le mot de passe de votre compte Bonzini vient d'être modifié.</p>` +
+          (when ? detailsCard([["Date", when]]) : "") +
+          `<p style="margin:14px 0 0;font-size:14px;">Si vous êtes à l'origine de ce changement, aucune action n'est nécessaire.</p>` +
+          `<p style="margin:8px 0 14px;font-size:13.5px;color:${MUTED};"><b>Ce n'était pas vous ?</b> Contactez-nous immédiatement pour sécuriser votre compte.</p>` +
+          button("Ouvrir l'application", APP, VIOLET),
+      });
+    }
     case "support_message": {
       const snippet = esc(p.message_preview ?? "");
       return layout({
@@ -287,12 +321,16 @@ const samples = [
   ["reset_password", {}],
   ["confirm_signup", {}],
   ["support_message", { message_preview: "Bonjour, nous avons bien reçu votre dépôt. Pourriez-vous nous confirmer le nom exact du bénéficiaire afin de finaliser votre paiement ? Merci." }],
+  ["deposit_created", { metadata: { reference: "DEP-2026-0420", amount_xaf: 3000000 } }],
+  ["payment_processing", { metadata: { reference: "PAY-2026-1190", amount_rmb: 18500 } }],
+  ["password_changed", { changed_at: "2026-06-01 14:32 UTC" }],
 ];
 const labels = {
   welcome: "① Bienvenue", deposit_validated: "② Dépôt crédité", payment_created: "③ Demande de paiement reçue",
   payment_completed: "④ Paiement effectué", payment_rejected: "⑤ Paiement non abouti (recrédité)",
   deposit_rejected: "⑥ Dépôt non validé", reset_password: "⑦ Mot de passe oublié (sécurité)",
   confirm_signup: "⑧ Vérification email — code OTP (inscription)", support_message: "⑨ Nouveau message support",
+  deposit_created: "⑩ Accusé de dépôt", payment_processing: "⑪ Paiement en cours", password_changed: "⑫ Mot de passe modifié",
 };
 
 mkdirSync(OUT, { recursive: true });
