@@ -798,6 +798,70 @@ const READ_TOOLS: ReadTool[] = [
       return { row_count: data?.row_count ?? 0, rows: data?.rows ?? [] };
     },
   },
+  {
+    name: "list_usdt_purchases",
+    permission: "canViewTreasury",
+    description: "Lister le DÉTAIL des achats USDT (chaque livraison : date, USDT, XAF payé, taux implicite). Optionnel: supplier (nom ou short_id F-00x pour un fournisseur précis, ex. Lizette), limit, include_voided.",
+    input_schema: { type: "object", properties: { supplier: { type: "string" }, limit: { type: "number" }, include_voided: { type: "boolean" } } },
+    execute: async (admin, { supplier, limit, include_voided }) => {
+      let supplierId: string | null = null, supplierName: string | null = null;
+      if (supplier) {
+        const r = await resolveCounterparty(admin, supplier, "usdt_supplier");
+        if (!r.ok) return { error: r.error };
+        supplierId = r.id; supplierName = r.name;
+      }
+      let q = admin.from("usdt_purchases")
+        .select("supplier_id, usdt_amount, xaf_amount, implicit_rate, channel, external_ref, occurred_at, voided_at")
+        .order("occurred_at", { ascending: false }).limit(clamp(limit, 10, 50));
+      if (supplierId) q = q.eq("supplier_id", supplierId);
+      if (!include_voided) q = q.is("voided_at", null);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      const ids = [...new Set((data ?? []).map((p: AnyClient) => p.supplier_id))];
+      const { data: cps } = await admin.from("treasury_counterparties").select("id, short_id, display_name").in("id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of cps ?? []) byId[c.id] = c;
+      const rows = (data ?? []).map((p: AnyClient) => ({
+        fournisseur: byId[p.supplier_id] ? `${byId[p.supplier_id].short_id} ${byId[p.supplier_id].display_name}` : p.supplier_id,
+        usdt: p.usdt_amount, xaf: p.xaf_amount, xaf_formatted: fmtXAF(p.xaf_amount),
+        taux_implicite: p.implicit_rate, canal: p.channel, ref: p.external_ref, date: p.occurred_at, annule: p.voided_at ? true : undefined,
+      }));
+      return { supplier: supplierName, count: rows.length, purchases: rows };
+    },
+  },
+  {
+    name: "list_usdt_sales",
+    permission: "canViewTreasury",
+    description: "Lister le DÉTAIL des ventes USDT (chaque vente : date, USDT, CNY reçu, taux implicite, coût de revient). Optionnel: buyer (nom ou short_id de l'acheteur CNY), limit, include_voided.",
+    input_schema: { type: "object", properties: { buyer: { type: "string" }, limit: { type: "number" }, include_voided: { type: "boolean" } } },
+    execute: async (admin, { buyer, limit, include_voided }) => {
+      let buyerId: string | null = null, buyerName: string | null = null;
+      if (buyer) {
+        const r = await resolveCounterparty(admin, buyer, "cny_buyer");
+        if (!r.ok) return { error: r.error };
+        buyerId = r.id; buyerName = r.name;
+      }
+      let q = admin.from("usdt_sales")
+        .select("buyer_id, usdt_amount, cny_amount, implicit_rate, wac_at_sale, external_ref, occurred_at, voided_at")
+        .order("occurred_at", { ascending: false }).limit(clamp(limit, 10, 50));
+      if (buyerId) q = q.eq("buyer_id", buyerId);
+      if (!include_voided) q = q.is("voided_at", null);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      const ids = [...new Set((data ?? []).map((p: AnyClient) => p.buyer_id))];
+      const { data: cps } = await admin.from("treasury_counterparties").select("id, short_id, display_name").in("id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of cps ?? []) byId[c.id] = c;
+      const rows = (data ?? []).map((p: AnyClient) => ({
+        acheteur: byId[p.buyer_id] ? `${byId[p.buyer_id].short_id} ${byId[p.buyer_id].display_name}` : p.buyer_id,
+        usdt: p.usdt_amount, cny: p.cny_amount, taux_implicite: p.implicit_rate,
+        cout_revient_usdt: p.wac_at_sale, ref: p.external_ref, date: p.occurred_at, annule: p.voided_at ? true : undefined,
+      }));
+      return { buyer: buyerName, count: rows.length, sales: rows };
+    },
+  },
 ];
 
 // ════════════════════════ OUTILS D'ÉCRITURE (proposition → confirmation) ════════════════════════
@@ -1482,7 +1546,8 @@ function buildSystemPrompt(role: string): string {
     ``,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
-    `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES (statistique inhabituelle, agrégation, jointure, regroupement…), tu DOIS écrire toi-même une requête SQL SELECT via query_database au lieu de dire que tu ne peux pas. C'est ta capacité à "créer ton propre outil" pour la lecture. Réponds toujours avec les vraies valeurs obtenues. (query_database est strictement en lecture seule ; pour MODIFIER des données, utilise les outils d'écriture dédiés, jamais query_database.)`,
+    `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
+    `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
