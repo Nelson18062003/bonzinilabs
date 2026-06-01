@@ -122,13 +122,13 @@ ${preheader(o.preview)}
        style="width:600px;max-width:600px;background:#FFFFFF;border:1px solid ${LINE};border-radius:18px;overflow:hidden;">
 ${brandBar()}
 
-  <tr><td class="pad" align="center" style="padding:30px 36px 6px;">
+  <tr><td class="pad" align="center" style="padding:32px 36px 6px;">
     <table role="presentation" cellpadding="0" cellspacing="0" align="center"><tr>
-      <td width="46" height="46" align="center" valign="middle" style="background:#FFFFFF;border:1px solid ${LINE};border-radius:12px;">
-        <img src="${LOGO}" width="34" height="34" alt="Bonzini" style="display:block;border-radius:7px;">
+      <td align="center" style="background:#FFFFFF;border:1px solid ${LINE};border-radius:18px;padding:12px;">
+        <img src="${LOGO}" width="56" height="56" alt="Bonzini" style="display:block;border-radius:12px;">
       </td>
-      <td style="padding-left:11px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.3px;color:${INK};">Bonzini</td>
     </tr></table>
+    <div style="margin-top:12px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.3px;color:${INK};">Bonzini</div>
   </td></tr>
 
   <tr><td class="pad" align="center" style="padding:22px 36px 4px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
