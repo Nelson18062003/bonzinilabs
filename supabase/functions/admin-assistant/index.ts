@@ -400,6 +400,104 @@ const READ_TOOLS: ReadTool[] = [
       return { count: data?.length ?? 0, admins: data ?? [] };
     },
   },
+  {
+    name: "count_clients",
+    permission: "canViewClients",
+    description: "Compter le nombre total de clients. Optionnel: pays (filtre), kyc_verified (true/false).",
+    input_schema: { type: "object", properties: { country: { type: "string" }, kyc_verified: { type: "boolean" } } },
+    execute: async (admin, { country, kyc_verified }) => {
+      let q = admin.from("clients").select("id", { count: "exact", head: true });
+      if (country) q = q.ilike("country", `%${String(country).replace(/[,():*%]/g, "")}%`);
+      if (typeof kyc_verified === "boolean") q = q.eq("kyc_verified", kyc_verified);
+      const { count, error } = await q;
+      if (error) return { error: error.message };
+      return { total_clients: count ?? 0 };
+    },
+  },
+  {
+    name: "list_recent_clients",
+    permission: "canViewClients",
+    description: "Lister les clients les plus récemment créés (nouveaux clients).",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("clients")
+        .select("user_id, first_name, last_name, phone, country, created_at")
+        .order("created_at", { ascending: false }).limit(clamp(limit, 10, 30));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, clients: data ?? [] };
+    },
+  },
+  {
+    name: "top_clients_by_balance",
+    permission: "canViewClients",
+    description: "Lister les clients ayant les plus gros soldes de wallet (en XAF). Utile pour voir les principaux clients.",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data: wallets } = await admin.from("wallets").select("user_id, balance_xaf").order("balance_xaf", { ascending: false }).limit(clamp(limit, 10, 25));
+      const ids = (wallets ?? []).map((w: AnyClient) => w.user_id);
+      if (!ids.length) return { count: 0, clients: [] };
+      const { data: clients } = await admin.from("clients").select("user_id, first_name, last_name, phone").in("user_id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of clients ?? []) byId[c.user_id] = c;
+      const rows = (wallets ?? []).map((w: AnyClient) => ({
+        name: byId[w.user_id] ? `${byId[w.user_id].first_name} ${byId[w.user_id].last_name}` : "—",
+        phone: byId[w.user_id]?.phone ?? null,
+        balance_xaf: w.balance_xaf, balance_formatted: fmtXAF(w.balance_xaf), user_id: w.user_id,
+      }));
+      return { count: rows.length, clients: rows };
+    },
+  },
+  {
+    name: "search_deposit_by_amount",
+    permission: "canViewDeposits",
+    description: "Retrouver des dépôts par montant approximatif (à ±2%). Utile quand on connaît le montant mais pas la référence. Optionnel: status.",
+    input_schema: { type: "object", properties: { amount_xaf: { type: "number" }, status: { type: "string" }, limit: { type: "number" } }, required: ["amount_xaf"] },
+    execute: async (admin, { amount_xaf, status, limit }) => {
+      const amt = Number(amount_xaf);
+      if (!amt) return { error: "Montant invalide." };
+      const lo = Math.floor(amt * 0.98), hi = Math.ceil(amt * 1.02);
+      let q = admin.from("deposits").select("reference, amount_xaf, confirmed_amount_xaf, method, status, created_at, user_id")
+        .gte("amount_xaf", lo).lte("amount_xaf", hi).order("created_at", { ascending: false }).limit(clamp(limit, 10, 25));
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, deposits: data ?? [] };
+    },
+  },
+  {
+    name: "get_client_full_activity",
+    permission: "canViewClients",
+    description: "Vue 360° d'un client (par user_id) : solde + ses derniers dépôts + ses derniers paiements + ses bénéficiaires. Idéal pour faire le point sur un client.",
+    input_schema: { type: "object", properties: { client_user_id: { type: "string" }, limit: { type: "number" } }, required: ["client_user_id"] },
+    execute: async (admin, { client_user_id, limit }) => {
+      const n = clamp(limit, 5, 15);
+      const { data: client } = await admin.from("clients").select("first_name, last_name, phone, country, kyc_verified").eq("user_id", client_user_id).maybeSingle();
+      if (!client) return { found: false };
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", client_user_id).maybeSingle();
+      const { data: deposits } = await admin.from("deposits").select("reference, amount_xaf, method, status, created_at").eq("user_id", client_user_id).order("created_at", { ascending: false }).limit(n);
+      const { data: payments } = await admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, created_at").eq("user_id", client_user_id).order("created_at", { ascending: false }).limit(n);
+      const { data: beneficiaries } = await admin.from("beneficiaries").select("alias, name, payment_method").eq("client_id", client_user_id).limit(n);
+      return {
+        found: true, client,
+        wallet_balance_xaf: wallet?.balance_xaf ?? 0, wallet_balance_formatted: fmtXAF(wallet?.balance_xaf ?? 0),
+        deposits: deposits ?? [], payments: payments ?? [], beneficiaries: beneficiaries ?? [],
+      };
+    },
+  },
+  {
+    name: "list_recent_proofs",
+    permission: "canViewDeposits",
+    description: "Lister les dernières preuves de dépôt ajoutées (qui les a ajoutées, sur quel dépôt, quand).",
+    input_schema: { type: "object", properties: { limit: { type: "number" } } },
+    execute: async (admin, { limit }) => {
+      const { data, error } = await admin.from("deposit_proofs")
+        .select("deposit_id, file_name, file_type, uploaded_by_type, uploaded_at")
+        .is("deleted_at", null).order("uploaded_at", { ascending: false }).limit(clamp(limit, 10, 25));
+      if (error) return { error: error.message };
+      return { count: data?.length ?? 0, proofs: data ?? [] };
+    },
+  },
 ];
 
 // ════════════════════════ OUTILS D'ÉCRITURE (proposition → confirmation) ════════════════════════
@@ -408,11 +506,18 @@ interface Proposal { title: string; subtitle?: string; amount?: string; lines: L
 interface PrepareOk { ok: true; summary: Proposal; args: Record<string, unknown>; }
 interface PrepareErr { ok: false; error: string; }
 
+interface ExecCtx {
+  admin: AnyClient;          // client service-role (pour copier les pièces jointes)
+  adminUserId: string;       // l'admin qui confirme (uploaded_by)
+}
+
 interface WriteTool {
   name: string;
   permission: PermKey;
   /** Défense en profondeur : action réservée au super_admin (en plus de la garde DB). */
   superAdminOnly?: boolean;
+  /** Si vrai, les pièces jointes du message (captures/PDF) sont attachées comme preuve. */
+  acceptsProof?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
@@ -421,7 +526,75 @@ interface WriteTool {
   prepare: (admin: AnyClient, args: any) => Promise<PrepareOk | PrepareErr>;
   /** Exécute réellement, APRÈS confirmation. Utilise le client AUTHENTIFIÉ de l'admin (is_admin(auth.uid())). */
   // deno-lint-ignore no-explicit-any
-  execute: (userClient: AnyClient, args: any) => Promise<Record<string, unknown>>;
+  execute: (userClient: AnyClient, args: any, ctx: ExecCtx) => Promise<Record<string, unknown>>;
+}
+
+/**
+ * Attache les pièces jointes du message (captures/PDF) comme PREUVES d'un dépôt :
+ * copie depuis le bucket assistant-attachments vers deposit-proofs et insère la
+ * ligne deposit_proofs (uploaded_by_type='admin'). Best-effort : n'échoue pas le dépôt.
+ */
+async function attachDepositProofs(
+  svc: AnyClient,
+  depositId: string,
+  adminUserId: string,
+  attachments: Array<{ path: string; mime: string; name: string }>,
+): Promise<number> {
+  let attached = 0;
+  for (const att of attachments) {
+    try {
+      const { data: blob, error: dlErr } = await svc.storage.from(ATTACHMENT_BUCKET).download(att.path);
+      if (dlErr || !blob) continue;
+      const ext = (att.name.split(".").pop() || (att.mime === "application/pdf" ? "pdf" : "jpg")).toLowerCase();
+      const filePath = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await svc.storage.from("deposit-proofs").upload(filePath, blob, { contentType: att.mime, upsert: false });
+      if (upErr) continue;
+      const { error: insErr } = await svc.from("deposit_proofs").insert({
+        deposit_id: depositId,
+        file_url: `deposit-proofs/${filePath}`,
+        file_name: att.name,
+        file_type: att.mime,
+        uploaded_by: adminUserId,
+        uploaded_by_type: "admin",
+        is_visible_to_client: true,
+      });
+      if (!insErr) attached++;
+    } catch (_) { /* preuve best-effort */ }
+  }
+  return attached;
+}
+
+/**
+ * Attache les pièces jointes du message comme PREUVES d'un paiement (QR code,
+ * justificatif) : copie vers payment-proofs et insère dans payment_proofs.
+ */
+async function attachPaymentProofs(
+  svc: AnyClient,
+  paymentId: string,
+  adminUserId: string,
+  attachments: Array<{ path: string; mime: string; name: string }>,
+): Promise<number> {
+  let attached = 0;
+  for (const att of attachments) {
+    try {
+      const { data: blob, error: dlErr } = await svc.storage.from(ATTACHMENT_BUCKET).download(att.path);
+      if (dlErr || !blob) continue;
+      const ext = (att.name.split(".").pop() || (att.mime === "application/pdf" ? "pdf" : "jpg")).toLowerCase();
+      const filePath = `admin/${paymentId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await svc.storage.from("payment-proofs").upload(filePath, blob, { contentType: att.mime, upsert: false });
+      if (upErr) continue;
+      const { error: insErr } = await svc.from("payment_proofs").insert({
+        payment_id: paymentId,
+        uploaded_by: adminUserId,
+        uploaded_by_type: "admin",
+        file_name: att.name,
+        file_url: `payment-proofs/${filePath}`,
+        file_type: att.mime,
+      });
+      if (!insErr) attached++;
+    } catch (_) { /* preuve best-effort */ }
+  }
+  return attached;
 }
 
 // payment_method (enum DB) → clé attendue par calculate_final_rate
@@ -527,7 +700,8 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_deposit",
     permission: "canProcessDeposits",
-    description: "Créer un dépôt EN ATTENTE pour un client (statut 'created', SANS créditer le wallet — utile si la preuve viendra plus tard). method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
+    acceptsProof: true,
+    description: "Créer un dépôt EN ATTENTE pour un client (statut 'created', SANS créditer le wallet — utile si la preuve viendra plus tard). Si l'admin a joint une capture, elle est attachée comme preuve. method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
     input_schema: {
       type: "object",
       properties: {
@@ -548,16 +722,19 @@ const WRITE_TOOLS: WriteTool[] = [
       lines.push({ label: "Wallet", value: "non crédité (en attente)" });
       return { ok: true, args, summary: { title: "Créer un dépôt (en attente)", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Créer le dépôt" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("create_client_deposit", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const depId = data?.deposit_id;
+      const proofs = depId && args.proofAttachments?.length ? await attachDepositProofs(ctx.admin, depId, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
     name: "create_and_validate_deposit",
     permission: "canProcessDeposits",
-    description: "Créer un dépôt ET le valider immédiatement → CRÉDITE le wallet du client. C'est l'action typique quand l'argent a déjà été reçu. La capture peut être ajoutée plus tard. method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
+    acceptsProof: true,
+    description: "Créer un dépôt ET le valider immédiatement → CRÉDITE le wallet du client. C'est l'action typique quand l'argent a déjà été reçu. Si l'admin a joint une capture/reçu, elle est AUTOMATIQUEMENT attachée comme preuve du dépôt — pas besoin de la remettre après. method ∈ bank_transfer, bank_cash, agency_cash, om_transfer, om_withdrawal, mtn_transfer, mtn_withdrawal, wave.",
     input_schema: {
       type: "object",
       properties: {
@@ -575,20 +752,23 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [{ label: "Client", value: c.name }, { label: "Moyen", value: String(a.method) }, { label: "Effet", value: "✅ crédite le wallet du client" }];
       return { ok: true, args, summary: { title: "Créer & valider un dépôt", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer & créditer" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const r1 = await userClient.rpc("create_client_deposit", args.create);
       if (r1.error) return { success: false, error: r1.error.message };
       const depId = r1.data?.deposit_id;
       if (!depId) return { success: false, error: "Échec de création du dépôt." };
       const r2 = await userClient.rpc("validate_deposit", { p_deposit_id: depId, p_admin_comment: args.comment, p_confirmed_amount: args.amount, p_send_notification: true });
       if (r2.error) return { success: false, error: `Dépôt créé mais validation échouée: ${r2.error.message}` };
-      return r2.data;
+      // Attache automatiquement les captures jointes comme preuve
+      const proofs = args.proofAttachments?.length ? await attachDepositProofs(ctx.admin, depId, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...r2.data, deposit_id: depId, proofs_attached: proofs };
     },
   },
   {
     name: "validate_deposit",
     permission: "canProcessDeposits",
-    description: "Valider un dépôt EXISTANT (par référence BZ-DP-... ou deposit_id) → crédite le wallet. Optionnel: confirmed_amount (si le montant réel diffère), comment.",
+    acceptsProof: true,
+    description: "Valider un dépôt EXISTANT (par référence BZ-DP-... ou deposit_id) → crédite le wallet. Si l'admin a joint une capture, elle est attachée comme preuve. Optionnel: confirmed_amount (si le montant réel diffère), comment.",
     input_schema: { type: "object", properties: { reference: { type: "string" }, deposit_id: { type: "string" }, confirmed_amount: { type: "number" }, comment: { type: "string" } } },
     prepare: async (admin, a) => {
       let q = admin.from("deposits").select("id, reference, amount_xaf, status, user_id");
@@ -602,10 +782,11 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [{ label: "Référence", value: dep.reference }, { label: "Statut actuel", value: dep.status }, { label: "Effet", value: "✅ crédite le wallet" }];
       return { ok: true, args: { p_deposit_id: dep.id, p_admin_comment: a.comment || null, p_confirmed_amount: confirmed, p_send_notification: true }, summary: { title: "Valider un dépôt", amount: fmtXAF(confirmed), lines, confirmLabel: "Confirmer & créditer" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("validate_deposit", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const proofs = args.proofAttachments?.length ? await attachDepositProofs(ctx.admin, args.p_deposit_id, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
@@ -632,7 +813,8 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_payment",
     permission: "canProcessPayments",
-    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour). Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url. Le montant RMB est calculé automatiquement au taux du jour.",
+    acceptsProof: true,
+    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url. Le montant RMB est calculé automatiquement au taux du jour.",
     input_schema: {
       type: "object",
       properties: {
@@ -677,16 +859,19 @@ const WRITE_TOOLS: WriteTool[] = [
       lines.push({ label: "Effet", value: "⚠️ débite le wallet du client" });
       return { ok: true, args, summary: { title: "Créer un paiement fournisseur", subtitle: c.name, amount: fmtXAF(amt), lines, confirmLabel: "Confirmer le paiement" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("create_admin_payment", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const payId = data?.payment_id;
+      const proofs = payId && args.proofAttachments?.length ? await attachPaymentProofs(ctx.admin, payId, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
     name: "update_payment_beneficiary",
     permission: "canProcessPayments",
-    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, banque, compte, QR code. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
+    acceptsProof: true,
+    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, banque, compte, QR code. Si l'admin a joint une capture, elle est attachée comme preuve. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
     input_schema: {
       type: "object",
       properties: {
@@ -708,10 +893,11 @@ const WRITE_TOOLS: WriteTool[] = [
       if (a.beneficiary_qr_code_url) lines.push({ label: "QR code", value: "fourni" });
       return { ok: true, args: { p_payment_id: pay.id, p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null, p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null, p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null }, summary: { title: "Compléter le bénéficiaire", subtitle: pay.reference, lines, confirmLabel: "Enregistrer" } };
     },
-    execute: async (userClient, args) => {
+    execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("admin_update_payment_beneficiary", args);
       if (error) return { success: false, error: error.message };
-      return data;
+      const proofs = args.proofAttachments?.length ? await attachPaymentProofs(ctx.admin, args.p_payment_id, ctx.adminUserId, args.proofAttachments) : 0;
+      return { ...data, proofs_attached: proofs };
     },
   },
   {
@@ -950,7 +1136,7 @@ serve(async (req) => {
       }
 
       let result: Record<string, unknown>;
-      try { result = await tool.execute(userClient, pa.args); }
+      try { result = await tool.execute(userClient, pa.args, { admin, adminUserId: user.id }); }
       catch (e) { result = { success: false, error: String((e as Error)?.message ?? e) }; }
 
       const ok = result?.success !== false;
@@ -1068,8 +1254,15 @@ serve(async (req) => {
                     const prep = await writeTool.prepare(admin, tu.input ?? {});
                     if (!prep.ok) { result = { error: prep.error }; }
                     else {
+                      // Outils acceptant une preuve : on rattache les captures du message à l'action.
+                      const argsToStore = writeTool.acceptsProof && acceptedAttachments.length
+                        ? { ...prep.args, proofAttachments: acceptedAttachments }
+                        : prep.args;
+                      if (writeTool.acceptsProof && acceptedAttachments.length) {
+                        prep.summary.lines.push({ label: "Preuve", value: `${acceptedAttachments.length} pièce(s) jointe(s) ✅` });
+                      }
                       const { data: pa } = await admin.from("assistant_pending_actions").insert({
-                        conversation_id: convId, admin_user_id: user.id, tool: writeTool.name, args: prep.args, summary: prep.summary, status: "pending",
+                        conversation_id: convId, admin_user_id: user.id, tool: writeTool.name, args: argsToStore, summary: prep.summary, status: "pending",
                       }).select("id").single();
                       const proposal = { id: pa?.id, tool: writeTool.name, summary: prep.summary };
                       proposals.push(proposal);
