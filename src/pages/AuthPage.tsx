@@ -179,6 +179,17 @@ export default function AuthPage() {
     setIsSubmitting(false);
 
     if (error) {
+      // Email pas encore vérifié → on bascule sur l'écran du code (+ renvoi d'un code)
+      // au lieu d'une erreur de connexion.
+      if (/not confirmed|email.*confirm/i.test(error.message)) {
+        void resendSignupOtp(email);
+        setOtpCode('');
+        setOtpError('');
+        setDirection('forward');
+        setMode('verify-otp');
+        toast.success(t('verifyEmail.codeSent', { defaultValue: 'Vérifiez votre email — un code vous a été envoyé.' }));
+        return;
+      }
       if (error.message.includes('Invalid login credentials')) {
         setPasswordError(t('validation.incorrectCredentials'));
       } else {
