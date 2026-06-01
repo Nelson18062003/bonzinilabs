@@ -80,11 +80,14 @@ type AnyClient = any;
 interface ReadTool {
   name: string;
   permission: PermKey;
+  /** Si vrai, l'outil reçoit le client AUTHENTIFIÉ (JWT admin) en 2e arg —
+   *  nécessaire pour les RPC qui vérifient auth.uid() (ex. trésorerie). */
+  needsAuth?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
   // deno-lint-ignore no-explicit-any
-  execute: (admin: AnyClient, args: any) => Promise<Record<string, unknown>>;
+  execute: (admin: AnyClient, args: any, userClient?: AnyClient) => Promise<Record<string, unknown>>;
 }
 
 /**
@@ -563,33 +566,39 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "treasury_report",
     permission: "canViewTreasury",
+    needsAuth: true,
     description: "Rapport complet du module trésorerie sur une période (P&L) : soldes des comptes, achats/ventes USDT, taux implicites, spreads (chaîne et client), stock USDT, WAC, taux de revient, bénéfice total, capital immobilisé. period = 'today' | 'week' | 'month' | 'all' (défaut 'month').",
     input_schema: { type: "object", properties: { period: { type: "string", enum: ["today", "week", "month", "all"] } } },
-    execute: async (admin, { period }) => {
+    execute: async (admin, { period }, userClient) => {
+      const db = userClient ?? admin;
       const to = new Date();
       const from = new Date();
       if (period === "today") from.setHours(0, 0, 0, 0);
       else if (period === "week") from.setDate(from.getDate() - 7);
       else if (period === "all") from.setFullYear(from.getFullYear() - 10);
       else from.setDate(from.getDate() - 30);
-      const { data, error } = await admin.rpc("get_treasury_dashboard", { p_from_date: from.toISOString(), p_to_date: to.toISOString() });
+      const { data, error } = await db.rpc("get_treasury_dashboard", { p_from_date: from.toISOString(), p_to_date: to.toISOString() });
       if (error) return { error: error.message };
+      if (data?.success === false) return { error: data.error };
       return { period: period ?? "month", report: data };
     },
   },
   {
     name: "treasury_top_counterparties",
     permission: "canViewTreasury",
+    needsAuth: true,
     description: "Top fournisseurs USDT ou acheteurs CNY par volume sur une période. type = 'usdt_supplier' | 'cny_buyer'. period = 'week' | 'month' | 'all' (défaut 'month').",
     input_schema: { type: "object", properties: { type: { type: "string", enum: ["usdt_supplier", "cny_buyer"] }, period: { type: "string", enum: ["week", "month", "all"] }, limit: { type: "number" } }, required: ["type"] },
-    execute: async (admin, { type, period, limit }) => {
+    execute: async (admin, { type, period, limit }, userClient) => {
+      const db = userClient ?? admin;
       const to = new Date();
       const from = new Date();
       if (period === "week") from.setDate(from.getDate() - 7);
       else if (period === "all") from.setFullYear(from.getFullYear() - 10);
       else from.setDate(from.getDate() - 30);
-      const { data, error } = await admin.rpc("get_top_counterparties", { p_type: type, p_from_date: from.toISOString(), p_to_date: to.toISOString(), p_limit: clamp(limit, 5, 20) });
+      const { data, error } = await db.rpc("get_top_counterparties", { p_type: type, p_from_date: from.toISOString(), p_to_date: to.toISOString(), p_limit: clamp(limit, 5, 20) });
       if (error) return { error: error.message };
+      if (data?.success === false) return { error: data.error };
       return { type, period: period ?? "month", counterparties: data };
     },
   },
@@ -1410,7 +1419,8 @@ serve(async (req) => {
                 const writeTool = allowedWrite.find((t) => t.name === tu.name);
                 let result: Record<string, unknown>;
                 if (readTool) {
-                  try { result = await readTool.execute(admin, tu.input ?? {}); }
+                  // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
+                  try { result = await readTool.execute(admin, tu.input ?? {}, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
                 } else if (writeTool) {
                   try {
