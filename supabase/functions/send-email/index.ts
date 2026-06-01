@@ -277,6 +277,25 @@ function render(template: string, payload: Record<string, unknown>): Rendered {
         text: `Votre paiement n'a pas abouti et le montant a été recrédité sur votre solde.${m.reason ? ` Motif : ${esc(m.reason)}.` : ""} ${APP}`,
       };
     }
+    case "support_message": {
+      const snippet = esc((payload.message_preview as string) ?? m.message_preview ?? "");
+      return {
+        subject: "Nouveau message de l'équipe Bonzini",
+        html: layout({
+          preview: "Notre équipe support vous a répondu sur Bonzini.",
+          accent: VIOLET, emoji: "💬",
+          heading: "Nouveau message du support", subhead: "Notre équipe vous a répondu.",
+          bodyHtml:
+            `<p style="margin:0 0 4px;">Vous avez reçu un nouveau message de l'équipe Bonzini :</p>` +
+            (snippet
+              ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="padding:14px 16px;background:#FAFAFC;border-left:3px solid ${VIOLET};border-radius:8px;font-size:14.5px;line-height:1.55;color:#3A3A44;font-style:italic;">${snippet}</td></tr></table>`
+              : "") +
+            button("Lire et répondre", APP, VIOLET) +
+            `<p style="margin:18px 0 0;font-size:13.5px;color:${MUTED};">Répondez directement depuis l'application pour poursuivre la conversation.</p>`,
+        }),
+        text: `Vous avez un nouveau message de l'équipe Bonzini. Ouvrez l'application pour le lire et répondre : ${APP}`,
+      };
+    }
     default: {
       // Fallback robuste : title/message déjà localisés par la RPC.
       const title = esc(payload.title ?? "Notification Bonzini");
