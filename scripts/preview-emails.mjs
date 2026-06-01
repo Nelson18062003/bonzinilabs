@@ -241,6 +241,35 @@ function render(template, p = {}) {
            <p style="margin:18px 0 0;font-size:13.5px;color:${MUTED};">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe restera inchangé. Pour votre sécurité, ne partagez jamais ce lien.</p>`,
       });
     }
+    case "confirm_signup": {
+      // Email Auth (Supabase) — {{ .Token }} = code à 6 chiffres remplacé par Supabase.
+      return layout({
+        preview: "Votre code de vérification Bonzini (valable 1 heure).",
+        accent: VIOLET, emoji: "🔢",
+        heading: "Vérifiez votre adresse email",
+        subhead: "Saisissez ce code dans l'application pour activer votre compte.",
+        bodyHtml:
+          `<p style="margin:0 0 6px;">Bienvenue ! Pour finaliser votre inscription, entrez le code ci-dessous dans l'application Bonzini :</p>
+           <div style="margin:20px 0;text-align:center;">
+             <div style="display:inline-block;padding:16px 28px;background:#FAFAFC;border:1px solid ${LINE};border-radius:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:30px;font-weight:800;letter-spacing:8px;color:${INK};">{{ .Token }}</div>
+           </div>
+           <p style="margin:6px 0 0;font-size:13.5px;color:${MUTED};">Ce code est valable <b>1 heure</b>. Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.</p>`,
+      });
+    }
+    case "support_message": {
+      const snippet = esc(p.message_preview ?? "");
+      return layout({
+        preview: "Notre équipe support vous a répondu sur Bonzini.",
+        accent: VIOLET, emoji: "💬",
+        heading: "Nouveau message du support", subhead: "Notre équipe vous a répondu.",
+        bodyHtml:
+          `<p style="margin:0 0 4px;">Vous avez reçu un nouveau message de l'équipe Bonzini :</p>
+           ${snippet ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr>
+             <td style="padding:14px 16px;background:#FAFAFC;border-left:3px solid ${VIOLET};border-radius:8px;font-size:14.5px;line-height:1.55;color:#3A3A44;font-style:italic;">${snippet}</td></tr></table>` : ""}
+           ${button("Lire et répondre", APP, VIOLET)}
+           <p style="margin:18px 0 0;font-size:13.5px;color:${MUTED};">Répondez directement depuis l'application pour poursuivre la conversation.</p>`,
+      });
+    }
     default:
       return layout({ preview: "Notification Bonzini", accent: VIOLET, emoji: "🔔",
         heading: esc(p.title ?? "Notification"), subhead: "", bodyHtml: `<p>${esc(p.message ?? "")}</p>` });
@@ -256,11 +285,14 @@ const samples = [
   ["payment_rejected", { metadata: { reference: "PAY-2026-1181", reason: "Coordonnées du bénéficiaire invalides", refunded_xaf: 1800000 } }],
   ["deposit_rejected", { metadata: { reference: "DEP-2026-0413", reason: "Justificatif de virement illisible" } }],
   ["reset_password", {}],
+  ["confirm_signup", {}],
+  ["support_message", { message_preview: "Bonjour, nous avons bien reçu votre dépôt. Pourriez-vous nous confirmer le nom exact du bénéficiaire afin de finaliser votre paiement ? Merci." }],
 ];
 const labels = {
   welcome: "① Bienvenue", deposit_validated: "② Dépôt crédité", payment_created: "③ Demande de paiement reçue",
   payment_completed: "④ Paiement effectué", payment_rejected: "⑤ Paiement non abouti (recrédité)",
   deposit_rejected: "⑥ Dépôt non validé", reset_password: "⑦ Mot de passe oublié (sécurité)",
+  confirm_signup: "⑧ Vérification email — code OTP (inscription)", support_message: "⑨ Nouveau message support",
 };
 
 mkdirSync(OUT, { recursive: true });
