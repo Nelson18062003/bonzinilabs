@@ -11,7 +11,7 @@
 
 -- ── Mapping : activer ces 3 types (le cron est déjà live) ───────────────
 INSERT INTO public.email_template_map (notification_type, template, enabled) VALUES
-  ('deposit_created',     'deposit_created',     true),
+  ('deposit_created',     'deposit_created',     false),  -- accusé de dépôt : DIFFÉRÉ (réactiver plus tard)
   ('password_changed',    'password_changed',    true)
 ON CONFLICT (notification_type) DO UPDATE SET enabled = EXCLUDED.enabled;
 

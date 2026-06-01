@@ -103,14 +103,17 @@ ALTER TABLE public.email_outbox        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.email_suppressions  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.email_template_map  ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins read email_outbox" ON public.email_outbox;
 CREATE POLICY "Admins read email_outbox"
   ON public.email_outbox FOR SELECT
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Admins read email_suppressions" ON public.email_suppressions;
 CREATE POLICY "Admins read email_suppressions"
   ON public.email_suppressions FOR SELECT
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Admins read email_template_map" ON public.email_template_map;
 CREATE POLICY "Admins read email_template_map"
   ON public.email_template_map FOR SELECT
   USING (public.is_admin(auth.uid()));
