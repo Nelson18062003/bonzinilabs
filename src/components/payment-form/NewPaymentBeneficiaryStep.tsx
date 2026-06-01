@@ -1,29 +1,26 @@
 // ============================================================
-// Step 3 — Beneficiary.
-// Two tabs: "saved" (pick from useBeneficiaries) or "new"
-// (method-specific form: cash / alipay-wechat / bank).
-// The "saved" path also exposes a "complete later" escape.
+// Step 3 — Beneficiary (payment wizard, client).
+//
+// Rebuilt for Lot 3 bis. Two tabs:
+//   • "existing" — pick a saved beneficiary (alias-first list).
+//   • "new"      — a self/other toggle + the shared <BeneficiaryForm/>.
+//
+// Reuses BeneficiaryForm (same hard validation / alias / CJK / QR as the
+// carnet) instead of duplicating per-mode inputs. The page owns all
+// state and the snapshot/payment payload; this component is presentational.
+// "Complete later" (skip) stays available for non-cash modes.
 // ============================================================
 import { useTranslation } from 'react-i18next';
-import {
-  Check,
-  CreditCard,
-  Mail,
-  Phone,
-  QrCode,
-  Upload,
-  User,
-  X,
-} from 'lucide-react';
+import { Check, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Beneficiary } from '@/hooks/useBeneficiaries';
 import type { useMyProfile } from '@/hooks/useProfile';
 import {
-  type IdentificationType,
-  type NewBeneficiaryDraft,
-  type NewBeneficiaryDraftSetters,
-  type PaymentMethodType,
-} from './types';
+  BeneficiaryForm,
+  type BeneficiaryFormValues,
+} from '@/components/beneficiary/BeneficiaryForm';
+import { modeColor } from '@/lib/beneficiaries/labels';
+import type { PaymentMethodType } from './types';
 
 type Profile = NonNullable<ReturnType<typeof useMyProfile>['data']>;
 
@@ -35,10 +32,15 @@ interface Props {
   onBeneficiaryTabChange: (tab: 'existing' | 'new') => void;
   selectedBeneficiary: Beneficiary | null;
   onSelectedBeneficiaryChange: (b: Beneficiary | null) => void;
-  cashBenefType: 'self' | 'other';
-  onCashBenefTypeChange: (t: 'self' | 'other') => void;
-  draft: NewBeneficiaryDraft;
-  setters: NewBeneficiaryDraftSetters;
+  /** "Me payer moi-même" — sets relation=self + prefills from profile. */
+  useSelf: boolean;
+  onUseSelfChange: (v: boolean) => void;
+  formValues: BeneficiaryFormValues;
+  onFormChange: (v: BeneficiaryFormValues) => void;
+  dontSave: boolean;
+  onDontSaveChange: (v: boolean) => void;
+  /** A saved beneficiary that collides with the typed account (soft dedup). */
+  duplicateMatch: Beneficiary | null;
   qrCodePreview: string | null;
   onQrFileSelect: (file: File) => void;
   onQrFileRemove: () => void;
@@ -53,70 +55,51 @@ export function NewPaymentBeneficiaryStep({
   onBeneficiaryTabChange,
   selectedBeneficiary,
   onSelectedBeneficiaryChange,
-  cashBenefType,
-  onCashBenefTypeChange,
-  draft,
-  setters,
+  useSelf,
+  onUseSelfChange,
+  formValues,
+  onFormChange,
+  dontSave,
+  onDontSaveChange,
+  duplicateMatch,
   qrCodePreview,
   onQrFileSelect,
   onQrFileRemove,
   onSkip,
 }: Props) {
   const { t } = useTranslation('payments');
+  const { t: tc } = useTranslation('client');
 
   const isCash = selectedMethod === 'cash';
-  const isAlipayWechat = selectedMethod === 'alipay' || selectedMethod === 'wechat';
-  const isBankTransfer = selectedMethod === 'bank_transfer';
-
-  const handleQrInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onQrFileSelect(file);
-  };
-
-  const idTypeOptions: ReadonlyArray<{ key: IdentificationType; icon: typeof QrCode; label: string }> = [
-    { key: 'qr', icon: QrCode, label: t('form.beneficiary.idTypes.qr') },
-    { key: 'id', icon: CreditCard, label: t('form.beneficiary.idTypes.id') },
-    { key: 'email', icon: Mail, label: t('form.beneficiary.idTypes.email') },
-    { key: 'phone', icon: Phone, label: t('form.beneficiary.idTypes.phone') },
-  ];
-
-  const inputCls =
-    'w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary';
+  // Cash + self needs no account details (it's the client) → show a card.
+  const cashSelfCard = isCash && useSelf;
 
   return (
     <div className="animate-fade-in space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">
-          {isCash ? t('form.beneficiary.whoPicks') : t('form.beneficiary.title')}
-        </h2>
+        <h2 className="text-lg font-semibold">{t('form.beneficiary.title')}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {isCash ? t('form.beneficiary.mustPresentQr') : t('form.beneficiary.selectOrCreate')}
+          {t('form.beneficiary.selectOrCreate')}
         </p>
       </div>
 
+      {/* Existing / New tabs */}
       <div className="flex gap-1 bg-muted rounded-lg p-1">
-        <button
-          onClick={() => onBeneficiaryTabChange('existing')}
-          className={cn(
-            'flex-1 h-9 rounded-md text-sm font-medium transition-colors',
-            beneficiaryTab === 'existing'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground',
-          )}
-        >
-          {t('form.beneficiary.existing')}
-        </button>
-        <button
-          onClick={() => onBeneficiaryTabChange('new')}
-          className={cn(
-            'flex-1 h-9 rounded-md text-sm font-medium transition-colors',
-            beneficiaryTab === 'new'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground',
-          )}
-        >
-          {t('form.beneficiary.new')}
-        </button>
+        {(['existing', 'new'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => onBeneficiaryTabChange(tab)}
+            className={cn(
+              'flex-1 h-9 rounded-md text-sm font-medium transition-colors',
+              beneficiaryTab === tab
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground',
+            )}
+          >
+            {t(`form.beneficiary.${tab === 'existing' ? 'existing' : 'new'}`)}
+          </button>
+        ))}
       </div>
 
       {beneficiaryTab === 'existing' ? (
@@ -126,6 +109,7 @@ export function NewPaymentBeneficiaryStep({
               <User className="w-10 h-10 mx-auto mb-2 opacity-50" />
               <p className="text-sm">{t('form.beneficiary.noneRegistered')}</p>
               <button
+                type="button"
                 onClick={() => onBeneficiaryTabChange('new')}
                 className="mt-2 text-sm text-primary font-medium"
               >
@@ -136,23 +120,26 @@ export function NewPaymentBeneficiaryStep({
             existingBeneficiaries.map((b) => (
               <button
                 key={b.id}
+                type="button"
                 onClick={() =>
                   onSelectedBeneficiaryChange(selectedBeneficiary?.id === b.id ? null : b)
                 }
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left',
-                  selectedBeneficiary?.id === b.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border',
+                  selectedBeneficiary?.id === b.id ? 'border-primary bg-primary/5' : 'border-border',
                 )}
               >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
-                  {b.name[0]?.toUpperCase()}
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0"
+                  style={{ backgroundColor: modeColor(b.payment_method) }}
+                >
+                  {(b.alias || b.name)[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{b.name}</p>
+                  {/* alias-first: the recognisable label on top, real account below */}
+                  <p className="font-medium truncate">{b.alias || b.name}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {b.identifier || b.phone || b.bank_account || b.email || ''}
+                    {b.identifier || b.phone || b.bank_account || b.name || ''}
                   </p>
                 </div>
                 {selectedBeneficiary?.id === b.id && (
@@ -166,240 +153,103 @@ export function NewPaymentBeneficiaryStep({
         </div>
       ) : (
         <div className="space-y-4">
-          {isCash && (
-            <>
-              <div className="space-y-2">
-                <button
-                  onClick={() => onCashBenefTypeChange('self')}
-                  className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all',
-                    cashBenefType === 'self'
-                      ? 'border-[#dc2626] bg-red-50/50'
-                      : 'border-border hover:border-primary/50',
-                  )}
-                >
-                  <User className="w-5 h-5 text-muted-foreground" />
-                  <div className="flex-1 text-left">
-                    <p className="font-medium">{t('form.beneficiary.myself')}</p>
-                    {profile && (
-                      <p className="text-xs text-muted-foreground">
-                        {profile.first_name} {profile.last_name}
-                      </p>
-                    )}
-                  </div>
-                </button>
-                <button
-                  onClick={() => onCashBenefTypeChange('other')}
-                  className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all',
-                    cashBenefType === 'other'
-                      ? 'border-[#dc2626] bg-red-50/50'
-                      : 'border-border hover:border-primary/50',
-                  )}
-                >
-                  <User className="w-5 h-5 text-muted-foreground" />
-                  <div className="text-left">
-                    <p className="font-medium">{t('form.beneficiary.anotherPerson')}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t('form.beneficiary.provideDetails')}
-                    </p>
-                  </div>
-                </button>
-              </div>
-              {cashBenefType === 'other' && (
-                <div className="space-y-3 p-4 rounded-xl bg-muted/50">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      {t('form.beneficiary.fullNameRequired')}
-                    </label>
-                    <input
-                      type="text"
-                      value={draft.name}
-                      onChange={(e) => setters.setName(e.target.value)}
-                      placeholder={t('form.beneficiaryName')}
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      {t('form.beneficiary.phoneRequired')}
-                    </label>
-                    <input
-                      type="tel"
-                      value={draft.phone}
-                      onChange={(e) => setters.setPhone(e.target.value)}
-                      placeholder="+86..."
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      {t('form.beneficiary.emailOptional')}
-                    </label>
-                    <input
-                      type="email"
-                      value={draft.email}
-                      onChange={(e) => setters.setEmail(e.target.value)}
-                      placeholder="email@exemple.com"
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
+          {/* Self / other toggle (all modes) */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onUseSelfChange(true)}
+              className={cn(
+                'flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left',
+                useSelf ? 'border-current' : 'border-border',
               )}
-            </>
+              style={useSelf ? { color: modeColor(selectedMethod) } : undefined}
+            >
+              <User className="w-5 h-5" />
+              <span className="text-sm font-medium text-foreground">
+                {t('form.beneficiary.myself')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onUseSelfChange(false)}
+              className={cn(
+                'flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left',
+                !useSelf ? 'border-current' : 'border-border',
+              )}
+              style={!useSelf ? { color: modeColor(selectedMethod) } : undefined}
+            >
+              <User className="w-5 h-5" />
+              <span className="text-sm font-medium text-foreground">
+                {t('form.beneficiary.anotherPerson')}
+              </span>
+            </button>
+          </div>
+
+          {/* Soft duplicate hint: offer to reuse the saved match. */}
+          {!cashSelfCard && duplicateMatch && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                {tc('beneficiaries.duplicate.body', { alias: duplicateMatch.alias || duplicateMatch.name })}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectedBeneficiaryChange(duplicateMatch);
+                  onBeneficiaryTabChange('existing');
+                }}
+                className="mt-2 text-sm font-medium text-amber-900 dark:text-amber-100 underline"
+              >
+                {tc('beneficiaries.actions.useThis')}
+              </button>
+            </div>
           )}
 
-          {isAlipayWechat && (
+          {cashSelfCard ? (
+            // Cash + self: nothing to fill, just confirm it's the client.
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
+                style={{ backgroundColor: modeColor('cash') }}
+              >
+                {(profile?.first_name?.[0] || 'M').toUpperCase()}
+              </div>
+              <div>
+                <p className="font-medium">
+                  {`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() ||
+                    t('form.beneficiary.myself')}
+                </p>
+                <p className="text-xs text-muted-foreground">{profile?.phone || ''}</p>
+              </div>
+            </div>
+          ) : (
             <>
-              <div className="space-y-3">
-                {qrCodePreview ? (
-                  <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden">
-                    <img src={qrCodePreview} alt="" className="w-full h-full object-cover" />
-                    <button
-                      onClick={onQrFileRemove}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="block w-full h-24 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
-                    <input type="file" accept="image/*" onChange={handleQrInput} className="hidden" />
-                    <div className="h-full flex flex-col items-center justify-center gap-2">
-                      <Upload className="w-6 h-6 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        {t('form.beneficiary.addQrCode')}
-                      </p>
-                    </div>
-                  </label>
-                )}
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    {t('form.beneficiary.orProvideInfo')}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  {t('form.beneficiaryName')}
-                </label>
+              <BeneficiaryForm
+                values={formValues}
+                onChange={onFormChange}
+                lockMode
+                qrPreview={qrCodePreview}
+                onQrSelect={onQrFileSelect}
+                onQrRemove={onQrFileRemove}
+              />
+              {/* Ponctuel: don't persist this beneficiary to the carnet. */}
+              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                 <input
-                  type="text"
-                  value={draft.name}
-                  onChange={(e) => setters.setName(e.target.value)}
-                  placeholder={t('form.beneficiary.fullName')}
-                  className={inputCls}
+                  type="checkbox"
+                  checked={dontSave}
+                  onChange={(e) => onDontSaveChange(e.target.checked)}
+                  className="w-4 h-4 rounded border-border"
                 />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  {t('form.beneficiary.idType')}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {idTypeOptions.map(({ key, icon: Icon, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setters.setIdType(key)}
-                      className={cn(
-                        'flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-colors',
-                        draft.idType === key ? 'border-primary bg-primary/5' : 'border-border',
-                      )}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="text-xs font-medium">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {draft.idType !== 'qr' && (
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    {draft.idType === 'id'
-                      ? t('form.beneficiaryId')
-                      : draft.idType === 'email'
-                        ? 'Email'
-                        : t('form.beneficiary.phoneLabel')}
-                  </label>
-                  <input
-                    type={draft.idType === 'email' ? 'email' : draft.idType === 'phone' ? 'tel' : 'text'}
-                    value={draft.identifier}
-                    onChange={(e) => setters.setIdentifier(e.target.value)}
-                    placeholder={
-                      draft.idType === 'id'
-                        ? t('form.beneficiary.alipayWechatId')
-                        : draft.idType === 'email'
-                          ? 'email@exemple.com'
-                          : '+86...'
-                    }
-                    className={inputCls}
-                  />
-                </div>
-              )}
-            </>
-          )}
-
-          {isBankTransfer && (
-            <>
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  {t('form.beneficiary.nameRequired')}
-                </label>
-                <input
-                  type="text"
-                  value={draft.name}
-                  onChange={(e) => setters.setName(e.target.value)}
-                  placeholder={t('form.beneficiary.fullName')}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  {t('form.beneficiary.bankRequired')}
-                </label>
-                <input
-                  type="text"
-                  value={draft.bankName}
-                  onChange={(e) => setters.setBankName(e.target.value)}
-                  placeholder={t('form.beneficiary.bankName')}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  {t('form.beneficiary.accountRequired')}
-                </label>
-                <input
-                  type="text"
-                  value={draft.bankAccount}
-                  onChange={(e) => setters.setBankAccount(e.target.value)}
-                  placeholder={t('form.beneficiary.accountNumber')}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  {t('form.beneficiary.additionalInfo')}
-                </label>
-                <input
-                  type="text"
-                  value={draft.bankExtra}
-                  onChange={(e) => setters.setBankExtra(e.target.value)}
-                  placeholder={t('form.beneficiary.swiftAgency')}
-                  className={inputCls}
-                />
-              </div>
+                {t('form.beneficiary.dontSave')}
+              </label>
             </>
           )}
         </div>
       )}
 
+      {/* Complete later (not for cash) */}
       {!isCash && (
         <button
+          type="button"
           onClick={onSkip}
           className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
         >

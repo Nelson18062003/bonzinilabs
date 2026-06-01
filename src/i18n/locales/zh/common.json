@@ -320,6 +320,8 @@
   "debitLabel": "借记",
   "totalDeposits": "存款总额",
   "totalPayments": "付款总额",
+  "beneficiaries": "收款人",
+  "manageBeneficiaries": "管理客户收款人列表",
   "movementHistory": "交易历史",
   "viewFullLedger": "查看完整账本",
   "declareDeposit": "申报存款",

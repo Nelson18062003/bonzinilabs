@@ -127,7 +127,9 @@
       "accountNumber": "Numéro de compte",
       "swiftAgency": "SWIFT / IBAN / agence (optionnel)",
       "additionalInfo": "Informations complémentaires",
-      "addLater": "Compléter plus tard"
+      "addLater": "Compléter plus tard",
+      "dontSave": "Ne pas enregistrer ce bénéficiaire",
+      "saveFailedPaymentContinues": "Bénéficiaire non enregistré au carnet — le paiement continue"
     },
     "confirm": {
       "method": "Mode de paiement",

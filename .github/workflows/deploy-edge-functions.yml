@@ -1,0 +1,53 @@
+name: Deploy Supabase (functions + migrations)
+
+# Déploie automatiquement à chaque push sur main :
+#  - les Edge Functions (si supabase/functions/ change)
+#  - les migrations de base de données (si supabase/migrations/ change)
+# Fini le copier-coller manuel (fonctions ET SQL).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+  workflow_dispatch: {} # déclenchement manuel possible depuis l'onglet Actions
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: fmhsohrgbznqmcvqktjw
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link au projet Supabase
+        run: supabase link --project-ref "$PROJECT_REF"
+
+      # ── Migrations de base de données ───────────────────────────
+      # Applique uniquement les migrations non encore appliquées.
+      # Nécessite le secret SUPABASE_DB_PASSWORD. Si absent, l'étape est ignorée
+      # (les fonctions se déploient quand même).
+      - name: Appliquer les migrations (db push)
+        if: ${{ env.SUPABASE_DB_PASSWORD != '' }}
+        run: supabase db push --include-all
+
+      - name: Avertissement si mot de passe DB manquant
+        if: ${{ env.SUPABASE_DB_PASSWORD == '' }}
+        run: echo "::warning::SUPABASE_DB_PASSWORD non configuré — migrations NON appliquées automatiquement. Ajoute le secret pour activer l'auto-migration."
+
+      # ── Edge Functions ──────────────────────────────────────────
+      - name: Déployer la fonction admin-assistant
+        run: |
+          supabase functions deploy admin-assistant \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt=false

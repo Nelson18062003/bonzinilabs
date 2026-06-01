@@ -60,6 +60,7 @@ const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
+const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
@@ -74,6 +75,9 @@ const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/supp
 const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
 const MobileCannedResponsesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileCannedResponsesScreen })));
 const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileQuickRepliesScreen })));
+
+// ── AI Assistant (Directeur des Opérations) ────────────────────
+const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").then(m => ({ default: m.MobileAssistantScreen })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
@@ -175,6 +179,8 @@ const App = () => (
                 <Route path="/m/clients/new" element={<MobileRouteWrapper showTabBar={false}><MobileCreateClient /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<MobileRouteWrapper showTabBar={false}><MobileClientDetail /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<MobileRouteWrapper><MobileClientLedger /></MobileRouteWrapper>} />
+                <Route path="/m/clients/:clientId/beneficiaries" element={<MobileRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></MobileRouteWrapper>} />
+                <Route path="/m/assistant" element={<MobileRouteWrapper showTabBar={false}><MobileAssistantScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more" element={<MobileRouteWrapper><MobileMoreScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/rates" element={<MobileRouteWrapper><MobileRatesScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<MobileRouteWrapper><MobileProofsScreen /></MobileRouteWrapper>} />

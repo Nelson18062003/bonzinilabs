@@ -1,5 +1,5 @@
 // Supabase clients with SEPARATE session storage for Client and Admin
-import { createClient } from '@supabase/supabase-js';
+import { createClient, processLock } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
@@ -18,6 +18,10 @@ export const supabase = createClient<Database>(
       // OAuth (Google): PKCE + lecture du ?code= au retour sur /auth/callback.
       flowType: 'pkce',
       detectSessionInUrl: true,
+      // Verrou en mémoire (processLock) au lieu du Navigator LockManager :
+      // le LockManager se bloque sur Safari iOS et fait échouer la connexion
+      // ("Acquiring an exclusive Navigator LockManager lock ... timed out").
+      lock: processLock,
     },
   }
 );
@@ -39,6 +43,8 @@ export const supabaseAdmin = createClient<Database>(
       // (Mitigation complémentaire ; la garde primaire est de ne jamais
       // monter supabaseAdmin sur la route de callback — cf. design-social-login.md §2.)
       detectSessionInUrl: false,
+      // Idem côté admin : évite le blocage du Navigator LockManager sur iOS.
+      lock: processLock,
     },
   }
 );

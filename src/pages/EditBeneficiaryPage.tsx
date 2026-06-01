@@ -21,6 +21,9 @@ import {
   usePaymentDetail,
   useUpdateBeneficiaryInfo,
 } from '@/hooks/usePayments';
+import { useCreateBeneficiary } from '@/hooks/useBeneficiaries';
+import type { BeneficiaryMode, IdentifierType } from '@/lib/beneficiaries/spec';
+import { isBeneficiaryComplete } from '@/lib/beneficiaries/spec';
 import {
   BeneficiaryEditForm,
   type BeneficiaryFormValues,
@@ -30,10 +33,14 @@ export default function EditBeneficiaryPage() {
   const { paymentId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation('payments');
+  const { t: tc } = useTranslation('client');
 
   const { data: payment, isLoading } = usePaymentDetail(paymentId);
   const updateBeneficiaryInfo = useUpdateBeneficiaryInfo();
+  const createBeneficiary = useCreateBeneficiary();
   const [isUploadingQr, setIsUploadingQr] = useState(false);
+  // Lot 5: offer to also persist this completed beneficiary to the carnet.
+  const [alsoSave, setAlsoSave] = useState(false);
 
   const goBackToPayment = () => {
     if (paymentId) navigate(`/payments/${paymentId}`);
@@ -77,6 +84,40 @@ export default function EditBeneficiaryPage() {
         },
         paymentMethod: payment.method,
       });
+
+      // Lot 5: optionally also save to the client's carnet for reuse.
+      // Only when checked, the payment isn't already linked, and the data
+      // is complete for its mode (mirror of the DB CHECK). Non-blocking:
+      // a carnet failure must not undo the payment-snapshot save.
+      if (alsoSave && !payment.beneficiary_id && payment.method !== 'cash') {
+        const mode = payment.method as BeneficiaryMode;
+        const carnetInput = {
+          payment_method: mode,
+          alias: values.beneficiary_name || '',
+          name: values.beneficiary_name || '',
+          identifier: values.beneficiary_identifier || undefined,
+          identifier_type:
+            (payment.method === 'alipay' || payment.method === 'wechat') && values.beneficiary_identifier
+              ? ('id' as IdentifierType)
+              : undefined,
+          phone: values.beneficiary_phone || undefined,
+          email: values.beneficiary_email || undefined,
+          bank_name: values.beneficiary_bank_name || undefined,
+          bank_account: values.beneficiary_bank_account || undefined,
+          bank_extra: values.beneficiary_bank_extra || undefined,
+        };
+        const completeForCarnet = isBeneficiaryComplete({
+          ...carnetInput,
+          qr_code_url: qrUrl || undefined,
+        });
+        if (completeForCarnet) {
+          try {
+            await createBeneficiary.mutateAsync({ ...carnetInput, qr_code_file: qrFile ?? undefined });
+          } catch {
+            // Hook toasts the cause; the payment beneficiary is already saved.
+          }
+        }
+      }
 
       toast.success(t('detail.toast.beneficiarySaved'));
       goBackToPayment();
@@ -164,6 +205,17 @@ export default function EditBeneficiaryPage() {
           onValidationError={(key) => toast.error(t(key))}
           renderActions={({ submit }) => (
             <div className="fixed inset-x-0 bottom-0 bg-background border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-10">
+              {payment.method !== 'cash' && !payment.beneficiary_id && (
+                <label className="flex items-center gap-2 text-sm text-muted-foreground mb-3 max-w-screen-md mx-auto cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={alsoSave}
+                    onChange={(e) => setAlsoSave(e.target.checked)}
+                    className="w-4 h-4 rounded border-border"
+                  />
+                  {tc('beneficiaries.saveToCarnet', { defaultValue: 'Enregistrer aussi dans mon carnet' })}
+                </label>
+              )}
               <div className="flex gap-3 max-w-screen-md mx-auto">
                 <button
                   type="button"
