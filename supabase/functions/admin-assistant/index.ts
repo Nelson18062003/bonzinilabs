@@ -769,6 +769,35 @@ const READ_TOOLS: ReadTool[] = [
       return { count: data?.length ?? 0, entries: data ?? [] };
     },
   },
+  {
+    name: "query_database",
+    permission: "canViewLogs",
+    description:
+      "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 200 lignes.\n" +
+      "Tables principales (colonnes utiles) :\n" +
+      "- clients(user_id, first_name, last_name, phone, company_name, country, city, kyc_verified, status, created_at)\n" +
+      "- wallets(user_id, balance_xaf, updated_at)\n" +
+      "- deposits(reference, user_id, amount_xaf, confirmed_amount_xaf, method, status, bank_name, agency_name, created_at, validated_at)\n" +
+      "- payments(reference, user_id, amount_xaf, amount_rmb, exchange_rate, method, status, beneficiary_name, created_at, processed_at)\n" +
+      "- ledger_entries(user_id, entry_type, amount_xaf, balance_after, description, created_at)\n" +
+      "- beneficiaries(client_id, alias, name, payment_method, phone, bank_name)\n" +
+      "- daily_rates(rate_cash, rate_alipay, rate_wechat, rate_virement, is_active, effective_at)\n" +
+      "- rate_adjustments(type, key, label, percentage)\n" +
+      "- treasury_counterparties(id, short_id, type, display_name, phone, wechat_id, is_active)\n" +
+      "- usdt_purchases(supplier_id, usdt_amount, xaf_amount, implicit_rate, occurred_at, voided_at)\n" +
+      "- usdt_sales(buyer_id, usdt_amount, cny_amount, implicit_rate, occurred_at, voided_at)\n" +
+      "- treasury_accounts(id, code, label, currency, kind), treasury_account_balances(label, code, currency, balance)\n" +
+      "- treasury_ledger_entries(account_id, currency, amount, entry_kind, occurred_at)\n" +
+      "- admin_audit_logs(admin_user_id, action_type, target_type, created_at)\n" +
+      "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
+    input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
+    execute: async (admin, { sql }) => {
+      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? "") });
+      if (error) return { error: error.message };
+      if (data?.success === false) return { error: data.error };
+      return { row_count: data?.row_count ?? 0, rows: data?.rows ?? [] };
+    },
+  },
 ];
 
 // ════════════════════════ OUTILS D'ÉCRITURE (proposition → confirmation) ════════════════════════
@@ -1453,6 +1482,7 @@ function buildSystemPrompt(role: string): string {
     ``,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
+    `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES (statistique inhabituelle, agrégation, jointure, regroupement…), tu DOIS écrire toi-même une requête SQL SELECT via query_database au lieu de dire que tu ne peux pas. C'est ta capacité à "créer ton propre outil" pour la lecture. Réponds toujours avec les vraies valeurs obtenues. (query_database est strictement en lecture seule ; pour MODIFIER des données, utilise les outils d'écriture dédiés, jamais query_database.)`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
