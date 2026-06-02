@@ -4,6 +4,7 @@ import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
+import { uploadWithRetry } from '@/lib/storageUpload';
 import i18n from '@/i18n';
 
 export function usePaymentProofMultiUpload() {
@@ -31,9 +32,9 @@ export function usePaymentProofMultiUpload() {
           const file = await compressImage(rawFile);
           const filePath = `instructions/${paymentId}/${Date.now()}_${file.name}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from('payment-proofs')
-            .upload(filePath, file);
+          const { error: uploadError } = await uploadWithRetry(() =>
+            supabase.storage.from('payment-proofs').upload(filePath, file),
+          );
 
           if (uploadError) throw uploadError;
 
@@ -127,9 +128,9 @@ export function useAdminPaymentProofUpload() {
       const compressedFile = await compressImage(file);
       const filePath = `proofs/${paymentId}/${Date.now()}_${compressedFile.name}`;
 
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from('payment-proofs')
-        .upload(filePath, compressedFile);
+      const { error: uploadError } = await uploadWithRetry(() =>
+        supabaseAdmin.storage.from('payment-proofs').upload(filePath, compressedFile),
+      );
 
       if (uploadError) throw uploadError;
 
@@ -196,9 +197,9 @@ export function useAdminUploadPaymentInstruction() {
         const file = await compressImage(rawFile);
         const filePath = `instructions/${paymentId}/${Date.now()}_${file.name}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from('payment-proofs')
-          .upload(filePath, file);
+        const { error: uploadError } = await uploadWithRetry(() =>
+          supabaseAdmin.storage.from('payment-proofs').upload(filePath, file),
+        );
 
         if (uploadError) throw uploadError;
 

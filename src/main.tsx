@@ -30,7 +30,12 @@ function showFatal(message: string, isChunkError: boolean) {
 }
 
 function isChunk(msg: string): boolean {
-  return /dynamically imported module|Failed to fetch|Importing a module|ChunkLoadError|Loading chunk|MIME type/i.test(msg);
+  // NOTE: match only genuine lazy-chunk/module load failures. A bare
+  // "Failed to fetch" is too broad — it also fires on transient network errors
+  // (e.g. a proof upload over a flaky mobile connection) and must NOT blow away
+  // the whole app. Real dynamic-import failures still match via
+  // "dynamically imported module" / "Loading chunk" / "ChunkLoadError".
+  return /dynamically imported module|Importing a module|ChunkLoadError|Loading chunk|MIME type/i.test(msg);
 }
 
 // Filet : erreurs synchrones non capturées + promesses rejetées (imports lazy).
