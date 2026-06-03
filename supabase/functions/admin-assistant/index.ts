@@ -29,6 +29,21 @@ const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6"
 const MAX_TOOL_ITERATIONS = 14;
 const MIN_PAYMENT_XAF = 10_000;
 
+// ─── Instrumentation coût (Lot 1) ─────────────────────────────────────────────
+// Les COMPTES de tokens sont EXACTS (issus de l'API). Les tarifs ci-dessous sont
+// un ORDRE DE GRANDEUR (USD / million de tokens) pour estimer le coût ; ajuste-les
+// si la facturation réelle diffère. Surchargeables sans risque.
+interface TokenUsage { input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; }
+const PRICING_USD_PER_MTOK: Record<string, { in: number; out: number; cacheRead: number; cacheWrite: number }> = {
+  "claude-sonnet-4-6": { in: 3, out: 15, cacheRead: 0.30, cacheWrite: 3.75 },
+  "claude-haiku-4-5":  { in: 1, out: 5, cacheRead: 0.10, cacheWrite: 1.25 },
+};
+function estimateCostUsd(model: string, u: TokenUsage): number {
+  const p = PRICING_USD_PER_MTOK[model] ?? PRICING_USD_PER_MTOK["claude-sonnet-4-6"];
+  const cost = (u.input_tokens * p.in + u.output_tokens * p.out + u.cache_read_input_tokens * p.cacheRead + u.cache_creation_input_tokens * p.cacheWrite) / 1_000_000;
+  return Math.round(cost * 1e6) / 1e6; // 6 décimales
+}
+
 // Liste blanche pour les actions wallet (crédit/débit manuel) : e-mails ou user_id
 // autorisés EN PLUS des super_admin. Configuré via secret (ex. "jonas@bonzini.com").
 const WALLET_ADMINS = (Deno.env.get("ASSISTANT_WALLET_ADMINS") ?? "")
@@ -1828,7 +1843,7 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>) {
  * mot-à-mot côté client.
  */
 // deno-lint-ignore no-explicit-any
-async function streamAnthropic(apiKey: string, body: Record<string, unknown>, onText: (delta: string) => void): Promise<{ content: any[]; stop_reason: string }> {
+async function streamAnthropic(apiKey: string, body: Record<string, unknown>, onText: (delta: string) => void): Promise<{ content: any[]; stop_reason: string; usage: TokenUsage }> {
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -1842,6 +1857,7 @@ async function streamAnthropic(apiKey: string, body: Record<string, unknown>, on
   // deno-lint-ignore no-explicit-any
   const blocks: any[] = [];
   let stopReason = "end_turn";
+  const usage: TokenUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
   const jsonBuf: Record<number, string> = {}; // accumulation des input_json_delta par index
 
   const reader = res.body.getReader();
@@ -1877,12 +1893,20 @@ async function streamAnthropic(apiKey: string, body: Record<string, unknown>, on
         if (b?.type === "tool_use") {
           try { b.input = jsonBuf[ev.index] ? JSON.parse(jsonBuf[ev.index]) : {}; } catch { b.input = {}; }
         }
-      } else if (ev.type === "message_delta" && ev.delta?.stop_reason) {
-        stopReason = ev.delta.stop_reason;
+      } else if (ev.type === "message_start") {
+        const u = ev.message?.usage;
+        if (u) {
+          usage.input_tokens += Number(u.input_tokens ?? 0);
+          usage.cache_read_input_tokens += Number(u.cache_read_input_tokens ?? 0);
+          usage.cache_creation_input_tokens += Number(u.cache_creation_input_tokens ?? 0);
+        }
+      } else if (ev.type === "message_delta") {
+        if (ev.delta?.stop_reason) stopReason = ev.delta.stop_reason;
+        if (ev.usage?.output_tokens != null) usage.output_tokens = Number(ev.usage.output_tokens);
       }
     }
   }
-  return { content: blocks.filter(Boolean), stop_reason: stopReason };
+  return { content: blocks.filter(Boolean), stop_reason: stopReason, usage };
 }
 
 // Encode un événement SSE pour notre propre flux vers le client.
@@ -2046,6 +2070,7 @@ serve(async (req) => {
         // deno-lint-ignore no-explicit-any
         const proposals: any[] = [];
         let model = MODEL_FAST;
+        const totalUsage: TokenUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
 
         send({ type: "start", conversationId: convId });
 
@@ -2057,6 +2082,10 @@ serve(async (req) => {
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
+            totalUsage.input_tokens += resp.usage.input_tokens;
+            totalUsage.output_tokens += resp.usage.output_tokens;
+            totalUsage.cache_read_input_tokens += resp.usage.cache_read_input_tokens;
+            totalUsage.cache_creation_input_tokens += resp.usage.cache_creation_input_tokens;
             // deno-lint-ignore no-explicit-any
             const toolUses = content.filter((b: any) => b.type === "tool_use");
 
@@ -2132,7 +2161,10 @@ serve(async (req) => {
           await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
           await admin.from("admin_audit_logs").insert({
             admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: convId,
-            details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length },
+            details: {
+              message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length,
+              model, usage: totalUsage, est_cost_usd: estimateCostUsd(model, totalUsage),
+            },
           }).then(() => {}, () => {});
 
           send({ type: "done", conversationId: convId });

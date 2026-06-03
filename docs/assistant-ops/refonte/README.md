@@ -15,6 +15,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 | 05 | [`05-SECURITE-EXPOSITION.md`](./05-SECURITE-EXPOSITION.md) | SQL scopé par rôle (EXPLAIN+allowlist), matrice PII, masquage avant LLM, rétention |
 | 06 | [`06-EVAL-ET-COUT.md`](./06-EVAL-ET-COUT.md) | Jeu d'eval (régression) + instrumentation coût/tokens |
 | 07 | [`07-ROADMAP.md`](./07-ROADMAP.md) | Lots ordonnancés (Lot 1 = eval/coût d'abord), dépendances, DoD |
+| 08 | [`08-LOT1-LOG.md`](./08-LOT1-LOG.md) | Journal Lot 1 : instrumentation coût (edge) + harnais d'eval (`eval/assistant/`) |
 
 ## Documents v1 (hérités, à côté)
 - [`../CONCEPTION.md`](../CONCEPTION.md) · [`../PLAN-DEV.md`](../PLAN-DEV.md) — le design/build initial de l'agent (livré). La refonte les prolonge.
@@ -23,4 +24,5 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 ## État
 - ✅ Conception complète (phases 0→7).
 - ✅ Quick-wins QW-1..6 codés et vérifiés sur la branche — **à déployer** (`supabase functions deploy admin-assistant`).
-- ⏭️ Implémentation : **Lot 1 (eval + coût) d'abord**, sur feu vert.
+- ✅ **Lot 1 livré** : instrumentation coût (edge) + harnais d'eval (`eval/assistant/`, grader vérifié 11/11) — **à déployer + recevoir tes 15-20 questions**.
+- ⏭️ Suite : **Lot 2 (parité : bénéficiaires CRUD + ajustements de taux + registre/test)** ou **Lot 3 (mémoire)**.
