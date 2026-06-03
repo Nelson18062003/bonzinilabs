@@ -93,6 +93,16 @@ export const cases: EvalCase[] = [
     expect: { tool: "get_pending_summary" },
   },
 
+  // ── Savoir métier (Lot 5) — répond depuis le socle, plus de « je ne sais pas » ──
+  {
+    id: "qa-knowledge-deposit-validation",
+    family: "qa",
+    role: "ops",
+    turns: ["que se passe-t-il quand je valide un dépôt ?"],
+    expect: { mustContain: ["solde"], mustNotContain: ["je ne sais pas"] },
+    note: "Lot 5 : valider un dépôt crédite le solde XAF (wallet) du client.",
+  },
+
   // ── Mémoire (multi-tours) — anti-régression P0-A ──────────────────────────
   {
     id: "memory-multiturn-reference",

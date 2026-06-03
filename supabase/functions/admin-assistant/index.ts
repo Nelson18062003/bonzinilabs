@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.3 — 68 outils (43 lecture + 25 écriture), trésorerie complète,
+// Version: 2026-06-03.4 — 69 outils (44 lecture + 25 écriture), trésorerie complète,
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -74,6 +74,17 @@ const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
   cash_agent:       { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true,  canProcessPayments: true,  canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
   treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true },
 };
+
+// Tables lisibles en SQL libre selon les permissions du rôle (Lot 4b — confidentialité).
+function allowedTablesForRole(perms: Record<PermKey, boolean>): string[] {
+  const t: string[] = [];
+  if (perms.canViewClients) t.push("clients", "wallets", "ledger_entries");
+  if (perms.canViewDeposits) t.push("deposits", "deposit_proofs", "deposit_timeline_events");
+  if (perms.canViewPayments) t.push("payments", "beneficiaries", "daily_rates", "rate_adjustments");
+  if (perms.canViewTreasury) t.push("treasury_accounts", "treasury_account_balances", "treasury_ledger_entries", "treasury_counterparties", "usdt_purchases", "usdt_sales", "treasury_inventory_snapshots");
+  if (perms.canViewLogs) t.push("admin_audit_logs", "user_roles");
+  return t;
+}
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -213,6 +224,16 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   ],
 };
 
+// Savoir métier détaillé — indexable en mémoire sémantique (reindex_knowledge) → récupéré just-in-time.
+const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
+  { scope: "depots", content: "Cycle d'un dépôt : created → proof_submitted → admin_review → validated ou rejected. Valider un dépôt CRÉDITE le solde XAF (wallet) du client du montant confirmé. Un dépôt peut être créé sans preuve (en attente) puis validé quand l'argent est reçu." },
+  { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Minimum 10 000 XAF. Méthodes : alipay, wechat, bank_transfer, cash." },
+  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Des ajustements en pourcentage par pays et par palier affinent le taux final. Un paiement utilise le taux du jour, ou un taux personnalisé si l'admin en fixe un." },
+  { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
+  { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
+  { scope: "kyc", content: "Les clients ont un statut KYC (kyc_verified). Bonzini cible les importateurs africains qui règlent des fournisseurs chinois — ce ne sont pas des transferts d'argent entre particuliers." },
+];
+
 const READ_TOOLS: ReadTool[] = [
   {
     name: "what_can_i_do",
@@ -224,6 +245,26 @@ const READ_TOOLS: ReadTool[] = [
       const d = domain ? String(domain).toLowerCase() : null;
       const map = d && CAPABILITY_MAP[d] ? { [d]: CAPABILITY_MAP[d] } : CAPABILITY_MAP;
       return Promise.resolve({ capabilities: map, note: "Si tool=null : la plateforme le permet (écran) mais je n'ai pas encore l'outil — le dire honnêtement, ne pas confabuler." });
+    },
+  },
+  {
+    name: "reindex_knowledge",
+    permission: "canViewLogs",
+    superAdminOnly: true,
+    description: "Indexer / réindexer le savoir métier de base dans la mémoire sémantique (rappelé just-in-time). À lancer une fois après déploiement, et après une évolution du savoir. Réservé super_admin.",
+    input_schema: { type: "object", properties: {} },
+    execute: async (admin) => {
+      let n = 0;
+      try {
+        await admin.from("mola_memory").delete().eq("source", "ontology").is("admin_user_id", null);
+        for (const chunk of BUSINESS_ONTOLOGY) {
+          const emb = await embedText(chunk.content);
+          if (!emb) continue;
+          const { error } = await admin.from("mola_memory").insert({ kind: "semantic", admin_user_id: null, scope: chunk.scope, content: chunk.content, embedding: emb, source: "ontology" });
+          if (!error) n++;
+        }
+      } catch (e) { return { error: String((e as Error)?.message ?? e), indexed: n }; }
+      return { indexed: n, total: BUSINESS_ONTOLOGY.length, note: n === 0 ? "Embeddings gte-small indisponibles — réessaie après déploiement." : "Savoir métier indexé en mémoire sémantique." };
     },
   },
   {
@@ -920,7 +961,6 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "query_database",
     permission: "canViewLogs",
-    superAdminOnly: true,
     description:
       "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 200 lignes.\n" +
       "Tables principales (colonnes utiles) :\n" +
@@ -940,8 +980,8 @@ const READ_TOOLS: ReadTool[] = [
       "- admin_audit_logs(admin_user_id, action_type, target_type, created_at)\n" +
       "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
     input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
-    execute: async (admin, { sql }) => {
-      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? "") });
+    execute: async (admin, { sql, __allowed_tables }) => {
+      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? ""), p_allowed_tables: __allowed_tables ?? null });
       if (error) return { error: error.message };
       if (data?.success === false) return { error: data.error };
       return { row_count: data?.row_count ?? 0, rows: data?.rows ?? [] };
@@ -1983,6 +2023,12 @@ function buildSystemPrompt(role: string): string {
     `Tu es l'assistant "Directeur des Opérations" de BonziniLabs, une fintech qui permet aux importateurs africains de régler leurs fournisseurs chinois en XAF.`,
     `Tu assistes un administrateur (rôle: ${role}). Réponds en français, de façon concise, claire et professionnelle.`,
     ``,
+    `CONNAISSANCE MÉTIER (socle — complète toujours par tes outils pour les chiffres réels) :`,
+    `- DÉPÔT : created → proof_submitted → admin_review → validated (crédite le wallet XAF du client) ou rejected.`,
+    `- PAIEMENT fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected). Débite le wallet. Minimum 10 000 XAF. Modes : alipay, wechat, bank_transfer, cash.`,
+    `- TAUX : en CNY (¥) pour 1 000 000 XAF, par mode ; ajustements en % par pays/palier ; un paiement utilise le taux du jour OU un taux personnalisé.`,
+    `- TRÉSORERIE : on achète des USDT en XAF puis on les vend en CNY pour régler les fournisseurs chinois. Coût de revient en WAC ; le bénéfice = le spread achat/vente.`,
+    `- WALLET : solde XAF du client (crédité par dépôt validé, débité par paiement) ; jamais modifié à la main sauf ajustement tracé.`,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
     `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
@@ -2007,6 +2053,7 @@ function buildSystemPrompt(role: string): string {
     `RÈGLES :`,
     `- Formate les montants en XAF avec séparateurs (ex : 10 000 000 XAF). Les taux sont en CNY (¥) pour 1 000 000 XAF.`,
     `- Si un outil renvoie une erreur de permission, indique que ce rôle n'a pas accès à cette action.`,
+    `- VÉRIFIE-toi sur l'argent et les chiffres : avant toute proposition financière, recoupe montant, solde et taux ; sur une réponse chiffrée (volumes, totaux), contrôle la cohérence. Un appel d'outil de plus vaut mieux qu'un chiffre faux.`,
     `- Va à l'essentiel.`,
   ].join("\n");
 }
@@ -2347,7 +2394,10 @@ serve(async (req) => {
                 let result: Record<string, unknown>;
                 if (readTool) {
                   // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
-                  try { result = await readTool.execute(admin, tu.input ?? {}, readTool.needsAuth ? userClient : undefined); }
+                  const toolInput = (tu.input ?? {}) as Record<string, unknown>;
+                  // SQL libre : injecte l'allowlist de tables du rôle (sauf super_admin = accès complet).
+                  if (tu.name === "query_database" && role !== "super_admin") toolInput.__allowed_tables = allowedTablesForRole(perms);
+                  try { result = await readTool.execute(admin, toolInput, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
                   // Si l'outil a produit une image (ex. flyer), on l'envoie au chat.
                   // deno-lint-ignore no-explicit-any
@@ -2390,7 +2440,10 @@ serve(async (req) => {
             }
 
             // deno-lint-ignore no-explicit-any
-            finalText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+            const turnText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+            finalText += (finalText && turnText ? "\n" : "") + turnText;
+            // Réponse tronquée par la limite de tokens → on POURSUIT la génération (QW-2b).
+            if (resp.stop_reason === "max_tokens") { messages.push({ role: "assistant", content }); continue; }
             break;
           }
 

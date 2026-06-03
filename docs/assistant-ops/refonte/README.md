@@ -19,6 +19,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 | 09 | [`09-LOT2-LOG.md`](./09-LOT2-LOG.md) | Journal Lot 2 : 4 outils de parité + introspection `what_can_i_do` + registre/test de dérive |
 | 10 | [`10-LOT3-LOG.md`](./10-LOT3-LOG.md) | Journal Lot 3 : mémoire en couches (migration pgvector + profil + compaction + `remember`) |
 | 11 | [`11-LOT4a-MASQUAGE-LOG.md`](./11-LOT4a-MASQUAGE-LOG.md) | Journal Lot 4a : masquage PII (comptes/IBAN/tél/email) avant LLM, vérifié 9/9 |
+| 12 | [`12-LOT4b-LOT5-LOG.md`](./12-LOT4b-LOT5-LOG.md) | Journal Lots 4b+5 : SQL scopé par rôle (EXPLAIN) + savoir métier + self-correction + QW-2b |
 
 ## Documents v1 (hérités, à côté)
 - [`../CONCEPTION.md`](../CONCEPTION.md) · [`../PLAN-DEV.md`](../PLAN-DEV.md) — le design/build initial de l'agent (livré). La refonte les prolonge.
@@ -30,5 +31,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 - ✅ **Lot 1 livré** : instrumentation coût (edge) + harnais d'eval (`eval/assistant/`, grader vérifié 11/11).
 - ✅ **Lot 2 livré** : 4 outils de parité (bénéficiaires CRUD + ajustement de taux) + introspection `what_can_i_do` + registre/test de dérive (0 dérive, a attrapé 2 vrais écarts). 67 outils.
 - ✅ **Lot 3 livré** : mémoire en couches (migration `mola_memory`/`mola_user_memory` pgvector + profil + compaction + outil `remember`), best-effort. 68 outils. **Migration à appliquer** (`npx supabase db push --linked`).
-- ✅ **Lot 4a livré** : masquage PII (comptes/IBAN/tél/email) avant le LLM (`_shared/mask.ts`, vérifié 9/9). La fuite §6 est fermée (QW-4 + masquage).
-- ⏸️ **Stop volontaire** avant Lot 4b (SQL scopé par rôle — confort, non testable ici) et Lot 5 (savoir + self-correction — dépend de la mémoire). **Valider la fondation au déploiement d'abord.**
+- ✅ **Lot 4a livré** : masquage PII (comptes/IBAN/tél/email) avant le LLM (`_shared/mask.ts`, vérifié 9/9).
+- ✅ **Lot 4b livré** : SQL libre **scopé par rôle** (EXPLAIN + allowlist, fail-closed) — remplace la mitigation QW-4.
+- ✅ **Lot 5 livré** : savoir métier (socle prompt + ontologie indexable `reindex_knowledge`) + self-correction + QW-2b. **69 outils.**
+- 🎯 **Roadmap d'implémentation COMPLÈTE côté code.** Reste : **déployer + valider + brancher tes vraies questions dans l'eval.**
