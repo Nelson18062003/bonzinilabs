@@ -392,16 +392,22 @@ const READ_TOOLS: ReadTool[] = [
     input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
     execute: async (admin, a) => {
       const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
+      const max = clamp(a.limit, 50, 200);
       let q = admin.from("deposits")
         .select("reference, amount_xaf, confirmed_amount_xaf, method, status, bank_name, agency_name, created_at, user_id")
-        .order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+        .order("created_at", { ascending: false }).limit(max);
       if (a.status) q = q.eq("status", a.status);
       if (a.client_user_id) q = q.eq("user_id", a.client_user_id);
       let label: string | undefined;
       if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { period: label, count: data?.length ?? 0, deposits: data ?? [] };
+      const truncated = (data?.length ?? 0) >= max;
+      return {
+        period: label, count: data?.length ?? 0, truncated,
+        note: truncated ? "⚠️ Liste TRONQUÉE (plus de lignes existent). N'additionne PAS ces lignes pour un total/volume — utilise get_operations_stats (exact, côté serveur)." : undefined,
+        deposits: data ?? [],
+      };
     },
   },
   {
@@ -481,16 +487,79 @@ const READ_TOOLS: ReadTool[] = [
     input_schema: { type: "object", properties: { status: { type: "string" }, client_user_id: { type: "string" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, limit: { type: "number" } } },
     execute: async (admin, a) => {
       const hasRange = a.from_date || a.to_date || (a.year && a.month) || a.period;
+      const max = clamp(a.limit, 50, 200);
       let q = admin.from("payments")
         .select("reference, amount_xaf, amount_rmb, method, status, beneficiary_name, created_at, user_id")
-        .order("created_at", { ascending: false }).limit(clamp(a.limit, 15, 50));
+        .order("created_at", { ascending: false }).limit(max);
       if (a.status) q = q.eq("status", a.status);
       if (a.client_user_id) q = q.eq("user_id", a.client_user_id);
       let label: string | undefined;
       if (hasRange) { const r = resolveRange(a); label = r.label; q = q.gte("created_at", r.from).lt("created_at", r.to); }
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { period: label, count: data?.length ?? 0, payments: data ?? [] };
+      const truncated = (data?.length ?? 0) >= max;
+      return {
+        period: label, count: data?.length ?? 0, truncated,
+        note: truncated ? "⚠️ Liste TRONQUÉE (plus de lignes existent). N'additionne PAS ces lignes pour un total/volume — utilise get_operations_stats (exact, côté serveur)." : undefined,
+        payments: data ?? [],
+      };
+    },
+  },
+  {
+    name: "get_operations_stats",
+    permission: "canViewDeposits",
+    description:
+      "STATISTIQUES EXACTES dépôts + paiements sur une période : volumes, comptages, ventilation par statut, plus gros montant. Agrégé CÔTÉ SERVEUR sur TOUTES les lignes de la période (aucun plafond, aucun calcul approximatif). C'EST l'outil à utiliser pour toute question de VOLUME / TOTAL / COMBIEN / bilan du mois. Période : year+month (ex. mai 2026 = year 2026, month 5) OU from_date+to_date (YYYY-MM-DD) OU period (today/week/month/year/all). Renvoie aussi les bornes de dates EXACTES interrogées (pour vérification).",
+    input_schema: { type: "object", properties: { from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" } } },
+    execute: async (admin, a) => {
+      const r = resolveRange(a);
+      const CAP = 50000;
+      const [depRes, payRes] = await Promise.all([
+        admin.from("deposits").select("amount_xaf, confirmed_amount_xaf, status, created_at").gte("created_at", r.from).lt("created_at", r.to).limit(CAP),
+        admin.from("payments").select("amount_xaf, status, created_at").gte("created_at", r.from).lt("created_at", r.to).limit(CAP),
+      ]);
+      if (depRes.error) return { error: depRes.error.message };
+      if (payRes.error) return { error: payRes.error.message };
+      const deps = depRes.data ?? [], pays = payRes.data ?? [];
+      // Agrégation déterministe (montants = entiers XAF, somme exacte en JS sous 2^53).
+      const aggregate = (rows: Array<Record<string, unknown>>, amountKeys: string[], doneStatus: string) => {
+        const byStatus: Record<string, { count: number; volume_xaf: number; volume: string }> = {};
+        let total = 0, doneVol = 0, biggest = 0;
+        for (const row of rows) {
+          const st = String(row.status ?? "?");
+          let amt = 0;
+          for (const k of amountKeys) { const v = Number(row[k]); if (v) { amt = v; break; } }
+          if (!byStatus[st]) byStatus[st] = { count: 0, volume_xaf: 0, volume: "" };
+          byStatus[st].count += 1; byStatus[st].volume_xaf += amt;
+          total += 1;
+          if (st === doneStatus) { doneVol += amt; if (amt > biggest) biggest = amt; }
+        }
+        for (const st of Object.keys(byStatus)) byStatus[st].volume = fmtXAF(byStatus[st].volume_xaf);
+        return { byStatus, total, doneVol, biggest };
+      };
+      const d = aggregate(deps, ["confirmed_amount_xaf", "amount_xaf"], "validated");
+      const p = aggregate(pays, ["amount_xaf"], "completed");
+      const truncated = deps.length >= CAP || pays.length >= CAP;
+      return {
+        periode: r.label,
+        bornes_exactes: { from: r.from, to: r.to },
+        note: "Chiffres EXACTS, agrégés côté serveur sur toutes les lignes. Présente ces nombres tels quels, ne recalcule rien à la main.",
+        depots: {
+          total_count: d.total,
+          volume_valides_xaf: d.doneVol,
+          volume_valides: fmtXAF(d.doneVol),
+          plus_gros_valide: fmtXAF(d.biggest),
+          par_statut: d.byStatus,
+        },
+        paiements: {
+          total_count: p.total,
+          volume_completes_xaf: p.doneVol,
+          volume_completes: fmtXAF(p.doneVol),
+          plus_gros_complete: fmtXAF(p.biggest),
+          par_statut: p.byStatus,
+        },
+        ...(truncated ? { warning: `Période très large (≥ ${CAP} lignes) : chiffres possiblement plafonnés — restreins la période.` } : {}),
+      };
     },
   },
   {
@@ -987,8 +1056,9 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "query_database",
     permission: "canViewLogs",
+    needsAuth: true, // l'RPC assistant_readonly_query vérifie is_admin(auth.uid()) → DOIT recevoir le client authentifié, pas le service-role (sinon auth.uid() = null → refus)
     description:
-      "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 200 lignes.\n" +
+      "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 1000 lignes.\n" +
       "Tables principales (colonnes utiles) :\n" +
       "- clients(user_id, first_name, last_name, phone, company_name, country, city, kyc_verified, status, created_at)\n" +
       "- wallets(user_id, balance_xaf, updated_at)\n" +
@@ -1006,8 +1076,9 @@ const READ_TOOLS: ReadTool[] = [
       "- admin_audit_logs(admin_user_id, action_type, target_type, created_at)\n" +
       "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
     input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
-    execute: async (admin, { sql, __allowed_tables }) => {
-      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? ""), p_allowed_tables: __allowed_tables ?? null });
+    execute: async (admin, { sql, __allowed_tables }, userClient) => {
+      const db = userClient ?? admin; // l'RPC lit auth.uid() : on utilise le client authentifié (admin JWT)
+      const { data, error } = await db.rpc("assistant_readonly_query", { p_sql: String(sql ?? ""), p_allowed_tables: __allowed_tables ?? null });
       if (error) return { error: error.message };
       if (data?.success === false) return { error: data.error };
       return { row_count: data?.row_count ?? 0, rows: data?.rows ?? [] };
@@ -2156,7 +2227,8 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `- WALLET : solde XAF du client (crédité par dépôt validé, débité par paiement) ; jamais modifié à la main sauf ajustement tracé.`,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
-    `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
+    `STATISTIQUES / VOLUMES / TOTAUX (RÈGLE ABSOLUE) : pour TOUTE question chiffrée d'ensemble — « quel volume de dépôts/paiements », « combien de dépôts en mai », « bilan du mois », totaux, ventilation par statut — utilise get_operations_stats (year+month, ou from_date+to_date, ou period). Il agrège EXACTEMENT côté serveur (aucun plafond, aucune approximation) et renvoie les bornes de dates exactes. N'ADDITIONNE JAMAIS toi-même les lignes de list_deposits/list_payments : elles sont tronquées et te donneraient un total FAUX. Si un résultat d'outil contient "truncated": true, NE calcule pas de total à partir de ses lignes — repasse par get_operations_stats (ou query_database avec un GROUP BY). Présente les nombres exacts tels quels ; ne « corrige » pas un chiffre à la louche.`,
+    `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (ses lignes brutes sont tronquées et il ne donne pas les noms).`,
     `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
     `INTROSPECTION & HONNÊTETÉ : avant d'affirmer qu'une action est IMPOSSIBLE, appelle what_can_i_do. Trois réponses honnêtes : (1) je le fais (j'ai l'outil) ; (2) la plateforme le permet via un écran mais je n'ai pas encore l'outil — je le dis franchement et je le signale ; (3) ce n'est pas supporté. Ne confabule JAMAIS une fausse règle métier (ex. « le taux est fixé ») pour masquer l'absence d'un outil.`,
     `DÉCOUVERTE DE CAPACITÉS : si aucun de tes outils dédiés ne correspond à une action demandée, appelle d'abord find_capability (ex. « annuler dépôt », « confirmer cash ») — la plateforme expose peut-être déjà cette action, prête à l'emploi. Puis exécute-la via do_capability (son name + les paramètres ; donne une référence BZ-…, l'identifiant est résolu, et une carte de confirmation s'affiche). Ne dis « je ne peux pas » qu'APRÈS avoir cherché une capacité.`,
