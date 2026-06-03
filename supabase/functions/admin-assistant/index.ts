@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.1 — 62 outils (42 lecture + 20 écriture), trésorerie complète,
+// Version: 2026-06-03.2 — 67 outils (43 lecture + 24 écriture), trésorerie complète,
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -145,6 +145,8 @@ interface ReadTool {
   needsAuth?: boolean;
   /** Défense en profondeur : outil réservé au super_admin (ex. requête SQL libre). */
   superAdminOnly?: boolean;
+  /** Toujours disponible (introspection des capacités) — bypass du filtre de permission. */
+  always?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
@@ -181,7 +183,48 @@ async function findClientsByName(admin: AnyClient, name: unknown, max = 10): Pro
   }).slice(0, max);
 }
 
+// Carte des capacités (introspection) — sert what_can_i_do. tool=null = la plateforme
+// le permet (via un écran) mais Mola n'a pas encore l'outil → dire l'état ⚠️, ne pas confabuler.
+const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | null; note?: string }>> = {
+  clients: [
+    { capability: "créer / modifier un client", tool: "create_client / update_client" },
+    { capability: "rechercher, fiche 360°, solde, grand livre", tool: "search_clients / get_client_full_activity / get_wallet_balance / get_ledger" },
+    { capability: "supprimer définitivement", tool: "delete_client", note: "super_admin" },
+  ],
+  depots: [
+    { capability: "créer / valider / rejeter un dépôt", tool: "create_deposit / create_and_validate_deposit / validate_deposit / reject_deposit" },
+    { capability: "attacher une preuve (capture/PDF)", tool: "auto (pièces jointes du message)" },
+  ],
+  paiements: [
+    { capability: "créer un paiement au taux du jour OU à un taux personnalisé", tool: "create_payment", note: "exchange_rate optionnel = taux personnalisé, comme l'écran admin" },
+    { capability: "compléter le bénéficiaire d'UN paiement", tool: "update_payment_beneficiary" },
+    { capability: "annuler un paiement non finalisé (rembourse)", tool: "cancel_payment", note: "super_admin" },
+    { capability: "enregistrer / modifier / archiver un bénéficiaire RÉUTILISABLE", tool: "create_beneficiary / update_beneficiary / archive_beneficiary" },
+    { capability: "joindre un QR à un bénéficiaire enregistré", tool: null, note: "pas encore d'outil — possible via l'écran Bénéficiaires" },
+  ],
+  taux: [
+    { capability: "définir les 4 taux du jour", tool: "set_daily_rate" },
+    { capability: "modifier un ajustement de taux par pays/palier (%)", tool: "set_rate_adjustment", note: "super_admin" },
+    { capability: "générer le flyer du taux", tool: "generate_rate_flyer" },
+  ],
+  tresorerie: [
+    { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
+  ],
+};
+
 const READ_TOOLS: ReadTool[] = [
+  {
+    name: "what_can_i_do",
+    permission: "canViewPayments",
+    always: true,
+    description: "INTROSPECTION : ce que TOI (l'assistant) peux faire, par domaine, et ce que la plateforme permet même sans outil dédié. À APPELER avant d'affirmer qu'une action est impossible. domain optionnel (clients|depots|paiements|taux|tresorerie).",
+    input_schema: { type: "object", properties: { domain: { type: "string" } } },
+    execute: (_admin, { domain }) => {
+      const d = domain ? String(domain).toLowerCase() : null;
+      const map = d && CAPABILITY_MAP[d] ? { [d]: CAPABILITY_MAP[d] } : CAPABILITY_MAP;
+      return Promise.resolve({ capabilities: map, note: "Si tool=null : la plateforme le permet (écran) mais je n'ai pas encore l'outil — le dire honnêtement, ne pas confabuler." });
+    },
+  },
   {
     name: "search_clients",
     permission: "canViewClients",
@@ -1791,6 +1834,127 @@ const WRITE_TOOLS: WriteTool[] = [
       return data;
     },
   },
+  // ─── Parité (Lot 2) : bénéficiaires réutilisables + ajustements de taux ───
+  {
+    name: "create_beneficiary",
+    permission: "canProcessPayments",
+    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. Optionnels: identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_user_id: { type: "string" }, payment_method: { type: "string", enum: ["alipay", "wechat", "bank_transfer", "cash"] },
+        alias: { type: "string" }, name: { type: "string" }, identifier: { type: "string" }, identifier_type: { type: "string" },
+        phone: { type: "string" }, email: { type: "string" }, bank_name: { type: "string" }, bank_account: { type: "string" },
+        bank_extra: { type: "string" }, relation_type: { type: "string" }, notes: { type: "string" },
+      },
+      required: ["client_user_id", "payment_method", "alias", "name"],
+    },
+    prepare: async (admin, a) => {
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!["alipay", "wechat", "bank_transfer", "cash"].includes(a.payment_method)) return { ok: false, error: "payment_method invalide (alipay|wechat|bank_transfer|cash)." };
+      if (!a.alias || !a.name) return { ok: false, error: "alias et name sont requis." };
+      const row = {
+        client_id: c.uid, payment_method: a.payment_method, alias: String(a.alias).trim(), name: String(a.name).trim(),
+        identifier: a.identifier || null, identifier_type: a.identifier_type || null, phone: a.phone || null, email: a.email || null,
+        bank_name: a.bank_name || null, bank_account: a.bank_account || null, bank_extra: a.bank_extra || null,
+        relation_type: a.relation_type || null, notes: a.notes || null, qr_code_url: null,
+      };
+      const lines: Line[] = [
+        { label: "Client", value: c.name }, { label: "Bénéficiaire", value: `${row.alias} — ${row.name}` },
+        { label: "Mode", value: PAYMENT_METHOD_LABEL[a.payment_method] || a.payment_method },
+      ];
+      if (row.phone) lines.push({ label: "Téléphone", value: String(row.phone) });
+      if (row.bank_name) lines.push({ label: "Banque", value: String(row.bank_name) });
+      return { ok: true, args: { row }, summary: { title: "Enregistrer un bénéficiaire", subtitle: c.name, lines, confirmLabel: "Enregistrer le bénéficiaire" } };
+    },
+    execute: async (userClient, args, ctx) => {
+      const { error } = await userClient.from("beneficiaries").insert({ ...(args.row as Record<string, unknown>), created_by: ctx.adminUserId, created_by_role: "admin" });
+      if (error) {
+        if ((error as AnyClient)?.code === "23505") return { success: false, error: "Ce bénéficiaire est déjà enregistré pour ce client." };
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    },
+  },
+  {
+    name: "update_beneficiary",
+    permission: "canProcessPayments",
+    description: "Modifier un bénéficiaire enregistré (par beneficiary_id, obtenu via list_beneficiaries). Champs: alias, name, identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        beneficiary_id: { type: "string" }, alias: { type: "string" }, name: { type: "string" }, identifier: { type: "string" },
+        identifier_type: { type: "string" }, phone: { type: "string" }, email: { type: "string" }, bank_name: { type: "string" },
+        bank_account: { type: "string" }, bank_extra: { type: "string" }, relation_type: { type: "string" }, notes: { type: "string" },
+      },
+      required: ["beneficiary_id"],
+    },
+    prepare: async (admin, a) => {
+      if (!UUID_RE.test(String(a.beneficiary_id ?? ""))) return { ok: false, error: "beneficiary_id (UUID) requis. Utilise list_beneficiaries pour le récupérer." };
+      const { data: ben } = await admin.from("beneficiaries").select("id, alias, name").eq("id", a.beneficiary_id).maybeSingle();
+      if (!ben) return { ok: false, error: "Bénéficiaire introuvable." };
+      const editable = ["alias", "name", "identifier", "identifier_type", "phone", "email", "bank_name", "bank_account", "bank_extra", "relation_type", "notes"];
+      const fields: Record<string, unknown> = {};
+      const lines: Line[] = [{ label: "Bénéficiaire", value: `${ben.alias} — ${ben.name}` }];
+      for (const k of editable) { if (a[k] !== undefined && a[k] !== null) { fields[k] = a[k]; lines.push({ label: k, value: String(a[k]) }); } }
+      if (Object.keys(fields).length === 0) return { ok: false, error: "Aucun champ à modifier fourni." };
+      return { ok: true, args: { beneficiary_id: ben.id, fields }, summary: { title: "Modifier un bénéficiaire", subtitle: `${ben.alias} — ${ben.name}`, lines, confirmLabel: "Enregistrer" } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.from("beneficiaries").update(args.fields).eq("id", args.beneficiary_id).select("id");
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: "Aucune ligne modifiée (introuvable ou accès refusé)." };
+      return { success: true };
+    },
+  },
+  {
+    name: "archive_beneficiary",
+    permission: "canProcessPayments",
+    description: "Archiver (désactiver) un bénéficiaire enregistré (par beneficiary_id) → is_active=false. Réversible (réactivable via update direct). Il disparaît des listes actives sans être supprimé.",
+    input_schema: { type: "object", properties: { beneficiary_id: { type: "string" } }, required: ["beneficiary_id"] },
+    prepare: async (admin, a) => {
+      if (!UUID_RE.test(String(a.beneficiary_id ?? ""))) return { ok: false, error: "beneficiary_id (UUID) requis (via list_beneficiaries)." };
+      const { data: ben } = await admin.from("beneficiaries").select("id, alias, name").eq("id", a.beneficiary_id).maybeSingle();
+      if (!ben) return { ok: false, error: "Bénéficiaire introuvable." };
+      return { ok: true, args: { beneficiary_id: ben.id }, summary: { title: "Archiver un bénéficiaire", subtitle: `${ben.alias} — ${ben.name}`, lines: [{ label: "Effet", value: "désactivé (réversible)" }], confirmLabel: "Archiver", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.from("beneficiaries").update({ is_active: false }).eq("id", args.beneficiary_id).select("id");
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: "Aucune ligne modifiée." };
+      return { success: true };
+    },
+  },
+  {
+    name: "set_rate_adjustment",
+    permission: "canManageRates",
+    superAdminOnly: true,
+    description: "Modifier le POURCENTAGE d'un ajustement de taux existant (par pays/palier), comme l'écran Taux. ⚠️ Impacte le calcul de TOUS les nouveaux paiements concernés. Fournir key (la clé de l'ajustement, via get_rate_adjustments) et percentage (nouveau %). Optionnel: type (pour désambiguïser). Ne crée pas d'ajustement (la plateforme ne fait que les modifier).",
+    input_schema: { type: "object", properties: { key: { type: "string" }, percentage: { type: "number" }, type: { type: "string" } }, required: ["key", "percentage"] },
+    prepare: async (admin, a) => {
+      if (a.percentage == null || !Number.isFinite(Number(a.percentage))) return { ok: false, error: "percentage invalide." };
+      let q = admin.from("rate_adjustments").select("id, type, key, label, percentage").eq("key", String(a.key));
+      if (a.type) q = q.eq("type", String(a.type));
+      const { data: rows } = await q;
+      if (!rows || rows.length === 0) return { ok: false, error: `Aucun ajustement pour key="${a.key}". Utilise get_rate_adjustments pour voir les clés.` };
+      if (rows.length > 1) return { ok: false, error: `Plusieurs ajustements pour "${a.key}" : ${rows.map((r: AnyClient) => `${r.type}/${r.key}`).join(", ")}. Précise type.` };
+      const adj = rows[0];
+      const lines: Line[] = [
+        { label: "Ajustement", value: `${adj.label ?? adj.key} (${adj.type})` },
+        { label: "Actuel", value: `${adj.percentage} %` },
+        { label: "Nouveau", value: `${Number(a.percentage)} %` },
+        { label: "Effet", value: "⚠️ s'applique aux nouveaux paiements" },
+      ];
+      return { ok: true, args: { p_adjustment_id: adj.id, p_percentage: Number(a.percentage) }, summary: { title: "Modifier un ajustement de taux", subtitle: String(adj.label ?? adj.key), lines, confirmLabel: "Appliquer l'ajustement", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("update_rate_adjustment", args);
+      if (error) return { success: false, error: error.message };
+      if (data?.success === false) return { success: false, error: data.error };
+      return data;
+    },
+  },
 ];
 
 function buildSystemPrompt(role: string): string {
@@ -1802,9 +1966,10 @@ function buildSystemPrompt(role: string): string {
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
     `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
     `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
+    `INTROSPECTION & HONNÊTETÉ : avant d'affirmer qu'une action est IMPOSSIBLE, appelle what_can_i_do. Trois réponses honnêtes : (1) je le fais (j'ai l'outil) ; (2) la plateforme le permet via un écran mais je n'ai pas encore l'outil — je le dis franchement et je le signale ; (3) ce n'est pas supporté. Ne confabule JAMAIS une fausse règle métier (ex. « le taux est fixé ») pour masquer l'absence d'un outil.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     ``,
-    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
+    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
     `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
     `- N'invente jamais un montant ou un user_id : récupère-les. Par défaut, le taux RMB est calculé automatiquement par l'outil au taux du jour — ne calcule pas le taux toi-même. EXCEPTION : si l'admin demande explicitement un taux personnalisé (ex. « au taux 78 »), passe-le dans le paramètre exchange_rate de create_payment ; la plateforme autorise les paiements à taux personnalisé, exactement comme l'écran de paiement admin. Ne dis donc JAMAIS que « le taux est fixé » : c'est faux.`,
@@ -2041,7 +2206,7 @@ serve(async (req) => {
     const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
     // Outils autorisés pour ce rôle (lecture + écriture)
-    const allowedRead = READ_TOOLS.filter((t) => perms[t.permission] && !(t.superAdminOnly && role !== "super_admin"));
+    const allowedRead = READ_TOOLS.filter((t) => t.always || (perms[t.permission] && !(t.superAdminOnly && role !== "super_admin")));
     const allowedWrite = WRITE_TOOLS.filter((t) => {
       if (!perms[t.permission]) return false;
       if (t.superAdminOnly && role !== "super_admin") return false;
