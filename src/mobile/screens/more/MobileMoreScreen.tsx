@@ -106,7 +106,7 @@ export function MobileMoreScreen() {
         <div className="divide-y divide-border">
           <MenuItem
             icon={Bot}
-            label="Assistant"
+            label="Mola"
             description="Pose une question sur la plateforme"
             onClick={() => navigate('/m/assistant')}
           />

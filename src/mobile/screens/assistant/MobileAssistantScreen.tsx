@@ -226,7 +226,7 @@ export function MobileAssistantScreen() {
 
   const header = (
     <MobileHeader
-      title="Assistant"
+      title="Mola"
       subtitle="Directeur des Opérations"
       showBack
       rightElement={
@@ -332,7 +332,7 @@ export function MobileAssistantScreen() {
             Bonjour {profile?.first_name || ''} 👋
           </h2>
           <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-            Pose-moi une question sur la plateforme — clients, dépôts, paiements, taux, statistiques.
+            Je suis Mola, ton directeur des opérations. Pose-moi une question sur la plateforme — clients, dépôts, paiements, taux, statistiques.
             Tu peux écrire, <span className="font-medium text-foreground">dicter avec le micro du clavier</span>,
             ou <span className="font-medium text-foreground">joindre une capture ou un PDF</span> (📎).
           </p>
@@ -412,7 +412,7 @@ export function MobileAssistantScreen() {
             <div className="flex justify-start">
               <div className="bg-muted text-muted-foreground rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">L'assistant réfléchit…</span>
+                <span className="text-sm">Mola réfléchit…</span>
               </div>
             </div>
           )}
