@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.4 — 69 outils (44 lecture + 25 écriture), trésorerie complète,
+// Version: 2026-06-03.5 — 71 outils (45 lecture + 26 écriture) + découverte de capacités (do_capability),
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -265,6 +265,18 @@ const READ_TOOLS: ReadTool[] = [
         }
       } catch (e) { return { error: String((e as Error)?.message ?? e), indexed: n }; }
       return { indexed: n, total: BUSINESS_ONTOLOGY.length, note: n === 0 ? "Embeddings gte-small indisponibles — réessaie après déploiement." : "Savoir métier indexé en mémoire sémantique." };
+    },
+  },
+  {
+    name: "find_capability",
+    permission: "canViewPayments",
+    always: true,
+    description: "DÉCOUVERTE : trouve dynamiquement les capacités (actions/lectures) de la plateforme, même celles sans outil dédié écrit à la main. Donne un terme (ex. « annuler dépôt », « confirmer cash »). Renvoie les opérations disponibles, leurs paramètres réels et si elles demandent une confirmation. À utiliser AVANT de dire que tu ne peux pas faire une action.",
+    input_schema: { type: "object", properties: { search: { type: "string" } } },
+    execute: async (admin, { search }) => {
+      const { data, error } = await admin.rpc("mola_discover_capabilities", { p_search: search || null });
+      if (error) return { error: error.message };
+      return { capabilities: data ?? [], note: "Pour exécuter une capacité WRITE découverte : do_capability avec son name + les params (donne une référence BZ-…, l'identifiant est résolu)." };
     },
   },
   {
@@ -1257,6 +1269,27 @@ async function resolveTreasuryAccount(admin: AnyClient, raw: unknown, currency: 
 }
 
 
+/** Résout une RÉFÉRENCE (BZ-DP-…, BZ-…, ou nom de client) ou un UUID → UUID de la cible.
+ *  Utilisé par le gateway générique do_capability (capacités auto-découvertes). */
+async function resolveRef(admin: AnyClient, type: string, value: unknown): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const v = String(value ?? "").trim();
+  if (!v) return { ok: false, error: "Référence manquante." };
+  if (UUID_RE.test(v)) return { ok: true, id: v };
+  if (type === "deposit") {
+    const { data } = await admin.from("deposits").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Dépôt « ${v} » introuvable.` };
+  }
+  if (type === "payment") {
+    const { data } = await admin.from("payments").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Paiement « ${v} » introuvable.` };
+  }
+  if (type === "client") {
+    const c = await resolveClient(admin, v);
+    return c.ok ? { ok: true, id: c.uid } : { ok: false, error: c.error };
+  }
+  return { ok: false, error: `Type de référence inconnu : ${type}.` };
+}
+
 const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_client",
@@ -2018,6 +2051,52 @@ const WRITE_TOOLS: WriteTool[] = [
       return { success: true };
     },
   },
+  {
+    // GATEWAY générique : exécute une capacité AUTO-DÉCOUVERTE (étiquetée @mola en base),
+    // SANS outil dédié. C'est la preuve « AI-native » : une RPC étiquetée devient utilisable
+    // par Mola sans réécriture. Sécurité : permission de la capacité + carte de confirmation.
+    name: "do_capability",
+    permission: "canViewPayments",
+    description: "EXÉCUTE une capacité WRITE découverte via find_capability (par son name exact), même sans outil dédié. Fournir capability (le name) et params (objet). Les références (BZ-DP-…, BZ-…) sont résolues automatiquement. Une carte de confirmation s'affiche.",
+    input_schema: { type: "object", properties: { capability: { type: "string" }, params: { type: "object" } }, required: ["capability"] },
+    prepare: async (admin, a) => {
+      const name = String(a.capability ?? "").trim();
+      if (!name) return { ok: false, error: "capability (name) requis." };
+      const { data: caps } = await admin.rpc("mola_discover_capabilities", { p_search: name });
+      // deno-lint-ignore no-explicit-any
+      const cap = (caps ?? []).find((c: any) => c.name === name);
+      if (!cap) return { ok: false, error: `Capacité « ${name} » introuvable/non exposée. Utilise find_capability d'abord.` };
+      const meta = (cap.meta ?? {}) as AnyClient;
+      if (meta.expose !== true) return { ok: false, error: `Capacité « ${name} » non exposée.` };
+      if (meta.kind === "read") return { ok: false, error: `« ${name} » est une lecture : utilise find_capability/query_database, pas do_capability.` };
+      // Garde de permission (rôle injecté par la boucle dans __perms).
+      const perms = (a.__perms ?? {}) as Record<string, boolean>;
+      if (meta.permission && !perms[meta.permission]) return { ok: false, error: `Ton rôle n'a pas la permission requise (${meta.permission}) pour « ${name} ».` };
+      // Résolution des références + construction des arguments RPC.
+      const inParams = (a.params ?? {}) as Record<string, unknown>;
+      const resolveMap = (meta.resolve ?? {}) as Record<string, string>;
+      const rpcArgs: Record<string, unknown> = {};
+      const lines: Line[] = [{ label: "Action", value: String(meta.label ?? name) }];
+      for (const [k, v] of Object.entries(inParams)) {
+        if (resolveMap[k]) {
+          const r = await resolveRef(admin, resolveMap[k], v);
+          if (!r.ok) return { ok: false, error: r.error };
+          rpcArgs[k] = r.id;
+          lines.push({ label: k, value: `${String(v)} → ${r.id.slice(0, 8)}…` });
+        } else {
+          rpcArgs[k] = v;
+          lines.push({ label: k, value: String(v) });
+        }
+      }
+      return { ok: true, args: { __rpc: name, rpcArgs }, summary: { title: String(meta.label ?? name), subtitle: "capacité découverte", lines, confirmLabel: meta.danger ? "Confirmer (sensible)" : "Confirmer", danger: !!meta.danger } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc(String(args.__rpc), (args.rpcArgs ?? {}) as Record<string, unknown>);
+      if (error) return { success: false, error: error.message };
+      if (data?.success === false) return { success: false, error: data.error };
+      return data ?? { success: true };
+    },
+  },
 ];
 
 function buildSystemPrompt(role: string): string {
@@ -2036,6 +2115,7 @@ function buildSystemPrompt(role: string): string {
     `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
     `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
     `INTROSPECTION & HONNÊTETÉ : avant d'affirmer qu'une action est IMPOSSIBLE, appelle what_can_i_do. Trois réponses honnêtes : (1) je le fais (j'ai l'outil) ; (2) la plateforme le permet via un écran mais je n'ai pas encore l'outil — je le dis franchement et je le signale ; (3) ce n'est pas supporté. Ne confabule JAMAIS une fausse règle métier (ex. « le taux est fixé ») pour masquer l'absence d'un outil.`,
+    `DÉCOUVERTE DE CAPACITÉS : si aucun de tes outils dédiés ne correspond à une action demandée, appelle d'abord find_capability (ex. « annuler dépôt », « confirmer cash ») — la plateforme expose peut-être déjà cette action, prête à l'emploi. Puis exécute-la via do_capability (son name + les paramètres ; donne une référence BZ-…, l'identifiant est résolu, et une carte de confirmation s'affiche). Ne dis « je ne peux pas » qu'APRÈS avoir cherché une capacité.`,
     `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     ``,
@@ -2412,7 +2492,10 @@ serve(async (req) => {
                   }
                 } else if (writeTool) {
                   try {
-                    const prep = await writeTool.prepare(admin, tu.input ?? {});
+                    const wInput = (tu.input ?? {}) as Record<string, unknown>;
+                    // Gateway générique : on injecte les permissions du rôle pour la garde par capacité.
+                    if (tu.name === "do_capability") wInput.__perms = perms;
+                    const prep = await writeTool.prepare(admin, wInput);
                     if (!prep.ok) { result = { error: prep.error }; }
                     else {
                       // Outils acceptant une preuve : on rattache les captures du message à l'action.
