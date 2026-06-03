@@ -1514,13 +1514,15 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "update_payment_beneficiary",
     permission: "canProcessPayments",
     acceptsProof: true,
-    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, banque, compte, QR code. Si l'admin a joint une capture, elle est attachée comme preuve. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
+    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, email, identifiant (+ type), banque, compte, complément bancaire, QR code, notes. Si l'admin a joint une capture, elle est attachée comme preuve. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
     input_schema: {
       type: "object",
       properties: {
         reference: { type: "string" }, payment_id: { type: "string" },
-        beneficiary_name: { type: "string" }, beneficiary_phone: { type: "string" },
-        beneficiary_bank_name: { type: "string" }, beneficiary_bank_account: { type: "string" }, beneficiary_qr_code_url: { type: "string" },
+        beneficiary_name: { type: "string" }, beneficiary_phone: { type: "string" }, beneficiary_email: { type: "string" },
+        beneficiary_identifier: { type: "string" }, beneficiary_identifier_type: { type: "string" },
+        beneficiary_bank_name: { type: "string" }, beneficiary_bank_account: { type: "string" }, beneficiary_bank_extra: { type: "string" },
+        beneficiary_qr_code_url: { type: "string" }, beneficiary_notes: { type: "string" },
       },
     },
     prepare: async (admin, a) => {
@@ -1534,7 +1536,7 @@ const WRITE_TOOLS: WriteTool[] = [
       if (a.beneficiary_name) lines.push({ label: "Bénéficiaire", value: String(a.beneficiary_name) });
       if (a.beneficiary_bank_name) lines.push({ label: "Banque", value: String(a.beneficiary_bank_name) });
       if (a.beneficiary_qr_code_url) lines.push({ label: "QR code", value: "fourni" });
-      return { ok: true, args: { p_payment_id: pay.id, p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null, p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null, p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null }, summary: { title: "Compléter le bénéficiaire", subtitle: pay.reference, lines, confirmLabel: "Enregistrer" } };
+      return { ok: true, args: { p_payment_id: pay.id, p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null, p_beneficiary_email: a.beneficiary_email || null, p_beneficiary_identifier: a.beneficiary_identifier || null, p_beneficiary_identifier_type: a.beneficiary_identifier_type || null, p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null, p_beneficiary_bank_extra: a.beneficiary_bank_extra || null, p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null, p_beneficiary_notes: a.beneficiary_notes || null }, summary: { title: "Compléter le bénéficiaire", subtitle: pay.reference, lines, confirmLabel: "Enregistrer" } };
     },
     execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("admin_update_payment_beneficiary", args);

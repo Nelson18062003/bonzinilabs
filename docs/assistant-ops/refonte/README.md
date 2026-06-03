@@ -20,6 +20,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 | 10 | [`10-LOT3-LOG.md`](./10-LOT3-LOG.md) | Journal Lot 3 : mémoire en couches (migration pgvector + profil + compaction + `remember`) |
 | 11 | [`11-LOT4a-MASQUAGE-LOG.md`](./11-LOT4a-MASQUAGE-LOG.md) | Journal Lot 4a : masquage PII (comptes/IBAN/tél/email) avant LLM, vérifié 9/9 |
 | 12 | [`12-LOT4b-LOT5-LOG.md`](./12-LOT4b-LOT5-LOG.md) | Journal Lots 4b+5 : SQL scopé par rôle (EXPLAIN) + savoir métier + self-correction + QW-2b |
+| 13 | [`13-FINALISATION-LOG.md`](./13-FINALISATION-LOG.md) | Finalisation : parité **catalogue complet** (19/19) + rétention + eval élargi |
 
 ## Documents v1 (hérités, à côté)
 - [`../CONCEPTION.md`](../CONCEPTION.md) · [`../PLAN-DEV.md`](../PLAN-DEV.md) — le design/build initial de l'agent (livré). La refonte les prolonge.
@@ -34,4 +35,5 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 - ✅ **Lot 4a livré** : masquage PII (comptes/IBAN/tél/email) avant le LLM (`_shared/mask.ts`, vérifié 9/9).
 - ✅ **Lot 4b livré** : SQL libre **scopé par rôle** (EXPLAIN + allowlist, fail-closed) — remplace la mitigation QW-4.
 - ✅ **Lot 5 livré** : savoir métier (socle prompt + ontologie indexable `reindex_knowledge`) + self-correction + QW-2b. **69 outils.**
-- 🎯 **Roadmap d'implémentation COMPLÈTE côté code.** Reste : **déployer + valider + brancher tes vraies questions dans l'eval.**
+- ✅ **Finalisation** : parité étendue à **tout le catalogue d'écriture (19/19 outils RPC, 0 dérive)** — a comblé un vrai trou (`update_payment_beneficiary`) + rétention (purge 180 j) + eval élargi (~16 cas).
+- 🎯 **REFONTE TERMINÉE côté code** (4 migrations, harnais d'eval vérifié 11/11 + 9/9 + 19/19). Reste **uniquement** : **déployer + tester + brancher tes vraies questions + valider matrice PII/rétention.**
