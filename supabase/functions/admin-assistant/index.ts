@@ -1284,8 +1284,10 @@ async function resolveRef(admin: AnyClient, type: string, value: unknown): Promi
     return data ? { ok: true, id: data.id } : { ok: false, error: `Paiement « ${v} » introuvable.` };
   }
   if (type === "client") {
-    const c = await resolveClient(admin, v);
-    return c.ok ? { ok: true, id: c.uid } : { ok: false, error: c.error };
+    const clients = await findClientsByName(admin, v, 5);
+    if (clients.length === 0) return { ok: false, error: `Client « ${v} » introuvable.` };
+    if (clients.length > 1) return { ok: false, error: `Plusieurs clients « ${v} » : ${clients.map((c: AnyClient) => `${c.first_name} ${c.last_name}`).join(", ")}. Précise.` };
+    return { ok: true, id: clients[0].user_id };
   }
   return { ok: false, error: `Type de référence inconnu : ${type}.` };
 }
@@ -2088,7 +2090,7 @@ const WRITE_TOOLS: WriteTool[] = [
           lines.push({ label: k, value: String(v) });
         }
       }
-      return { ok: true, args: { __rpc: name, rpcArgs }, summary: { title: String(meta.label ?? name), subtitle: "capacité découverte", lines, confirmLabel: meta.danger ? "Confirmer (sensible)" : "Confirmer", danger: !!meta.danger } };
+      return { ok: true, args: { __rpc: name, __perm: meta.permission ?? null, rpcArgs }, summary: { title: String(meta.label ?? name), subtitle: "capacité découverte", lines, confirmLabel: meta.danger ? "Confirmer (sensible)" : "Confirmer", danger: !!meta.danger } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc(String(args.__rpc), (args.rpcArgs ?? {}) as Record<string, unknown>);
@@ -2331,6 +2333,11 @@ serve(async (req) => {
       const tool = WRITE_TOOLS.find((t) => t.name === pa.tool);
       if (!tool) return json({ success: false, error: "Outil inconnu" }, 400);
       if (!perms[tool.permission]) return json({ success: false, error: "Permission insuffisante pour exécuter cette action." }, 403);
+      // Gateway générique : re-vérifie la permission de la CAPACITÉ (pas seulement de l'outil do_capability).
+      if (pa.tool === "do_capability") {
+        const capPerm = (pa.args as AnyClient)?.__perm as PermKey | undefined;
+        if (capPerm && !perms[capPerm]) return json({ success: false, error: "Permission insuffisante pour cette capacité." }, 403);
+      }
       // Défense en profondeur : super_admin requis pour les actions les plus sensibles
       if (tool.superAdminOnly && role !== "super_admin") {
         return json({ success: false, error: "Action réservée au super administrateur." }, 403);
