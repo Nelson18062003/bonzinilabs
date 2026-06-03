@@ -22,6 +22,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 | 12 | [`12-LOT4b-LOT5-LOG.md`](./12-LOT4b-LOT5-LOG.md) | Journal Lots 4b+5 : SQL scopé par rôle (EXPLAIN) + savoir métier + self-correction + QW-2b |
 | 13 | [`13-FINALISATION-LOG.md`](./13-FINALISATION-LOG.md) | Finalisation : parité **catalogue complet** (19/19) + rétention + eval élargi |
 | 14 | [`14-AI-NATIVE-DIAGNOSTIC-DESIGN.md`](./14-AI-NATIVE-DIAGNOSTIC-DESIGN.md) | **Le vrai plafond** : Mola atteint ~44% des actions de la plateforme → conception de l'auto-génération du catalogue (AI-native) |
+| 15 | [`15-MCP-DEEP-DIVE.md`](./15-MCP-DEEP-DIVE.md) | **MCP en profondeur** + verdict honnête : destination oui (faisable sur edge via mcp-lite), mais la couche de capacités d'abord ; sécurité fintech |
 
 ## Documents v1 (hérités, à côté)
 - [`../CONCEPTION.md`](../CONCEPTION.md) · [`../PLAN-DEV.md`](../PLAN-DEV.md) — le design/build initial de l'agent (livré). La refonte les prolonge.
