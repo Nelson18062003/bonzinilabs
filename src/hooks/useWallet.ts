@@ -188,23 +188,4 @@ export function useWalletOperations(walletId: string | undefined) {
   });
 }
 
-// Fetch current exchange rate
-export function useExchangeRate() {
-  return useQuery({
-    queryKey: ['exchange-rate'],
-    staleTime: CACHE_CONFIG.STALE_TIME.EXCHANGE_RATES,
-    gcTime: CACHE_CONFIG.GC_TIME,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exchange_rates')
-        .select('rate_xaf_to_rmb')
-        .order('effective_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data?.rate_xaf_to_rmb ?? BUSINESS_RULES.DEFAULT_EXCHANGE_RATE;
-    },
-  });
-}
+// (useExchangeRate retiré — table exchange_rates supprimée ; les RMB viennent de daily_rates.)

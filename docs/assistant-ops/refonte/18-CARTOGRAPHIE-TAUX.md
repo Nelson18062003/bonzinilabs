@@ -43,7 +43,12 @@
   - Vérifié : **`tsc --noEmit` exit 0** (imports + types OK ; un import cassé ou un champ absent aurait échoué). `npm run build` non lançable ici (vite absent du sandbox) → à confirmer côté toi, mais le type-check couvre la correction d'imports.
   - `useCurrentExchangeRate` n'a plus aucun appelant (export mort).
 
-## 6. RESTE — étape 3 (pré-DROP, sur ton go)
+## 6. ✅ Étape 3 FAITE — `exchange_rates` supprimé
+- **Frontend** : supprimés — `useExchangeRates.ts`, et les 3 composants chart orphelins (`RateChart`, `ResponsiveRateChart`, `RateDateFilter`). Retirés — `useExchangeRate()` (`useWallet`), les 2 fonctions exchange de `useAdminData`, les 2 entrées `exchange_rates` de `useRealtimeInvalidation`. **`tsc` exit 0**, 0 référence restante.
+- **DB** (migration `20260603170000_drop_exchange_rates.sql`) : drop des RPC `add/update/delete_exchange_rate` + `is_rate_used` + `get_rate_usage_count` (par signature réelle), puis `DROP TABLE exchange_rates`. **Vérifié : aucune FK entrante** (drop sûr, sans CASCADE).
+- ⚠️ Après `db push` : **régénérer les types** (`/gen-types`) pour retirer exchange_rates de `types.ts`.
+
+### (Plan d'origine, pour mémoire)
 Avant `DROP TABLE exchange_rates` :
 1. Retirer les exports morts : `useCurrentExchangeRate`/`useExchangeRate` (`useWallet`), les fonctions exchange de `useAdminData`, et le hook `useExchangeRates.ts` (+ composants chart `RateChart`/`ResponsiveRateChart`/`RateDateFilter` s'ils ne servaient qu'aux orphelins).
 2. Supprimer les RPC `add/update/delete_exchange_rate` (migration).
