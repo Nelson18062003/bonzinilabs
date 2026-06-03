@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.5 — 71 outils (45 lecture + 26 écriture) + découverte de capacités (do_capability),
+// Version: 2026-06-03.6 — 73 outils (46 lecture + 27 écriture) + découverte de capacités (do_capability),
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -277,6 +277,20 @@ const READ_TOOLS: ReadTool[] = [
       const { data, error } = await admin.rpc("mola_discover_capabilities", { p_search: search || null });
       if (error) return { error: error.message };
       return { capabilities: data ?? [], note: "Pour exécuter une capacité WRITE découverte : do_capability avec son name + les params (donne une référence BZ-…, l'identifiant est résolu)." };
+    },
+  },
+  {
+    name: "list_payment_proofs",
+    permission: "canViewPayments",
+    description: "Lister les preuves (justificatifs) d'un paiement, par référence (BZ-…) ou payment_id. Renvoie id, nom de fichier, type, date — utile avant de supprimer (delete_payment_proof) ou de remplacer une preuve.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    execute: async (admin, { reference, payment_id }) => {
+      let pid = payment_id;
+      if (!pid && reference) { const { data } = await admin.from("payments").select("id").eq("reference", reference).maybeSingle(); pid = data?.id; }
+      if (!pid) return { error: "Fournir reference ou payment_id." };
+      const { data, error } = await admin.from("payment_proofs").select("id, file_name, file_type, uploaded_by_type, created_at").eq("payment_id", pid).order("created_at", { ascending: false });
+      if (error) return { error: error.message };
+      return { payment_id: pid, count: data?.length ?? 0, proofs: data ?? [] };
     },
   },
   {
@@ -2097,6 +2111,33 @@ const WRITE_TOOLS: WriteTool[] = [
       if (error) return { success: false, error: error.message };
       if (data?.success === false) return { success: false, error: data.error };
       return data ?? { success: true };
+    },
+  },
+  {
+    name: "replace_payment_proof",
+    permission: "canProcessPayments",
+    acceptsProof: true,
+    description: "Remplacer la/les preuve(s) d'un paiement : supprime les preuves existantes ET attache la nouvelle capture jointe au message. Fournir reference (BZ-…) ou payment_id, et JOINDRE la nouvelle preuve. (Pour seulement supprimer, utilise delete_payment_proof.)",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    prepare: async (admin, a) => {
+      let q = admin.from("payments").select("id, reference");
+      if (a.payment_id) q = q.eq("id", a.payment_id);
+      else if (a.reference) q = q.eq("reference", a.reference);
+      else return { ok: false, error: "Fournir reference ou payment_id." };
+      const { data: pay } = await q.maybeSingle();
+      if (!pay) return { ok: false, error: "Paiement introuvable." };
+      const { data: proofs } = await admin.from("payment_proofs").select("id").eq("payment_id", pay.id);
+      const ids = (proofs ?? []).map((p: AnyClient) => p.id);
+      return { ok: true, args: { p_payment_id: pay.id, proof_ids: ids }, summary: { title: "Remplacer la preuve d'un paiement", subtitle: pay.reference, lines: [{ label: "Preuves existantes", value: `${ids.length} (supprimées)` }, { label: "Nouvelle preuve", value: "capture jointe au message" }], confirmLabel: "Remplacer la preuve", danger: true } };
+    },
+    execute: async (userClient, args, ctx) => {
+      let deleted = 0;
+      for (const pid of ((args.proof_ids ?? []) as string[])) {
+        const { data } = await userClient.rpc("delete_payment_proof", { p_proof_id: pid });
+        if (data?.success !== false) deleted++;
+      }
+      const attached = args.proofAttachments?.length ? await attachPaymentProofs(ctx.admin, args.p_payment_id, ctx.adminUserId, args.proofAttachments) : 0;
+      return { success: true, deleted, attached, note: attached === 0 ? "Aucune nouvelle preuve jointe — preuves supprimées seulement." : undefined };
     },
   },
 ];

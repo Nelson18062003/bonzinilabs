@@ -42,4 +42,11 @@
 2. **Clarifier le groupe exchange_rate** (legacy ?).
 3. À terme : migrer les 19 outils faits-main vers des étiquettes (même garanties, moins de code) + exposer le registre en **MCP** (doc 15).
 
-*Industrialisation en place. Mola découvre et agit ; le sensible attend ton feu.*
+## 7. Décision fondateur appliquée (preuves de paiement)
+- ✅ **`delete_payment_proof` activée** (ON) — Mola peut supprimer une preuve (carte de confirmation, danger).
+- ✅ **Nouvel outil `replace_payment_proof`** (acceptsProof) — **remplace** la preuve : supprime les existantes + attache la nouvelle capture jointe, en une action confirmée. + `list_payment_proofs` (lecture) pour cibler une preuve précise.
+- ⛔ **Restent OFF** (ta décision) : gestion d'admins (`admin_create_admin`, `toggle_admin_status`, `update_admin_role`, `update_admin_profile`) et **resets de mot de passe** (`admin_reset_client_password`, `admin_reset_password`).
+
+**73 outils** (46 lecture + 27 écriture) + 7 capacités opérationnelles auto-découvertes.
+
+*Industrialisation en place. Mola découvre et agit ; admins/mots de passe restent hors de sa portée, par ton choix.*

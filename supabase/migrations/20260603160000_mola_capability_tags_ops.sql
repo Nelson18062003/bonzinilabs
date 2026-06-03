@@ -22,8 +22,9 @@ comment on function public.process_payment(uuid, text, text) is
 -- ════════════ SENSIBLE — ÉTEINT (expose:false) jusqu'à décision explicite ════════════
 -- (Les reset de mot de passe vérifient DÉJÀ super_admin en interne ; on les laisse OFF par prudence.)
 
+-- Activée (décision fondateur) : Mola peut supprimer/remplacer une preuve (toujours avec confirmation).
 comment on function public.delete_payment_proof(uuid) is
-  '@mola:{"expose":false,"kind":"write","permission":"canProcessPayments","danger":true,"label":"Supprimer une preuve de paiement (audit-sensible)"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canProcessPayments","confirm":true,"danger":true,"label":"Supprimer une preuve de paiement"}';
 comment on function public.admin_reset_client_password(uuid) is
   '@mola:{"expose":false,"kind":"write","permission":"canManageUsers","danger":true,"label":"Réinitialiser le mot de passe d''un client (super_admin)","resolve":{"p_target_user_id":"client"}}';
 comment on function public.admin_reset_password(uuid) is
