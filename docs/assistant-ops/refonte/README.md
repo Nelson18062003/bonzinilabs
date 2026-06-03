@@ -25,6 +25,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 | 15 | [`15-MCP-DEEP-DIVE.md`](./15-MCP-DEEP-DIVE.md) | **MCP en profondeur** + verdict honnête : destination oui (faisable sur edge via mcp-lite), mais la couche de capacités d'abord ; sécurité fintech |
 | 16 | [`16-POC-DECOUVERTE-CAPACITES.md`](./16-POC-DECOUVERTE-CAPACITES.md) | **PoC réel** : étiquette `@mola` sur les RPC + `find_capability`/`do_capability` → Mola découvre et exécute une action SANS outil écrit à la main |
 | 17 | [`17-INDUSTRIALISATION-CAPACITES.md`](./17-INDUSTRIALISATION-CAPACITES.md) | Étiquetage des capacités (6 actions opérationnelles ON, 7 sensibles OFF) + durcissement (re-check permission, résolveur client par nom) |
+| 18 | [`18-CARTOGRAPHIE-TAUX.md`](./18-CARTOGRAPHIE-TAUX.md) | Carte des 2 systèmes de taux : `daily_rates` fait foi, `exchange_rates` legacy (affichage seul) + orphelins ; plan de nettoyage sûr |
 
 ## Documents v1 (hérités, à côté)
 - [`../CONCEPTION.md`](../CONCEPTION.md) · [`../PLAN-DEV.md`](../PLAN-DEV.md) — le design/build initial de l'agent (livré). La refonte les prolonge.
