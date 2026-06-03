@@ -106,6 +106,14 @@ export const cases: EvalCase[] = [
     expect: { mustContain: ["jonas"] },
     note: "Le 3e tour référence le 1er → exige le contexte ancien (compaction, Lot 3).",
   },
+  {
+    id: "memory-remember-preference",
+    family: "memory",
+    role: "ops",
+    turns: ["retiens que mon fournisseur USDT habituel est Lizette"],
+    expect: { tool: "remember", mustExecute: false },
+    note: "Lot 3 : « retiens que… » doit proposer l'outil remember (mémoire de profil).",
+  },
 
   // ── Exposition PII (masquage attendu — Lot 4) ─────────────────────────────
   // NB : le masquage IBAN se vérifie au RUNNER (inspection du tool_result AVANT envoi au LLM),

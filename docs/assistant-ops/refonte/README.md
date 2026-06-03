@@ -17,6 +17,7 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 | 07 | [`07-ROADMAP.md`](./07-ROADMAP.md) | Lots ordonnancés (Lot 1 = eval/coût d'abord), dépendances, DoD |
 | 08 | [`08-LOT1-LOG.md`](./08-LOT1-LOG.md) | Journal Lot 1 : instrumentation coût (edge) + harnais d'eval (`eval/assistant/`) |
 | 09 | [`09-LOT2-LOG.md`](./09-LOT2-LOG.md) | Journal Lot 2 : 4 outils de parité + introspection `what_can_i_do` + registre/test de dérive |
+| 10 | [`10-LOT3-LOG.md`](./10-LOT3-LOG.md) | Journal Lot 3 : mémoire en couches (migration pgvector + profil + compaction + `remember`) |
 
 ## Documents v1 (hérités, à côté)
 - [`../CONCEPTION.md`](../CONCEPTION.md) · [`../PLAN-DEV.md`](../PLAN-DEV.md) — le design/build initial de l'agent (livré). La refonte les prolonge.
@@ -27,4 +28,5 @@ Refonte de fond du module Assistant de Bonzini. **Diagnostic + conception**, une
 - ✅ Quick-wins QW-1..6 codés et vérifiés sur la branche — **à déployer** (`supabase functions deploy admin-assistant`).
 - ✅ **Lot 1 livré** : instrumentation coût (edge) + harnais d'eval (`eval/assistant/`, grader vérifié 11/11).
 - ✅ **Lot 2 livré** : 4 outils de parité (bénéficiaires CRUD + ajustement de taux) + introspection `what_can_i_do` + registre/test de dérive (0 dérive, a attrapé 2 vrais écarts). 67 outils.
-- ⏭️ Suite : **Lot 3 (mémoire)**, puis Lot 4 (sécurité), Lot 5 (savoir + self-correction). **À déployer** (`supabase functions deploy admin-assistant`).
+- ✅ **Lot 3 livré** : mémoire en couches (migration `mola_memory`/`mola_user_memory` pgvector + profil + compaction + outil `remember`), best-effort. 68 outils. **Migration à appliquer** (`npx supabase db push --linked`).
+- ⏭️ Suite : **Lot 4 (sécurité/exposition par rôle)**, **Lot 5 (savoir + self-correction)**. **À déployer** (migration + `supabase functions deploy admin-assistant`).

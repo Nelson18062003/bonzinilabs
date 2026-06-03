@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.2 — 67 outils (43 lecture + 24 écriture), trésorerie complète,
+// Version: 2026-06-03.3 — 68 outils (43 lecture + 25 écriture), trésorerie complète,
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -1955,6 +1955,26 @@ const WRITE_TOOLS: WriteTool[] = [
       return data;
     },
   },
+  {
+    name: "remember",
+    permission: "canViewPayments",
+    description: "Mémoriser durablement une préférence ou un fait utile sur l'admin ou son activité (ex. « fournisseur USDT habituel = Lizette », « répondre en français »). Rappelé automatiquement aux prochaines conversations. Fournir key (court) et value. À utiliser quand l'admin dit « retiens que… ».",
+    input_schema: { type: "object", properties: { key: { type: "string" }, value: { type: "string" } }, required: ["key", "value"] },
+    prepare: (_admin, a) => {
+      if (!a.key || !a.value) return Promise.resolve({ ok: false, error: "key et value requis." });
+      const key = String(a.key).trim().slice(0, 80);
+      const value = String(a.value).trim().slice(0, 500);
+      return Promise.resolve({ ok: true, args: { key, value }, summary: { title: "Mémoriser", lines: [{ label: key, value }], confirmLabel: "Mémoriser" } });
+    },
+    execute: async (_userClient, args, ctx) => {
+      const { error } = await ctx.admin.from("mola_user_memory").upsert(
+        { admin_user_id: ctx.adminUserId, key: args.key, value: args.value, updated_at: new Date().toISOString() },
+        { onConflict: "admin_user_id,key" },
+      );
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    },
+  },
 ];
 
 function buildSystemPrompt(role: string): string {
@@ -1967,6 +1987,7 @@ function buildSystemPrompt(role: string): string {
     `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
     `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
     `INTROSPECTION & HONNÊTETÉ : avant d'affirmer qu'une action est IMPOSSIBLE, appelle what_can_i_do. Trois réponses honnêtes : (1) je le fais (j'ai l'outil) ; (2) la plateforme le permet via un écran mais je n'ai pas encore l'outil — je le dis franchement et je le signale ; (3) ce n'est pas supporté. Ne confabule JAMAIS une fausse règle métier (ex. « le taux est fixé ») pour masquer l'absence d'un outil.`,
+    `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
@@ -2072,6 +2093,59 @@ async function streamAnthropic(apiKey: string, body: Record<string, unknown>, on
     }
   }
   return { content: blocks.filter(Boolean), stop_reason: stopReason, usage };
+}
+
+// ─── MÉMOIRE (Lot 3) — TOUT best-effort : ne casse JAMAIS le flux principal ───
+// Embeddings gte-small (384) générés DANS l'edge runtime (Supabase.ai) → rien ne sort de l'infra.
+async function embedText(text: string): Promise<number[] | null> {
+  try {
+    // deno-lint-ignore no-explicit-any
+    const S = (globalThis as any).Supabase;
+    if (!S?.ai?.Session) return null;
+    const session = new S.ai.Session("gte-small");
+    const out = await session.run(String(text ?? "").slice(0, 2000), { mean_pool: true, normalize: true });
+    return Array.isArray(out) ? (out as number[]) : null;
+  } catch (_) { return null; }
+}
+
+// Bloc de contexte mémoire : profil (toujours) + résumé roulant + souvenirs récupérés (best-effort).
+async function buildMemoryContext(admin: AnyClient, adminUserId: string, conversationId: string, message: string): Promise<string> {
+  const parts: string[] = [];
+  try {
+    const { data: prof } = await admin.from("mola_user_memory").select("key, value").eq("admin_user_id", adminUserId).limit(40);
+    if (prof?.length) parts.push(`Profil de cet admin (ce que tu sais déjà) :\n` + prof.map((p: AnyClient) => `- ${p.key}: ${typeof p.value === "string" ? p.value : JSON.stringify(p.value)}`).join("\n"));
+  } catch (_) { /* best-effort */ }
+  try {
+    const { data: conv } = await admin.from("assistant_conversations").select("rolling_summary").eq("id", conversationId).maybeSingle();
+    if (conv?.rolling_summary) parts.push(`Résumé du début de cette conversation :\n${conv.rolling_summary}`);
+  } catch (_) { /* best-effort */ }
+  try {
+    const emb = await embedText(message);
+    if (emb) {
+      const { data: hits } = await admin.rpc("mola_search_memory", { p_embedding: emb, p_admin: adminUserId, p_limit: 6 });
+      if (hits?.length) parts.push(`Souvenirs pertinents (mémoire) :\n` + hits.map((h: AnyClient) => `- ${h.content}`).join("\n"));
+    }
+  } catch (_) { /* best-effort */ }
+  return parts.length ? `MÉMOIRE (contexte rappelé — appuie-toi dessus si pertinent, ne l'invente pas) :\n${parts.join("\n\n")}` : "";
+}
+
+// Compaction (conversation longue) + épisodique inter-conversations — best-effort, throttlé.
+async function maybeCompact(admin: AnyClient, apiKey: string, adminUserId: string, conversationId: string): Promise<void> {
+  try {
+    const { count } = await admin.from("assistant_messages").select("id", { count: "exact", head: true }).eq("conversation_id", conversationId);
+    const n = count ?? 0;
+    if (n < 30 || n % 8 !== 0) return; // seulement les conversations longues, périodiquement
+    const { data: old } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(Math.max(0, n - 20));
+    const text = (old ?? []).map((m: AnyClient) => `${m.role}: ${typeof m.content?.text === "string" ? m.content.text : ""}`).filter(Boolean).join("\n").slice(0, 12000);
+    if (!text) return;
+    const resp = await callAnthropic(apiKey, { model: MODEL_FAST, max_tokens: 400, system: "Résume en 4-6 puces les faits DURABLES de cette conversation (clients, montants, décisions). Concis, factuel, en français.", messages: [{ role: "user", content: text }] });
+    // deno-lint-ignore no-explicit-any
+    const summary = (resp?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+    if (!summary) return;
+    await admin.from("assistant_conversations").update({ rolling_summary: summary, summary_through: new Date().toISOString() }).eq("id", conversationId);
+    const emb = await embedText(summary);
+    if (emb) await admin.from("mola_memory").insert({ kind: "episodic", admin_user_id: adminUserId, scope: `conversation:${conversationId}`, content: summary, embedding: emb, source: "compaction", expires_at: new Date(Date.now() + 90 * 86400000).toISOString() });
+  } catch (_) { /* best-effort */ }
 }
 
 // Encode un événement SSE pour notre propre flux vers le client.
@@ -2222,6 +2296,11 @@ serve(async (req) => {
     if (toolDefs.length) toolDefs[toolDefs.length - 1].cache_control = { type: "ephemeral" };
 
     const system = buildSystemPrompt(role);
+    // Mémoire (Lot 3) : contexte rappelé (profil + résumé roulant + souvenirs), best-effort.
+    const memoryContext = await buildMemoryContext(admin, user.id, String(conversationId), message);
+    // deno-lint-ignore no-explicit-any
+    const systemBlocks: any[] = [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+    if (memoryContext) systemBlocks.push({ type: "text", text: memoryContext });
 
     // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
     // MODEL_FAST par défaut (Sonnet 4.6) ; bascule sur MODEL_SMART dès qu'une action
@@ -2243,7 +2322,7 @@ serve(async (req) => {
           for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
             const resp = await streamAnthropic(
               apiKey,
-              { model, max_tokens: 4000, system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }], tools: toolDefs, messages },
+              { model, max_tokens: 4000, system: systemBlocks, tools: toolDefs, messages },
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
@@ -2332,6 +2411,8 @@ serve(async (req) => {
             },
           }).then(() => {}, () => {});
 
+          // Compaction + mémoire épisodique (best-effort, après persistance).
+          await maybeCompact(admin, apiKey, user.id, convId);
           send({ type: "done", conversationId: convId });
         } catch (e) {
           console.error("admin-assistant stream error:", (e as Error)?.message ?? e);
