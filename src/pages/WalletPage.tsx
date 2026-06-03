@@ -15,11 +15,6 @@ const WalletPage = () => {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: clientRatesData, isLoading: rateLoading } = useClientRates();
 
-  // rate_alipay is "CNY per 1M XAF" (e.g. 11765 means 1M XAF = 11 765 CNY)
-  const alipayRate = clientRatesData?.activeRate?.rate_alipay ?? 11765;
-  // Convert to XAF-to-RMB multiplier (e.g. 11765 / 1M = 0.011765)
-  const rateXafToRmb = alipayRate / 1_000_000;
-
   return (
     <MobileLayout>
       <div className="px-4 pt-6 safe-area-top">
@@ -40,7 +35,7 @@ const WalletPage = () => {
           {walletLoading ? (
             <Skeleton className="h-40 w-full rounded-2xl" />
           ) : (
-            <BalanceCard balanceXAF={wallet?.balance_xaf || 0} rateXafToRmb={rateXafToRmb} />
+            <BalanceCard balanceXAF={wallet?.balance_xaf || 0} />
           )}
         </div>
 

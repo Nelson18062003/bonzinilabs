@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-01.1 — 47 outils (lecture + écriture), trésorerie complète,
+// Version: 2026-06-03.6 — 73 outils (46 lecture + 27 écriture) + découverte de capacités (do_capability),
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -9,11 +9,12 @@
 // - ÉCRITURE : l'IA ne fait que PROPOSER une action (carte de confirmation).
 //   Rien n'est exécuté tant que l'admin n'a pas confirmé. L'exécution passe par
 //   les RPC existantes, appelées avec le JWT de l'admin (is_admin(auth.uid())).
-// - Pièces jointes : images (vision) + PDF (documents). Prompt caching.
+// - Pièces jointes : stockées comme PREUVES (non analysées par le modèle). Prompt caching.
 // - Tout est journalisé (admin_audit_logs + assistant_pending_actions).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { maskForRole } from "../_shared/mask.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,8 +27,23 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 // ressentie. Surchargables par secret si besoin (ex. Haiku pour la vitesse pure).
 const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-sonnet-4-6";
 const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
-const MAX_TOOL_ITERATIONS = 8;
+const MAX_TOOL_ITERATIONS = 14;
 const MIN_PAYMENT_XAF = 10_000;
+
+// ─── Instrumentation coût (Lot 1) ─────────────────────────────────────────────
+// Les COMPTES de tokens sont EXACTS (issus de l'API). Les tarifs ci-dessous sont
+// un ORDRE DE GRANDEUR (USD / million de tokens) pour estimer le coût ; ajuste-les
+// si la facturation réelle diffère. Surchargeables sans risque.
+interface TokenUsage { input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; }
+const PRICING_USD_PER_MTOK: Record<string, { in: number; out: number; cacheRead: number; cacheWrite: number }> = {
+  "claude-sonnet-4-6": { in: 3, out: 15, cacheRead: 0.30, cacheWrite: 3.75 },
+  "claude-haiku-4-5":  { in: 1, out: 5, cacheRead: 0.10, cacheWrite: 1.25 },
+};
+function estimateCostUsd(model: string, u: TokenUsage): number {
+  const p = PRICING_USD_PER_MTOK[model] ?? PRICING_USD_PER_MTOK["claude-sonnet-4-6"];
+  const cost = (u.input_tokens * p.in + u.output_tokens * p.out + u.cache_read_input_tokens * p.cacheRead + u.cache_creation_input_tokens * p.cacheWrite) / 1_000_000;
+  return Math.round(cost * 1e6) / 1e6; // 6 décimales
+}
 
 // Liste blanche pour les actions wallet (crédit/débit manuel) : e-mails ou user_id
 // autorisés EN PLUS des super_admin. Configuré via secret (ex. "jonas@bonzini.com").
@@ -58,6 +74,17 @@ const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
   cash_agent:       { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true,  canProcessPayments: true,  canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
   treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true },
 };
+
+// Tables lisibles en SQL libre selon les permissions du rôle (Lot 4b — confidentialité).
+function allowedTablesForRole(perms: Record<PermKey, boolean>): string[] {
+  const t: string[] = [];
+  if (perms.canViewClients) t.push("clients", "wallets", "ledger_entries");
+  if (perms.canViewDeposits) t.push("deposits", "deposit_proofs", "deposit_timeline_events");
+  if (perms.canViewPayments) t.push("payments", "beneficiaries", "daily_rates", "rate_adjustments");
+  if (perms.canViewTreasury) t.push("treasury_accounts", "treasury_account_balances", "treasury_ledger_entries", "treasury_counterparties", "usdt_purchases", "usdt_sales", "treasury_inventory_snapshots");
+  if (perms.canViewLogs) t.push("admin_audit_logs", "user_roles");
+  return t;
+}
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -128,6 +155,10 @@ interface ReadTool {
   /** Si vrai, l'outil reçoit le client AUTHENTIFIÉ (JWT admin) en 2e arg —
    *  nécessaire pour les RPC qui vérifient auth.uid() (ex. trésorerie). */
   needsAuth?: boolean;
+  /** Défense en profondeur : outil réservé au super_admin (ex. requête SQL libre). */
+  superAdminOnly?: boolean;
+  /** Toujours disponible (introspection des capacités) — bypass du filtre de permission. */
+  always?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
@@ -164,7 +195,104 @@ async function findClientsByName(admin: AnyClient, name: unknown, max = 10): Pro
   }).slice(0, max);
 }
 
+// Carte des capacités (introspection) — sert what_can_i_do. tool=null = la plateforme
+// le permet (via un écran) mais Mola n'a pas encore l'outil → dire l'état ⚠️, ne pas confabuler.
+const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | null; note?: string }>> = {
+  clients: [
+    { capability: "créer / modifier un client", tool: "create_client / update_client" },
+    { capability: "rechercher, fiche 360°, solde, grand livre", tool: "search_clients / get_client_full_activity / get_wallet_balance / get_ledger" },
+    { capability: "supprimer définitivement", tool: "delete_client", note: "super_admin" },
+  ],
+  depots: [
+    { capability: "créer / valider / rejeter un dépôt", tool: "create_deposit / create_and_validate_deposit / validate_deposit / reject_deposit" },
+    { capability: "attacher une preuve (capture/PDF)", tool: "auto (pièces jointes du message)" },
+  ],
+  paiements: [
+    { capability: "créer un paiement au taux du jour OU à un taux personnalisé", tool: "create_payment", note: "exchange_rate optionnel = taux personnalisé, comme l'écran admin" },
+    { capability: "compléter le bénéficiaire d'UN paiement", tool: "update_payment_beneficiary" },
+    { capability: "annuler un paiement non finalisé (rembourse)", tool: "cancel_payment", note: "super_admin" },
+    { capability: "enregistrer / modifier / archiver un bénéficiaire RÉUTILISABLE", tool: "create_beneficiary / update_beneficiary / archive_beneficiary" },
+    { capability: "joindre un QR à un bénéficiaire enregistré", tool: null, note: "pas encore d'outil — possible via l'écran Bénéficiaires" },
+  ],
+  taux: [
+    { capability: "définir les 4 taux du jour", tool: "set_daily_rate" },
+    { capability: "modifier un ajustement de taux par pays/palier (%)", tool: "set_rate_adjustment", note: "super_admin" },
+    { capability: "générer le flyer du taux", tool: "generate_rate_flyer" },
+  ],
+  tresorerie: [
+    { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
+  ],
+};
+
+// Savoir métier détaillé — indexable en mémoire sémantique (reindex_knowledge) → récupéré just-in-time.
+const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
+  { scope: "depots", content: "Cycle d'un dépôt : created → proof_submitted → admin_review → validated ou rejected. Valider un dépôt CRÉDITE le solde XAF (wallet) du client du montant confirmé. Un dépôt peut être créé sans preuve (en attente) puis validé quand l'argent est reçu." },
+  { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Minimum 10 000 XAF. Méthodes : alipay, wechat, bank_transfer, cash." },
+  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Des ajustements en pourcentage par pays et par palier affinent le taux final. Un paiement utilise le taux du jour, ou un taux personnalisé si l'admin en fixe un." },
+  { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
+  { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
+  { scope: "kyc", content: "Les clients ont un statut KYC (kyc_verified). Bonzini cible les importateurs africains qui règlent des fournisseurs chinois — ce ne sont pas des transferts d'argent entre particuliers." },
+];
+
 const READ_TOOLS: ReadTool[] = [
+  {
+    name: "what_can_i_do",
+    permission: "canViewPayments",
+    always: true,
+    description: "INTROSPECTION : ce que TOI (l'assistant) peux faire, par domaine, et ce que la plateforme permet même sans outil dédié. À APPELER avant d'affirmer qu'une action est impossible. domain optionnel (clients|depots|paiements|taux|tresorerie).",
+    input_schema: { type: "object", properties: { domain: { type: "string" } } },
+    execute: (_admin, { domain }) => {
+      const d = domain ? String(domain).toLowerCase() : null;
+      const map = d && CAPABILITY_MAP[d] ? { [d]: CAPABILITY_MAP[d] } : CAPABILITY_MAP;
+      return Promise.resolve({ capabilities: map, note: "Si tool=null : la plateforme le permet (écran) mais je n'ai pas encore l'outil — le dire honnêtement, ne pas confabuler." });
+    },
+  },
+  {
+    name: "reindex_knowledge",
+    permission: "canViewLogs",
+    superAdminOnly: true,
+    description: "Indexer / réindexer le savoir métier de base dans la mémoire sémantique (rappelé just-in-time). À lancer une fois après déploiement, et après une évolution du savoir. Réservé super_admin.",
+    input_schema: { type: "object", properties: {} },
+    execute: async (admin) => {
+      let n = 0;
+      try {
+        await admin.from("mola_memory").delete().eq("source", "ontology").is("admin_user_id", null);
+        for (const chunk of BUSINESS_ONTOLOGY) {
+          const emb = await embedText(chunk.content);
+          if (!emb) continue;
+          const { error } = await admin.from("mola_memory").insert({ kind: "semantic", admin_user_id: null, scope: chunk.scope, content: chunk.content, embedding: emb, source: "ontology" });
+          if (!error) n++;
+        }
+      } catch (e) { return { error: String((e as Error)?.message ?? e), indexed: n }; }
+      return { indexed: n, total: BUSINESS_ONTOLOGY.length, note: n === 0 ? "Embeddings gte-small indisponibles — réessaie après déploiement." : "Savoir métier indexé en mémoire sémantique." };
+    },
+  },
+  {
+    name: "find_capability",
+    permission: "canViewPayments",
+    always: true,
+    description: "DÉCOUVERTE : trouve dynamiquement les capacités (actions/lectures) de la plateforme, même celles sans outil dédié écrit à la main. Donne un terme (ex. « annuler dépôt », « confirmer cash »). Renvoie les opérations disponibles, leurs paramètres réels et si elles demandent une confirmation. À utiliser AVANT de dire que tu ne peux pas faire une action.",
+    input_schema: { type: "object", properties: { search: { type: "string" } } },
+    execute: async (admin, { search }) => {
+      const { data, error } = await admin.rpc("mola_discover_capabilities", { p_search: search || null });
+      if (error) return { error: error.message };
+      return { capabilities: data ?? [], note: "Pour exécuter une capacité WRITE découverte : do_capability avec son name + les params (donne une référence BZ-…, l'identifiant est résolu)." };
+    },
+  },
+  {
+    name: "list_payment_proofs",
+    permission: "canViewPayments",
+    description: "Lister les preuves (justificatifs) d'un paiement, par référence (BZ-…) ou payment_id. Renvoie id, nom de fichier, type, date — utile avant de supprimer (delete_payment_proof) ou de remplacer une preuve.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    execute: async (admin, { reference, payment_id }) => {
+      let pid = payment_id;
+      if (!pid && reference) { const { data } = await admin.from("payments").select("id").eq("reference", reference).maybeSingle(); pid = data?.id; }
+      if (!pid) return { error: "Fournir reference ou payment_id." };
+      const { data, error } = await admin.from("payment_proofs").select("id, file_name, file_type, uploaded_by_type, created_at").eq("payment_id", pid).order("created_at", { ascending: false });
+      if (error) return { error: error.message };
+      return { payment_id: pid, count: data?.length ?? 0, proofs: data ?? [] };
+    },
+  },
   {
     name: "search_clients",
     permission: "canViewClients",
@@ -878,8 +1006,8 @@ const READ_TOOLS: ReadTool[] = [
       "- admin_audit_logs(admin_user_id, action_type, target_type, created_at)\n" +
       "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
     input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
-    execute: async (admin, { sql }) => {
-      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? "") });
+    execute: async (admin, { sql, __allowed_tables }) => {
+      const { data, error } = await admin.rpc("assistant_readonly_query", { p_sql: String(sql ?? ""), p_allowed_tables: __allowed_tables ?? null });
       if (error) return { error: error.message };
       if (data?.success === false) return { error: data.error };
       return { row_count: data?.row_count ?? 0, rows: data?.rows ?? [] };
@@ -1155,6 +1283,29 @@ async function resolveTreasuryAccount(admin: AnyClient, raw: unknown, currency: 
 }
 
 
+/** Résout une RÉFÉRENCE (BZ-DP-…, BZ-…, ou nom de client) ou un UUID → UUID de la cible.
+ *  Utilisé par le gateway générique do_capability (capacités auto-découvertes). */
+async function resolveRef(admin: AnyClient, type: string, value: unknown): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const v = String(value ?? "").trim();
+  if (!v) return { ok: false, error: "Référence manquante." };
+  if (UUID_RE.test(v)) return { ok: true, id: v };
+  if (type === "deposit") {
+    const { data } = await admin.from("deposits").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Dépôt « ${v} » introuvable.` };
+  }
+  if (type === "payment") {
+    const { data } = await admin.from("payments").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Paiement « ${v} » introuvable.` };
+  }
+  if (type === "client") {
+    const clients = await findClientsByName(admin, v, 5);
+    if (clients.length === 0) return { ok: false, error: `Client « ${v} » introuvable.` };
+    if (clients.length > 1) return { ok: false, error: `Plusieurs clients « ${v} » : ${clients.map((c: AnyClient) => `${c.first_name} ${c.last_name}`).join(", ")}. Précise.` };
+    return { ok: true, id: clients[0].user_id };
+  }
+  return { ok: false, error: `Type de référence inconnu : ${type}.` };
+}
+
 const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_client",
@@ -1341,11 +1492,12 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "create_payment",
     permission: "canProcessPayments",
     acceptsProof: true,
-    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url. Le montant RMB est calculé automatiquement au taux du jour.",
+    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour, OU à un taux personnalisé si l'admin le demande). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, et exchange_rate (taux personnalisé en CNY ¥ pour 1 000 000 XAF — la plateforme l'autorise, comme l'écran de paiement admin). Sans exchange_rate, le montant RMB est calculé automatiquement au taux du jour ; avec, il utilise le taux fourni.",
     input_schema: {
       type: "object",
       properties: {
         client_user_id: { type: "string" }, amount_xaf: { type: "number" }, method: { type: "string", enum: ["alipay", "wechat", "bank_transfer", "cash"] },
+        exchange_rate: { type: "number", description: "Taux personnalisé optionnel (CNY ¥ pour 1 000 000 XAF). Si fourni, remplace le taux du jour." },
         country_key: { type: "string" }, beneficiary_name: { type: "string" }, beneficiary_phone: { type: "string" },
         beneficiary_bank_name: { type: "string" }, beneficiary_bank_account: { type: "string" }, beneficiary_qr_code_url: { type: "string" },
       },
@@ -1364,14 +1516,26 @@ const WRITE_TOOLS: WriteTool[] = [
       const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
       if (Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
-      // Calculer le taux du jour (jamais inventé par l'IA)
-      const { data: rate, error: rErr } = await admin.rpc("calculate_final_rate", { p_payment_method: rateMethod, p_country_key: countryKey, p_amount_xaf: amt });
-      if (rErr) return { ok: false, error: `Calcul du taux: ${rErr.message}` };
-      if (!rate?.success) return { ok: false, error: rate?.error || "Taux indisponible." };
-      const amountRmb = Number(rate.amount_cny);
-      const exchangeRate = Number(rate.final_rate);
+      // Taux : personnalisé si l'admin le fournit (parité avec l'écran admin MobileNewPayment),
+      // sinon taux du jour calculé côté base (jamais inventé par l'IA).
+      let amountRmb: number;
+      let exchangeRate: number;
+      let rateIsCustom = false;
+      const customRate = a.exchange_rate != null ? Number(a.exchange_rate) : null;
+      if (customRate != null && Number.isFinite(customRate) && customRate > 0) {
+        // exchange_rate = CNY (¥) pour 1 000 000 XAF (même unité que rate.final_rate)
+        exchangeRate = customRate;
+        amountRmb = Math.round((amt * customRate) / 1_000_000);
+        rateIsCustom = true;
+      } else {
+        const { data: rate, error: rErr } = await admin.rpc("calculate_final_rate", { p_payment_method: rateMethod, p_country_key: countryKey, p_amount_xaf: amt });
+        if (rErr) return { ok: false, error: `Calcul du taux: ${rErr.message}` };
+        if (!rate?.success) return { ok: false, error: rate?.error || "Taux indisponible." };
+        amountRmb = Number(rate.amount_cny);
+        exchangeRate = Number(rate.final_rate);
+      }
       const args = {
-        p_user_id: c.uid, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_method: a.method,
+        p_user_id: c.uid, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_rate_is_custom: rateIsCustom, p_method: a.method,
         p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null,
         p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null,
         p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null,
@@ -1379,6 +1543,7 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [
         { label: "Client", value: c.name },
         { label: "Mode", value: PAYMENT_METHOD_LABEL[a.method] || a.method },
+        { label: "Taux", value: rateIsCustom ? `¥ ${exchangeRate} / 1M XAF (personnalisé)` : `¥ ${exchangeRate} / 1M XAF (taux du jour)` },
         { label: "Montant fournisseur", value: `≈ ¥ ${amountRmb.toLocaleString("fr-FR")}` },
         { label: "Solde après", value: fmtXAF(Number(wallet.balance_xaf) - amt) },
       ];
@@ -1398,13 +1563,15 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "update_payment_beneficiary",
     permission: "canProcessPayments",
     acceptsProof: true,
-    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, banque, compte, QR code. Si l'admin a joint une capture, elle est attachée comme preuve. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
+    description: "Compléter/corriger les infos bénéficiaire d'un paiement non finalisé (par référence ou payment_id) : nom, téléphone, email, identifiant (+ type), banque, compte, complément bancaire, QR code, notes. Si l'admin a joint une capture, elle est attachée comme preuve. Fait passer un paiement 'en attente d'infos' à 'prêt'.",
     input_schema: {
       type: "object",
       properties: {
         reference: { type: "string" }, payment_id: { type: "string" },
-        beneficiary_name: { type: "string" }, beneficiary_phone: { type: "string" },
-        beneficiary_bank_name: { type: "string" }, beneficiary_bank_account: { type: "string" }, beneficiary_qr_code_url: { type: "string" },
+        beneficiary_name: { type: "string" }, beneficiary_phone: { type: "string" }, beneficiary_email: { type: "string" },
+        beneficiary_identifier: { type: "string" }, beneficiary_identifier_type: { type: "string" },
+        beneficiary_bank_name: { type: "string" }, beneficiary_bank_account: { type: "string" }, beneficiary_bank_extra: { type: "string" },
+        beneficiary_qr_code_url: { type: "string" }, beneficiary_notes: { type: "string" },
       },
     },
     prepare: async (admin, a) => {
@@ -1418,7 +1585,7 @@ const WRITE_TOOLS: WriteTool[] = [
       if (a.beneficiary_name) lines.push({ label: "Bénéficiaire", value: String(a.beneficiary_name) });
       if (a.beneficiary_bank_name) lines.push({ label: "Banque", value: String(a.beneficiary_bank_name) });
       if (a.beneficiary_qr_code_url) lines.push({ label: "QR code", value: "fourni" });
-      return { ok: true, args: { p_payment_id: pay.id, p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null, p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null, p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null }, summary: { title: "Compléter le bénéficiaire", subtitle: pay.reference, lines, confirmLabel: "Enregistrer" } };
+      return { ok: true, args: { p_payment_id: pay.id, p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null, p_beneficiary_email: a.beneficiary_email || null, p_beneficiary_identifier: a.beneficiary_identifier || null, p_beneficiary_identifier_type: a.beneficiary_identifier_type || null, p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null, p_beneficiary_bank_extra: a.beneficiary_bank_extra || null, p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null, p_beneficiary_notes: a.beneficiary_notes || null }, summary: { title: "Compléter le bénéficiaire", subtitle: pay.reference, lines, confirmLabel: "Enregistrer" } };
     },
     execute: async (userClient, args, ctx) => {
       const { data, error } = await userClient.rpc("admin_update_payment_beneficiary", args);
@@ -1759,6 +1926,220 @@ const WRITE_TOOLS: WriteTool[] = [
       return data;
     },
   },
+  // ─── Parité (Lot 2) : bénéficiaires réutilisables + ajustements de taux ───
+  {
+    name: "create_beneficiary",
+    permission: "canProcessPayments",
+    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. Optionnels: identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_user_id: { type: "string" }, payment_method: { type: "string", enum: ["alipay", "wechat", "bank_transfer", "cash"] },
+        alias: { type: "string" }, name: { type: "string" }, identifier: { type: "string" }, identifier_type: { type: "string" },
+        phone: { type: "string" }, email: { type: "string" }, bank_name: { type: "string" }, bank_account: { type: "string" },
+        bank_extra: { type: "string" }, relation_type: { type: "string" }, notes: { type: "string" },
+      },
+      required: ["client_user_id", "payment_method", "alias", "name"],
+    },
+    prepare: async (admin, a) => {
+      const c = await resolveClient(admin, a.client_user_id);
+      if (!c.ok) return { ok: false, error: c.error };
+      if (!["alipay", "wechat", "bank_transfer", "cash"].includes(a.payment_method)) return { ok: false, error: "payment_method invalide (alipay|wechat|bank_transfer|cash)." };
+      if (!a.alias || !a.name) return { ok: false, error: "alias et name sont requis." };
+      const row = {
+        client_id: c.uid, payment_method: a.payment_method, alias: String(a.alias).trim(), name: String(a.name).trim(),
+        identifier: a.identifier || null, identifier_type: a.identifier_type || null, phone: a.phone || null, email: a.email || null,
+        bank_name: a.bank_name || null, bank_account: a.bank_account || null, bank_extra: a.bank_extra || null,
+        relation_type: a.relation_type || null, notes: a.notes || null, qr_code_url: null,
+      };
+      const lines: Line[] = [
+        { label: "Client", value: c.name }, { label: "Bénéficiaire", value: `${row.alias} — ${row.name}` },
+        { label: "Mode", value: PAYMENT_METHOD_LABEL[a.payment_method] || a.payment_method },
+      ];
+      if (row.phone) lines.push({ label: "Téléphone", value: String(row.phone) });
+      if (row.bank_name) lines.push({ label: "Banque", value: String(row.bank_name) });
+      return { ok: true, args: { row }, summary: { title: "Enregistrer un bénéficiaire", subtitle: c.name, lines, confirmLabel: "Enregistrer le bénéficiaire" } };
+    },
+    execute: async (userClient, args, ctx) => {
+      const { error } = await userClient.from("beneficiaries").insert({ ...(args.row as Record<string, unknown>), created_by: ctx.adminUserId, created_by_role: "admin" });
+      if (error) {
+        if ((error as AnyClient)?.code === "23505") return { success: false, error: "Ce bénéficiaire est déjà enregistré pour ce client." };
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    },
+  },
+  {
+    name: "update_beneficiary",
+    permission: "canProcessPayments",
+    description: "Modifier un bénéficiaire enregistré (par beneficiary_id, obtenu via list_beneficiaries). Champs: alias, name, identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        beneficiary_id: { type: "string" }, alias: { type: "string" }, name: { type: "string" }, identifier: { type: "string" },
+        identifier_type: { type: "string" }, phone: { type: "string" }, email: { type: "string" }, bank_name: { type: "string" },
+        bank_account: { type: "string" }, bank_extra: { type: "string" }, relation_type: { type: "string" }, notes: { type: "string" },
+      },
+      required: ["beneficiary_id"],
+    },
+    prepare: async (admin, a) => {
+      if (!UUID_RE.test(String(a.beneficiary_id ?? ""))) return { ok: false, error: "beneficiary_id (UUID) requis. Utilise list_beneficiaries pour le récupérer." };
+      const { data: ben } = await admin.from("beneficiaries").select("id, alias, name").eq("id", a.beneficiary_id).maybeSingle();
+      if (!ben) return { ok: false, error: "Bénéficiaire introuvable." };
+      const editable = ["alias", "name", "identifier", "identifier_type", "phone", "email", "bank_name", "bank_account", "bank_extra", "relation_type", "notes"];
+      const fields: Record<string, unknown> = {};
+      const lines: Line[] = [{ label: "Bénéficiaire", value: `${ben.alias} — ${ben.name}` }];
+      for (const k of editable) { if (a[k] !== undefined && a[k] !== null) { fields[k] = a[k]; lines.push({ label: k, value: String(a[k]) }); } }
+      if (Object.keys(fields).length === 0) return { ok: false, error: "Aucun champ à modifier fourni." };
+      return { ok: true, args: { beneficiary_id: ben.id, fields }, summary: { title: "Modifier un bénéficiaire", subtitle: `${ben.alias} — ${ben.name}`, lines, confirmLabel: "Enregistrer" } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.from("beneficiaries").update(args.fields).eq("id", args.beneficiary_id).select("id");
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: "Aucune ligne modifiée (introuvable ou accès refusé)." };
+      return { success: true };
+    },
+  },
+  {
+    name: "archive_beneficiary",
+    permission: "canProcessPayments",
+    description: "Archiver (désactiver) un bénéficiaire enregistré (par beneficiary_id) → is_active=false. Réversible (réactivable via update direct). Il disparaît des listes actives sans être supprimé.",
+    input_schema: { type: "object", properties: { beneficiary_id: { type: "string" } }, required: ["beneficiary_id"] },
+    prepare: async (admin, a) => {
+      if (!UUID_RE.test(String(a.beneficiary_id ?? ""))) return { ok: false, error: "beneficiary_id (UUID) requis (via list_beneficiaries)." };
+      const { data: ben } = await admin.from("beneficiaries").select("id, alias, name").eq("id", a.beneficiary_id).maybeSingle();
+      if (!ben) return { ok: false, error: "Bénéficiaire introuvable." };
+      return { ok: true, args: { beneficiary_id: ben.id }, summary: { title: "Archiver un bénéficiaire", subtitle: `${ben.alias} — ${ben.name}`, lines: [{ label: "Effet", value: "désactivé (réversible)" }], confirmLabel: "Archiver", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.from("beneficiaries").update({ is_active: false }).eq("id", args.beneficiary_id).select("id");
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: "Aucune ligne modifiée." };
+      return { success: true };
+    },
+  },
+  {
+    name: "set_rate_adjustment",
+    permission: "canManageRates",
+    superAdminOnly: true,
+    description: "Modifier le POURCENTAGE d'un ajustement de taux existant (par pays/palier), comme l'écran Taux. ⚠️ Impacte le calcul de TOUS les nouveaux paiements concernés. Fournir key (la clé de l'ajustement, via get_rate_adjustments) et percentage (nouveau %). Optionnel: type (pour désambiguïser). Ne crée pas d'ajustement (la plateforme ne fait que les modifier).",
+    input_schema: { type: "object", properties: { key: { type: "string" }, percentage: { type: "number" }, type: { type: "string" } }, required: ["key", "percentage"] },
+    prepare: async (admin, a) => {
+      if (a.percentage == null || !Number.isFinite(Number(a.percentage))) return { ok: false, error: "percentage invalide." };
+      let q = admin.from("rate_adjustments").select("id, type, key, label, percentage").eq("key", String(a.key));
+      if (a.type) q = q.eq("type", String(a.type));
+      const { data: rows } = await q;
+      if (!rows || rows.length === 0) return { ok: false, error: `Aucun ajustement pour key="${a.key}". Utilise get_rate_adjustments pour voir les clés.` };
+      if (rows.length > 1) return { ok: false, error: `Plusieurs ajustements pour "${a.key}" : ${rows.map((r: AnyClient) => `${r.type}/${r.key}`).join(", ")}. Précise type.` };
+      const adj = rows[0];
+      const lines: Line[] = [
+        { label: "Ajustement", value: `${adj.label ?? adj.key} (${adj.type})` },
+        { label: "Actuel", value: `${adj.percentage} %` },
+        { label: "Nouveau", value: `${Number(a.percentage)} %` },
+        { label: "Effet", value: "⚠️ s'applique aux nouveaux paiements" },
+      ];
+      return { ok: true, args: { p_adjustment_id: adj.id, p_percentage: Number(a.percentage) }, summary: { title: "Modifier un ajustement de taux", subtitle: String(adj.label ?? adj.key), lines, confirmLabel: "Appliquer l'ajustement", danger: true } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc("update_rate_adjustment", args);
+      if (error) return { success: false, error: error.message };
+      if (data?.success === false) return { success: false, error: data.error };
+      return data;
+    },
+  },
+  {
+    name: "remember",
+    permission: "canViewPayments",
+    description: "Mémoriser durablement une préférence ou un fait utile sur l'admin ou son activité (ex. « fournisseur USDT habituel = Lizette », « répondre en français »). Rappelé automatiquement aux prochaines conversations. Fournir key (court) et value. À utiliser quand l'admin dit « retiens que… ».",
+    input_schema: { type: "object", properties: { key: { type: "string" }, value: { type: "string" } }, required: ["key", "value"] },
+    prepare: (_admin, a) => {
+      if (!a.key || !a.value) return Promise.resolve({ ok: false, error: "key et value requis." });
+      const key = String(a.key).trim().slice(0, 80);
+      const value = String(a.value).trim().slice(0, 500);
+      return Promise.resolve({ ok: true, args: { key, value }, summary: { title: "Mémoriser", lines: [{ label: key, value }], confirmLabel: "Mémoriser" } });
+    },
+    execute: async (_userClient, args, ctx) => {
+      const { error } = await ctx.admin.from("mola_user_memory").upsert(
+        { admin_user_id: ctx.adminUserId, key: args.key, value: args.value, updated_at: new Date().toISOString() },
+        { onConflict: "admin_user_id,key" },
+      );
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    },
+  },
+  {
+    // GATEWAY générique : exécute une capacité AUTO-DÉCOUVERTE (étiquetée @mola en base),
+    // SANS outil dédié. C'est la preuve « AI-native » : une RPC étiquetée devient utilisable
+    // par Mola sans réécriture. Sécurité : permission de la capacité + carte de confirmation.
+    name: "do_capability",
+    permission: "canViewPayments",
+    description: "EXÉCUTE une capacité WRITE découverte via find_capability (par son name exact), même sans outil dédié. Fournir capability (le name) et params (objet). Les références (BZ-DP-…, BZ-…) sont résolues automatiquement. Une carte de confirmation s'affiche.",
+    input_schema: { type: "object", properties: { capability: { type: "string" }, params: { type: "object" } }, required: ["capability"] },
+    prepare: async (admin, a) => {
+      const name = String(a.capability ?? "").trim();
+      if (!name) return { ok: false, error: "capability (name) requis." };
+      const { data: caps } = await admin.rpc("mola_discover_capabilities", { p_search: name });
+      // deno-lint-ignore no-explicit-any
+      const cap = (caps ?? []).find((c: any) => c.name === name);
+      if (!cap) return { ok: false, error: `Capacité « ${name} » introuvable/non exposée. Utilise find_capability d'abord.` };
+      const meta = (cap.meta ?? {}) as AnyClient;
+      if (meta.expose !== true) return { ok: false, error: `Capacité « ${name} » non exposée.` };
+      if (meta.kind === "read") return { ok: false, error: `« ${name} » est une lecture : utilise find_capability/query_database, pas do_capability.` };
+      // Garde de permission (rôle injecté par la boucle dans __perms).
+      const perms = (a.__perms ?? {}) as Record<string, boolean>;
+      if (meta.permission && !perms[meta.permission]) return { ok: false, error: `Ton rôle n'a pas la permission requise (${meta.permission}) pour « ${name} ».` };
+      // Résolution des références + construction des arguments RPC.
+      const inParams = (a.params ?? {}) as Record<string, unknown>;
+      const resolveMap = (meta.resolve ?? {}) as Record<string, string>;
+      const rpcArgs: Record<string, unknown> = {};
+      const lines: Line[] = [{ label: "Action", value: String(meta.label ?? name) }];
+      for (const [k, v] of Object.entries(inParams)) {
+        if (resolveMap[k]) {
+          const r = await resolveRef(admin, resolveMap[k], v);
+          if (!r.ok) return { ok: false, error: r.error };
+          rpcArgs[k] = r.id;
+          lines.push({ label: k, value: `${String(v)} → ${r.id.slice(0, 8)}…` });
+        } else {
+          rpcArgs[k] = v;
+          lines.push({ label: k, value: String(v) });
+        }
+      }
+      return { ok: true, args: { __rpc: name, __perm: meta.permission ?? null, rpcArgs }, summary: { title: String(meta.label ?? name), subtitle: "capacité découverte", lines, confirmLabel: meta.danger ? "Confirmer (sensible)" : "Confirmer", danger: !!meta.danger } };
+    },
+    execute: async (userClient, args) => {
+      const { data, error } = await userClient.rpc(String(args.__rpc), (args.rpcArgs ?? {}) as Record<string, unknown>);
+      if (error) return { success: false, error: error.message };
+      if (data?.success === false) return { success: false, error: data.error };
+      return data ?? { success: true };
+    },
+  },
+  {
+    name: "replace_payment_proof",
+    permission: "canProcessPayments",
+    acceptsProof: true,
+    description: "Remplacer la/les preuve(s) d'un paiement : supprime les preuves existantes ET attache la nouvelle capture jointe au message. Fournir reference (BZ-…) ou payment_id, et JOINDRE la nouvelle preuve. (Pour seulement supprimer, utilise delete_payment_proof.)",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    prepare: async (admin, a) => {
+      let q = admin.from("payments").select("id, reference");
+      if (a.payment_id) q = q.eq("id", a.payment_id);
+      else if (a.reference) q = q.eq("reference", a.reference);
+      else return { ok: false, error: "Fournir reference ou payment_id." };
+      const { data: pay } = await q.maybeSingle();
+      if (!pay) return { ok: false, error: "Paiement introuvable." };
+      const { data: proofs } = await admin.from("payment_proofs").select("id").eq("payment_id", pay.id);
+      const ids = (proofs ?? []).map((p: AnyClient) => p.id);
+      return { ok: true, args: { p_payment_id: pay.id, proof_ids: ids }, summary: { title: "Remplacer la preuve d'un paiement", subtitle: pay.reference, lines: [{ label: "Preuves existantes", value: `${ids.length} (supprimées)` }, { label: "Nouvelle preuve", value: "capture jointe au message" }], confirmLabel: "Remplacer la preuve", danger: true } };
+    },
+    execute: async (userClient, args, ctx) => {
+      let deleted = 0;
+      for (const pid of ((args.proof_ids ?? []) as string[])) {
+        const { data } = await userClient.rpc("delete_payment_proof", { p_proof_id: pid });
+        if (data?.success !== false) deleted++;
+      }
+      const attached = args.proofAttachments?.length ? await attachPaymentProofs(ctx.admin, args.p_payment_id, ctx.adminUserId, args.proofAttachments) : 0;
+      return { success: true, deleted, attached, note: attached === 0 ? "Aucune nouvelle preuve jointe — preuves supprimées seulement." : undefined };
+    },
+  },
 ];
 
 function buildSystemPrompt(role: string): string {
@@ -1766,16 +2147,25 @@ function buildSystemPrompt(role: string): string {
     `Tu es l'assistant "Directeur des Opérations" de BonziniLabs, une fintech qui permet aux importateurs africains de régler leurs fournisseurs chinois en XAF.`,
     `Tu assistes un administrateur (rôle: ${role}). Réponds en français, de façon concise, claire et professionnelle.`,
     ``,
+    `CONNAISSANCE MÉTIER (socle — complète toujours par tes outils pour les chiffres réels) :`,
+    `- DÉPÔT : created → proof_submitted → admin_review → validated (crédite le wallet XAF du client) ou rejected.`,
+    `- PAIEMENT fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected). Débite le wallet. Minimum 10 000 XAF. Modes : alipay, wechat, bank_transfer, cash.`,
+    `- TAUX : en CNY (¥) pour 1 000 000 XAF, par mode ; ajustements en % par pays/palier ; un paiement utilise le taux du jour OU un taux personnalisé.`,
+    `- TRÉSORERIE : on achète des USDT en XAF puis on les vend en CNY pour régler les fournisseurs chinois. Coût de revient en WAC ; le bénéfice = le spread achat/vente.`,
+    `- WALLET : solde XAF du client (crédité par dépôt validé, débité par paiement) ; jamais modifié à la main sauf ajustement tracé.`,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
     `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
     `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
+    `INTROSPECTION & HONNÊTETÉ : avant d'affirmer qu'une action est IMPOSSIBLE, appelle what_can_i_do. Trois réponses honnêtes : (1) je le fais (j'ai l'outil) ; (2) la plateforme le permet via un écran mais je n'ai pas encore l'outil — je le dis franchement et je le signale ; (3) ce n'est pas supporté. Ne confabule JAMAIS une fausse règle métier (ex. « le taux est fixé ») pour masquer l'absence d'un outil.`,
+    `DÉCOUVERTE DE CAPACITÉS : si aucun de tes outils dédiés ne correspond à une action demandée, appelle d'abord find_capability (ex. « annuler dépôt », « confirmer cash ») — la plateforme expose peut-être déjà cette action, prête à l'emploi. Puis exécute-la via do_capability (son name + les paramètres ; donne une référence BZ-…, l'identifiant est résolu, et une carte de confirmation s'affiche). Ne dis « je ne peux pas » qu'APRÈS avoir cherché une capacité.`,
+    `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     ``,
-    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
+    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
     `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
-    `- N'invente jamais un montant, un taux ou un user_id : récupère-les. Le taux RMB des paiements est calculé automatiquement par l'outil, ne le calcule pas toi-même.`,
+    `- N'invente jamais un montant ou un user_id : récupère-les. Par défaut, le taux RMB est calculé automatiquement par l'outil au taux du jour — ne calcule pas le taux toi-même. EXCEPTION : si l'admin demande explicitement un taux personnalisé (ex. « au taux 78 »), passe-le dans le paramètre exchange_rate de create_payment ; la plateforme autorise les paiements à taux personnalisé, exactement comme l'écran de paiement admin. Ne dis donc JAMAIS que « le taux est fixé » : c'est faux.`,
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
     ``,
@@ -1788,6 +2178,7 @@ function buildSystemPrompt(role: string): string {
     `RÈGLES :`,
     `- Formate les montants en XAF avec séparateurs (ex : 10 000 000 XAF). Les taux sont en CNY (¥) pour 1 000 000 XAF.`,
     `- Si un outil renvoie une erreur de permission, indique que ce rôle n'a pas accès à cette action.`,
+    `- VÉRIFIE-toi sur l'argent et les chiffres : avant toute proposition financière, recoupe montant, solde et taux ; sur une réponse chiffrée (volumes, totaux), contrôle la cohérence. Un appel d'outil de plus vaut mieux qu'un chiffre faux.`,
     `- Va à l'essentiel.`,
   ].join("\n");
 }
@@ -1811,7 +2202,7 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>) {
  * mot-à-mot côté client.
  */
 // deno-lint-ignore no-explicit-any
-async function streamAnthropic(apiKey: string, body: Record<string, unknown>, onText: (delta: string) => void): Promise<{ content: any[]; stop_reason: string }> {
+async function streamAnthropic(apiKey: string, body: Record<string, unknown>, onText: (delta: string) => void): Promise<{ content: any[]; stop_reason: string; usage: TokenUsage }> {
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -1825,6 +2216,7 @@ async function streamAnthropic(apiKey: string, body: Record<string, unknown>, on
   // deno-lint-ignore no-explicit-any
   const blocks: any[] = [];
   let stopReason = "end_turn";
+  const usage: TokenUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
   const jsonBuf: Record<number, string> = {}; // accumulation des input_json_delta par index
 
   const reader = res.body.getReader();
@@ -1860,12 +2252,73 @@ async function streamAnthropic(apiKey: string, body: Record<string, unknown>, on
         if (b?.type === "tool_use") {
           try { b.input = jsonBuf[ev.index] ? JSON.parse(jsonBuf[ev.index]) : {}; } catch { b.input = {}; }
         }
-      } else if (ev.type === "message_delta" && ev.delta?.stop_reason) {
-        stopReason = ev.delta.stop_reason;
+      } else if (ev.type === "message_start") {
+        const u = ev.message?.usage;
+        if (u) {
+          usage.input_tokens += Number(u.input_tokens ?? 0);
+          usage.cache_read_input_tokens += Number(u.cache_read_input_tokens ?? 0);
+          usage.cache_creation_input_tokens += Number(u.cache_creation_input_tokens ?? 0);
+        }
+      } else if (ev.type === "message_delta") {
+        if (ev.delta?.stop_reason) stopReason = ev.delta.stop_reason;
+        if (ev.usage?.output_tokens != null) usage.output_tokens = Number(ev.usage.output_tokens);
       }
     }
   }
-  return { content: blocks.filter(Boolean), stop_reason: stopReason };
+  return { content: blocks.filter(Boolean), stop_reason: stopReason, usage };
+}
+
+// ─── MÉMOIRE (Lot 3) — TOUT best-effort : ne casse JAMAIS le flux principal ───
+// Embeddings gte-small (384) générés DANS l'edge runtime (Supabase.ai) → rien ne sort de l'infra.
+async function embedText(text: string): Promise<number[] | null> {
+  try {
+    // deno-lint-ignore no-explicit-any
+    const S = (globalThis as any).Supabase;
+    if (!S?.ai?.Session) return null;
+    const session = new S.ai.Session("gte-small");
+    const out = await session.run(String(text ?? "").slice(0, 2000), { mean_pool: true, normalize: true });
+    return Array.isArray(out) ? (out as number[]) : null;
+  } catch (_) { return null; }
+}
+
+// Bloc de contexte mémoire : profil (toujours) + résumé roulant + souvenirs récupérés (best-effort).
+async function buildMemoryContext(admin: AnyClient, adminUserId: string, conversationId: string, message: string): Promise<string> {
+  const parts: string[] = [];
+  try {
+    const { data: prof } = await admin.from("mola_user_memory").select("key, value").eq("admin_user_id", adminUserId).limit(40);
+    if (prof?.length) parts.push(`Profil de cet admin (ce que tu sais déjà) :\n` + prof.map((p: AnyClient) => `- ${p.key}: ${typeof p.value === "string" ? p.value : JSON.stringify(p.value)}`).join("\n"));
+  } catch (_) { /* best-effort */ }
+  try {
+    const { data: conv } = await admin.from("assistant_conversations").select("rolling_summary").eq("id", conversationId).maybeSingle();
+    if (conv?.rolling_summary) parts.push(`Résumé du début de cette conversation :\n${conv.rolling_summary}`);
+  } catch (_) { /* best-effort */ }
+  try {
+    const emb = await embedText(message);
+    if (emb) {
+      const { data: hits } = await admin.rpc("mola_search_memory", { p_embedding: emb, p_admin: adminUserId, p_limit: 6 });
+      if (hits?.length) parts.push(`Souvenirs pertinents (mémoire) :\n` + hits.map((h: AnyClient) => `- ${h.content}`).join("\n"));
+    }
+  } catch (_) { /* best-effort */ }
+  return parts.length ? `MÉMOIRE (contexte rappelé — appuie-toi dessus si pertinent, ne l'invente pas) :\n${parts.join("\n\n")}` : "";
+}
+
+// Compaction (conversation longue) + épisodique inter-conversations — best-effort, throttlé.
+async function maybeCompact(admin: AnyClient, apiKey: string, adminUserId: string, conversationId: string): Promise<void> {
+  try {
+    const { count } = await admin.from("assistant_messages").select("id", { count: "exact", head: true }).eq("conversation_id", conversationId);
+    const n = count ?? 0;
+    if (n < 30 || n % 8 !== 0) return; // seulement les conversations longues, périodiquement
+    const { data: old } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(Math.max(0, n - 20));
+    const text = (old ?? []).map((m: AnyClient) => `${m.role}: ${typeof m.content?.text === "string" ? m.content.text : ""}`).filter(Boolean).join("\n").slice(0, 12000);
+    if (!text) return;
+    const resp = await callAnthropic(apiKey, { model: MODEL_FAST, max_tokens: 400, system: "Résume en 4-6 puces les faits DURABLES de cette conversation (clients, montants, décisions). Concis, factuel, en français.", messages: [{ role: "user", content: text }] });
+    // deno-lint-ignore no-explicit-any
+    const summary = (resp?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+    if (!summary) return;
+    await admin.from("assistant_conversations").update({ rolling_summary: summary, summary_through: new Date().toISOString() }).eq("id", conversationId);
+    const emb = await embedText(summary);
+    if (emb) await admin.from("mola_memory").insert({ kind: "episodic", admin_user_id: adminUserId, scope: `conversation:${conversationId}`, content: summary, embedding: emb, source: "compaction", expires_at: new Date(Date.now() + 90 * 86400000).toISOString() });
+  } catch (_) { /* best-effort */ }
 }
 
 // Encode un événement SSE pour notre propre flux vers le client.
@@ -1921,6 +2374,11 @@ serve(async (req) => {
       const tool = WRITE_TOOLS.find((t) => t.name === pa.tool);
       if (!tool) return json({ success: false, error: "Outil inconnu" }, 400);
       if (!perms[tool.permission]) return json({ success: false, error: "Permission insuffisante pour exécuter cette action." }, 403);
+      // Gateway générique : re-vérifie la permission de la CAPACITÉ (pas seulement de l'outil do_capability).
+      if (pa.tool === "do_capability") {
+        const capPerm = (pa.args as AnyClient)?.__perm as PermKey | undefined;
+        if (capPerm && !perms[capPerm]) return json({ success: false, error: "Permission insuffisante pour cette capacité." }, 403);
+      }
       // Défense en profondeur : super_admin requis pour les actions les plus sensibles
       if (tool.superAdminOnly && role !== "super_admin") {
         return json({ success: false, error: "Action réservée au super administrateur." }, 403);
@@ -1971,7 +2429,9 @@ serve(async (req) => {
       conversationId = conv.id;
     }
 
-    const { data: hist } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(20);
+    // Les N derniers messages (les plus RÉCENTS), remis dans l'ordre chronologique pour le modèle.
+    const { data: histRaw } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(40);
+    const hist = (histRaw ?? []).reverse();
     // deno-lint-ignore no-explicit-any
     const history = (hist ?? []).filter((m: any) => m.role === "user" || m.role === "assistant").map((m: any) => {
       let text = typeof m.content?.text === "string" ? m.content.text : "";
@@ -1998,7 +2458,7 @@ serve(async (req) => {
     const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
     // Outils autorisés pour ce rôle (lecture + écriture)
-    const allowedRead = READ_TOOLS.filter((t) => perms[t.permission]);
+    const allowedRead = READ_TOOLS.filter((t) => t.always || (perms[t.permission] && !(t.superAdminOnly && role !== "super_admin")));
     const allowedWrite = WRITE_TOOLS.filter((t) => {
       if (!perms[t.permission]) return false;
       if (t.superAdminOnly && role !== "super_admin") return false;
@@ -2014,10 +2474,15 @@ serve(async (req) => {
     if (toolDefs.length) toolDefs[toolDefs.length - 1].cache_control = { type: "ephemeral" };
 
     const system = buildSystemPrompt(role);
+    // Mémoire (Lot 3) : contexte rappelé (profil + résumé roulant + souvenirs), best-effort.
+    const memoryContext = await buildMemoryContext(admin, user.id, String(conversationId), message);
+    // deno-lint-ignore no-explicit-any
+    const systemBlocks: any[] = [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+    if (memoryContext) systemBlocks.push({ type: "text", text: memoryContext });
 
     // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
-    // Haiku par défaut (rapide) ; on bascule sur Sonnet dès qu'une action
-    // d'écriture est proposée (les opérations sensibles méritent plus de "réflexion").
+    // MODEL_FAST par défaut (Sonnet 4.6) ; bascule sur MODEL_SMART dès qu'une action
+    // d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
     const convId = conversationId;
     const stream = new ReadableStream({
       async start(controller) {
@@ -2027,6 +2492,7 @@ serve(async (req) => {
         // deno-lint-ignore no-explicit-any
         const proposals: any[] = [];
         let model = MODEL_FAST;
+        const totalUsage: TokenUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
 
         send({ type: "start", conversationId: convId });
 
@@ -2034,10 +2500,14 @@ serve(async (req) => {
           for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
             const resp = await streamAnthropic(
               apiKey,
-              { model, max_tokens: 1500, system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }], tools: toolDefs, messages },
+              { model, max_tokens: 4000, system: systemBlocks, tools: toolDefs, messages },
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
+            totalUsage.input_tokens += resp.usage.input_tokens;
+            totalUsage.output_tokens += resp.usage.output_tokens;
+            totalUsage.cache_read_input_tokens += resp.usage.cache_read_input_tokens;
+            totalUsage.cache_creation_input_tokens += resp.usage.cache_creation_input_tokens;
             // deno-lint-ignore no-explicit-any
             const toolUses = content.filter((b: any) => b.type === "tool_use");
 
@@ -2054,7 +2524,10 @@ serve(async (req) => {
                 let result: Record<string, unknown>;
                 if (readTool) {
                   // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
-                  try { result = await readTool.execute(admin, tu.input ?? {}, readTool.needsAuth ? userClient : undefined); }
+                  const toolInput = (tu.input ?? {}) as Record<string, unknown>;
+                  // SQL libre : injecte l'allowlist de tables du rôle (sauf super_admin = accès complet).
+                  if (tu.name === "query_database" && role !== "super_admin") toolInput.__allowed_tables = allowedTablesForRole(perms);
+                  try { result = await readTool.execute(admin, toolInput, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
                   // Si l'outil a produit une image (ex. flyer), on l'envoie au chat.
                   // deno-lint-ignore no-explicit-any
@@ -2067,7 +2540,10 @@ serve(async (req) => {
                   }
                 } else if (writeTool) {
                   try {
-                    const prep = await writeTool.prepare(admin, tu.input ?? {});
+                    const wInput = (tu.input ?? {}) as Record<string, unknown>;
+                    // Gateway générique : on injecte les permissions du rôle pour la garde par capacité.
+                    if (tu.name === "do_capability") wInput.__perms = perms;
+                    const prep = await writeTool.prepare(admin, wInput);
                     if (!prep.ok) { result = { error: prep.error }; }
                     else {
                       // Outils acceptant une preuve : on rattache les captures du message à l'action.
@@ -2089,14 +2565,18 @@ serve(async (req) => {
                 } else {
                   result = { error: "outil indisponible pour ce rôle" };
                 }
-                results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result) });
+                // Masquage PII par rôle AVANT envoi au LLM (numéros de compte pour tous ; tél/email selon rôle).
+                results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(maskForRole(role, result)) });
               }
               messages.push({ role: "user", content: results });
               continue;
             }
 
             // deno-lint-ignore no-explicit-any
-            finalText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+            const turnText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+            finalText += (finalText && turnText ? "\n" : "") + turnText;
+            // Réponse tronquée par la limite de tokens → on POURSUIT la génération (QW-2b).
+            if (resp.stop_reason === "max_tokens") { messages.push({ role: "assistant", content }); continue; }
             break;
           }
 
@@ -2113,9 +2593,14 @@ serve(async (req) => {
           await admin.from("assistant_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
           await admin.from("admin_audit_logs").insert({
             admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: convId,
-            details: { message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length },
+            details: {
+              message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length,
+              model, usage: totalUsage, est_cost_usd: estimateCostUsd(model, totalUsage),
+            },
           }).then(() => {}, () => {});
 
+          // Compaction + mémoire épisodique (best-effort, après persistance).
+          await maybeCompact(admin, apiKey, user.id, convId);
           send({ type: "done", conversationId: convId });
         } catch (e) {
           console.error("admin-assistant stream error:", (e as Error)?.message ?? e);
