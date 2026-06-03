@@ -277,6 +277,54 @@ const READ_TOOLS: ReadTool[] = [
     },
   },
   {
+    name: "list_depositing_clients",
+    permission: "canViewDeposits",
+    description: "Lister TOUS les CLIENTS (dédupliqués, AVEC LEUR NOM) ayant effectué des dépôts sur une période — c'est la liste des clients déposants, pas les dépôts un par un. Pour chaque client : nombre de dépôts, total déposé, date du dernier dépôt. Période : months (ex. 4 = les 4 derniers mois) OU from_date+to_date (YYYY-MM-DD) OU year+month OU period (week/month/year/all). Par défaut TOUS statuts confondus ; validated_only=true pour ne compter que les dépôts validés. N'est PAS tronqué : agrège tous les dépôts de la période côté serveur.",
+    input_schema: { type: "object", properties: { months: { type: "number" }, from_date: { type: "string" }, to_date: { type: "string" }, year: { type: "number" }, month: { type: "number" }, period: { type: "string" }, validated_only: { type: "boolean" }, limit: { type: "number" } } },
+    execute: async (admin, a) => {
+      // Période : "X derniers mois" prioritaire (le cas le plus courant), sinon resolveRange.
+      let from: string, to: string, label: string;
+      if (a.months && Number(a.months) > 0) {
+        const t = new Date(); const f = new Date(); f.setMonth(f.getMonth() - Number(a.months));
+        from = f.toISOString(); to = t.toISOString(); label = `${Number(a.months)} derniers mois`;
+      } else {
+        const r = resolveRange(a); from = r.from; to = r.to; label = r.label;
+      }
+      let q = admin.from("deposits")
+        .select("user_id, amount_xaf, confirmed_amount_xaf, status, created_at")
+        .gte("created_at", from).lt("created_at", to).limit(10000);
+      if (a.validated_only) q = q.eq("status", "validated");
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      // Dédup + agrégation par client (côté serveur, donc complet — pas de plafond à 50).
+      // deno-lint-ignore no-explicit-any
+      const agg: Record<string, any> = {};
+      for (const d of data ?? []) {
+        const id = d.user_id as string;
+        const amt = Number(d.confirmed_amount_xaf ?? d.amount_xaf ?? 0);
+        if (!agg[id]) agg[id] = { nb: 0, total: 0, last: d.created_at };
+        agg[id].nb += 1; agg[id].total += amt;
+        if (d.created_at > agg[id].last) agg[id].last = d.created_at;
+      }
+      const ids = Object.keys(agg);
+      if (ids.length === 0) return { period: label, total_clients: 0, clients: [], note: "Aucun client n'a déposé sur cette période." };
+      const { data: clients } = await admin.from("clients").select("user_id, first_name, last_name, phone").in("user_id", ids);
+      // deno-lint-ignore no-explicit-any
+      const byId: Record<string, any> = {};
+      for (const c of clients ?? []) byId[c.user_id] = c;
+      const rows = ids.map((id) => ({
+        nom: byId[id] ? `${byId[id].first_name ?? ""} ${byId[id].last_name ?? ""}`.trim() : "(client inconnu)",
+        telephone: byId[id]?.phone ?? null,
+        nb_depots: agg[id].nb,
+        total_xaf: agg[id].total,
+        total_formatted: fmtXAF(agg[id].total),
+        dernier_depot: String(agg[id].last).slice(0, 10),
+        user_id: id,
+      })).sort((x, y) => y.total_xaf - x.total_xaf).slice(0, clamp(a.limit, 200, 500));
+      return { period: label, total_clients: ids.length, returned: rows.length, validated_only: !!a.validated_only, clients: rows };
+    },
+  },
+  {
     name: "get_deposit",
     permission: "canViewDeposits",
     description: "Détail complet d'un dépôt (par référence BZ-DP-... ou par deposit_id), avec sa chronologie et le nombre de preuves jointes.",
@@ -1720,6 +1768,7 @@ function buildSystemPrompt(role: string): string {
     ``,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
     `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
+    `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (il est plafonné à 50 dépôts bruts et ne donne pas les noms).`,
     `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     ``,
