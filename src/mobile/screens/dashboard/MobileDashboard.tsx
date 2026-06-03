@@ -29,7 +29,6 @@ import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
 import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaymentStats } from '@/hooks/usePaginatedPayments';
-import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { RateCard } from '@/components/rates/RateCard';
 import { useGreeting } from '@/hooks/useGreeting';
@@ -58,7 +57,6 @@ export function MobileDashboard() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: depositStats } = useDepositStats();
   const { data: paymentStats } = usePaymentStats();
-  const { data: currentRate } = useCurrentExchangeRate();
   const { data: activeDailyRate } = useActiveDailyRate();
   const { data: allDeposits } = useAdminDeposits();
 
@@ -66,7 +64,8 @@ export function MobileDashboard() {
   const pendingDepositCount = depositStats?.to_process || stats?.pendingDeposits || 0;
   const pendingPaymentCount = (paymentStats?.toProcess || 0) + (paymentStats?.inProgress || 0);
   const balanceXAF = stats?.totalWalletBalance ?? 0;
-  const balanceRMB = currentRate ? balanceXAF * currentRate.rate_xaf_to_rmb : null;
+  // Affichage approximatif en RMB via le taux du jour (daily_rates, réf. virement) — cf. doc 18 cartographie taux.
+  const balanceRMB = activeDailyRate ? balanceXAF * activeDailyRate.rate_virement / 1_000_000 : null;
   const todayDepositAmount = depositStats?.today_amount ?? 0;
   const todayPaymentAmount = stats?.todayPaymentsAmount ?? 0;
   const weekVolume = stats?.weekVolume ?? 0;

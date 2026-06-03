@@ -37,6 +37,16 @@
 
 > **Important :** ne PAS faire un `DROP TABLE exchange_rates` maintenant → le dashboard et la fiche client casseraient. L'étape 2 (migration de l'affichage) est obligatoire avant.
 
-## 5. Décision attendue
-- OK pour que j'exécute l'**étape 1** (supprimer le code mort orphelin, vérifié par build) ?
-- Et pour l'**étape 2** (basculer l'affichage RMB du dashboard sur `daily_rates`, ce qui corrige le bug §3) puis le DROP en étape 3 ?
+## 5. AVANCEMENT
+- ✅ **Étape 1 FAITE** — orphelins supprimés : `screens/more/MobileRatesScreen.tsx` (46 Ko), `pages/ClientRatesPage.tsx`, `App.tsx.backup`.
+- ✅ **Étape 2 FAITE** — `MobileDashboard` + `MobileClientDetail` calculent désormais le RMB via **`daily_rates`** (`rate_virement / 1 000 000` comme référence d'affichage) au lieu d'`exchange_rates`. **Bug §3 corrigé** : le solde RMB suit enfin le vrai taux.
+  - Vérifié : **`tsc --noEmit` exit 0** (imports + types OK ; un import cassé ou un champ absent aurait échoué). `npm run build` non lançable ici (vite absent du sandbox) → à confirmer côté toi, mais le type-check couvre la correction d'imports.
+  - `useCurrentExchangeRate` n'a plus aucun appelant (export mort).
+
+## 6. RESTE — étape 3 (pré-DROP, sur ton go)
+Avant `DROP TABLE exchange_rates` :
+1. Retirer les exports morts : `useCurrentExchangeRate`/`useExchangeRate` (`useWallet`), les fonctions exchange de `useAdminData`, et le hook `useExchangeRates.ts` (+ composants chart `RateChart`/`ResponsiveRateChart`/`RateDateFilter` s'ils ne servaient qu'aux orphelins).
+2. Supprimer les RPC `add/update/delete_exchange_rate` (migration).
+3. `DROP TABLE public.exchange_rates` (migration — réversible si on garde le SQL).
+4. `npm run build` complet pour valider.
+→ À faire en une passe dédiée, vérifiée, quand tu dis go.

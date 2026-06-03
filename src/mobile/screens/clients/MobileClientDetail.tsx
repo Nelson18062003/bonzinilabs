@@ -5,7 +5,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
+import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatCurrencyRMB, formatXAF, formatDate } from '@/lib/formatters';
 import {
@@ -71,7 +71,7 @@ export function MobileClientDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId || '');
-  const { data: currentRate } = useCurrentExchangeRate();
+  const { data: activeDailyRate } = useActiveDailyRate();
   const { hasPermission } = useAdminAuth();
   const resetPasswordMutation = useResetClientPassword();
 
@@ -337,9 +337,9 @@ export function MobileClientDetail() {
             {formatXAF(client.walletBalance || 0)}{' '}
             <span className="text-xl font-medium text-primary/70">XAF</span>
           </p>
-          {currentRate && (
+          {activeDailyRate && (
             <p className="text-base font-semibold text-muted-foreground mt-1">
-              ≈ {formatCurrencyRMB((client.walletBalance || 0) * currentRate.rate_xaf_to_rmb)}
+              ≈ {formatCurrencyRMB((client.walletBalance || 0) * activeDailyRate.rate_virement / 1_000_000)}
             </p>
           )}
 
