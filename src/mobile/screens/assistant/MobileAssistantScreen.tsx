@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, SquarePen } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { ViewportShell } from '@/components/layout/ViewportShell';
 import { useAdminAssistant, type AssistantProposal } from '@/hooks/useAdminAssistant';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { validateUploadFile, cn } from '@/lib/utils';
@@ -16,6 +17,8 @@ const SUGGESTIONS = [
 // Dégradé d'identité (3 couleurs du logo : violet → orange)
 const BRAND_GRADIENT = 'bg-gradient-to-br from-[hsl(258,100%,60%)] to-[hsl(16,100%,55%)]';
 const MAX_FILES = 5;
+// Hauteur max du champ de saisie avant qu'il ne défile lui-même (≈ 5 lignes).
+const COMPOSER_MAX_H = 128;
 
 interface PendingFile {
   id: string;
@@ -124,30 +127,25 @@ export function MobileAssistantScreen() {
   const { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset, loadHistory } = useAdminAssistant();
   const [input, setInput] = useState('');
   const [pending, setPending] = useState<PendingFile[]>([]);
-  // Hauteur du viewport VISIBLE (au-dessus du clavier) — comportement type WhatsApp.
-  const [viewportH, setViewportH] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Reprend la dernière conversation au montage (historique)
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
-  // Suit le clavier via visualViewport : la zone se réduit à l'espace visible,
-  // donc la barre d'écriture reste juste au-dessus du clavier (et ne "saute" plus).
+  // Le cadre (ViewportShell) suit le clavier via --vvh (CSS, sans re-render).
+  // Ici on se contente de garder la conversation collée au bas quand le clavier
+  // s'ouvre/se ferme — opération DOM pure, aucun re-render React.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
-      setViewportH(vv.height);
-      requestAnimationFrame(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; });
+    const stickToBottom = () => {
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
     };
-    vv.addEventListener('resize', onResize);
-    vv.addEventListener('scroll', onResize);
-    onResize();
-    return () => {
-      vv.removeEventListener('resize', onResize);
-      vv.removeEventListener('scroll', onResize);
-    };
+    vv.addEventListener('resize', stickToBottom);
+    return () => vv.removeEventListener('resize', stickToBottom);
   }, []);
 
   useEffect(() => {
@@ -157,6 +155,12 @@ export function MobileAssistantScreen() {
 
   // Libère les object URLs au démontage
   useEffect(() => () => { pending.forEach((p) => URL.revokeObjectURL(p.url)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Réinitialise la hauteur du champ après envoi / nouvelle conversation.
+  const resetComposerHeight = () => {
+    const el = textareaRef.current;
+    if (el) el.style.height = 'auto';
+  };
 
   const handleFiles = (list: FileList | null) => {
     if (!list) return;
@@ -196,6 +200,7 @@ export function MobileAssistantScreen() {
     if ((!input.trim() && pending.length === 0) || isLoading) return;
     sendMessage(input, pending.map((p) => p.file));
     setInput('');
+    resetComposerHeight();
     pending.forEach((p) => URL.revokeObjectURL(p.url));
     setPending([]);
   };
@@ -211,6 +216,7 @@ export function MobileAssistantScreen() {
     if (isLoading) return;
     reset();
     setInput('');
+    resetComposerHeight();
     pending.forEach((p) => URL.revokeObjectURL(p.url));
     setPending([]);
   };
@@ -218,189 +224,200 @@ export function MobileAssistantScreen() {
   const canSend = (!!input.trim() || pending.length > 0) && !isLoading;
   const isEmpty = messages.length === 0;
 
-  return (
-    <div
-      className="flex flex-col bg-background overflow-hidden"
-      style={{ height: viewportH ? `${viewportH}px` : '100dvh' }}
-    >
-      <MobileHeader
-        title="Assistant"
-        subtitle="Directeur des Opérations"
-        showBack
-        rightElement={
-          <button
-            onClick={handleNew}
-            aria-label="Nouvelle conversation"
-            className="flex items-center justify-center w-10 h-10 -mr-2 rounded-full active:bg-muted transition-colors"
-          >
-            <SquarePen className="w-5 h-5" />
-          </button>
-        }
-      />
+  const header = (
+    <MobileHeader
+      title="Assistant"
+      subtitle="Directeur des Opérations"
+      showBack
+      rightElement={
+        <button
+          onClick={handleNew}
+          aria-label="Nouvelle conversation"
+          className="flex items-center justify-center w-10 h-10 -mr-2 rounded-full active:bg-muted transition-colors"
+        >
+          <SquarePen className="w-5 h-5" />
+        </button>
+      }
+    />
+  );
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-        {isEmpty ? (
-          <div className="flex flex-col items-center text-center pt-10">
-            <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg', BRAND_GRADIENT)}>
-              <Bot className="w-8 h-8" />
-            </div>
-            <h2 className="mt-4 text-lg font-semibold">
-              Bonjour {profile?.first_name || ''} 👋
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-              Pose-moi une question sur la plateforme — clients, dépôts, paiements, taux, statistiques.
-              Tu peux écrire, <span className="font-medium text-foreground">dicter avec le micro du clavier</span>,
-              ou <span className="font-medium text-foreground">joindre une capture ou un PDF</span> (📎).
-            </p>
-            <div className="mt-6 grid grid-cols-1 gap-2 w-full max-w-sm">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => sendMessage(s)}
-                  className="text-left text-sm px-4 py-3 rounded-xl border border-border bg-card active:bg-muted transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((m) => (
-              <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'items-start')}>
-                <div
-                  className={cn(
-                    'max-w-[85%] px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words rounded-2xl',
-                    m.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-md'
-                      : m.error
-                        ? 'bg-destructive/10 text-destructive rounded-bl-md'
-                        : 'bg-muted text-foreground rounded-bl-md',
-                  )}
-                >
-                  {m.attachments?.length ? (
-                    <div className="mb-2 flex flex-wrap gap-2">
-                      {m.attachments.map((a, i) =>
-                        a.kind === 'image' && a.url ? (
-                          <img
-                            key={i}
-                            src={a.url}
-                            alt={a.name}
-                            className="w-24 h-24 object-cover rounded-lg border border-black/10"
-                          />
-                        ) : (
-                          <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/40 border border-black/10 text-xs">
-                            <FileText className="w-4 h-4 shrink-0" />
-                            <span className="truncate max-w-[140px]">{a.name}</span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  ) : null}
-                  {m.text && <RichText text={m.text} />}
+  const composer = (
+    <div className="border-t border-border bg-background px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+      {/* Plateau d'aperçu des pièces jointes en attente */}
+      {pending.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {pending.map((p) => (
+            <div key={p.id} className="relative shrink-0">
+              {p.isPdf ? (
+                <div className="w-16 h-16 rounded-lg border border-border bg-muted flex flex-col items-center justify-center px-1 text-[10px] text-muted-foreground">
+                  <FileText className="w-5 h-5 mb-1" />
+                  <span className="truncate max-w-[56px]">{p.file.name}</span>
                 </div>
-                {m.images?.map((img, i) => (
-                  <a
-                    key={i}
-                    href={img.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={img.name}
-                    className="block max-w-[85%] rounded-2xl overflow-hidden border border-border bg-card"
-                  >
-                    <img src={img.url} alt={img.name} className="w-full h-auto" />
-                    <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5" /> {img.name} — appuyer pour ouvrir / télécharger
-                    </div>
-                  </a>
-                ))}
-                {m.proposals?.map((p) => (
-                  <ConfirmationCard
-                    key={p.id}
-                    proposal={p}
-                    onConfirm={() => confirmProposal(p.id)}
-                    onCancel={() => cancelProposal(p.id)}
-                  />
-                ))}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-muted text-muted-foreground rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">L'assistant réfléchit…</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-border bg-background px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-        {/* Plateau d'aperçu des pièces jointes en attente */}
-        {pending.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {pending.map((p) => (
-              <div key={p.id} className="relative shrink-0">
-                {p.isPdf ? (
-                  <div className="w-16 h-16 rounded-lg border border-border bg-muted flex flex-col items-center justify-center px-1 text-[10px] text-muted-foreground">
-                    <FileText className="w-5 h-5 mb-1" />
-                    <span className="truncate max-w-[56px]">{p.file.name}</span>
-                  </div>
-                ) : (
-                  <img src={p.url} alt={p.file.name} className="w-16 h-16 object-cover rounded-lg border border-border" />
-                )}
-                <button
-                  onClick={() => removePending(p.id)}
-                  aria-label="Retirer"
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-end gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            multiple
-            className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            aria-label="Joindre un fichier"
-            className="w-11 h-11 rounded-full flex items-center justify-center bg-muted text-foreground shrink-0 active:bg-muted/70 disabled:opacity-40"
-          >
-            <Paperclip className="w-5 h-5" />
-          </button>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            placeholder="Écris, dicte ou joins un fichier…"
-            className="flex-1 resize-none max-h-32 px-4 py-3 rounded-2xl bg-muted text-[15px] outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!canSend}
-            aria-label="Envoyer"
-            className={cn(
-              'w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-opacity',
-              BRAND_GRADIENT,
-              (!canSend) && 'opacity-40',
-            )}
-          >
-            <Send className="w-5 h-5" />
-          </button>
+              ) : (
+                <img src={p.url} alt={p.file.name} className="w-16 h-16 object-cover rounded-lg border border-border" />
+              )}
+              <button
+                onClick={() => removePending(p.id)}
+                aria-label="Retirer"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
         </div>
+      )}
+
+      <div className="flex items-end gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading}
+          aria-label="Joindre un fichier"
+          className="w-11 h-11 rounded-full flex items-center justify-center bg-muted text-foreground shrink-0 active:bg-muted/70 disabled:opacity-40"
+        >
+          <Paperclip className="w-5 h-5" />
+        </button>
+        {/* Composeur de chat : textarea brut requis pour l'auto-grow (type
+            WhatsApp). La police est fixée à 16px → le zoom iOS visé par la règle
+            ne peut pas se produire. Même choix que MessageInput.tsx. */}
+        {/* eslint-disable-next-line no-restricted-syntax */}
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onInput={(e) => {
+            // Auto-grow (comportement type WhatsApp/iMessage) : la barre grandit
+            // ligne par ligne jusqu'à COMPOSER_MAX_H, puis défile à l'intérieur.
+            const el = e.currentTarget;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, COMPOSER_MAX_H) + 'px';
+          }}
+          rows={1}
+          placeholder="Écris, dicte ou joins un fichier…"
+          className="flex-1 resize-none max-h-32 px-4 py-3 rounded-2xl bg-muted text-[16px] outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
+        />
+        <button
+          onClick={handleSend}
+          disabled={!canSend}
+          aria-label="Envoyer"
+          className={cn(
+            'w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-opacity',
+            BRAND_GRADIENT,
+            (!canSend) && 'opacity-40',
+          )}
+        >
+          <Send className="w-5 h-5" />
+        </button>
       </div>
     </div>
+  );
+
+  return (
+    <ViewportShell header={header} footer={composer} scrollRef={scrollRef} scrollClassName="px-4 py-4">
+      {isEmpty ? (
+        <div className="flex flex-col items-center text-center pt-10">
+          <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg', BRAND_GRADIENT)}>
+            <Bot className="w-8 h-8" />
+          </div>
+          <h2 className="mt-4 text-lg font-semibold">
+            Bonjour {profile?.first_name || ''} 👋
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs">
+            Pose-moi une question sur la plateforme — clients, dépôts, paiements, taux, statistiques.
+            Tu peux écrire, <span className="font-medium text-foreground">dicter avec le micro du clavier</span>,
+            ou <span className="font-medium text-foreground">joindre une capture ou un PDF</span> (📎).
+          </p>
+          <div className="mt-6 grid grid-cols-1 gap-2 w-full max-w-sm">
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => sendMessage(s)}
+                className="text-left text-sm px-4 py-3 rounded-xl border border-border bg-card active:bg-muted transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {messages.map((m) => (
+            <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'items-start')}>
+              <div
+                className={cn(
+                  'max-w-[85%] px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words rounded-2xl',
+                  m.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    : m.error
+                      ? 'bg-destructive/10 text-destructive rounded-bl-md'
+                      : 'bg-muted text-foreground rounded-bl-md',
+                )}
+              >
+                {m.attachments?.length ? (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {m.attachments.map((a, i) =>
+                      a.kind === 'image' && a.url ? (
+                        <img
+                          key={i}
+                          src={a.url}
+                          alt={a.name}
+                          className="w-24 h-24 object-cover rounded-lg border border-black/10"
+                        />
+                      ) : (
+                        <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/40 border border-black/10 text-xs">
+                          <FileText className="w-4 h-4 shrink-0" />
+                          <span className="truncate max-w-[140px]">{a.name}</span>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                ) : null}
+                {m.text && <RichText text={m.text} />}
+              </div>
+              {m.images?.map((img, i) => (
+                <a
+                  key={i}
+                  href={img.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={img.name}
+                  className="block max-w-[85%] rounded-2xl overflow-hidden border border-border bg-card"
+                >
+                  <img src={img.url} alt={img.name} className="w-full h-auto" />
+                  <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5" /> {img.name} — appuyer pour ouvrir / télécharger
+                  </div>
+                </a>
+              ))}
+              {m.proposals?.map((p) => (
+                <ConfirmationCard
+                  key={p.id}
+                  proposal={p}
+                  onConfirm={() => confirmProposal(p.id)}
+                  onCancel={() => cancelProposal(p.id)}
+                />
+              ))}
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-muted text-muted-foreground rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">L'assistant réfléchit…</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </ViewportShell>
   );
 }
