@@ -38,7 +38,6 @@ import { KpiCard, KpiRow, formatCurrencyFull } from '@/components/analytics';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  formatCurrencyRMB,
   formatRelativeDate,
   getDepositStatusLabel,
 } from '@/lib/formatters';
@@ -64,8 +63,6 @@ export function MobileDashboard() {
   const pendingDepositCount = depositStats?.to_process || stats?.pendingDeposits || 0;
   const pendingPaymentCount = (paymentStats?.toProcess || 0) + (paymentStats?.inProgress || 0);
   const balanceXAF = stats?.totalWalletBalance ?? 0;
-  // Affichage approximatif en RMB via le taux du jour (daily_rates, réf. virement) — cf. doc 18 cartographie taux.
-  const balanceRMB = activeDailyRate ? balanceXAF * activeDailyRate.rate_virement / 1_000_000 : null;
   const todayDepositAmount = depositStats?.today_amount ?? 0;
   const todayPaymentAmount = stats?.todayPaymentsAmount ?? 0;
   const weekVolume = stats?.weekVolume ?? 0;
@@ -146,7 +143,6 @@ export function MobileDashboard() {
             icon={<Wallet className="h-4 w-4" />}
             label="Solde plateforme"
             value={formatCurrencyFull(balanceXAF, 'XAF')}
-            secondary={balanceRMB != null ? `≈ ${formatCurrencyRMB(balanceRMB)}` : undefined}
             description="Somme totale XAF actuellement détenue par tous les wallets clients — ton engagement financier à l'instant T."
           />
           <KpiCard
