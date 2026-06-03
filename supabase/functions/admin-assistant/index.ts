@@ -14,6 +14,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { maskForRole } from "../_shared/mask.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2381,7 +2382,8 @@ serve(async (req) => {
                 } else {
                   result = { error: "outil indisponible pour ce rôle" };
                 }
-                results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result) });
+                // Masquage PII par rôle AVANT envoi au LLM (numéros de compte pour tous ; tél/email selon rôle).
+                results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(maskForRole(role, result)) });
               }
               messages.push({ role: "user", content: results });
               continue;
