@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ChevronLeft, ExternalLink, UserPlus, UserCheck, Lock, Unlock, MoreVertical } from 'lucide-react';
@@ -7,6 +7,7 @@ import { ChatThread } from '@/components/support/ChatThread';
 import { MessageInput } from '@/components/support/MessageInput';
 import { TypingIndicator } from '@/components/support/TypingIndicator';
 import { ClosedBanner } from '@/components/support/ClosedBanner';
+import { ViewportShell } from '@/components/layout/ViewportShell';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import {
@@ -27,12 +28,14 @@ import {
   useSupportAdmins,
 } from '@/hooks/useAdminChatTools';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
-import { useViewportContainerHeight } from '@/hooks/keyboard/useViewportContainerHeight';
 import { notifyAssignment } from '@/lib/notify-assignment';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ChatMessage } from '@/types/chat';
 import type { TemplateContext } from '@/lib/template-vars';
+
+// Fond de la zone de messages (identique côté client — cohérence cross-app).
+const CHAT_BG = 'bg-[hsl(30_8%_96%)] dark:bg-[hsl(220_20%_11%)]';
 
 export function MobileSupportConversationScreen() {
   const { t } = useTranslation('support');
@@ -40,7 +43,6 @@ export function MobileSupportConversationScreen() {
   const navigate = useNavigate();
   const { hasPermission, currentUser } = useAdminAuth();
   const canAccess = hasPermission('canAccessSupportChat');
-  const containerHeight = useViewportContainerHeight();
 
   const { data: conversation, isLoading: isLoadingConv } =
     useAdminConversation(conversationId);
@@ -63,6 +65,7 @@ export function MobileSupportConversationScreen() {
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setAdminId(currentUser?.id ?? null);
@@ -90,6 +93,16 @@ export function MobileSupportConversationScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length, conversationId]);
+
+  // Garde la conversation collée au bas quand le clavier s'ouvre/se ferme
+  // (le cadre suit déjà le clavier via --vvh ; ici simple scroll DOM, 0 re-render).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const stick = () => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; };
+    vv.addEventListener('resize', stick);
+    return () => vv.removeEventListener('resize', stick);
+  }, []);
 
   if (!canAccess) {
     return (
@@ -170,130 +183,105 @@ export function MobileSupportConversationScreen() {
     }
   };
 
-  return (
-    <div
-      className="flex flex-col bg-background"
-      style={{ height: containerHeight }}
+  const header = (
+    <header
+      className="relative flex items-center gap-2 border-b border-border bg-background px-2 py-2.5"
+      style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}
     >
-      {/* Header custom */}
-      <header
-        className="relative flex items-center gap-2 border-b border-border bg-background px-2 py-2.5"
-        style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}
+      <button
+        type="button"
+        onClick={() => navigate('/m/support')}
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted -ml-1"
+        aria-label={t('detail.back')}
       >
-        <button
-          type="button"
-          onClick={() => navigate('/m/support')}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted -ml-1"
-          aria-label={t('detail.back')}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-sm font-semibold text-white">
-          {(conversation?.client_first_name?.[0] ?? 'C').toUpperCase()}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground">
-            {clientName || t('admin.noClientName')}
-          </h1>
-          {(conversation?.subject || conversation?.client_phone) && (
-            <p className="truncate text-[11px] leading-tight text-muted-foreground">
-              {conversation?.subject || conversation?.client_phone}
-            </p>
-          )}
-        </div>
-
-        {conversation && !conversation.assigned_admin_id && !isAssignedToMe && (
-          <button
-            type="button"
-            onClick={handleClaim}
-            className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-bonzini-violet px-2.5 text-[11px] font-semibold text-white shadow-[0_6px_18px_hsl(258_95%_60%/_0.22)]"
-            aria-label={t('admin.actions.claim')}
-          >
-            <UserPlus className="h-3 w-3" />
-            {t('admin.actions.claim')}
-          </button>
-        )}
-        {conversation && conversation.assigned_admin_id && !isAssignedToMe && assignedName && (
-          <span className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-muted px-2 text-[10px] font-medium text-muted-foreground">
-            <UserCheck className="h-3 w-3" />
-            {assignedName}
-          </span>
-        )}
-        {isAssignedToMe && (
-          <span className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[hsl(258_100%_97%)] px-2 text-[10px] font-medium text-bonzini-violet dark:bg-[hsl(258_45%_22%)]">
-            <UserCheck className="h-3 w-3" />
-            {t('admin.actions.assignedToMe')}
-          </span>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setMenuOpen((o) => !o)}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-          aria-label="Menu"
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
-
-        <AnimatePresence>
-          {menuOpen && conversation && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-2 top-full z-20 mt-1 flex w-56 flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1 shadow-lg"
-            >
-              <MenuItem
-                icon={ExternalLink}
-                label={t('admin.clientLink')}
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate(`/m/clients/${conversation.client_id}`);
-                }}
-              />
-              <MenuItem
-                icon={UserPlus}
-                label={t('admin.actions.assignTo')}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setAssignOpen(true);
-                }}
-              />
-              {conversation.status === 'open' ? (
-                <MenuItem icon={Lock} label={t('admin.actions.close')} onClick={handleClose} />
-              ) : (
-                <MenuItem icon={Unlock} label={t('admin.actions.reopen')} onClick={handleReopen} />
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-
-      <div className="flex-1 overflow-y-auto bg-[hsl(30_8%_96%)] dark:bg-[hsl(220_20%_11%)]">
-        {isLoadingConv || isLoadingMsgs ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <ChatThread
-            messages={messages ?? []}
-            selfSenderType="admin"
-            variant="admin-app"
-            onReply={setReplyTo}
-            conversationId={conversationId ?? null}
-            clientForReactions={supabaseAdmin}
-            selfReactorId={adminId}
-            selfReactorType="admin"
-            typingIndicatorSlot={otherIsTyping ? <TypingIndicator who="client" /> : null}
-          />
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-sm font-semibold text-white">
+        {(conversation?.client_first_name?.[0] ?? 'C').toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+          {clientName || t('admin.noClientName')}
+        </h1>
+        {(conversation?.subject || conversation?.client_phone) && (
+          <p className="truncate text-[11px] leading-tight text-muted-foreground">
+            {conversation?.subject || conversation?.client_phone}
+          </p>
         )}
       </div>
 
-      {conversation?.status === 'closed' && (
-        <ClosedBanner message={t('admin.closedHint')} />
+      {conversation && !conversation.assigned_admin_id && !isAssignedToMe && (
+        <button
+          type="button"
+          onClick={handleClaim}
+          className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-bonzini-violet px-2.5 text-[11px] font-semibold text-white shadow-[0_6px_18px_hsl(258_95%_60%/_0.22)]"
+          aria-label={t('admin.actions.claim')}
+        >
+          <UserPlus className="h-3 w-3" />
+          {t('admin.actions.claim')}
+        </button>
+      )}
+      {conversation && conversation.assigned_admin_id && !isAssignedToMe && assignedName && (
+        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-muted px-2 text-[10px] font-medium text-muted-foreground">
+          <UserCheck className="h-3 w-3" />
+          {assignedName}
+        </span>
+      )}
+      {isAssignedToMe && (
+        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[hsl(258_100%_97%)] px-2 text-[10px] font-medium text-bonzini-violet dark:bg-[hsl(258_45%_22%)]">
+          <UserCheck className="h-3 w-3" />
+          {t('admin.actions.assignedToMe')}
+        </span>
       )}
 
+      <button
+        type="button"
+        onClick={() => setMenuOpen((o) => !o)}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        aria-label="Menu"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+
+      <AnimatePresence>
+        {menuOpen && conversation && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-2 top-full z-20 mt-1 flex w-56 flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1 shadow-lg"
+          >
+            <MenuItem
+              icon={ExternalLink}
+              label={t('admin.clientLink')}
+              onClick={() => {
+                setMenuOpen(false);
+                navigate(`/m/clients/${conversation.client_id}`);
+              }}
+            />
+            <MenuItem
+              icon={UserPlus}
+              label={t('admin.actions.assignTo')}
+              onClick={() => {
+                setMenuOpen(false);
+                setAssignOpen(true);
+              }}
+            />
+            {conversation.status === 'open' ? (
+              <MenuItem icon={Lock} label={t('admin.actions.close')} onClick={handleClose} />
+            ) : (
+              <MenuItem icon={Unlock} label={t('admin.actions.reopen')} onClick={handleReopen} />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+
+  const footer = (
+    <>
+      {conversation?.status === 'closed' && <ClosedBanner message={t('admin.closedHint')} />}
       {conversationId && (
         <MessageInput
           replyTo={replyTo}
@@ -333,8 +321,33 @@ export function MobileSupportConversationScreen() {
           }}
         />
       )}
+    </>
+  );
 
-      {/* Modal assignation */}
+  return (
+    <>
+      <ViewportShell header={header} footer={footer} scrollRef={scrollRef} scrollClassName={CHAT_BG}>
+        {isLoadingConv || isLoadingMsgs ? (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <ChatThread
+            messages={messages ?? []}
+            selfSenderType="admin"
+            variant="admin-app"
+            onReply={setReplyTo}
+            conversationId={conversationId ?? null}
+            clientForReactions={supabaseAdmin}
+            selfReactorId={adminId}
+            selfReactorType="admin"
+            typingIndicatorSlot={otherIsTyping ? <TypingIndicator who="client" /> : null}
+          />
+        )}
+      </ViewportShell>
+
+      {/* Modal assignation — rendue HORS du cadre (plein écran, z-40) pour
+          n'être ni rognée par l'overflow du shell ni passée sous lui. */}
       <AnimatePresence>
         {assignOpen && (
           <motion.div
@@ -384,7 +397,7 @@ export function MobileSupportConversationScreen() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
 
