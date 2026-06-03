@@ -1,5 +1,5 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-01.1 — 47 outils (lecture + écriture), trésorerie complète,
+// Version: 2026-06-03.1 — 62 outils (42 lecture + 20 écriture), trésorerie complète,
 // top clients par volume, crédit/débit wallet, preuves auto, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
@@ -9,7 +9,7 @@
 // - ÉCRITURE : l'IA ne fait que PROPOSER une action (carte de confirmation).
 //   Rien n'est exécuté tant que l'admin n'a pas confirmé. L'exécution passe par
 //   les RPC existantes, appelées avec le JWT de l'admin (is_admin(auth.uid())).
-// - Pièces jointes : images (vision) + PDF (documents). Prompt caching.
+// - Pièces jointes : stockées comme PREUVES (non analysées par le modèle). Prompt caching.
 // - Tout est journalisé (admin_audit_logs + assistant_pending_actions).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -26,7 +26,7 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 // ressentie. Surchargables par secret si besoin (ex. Haiku pour la vitesse pure).
 const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-sonnet-4-6";
 const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
-const MAX_TOOL_ITERATIONS = 8;
+const MAX_TOOL_ITERATIONS = 14;
 const MIN_PAYMENT_XAF = 10_000;
 
 // Liste blanche pour les actions wallet (crédit/débit manuel) : e-mails ou user_id
@@ -128,6 +128,8 @@ interface ReadTool {
   /** Si vrai, l'outil reçoit le client AUTHENTIFIÉ (JWT admin) en 2e arg —
    *  nécessaire pour les RPC qui vérifient auth.uid() (ex. trésorerie). */
   needsAuth?: boolean;
+  /** Défense en profondeur : outil réservé au super_admin (ex. requête SQL libre). */
+  superAdminOnly?: boolean;
   description: string;
   // deno-lint-ignore no-explicit-any
   input_schema: Record<string, any>;
@@ -859,6 +861,7 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "query_database",
     permission: "canViewLogs",
+    superAdminOnly: true,
     description:
       "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 200 lignes.\n" +
       "Tables principales (colonnes utiles) :\n" +
@@ -1341,11 +1344,12 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "create_payment",
     permission: "canProcessPayments",
     acceptsProof: true,
-    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url. Le montant RMB est calculé automatiquement au taux du jour.",
+    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour, OU à un taux personnalisé si l'admin le demande). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, et exchange_rate (taux personnalisé en CNY ¥ pour 1 000 000 XAF — la plateforme l'autorise, comme l'écran de paiement admin). Sans exchange_rate, le montant RMB est calculé automatiquement au taux du jour ; avec, il utilise le taux fourni.",
     input_schema: {
       type: "object",
       properties: {
         client_user_id: { type: "string" }, amount_xaf: { type: "number" }, method: { type: "string", enum: ["alipay", "wechat", "bank_transfer", "cash"] },
+        exchange_rate: { type: "number", description: "Taux personnalisé optionnel (CNY ¥ pour 1 000 000 XAF). Si fourni, remplace le taux du jour." },
         country_key: { type: "string" }, beneficiary_name: { type: "string" }, beneficiary_phone: { type: "string" },
         beneficiary_bank_name: { type: "string" }, beneficiary_bank_account: { type: "string" }, beneficiary_qr_code_url: { type: "string" },
       },
@@ -1364,14 +1368,26 @@ const WRITE_TOOLS: WriteTool[] = [
       const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
       if (Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
-      // Calculer le taux du jour (jamais inventé par l'IA)
-      const { data: rate, error: rErr } = await admin.rpc("calculate_final_rate", { p_payment_method: rateMethod, p_country_key: countryKey, p_amount_xaf: amt });
-      if (rErr) return { ok: false, error: `Calcul du taux: ${rErr.message}` };
-      if (!rate?.success) return { ok: false, error: rate?.error || "Taux indisponible." };
-      const amountRmb = Number(rate.amount_cny);
-      const exchangeRate = Number(rate.final_rate);
+      // Taux : personnalisé si l'admin le fournit (parité avec l'écran admin MobileNewPayment),
+      // sinon taux du jour calculé côté base (jamais inventé par l'IA).
+      let amountRmb: number;
+      let exchangeRate: number;
+      let rateIsCustom = false;
+      const customRate = a.exchange_rate != null ? Number(a.exchange_rate) : null;
+      if (customRate != null && Number.isFinite(customRate) && customRate > 0) {
+        // exchange_rate = CNY (¥) pour 1 000 000 XAF (même unité que rate.final_rate)
+        exchangeRate = customRate;
+        amountRmb = Math.round((amt * customRate) / 1_000_000);
+        rateIsCustom = true;
+      } else {
+        const { data: rate, error: rErr } = await admin.rpc("calculate_final_rate", { p_payment_method: rateMethod, p_country_key: countryKey, p_amount_xaf: amt });
+        if (rErr) return { ok: false, error: `Calcul du taux: ${rErr.message}` };
+        if (!rate?.success) return { ok: false, error: rate?.error || "Taux indisponible." };
+        amountRmb = Number(rate.amount_cny);
+        exchangeRate = Number(rate.final_rate);
+      }
       const args = {
-        p_user_id: c.uid, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_method: a.method,
+        p_user_id: c.uid, p_amount_xaf: amt, p_amount_rmb: amountRmb, p_exchange_rate: exchangeRate, p_rate_is_custom: rateIsCustom, p_method: a.method,
         p_beneficiary_name: a.beneficiary_name || null, p_beneficiary_phone: a.beneficiary_phone || null,
         p_beneficiary_bank_name: a.beneficiary_bank_name || null, p_beneficiary_bank_account: a.beneficiary_bank_account || null,
         p_beneficiary_qr_code_url: a.beneficiary_qr_code_url || null,
@@ -1379,6 +1395,7 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [
         { label: "Client", value: c.name },
         { label: "Mode", value: PAYMENT_METHOD_LABEL[a.method] || a.method },
+        { label: "Taux", value: rateIsCustom ? `¥ ${exchangeRate} / 1M XAF (personnalisé)` : `¥ ${exchangeRate} / 1M XAF (taux du jour)` },
         { label: "Montant fournisseur", value: `≈ ¥ ${amountRmb.toLocaleString("fr-FR")}` },
         { label: "Solde après", value: fmtXAF(Number(wallet.balance_xaf) - amt) },
       ];
@@ -1775,7 +1792,7 @@ function buildSystemPrompt(role: string): string {
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter bénéficiaire, modifier client, définir le taux du jour, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
     `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
-    `- N'invente jamais un montant, un taux ou un user_id : récupère-les. Le taux RMB des paiements est calculé automatiquement par l'outil, ne le calcule pas toi-même.`,
+    `- N'invente jamais un montant ou un user_id : récupère-les. Par défaut, le taux RMB est calculé automatiquement par l'outil au taux du jour — ne calcule pas le taux toi-même. EXCEPTION : si l'admin demande explicitement un taux personnalisé (ex. « au taux 78 »), passe-le dans le paramètre exchange_rate de create_payment ; la plateforme autorise les paiements à taux personnalisé, exactement comme l'écran de paiement admin. Ne dis donc JAMAIS que « le taux est fixé » : c'est faux.`,
     `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
     `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
     ``,
@@ -1971,7 +1988,9 @@ serve(async (req) => {
       conversationId = conv.id;
     }
 
-    const { data: hist } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(20);
+    // Les N derniers messages (les plus RÉCENTS), remis dans l'ordre chronologique pour le modèle.
+    const { data: histRaw } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(40);
+    const hist = (histRaw ?? []).reverse();
     // deno-lint-ignore no-explicit-any
     const history = (hist ?? []).filter((m: any) => m.role === "user" || m.role === "assistant").map((m: any) => {
       let text = typeof m.content?.text === "string" ? m.content.text : "";
@@ -1998,7 +2017,7 @@ serve(async (req) => {
     const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
     // Outils autorisés pour ce rôle (lecture + écriture)
-    const allowedRead = READ_TOOLS.filter((t) => perms[t.permission]);
+    const allowedRead = READ_TOOLS.filter((t) => perms[t.permission] && !(t.superAdminOnly && role !== "super_admin"));
     const allowedWrite = WRITE_TOOLS.filter((t) => {
       if (!perms[t.permission]) return false;
       if (t.superAdminOnly && role !== "super_admin") return false;
@@ -2016,8 +2035,8 @@ serve(async (req) => {
     const system = buildSystemPrompt(role);
 
     // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
-    // Haiku par défaut (rapide) ; on bascule sur Sonnet dès qu'une action
-    // d'écriture est proposée (les opérations sensibles méritent plus de "réflexion").
+    // MODEL_FAST par défaut (Sonnet 4.6) ; bascule sur MODEL_SMART dès qu'une action
+    // d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
     const convId = conversationId;
     const stream = new ReadableStream({
       async start(controller) {
@@ -2034,7 +2053,7 @@ serve(async (req) => {
           for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
             const resp = await streamAnthropic(
               apiKey,
-              { model, max_tokens: 1500, system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }], tools: toolDefs, messages },
+              { model, max_tokens: 4000, system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }], tools: toolDefs, messages },
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
