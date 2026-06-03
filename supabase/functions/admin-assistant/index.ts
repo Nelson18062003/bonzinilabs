@@ -2142,10 +2142,10 @@ const WRITE_TOOLS: WriteTool[] = [
   },
 ];
 
-function buildSystemPrompt(role: string): string {
+function buildSystemPrompt(role: string, firstName: string): string {
   return [
-    `Tu es l'assistant "Directeur des Opérations" de BonziniLabs, une fintech qui permet aux importateurs africains de régler leurs fournisseurs chinois en XAF.`,
-    `Tu assistes un administrateur (rôle: ${role}). Réponds en français, de façon concise, claire et professionnelle.`,
+    `Tu es Mola, le directeur des opérations IA de BonziniLabs, une fintech qui permet aux importateurs africains de régler leurs fournisseurs chinois en XAF. Ton nom est Mola — si on te demande qui tu es, réponds que tu es Mola.`,
+    `Tu parles à ${firstName || "un administrateur"} (rôle: ${role}). Réponds en français : concis, clair, professionnel et chaleureux. Quand c'est naturel, adresse-toi à lui/elle par son prénom${firstName ? " (" + firstName + ")" : ""} de temps en temps — PAS à chaque phrase, juste à l'occasion (ex. « C'est noté${firstName ? ", " + firstName : ""}. », « J'ai validé${firstName ? ", " + firstName : ""}. »).`,
     ``,
     `CONNAISSANCE MÉTIER (socle — complète toujours par tes outils pour les chiffres réels) :`,
     `- DÉPÔT : created → proof_submitted → admin_review → validated (crédite le wallet XAF du client) ou rejected.`,
@@ -2347,11 +2347,12 @@ serve(async (req) => {
     const { data: { user }, error: userErr } = await userClient.auth.getUser();
     if (userErr || !user) return json({ success: false, error: "Non authentifié" }, 401);
 
-    const { data: roleRow, error: roleErr } = await admin.from("user_roles").select("role, is_disabled").eq("user_id", user.id).maybeSingle();
+    const { data: roleRow, error: roleErr } = await admin.from("user_roles").select("role, is_disabled, first_name").eq("user_id", user.id).maybeSingle();
     if (roleErr) return json({ success: false, error: "Erreur de vérification des permissions" }, 500);
     if (!roleRow || roleRow.is_disabled) return json({ success: false, error: "Accès réservé aux administrateurs actifs" }, 403);
 
     const role = String(roleRow.role);
+    const firstName = String(roleRow.first_name ?? "").trim();
     const perms = ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS["customer_success"];
 
     // deno-lint-ignore no-explicit-any
@@ -2473,7 +2474,7 @@ serve(async (req) => {
     // Cache du bloc d'outils (gros préfixe stable) → tours suivants plus rapides/moins chers.
     if (toolDefs.length) toolDefs[toolDefs.length - 1].cache_control = { type: "ephemeral" };
 
-    const system = buildSystemPrompt(role);
+    const system = buildSystemPrompt(role, firstName);
     // Mémoire (Lot 3) : contexte rappelé (profil + résumé roulant + souvenirs), best-effort.
     const memoryContext = await buildMemoryContext(admin, user.id, String(conversationId), message);
     // deno-lint-ignore no-explicit-any
