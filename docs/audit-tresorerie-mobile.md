@@ -137,5 +137,63 @@ détailler (themes confirmés par balayage, détails par écran à venir) :
    `bonzini-*`). *Gros volume, fort effet qualité visible.*
 3. **Cohérence design-system** (Thème 3) : `SelectField` + mutualisation des helpers.
 
-*→ En attente de ton GO : on garde cette priorité (sécurité → dark mode → cohérence) ? Et tu veux que
-je termine d'abord l'audit détaillé des 14 écrans restants, ou que j'attaque la sécurité tout de suite ?*
+---
+
+## 7. Audit complété — écrans restants & révisions
+
+Lus à fond ensuite : `MobilePurchasesList`, `MobileOperationsHistory`, `MobileOperationDetail`,
+`MobileAccountsScreen`, `MobileInventoryScreen`, `MobileTreasuryDashboard`, **et tout `useTreasury.ts`**.
+
+### 7.1 Révision importante — le float n'est PAS un risque (serveur fait foi) 🟢
+Toutes les écritures d'argent passent par des **RPC `SECURITY DEFINER`** (`record_usdt_purchase/sale`,
+`adjust_treasury_account`, `record_inventory_snapshot`, `void_treasury_operation`). Le **WAC, le stock,
+le taux implicite, la contre-écriture de void** sont calculés **côté Postgres** — le float client n'est
+qu'un **aperçu**. → Le point 3.3 est **rétrogradé en mineur**.
+
+### 7.2 Nouveau — totaux de listes faux à l'échelle (plafond 1000) 🟡
+`useTreasuryOperations` / `useWacEvolution` chargent les opérations **sans `.limit()`**
+(`useTreasury.ts:506-519,585-596`) → plafond **PostgREST par défaut = 1000 lignes**. Les **totaux des
+listes** (`MobilePurchasesList:227`, `MobileSalesList`) et la **courbe WAC** sont **sommés côté
+client** → faux au-delà de 1000 ops. Le **dashboard**, lui, agrège **côté serveur** (`get_treasury_
+dashboard`) → correct. Incohérence latente (OK aujourd'hui, faux à terme). Bon correctif : s'appuyer
+sur les agrégats serveur, pas resommer côté client.
+
+### 7.3 Confirmé — `max={null}` partout, y compris ajustements & inventaire 🟢
+Pas seulement les 2 grands formulaires : l'**ajustement manuel de compte** (`MobileAccountsScreen:209`)
+et l'**inventaire** (`MobileInventoryScreen:106`) débrident aussi le cap. Fat-finger possible sur
+**toutes** les saisies d'argent du module.
+
+### 7.4 Confirmé — duplication & non-réutilisation 🟢
+- `fmt`/`formatNumber`/`formatBalance` : **6+ copies** aux décimales divergentes.
+- `getRange` : **3 copies** aux presets divergents (PurchasesList / OperationsHistory / Dashboard).
+- `ComputedRow`, `Row`, **les 3 cartes** (`PurchaseCard`/`SaleCard`/`OperationCard`), les **tone-maps**
+  (violet/amber/orange → classes) : dupliqués.
+- Le `MobileTreasuryDashboard` a son **propre `KpiCard`** alors qu'un **`components/analytics/KpiCard`
+  partagé existe déjà** → non-réutilisation.
+
+### 7.5 Confirmé — dark mode jusque dans les graphes 🟠
+`MobileTreasuryDashboard` : couleurs de courbe **en hex brut** (`stroke="#a855f7"`, grille `#eee`) sur
+une carte `bg-white` → illisible/figé en thème sombre. Les `<select>` bruts + `bg-white` sont partout.
+
+### 7.6 Confirmé bon (à préserver)
+Math d'argent serveur (RPC), **contre-écriture ledger au void** (piste d'audit fintech), confirmations
+sur destructif (motif ≥10 car.), gardes de permission partout, UX métier riche (WAC/stock/écarts,
+format dual XAF/CNY, déviation top-contreparties, réconciliation), `AmountField` solide.
+
+---
+
+## 8. Plan d'implémentation (validé : audit d'abord, puis sécurité → dark mode → cohérence)
+
+**Lot 1 — Sécurité financière** (petit périmètre, fort enjeu) :
+- Remplacer `max={null}` par des **caps raisonnés** (à chiffrer avec le fondateur) sur tous les champs.
+- **Étape de confirmation** (récap avant écriture) sur achat & vente.
+- (option) S'appuyer sur les agrégats serveur pour les totaux de listes (corrige le plafond 1000).
+
+**Lot 2 — Dark mode / tokens** : passe couleurs → tokens (`bg-card`, `text-foreground`, `border-border`,
+`bonzini-*`) sur les 14 écrans + couleurs de graphe via variables CSS.
+
+**Lot 3 — Cohérence/dette** : `SelectField` partagé, mutualiser `formatMoney`/`getRange`/`ComputedRow`/
+cartes/KPI (réutiliser `components/analytics/KpiCard`).
+
+*Audit Phase 1 terminé. Décision produit en attente pour démarrer le Lot 1 (niveau des caps + étape de
+confirmation) — cf. message.*
