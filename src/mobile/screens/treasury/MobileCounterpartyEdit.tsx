@@ -72,8 +72,8 @@ export function MobileCounterpartyEdit() {
   const isSupplier = cp.type === 'usdt_supplier';
   const tone = isSupplier ? 'violet' : 'amber';
   const toneClasses: Record<string, string> = {
-    violet: 'bg-violet-100 text-violet-700',
-    amber: 'bg-amber-100 text-amber-700',
+    violet: 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300',
+    amber: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
   };
 
   const handleSave = async () => {
@@ -107,7 +107,7 @@ export function MobileCounterpartyEdit() {
 
       <div className="px-4 py-4 space-y-4">
         {/* Header */}
-        <div className="bg-white rounded-2xl border border-border p-3.5 flex items-center justify-between">
+        <div className="bg-card rounded-2xl border border-border p-3.5 flex items-center justify-between">
           <div>
             <span className={cn('inline-block px-2 py-0.5 rounded-full text-[11px] font-bold', toneClasses[tone])}>
               {cp.short_id}
@@ -167,14 +167,14 @@ export function MobileCounterpartyEdit() {
         </Button>
 
         {/* Delete section */}
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mt-2">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-3.5 mt-2">
           {confirmDelete ? (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-red-700" />
-                <span className="text-[13px] font-bold text-red-700">Supprimer définitivement ?</span>
+                <AlertTriangle className="w-4 h-4 text-red-700 dark:text-red-300" />
+                <span className="text-[13px] font-bold text-red-700 dark:text-red-300">Supprimer définitivement ?</span>
               </div>
-              <p className="text-[12px] text-red-700 mb-3">
+              <p className="text-[12px] text-red-700 dark:text-red-300 mb-3">
                 Suppression possible uniquement si aucune opération n’est liée. Sinon, archive plutôt.
               </p>
               <div className="flex gap-2">
@@ -195,7 +195,7 @@ export function MobileCounterpartyEdit() {
             <Button
               variant="outline"
               onClick={() => setConfirmDelete(true)}
-              className="w-full border-red-300 text-red-700 hover:bg-red-100"
+              className="w-full border-red-300 dark:border-red-600/50 text-red-700 dark:text-red-300 hover:bg-red-100 dark:bg-red-500/20"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Supprimer définitivement

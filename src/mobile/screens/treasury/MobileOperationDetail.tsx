@@ -92,9 +92,9 @@ export function MobileOperationDetail({ kind }: Props) {
 
       <div className="px-4 py-4 space-y-4">
         {voided && (
-          <div className="rounded-xl bg-slate-100 border border-slate-300 px-3 py-2.5 flex items-start gap-2">
-            <Ban className="w-4 h-4 text-slate-700 flex-shrink-0 mt-0.5" />
-            <div className="text-[12px] text-slate-700">
+          <div className="rounded-xl bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-3 py-2.5 flex items-start gap-2">
+            <Ban className="w-4 h-4 text-slate-700 dark:text-slate-200 flex-shrink-0 mt-0.5" />
+            <div className="text-[12px] text-slate-700 dark:text-slate-200">
               <strong>Opération supprimée</strong> le{' '}
               {new Date(op.voided_at!).toLocaleString('fr-FR')}
               {op.void_reason && (
@@ -110,7 +110,7 @@ export function MobileOperationDetail({ kind }: Props) {
         {/* Headline */}
         <div className={cn(
           'rounded-2xl border-2 p-4',
-          kind === 'purchase' ? 'border-violet-200 bg-violet-50' : 'border-amber-200 bg-amber-50',
+          kind === 'purchase' ? 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10' : 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10',
         )}>
           <div className="flex items-center gap-2 mb-2">
             <div className={cn(
@@ -149,7 +149,7 @@ export function MobileOperationDetail({ kind }: Props) {
         </div>
 
         {/* Details */}
-        <div className="bg-white rounded-2xl border border-border p-3.5">
+        <div className="bg-card rounded-2xl border border-border p-3.5">
           <Row label="Date" value={new Date(op.occurred_at).toLocaleString('fr-FR')} />
           {kind === 'purchase' ? (
             <>
@@ -200,14 +200,14 @@ export function MobileOperationDetail({ kind }: Props) {
 
         {/* Void section */}
         {!voided && isSuperAdmin && (
-          <section className="bg-red-50 border border-red-200 rounded-2xl p-3.5">
+          <section className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-3.5">
             {showVoidForm ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-red-700" />
-                  <span className="text-[13px] font-bold text-red-700">Supprimer cette opération</span>
+                  <AlertTriangle className="w-4 h-4 text-red-700 dark:text-red-300" />
+                  <span className="text-[13px] font-bold text-red-700 dark:text-red-300">Supprimer cette opération</span>
                 </div>
-                <p className="text-[12px] text-red-700 mb-3">
+                <p className="text-[12px] text-red-700 dark:text-red-300 mb-3">
                   L’opération disparaîtra des stats et des soldes. Pour des raisons d’audit fintech, une
                   contre-écriture est enregistrée dans le ledger (l’action est tracée, irréversible).
                 </p>
@@ -234,7 +234,7 @@ export function MobileOperationDetail({ kind }: Props) {
               <Button
                 variant="outline"
                 onClick={() => setShowVoidForm(true)}
-                className="w-full border-red-300 text-red-700 hover:bg-red-100"
+                className="w-full border-red-300 dark:border-red-600/50 text-red-700 dark:text-red-300 hover:bg-red-100 dark:bg-red-500/20"
               >
                 <Ban className="w-4 h-4 mr-2" />
                 Supprimer cette opération (super admin)

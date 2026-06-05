@@ -72,7 +72,7 @@ export function MobileCounterpartiesScreen() {
               onClick={() => setTab(t.value)}
               className={cn(
                 'flex-1 h-9 rounded-lg text-[13px] font-semibold transition-colors',
-                tab === t.value ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground',
+                tab === t.value ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground',
               )}
             >
               {t.label}
@@ -99,7 +99,7 @@ export function MobileCounterpartiesScreen() {
           {showForm ? (
             <div className={cn(
               'rounded-2xl border p-3 space-y-2',
-              tab === 'usdt_supplier' ? 'bg-violet-50 border-violet-200' : 'bg-amber-50 border-amber-200',
+              tab === 'usdt_supplier' ? 'bg-violet-50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/30' : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30',
             )}>
               <TextField label="Nom *" value={name} onChange={(e) => setName(e.target.value)} />
               <TextField label="Entreprise" value={company} onChange={(e) => setCompany(e.target.value)} />
@@ -153,14 +153,14 @@ export function MobileCounterpartiesScreen() {
         ) : (
           (data ?? []).map((c) => {
             const toneBadge = tab === 'usdt_supplier'
-              ? 'bg-violet-100 text-violet-700'
-              : 'bg-amber-100 text-amber-700';
+              ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300'
+              : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300';
             return (
               <button
                 key={c.id}
                 onClick={() => canManage && navigate(`/m/more/treasury/counterparties/${c.id}`)}
                 className={cn(
-                  'w-full text-left bg-white rounded-xl border border-border p-3.5 flex items-center gap-3',
+                  'w-full text-left bg-card rounded-xl border border-border p-3.5 flex items-center gap-3',
                   canManage && 'active:bg-muted/40 transition-colors',
                 )}
               >

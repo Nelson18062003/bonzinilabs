@@ -68,7 +68,7 @@ export function MobileOperationsHistory() {
               onClick={() => setPreset(p.value)}
               className={cn(
                 'flex-1 h-9 rounded-lg text-[13px] font-semibold transition-colors',
-                preset === p.value ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground',
+                preset === p.value ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground',
               )}
             >
               {p.label}
@@ -90,8 +90,8 @@ export function MobileOperationsHistory() {
               className={cn(
                 'flex-shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
                 filter === f.value
-                  ? 'border-violet-600 bg-violet-50 text-violet-700'
-                  : 'border-border bg-white text-muted-foreground',
+                  ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300'
+                  : 'border-border bg-card text-muted-foreground',
               )}
             >
               {f.label}
@@ -138,14 +138,14 @@ function OperationCard({ op, onClick }: { op: OperationRow; onClick: () => void 
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left bg-white rounded-2xl border p-3.5 active:bg-muted/40 transition-colors flex items-center gap-3',
-        voided ? 'border-border opacity-60' : isPurchase ? 'border-violet-200' : 'border-amber-200',
+        'w-full text-left bg-card rounded-2xl border p-3.5 active:bg-muted/40 transition-colors flex items-center gap-3',
+        voided ? 'border-border opacity-60' : isPurchase ? 'border-violet-200 dark:border-violet-500/30' : 'border-amber-200 dark:border-amber-500/30',
       )}
     >
       <div
         className={cn(
           'w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0',
-          voided ? 'bg-slate-400' : isPurchase ? 'bg-violet-600' : 'bg-amber-500',
+          voided ? 'bg-slate-400 dark:bg-slate-600' : isPurchase ? 'bg-violet-600' : 'bg-amber-500',
         )}
       >
         {voided ? <Ban className="w-4 h-4" /> : isPurchase ? <ArrowDownToLine className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
@@ -157,7 +157,7 @@ function OperationCard({ op, onClick }: { op: OperationRow; onClick: () => void 
             {counterparty ?? '—'}
           </span>
           {voided && (
-            <span className="text-[10px] uppercase font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
               Annulée
             </span>
           )}

@@ -101,19 +101,19 @@ function KpiCard({
   trend?: 'up' | 'down';
 }) {
   const toneClasses: Record<string, string> = {
-    violet: 'border-violet-200 bg-violet-50',
-    amber: 'border-amber-200 bg-amber-50',
-    orange: 'border-orange-200 bg-orange-50',
-    emerald: 'border-emerald-200 bg-emerald-50',
-    red: 'border-red-200 bg-red-50',
-    neutral: 'border-border bg-white',
+    violet: 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10',
+    amber: 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10',
+    orange: 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10',
+    emerald: 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10',
+    red: 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10',
+    neutral: 'border-border bg-card',
   };
   const labelTone: Record<string, string> = {
-    violet: 'text-violet-700',
-    amber: 'text-amber-700',
-    orange: 'text-orange-700',
-    emerald: 'text-emerald-700',
-    red: 'text-red-700',
+    violet: 'text-violet-700 dark:text-violet-300',
+    amber: 'text-amber-700 dark:text-amber-300',
+    orange: 'text-orange-700 dark:text-orange-300',
+    emerald: 'text-emerald-700 dark:text-emerald-300',
+    red: 'text-red-700 dark:text-red-300',
     neutral: 'text-muted-foreground',
   };
 
@@ -123,8 +123,8 @@ function KpiCard({
         <span className={cn('text-[11px] font-bold uppercase tracking-wide', labelTone[tone ?? 'neutral'])}>
           {label}
         </span>
-        {trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />}
-        {trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-600" />}
+        {trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+        {trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
       </div>
       <div className="text-[18px] font-extrabold text-foreground tabular-nums">
         {value}
@@ -203,8 +203,8 @@ export function MobileTreasuryDashboard() {
               className={cn(
                 'flex-shrink-0 h-9 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
                 preset === p.value
-                  ? 'border-violet-600 bg-violet-50 text-violet-700'
-                  : 'border-border bg-white text-muted-foreground',
+                  ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300'
+                  : 'border-border bg-card text-muted-foreground',
               )}
             >
               {p.label}
@@ -214,7 +214,7 @@ export function MobileTreasuryDashboard() {
 
         {/* Custom range pickers */}
         {preset === 'custom' && (
-          <div className="grid grid-cols-2 gap-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
+          <div className="grid grid-cols-2 gap-2 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-xl p-3">
             <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
             <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </div>
@@ -233,14 +233,14 @@ export function MobileTreasuryDashboard() {
             {/* Bénéfice headline */}
             <div className={cn(
               'rounded-2xl border-2 p-4',
-              benefitTone === 'emerald' ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50',
+              benefitTone === 'emerald' ? 'border-emerald-300 dark:border-emerald-600/50 bg-emerald-50 dark:bg-emerald-500/10' : 'border-red-300 dark:border-red-600/50 bg-red-50 dark:bg-red-500/10',
             )}>
               <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
                 Bénéfice période
               </div>
               <div className={cn(
                 'text-3xl font-extrabold tabular-nums',
-                benefitTone === 'emerald' ? 'text-emerald-700' : 'text-red-700',
+                benefitTone === 'emerald' ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300',
               )}>
                 {dash.benefit_total_xaf >= 0 ? '+' : ''}
                 {fmt(dash.benefit_total_xaf, 0)}
@@ -302,13 +302,13 @@ export function MobileTreasuryDashboard() {
                 <RateCardXafCny label="Revient" xafPerCny={revientXafPerCny} tone="emerald" />
                 <RateCardXafCny label="Client" xafPerCny={clientRateXafPerCny} tone="orange" />
                 {margePerCny !== null && (
-                  <div className="col-span-2 bg-gradient-to-br from-emerald-50 to-amber-50 border border-emerald-200 rounded-2xl p-3.5">
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-700 mb-1">
+                  <div className="col-span-2 bg-gradient-to-br from-emerald-50 dark:from-emerald-500/10 to-amber-50 dark:to-amber-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl p-3.5">
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 mb-1">
                       Marge par CNY livré
                     </div>
                     <div className={cn(
                       'text-[18px] font-extrabold tabular-nums',
-                      margePerCny >= 0 ? 'text-emerald-700' : 'text-red-700',
+                      margePerCny >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300',
                     )}>
                       {margePerCny >= 0 ? '+' : ''}
                       {fmt(margePerCny, 4)}
@@ -347,9 +347,9 @@ export function MobileTreasuryDashboard() {
                 />
               </div>
               {dash.is_stock_usdt_negative && (
-                <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-[12px] text-red-700">
+                <div className="mt-2 flex items-start gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-[12px] text-red-700 dark:text-red-300">
                     Stock USDT négatif. Cherche un achat manquant à enregistrer.
                   </span>
                 </div>
@@ -362,25 +362,32 @@ export function MobileTreasuryDashboard() {
                 <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
                   Évolution WAC USDT
                 </h2>
-                <div className="bg-white border border-border rounded-2xl p-3">
+                <div className="bg-card border border-border rounded-2xl p-3">
                   <ResponsiveContainer width="100%" height={180}>
                     <LineChart data={wacSeries.map((p) => ({
                       ...p,
                       label: new Date(p.at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
                     }))}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 10', 'dataMax + 10']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+                      <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" domain={['dataMin - 10', 'dataMax + 10']} />
                       <Tooltip
                         formatter={(v: number) => [`${fmt(v, 4)} XAF/USDT`, 'WAC']}
-                        labelStyle={{ fontSize: 12 }}
+                        labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
+                        contentStyle={{
+                          background: 'hsl(var(--popover))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: 12,
+                          fontSize: 12,
+                          color: 'hsl(var(--popover-foreground))',
+                        }}
                       />
                       <Line
                         type="monotone"
                         dataKey="wac"
-                        stroke="#a855f7"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={2}
-                        dot={{ r: 3 }}
+                        dot={{ r: 3, fill: 'hsl(var(--primary))' }}
                         activeDot={{ r: 5 }}
                       />
                     </LineChart>
@@ -463,7 +470,7 @@ function TopList({
     return <div className="text-center text-muted-foreground text-[12px] py-4">{emptyText}</div>;
   }
   return (
-    <div className="bg-white rounded-2xl border border-border divide-y divide-border/60 overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border divide-y divide-border/60 overflow-hidden">
       {rows.map((r, i) => (
         <div key={r.id} className="p-3 flex items-center gap-3">
           <div className="w-7 h-7 rounded-full bg-muted text-foreground flex items-center justify-center text-[12px] font-bold">
@@ -485,8 +492,8 @@ function TopList({
               Math.abs(r.deviation_pct) < 0.5
                 ? 'text-muted-foreground'
                 : r.deviation_pct > 0
-                ? 'text-red-600'
-                : 'text-emerald-600',
+                ? 'text-red-600 dark:text-red-400'
+                : 'text-emerald-600 dark:text-emerald-400',
             )}
             title="Écart vs moyenne période"
           >

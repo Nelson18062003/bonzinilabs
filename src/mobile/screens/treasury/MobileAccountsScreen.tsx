@@ -9,9 +9,9 @@ import { useAdjustAccount, useTreasuryAccountBalances, type TreasuryAccountBalan
 import { cn } from '@/lib/utils';
 
 const CURRENCY_GROUPS: { currency: 'XAF' | 'USDT' | 'CNY'; label: string; tone: string }[] = [
-  { currency: 'XAF', label: 'Comptes XAF', tone: 'border-violet-200 bg-violet-50' },
-  { currency: 'USDT', label: 'Pool USDT', tone: 'border-amber-200 bg-amber-50' },
-  { currency: 'CNY', label: 'Comptes CNY', tone: 'border-orange-200 bg-orange-50' },
+  { currency: 'XAF', label: 'Comptes XAF', tone: 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10' },
+  { currency: 'USDT', label: 'Pool USDT', tone: 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10' },
+  { currency: 'CNY', label: 'Comptes CNY', tone: 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10' },
 ];
 
 function formatBalance(n: number, currency: string) {
@@ -100,7 +100,7 @@ function AccountRow({
   const negative = balance < 0;
 
   return (
-    <div className={cn('bg-white/60', !isLast && 'border-b border-border/60')}>
+    <div className={cn('bg-card/60', !isLast && 'border-b border-border/60')}>
       <button
         type="button"
         onClick={() => canManage && setOpen((v) => !v)}
@@ -119,7 +119,7 @@ function AccountRow({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className={cn('text-right font-bold tabular-nums', negative ? 'text-red-600' : 'text-foreground')}>
+          <div className={cn('text-right font-bold tabular-nums', negative ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
             {formatBalance(balance, currency)}
           </div>
           {canManage && (open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />)}
@@ -177,8 +177,8 @@ function AdjustForm({
           className={cn(
             'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors flex items-center justify-center gap-1.5',
             direction === 'credit'
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-              : 'border-border bg-white text-muted-foreground',
+              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+              : 'border-border bg-card text-muted-foreground',
           )}
         >
           <Plus className="w-4 h-4" />
@@ -190,8 +190,8 @@ function AdjustForm({
           className={cn(
             'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors flex items-center justify-center gap-1.5',
             direction === 'debit'
-              ? 'border-red-500 bg-red-50 text-red-700'
-              : 'border-border bg-white text-muted-foreground',
+              ? 'border-red-500 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300'
+              : 'border-border bg-card text-muted-foreground',
           )}
         >
           <Minus className="w-4 h-4" />

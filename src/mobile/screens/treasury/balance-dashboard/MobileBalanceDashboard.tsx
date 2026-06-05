@@ -63,9 +63,9 @@ export function MobileBalanceDashboard() {
           </h2>
           <div className="space-y-3">
             {DASHBOARD_ACCOUNTS.map((a) => (
-              <div key={a.key} className="bg-white border border-border rounded-2xl p-3 space-y-2.5">
+              <div key={a.key} className="bg-card border border-border rounded-2xl p-3 space-y-2.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
                     <img src={a.logo} alt={a.name} className="w-7 h-7 object-contain" />
                   </div>
                   <div className="flex-1 min-w-0">

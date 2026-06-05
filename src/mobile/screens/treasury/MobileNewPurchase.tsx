@@ -158,7 +158,7 @@ export function MobileNewPurchase() {
             <select
               value={supplierId}
               onChange={(e) => setSupplierId(e.target.value)}
-              className="flex-1 h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
+              className="flex-1 h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
             >
               <option value="">Sélectionner…</option>
               {(suppliers ?? []).map((s) => (
@@ -170,14 +170,14 @@ export function MobileNewPurchase() {
             <button
               type="button"
               onClick={() => setShowNewSupplier((v) => !v)}
-              className="h-11 w-11 rounded-xl border border-border bg-white flex items-center justify-center active:bg-muted/40"
+              className="h-11 w-11 rounded-xl border border-border bg-card flex items-center justify-center active:bg-muted/40"
               aria-label="Nouveau fournisseur"
             >
               <Plus className="w-5 h-5" />
             </button>
           </div>
           {showNewSupplier && (
-            <div className="mt-2 bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-2">
+            <div className="mt-2 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-xl p-3 space-y-2">
               <TextField label="Nom fournisseur" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <PhoneInputWithCountry label="Téléphone (optionnel)" value={newPhone} onValueChange={setNewPhone} defaultDialCode="+237" />
               <Button onClick={handleCreateSupplier} disabled={create.isPending || !newName.trim()} size="sm" className="w-full">
@@ -198,7 +198,7 @@ export function MobileNewPurchase() {
               onClick={() => setAccountMode('single')}
               className={cn(
                 'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors',
-                accountMode === 'single' ? 'border-violet-600 bg-violet-50 text-violet-700' : 'border-border bg-white text-muted-foreground',
+                accountMode === 'single' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
               )}
             >
               Compte unique
@@ -207,7 +207,7 @@ export function MobileNewPurchase() {
               onClick={() => setAccountMode('multi')}
               className={cn(
                 'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors',
-                accountMode === 'multi' ? 'border-violet-600 bg-violet-50 text-violet-700' : 'border-border bg-white text-muted-foreground',
+                accountMode === 'multi' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
               )}
             >
               Multi-comptes
@@ -218,7 +218,7 @@ export function MobileNewPurchase() {
             <select
               value={singleAccountId}
               onChange={(e) => setSingleAccountId(e.target.value)}
-              className="w-full h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
+              className="w-full h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
             >
               <option value="">Sélectionner…</option>
               {(xafAccounts ?? []).map((a) => (
@@ -228,7 +228,7 @@ export function MobileNewPurchase() {
           ) : (
             <div className="space-y-2.5">
               {splits.map((row, idx) => (
-                <div key={row.key} className="bg-white border border-border rounded-xl p-3 space-y-2">
+                <div key={row.key} className="bg-card border border-border rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                       Compte {idx + 1}
@@ -237,7 +237,7 @@ export function MobileNewPurchase() {
                       <button
                         type="button"
                         onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))}
-                        className="text-red-600"
+                        className="text-red-600 dark:text-red-400"
                         aria-label="Retirer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -247,7 +247,7 @@ export function MobileNewPurchase() {
                   <select
                     value={row.accountId}
                     onChange={(e) => updateSplit(row.key, { accountId: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
+                    className="w-full h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
                   >
                     <option value="">Choisir le compte…</option>
                     {(xafAccounts ?? []).map((a) => (
@@ -275,10 +275,10 @@ export function MobileNewPurchase() {
               </button>
 
               {/* Total XAF (computed from splits) */}
-              <div className="bg-violet-50 border border-violet-200 rounded-xl px-3.5 py-3 flex items-center justify-between">
-                <span className="text-[12px] font-semibold text-violet-700 uppercase tracking-wide">Total XAF payé</span>
-                <span className="text-[18px] font-extrabold tabular-nums text-violet-900">
-                  {fmt(multiTotalXaf, 0)} <span className="text-[11px] font-normal text-violet-700">XAF</span>
+              <div className="bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-xl px-3.5 py-3 flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide">Total XAF payé</span>
+                <span className="text-[18px] font-extrabold tabular-nums text-violet-900 dark:text-violet-200">
+                  {fmt(multiTotalXaf, 0)} <span className="text-[11px] font-normal text-violet-700 dark:text-violet-300">XAF</span>
                 </span>
               </div>
             </div>
@@ -298,7 +298,7 @@ export function MobileNewPurchase() {
                     onClick={() => setSingleMode(m.value)}
                     className={cn(
                       'h-12 rounded-xl text-[11px] font-semibold border-2 transition-colors flex flex-col items-center justify-center px-1',
-                      singleMode === m.value ? 'border-violet-600 bg-violet-50 text-violet-700' : 'border-border bg-white text-muted-foreground',
+                      singleMode === m.value ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
                     )}
                   >
                     <span>{m.label}</span>
@@ -331,7 +331,7 @@ export function MobileNewPurchase() {
                   onClick={() => setMultiInput('usdt')}
                   className={cn(
                     'h-10 rounded-xl text-[12px] font-semibold border-2 transition-colors',
-                    multiInput === 'usdt' ? 'border-violet-600 bg-violet-50 text-violet-700' : 'border-border bg-white text-muted-foreground',
+                    multiInput === 'usdt' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
                   )}
                 >
                   Je saisis l’USDT reçu
@@ -340,7 +340,7 @@ export function MobileNewPurchase() {
                   onClick={() => setMultiInput('rate')}
                   className={cn(
                     'h-10 rounded-xl text-[12px] font-semibold border-2 transition-colors',
-                    multiInput === 'rate' ? 'border-violet-600 bg-violet-50 text-violet-700' : 'border-border bg-white text-muted-foreground',
+                    multiInput === 'rate' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
                   )}
                 >
                   Je saisis le taux
@@ -360,7 +360,7 @@ export function MobileNewPurchase() {
         </div>
 
         {/* WAC reminder */}
-        <div className="bg-gradient-to-br from-amber-50 to-violet-50 border border-amber-200 rounded-2xl p-3 flex items-center justify-between text-[13px]">
+        <div className="bg-gradient-to-br from-amber-50 dark:from-amber-500/10 to-violet-50 dark:to-violet-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-3 flex items-center justify-between text-[13px]">
           <span className="text-muted-foreground">WAC USDT courant</span>
           <span className="font-bold">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
         </div>
@@ -392,10 +392,10 @@ function ComputedRow({
   decimals: number;
 }) {
   return (
-    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-3 flex items-center justify-between">
-      <span className="text-[12px] font-semibold text-emerald-700 uppercase tracking-wide">{label}</span>
-      <span className="font-bold tabular-nums text-emerald-900">
-        {fmt(value, decimals)} <span className="text-[11px] text-emerald-700 font-normal">{unit}</span>
+    <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl px-3.5 py-3 flex items-center justify-between">
+      <span className="text-[12px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">{label}</span>
+      <span className="font-bold tabular-nums text-emerald-900 dark:text-emerald-200">
+        {fmt(value, decimals)} <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-normal">{unit}</span>
       </span>
     </div>
   );

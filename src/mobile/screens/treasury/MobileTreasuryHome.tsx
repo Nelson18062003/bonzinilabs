@@ -41,23 +41,23 @@ function CurrencyCard({
   warning?: boolean;
 }) {
   const toneClasses: Record<string, string> = {
-    violet: 'border-violet-200 bg-violet-50',
-    amber: 'border-amber-200 bg-amber-50',
-    orange: 'border-orange-200 bg-orange-50',
+    violet: 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10',
+    amber: 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10',
+    orange: 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10',
   };
   const accentClasses: Record<string, string> = {
-    violet: 'text-violet-700',
-    amber: 'text-amber-700',
-    orange: 'text-orange-700',
+    violet: 'text-violet-700 dark:text-violet-300',
+    amber: 'text-amber-700 dark:text-amber-300',
+    orange: 'text-orange-700 dark:text-orange-300',
   };
 
   return (
     <div className={cn('rounded-2xl border p-3.5', toneClasses[tone])}>
       <div className="flex items-center justify-between mb-1">
         <span className={cn('text-[11px] font-bold uppercase tracking-wide', accentClasses[tone])}>{label}</span>
-        {warning && <AlertTriangle className="w-3.5 h-3.5 text-red-600" />}
+        {warning && <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
       </div>
-      <div className={cn('text-[20px] font-extrabold', warning ? 'text-red-600' : 'text-foreground')}>
+      <div className={cn('text-[20px] font-extrabold', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
         {formatNumber(amount, unit === 'USDT' ? 2 : 0)}
       </div>
       <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -90,7 +90,7 @@ function ActionTile({
   return (
     <button
       onClick={onClick}
-      className="w-full bg-white border border-border rounded-2xl p-4 text-left active:bg-muted/40 transition-colors flex items-center gap-3"
+      className="w-full bg-card border border-border rounded-2xl p-4 text-left active:bg-muted/40 transition-colors flex items-center gap-3"
     >
       <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0', toneBg[tone])}>
         <Icon className="w-5 h-5" />
@@ -160,9 +160,9 @@ export function MobileTreasuryHome() {
             />
           </div>
           {stockNegative && (
-            <div className="mt-2 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
-              <span className="text-[12px] text-red-700 font-medium">
+            <div className="mt-2 flex items-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-3 py-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <span className="text-[12px] text-red-700 dark:text-red-300 font-medium">
                 Stock USDT négatif : {formatNumber(stockUsdt)} — enregistrez un achat manquant.
               </span>
             </div>
@@ -170,10 +170,10 @@ export function MobileTreasuryHome() {
         </section>
 
         {/* WAC banner */}
-        <section className="bg-gradient-to-br from-amber-50 to-violet-50 border border-amber-200 rounded-2xl p-4">
+        <section className="bg-gradient-to-br from-amber-50 dark:from-amber-500/10 to-violet-50 dark:to-violet-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 mb-1">WAC USDT courant</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">WAC USDT courant</div>
               <div className="text-2xl font-extrabold text-foreground">
                 {formatNumber(wac, 4)} <span className="text-sm font-semibold text-muted-foreground">XAF / USDT</span>
               </div>

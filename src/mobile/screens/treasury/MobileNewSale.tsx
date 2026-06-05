@@ -126,7 +126,7 @@ export function MobileNewSale() {
             <select
               value={buyerId}
               onChange={(e) => setBuyerId(e.target.value)}
-              className="flex-1 h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
+              className="flex-1 h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
             >
               <option value="">Sélectionner…</option>
               {(buyers ?? []).map((b) => (
@@ -139,14 +139,14 @@ export function MobileNewSale() {
             <button
               type="button"
               onClick={() => setShowNewBuyer((v) => !v)}
-              className="h-11 w-11 rounded-xl border border-border bg-white flex items-center justify-center active:bg-muted/40"
+              className="h-11 w-11 rounded-xl border border-border bg-card flex items-center justify-center active:bg-muted/40"
               aria-label="Nouvel acheteur"
             >
               <Plus className="w-5 h-5" />
             </button>
           </div>
           {showNewBuyer && (
-            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+            <div className="mt-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-3 space-y-2">
               <TextField label="Nom" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <TextField label="Entreprise (optionnel)" value={newCompany} onChange={(e) => setNewCompany(e.target.value)} />
               <PhoneInputWithCountry
@@ -171,7 +171,7 @@ export function MobileNewSale() {
           <select
             value={cnyAccountId}
             onChange={(e) => setCnyAccountId(e.target.value)}
-            className="w-full h-11 px-3 rounded-xl border border-border bg-white text-[15px]"
+            className="w-full h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
           >
             <option value="">Aucun compte Bonzini concerné</option>
             {(cnyAccounts ?? []).map((a) => (
@@ -201,8 +201,8 @@ export function MobileNewSale() {
                 className={cn(
                   'h-12 rounded-xl text-[11px] font-semibold border-2 transition-colors flex flex-col items-center justify-center px-1',
                   mode === m.value
-                    ? 'border-amber-500 bg-amber-50 text-amber-700'
-                    : 'border-border bg-white text-muted-foreground',
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                    : 'border-border bg-card text-muted-foreground',
                 )}
               >
                 <span>{m.label}</span>
@@ -260,7 +260,7 @@ export function MobileNewSale() {
         </div>
 
         {/* WAC & stock summary */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-3.5 space-y-1.5">
+        <div className="bg-gradient-to-br from-amber-50 dark:from-amber-500/10 to-orange-50 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between text-[13px]">
             <span className="text-muted-foreground">WAC à utiliser</span>
             <span className="font-bold">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
@@ -269,18 +269,18 @@ export function MobileNewSale() {
             <span className="text-muted-foreground">Coût sortie XAF</span>
             <span className="font-bold">{costBasis !== null ? `${fmt(costBasis, 0)} XAF` : '—'}</span>
           </div>
-          <div className="flex items-center justify-between text-[13px] pt-1.5 border-t border-amber-200">
+          <div className="flex items-center justify-between text-[13px] pt-1.5 border-t border-amber-200 dark:border-amber-500/30">
             <span className="text-muted-foreground">Stock USDT après</span>
-            <span className={`font-bold ${willGoNegative ? 'text-red-600' : 'text-foreground'}`}>
+            <span className={`font-bold ${willGoNegative ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
               {stockAfter !== null ? fmt(stockAfter, 4) : '—'}
             </span>
           </div>
         </div>
 
         {willGoNegative && (
-          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-            <span className="text-[12px] text-red-700">
+          <div className="flex items-start gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-3 py-2">
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <span className="text-[12px] text-red-700 dark:text-red-300">
               Cette vente fera passer le stock USDT en négatif. L’opération est tout de même enregistrable
               (à régulariser par un achat manquant).
             </span>
@@ -318,10 +318,10 @@ function ComputedRow({
   decimals: number;
 }) {
   return (
-    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-3 flex items-center justify-between">
-      <span className="text-[12px] font-semibold text-emerald-700 uppercase tracking-wide">{label}</span>
-      <span className="font-bold tabular-nums text-emerald-900">
-        {fmt(value, decimals)} <span className="text-[11px] text-emerald-700 font-normal">{unit}</span>
+    <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl px-3.5 py-3 flex items-center justify-between">
+      <span className="text-[12px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">{label}</span>
+      <span className="font-bold tabular-nums text-emerald-900 dark:text-emerald-200">
+        {fmt(value, decimals)} <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-normal">{unit}</span>
       </span>
     </div>
   );

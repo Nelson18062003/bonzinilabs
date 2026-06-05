@@ -119,7 +119,7 @@ export function MobilePurchasesList() {
               onClick={() => setPreset(p.value)}
               className={cn(
                 'flex-1 h-9 rounded-lg text-[12px] font-semibold transition-colors',
-                preset === p.value ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground',
+                preset === p.value ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground',
               )}
             >
               {p.label}
@@ -129,7 +129,7 @@ export function MobilePurchasesList() {
 
         {/* Custom range */}
         {preset === 'custom' && (
-          <div className="grid grid-cols-2 gap-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
+          <div className="grid grid-cols-2 gap-2 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-xl p-3">
             <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
             <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </div>
@@ -142,8 +142,8 @@ export function MobilePurchasesList() {
             className={cn(
               'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
               activeFilterCount > 0
-                ? 'border-violet-600 bg-violet-50 text-violet-700'
-                : 'border-border bg-white text-muted-foreground',
+                ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300'
+                : 'border-border bg-card text-muted-foreground',
             )}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -157,13 +157,13 @@ export function MobilePurchasesList() {
 
         {/* Filter panel */}
         {showFilters && (
-          <div className="bg-white border border-border rounded-2xl p-3 space-y-3">
+          <div className="bg-card border border-border rounded-2xl p-3 space-y-3">
             <div>
               <label className="block text-[12px] font-semibold mb-1.5">Fournisseur</label>
               <select
                 value={supplierId}
                 onChange={(e) => setSupplierId(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-card text-[14px]"
               >
                 <option value="">Tous les fournisseurs</option>
                 {(suppliers ?? []).map((s) => (
@@ -184,8 +184,8 @@ export function MobilePurchasesList() {
                     className={cn(
                       'h-8 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
                       channel === c
-                        ? 'border-violet-600 bg-violet-50 text-violet-700'
-                        : 'border-border bg-white text-muted-foreground',
+                        ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300'
+                        : 'border-border bg-card text-muted-foreground',
                     )}
                   >
                     {c === '' ? 'Tous' : CHANNEL_LABELS[c]}
@@ -199,7 +199,7 @@ export function MobilePurchasesList() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortKey)}
-                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-card text-[14px]"
               >
                 <option value="date_desc">Date (plus récent)</option>
                 <option value="date_asc">Date (plus ancien)</option>
@@ -211,7 +211,7 @@ export function MobilePurchasesList() {
             {activeFilterCount > 0 && (
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600"
+                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600 dark:text-red-400"
               >
                 <X className="w-3.5 h-3.5" />
                 Réinitialiser les filtres
@@ -221,7 +221,7 @@ export function MobilePurchasesList() {
         )}
 
         {/* Summary */}
-        <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 text-[12px]">
+        <div className="bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-xl p-3 text-[12px]">
           <span className="text-muted-foreground">Total ({purchases.filter((p) => !p.voided_at).length} achats) : </span>
           <span className="font-bold">
             {fmt(
@@ -289,14 +289,14 @@ function PurchaseCard({
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border p-3.5 flex items-center gap-3',
-        voided ? 'border-border opacity-60' : 'border-violet-200',
+        'bg-card rounded-2xl border p-3.5 flex items-center gap-3',
+        voided ? 'border-border opacity-60' : 'border-violet-200 dark:border-violet-500/30',
       )}
     >
       <div
         className={cn(
           'w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0',
-          voided ? 'bg-slate-400' : 'bg-violet-600',
+          voided ? 'bg-slate-400 dark:bg-slate-600' : 'bg-violet-600',
         )}
       >
         {voided ? <Ban className="w-4 h-4" /> : <ArrowDownToLine className="w-4 h-4" />}
@@ -308,7 +308,7 @@ function PurchaseCard({
             {op.supplier?.display_name ?? '—'}
           </span>
           {voided && (
-            <span className="text-[10px] uppercase font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
               Supprimée
             </span>
           )}
@@ -325,7 +325,7 @@ function PurchaseCard({
       {canDelete && !voided ? (
         <button
           onClick={onDelete}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-red-600 hover:bg-red-50 flex-shrink-0"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 flex-shrink-0"
           aria-label="Supprimer"
         >
           <Trash2 className="w-4 h-4" />
@@ -354,9 +354,9 @@ function DeleteDialog({ op, onClose }: { op: OperationRow; onClose: () => void }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-4 w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card rounded-2xl p-4 w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-2">
-          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div>
             <h2 className="font-bold text-foreground">Supprimer cet achat ?</h2>
             <p className="text-[12px] text-muted-foreground mt-1">

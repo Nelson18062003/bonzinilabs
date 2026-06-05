@@ -67,8 +67,8 @@ export function MobileInventoryScreen() {
             <div
               key={a.id}
               className={cn(
-                'rounded-2xl border bg-white overflow-hidden',
-                isActive ? 'border-violet-400 shadow-sm' : 'border-border',
+                'rounded-2xl border bg-card overflow-hidden',
+                isActive ? 'border-violet-400 dark:border-violet-500/60 shadow-sm' : 'border-border',
               )}
             >
               <button
@@ -91,7 +91,7 @@ export function MobileInventoryScreen() {
                     Solde théorique : {balance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {a.currency}
                   </div>
                 </div>
-                <ClipboardCheck className={cn('w-5 h-5', isActive ? 'text-violet-600' : 'text-muted-foreground')} />
+                <ClipboardCheck className={cn('w-5 h-5', isActive ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground')} />
               </button>
 
               {isActive && canManage && a.currency && (
@@ -107,16 +107,16 @@ export function MobileInventoryScreen() {
                   />
 
                   <div className="grid grid-cols-2 gap-2 text-[12px]">
-                    <div className="bg-white rounded-lg p-2 border border-border">
+                    <div className="bg-card rounded-lg p-2 border border-border">
                       <div className="text-muted-foreground">Théorique</div>
                       <div className="font-bold">{theoretical.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</div>
                     </div>
                     <div className={cn(
                       'rounded-lg p-2 border',
-                      variance === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200',
+                      variance === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30',
                     )}>
-                      <div className={cn(variance === 0 ? 'text-emerald-700' : 'text-red-700')}>Écart</div>
-                      <div className={cn('font-bold', variance === 0 ? 'text-emerald-700' : 'text-red-700')}>
+                      <div className={cn(variance === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>Écart</div>
+                      <div className={cn('font-bold', variance === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
                         {variance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
                       </div>
                     </div>
@@ -130,7 +130,7 @@ export function MobileInventoryScreen() {
                         onChange={(e) => setReason(e.target.value)}
                       />
                       {!reasonValid && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-red-600 mt-1">
+                        <div className="flex items-center gap-1.5 text-[11px] text-red-600 dark:text-red-400 mt-1">
                           <AlertTriangle className="w-3 h-3" />
                           Motif obligatoire et au moins 10 caractères.
                         </div>
