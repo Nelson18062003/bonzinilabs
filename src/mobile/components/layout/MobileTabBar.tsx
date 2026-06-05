@@ -21,7 +21,7 @@ export function MobileTabBar({ className }: MobileTabBarProps) {
 
   const adminNavItems: TabItem[] = [
     { to: '/m', icon: LayoutDashboard, label: t('home', { defaultValue: 'Accueil' }), end: true },
-    { to: '/m/assistant', icon: Bot, label: t('assistant', { defaultValue: 'Assistant' }) },
+    { to: '/m/assistant', icon: Bot, label: t('assistant', { defaultValue: 'Mola' }) },
     { to: '/m/deposits', icon: ArrowDownToLine, label: t('deposits', { defaultValue: 'Dépôts' }), badgeCount: counts?.deposits ?? 0 },
     { to: '/m/payments', icon: ArrowUpFromLine, label: t('payments', { defaultValue: 'Paiements' }), badgeCount: counts?.payments ?? 0 },
     { to: '/m/clients', icon: Users, label: t('clients', { defaultValue: 'Clients' }) },

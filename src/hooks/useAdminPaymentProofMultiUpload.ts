@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
 import { compressImage } from '@/lib/imageCompression';
+import { uploadWithRetry } from '@/lib/storageUpload';
 import i18n from '@/i18n';
 
 export function useAdminPaymentProofMultiUpload() {
@@ -27,9 +28,9 @@ export function useAdminPaymentProofMultiUpload() {
         const file = await compressImage(rawFile);
         const filePath = `admin/${paymentId}/${Date.now()}_${file.name}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from('payment-proofs')
-          .upload(filePath, file);
+        const { error: uploadError } = await uploadWithRetry(() =>
+          supabaseAdmin.storage.from('payment-proofs').upload(filePath, file),
+        );
 
         if (uploadError) {
           console.error(`Failed to upload ${rawFile.name}:`, uploadError);

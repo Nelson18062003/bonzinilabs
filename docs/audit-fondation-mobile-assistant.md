@@ -573,3 +573,46 @@ Une seule barre, partagée par Assistant **et** Support. Réunit ce qui marche d
 
 *Fondation posée. La suite (généralisation Support + nettoyage dette) se fera une fois l'Assistant
 validé sur device.*
+
+---
+
+# Phase 6 — Généralisation au chat Support / messagerie (client + admin)
+
+> La fondation (`ViewportShell`, `useVisibleViewportSync`, mode resize) ayant survécu à la refonte
+> Mola, on l'**applique** au 2ᵉ module de chat — sans la réinventer. Même méthodologie, exécution courte.
+
+## 6.1 Diagnostic
+Les deux écrans de conversation Support étaient des **jumeaux** sur l'**ANCIENNE recette** (exactement
+le pattern remplacé pour Mola) :
+- `useViewportContainerHeight()` + `style={{ height: containerHeight }}` sur un `<div flex flex-col>`,
+- header non figé (simple enfant flex), **aucun verrou du document**,
+- composeur `MessageInput` **déjà partagé** entre client et admin.
+- Risque latent identique : page qui glisse, header qui part, clavier (Android dépendant du mode resize).
+
+## 6.2 Ce qui a été fait
+- **CLIENT** `src/pages/SupportPage.tsx` → migré sur `<ViewportShell>` (header / messages / composeur).
+- **ADMIN** `src/mobile/screens/support/MobileSupportConversationScreen.tsx` → migré sur `<ViewportShell>` ;
+  **modale d'assignation sortie du shell** (fixe plein écran, pas de rognage par l'`overflow-hidden`).
+- **Parité Mola** : ajout du « stick-to-bottom » au clavier (scroll DOM, 0 re-render).
+- **Logique 100 % préservée** : envoi texte/image/voix/vidéo/fichier, reply, typing, claim/assign/
+  close/reopen, réponses-types (canned), bannière « fermé ».
+- **Pas de risque bureau** : `SupportPage` (client) n'utilise pas `MobileLayout` → c'était déjà un
+  plein écran ; `ViewportShell` ne change pas ça.
+- **Listes** (`SupportListPage`, `MobileSupportListScreen`) laissées telles quelles : ce sont des
+  écrans-page (défilement normal), pas des cadres-chat.
+
+## 6.3 Vérifications machine (faites)
+- `npm run type-check` (TS 5.8.3) : **exit 0**.
+- `eslint` (2 fichiers) : **exit 0**.
+- `npm run build` : **exit 0**.
+
+## 6.4 ⚠️ Test device requis (client ET admin)
+Sur **iPhone (Safari)** + **Android (Chrome)** :
+- **Client** : `/support/:id` (compte client) — ouverture, focus clavier (barre au-dessus), champ qui
+  grandit, défilement (titre figé, pas de blanc), envoi, fermeture clavier.
+- **Admin** : `/m/support/:id` — idem + tester le menu ⋮ (assigner/fermer) et la **modale d'assignation**
+  (s'ouvre bien par-dessus, se ferme).
+
+## 6.5 Reste à faire (dette, plus tard)
+- Supprimer `useViewportContainerHeight` une fois la validation device OK (plus aucun appelant).
+- Convertir les `min-h-screen` (100vh) restants en `min-h-[100dvh]` à l'échelle de la plateforme.

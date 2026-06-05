@@ -27,6 +27,23 @@ Use the `/verify` skill to run both at once.
 @.claude/rules/security.md — permission guards, amount caps, OWASP checklist
 @.claude/rules/frontend.md — landing page colors, messaging rules, hero structure
 
+## Mola — Convention AI-native (OBLIGATOIRE pour toute nouvelle action)
+« Mola » (l'assistant directeur des opérations) **découvre et exécute** les actions de la plateforme grâce à une **étiquette** posée sur chaque fonction RPC. La plateforme est **AI-native** : un agent piloté par un humain doit pouvoir atteindre **toutes** les actions, dans les limites des droits de la personne.
+
+**Règle non négociable : toute nouvelle action (RPC) ajoutée DOIT porter une étiquette `@mola`** — sinon Mola ne la verra pas. Dans la **même migration** que la RPC :
+```sql
+comment on function public.<nom>(<types>) is
+  '@mola:{"expose":true,"kind":"write","permission":"<canX>","confirm":true,"danger":false,"label":"<libellé humain>","resolve":{"<param>":"deposit|payment|client"}}';
+```
+- `expose` : `true` = découvrable/utilisable par Mola ; `false` = action interne/sensible, **jamais** exposée (mets-le quand même, pour documenter le choix).
+- `permission` : clé de rôle requise — `canProcessDeposits` · `canProcessPayments` · `canViewTreasury` · `canManageRates` · `canEditClients` · `canManageUsers` · `canViewClients` · `canViewDeposits` · `canViewPayments` · `canViewLogs`.
+- `confirm` / `danger` : carte de confirmation (toujours pour l'argent / le sensible).
+- `resolve` : pour donner une **référence** (`BZ-DP-…`) au lieu d'un UUID — types: `deposit`, `payment`, `client`.
+- `tool` (optionnel) : si un **outil dédié riche** existe déjà dans l'edge function, mets son nom → Mola l'utilise au lieu du générique `do_capability`.
+
+Après toute migration RPC : lancer `/gen-types`. Le test de parité (`eval/assistant/parity.test.ts`) signale les dérives.
+Réf. : `docs/assistant-ops/refonte/` (16, 17, 19) + migrations `*_mola_capability_*`.
+
 ## Design Rule — ALWAYS APPLY
 Whenever building or modifying any UI (components, pages, screens, modals, forms, layouts), **always invoke the `/frontend-design` skill first** to apply the design thinking framework before writing any code. This ensures every screen is distinctive, production-grade, and avoids generic AI aesthetics.
 

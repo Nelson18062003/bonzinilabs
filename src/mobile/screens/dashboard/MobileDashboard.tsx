@@ -29,7 +29,6 @@ import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
 import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaymentStats } from '@/hooks/usePaginatedPayments';
-import { useCurrentExchangeRate } from '@/hooks/useExchangeRates';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { RateCard } from '@/components/rates/RateCard';
 import { useGreeting } from '@/hooks/useGreeting';
@@ -39,7 +38,6 @@ import { KpiCard, KpiRow, formatCurrencyFull } from '@/components/analytics';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  formatCurrencyRMB,
   formatRelativeDate,
   getDepositStatusLabel,
 } from '@/lib/formatters';
@@ -58,7 +56,6 @@ export function MobileDashboard() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: depositStats } = useDepositStats();
   const { data: paymentStats } = usePaymentStats();
-  const { data: currentRate } = useCurrentExchangeRate();
   const { data: activeDailyRate } = useActiveDailyRate();
   const { data: allDeposits } = useAdminDeposits();
 
@@ -66,7 +63,6 @@ export function MobileDashboard() {
   const pendingDepositCount = depositStats?.to_process || stats?.pendingDeposits || 0;
   const pendingPaymentCount = (paymentStats?.toProcess || 0) + (paymentStats?.inProgress || 0);
   const balanceXAF = stats?.totalWalletBalance ?? 0;
-  const balanceRMB = currentRate ? balanceXAF * currentRate.rate_xaf_to_rmb : null;
   const todayDepositAmount = depositStats?.today_amount ?? 0;
   const todayPaymentAmount = stats?.todayPaymentsAmount ?? 0;
   const weekVolume = stats?.weekVolume ?? 0;
@@ -147,7 +143,6 @@ export function MobileDashboard() {
             icon={<Wallet className="h-4 w-4" />}
             label="Solde plateforme"
             value={formatCurrencyFull(balanceXAF, 'XAF')}
-            secondary={balanceRMB != null ? `≈ ${formatCurrencyRMB(balanceRMB)}` : undefined}
             description="Somme totale XAF actuellement détenue par tous les wallets clients — ton engagement financier à l'instant T."
           />
           <KpiCard
