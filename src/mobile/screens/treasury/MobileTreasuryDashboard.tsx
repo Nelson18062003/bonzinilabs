@@ -100,37 +100,39 @@ function KpiCard({
   tone?: 'violet' | 'amber' | 'orange' | 'emerald' | 'red' | 'neutral';
   trend?: 'up' | 'down';
 }) {
-  const toneClasses: Record<string, string> = {
-    violet: 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10',
-    amber: 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10',
-    orange: 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10',
-    emerald: 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10',
-    red: 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10',
-    neutral: 'border-border bg-card',
+  const dotClasses: Record<string, string> = {
+    violet: 'bg-bonzini-violet',
+    amber: 'bg-bonzini-amber',
+    orange: 'bg-bonzini-orange',
+    emerald: 'bg-emerald-500',
+    red: 'bg-red-500',
+    neutral: 'bg-muted-foreground/40',
   };
   const labelTone: Record<string, string> = {
-    violet: 'text-violet-700 dark:text-violet-300',
-    amber: 'text-amber-700 dark:text-amber-300',
-    orange: 'text-orange-700 dark:text-orange-300',
-    emerald: 'text-emerald-700 dark:text-emerald-300',
-    red: 'text-red-700 dark:text-red-300',
+    violet: 'text-bonzini-violet',
+    amber: 'text-bonzini-amber',
+    orange: 'text-bonzini-orange',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    red: 'text-red-600 dark:text-red-400',
     neutral: 'text-muted-foreground',
   };
+  const t = tone ?? 'neutral';
 
   return (
-    <div className={cn('rounded-2xl border p-3.5', toneClasses[tone ?? 'neutral'])}>
-      <div className="flex items-center justify-between mb-1">
-        <span className={cn('text-[11px] font-bold uppercase tracking-wide', labelTone[tone ?? 'neutral'])}>
+    <div className="rounded-2xl border border-border bg-card p-3.5 shadow-sm">
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', dotClasses[t])} />
+        <span className={cn('text-[10px] font-bold uppercase tracking-wider', labelTone[t])}>
           {label}
         </span>
-        {trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-        {trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
+        {trend === 'up' && <TrendingUp className="ml-auto h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />}
+        {trend === 'down' && <TrendingDown className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
       </div>
-      <div className="text-[18px] font-extrabold text-foreground tabular-nums">
+      <div className="text-[18px] font-extrabold leading-none tracking-tight text-foreground tabular-nums">
         {value}
-        {unit && <span className="text-xs font-semibold text-muted-foreground ml-1">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-semibold text-muted-foreground">{unit}</span>}
       </div>
-      {hint && <div className="text-[10px] text-muted-foreground mt-0.5">{hint}</div>}
+      {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
