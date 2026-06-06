@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
-import { AmountField, TextField } from '@/components/form';
+import { TextField } from '@/components/form';
+import { MoneyField } from '@/components/treasury/MoneyField';
+import { SOFT_CARD, TONE_DOT, type Tone } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdjustAccount, useTreasuryAccountBalances, type TreasuryAccountBalance } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 
-const CURRENCY_GROUPS: { currency: 'XAF' | 'USDT' | 'CNY'; label: string; tone: string }[] = [
-  { currency: 'XAF', label: 'Comptes XAF', tone: 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10' },
-  { currency: 'USDT', label: 'Pool USDT', tone: 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10' },
-  { currency: 'CNY', label: 'Comptes CNY', tone: 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10' },
+const CURRENCY_GROUPS: { currency: 'XAF' | 'USDT' | 'CNY'; label: string; tone: Tone }[] = [
+  { currency: 'XAF', label: 'Comptes XAF', tone: 'violet' },
+  { currency: 'USDT', label: 'Pool USDT', tone: 'amber' },
+  { currency: 'CNY', label: 'Comptes CNY', tone: 'orange' },
 ];
 
 function formatBalance(n: number, currency: string) {
@@ -43,10 +44,10 @@ export function MobileAccountsScreen() {
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Comptes & soldes" showBack backTo="/m/more/treasury" />
 
-      <div className="px-4 py-4 space-y-5">
+      <div className="px-5 py-5 space-y-6">
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
           CURRENCY_GROUPS.map((group) => {
@@ -56,15 +57,16 @@ export function MobileAccountsScreen() {
 
             return (
               <section key={group.currency}>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground">
-                    {group.label}
-                  </h2>
-                  <span className="text-[13px] font-bold text-foreground">
+                <div className="mb-2.5 flex items-center justify-between px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn('h-2 w-2 rounded-full', TONE_DOT[group.tone])} />
+                    <h2 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">{group.label}</h2>
+                  </div>
+                  <span className="text-[13px] font-bold tabular-nums text-foreground">
                     {formatBalance(total, group.currency)} {group.currency}
                   </span>
                 </div>
-                <div className={cn('rounded-2xl border overflow-hidden', group.tone)}>
+                <div className={cn(SOFT_CARD, 'overflow-hidden')}>
                   {accounts.map((a, idx) => (
                     <AccountRow
                       key={a.id}
@@ -100,17 +102,14 @@ function AccountRow({
   const negative = balance < 0;
 
   return (
-    <div className={cn('bg-card/60', !isLast && 'border-b border-border/60')}>
+    <div className={cn(!isLast && 'border-b border-border/60')}>
       <button
         type="button"
         onClick={() => canManage && setOpen((v) => !v)}
-        className={cn(
-          'w-full flex items-center justify-between p-3.5 text-left active:bg-muted/30',
-          canManage && 'cursor-pointer',
-        )}
+        className={cn('flex w-full items-center justify-between p-4 text-left active:bg-muted/30', canManage && 'cursor-pointer')}
       >
         <div className="min-w-0">
-          <div className="font-semibold text-foreground truncate">{account.label}</div>
+          <div className="truncate font-semibold text-foreground">{account.label}</div>
           <div className="text-[11px] text-muted-foreground">
             {KIND_LABEL[account.kind ?? 'other'] ?? account.kind} ·{' '}
             {account.last_entry_at
@@ -122,7 +121,7 @@ function AccountRow({
           <div className={cn('text-right font-bold tabular-nums', negative ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
             {formatBalance(balance, currency)}
           </div>
-          {canManage && (open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />)}
+          {canManage && (open ? <ChevronUp className="h-4 w-4 text-muted-foreground/60" /> : <ChevronDown className="h-4 w-4 text-muted-foreground/60" />)}
         </div>
       </button>
 
@@ -168,38 +167,32 @@ function AdjustForm({
   };
 
   return (
-    <div className="px-3.5 pb-3.5 pt-1 space-y-3 bg-muted/10 border-t border-border">
-      {/* Direction toggle */}
-      <div className="grid grid-cols-2 gap-1.5">
+    <div className="space-y-3 border-t border-border bg-muted/30 px-4 pb-4 pt-3.5">
+      {/* Direction toggle (semantic colours kept for money safety) */}
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setDirection('credit')}
           className={cn(
-            'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors flex items-center justify-center gap-1.5',
-            direction === 'credit'
-              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-              : 'border-border bg-card text-muted-foreground',
+            'flex h-11 items-center justify-center gap-1.5 rounded-2xl text-[13px] font-semibold transition-colors',
+            direction === 'credit' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-muted text-muted-foreground',
           )}
         >
-          <Plus className="w-4 h-4" />
-          Approvisionner
+          <Plus className="h-4 w-4" /> Approvisionner
         </button>
         <button
           type="button"
           onClick={() => setDirection('debit')}
           className={cn(
-            'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors flex items-center justify-center gap-1.5',
-            direction === 'debit'
-              ? 'border-red-500 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300'
-              : 'border-border bg-card text-muted-foreground',
+            'flex h-11 items-center justify-center gap-1.5 rounded-2xl text-[13px] font-semibold transition-colors',
+            direction === 'debit' ? 'bg-red-500/15 text-red-700 dark:text-red-300' : 'bg-muted text-muted-foreground',
           )}
         >
-          <Minus className="w-4 h-4" />
-          Débiter
+          <Minus className="h-4 w-4" /> Débiter
         </button>
       </div>
 
-      <AmountField
+      <MoneyField
         label={`Montant ${direction === 'credit' ? 'à créditer' : 'à débiter'}`}
         currency={currency}
         value={amount}
@@ -210,33 +203,33 @@ function AdjustForm({
       />
 
       <TextField
-        label="Motif * (10 caractères min)"
+        label="Motif (10 caractères min)"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder={direction === 'credit' ? 'ex: virement client reçu UBA' : 'ex: paiement loyer bureau'}
       />
 
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+      <div className="flex gap-2.5">
+        <button
+          onClick={onClose}
+          className="h-12 flex-1 rounded-full bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
+        >
           Annuler
-        </Button>
-        <Button
-          size="sm"
+        </button>
+        <button
           onClick={handleSubmit}
           disabled={!valid || adjust.isPending}
           className={cn(
-            'flex-1',
-            direction === 'credit' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700',
+            'flex h-12 flex-1 items-center justify-center rounded-full text-[14px] font-bold transition active:scale-[0.99]',
+            !valid || adjust.isPending
+              ? 'bg-muted text-muted-foreground'
+              : direction === 'credit'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-red-600 text-white hover:bg-red-700',
           )}
         >
-          {adjust.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : direction === 'credit' ? (
-            'Approvisionner'
-          ) : (
-            'Débiter'
-          )}
-        </Button>
+          {adjust.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : direction === 'credit' ? 'Approvisionner' : 'Débiter'}
+        </button>
       </div>
     </div>
   );

@@ -18,6 +18,15 @@ import {
   useUsdtStock,
   useUsdtWac,
 } from '@/hooks/useTreasury';
+import {
+  ActionTile,
+  IconChip,
+  SectionTitle,
+  SOFT_CARD,
+  TONE_DOT,
+  TONE_TEXT,
+  type Tone,
+} from '@/components/treasury/ui';
 import { cn } from '@/lib/utils';
 
 function formatNumber(n: number | null | undefined, decimals = 2): string {
@@ -25,90 +34,27 @@ function formatNumber(n: number | null | undefined, decimals = 2): string {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-function CurrencyCard({
-  label,
-  amount,
-  unit,
-  accountCount,
-  tone,
-  warning,
-}: {
-  label: string;
-  amount: number;
-  unit: string;
-  accountCount: number;
-  tone: 'violet' | 'amber' | 'orange';
-  warning?: boolean;
+function CurrencyCard({ label, amount, unit, accountCount, tone, warning }: {
+  label: string; amount: number; unit: string; accountCount: number; tone: Exclude<Tone, 'neutral' | 'danger'>; warning?: boolean;
 }) {
-  const dotClasses: Record<string, string> = {
-    violet: 'bg-bonzini-violet',
-    amber: 'bg-bonzini-amber',
-    orange: 'bg-bonzini-orange',
-  };
-  const accentClasses: Record<string, string> = {
-    violet: 'text-bonzini-violet',
-    amber: 'text-bonzini-amber',
-    orange: 'text-bonzini-orange',
-  };
-  // Compact for the at-a-glance overview (exact balances live on the Accounts
-  // screen) so large XAF figures never overflow the 3-column grid.
   const display =
     Math.abs(amount) >= 1_000_000
       ? `${(amount / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M`
       : formatNumber(amount, 0);
-
   return (
-    <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-      <div className="mb-2 flex items-center gap-1.5">
-        <span className={cn('h-2 w-2 shrink-0 rounded-full', warning ? 'bg-red-500' : dotClasses[tone])} />
-        <span className={cn('text-[10px] font-bold uppercase tracking-wider', warning ? 'text-red-600 dark:text-red-400' : accentClasses[tone])}>
-          {label}
-        </span>
+    <div className={cn(SOFT_CARD, 'p-3.5')}>
+      <div className="mb-2.5 flex items-center gap-1.5">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', warning ? 'bg-red-500' : TONE_DOT[tone])} />
+        <span className={cn('text-[10px] font-bold uppercase tracking-wider', warning ? 'text-red-600 dark:text-red-400' : TONE_TEXT[tone])}>{label}</span>
         {warning && <AlertTriangle className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
       </div>
-      <div className={cn('text-[17px] font-extrabold leading-none tracking-tight tabular-nums', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+      <div className={cn('text-[18px] font-extrabold leading-none tracking-tight tabular-nums', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
         {display}
       </div>
       <div className="mt-1.5 text-[10px] text-muted-foreground">
         {unit} · {accountCount} compte{accountCount > 1 ? 's' : ''}
       </div>
     </div>
-  );
-}
-
-function ActionTile({
-  icon: Icon,
-  label,
-  description,
-  onClick,
-  tone,
-}: {
-  icon: React.ElementType;
-  label: string;
-  description: string;
-  onClick: () => void;
-  tone: 'violet' | 'amber' | 'orange' | 'neutral';
-}) {
-  const toneBg: Record<string, string> = {
-    violet: 'bg-violet-600',
-    amber: 'bg-amber-500',
-    orange: 'bg-orange-500',
-    neutral: 'bg-slate-600',
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className="w-full bg-card border border-border rounded-2xl p-4 text-left active:bg-muted/40 transition-colors flex items-center gap-3"
-    >
-      <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0', toneBg[tone])}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <div className="flex-1">
-        <div className="font-semibold text-foreground text-[15px]">{label}</div>
-        <div className="text-[12px] text-muted-foreground">{description}</div>
-      </div>
-    </button>
   );
 }
 
@@ -123,66 +69,41 @@ export function MobileTreasuryHome() {
     return <Navigate to="/m/more" replace />;
   }
 
-  const totals = (balances ?? []).reduce<Record<string, { total: number; count: number }>>(
-    (acc, b) => {
-      const cur = b.currency ?? 'XAF';
-      if (!acc[cur]) acc[cur] = { total: 0, count: 0 };
-      acc[cur].total += Number(b.balance ?? 0);
-      acc[cur].count += 1;
-      return acc;
-    },
-    {},
-  );
-
+  const totals = (balances ?? []).reduce<Record<string, { total: number; count: number }>>((acc, b) => {
+    const cur = b.currency ?? 'XAF';
+    if (!acc[cur]) acc[cur] = { total: 0, count: 0 };
+    acc[cur].total += Number(b.balance ?? 0);
+    acc[cur].count += 1;
+    return acc;
+  }, {});
   const stockNegative = (stockUsdt ?? 0) < 0;
 
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Trésorerie" showBack backTo="/m/more" />
 
-      <div className="px-4 py-4 space-y-5">
-        {/* Balances */}
+      <div className="px-5 py-6 space-y-7">
+        {/* Soldes */}
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Soldes</h2>
-          <div className="grid grid-cols-3 gap-2">
-            <CurrencyCard
-              label="XAF"
-              amount={totals.XAF?.total ?? 0}
-              unit="XAF"
-              accountCount={totals.XAF?.count ?? 0}
-              tone="violet"
-            />
-            <CurrencyCard
-              label="USDT"
-              amount={totals.USDT?.total ?? 0}
-              unit="USDT"
-              accountCount={totals.USDT?.count ?? 0}
-              tone="amber"
-              warning={stockNegative}
-            />
-            <CurrencyCard
-              label="CNY"
-              amount={totals.CNY?.total ?? 0}
-              unit="CNY"
-              accountCount={totals.CNY?.count ?? 0}
-              tone="orange"
-            />
+          <SectionTitle>Soldes</SectionTitle>
+          <div className="grid grid-cols-3 gap-2.5">
+            <CurrencyCard label="XAF" amount={totals.XAF?.total ?? 0} unit="XAF" accountCount={totals.XAF?.count ?? 0} tone="violet" />
+            <CurrencyCard label="USDT" amount={totals.USDT?.total ?? 0} unit="USDT" accountCount={totals.USDT?.count ?? 0} tone="amber" warning={stockNegative} />
+            <CurrencyCard label="CNY" amount={totals.CNY?.total ?? 0} unit="CNY" accountCount={totals.CNY?.count ?? 0} tone="orange" />
           </div>
           {stockNegative && (
-            <div className="mt-2 flex items-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-3 py-2">
-              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-              <span className="text-[12px] text-red-700 dark:text-red-300 font-medium">
+            <div className="mt-2.5 flex items-center gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+              <span className="text-[12px] font-medium text-red-600 dark:text-red-300">
                 Stock USDT négatif : {formatNumber(stockUsdt)} — enregistrez un achat manquant.
               </span>
             </div>
           )}
         </section>
 
-        {/* WAC banner */}
-        <section className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-bonzini-amber">
-            <TrendingUp className="h-5 w-5" />
-          </div>
+        {/* WAC */}
+        <section className={cn(SOFT_CARD, 'flex items-center gap-3.5 p-4')}>
+          <IconChip icon={TrendingUp} tone="amber" size="lg" />
           <div className="min-w-0">
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">WAC USDT courant</div>
             <div className="text-2xl font-extrabold leading-tight tracking-tight tabular-nums text-foreground">
@@ -191,87 +112,27 @@ export function MobileTreasuryHome() {
           </div>
         </section>
 
-        {/* Analytics */}
+        {/* Analyse */}
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Analyse</h2>
+          <SectionTitle>Analyse</SectionTitle>
           <div className="space-y-2.5">
-            <ActionTile
-              icon={BarChart3}
-              label="Dashboard analytique"
-              description="Volumes, taux moyens, bénéfice, top contreparties"
-              onClick={() => navigate('/m/more/treasury/dashboard')}
-              tone="violet"
-            />
-            <ActionTile
-              icon={History}
-              label="Historique opérations"
-              description="Toutes les opérations + voiding"
-              onClick={() => navigate('/m/more/treasury/operations')}
-              tone="neutral"
-            />
-            <ActionTile
-              icon={ImageIcon}
-              label="Dashboard soldes (PNG/PDF)"
-              description="Générer le visuel des soldes par compte"
-              onClick={() => navigate('/m/more/treasury/balance-dashboard')}
-              tone="orange"
-            />
+            <ActionTile icon={BarChart3} label="Dashboard analytique" description="Volumes, taux moyens, bénéfice, top contreparties" onClick={() => navigate('/m/more/treasury/dashboard')} tone="violet" />
+            <ActionTile icon={History} label="Historique opérations" description="Toutes les opérations + annulation" onClick={() => navigate('/m/more/treasury/operations')} tone="neutral" />
+            <ActionTile icon={ImageIcon} label="Dashboard soldes (PNG/PDF)" description="Générer le visuel des soldes par compte" onClick={() => navigate('/m/more/treasury/balance-dashboard')} tone="orange" />
           </div>
         </section>
 
-        {/* Quick actions */}
+        {/* Actions */}
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Actions</h2>
+          <SectionTitle>Actions</SectionTitle>
           <div className="space-y-2.5">
-            <ActionTile
-              icon={ArrowDownToLine}
-              label="Nouvel achat USDT"
-              description="Saisir un achat XAF → USDT auprès d'un fournisseur"
-              onClick={() => navigate('/m/more/treasury/purchase')}
-              tone="violet"
-            />
-            <ActionTile
-              icon={ArrowDownToLine}
-              label="Mes achats USDT"
-              description="Liste, total, suppression"
-              onClick={() => navigate('/m/more/treasury/purchases')}
-              tone="neutral"
-            />
-            <ActionTile
-              icon={ArrowUpFromLine}
-              label="Nouvelle vente USDT"
-              description="Saisir une vente USDT → CNY auprès d'un acheteur"
-              onClick={() => navigate('/m/more/treasury/sale')}
-              tone="amber"
-            />
-            <ActionTile
-              icon={ArrowUpFromLine}
-              label="Mes ventes USDT"
-              description="Liste, total, suppression"
-              onClick={() => navigate('/m/more/treasury/sales')}
-              tone="neutral"
-            />
-            <ActionTile
-              icon={Users}
-              label="Contreparties"
-              description="Fournisseurs USDT et acheteurs CNY"
-              onClick={() => navigate('/m/more/treasury/counterparties')}
-              tone="orange"
-            />
-            <ActionTile
-              icon={Wallet}
-              label="Comptes & soldes"
-              description="Soldes par compte, historique"
-              onClick={() => navigate('/m/more/treasury/accounts')}
-              tone="neutral"
-            />
-            <ActionTile
-              icon={ClipboardCheck}
-              label="Inventaire des comptes"
-              description="Réconciliation cash / Alipay / WeChat"
-              onClick={() => navigate('/m/more/treasury/inventory')}
-              tone="neutral"
-            />
+            <ActionTile icon={ArrowDownToLine} label="Nouvel achat USDT" description="Saisir un achat XAF → USDT" onClick={() => navigate('/m/more/treasury/purchase')} tone="violet" />
+            <ActionTile icon={ArrowDownToLine} label="Mes achats USDT" description="Liste, total, suppression" onClick={() => navigate('/m/more/treasury/purchases')} tone="neutral" />
+            <ActionTile icon={ArrowUpFromLine} label="Nouvelle vente USDT" description="Saisir une vente USDT → CNY" onClick={() => navigate('/m/more/treasury/sale')} tone="amber" />
+            <ActionTile icon={ArrowUpFromLine} label="Mes ventes USDT" description="Liste, total, suppression" onClick={() => navigate('/m/more/treasury/sales')} tone="neutral" />
+            <ActionTile icon={Users} label="Contreparties" description="Fournisseurs USDT et acheteurs CNY" onClick={() => navigate('/m/more/treasury/counterparties')} tone="orange" />
+            <ActionTile icon={Wallet} label="Comptes & soldes" description="Soldes par compte, historique" onClick={() => navigate('/m/more/treasury/accounts')} tone="neutral" />
+            <ActionTile icon={ClipboardCheck} label="Inventaire des comptes" description="Réconciliation cash / Alipay / WeChat" onClick={() => navigate('/m/more/treasury/inventory')} tone="neutral" />
           </div>
         </section>
       </div>

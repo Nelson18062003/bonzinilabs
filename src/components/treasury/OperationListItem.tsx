@@ -1,5 +1,6 @@
 import { ArrowDownToLine, ArrowUpFromLine, Ban, ChevronRight, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IconChip, SOFT_CARD, type Tone } from '@/components/treasury/ui';
 import type { OperationRow } from '@/hooks/useTreasury';
 
 const nf = (n: number, d = 2) =>
@@ -43,26 +44,12 @@ export function OperationListItem({
   const rateUnit = isPurchase ? 'XAF/USDT' : 'CNY/USDT';
   const accountLabel = !isPurchase && op.cny_account?.label ? op.cny_account.label : null;
   const showDelete = canDelete && !voided && !!onDelete;
+  const tone: Tone = voided ? 'neutral' : isPurchase ? 'violet' : 'amber';
+  const Icon = voided ? Ban : isPurchase ? ArrowDownToLine : ArrowUpFromLine;
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 rounded-2xl border bg-card p-3.5',
-        voided
-          ? 'border-border opacity-60'
-          : isPurchase
-            ? 'border-violet-200 dark:border-violet-500/30'
-            : 'border-amber-200 dark:border-amber-500/30',
-      )}
-    >
-      <div
-        className={cn(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white',
-          voided ? 'bg-slate-400 dark:bg-slate-600' : isPurchase ? 'bg-violet-600' : 'bg-amber-500',
-        )}
-      >
-        {voided ? <Ban className="h-4 w-4" /> : isPurchase ? <ArrowDownToLine className="h-4 w-4" /> : <ArrowUpFromLine className="h-4 w-4" />}
-      </div>
+    <div className={cn(SOFT_CARD, 'flex items-center gap-3 p-3.5', voided && 'opacity-60')}>
+      <IconChip icon={Icon} tone={tone} size="sm" />
 
       <button onClick={onClick} className="min-w-0 flex-1 text-left">
         <div className="flex items-center gap-1.5">
@@ -97,12 +84,12 @@ export function OperationListItem({
         <button
           onClick={onDelete}
           aria-label="Supprimer"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-600 hover:bg-red-500/10 dark:text-red-400"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       ) : (
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
       )}
     </div>
   );

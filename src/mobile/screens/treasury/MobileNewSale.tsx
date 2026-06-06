@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, Plus, AlertTriangle } from 'lucide-react';
+import { Plus, AlertTriangle, ChevronDown } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
-import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { MoneyField } from '@/components/treasury/MoneyField';
+import { Segmented } from '@/components/treasury/Segmented';
+import { SelectField } from '@/components/treasury/SelectField';
+import { FieldLabel, INSET, PrimaryPill, SOFT_CARD, SoftIconButton } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -23,9 +26,24 @@ const MODES: { value: InputMode; label: string; hint: string }[] = [
   { value: 'cny_rate', label: 'CNY + taux', hint: 'USDT calculé' },
 ];
 
+// Sentinel for "no Bonzini CNY account credited" (Radix Select forbids empty values).
+const NO_ACCOUNT = '__none__';
+
 function fmt(n: number | null, decimals = 2): string {
   if (n === null || !Number.isFinite(n)) return '—';
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// Discreet computed/derived value — same calm style as the purchase form.
+function Computed({ label, value, unit, decimals }: { label: string; value: number | null; unit: string; decimals: number }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3.5 py-2.5 text-[12px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums text-foreground">
+        {fmt(value, decimals)} <span className="font-normal text-muted-foreground">{unit}</span>
+      </span>
+    </div>
+  );
 }
 
 export function MobileNewSale() {
@@ -50,6 +68,7 @@ export function MobileNewSale() {
   const [notes, setNotes] = useState('');
 
   const [showNewBuyer, setShowNewBuyer] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCompany, setNewCompany] = useState('');
   const [newPhone, setNewPhone] = useState<string | null>(null);
@@ -114,215 +133,126 @@ export function MobileNewSale() {
     }
   };
 
+  const buyerOptions = (buyers ?? []).map((b) => ({
+    value: b.id,
+    label: `${b.display_name}${b.wechat_id ? ` · ${b.wechat_id}` : b.phone ? ` · ${b.phone}` : ''}`,
+  }));
+  const accountOptions = [
+    { value: NO_ACCOUNT, label: 'Aucun compte Bonzini concerné' },
+    ...(cnyAccounts ?? []).map((a) => ({ value: a.id, label: a.label })),
+  ];
+
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Nouvelle vente USDT" showBack backTo="/m/more/treasury" />
 
-      <div className="px-4 py-4 space-y-4">
-        {/* Buyer */}
+      <div className="px-5 py-5 space-y-6">
+        {/* Acheteur */}
         <div>
-          <label className="block text-[13px] font-semibold mb-1.5">Acheteur CNY *</label>
-          <div className="flex gap-2">
-            <select
-              value={buyerId}
-              onChange={(e) => setBuyerId(e.target.value)}
-              className="flex-1 h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
-            >
-              <option value="">Sélectionner…</option>
-              {(buyers ?? []).map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.display_name}
-                  {b.wechat_id ? ` · ${b.wechat_id}` : b.phone ? ` · ${b.phone}` : ''}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setShowNewBuyer((v) => !v)}
-              className="h-11 w-11 rounded-xl border border-border bg-card flex items-center justify-center active:bg-muted/40"
-              aria-label="Nouvel acheteur"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+          <FieldLabel>Acheteur CNY</FieldLabel>
+          <div className="flex items-center gap-2">
+            <SelectField className="flex-1" value={buyerId} onChange={setBuyerId} options={buyerOptions} />
+            <SoftIconButton icon={Plus} label="Nouvel acheteur" onClick={() => setShowNewBuyer((v) => !v)} />
           </div>
           {showNewBuyer && (
-            <div className="mt-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-3 space-y-2">
+            <div className={cn(INSET, 'mt-2.5 space-y-2.5 p-3.5')}>
               <TextField label="Nom" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <TextField label="Entreprise (optionnel)" value={newCompany} onChange={(e) => setNewCompany(e.target.value)} />
-              <PhoneInputWithCountry
-                label="Téléphone (optionnel)"
-                value={newPhone}
-                onValueChange={setNewPhone}
-                defaultDialCode="+86"
-              />
+              <PhoneInputWithCountry label="Téléphone (optionnel)" value={newPhone} onValueChange={setNewPhone} defaultDialCode="+86" />
               <TextField label="WeChat ID (optionnel)" value={newWechat} onChange={(e) => setNewWechat(e.target.value)} />
-              <Button onClick={handleCreateBuyer} disabled={create.isPending || !newName.trim()} size="sm" className="w-full">
-                {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Créer'}
-              </Button>
+              <PrimaryPill onClick={handleCreateBuyer} disabled={!newName.trim()} loading={create.isPending}>
+                Créer l’acheteur
+              </PrimaryPill>
             </div>
           )}
         </div>
 
-        {/* CNY account (optional) */}
+        {/* Compte CNY crédité (optionnel) */}
         <div>
-          <label className="block text-[13px] font-semibold mb-1.5">
-            Compte CNY crédité <span className="text-muted-foreground font-normal">(optionnel)</span>
-          </label>
-          <select
-            value={cnyAccountId}
-            onChange={(e) => setCnyAccountId(e.target.value)}
-            className="w-full h-11 px-3 rounded-xl border border-border bg-card text-[15px]"
-          >
-            <option value="">Aucun compte Bonzini concerné</option>
-            {(cnyAccounts ?? []).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
+          <FieldLabel>Compte CNY crédité <span className="font-normal text-muted-foreground">(optionnel)</span></FieldLabel>
+          <SelectField
+            value={cnyAccountId || NO_ACCOUNT}
+            onChange={(v) => setCnyAccountId(v === NO_ACCOUNT ? '' : v)}
+            options={accountOptions}
+          />
+          <p className="mt-1.5 px-1 text-[11px] leading-tight text-muted-foreground">
             Sélectionne le compte uniquement si le CNY a atterri sur un de nos comptes (cash Guangzhou,
-            Alipay/WeChat de papa…). Sinon laisse vide — tu pourras toujours déclarer une arrivée de
-            cash via « Approvisionner » plus tard.
+            Alipay/WeChat de papa…). Sinon laisse « Aucun ».
           </p>
         </div>
 
-        {/* Date / heure */}
-        <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
-
-        {/* Mode toggle */}
-        <div>
-          <label className="block text-[13px] font-semibold mb-1.5">Mode de saisie</label>
-          <div className="grid grid-cols-3 gap-1.5">
-            {MODES.map((m) => (
-              <button
-                key={m.value}
-                onClick={() => setMode(m.value)}
-                className={cn(
-                  'h-12 rounded-xl text-[11px] font-semibold border-2 transition-colors flex flex-col items-center justify-center px-1',
-                  mode === m.value
-                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                    : 'border-border bg-card text-muted-foreground',
-                )}
-              >
-                <span>{m.label}</span>
-                <span className="text-[10px] opacity-70 font-normal">{m.hint}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Inputs */}
+        {/* Montant */}
         <div className="space-y-3">
+          <FieldLabel className="mb-0">Montant</FieldLabel>
+          <Segmented value={mode} onChange={setMode} options={MODES} />
+
           {(mode === 'usdt_cny' || mode === 'usdt_rate') && (
-            <AmountField
-              label="USDT vendu *"
-              currency="USDT"
-              value={usdtAmount}
-              onValueChange={setUsdtAmount}
-              allowDecimal
-              decimals={4}
-              max={null}
-            />
+            <MoneyField label="USDT vendu" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
           )}
           {(mode === 'usdt_cny' || mode === 'cny_rate') && (
-            <AmountField
-              label="CNY reçu *"
-              currency="CNY"
-              value={cnyAmount}
-              onValueChange={setCnyAmount}
-              allowDecimal
-              decimals={2}
-              max={null}
-            />
+            <MoneyField label="CNY reçu" currency="CNY" value={cnyAmount} onValueChange={setCnyAmount} allowDecimal decimals={2} max={null} />
           )}
           {(mode === 'usdt_rate' || mode === 'cny_rate') && (
-            <AmountField
-              label="Taux *"
-              currency="CNY/USDT"
-              value={rate}
-              onValueChange={setRate}
-              allowDecimal
-              decimals={4}
-              max={null}
-            />
+            <MoneyField label="Taux" currency="CNY/USDT" value={rate} onValueChange={setRate} allowDecimal decimals={4} max={null} />
           )}
 
-          {mode === 'usdt_rate' && (
-            <ComputedRow label="CNY reçu (calculé)" value={resolved.cny} unit="CNY" decimals={2} />
-          )}
-          {mode === 'cny_rate' && (
-            <ComputedRow label="USDT vendu (calculé)" value={resolved.usdt} unit="USDT" decimals={4} />
-          )}
-          {mode === 'usdt_cny' && (
-            <ComputedRow label="Taux implicite" value={resolved.rate} unit="CNY/USDT" decimals={4} />
-          )}
+          {mode === 'usdt_cny' && <Computed label="Taux implicite" value={resolved.rate} unit="CNY/USDT" decimals={4} />}
+          {mode === 'usdt_rate' && <Computed label="CNY reçu (calculé)" value={resolved.cny} unit="CNY" decimals={2} />}
+          {mode === 'cny_rate' && <Computed label="USDT vendu (calculé)" value={resolved.usdt} unit="USDT" decimals={4} />}
         </div>
 
-        {/* WAC & stock summary */}
-        <div className="bg-gradient-to-br from-amber-50 dark:from-amber-500/10 to-orange-50 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-3.5 space-y-1.5">
+        {/* WAC / coût / stock */}
+        <div className={cn(SOFT_CARD, 'space-y-2 p-4')}>
           <div className="flex items-center justify-between text-[13px]">
             <span className="text-muted-foreground">WAC à utiliser</span>
-            <span className="font-bold">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
+            <span className="font-bold tabular-nums text-foreground">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
           </div>
           <div className="flex items-center justify-between text-[13px]">
             <span className="text-muted-foreground">Coût sortie XAF</span>
-            <span className="font-bold">{costBasis !== null ? `${fmt(costBasis, 0)} XAF` : '—'}</span>
+            <span className="font-bold tabular-nums text-foreground">{costBasis !== null ? `${fmt(costBasis, 0)} XAF` : '—'}</span>
           </div>
-          <div className="flex items-center justify-between text-[13px] pt-1.5 border-t border-amber-200 dark:border-amber-500/30">
+          <div className="flex items-center justify-between border-t border-border pt-2 text-[13px]">
             <span className="text-muted-foreground">Stock USDT après</span>
-            <span className={`font-bold ${willGoNegative ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+            <span className={cn('font-bold tabular-nums', willGoNegative ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
               {stockAfter !== null ? fmt(stockAfter, 4) : '—'}
             </span>
           </div>
         </div>
 
         {willGoNegative && (
-          <div className="flex items-start gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-3 py-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
             <span className="text-[12px] text-red-700 dark:text-red-300">
-              Cette vente fera passer le stock USDT en négatif. L’opération est tout de même enregistrable
+              Cette vente fera passer le stock USDT en négatif. L’opération reste enregistrable
               (à régulariser par un achat manquant).
             </span>
           </div>
         )}
 
-        <TextField
-          label="Référence externe (Binance, hash…)"
-          value={externalRef}
-          onChange={(e) => setExternalRef(e.target.value)}
-        />
-        <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        {/* Détails optionnels */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            className={cn(INSET, 'flex w-full items-center gap-2 px-4 py-3.5 text-[13px] font-semibold')}
+          >
+            <span>Détails</span>
+            <span className="font-normal text-muted-foreground">date · référence · note</span>
+            <ChevronDown className={cn('ml-auto h-4 w-4 text-muted-foreground transition-transform', showDetails && 'rotate-180')} />
+          </button>
+          {showDetails && (
+            <div className="mt-2.5 space-y-3">
+              <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
+              <TextField label="Référence externe (Binance, hash…)" value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
+              <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+          )}
+        </div>
 
-        <Button
-          onClick={handleSubmit}
-          disabled={!valid || submit.isPending}
-          className="w-full h-12 text-base font-bold rounded-xl bg-amber-500 hover:bg-amber-600"
-        >
-          {submit.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enregistrer la vente'}
-        </Button>
+        <PrimaryPill onClick={handleSubmit} disabled={!valid} loading={submit.isPending}>
+          Enregistrer la vente
+        </PrimaryPill>
       </div>
-    </div>
-  );
-}
-
-function ComputedRow({
-  label,
-  value,
-  unit,
-  decimals,
-}: {
-  label: string;
-  value: number | null;
-  unit: string;
-  decimals: number;
-}) {
-  return (
-    <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl px-3.5 py-3 flex items-center justify-between">
-      <span className="text-[12px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">{label}</span>
-      <span className="font-bold tabular-nums text-emerald-900 dark:text-emerald-200">
-        {fmt(value, decimals)} <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-normal">{unit}</span>
-      </span>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { OperationListItem } from '@/components/treasury/OperationListItem';
+import { Segmented } from '@/components/treasury/Segmented';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryOperations } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
@@ -42,29 +43,20 @@ export function MobileOperationsHistory() {
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Historique opérations" showBack backTo="/m/more/treasury" />
 
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-5 py-4 space-y-3">
         {/* Period */}
-        <div className="flex bg-muted rounded-xl p-1">
-          {([
-            { value: '7d' as const, label: '7 j' },
-            { value: '30d' as const, label: '30 j' },
-            { value: '90d' as const, label: '90 j' },
-          ]).map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPreset(p.value)}
-              className={cn(
-                'flex-1 h-9 rounded-lg text-[13px] font-semibold transition-colors',
-                preset === p.value ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground',
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          value={preset}
+          onChange={setPreset}
+          options={[
+            { value: '7d', label: '7 jours' },
+            { value: '30d', label: '30 jours' },
+            { value: '90d', label: '90 jours' },
+          ]}
+        />
 
         {/* Filter */}
-        <div className="flex gap-1.5 overflow-x-auto">
+        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-0.5">
           {([
             { value: 'all' as const, label: 'Tout' },
             { value: 'purchase' as const, label: 'Achats' },
@@ -75,10 +67,8 @@ export function MobileOperationsHistory() {
               key={f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'flex-shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
-                filter === f.value
-                  ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300'
-                  : 'border-border bg-card text-muted-foreground',
+                'h-9 shrink-0 rounded-full px-4 text-[12px] font-semibold transition-colors',
+                filter === f.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
               )}
             >
               {f.label}
