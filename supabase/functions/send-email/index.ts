@@ -180,7 +180,7 @@ function render(template: string, payload: Record<string, unknown>): Rendered {
           subhead: "Votre compte est prêt à l'emploi.",
           bodyHtml:
             `<p style="margin:0 0 16px;">Vous pouvez dès maintenant <b>régler vos fournisseurs chinois en XAF</b>, suivre chaque paiement en temps réel et profiter du meilleur taux du jour — le tout depuis une seule application.</p>
-             ${button("Accéder à mon espace", APP, VIOLET)}
+             <div style="margin:18px 0 4px;"><a href="${APP}" style="color:${VIOLET};font-weight:600;text-decoration:none;font-size:15px;">Accéder à mon espace →</a></div>
              <p style="margin:18px 0 0;font-size:13.5px;color:${MUTED};">Une question pour bien démarrer ? Nous sommes joignables directement depuis l'application.</p>`,
         }),
         text: `Bienvenue chez Bonzini${first ? `, ${first}` : ""} !\n\nVotre compte est prêt. Vous pouvez désormais régler vos fournisseurs chinois en XAF depuis l'application : ${APP}`,

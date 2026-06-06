@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
@@ -271,7 +272,9 @@ export function MobileNewPayment() {
           beneficiary_bank_extra: selectedBenef.bank_extra || undefined,
           beneficiary_identifier: selectedBenef.identifier || undefined,
           beneficiary_identifier_type: selectedBenef.identifier_type || undefined,
-          beneficiary_qr_code_url: selectedBenef.qr_code_url || undefined,
+          // Snapshot the durable path, NOT the temporary signed URL the list
+          // hook injected for display (otherwise the QR breaks after ~1h).
+          beneficiary_qr_code_url: toStoredPath(selectedBenef.qr_code_url) || undefined,
         };
       } else {
         // New beneficiary typed by the admin.

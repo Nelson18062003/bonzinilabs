@@ -15,6 +15,7 @@ import { useAdminPaymentDetail } from '@/hooks/usePayments';
 import { useAdminUpdateBeneficiaryInfo } from '@/hooks/useAdminPayments';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
+import { toStoredPath } from '@/lib/signedUrls';
 import { toast } from 'sonner';
 import {
   BeneficiaryEditForm,
@@ -34,7 +35,9 @@ export function MobileBeneficiaryEdit() {
     if (!payment || !paymentId) return;
 
     try {
-      let qrUrl: string | null = values.beneficiary_qr_code_url || null;
+      // Normalize to the durable "<bucket>/<path>" form: never persist the
+      // temporary signed URL that the detail hook injected for display.
+      let qrUrl: string | null = toStoredPath(values.beneficiary_qr_code_url);
 
       if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
         setIsUploadingQr(true);

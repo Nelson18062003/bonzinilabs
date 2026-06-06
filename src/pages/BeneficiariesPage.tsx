@@ -88,6 +88,7 @@ const BeneficiariesPage = () => {
         }
         isEdit={view.kind === 'edit'}
         existingQr={view.kind === 'edit' ? !!view.beneficiary.qr_code_url : false}
+        existingQrUrl={view.kind === 'edit' ? view.beneficiary.qr_code_url : null}
         saving={createBeneficiary.isPending || updateBeneficiary.isPending}
         onCancel={() => setView({ kind: 'list' })}
         onSave={async (vals, qrFile) => {
@@ -311,6 +312,7 @@ function BeneficiaryEditor({
   initial,
   isEdit,
   existingQr,
+  existingQrUrl,
   saving,
   onCancel,
   onSave,
@@ -318,6 +320,7 @@ function BeneficiaryEditor({
   initial: BeneficiaryFormValues;
   isEdit: boolean;
   existingQr: boolean;
+  existingQrUrl?: string | null;
   saving: boolean;
   onCancel: () => void;
   onSave: (values: BeneficiaryFormValues, qrFile?: File) => void | Promise<void>;
@@ -349,6 +352,7 @@ function BeneficiaryEditor({
           lockMode={isEdit}
           qrPreview={qrPreview}
           hasStoredQr={existingQr}
+          storedQrUrl={existingQrUrl}
           onQrSelect={(file) => {
             if (qrPreview) URL.revokeObjectURL(qrPreview);
             setQrFile(file);
