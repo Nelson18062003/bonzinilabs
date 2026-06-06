@@ -26,8 +26,12 @@ import {
   MobileInventoryScreen,
   MobileCounterpartiesScreen,
 } from '@/mobile/screens/treasury';
+import { DirectionA, DirectionB, DirectionC } from './directions';
 
 const SCREENS: Record<string, { Comp: React.ComponentType; route: string }> = {
+  'dir-a': { Comp: DirectionA, route: '/' },
+  'dir-b': { Comp: DirectionB, route: '/' },
+  'dir-c': { Comp: DirectionC, route: '/' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },
   dashboard: { Comp: MobileTreasuryDashboard, route: '/m/more/treasury/dashboard' },
   'new-purchase': { Comp: MobileNewPurchase, route: '/m/more/treasury/purchase' },
