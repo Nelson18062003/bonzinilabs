@@ -47,7 +47,7 @@ export function ChartCard({
   footer,
 }: ChartCardProps) {
   return (
-    <Card className={cn('overflow-hidden', className)}>
+    <Card className={cn('overflow-hidden rounded-2xl shadow-none', className)}>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-4 pb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1.5">

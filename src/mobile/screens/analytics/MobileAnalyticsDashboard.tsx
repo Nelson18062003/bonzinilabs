@@ -241,7 +241,7 @@ function DashboardBody() {
               type="button"
               onClick={handleRefresh}
               aria-label="Rafraîchir"
-              className="rounded-lg border border-border bg-background p-2 shadow-sm hover:bg-muted/50"
+              className="rounded-xl border border-border bg-background p-2 hover:bg-muted/50"
             >
               <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
             </button>
@@ -1222,7 +1222,7 @@ function RateEvolutionReport({
               onClick={() => setMode('absolute')}
               className={cn(
                 'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'absolute' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                mode === 'absolute' ? 'bg-background ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               Absolu
@@ -1232,7 +1232,7 @@ function RateEvolutionReport({
               onClick={() => setMode('variation')}
               className={cn(
                 'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'variation' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                mode === 'variation' ? 'bg-background ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               Variation %

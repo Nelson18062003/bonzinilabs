@@ -34,7 +34,7 @@ import { RateCard } from '@/components/rates/RateCard';
 import { useGreeting } from '@/hooks/useGreeting';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { SkeletonDashboard } from '@/mobile/components/ui/SkeletonCard';
-import { KpiCard, KpiRow, formatCurrencyFull } from '@/components/analytics';
+import { KpiCard, KpiRow, formatCurrency, formatCurrencyFull } from '@/components/analytics';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -95,7 +95,7 @@ export function MobileDashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto">
       <div
-        className="px-4 pb-24 space-y-5"
+        className="px-5 pb-24 space-y-6"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}
       >
         {/* ── 1. GREETING ── */}
@@ -125,10 +125,10 @@ export function MobileDashboard() {
               <button
                 onClick={() => navigate('/m/payments')}
                 aria-label={`${pendingPaymentCount} paiements en attente`}
-                className="relative rounded-full bg-purple-500/10 p-2.5 active:scale-[0.95] transition-transform"
+                className="relative rounded-full bg-violet-500/10 p-2.5 active:scale-[0.95] transition-transform"
               >
-                <ArrowUpFromLine className="h-5 w-5 text-purple-600" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-purple-500 px-1 text-[10px] font-bold text-white">
+                <ArrowUpFromLine className="h-5 w-5 text-violet-600" />
+                <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white">
                   {pendingPaymentCount}
                 </span>
               </button>
@@ -142,26 +142,26 @@ export function MobileDashboard() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Solde plateforme"
-            value={formatCurrencyFull(balanceXAF, 'XAF')}
+            value={formatCurrency(balanceXAF, 'XAF', { compact: true })}
             description="Somme totale XAF actuellement détenue par tous les wallets clients — ton engagement financier à l'instant T."
           />
           <KpiCard
             accent="amber"
             icon={<TrendingUp className="h-4 w-4" />}
             label="Volume 7 jours"
-            value={formatCurrencyFull(weekVolume, 'XAF')}
+            value={formatCurrency(weekVolume, 'XAF', { compact: true })}
             description="Volume cumulé des paiements exécutés sur les 7 derniers jours."
           />
           <KpiCard
             accent="emerald"
             label="Dépôts aujourd'hui"
-            value={formatCurrencyFull(todayDepositAmount, 'XAF')}
+            value={formatCurrency(todayDepositAmount, 'XAF', { compact: true })}
             description="Dépôts validés depuis minuit (heure Douala)."
           />
           <KpiCard
             accent="orange"
             label="Paiements aujourd'hui"
-            value={formatCurrencyFull(todayPaymentAmount, 'XAF')}
+            value={formatCurrency(todayPaymentAmount, 'XAF', { compact: true })}
             description="Paiements exécutés depuis minuit (heure Douala)."
           />
         </KpiRow>
@@ -175,13 +175,13 @@ export function MobileDashboard() {
                 tabIndex={0}
                 onClick={() => navigate('/m/deposits')}
                 onKeyDown={(e) => e.key === 'Enter' && navigate('/m/deposits')}
-                className="cursor-pointer border-orange-500/20 bg-orange-500/10 p-4 transition-transform active:scale-[0.98]"
+                className="cursor-pointer rounded-2xl border-0 bg-orange-500/10 p-4 shadow-none transition-transform active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
                     {pendingDepositCount}
                   </div>
-                  <p className="flex-1 text-left text-sm font-semibold text-orange-700">
+                  <p className="flex-1 text-left text-sm font-semibold text-orange-700 dark:text-orange-300">
                     {t('depositsToValidate', {
                       defaultValue: 'dépôt(s) à valider',
                       count: pendingDepositCount,
@@ -197,19 +197,19 @@ export function MobileDashboard() {
                 tabIndex={0}
                 onClick={() => navigate('/m/payments')}
                 onKeyDown={(e) => e.key === 'Enter' && navigate('/m/payments')}
-                className="cursor-pointer border-purple-500/20 bg-purple-500/10 p-4 transition-transform active:scale-[0.98]"
+                className="cursor-pointer rounded-2xl border-0 bg-violet-500/10 p-4 shadow-none transition-transform active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-sm font-bold text-white">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white">
                     {pendingPaymentCount}
                   </div>
-                  <p className="flex-1 text-left text-sm font-semibold text-purple-700">
+                  <p className="flex-1 text-left text-sm font-semibold text-violet-700 dark:text-violet-300">
                     {t('paymentsPending', {
                       defaultValue: 'paiement(s) en attente',
                       count: pendingPaymentCount,
                     })}
                   </p>
-                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-purple-600" />
+                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-violet-600" />
                 </div>
               </Card>
             ) : null}
@@ -220,8 +220,8 @@ export function MobileDashboard() {
         <div className="grid grid-cols-4 gap-2">
           {[
             { icon: Plus, label: t('deposit', { defaultValue: 'Dépôt' }), to: '/m/deposits/new', bg: 'bg-emerald-500/10', color: 'text-emerald-600' },
-            { icon: Send, label: t('payment', { defaultValue: 'Paiement' }), to: '/m/payments/new', bg: 'bg-blue-500/10', color: 'text-blue-600' },
-            { icon: Users, label: t('clients', { defaultValue: 'Clients' }), to: '/m/clients', bg: 'bg-indigo-500/10', color: 'text-indigo-600' },
+            { icon: Send, label: t('payment', { defaultValue: 'Paiement' }), to: '/m/payments/new', bg: 'bg-violet-500/10', color: 'text-violet-600' },
+            { icon: Users, label: t('clients', { defaultValue: 'Clients' }), to: '/m/clients', bg: 'bg-orange-500/10', color: 'text-orange-600' },
             { icon: BarChart3, label: 'Analytics', to: '/m/dashboard', bg: 'bg-amber-500/10', color: 'text-amber-600' },
           ].map(({ icon: Icon, label, to, bg, color }) => (
             <button
@@ -251,7 +251,7 @@ export function MobileDashboard() {
 
         {/* ── 6. RECENT ACTIVITY ── */}
         {recentDeposits.length > 0 ? (
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden rounded-2xl shadow-none">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="text-sm font-semibold">
                 {t('recentActivity', { defaultValue: 'Activité récente' })}
@@ -314,7 +314,7 @@ export function MobileDashboard() {
 
         {/* ── 7. EMPTY STATE ── */}
         {hasNoData ? (
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 text-center">
+          <Card className="rounded-2xl border-border bg-muted/40 p-6 text-center shadow-none">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <Sparkles className="h-6 w-6 text-primary" />
             </div>

@@ -61,7 +61,7 @@ export function KpiCard({
   const accentStyle = ACCENT_STYLES[accent];
 
   return (
-    <Card className={cn('flex h-full flex-col p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
+    <Card className={cn('flex h-full flex-col rounded-2xl p-4 shadow-none', className)}>
       <div className="flex flex-1 items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col space-y-1">
           {/* min-h reserves 2 lines so values align vertically across cards */}
@@ -116,7 +116,7 @@ export function KpiCard({
         {icon ? (
           <div
             className={cn(
-              'flex size-9 md:size-10 flex-shrink-0 items-center justify-center rounded-lg border border-border',
+              'flex size-9 md:size-10 flex-shrink-0 items-center justify-center rounded-full',
               accentStyle.iconBg,
               accentStyle.iconText,
             )}

@@ -10,9 +10,11 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from 'next-themes';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
 import '@/index.css';
+import '@/i18n';
 import {
   MobileTreasuryHome,
   MobileTreasuryDashboard,
@@ -30,6 +32,7 @@ import {
   MobileBalanceDashboard,
 } from '@/mobile/screens/treasury';
 import { DirectionA, DirectionB, DirectionC } from './directions';
+import { MobileDashboard } from '@/mobile/screens/dashboard';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -37,6 +40,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
+  'dashboard-home': { Comp: MobileDashboard, route: '/m' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },
   dashboard: { Comp: MobileTreasuryDashboard, route: '/m/more/treasury/dashboard' },
   'new-purchase': { Comp: MobileNewPurchase, route: '/m/more/treasury/purchase' },
@@ -57,6 +61,8 @@ const params = new URLSearchParams(window.location.search);
 const screenKey = params.get('screen') ?? 'home';
 const theme = params.get('theme') ?? 'light';
 if (theme === 'dark') document.documentElement.classList.add('dark');
+// Seed next-themes so components reading useTheme() (e.g. RateCard) resolve correctly.
+try { window.localStorage.setItem('theme', theme); } catch { /* ignore */ }
 // Preview-only font toggle (?font=dm) to compare DM Sans vs the default Inter.
 if (params.get('font') === 'dm') document.documentElement.style.fontFamily = "'DM Sans', sans-serif";
 
@@ -81,17 +87,19 @@ const entry = SCREENS[screenKey] ?? SCREENS.home;
 const Screen = entry.Comp;
 
 createRoot(document.getElementById('root')!).render(
-  <QueryClientProvider client={qc}>
-    <AdminAuthContext.Provider value={fakeAuth}>
-      <MemoryRouter initialEntries={[entry.route]}>
-        {entry.path ? (
-          <Routes>
-            <Route path={entry.path} element={<Screen />} />
-          </Routes>
-        ) : (
-          <Screen />
-        )}
-      </MemoryRouter>
-    </AdminAuthContext.Provider>
-  </QueryClientProvider>,
+  <ThemeProvider attribute="class" defaultTheme={theme} enableSystem={false}>
+    <QueryClientProvider client={qc}>
+      <AdminAuthContext.Provider value={fakeAuth}>
+        <MemoryRouter initialEntries={[entry.route]}>
+          {entry.path ? (
+            <Routes>
+              <Route path={entry.path} element={<Screen />} />
+            </Routes>
+          ) : (
+            <Screen />
+          )}
+        </MemoryRouter>
+      </AdminAuthContext.Provider>
+    </QueryClientProvider>
+  </ThemeProvider>,
 );
