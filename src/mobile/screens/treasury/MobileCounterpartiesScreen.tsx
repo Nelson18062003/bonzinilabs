@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
 import { PhoneInputWithCountry, TextField } from '@/components/form';
+import { Segmented } from '@/components/treasury/Segmented';
+import { INSET, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
 import { formatPhone } from '@/data/countryCodes';
@@ -55,150 +56,116 @@ export function MobileCounterpartiesScreen() {
   };
 
   const defaultDialCode = tab === 'usdt_supplier' ? '+237' : '+86';
+  const isSupplier = tab === 'usdt_supplier';
 
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Contreparties" showBack backTo="/m/more/treasury" />
 
-      {/* Tabs */}
-      <div className="px-4 pt-4">
-        <div className="flex bg-muted rounded-xl p-1">
-          {([
-            { value: 'usdt_supplier' as const, label: 'Fournisseurs USDT' },
-            { value: 'cny_buyer' as const, label: 'Acheteurs CNY' },
-          ]).map((t) => (
-            <button
-              key={t.value}
-              onClick={() => setTab(t.value)}
-              className={cn(
-                'flex-1 h-9 rounded-lg text-[13px] font-semibold transition-colors',
-                tab === t.value ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground',
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+      <div className="px-5 py-4 space-y-3">
+        {/* Tabs */}
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'usdt_supplier', label: 'Fournisseurs USDT' },
+            { value: 'cny_buyer', label: 'Acheteurs CNY' },
+          ]}
+        />
+
+        {/* Archived toggle */}
+        <div className="flex">
+          <Pill active={showArchived} onClick={() => setShowArchived((v) => !v)}>
+            <Archive className="h-3.5 w-3.5" /> Archivées
+          </Pill>
         </div>
-      </div>
 
-      {/* Toggle archived */}
-      <div className="px-4 pt-2">
-        <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={showArchived}
-            onChange={(e) => setShowArchived(e.target.checked)}
-          />
-          Afficher les archivées
-        </label>
-      </div>
-
-      {/* New form */}
-      {canManage && (
-        <div className="px-4 pt-3">
-          {showForm ? (
-            <div className={cn(
-              'rounded-2xl border p-3 space-y-2',
-              tab === 'usdt_supplier' ? 'bg-violet-50 border-violet-200' : 'bg-amber-50 border-amber-200',
-            )}>
-              <TextField label="Nom *" value={name} onChange={(e) => setName(e.target.value)} />
+        {/* New form */}
+        {canManage &&
+          (showForm ? (
+            <div className={cn(INSET, 'space-y-2.5 p-3.5')}>
+              <TextField label="Nom" value={name} onChange={(e) => setName(e.target.value)} />
               <TextField label="Entreprise" value={company} onChange={(e) => setCompany(e.target.value)} />
-              <PhoneInputWithCountry
-                label="Téléphone / WhatsApp"
-                value={phone}
-                onValueChange={setPhone}
-                defaultDialCode={defaultDialCode}
-              />
-              {tab === 'cny_buyer' && (
-                <TextField label="WeChat ID" value={wechat} onChange={(e) => setWechat(e.target.value)} />
-              )}
+              <PhoneInputWithCountry label="Téléphone / WhatsApp" value={phone} onValueChange={setPhone} defaultDialCode={defaultDialCode} />
+              {!isSupplier && <TextField label="WeChat ID" value={wechat} onChange={(e) => setWechat(e.target.value)} />}
               <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={resetForm} className="flex-1">
-                  Annuler
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={create.isPending || !name.trim()}
-                  className="flex-1"
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  onClick={resetForm}
+                  className="h-[52px] flex-1 rounded-2xl bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
                 >
-                  {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Créer'}
-                </Button>
+                  Annuler
+                </button>
+                <div className="flex-1">
+                  <PrimaryPill onClick={handleCreate} disabled={!name.trim()} loading={create.isPending}>
+                    Créer
+                  </PrimaryPill>
+                </div>
               </div>
             </div>
           ) : (
-            <Button
+            <button
               onClick={() => setShowForm(true)}
-              variant="outline"
-              className="w-full h-11 border-dashed"
+              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl bg-muted/60 text-[13px] font-semibold text-muted-foreground transition active:scale-[0.99]"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvelle contrepartie {tab === 'usdt_supplier' ? '(fournisseur USDT)' : '(acheteur CNY)'}
-            </Button>
-          )}
-        </div>
-      )}
+              <Plus className="h-4 w-4" />
+              Nouvelle contrepartie {isSupplier ? '(fournisseur USDT)' : '(acheteur CNY)'}
+            </button>
+          ))}
 
-      {/* List */}
-      <div className="px-4 py-3 space-y-2">
+        {/* List */}
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (data ?? []).length === 0 ? (
-          <div className="text-center text-muted-foreground text-[13px] py-8">
-            Aucune contrepartie {tab === 'usdt_supplier' ? 'fournisseur' : 'acheteur'} pour l’instant.
+          <div className="py-8 text-center text-[13px] text-muted-foreground">
+            Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l’instant.
           </div>
         ) : (
-          (data ?? []).map((c) => {
-            const toneBadge = tab === 'usdt_supplier'
-              ? 'bg-violet-100 text-violet-700'
-              : 'bg-amber-100 text-amber-700';
-            return (
-              <button
-                key={c.id}
-                onClick={() => canManage && navigate(`/m/more/treasury/counterparties/${c.id}`)}
-                className={cn(
-                  'w-full text-left bg-white rounded-xl border border-border p-3.5 flex items-center gap-3',
-                  canManage && 'active:bg-muted/40 transition-colors',
-                )}
-              >
-                <span className={cn('px-2 py-1 rounded-lg text-[11px] font-bold flex-shrink-0', toneBadge)}>
-                  {c.short_id}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-foreground truncate">{c.display_name}</span>
-                    {!c.is_active && (
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-flex items-center gap-0.5">
-                        <Archive className="w-3 h-3" />
-                        Archivée
-                      </span>
-                    )}
+          <div className="space-y-2.5">
+            {(data ?? []).map((c) => {
+              const toneBadge = isSupplier
+                ? 'bg-violet-500/10 text-bonzini-violet'
+                : 'bg-amber-500/10 text-bonzini-amber';
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => canManage && navigate(`/m/more/treasury/counterparties/${c.id}`)}
+                  className={cn(SOFT_CARD, 'flex w-full items-center gap-3 p-3.5 text-left', canManage && 'transition active:scale-[0.99]')}
+                >
+                  <span className={cn('shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold', toneBadge)}>{c.short_id}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate font-semibold text-foreground">{c.display_name}</span>
+                      {!c.is_active && (
+                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                          <Archive className="h-3 w-3" />
+                          Archivée
+                        </span>
+                      )}
+                    </div>
+                    {c.legal_name && <div className="truncate text-[12px] text-muted-foreground">{c.legal_name}</div>}
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      {c.phone && (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {formatPhone(c.phone)}
+                        </span>
+                      )}
+                      {c.wechat_id && (
+                        <span className="inline-flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" />
+                          {c.wechat_id}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {c.legal_name && (
-                    <div className="text-[12px] text-muted-foreground truncate">{c.legal_name}</div>
-                  )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
-                    {c.phone && (
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {formatPhone(c.phone)}
-                      </span>
-                    )}
-                    {c.wechat_id && (
-                      <span className="inline-flex items-center gap-1">
-                        <MessageCircle className="w-3 h-3" />
-                        {c.wechat_id}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {canManage && <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
-              </button>
-            );
-          })
+                  {canManage && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />}
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

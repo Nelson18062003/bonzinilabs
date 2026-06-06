@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
+      // DEV-ONLY: swap the analytics data hooks for static fixtures so the
+      // screenshot harness can render the analytics dashboard. Gated by an
+      // env var → never active in production or normal dev.
+      ...(process.env.SCREENSHOT_MOCK === "1"
+        ? { "@/hooks/analytics/useAnalytics": path.resolve(__dirname, "./src/__screenshot__/mockAnalytics.ts") }
+        : {}),
       "@": path.resolve(__dirname, "./src"),
     },
   },

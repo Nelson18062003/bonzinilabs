@@ -144,7 +144,9 @@ interface AdminAuthContextType {
   canManageUsers: boolean;
 }
 
-const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+// Exported so the dev-only screenshot harness (src/__screenshot__) can provide a
+// fake value. Production code must keep using the `useAdminAuth` hook below.
+export const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 // Garde-fou : empêche une requête réseau de rester bloquée indéfiniment.
 function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {

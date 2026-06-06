@@ -1,10 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Download, FileText } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
-import { AmountField } from '@/components/form';
+import { MoneyField } from '@/components/treasury/MoneyField';
+import { PrimaryPill, SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { cn } from '@/lib/utils';
 import { DASHBOARD_ACCOUNTS, PAGE } from './constants';
 import { BalanceDashboardPreview } from './BalanceDashboardPreview';
 import { downloadDashboardPng, downloadDashboardPdf } from './export';
@@ -37,8 +38,7 @@ export function MobileBalanceDashboard() {
     return <Navigate to="/m/more" replace />;
   }
 
-  const setBalance = (key: string, v: number | null) =>
-    setBalances((b) => ({ ...b, [key]: v ?? 0 }));
+  const setBalance = (key: string, v: number | null) => setBalances((b) => ({ ...b, [key]: v ?? 0 }));
 
   const handleExport = async (kind: 'png' | 'pdf') => {
     if (!previewRef.current || exporting) return;
@@ -55,33 +55,23 @@ export function MobileBalanceDashboard() {
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Dashboard soldes" showBack backTo="/m/more/treasury" />
 
-      <div className="px-4 py-4 space-y-5">
+      <div className="px-5 py-5 space-y-6">
         {/* Form */}
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
-            Soldes des comptes (XAF)
-          </h2>
-          <div className="space-y-3">
+          <SectionTitle>Soldes des comptes (XAF)</SectionTitle>
+          <div className="space-y-2.5">
             {DASHBOARD_ACCOUNTS.map((a) => (
-              <div key={a.key} className="bg-white border border-border rounded-2xl p-3 space-y-2.5">
+              <div key={a.key} className={cn(SOFT_CARD, 'space-y-2.5 p-4')}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <img src={a.logo} alt={a.name} className="w-7 h-7 object-contain" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card">
+                    <img src={a.logo} alt={a.name} className="h-7 w-7 object-contain" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-semibold text-foreground truncate">{a.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[14px] font-semibold text-foreground">{a.name}</div>
                     <div className="text-[11px] text-muted-foreground">{a.type}</div>
                   </div>
                 </div>
-                <AmountField
-                  currency="XAF"
-                  value={balances[a.key] ?? null}
-                  onValueChange={(v) => setBalance(a.key, v)}
-                  allowDecimal
-                  decimals={0}
-                  max={null}
-                  controlClassName="text-[17px]"
-                />
+                <MoneyField currency="XAF" value={balances[a.key] ?? null} onValueChange={(v) => setBalance(a.key, v)} allowDecimal decimals={0} max={null} />
               </div>
             ))}
           </div>
@@ -89,10 +79,10 @@ export function MobileBalanceDashboard() {
 
         {/* Live preview */}
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Aperçu</h2>
+          <SectionTitle>Aperçu</SectionTitle>
           <div
             ref={scaleWrapRef}
-            className="w-full overflow-hidden rounded-xl border border-border"
+            className="w-full overflow-hidden rounded-2xl border border-border"
             style={{ height: PAGE.height * scale }}
           >
             <div style={{ transformOrigin: 'top left', transform: `scale(${scale})`, width: PAGE.width, height: PAGE.height }}>
@@ -103,22 +93,16 @@ export function MobileBalanceDashboard() {
 
         {/* Export buttons */}
         <section className="grid grid-cols-2 gap-2.5">
-          <Button
-            onClick={() => handleExport('png')}
-            disabled={exporting !== null}
-            className="h-12 bg-violet-600 hover:bg-violet-700 font-bold"
-          >
-            {exporting === 'png' ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Download className="w-4 h-4 mr-2" />PNG</>}
-          </Button>
-          <Button
-            onClick={() => handleExport('pdf')}
-            disabled={exporting !== null}
-            className="h-12 bg-amber-500 hover:bg-amber-600 font-bold"
-          >
-            {exporting === 'pdf' ? <Loader2 className="w-5 h-5 animate-spin" /> : <><FileText className="w-4 h-4 mr-2" />PDF</>}
-          </Button>
+          <PrimaryPill onClick={() => handleExport('png')} disabled={exporting !== null} loading={exporting === 'png'}>
+            <Download className="mr-2 h-4 w-4" />
+            PNG
+          </PrimaryPill>
+          <PrimaryPill onClick={() => handleExport('pdf')} disabled={exporting !== null} loading={exporting === 'pdf'}>
+            <FileText className="mr-2 h-4 w-4" />
+            PDF
+          </PrimaryPill>
         </section>
-        <p className="text-[11px] text-muted-foreground text-center">
+        <p className="text-center text-[11px] text-muted-foreground">
           Tu peux aussi faire une capture d’écran de l’aperçu ci-dessus.
         </p>
       </div>

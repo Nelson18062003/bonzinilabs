@@ -1,15 +1,28 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowUpFromLine, Trash2, Ban, ChevronRight, AlertTriangle, SlidersHorizontal, X } from 'lucide-react';
+import { Loader2, SlidersHorizontal, X } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
-import { DateField, TextField } from '@/components/form';
+import { DateField } from '@/components/form';
+import { OperationListItem } from '@/components/treasury/OperationListItem';
+import { Segmented } from '@/components/treasury/Segmented';
+import { SelectField } from '@/components/treasury/SelectField';
+import { VoidOperationDialog } from '@/components/treasury/VoidOperationDialog';
+import { INSET, Pill, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCounterparties, useTreasuryAccounts, useTreasuryOperations, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
+import { useCounterparties, useTreasuryAccounts, useTreasuryOperations, type OperationRow } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 
 type Preset = '7d' | '30d' | '90d' | 'all' | 'custom';
 type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc';
+
+const NO_ACCOUNT = 'none';
+
+const SORT_OPTIONS = [
+  { value: 'date_desc', label: 'Date (plus récent)' },
+  { value: 'date_asc', label: 'Date (plus ancien)' },
+  { value: 'amount_desc', label: 'Montant USDT (plus grand)' },
+  { value: 'amount_asc', label: 'Montant USDT (plus petit)' },
+];
 
 function getRange(preset: Preset, customFrom?: string, customTo?: string): { from: Date; to: Date } {
   const to = new Date();
@@ -31,16 +44,6 @@ function getRange(preset: Preset, customFrom?: string, customTo?: string): { fro
 
 function fmt(n: number, decimals = 2): string {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 export function MobileSalesList() {
@@ -77,8 +80,8 @@ export function MobileSalesList() {
     if (!showVoided && op.voided_at) return false;
     if (buyerId && op.buyer_id !== buyerId) return false;
     if (cnyAccountId) {
-      if (cnyAccountId === 'none' && op.cny_account_id) return false;
-      if (cnyAccountId !== 'none' && op.cny_account_id !== cnyAccountId) return false;
+      if (cnyAccountId === NO_ACCOUNT && op.cny_account_id) return false;
+      if (cnyAccountId !== NO_ACCOUNT && op.cny_account_id !== cnyAccountId) return false;
     }
     return true;
   });
@@ -96,150 +99,103 @@ export function MobileSalesList() {
     }
   });
 
+  const live = sales.filter((s) => !s.voided_at);
+  const totalUsdt = live.reduce((sum, s) => sum + Number(s.usdt_amount ?? 0), 0);
+  const totalCny = live.reduce((sum, s) => sum + Number(s.cny_amount ?? 0), 0);
+
+  const accountOptions = [
+    { value: NO_ACCOUNT, label: 'Aucun compte Bonzini' },
+    ...(cnyAccounts ?? []).map((a) => ({ value: a.id, label: a.label })),
+  ];
+
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Mes ventes USDT" showBack backTo="/m/more/treasury" />
 
-      <div className="px-4 py-3 space-y-3">
-        <div className="flex bg-muted rounded-xl p-1">
-          {([
-            { value: '7d' as const, label: '7 j' },
-            { value: '30d' as const, label: '30 j' },
-            { value: '90d' as const, label: '90 j' },
-            { value: 'all' as const, label: 'Tout' },
-            { value: 'custom' as const, label: 'Perso' },
-          ]).map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPreset(p.value)}
-              className={cn(
-                'flex-1 h-9 rounded-lg text-[12px] font-semibold transition-colors',
-                preset === p.value ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground',
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+      <div className="px-5 py-4 space-y-3">
+        <Segmented
+          value={preset}
+          onChange={setPreset}
+          options={[
+            { value: '7d', label: '7 j' },
+            { value: '30d', label: '30 j' },
+            { value: '90d', label: '90 j' },
+            { value: 'all', label: 'Tout' },
+            { value: 'custom', label: 'Perso' },
+          ]}
+        />
 
         {preset === 'custom' && (
-          <div className="grid grid-cols-2 gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <div className={cn(INSET, 'grid grid-cols-2 gap-2 p-3')}>
             <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
             <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </div>
         )}
 
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => setShowFilters((v) => !v)}
-            className={cn(
-              'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
-              activeFilterCount > 0
-                ? 'border-amber-500 bg-amber-50 text-amber-700'
-                : 'border-border bg-white text-muted-foreground',
-            )}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+          <Pill active={activeFilterCount > 0 || showFilters} onClick={() => setShowFilters((v) => !v)}>
+            <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </button>
-          <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-            <input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+          </Pill>
+          <Pill active={showVoided} onClick={() => setShowVoided((v) => !v)}>
             Supprimées
-          </label>
+          </Pill>
         </div>
 
         {showFilters && (
-          <div className="bg-white border border-border rounded-2xl p-3 space-y-3">
-            <div>
-              <label className="block text-[12px] font-semibold mb-1.5">Acheteur</label>
-              <select
-                value={buyerId}
-                onChange={(e) => setBuyerId(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
-              >
-                <option value="">Tous les acheteurs</option>
-                {(buyers ?? []).map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.short_id} · {b.display_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-semibold mb-1.5">Compte CNY crédité</label>
-              <select
-                value={cnyAccountId}
-                onChange={(e) => setCnyAccountId(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
-              >
-                <option value="">Tous</option>
-                <option value="none">Aucun compte Bonzini</option>
-                {(cnyAccounts ?? []).map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-semibold mb-1.5">Trier par</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortKey)}
-                className="w-full h-10 px-3 rounded-xl border border-border bg-white text-[14px]"
-              >
-                <option value="date_desc">Date (plus récent)</option>
-                <option value="date_asc">Date (plus ancien)</option>
-                <option value="amount_desc">Montant USDT (plus grand)</option>
-                <option value="amount_asc">Montant USDT (plus petit)</option>
-              </select>
-            </div>
+          <div className={cn(SOFT_CARD, 'space-y-3 p-4')}>
+            <SelectField
+              label="Acheteur"
+              placeholder="Tous les acheteurs"
+              value={buyerId}
+              onChange={setBuyerId}
+              options={(buyers ?? []).map((b) => ({ value: b.id, label: `${b.short_id} · ${b.display_name}` }))}
+            />
+            <SelectField
+              label="Compte CNY crédité"
+              placeholder="Tous"
+              value={cnyAccountId}
+              onChange={setCnyAccountId}
+              options={accountOptions}
+            />
+            <SelectField
+              label="Trier par"
+              value={sortBy}
+              onChange={(v) => setSortBy(v as SortKey)}
+              options={SORT_OPTIONS}
+            />
 
             {activeFilterCount > 0 && (
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600"
+                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600 dark:text-red-400"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-3.5 w-3.5" />
                 Réinitialiser les filtres
               </button>
             )}
           </div>
         )}
 
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px]">
-          <span className="text-muted-foreground">Total ({sales.filter((s) => !s.voided_at).length} ventes) : </span>
-          <span className="font-bold">
-            {fmt(
-              sales.filter((s) => !s.voided_at).reduce((sum, s) => sum + Number(s.usdt_amount ?? 0), 0),
-              2,
-            )}{' '}
-            USDT
-          </span>
-          <span className="text-muted-foreground"> → </span>
-          <span className="font-bold">
-            {fmt(
-              sales.filter((s) => !s.voided_at).reduce((sum, s) => sum + Number(s.cny_amount ?? 0), 0),
-              2,
-            )}{' '}
-            CNY
+        <div className={cn(SOFT_CARD, 'flex items-baseline justify-between gap-2 p-4')}>
+          <span className="text-[12px] text-muted-foreground">Total · {live.length} vente{live.length > 1 ? 's' : ''}</span>
+          <span className="text-right text-[13px] font-bold tabular-nums text-foreground">
+            {fmt(totalUsdt, 2)} <span className="font-normal text-muted-foreground">USDT</span>
+            <span className="mx-1 font-normal text-muted-foreground">→</span>
+            {fmt(totalCny, 2)} <span className="font-normal text-muted-foreground">CNY</span>
           </span>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : sales.length === 0 ? (
-          <div className="text-center text-muted-foreground text-[13px] py-8">
-            Aucune vente avec ces critères.
-          </div>
+          <div className="py-8 text-center text-[13px] text-muted-foreground">Aucune vente avec ces critères.</div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {sales.map((op) => (
-              <SaleCard
+              <OperationListItem
                 key={op.id}
                 op={op}
                 canDelete={isSuperAdmin}
@@ -251,120 +207,7 @@ export function MobileSalesList() {
         )}
       </div>
 
-      {confirmDelete && <DeleteDialog op={confirmDelete} onClose={() => setConfirmDelete(null)} />}
-    </div>
-  );
-}
-
-function SaleCard({
-  op,
-  canDelete,
-  onDelete,
-  onClick,
-}: {
-  op: Extract<OperationRow, { kind: 'sale' }>;
-  canDelete: boolean;
-  onDelete: () => void;
-  onClick: () => void;
-}) {
-  const voided = !!op.voided_at;
-
-  return (
-    <div
-      className={cn(
-        'bg-white rounded-2xl border p-3.5 flex items-center gap-3',
-        voided ? 'border-border opacity-60' : 'border-amber-200',
-      )}
-    >
-      <div
-        className={cn(
-          'w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0',
-          voided ? 'bg-slate-400' : 'bg-amber-500',
-        )}
-      >
-        {voided ? <Ban className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
-      </div>
-
-      <button onClick={onClick} className="flex-1 text-left min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-[14px] truncate">{op.buyer?.display_name ?? '—'}</span>
-          {voided && (
-            <span className="text-[10px] uppercase font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-              Supprimée
-            </span>
-          )}
-        </div>
-        <div className="text-[11px] text-muted-foreground">
-          {fmtDate(op.occurred_at)}
-          {op.cny_account?.label ? ` · ${op.cny_account.label}` : ''}
-        </div>
-        <div className="text-[12px] mt-0.5 tabular-nums">
-          <span className="font-bold">{fmt(Number(op.usdt_amount), 4)} USDT</span>
-          <span className="text-muted-foreground"> → </span>
-          <span className="font-bold">{fmt(Number(op.cny_amount), 2)} CNY</span>
-          <span className="text-muted-foreground ml-1">@ {fmt(Number(op.implicit_rate), 4)}</span>
-        </div>
-      </button>
-
-      {canDelete && !voided ? (
-        <button
-          onClick={onDelete}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-red-600 hover:bg-red-50 flex-shrink-0"
-          aria-label="Supprimer"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      ) : (
-        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      )}
-    </div>
-  );
-}
-
-function DeleteDialog({ op, onClose }: { op: OperationRow; onClose: () => void }) {
-  const [reason, setReason] = useState('');
-  const voidOp = useVoidTreasuryOperation();
-  const valid = reason.trim().length >= 10;
-
-  const handleConfirm = async () => {
-    if (!valid) return;
-    const result = await voidOp.mutateAsync({
-      source_table: op.kind === 'purchase' ? 'usdt_purchase' : 'usdt_sale',
-      source_id: op.id,
-      void_reason: reason.trim(),
-    });
-    if (result.success) onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-4 w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h2 className="font-bold text-foreground">Supprimer cette vente ?</h2>
-            <p className="text-[12px] text-muted-foreground mt-1">
-              L’opération disparaîtra des stats et des soldes. Pour des raisons d’audit fintech, une
-              contre-écriture est enregistrée dans le ledger (l’action est tracée, irréversible).
-            </p>
-          </div>
-        </div>
-        <TextField
-          label="Motif * (10 caractères min)"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" onClick={onClose} className="flex-1">Garder</Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!valid || voidOp.isPending}
-            className="flex-1 bg-red-600 hover:bg-red-700"
-          >
-            {voidOp.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer la suppression'}
-          </Button>
-        </div>
-      </div>
+      {confirmDelete && <VoidOperationDialog op={confirmDelete} onClose={() => setConfirmDelete(null)} />}
     </div>
   );
 }

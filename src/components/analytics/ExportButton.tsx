@@ -55,7 +55,7 @@ export function ExportButton({
       onClick={handleClick}
       disabled={disabled || busy}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium shadow-sm',
+        'inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium',
         'hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}

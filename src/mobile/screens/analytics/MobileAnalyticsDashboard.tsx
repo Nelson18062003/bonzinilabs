@@ -241,7 +241,7 @@ function DashboardBody() {
               type="button"
               onClick={handleRefresh}
               aria-label="Rafraîchir"
-              className="rounded-lg border border-border bg-background p-2 shadow-sm hover:bg-muted/50"
+              className="rounded-xl border border-border bg-background p-2 hover:bg-muted/50"
             >
               <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
             </button>
@@ -259,7 +259,7 @@ function DashboardBody() {
             accent="amber"
             icon={<TrendingUp className="h-4 w-4" />}
             label="TPV — Volume paiements"
-            value={formatCurrencyFull(tpvCurrent, 'XAF')}
+            value={formatCurrency(tpvCurrent, 'XAF', { compact: true })}
             secondary={`${formatInteger(payments.data?.current.opCount)} opérations · ${formatCurrency(payments.data?.current.totalRMB ?? 0, 'CNY')}`}
             delta={range.compareToPrevious ? tpvDelta : undefined}
             loading={payments.isLoading}
@@ -269,7 +269,7 @@ function DashboardBody() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Dépôts validés"
-            value={formatCurrencyFull(depositsCurrent, 'XAF')}
+            value={formatCurrency(depositsCurrent, 'XAF', { compact: true })}
             secondary={`${formatInteger(deposits.data?.current.opCount)} dépôts`}
             delta={range.compareToPrevious ? depositsDelta : undefined}
             loading={deposits.isLoading}
@@ -278,7 +278,7 @@ function DashboardBody() {
           <KpiCard
             accent={netCurrent >= 0 ? 'emerald' : 'red'}
             label="Flux net"
-            value={formatCurrencyFull(netCurrent, 'XAF')}
+            value={formatCurrency(netCurrent, 'XAF', { compact: true })}
             secondary={netCurrent >= 0 ? "Plus d'entrées que de sorties" : 'Plus de sorties que d\'entrées'}
             delta={range.compareToPrevious ? netDelta : undefined}
             loading={payments.isLoading || deposits.isLoading}
@@ -288,7 +288,7 @@ function DashboardBody() {
             accent="neutral"
             icon={<Clock className="h-4 w-4" />}
             label="Ticket moyen paiement"
-            value={formatCurrencyFull(avgTicketCurrent, 'XAF')}
+            value={formatCurrency(avgTicketCurrent, 'XAF', { compact: true })}
             delta={range.compareToPrevious ? avgTicketDelta : undefined}
             loading={payments.isLoading}
             description="Montant moyen par paiement exécuté (total XAF / nombre d'opérations completed)."
@@ -301,7 +301,7 @@ function DashboardBody() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Exposition wallets (snapshot)"
-            value={formatCurrencyFull(walletExposure.data?.totalXAF ?? 0, 'XAF')}
+            value={formatCurrency(walletExposure.data?.totalXAF ?? 0, 'XAF', { compact: true })}
             secondary={`${formatInteger(walletExposure.data?.clientsWithBalance ?? 0)} clients · indépendant du filtre période`}
             loading={walletExposure.isLoading}
             description="Somme totale XAF encore dans les wallets clients (non dépensée). Indique ton engagement financier envers les clients à l'instant T — indépendant de la période sélectionnée."
@@ -309,7 +309,7 @@ function DashboardBody() {
           <KpiCard
             accent="amber"
             label="Solde moyen par client (snapshot)"
-            value={formatCurrencyFull(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF')}
+            value={formatCurrency(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF', { compact: true })}
             loading={walletExposure.isLoading}
             description="Exposition totale / nombre de clients avec un solde strictement positif. Snapshot actuel — indépendant du filtre période."
           />
@@ -835,19 +835,19 @@ function AlertsSection({
 }) {
   const severityStyle: Record<DashboardAlert['severity'], { box: string; icon: string; title: string }> = {
     critical: {
-      box: 'bg-red-500/10 border-red-500/30',
-      icon: 'text-red-600',
-      title: 'text-red-700',
+      box: 'bg-red-500/10',
+      icon: 'text-red-600 dark:text-red-400',
+      title: 'text-red-700 dark:text-red-300',
     },
     warning: {
-      box: 'bg-amber-500/10 border-amber-500/30',
-      icon: 'text-amber-600',
-      title: 'text-amber-700',
+      box: 'bg-amber-500/10',
+      icon: 'text-amber-600 dark:text-amber-400',
+      title: 'text-amber-700 dark:text-amber-300',
     },
     info: {
-      box: 'bg-blue-500/10 border-blue-500/30',
-      icon: 'text-blue-600',
-      title: 'text-blue-700',
+      box: 'bg-blue-500/10',
+      icon: 'text-blue-600 dark:text-blue-400',
+      title: 'text-blue-700 dark:text-blue-300',
     },
   };
 
@@ -867,7 +867,7 @@ function AlertsSection({
               type="button"
               disabled={!Clickable}
               onClick={Clickable ? () => onNavigate(alert.actionHref!) : undefined}
-              className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left ${s.box} ${Clickable ? 'hover:opacity-90' : 'cursor-default'}`}
+              className={`flex w-full items-start gap-3 rounded-2xl p-3.5 text-left ${s.box} ${Clickable ? 'hover:opacity-90' : 'cursor-default'}`}
             >
               <AlertTriangle className={`mt-0.5 h-5 w-5 flex-shrink-0 ${s.icon}`} />
               <div className="flex-1 min-w-0">
@@ -1011,7 +1011,7 @@ function CountryDistributionReport({
           {displayed.map((row) => (
             <div
               key={row.key}
-              className="flex items-center justify-between gap-3 rounded-md bg-muted/20 px-2.5 py-1.5 text-xs"
+              className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-2.5 py-1.5 text-xs"
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span
@@ -1222,7 +1222,7 @@ function RateEvolutionReport({
               onClick={() => setMode('absolute')}
               className={cn(
                 'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'absolute' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                mode === 'absolute' ? 'bg-background ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               Absolu
@@ -1232,7 +1232,7 @@ function RateEvolutionReport({
               onClick={() => setMode('variation')}
               className={cn(
                 'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'variation' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                mode === 'variation' ? 'bg-background ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               Variation %
@@ -1354,7 +1354,7 @@ function RateInsightTile({
   color: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/20 p-2.5">
+    <div className="rounded-2xl bg-muted/40 p-2.5">
       <div className="flex items-center gap-1.5">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
@@ -1712,12 +1712,12 @@ function RegistrationSourceBlock({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-muted/30 p-3">
+        <div className="rounded-2xl bg-muted/40 p-3">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Admin-créés</div>
           <div className="mt-1 text-xl font-bold tabular-nums">{formatInteger(stats.adminCreated)}</div>
           <div className="text-xs text-muted-foreground">{formatPercent(stats.adminCreatedPct)} du total</div>
         </div>
-        <div className="rounded-lg bg-muted/30 p-3">
+        <div className="rounded-2xl bg-muted/40 p-3">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Self-registered</div>
           <div className="mt-1 text-xl font-bold tabular-nums">{formatInteger(stats.selfRegistered)}</div>
           <div className="text-xs text-muted-foreground">{formatPercent(1 - stats.adminCreatedPct)} du total</div>
@@ -1733,7 +1733,7 @@ function RegistrationSourceBlock({
             {utm.map((row) => (
               <div
                 key={`${row.source}-${row.medium}-${row.campaign}`}
-                className="flex items-center justify-between gap-2 rounded-md bg-muted/20 px-2.5 py-1.5 text-xs"
+                className="flex items-center justify-between gap-2 rounded-xl bg-muted/40 px-2.5 py-1.5 text-xs"
               >
                 <div className="min-w-0 flex-1 truncate">
                   <span className="font-semibold">{row.source}</span>

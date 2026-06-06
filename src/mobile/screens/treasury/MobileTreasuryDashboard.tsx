@@ -12,6 +12,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { DateField } from '@/components/form';
+import { IconChip, INSET, Pill, SectionTitle, SOFT_CARD, TONE_DOT, TONE_TEXT } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useTopCounterparties,
@@ -85,6 +86,24 @@ function toCnyPer1MXaf(xafPerCny: number | null | undefined): number | null {
   return 1_000_000 / xafPerCny;
 }
 
+type KpiTone = 'violet' | 'amber' | 'orange' | 'emerald' | 'red' | 'neutral';
+const KPI_DOT: Record<KpiTone, string> = {
+  violet: TONE_DOT.violet,
+  amber: TONE_DOT.amber,
+  orange: TONE_DOT.orange,
+  emerald: 'bg-emerald-500',
+  red: 'bg-red-500',
+  neutral: 'bg-muted-foreground/40',
+};
+const KPI_TEXT: Record<KpiTone, string> = {
+  violet: TONE_TEXT.violet,
+  amber: TONE_TEXT.amber,
+  orange: TONE_TEXT.orange,
+  emerald: 'text-emerald-600 dark:text-emerald-400',
+  red: 'text-red-600 dark:text-red-400',
+  neutral: 'text-muted-foreground',
+};
+
 function KpiCard({
   label,
   value,
@@ -97,40 +116,23 @@ function KpiCard({
   value: string;
   unit?: string;
   hint?: string;
-  tone?: 'violet' | 'amber' | 'orange' | 'emerald' | 'red' | 'neutral';
+  tone?: KpiTone;
   trend?: 'up' | 'down';
 }) {
-  const toneClasses: Record<string, string> = {
-    violet: 'border-violet-200 bg-violet-50',
-    amber: 'border-amber-200 bg-amber-50',
-    orange: 'border-orange-200 bg-orange-50',
-    emerald: 'border-emerald-200 bg-emerald-50',
-    red: 'border-red-200 bg-red-50',
-    neutral: 'border-border bg-white',
-  };
-  const labelTone: Record<string, string> = {
-    violet: 'text-violet-700',
-    amber: 'text-amber-700',
-    orange: 'text-orange-700',
-    emerald: 'text-emerald-700',
-    red: 'text-red-700',
-    neutral: 'text-muted-foreground',
-  };
-
+  const t = tone ?? 'neutral';
   return (
-    <div className={cn('rounded-2xl border p-3.5', toneClasses[tone ?? 'neutral'])}>
-      <div className="flex items-center justify-between mb-1">
-        <span className={cn('text-[11px] font-bold uppercase tracking-wide', labelTone[tone ?? 'neutral'])}>
-          {label}
-        </span>
-        {trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />}
-        {trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-600" />}
+    <div className="rounded-2xl border border-border bg-card p-3.5">
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', KPI_DOT[t])} />
+        <span className={cn('text-[10px] font-bold uppercase tracking-wider', KPI_TEXT[t])}>{label}</span>
+        {trend === 'up' && <TrendingUp className="ml-auto h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />}
+        {trend === 'down' && <TrendingDown className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
       </div>
-      <div className="text-[18px] font-extrabold text-foreground tabular-nums">
+      <div className="text-[18px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">
         {value}
-        {unit && <span className="text-xs font-semibold text-muted-foreground ml-1">{unit}</span>}
+        {unit && <span className="ml-1 text-xs font-semibold text-muted-foreground">{unit}</span>}
       </div>
-      {hint && <div className="text-[10px] text-muted-foreground mt-0.5">{hint}</div>}
+      {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
@@ -143,7 +145,7 @@ function RateCardXafCny({
 }: {
   label: string;
   xafPerCny: number | null | undefined;
-  tone: 'violet' | 'amber' | 'orange' | 'emerald';
+  tone: KpiTone;
 }) {
   const altFormat = toCnyPer1MXaf(xafPerCny ?? null);
   return (
@@ -179,144 +181,92 @@ export function MobileTreasuryDashboard() {
     return <Navigate to="/m/more" replace />;
   }
 
-  const benefitTone = (dash?.benefit_total_xaf ?? 0) >= 0 ? 'emerald' : 'red';
+  const benefitPositive = (dash?.benefit_total_xaf ?? 0) >= 0;
 
   // Client rate is XAF/CNY directly from the existing `payments` table.
   const clientRateXafPerCny = dash?.client_rate.weighted_avg_rate_xaf_per_cny ?? null;
   const revientXafPerCny = dash?.taux_de_revient_xaf_per_cny ?? null;
   const margePerCny =
-    clientRateXafPerCny !== null && revientXafPerCny !== null
-      ? clientRateXafPerCny - revientXafPerCny
-      : null;
+    clientRateXafPerCny !== null && revientXafPerCny !== null ? clientRateXafPerCny - revientXafPerCny : null;
 
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Dashboard trésorerie" showBack backTo="/m/more/treasury" />
 
-      <div className="px-4 py-4 space-y-5">
+      <div className="px-5 py-5 space-y-6">
         {/* Period chips (scrollable on small screens) */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4">
+        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-0.5">
           {PRESETS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPreset(p.value)}
-              className={cn(
-                'flex-shrink-0 h-9 px-3 rounded-full text-[12px] font-semibold border-2 transition-colors',
-                preset === p.value
-                  ? 'border-violet-600 bg-violet-50 text-violet-700'
-                  : 'border-border bg-white text-muted-foreground',
-              )}
-            >
+            <Pill key={p.value} active={preset === p.value} onClick={() => setPreset(p.value)}>
               {p.label}
-            </button>
+            </Pill>
           ))}
         </div>
 
         {/* Custom range pickers */}
         {preset === 'custom' && (
-          <div className="grid grid-cols-2 gap-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
+          <div className={cn(INSET, 'grid grid-cols-2 gap-2 p-3')}>
             <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
             <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </div>
         )}
 
-        <div className="text-center text-[11px] text-muted-foreground -mt-2">
+        <div className="-mt-3 text-center text-[11px] text-muted-foreground">
           {range.from.toLocaleDateString('fr-FR')} → {range.to.toLocaleDateString('fr-FR')}
         </div>
 
         {isLoading || !dash ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <>
             {/* Bénéfice headline */}
-            <div className={cn(
-              'rounded-2xl border-2 p-4',
-              benefitTone === 'emerald' ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50',
-            )}>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
-                Bénéfice période
-              </div>
-              <div className={cn(
-                'text-3xl font-extrabold tabular-nums',
-                benefitTone === 'emerald' ? 'text-emerald-700' : 'text-red-700',
-              )}>
+            <div className={cn('rounded-3xl p-5', benefitPositive ? 'bg-emerald-500/10' : 'bg-red-500/10')}>
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Bénéfice période</div>
+              <div className={cn('text-3xl font-extrabold tabular-nums', benefitPositive ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
                 {dash.benefit_total_xaf >= 0 ? '+' : ''}
                 {fmt(dash.benefit_total_xaf, 0)}
-                <span className="text-sm font-semibold text-muted-foreground ml-1">XAF</span>
+                <span className="ml-1 text-sm font-semibold text-muted-foreground">XAF</span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-1">
+              <div className="mt-1 text-[11px] text-muted-foreground">
                 = XAF reçu clients − coût XAF des USDT vendus pour les livrer
               </div>
             </div>
 
             {/* Volumes */}
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Volumes</h2>
-              <div className="grid grid-cols-2 gap-2">
-                <KpiCard
-                  label="Achat USDT"
-                  value={fmt(dash.purchases.total_usdt, 2)}
-                  unit="USDT"
-                  hint={`${dash.purchases.count} op · ${fmt(dash.purchases.total_xaf, 0)} XAF`}
-                  tone="violet"
-                />
-                <KpiCard
-                  label="Vente USDT"
-                  value={fmt(dash.sales.total_usdt, 2)}
-                  unit="USDT"
-                  hint={`${dash.sales.count} op · ${fmt(dash.sales.total_cny, 2)} CNY`}
-                  tone="amber"
-                />
+              <SectionTitle>Volumes</SectionTitle>
+              <div className="grid grid-cols-2 gap-2.5">
+                <KpiCard label="Achat USDT" value={fmt(dash.purchases.total_usdt, 2)} unit="USDT" hint={`${dash.purchases.count} op · ${fmt(dash.purchases.total_xaf, 0)} XAF`} tone="violet" />
+                <KpiCard label="Vente USDT" value={fmt(dash.sales.total_usdt, 2)} unit="USDT" hint={`${dash.sales.count} op · ${fmt(dash.sales.total_cny, 2)} CNY`} tone="amber" />
               </div>
             </section>
 
-            {/* Taux moyens pondérés (XAF/USDT, CNY/USDT) */}
+            {/* Taux moyens pondérés */}
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
-                Taux moyens pondérés
-              </h2>
-              <div className="grid grid-cols-2 gap-2">
-                <KpiCard
-                  label="Achat"
-                  value={fmt(dash.purchases.weighted_avg_rate_xaf_per_usdt, 4)}
-                  unit="XAF/USDT"
-                  tone="violet"
-                />
-                <KpiCard
-                  label="Vente"
-                  value={fmt(dash.sales.weighted_avg_rate_cny_per_usdt, 4)}
-                  unit="CNY/USDT"
-                  tone="amber"
-                />
+              <SectionTitle>Taux moyens pondérés</SectionTitle>
+              <div className="grid grid-cols-2 gap-2.5">
+                <KpiCard label="Achat" value={fmt(dash.purchases.weighted_avg_rate_xaf_per_usdt, 4)} unit="XAF/USDT" tone="violet" />
+                <KpiCard label="Vente" value={fmt(dash.sales.weighted_avg_rate_cny_per_usdt, 4)} unit="CNY/USDT" tone="amber" />
               </div>
             </section>
 
-            {/* Taux XAF/CNY (revient / client / marge) avec format dual */}
+            {/* Taux XAF/CNY (revient / client / marge) */}
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
-                Taux XAF / CNY
-              </h2>
-              <div className="grid grid-cols-2 gap-2">
+              <SectionTitle>Taux XAF / CNY</SectionTitle>
+              <div className="grid grid-cols-2 gap-2.5">
                 <RateCardXafCny label="Revient" xafPerCny={revientXafPerCny} tone="emerald" />
                 <RateCardXafCny label="Client" xafPerCny={clientRateXafPerCny} tone="orange" />
                 {margePerCny !== null && (
-                  <div className="col-span-2 bg-gradient-to-br from-emerald-50 to-amber-50 border border-emerald-200 rounded-2xl p-3.5">
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-700 mb-1">
-                      Marge par CNY livré
-                    </div>
-                    <div className={cn(
-                      'text-[18px] font-extrabold tabular-nums',
-                      margePerCny >= 0 ? 'text-emerald-700' : 'text-red-700',
-                    )}>
+                  <div className="col-span-2 rounded-2xl bg-emerald-500/10 p-4">
+                    <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Marge par CNY livré</div>
+                    <div className={cn('text-[18px] font-extrabold tabular-nums', margePerCny >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
                       {margePerCny >= 0 ? '+' : ''}
                       {fmt(margePerCny, 4)}
-                      <span className="text-xs font-semibold text-muted-foreground ml-1">XAF / CNY livré</span>
+                      <span className="ml-1 text-xs font-semibold text-muted-foreground">XAF / CNY livré</span>
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-1">
-                      = Taux client − Taux de revient
-                    </div>
+                    <div className="mt-1 text-[10px] text-muted-foreground">= Taux client − Taux de revient</div>
                   </div>
                 )}
               </div>
@@ -324,34 +274,18 @@ export function MobileTreasuryDashboard() {
 
             {/* WAC + stocks */}
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Stock & capital</h2>
-              <div className="grid grid-cols-2 gap-2">
-                <KpiCard
-                  label="WAC USDT"
-                  value={fmt(dash.wac_usdt_current, 4)}
-                  unit="XAF/USDT"
-                  tone="emerald"
-                />
-                <KpiCard
-                  label="Stock USDT"
-                  value={fmt(dash.stock_usdt, 2)}
-                  unit="USDT"
-                  tone={dash.is_stock_usdt_negative ? 'red' : 'neutral'}
-                />
-                <KpiCard
-                  label="Capital immobilisé"
-                  value={fmt(dash.capital_immobilized_current_xaf, 0)}
-                  unit="XAF"
-                  hint="USDT × WAC + CNY × taux"
-                  tone="neutral"
-                />
+              <SectionTitle>Stock & capital</SectionTitle>
+              <div className="grid grid-cols-2 gap-2.5">
+                <KpiCard label="WAC USDT" value={fmt(dash.wac_usdt_current, 4)} unit="XAF/USDT" tone="emerald" />
+                <KpiCard label="Stock USDT" value={fmt(dash.stock_usdt, 2)} unit="USDT" tone={dash.is_stock_usdt_negative ? 'red' : 'neutral'} />
+                <div className="col-span-2">
+                  <KpiCard label="Capital immobilisé" value={fmt(dash.capital_immobilized_current_xaf, 0)} unit="XAF" hint="USDT × WAC + CNY × taux" tone="neutral" />
+                </div>
               </div>
               {dash.is_stock_usdt_negative && (
-                <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-[12px] text-red-700">
-                    Stock USDT négatif. Cherche un achat manquant à enregistrer.
-                  </span>
+                <div className="mt-2.5 flex items-start gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                  <span className="text-[12px] text-red-700 dark:text-red-300">Stock USDT négatif. Cherche un achat manquant à enregistrer.</span>
                 </div>
               )}
             </section>
@@ -359,30 +293,28 @@ export function MobileTreasuryDashboard() {
             {/* WAC chart */}
             {wacSeries && wacSeries.length > 1 && (
               <section>
-                <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
-                  Évolution WAC USDT
-                </h2>
-                <div className="bg-white border border-border rounded-2xl p-3">
+                <SectionTitle>Évolution WAC USDT</SectionTitle>
+                <div className="rounded-2xl border border-border bg-card p-3">
                   <ResponsiveContainer width="100%" height={180}>
                     <LineChart data={wacSeries.map((p) => ({
                       ...p,
                       label: new Date(p.at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
                     }))}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 10', 'dataMax + 10']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+                      <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" domain={['dataMin - 10', 'dataMax + 10']} />
                       <Tooltip
                         formatter={(v: number) => [`${fmt(v, 4)} XAF/USDT`, 'WAC']}
-                        labelStyle={{ fontSize: 12 }}
+                        labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
+                        contentStyle={{
+                          background: 'hsl(var(--popover))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: 12,
+                          fontSize: 12,
+                          color: 'hsl(var(--popover-foreground))',
+                        }}
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="wac"
-                        stroke="#a855f7"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
+                      <Line type="monotone" dataKey="wac" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: 'hsl(var(--primary))' }} activeDot={{ r: 5 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -391,55 +323,44 @@ export function MobileTreasuryDashboard() {
 
             {/* Top counterparties */}
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
-                Top fournisseurs USDT
-              </h2>
-              <TopList
-                rows={topSuppliers?.top ?? []}
-                rateLabel="XAF/USDT"
-                emptyText="Aucun fournisseur sur la période."
-              />
+              <SectionTitle>Top fournisseurs USDT</SectionTitle>
+              <TopList rows={topSuppliers?.top ?? []} rateLabel="XAF/USDT" emptyText="Aucun fournisseur sur la période." />
             </section>
 
             <section>
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
-                Top acheteurs CNY
-              </h2>
-              <TopList
-                rows={topBuyers?.top ?? []}
-                rateLabel="CNY/USDT"
-                emptyText="Aucun acheteur sur la période."
-              />
+              <SectionTitle>Top acheteurs CNY</SectionTitle>
+              <TopList rows={topBuyers?.top ?? []} rateLabel="CNY/USDT" emptyText="Aucun acheteur sur la période." />
             </section>
 
             {/* Quick links */}
-            <section className="grid grid-cols-3 gap-2 pt-2">
-              <button
-                onClick={() => navigate('/m/more/treasury/purchase')}
-                className="bg-violet-600 text-white rounded-xl py-3 flex flex-col items-center gap-1 active:opacity-80"
-              >
-                <ArrowDownToLine className="w-5 h-5" />
-                <span className="text-[11px] font-bold">Achat</span>
-              </button>
-              <button
-                onClick={() => navigate('/m/more/treasury/sale')}
-                className="bg-amber-500 text-white rounded-xl py-3 flex flex-col items-center gap-1 active:opacity-80"
-              >
-                <ArrowUpFromLine className="w-5 h-5" />
-                <span className="text-[11px] font-bold">Vente</span>
-              </button>
-              <button
-                onClick={() => navigate('/m/more/treasury/operations')}
-                className="bg-slate-700 text-white rounded-xl py-3 flex flex-col items-center gap-1 active:opacity-80"
-              >
-                <History className="w-5 h-5" />
-                <span className="text-[11px] font-bold">Historique</span>
-              </button>
+            <section className="grid grid-cols-3 gap-2.5">
+              <QuickLink icon={ArrowDownToLine} label="Achat" tone="violet" onClick={() => navigate('/m/more/treasury/purchase')} />
+              <QuickLink icon={ArrowUpFromLine} label="Vente" tone="amber" onClick={() => navigate('/m/more/treasury/sale')} />
+              <QuickLink icon={History} label="Historique" tone="neutral" onClick={() => navigate('/m/more/treasury/operations')} />
             </section>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+function QuickLink({
+  icon,
+  label,
+  tone,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  tone: 'violet' | 'amber' | 'neutral';
+  onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} className={cn(SOFT_CARD, 'flex flex-col items-center gap-2 py-3.5 transition active:scale-[0.98]')}>
+      <IconChip icon={icon} tone={tone} size="sm" />
+      <span className="text-[11px] font-bold text-foreground">{label}</span>
+    </button>
   );
 }
 
@@ -460,33 +381,33 @@ function TopList({
   emptyText: string;
 }) {
   if (!rows || rows.length === 0) {
-    return <div className="text-center text-muted-foreground text-[12px] py-4">{emptyText}</div>;
+    return <div className="py-4 text-center text-[12px] text-muted-foreground">{emptyText}</div>;
   }
   return (
-    <div className="bg-white rounded-2xl border border-border divide-y divide-border/60 overflow-hidden">
+    <div className="divide-y divide-border/60 overflow-hidden rounded-3xl border border-border bg-card">
       {rows.map((r, i) => (
-        <div key={r.id} className="p-3 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-muted text-foreground flex items-center justify-center text-[12px] font-bold">
-            #{i + 1}
+        <div key={r.id} className="flex items-center gap-3 p-3.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[12px] font-bold text-foreground">
+            {i + 1}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[14px] truncate">{r.display_name}</div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[14px] font-semibold text-foreground">{r.display_name}</div>
             <div className="text-[11px] text-muted-foreground">
               {r.operation_count} op · {fmt(r.total_usdt, 2)} USDT
             </div>
           </div>
           <div className="text-right">
-            <div className="font-bold text-[13px] tabular-nums">{fmt(r.weighted_avg_rate, 4)}</div>
+            <div className="text-[13px] font-bold tabular-nums text-foreground">{fmt(r.weighted_avg_rate, 4)}</div>
             <div className="text-[10px] text-muted-foreground">{rateLabel}</div>
           </div>
           <div
             className={cn(
-              'text-right tabular-nums w-12 text-[11px] font-bold',
+              'w-12 text-right text-[11px] font-bold tabular-nums',
               Math.abs(r.deviation_pct) < 0.5
                 ? 'text-muted-foreground'
                 : r.deviation_pct > 0
-                ? 'text-red-600'
-                : 'text-emerald-600',
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-emerald-600 dark:text-emerald-400',
             )}
             title="Écart vs moyenne période"
           >
