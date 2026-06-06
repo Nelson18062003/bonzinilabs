@@ -5,6 +5,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
 import { Segmented } from '@/components/treasury/Segmented';
+import { SelectField } from '@/components/treasury/SelectField';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -170,8 +171,6 @@ export function MobileNewPurchase() {
   const updateSplit = (key: string, patch: Partial<SplitRow>) =>
     setSplits((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
-  const selectCls = 'w-full h-11 px-3 rounded-xl border border-border bg-card text-[15px]';
-
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title="Nouvel achat USDT" showBack backTo="/m/more/treasury" />
@@ -181,12 +180,12 @@ export function MobileNewPurchase() {
         <div>
           <label className="mb-1.5 block text-[13px] font-semibold">Fournisseur</label>
           <div className="flex gap-2">
-            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className={cn(selectCls, 'flex-1')}>
-              <option value="">Sélectionner…</option>
-              {(suppliers ?? []).map((s) => (
-                <option key={s.id} value={s.id}>{s.short_id} · {s.display_name}</option>
-              ))}
-            </select>
+            <SelectField
+              className="flex-1"
+              value={supplierId}
+              onChange={setSupplierId}
+              options={(suppliers ?? []).map((s) => ({ value: s.id, label: `${s.short_id} · ${s.display_name}` }))}
+            />
             <button
               type="button"
               onClick={() => setShowNewSupplier((v) => !v)}
@@ -212,12 +211,11 @@ export function MobileNewPurchase() {
           <label className="mb-1.5 block text-[13px] font-semibold">Compte XAF débité</label>
           {accountMode === 'single' ? (
             <>
-              <select value={singleAccountId} onChange={(e) => setSingleAccountId(e.target.value)} className={selectCls}>
-                <option value="">Sélectionner…</option>
-                {(xafAccounts ?? []).map((a) => (
-                  <option key={a.id} value={a.id}>{a.label}</option>
-                ))}
-              </select>
+              <SelectField
+                value={singleAccountId}
+                onChange={setSingleAccountId}
+                options={(xafAccounts ?? []).map((a) => ({ value: a.id, label: a.label }))}
+              />
               <LinkButton onClick={() => setAccountMode('multi')}>
                 <Plus className="h-3.5 w-3.5" /> Répartir sur plusieurs comptes
               </LinkButton>
@@ -234,12 +232,12 @@ export function MobileNewPurchase() {
                       </button>
                     )}
                   </div>
-                  <select value={row.accountId} onChange={(e) => updateSplit(row.key, { accountId: e.target.value })} className={selectCls}>
-                    <option value="">Choisir le compte…</option>
-                    {(xafAccounts ?? []).map((a) => (
-                      <option key={a.id} value={a.id}>{a.label}</option>
-                    ))}
-                  </select>
+                  <SelectField
+                    placeholder="Choisir le compte…"
+                    value={row.accountId}
+                    onChange={(v) => updateSplit(row.key, { accountId: v })}
+                    options={(xafAccounts ?? []).map((a) => ({ value: a.id, label: a.label }))}
+                  />
                   <AmountField label="Montant débité" currency="XAF" value={row.amount} onValueChange={(v) => updateSplit(row.key, { amount: v })} allowDecimal decimals={0} max={null} />
                 </div>
               ))}
