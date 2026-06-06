@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { validateUploadFile } from '@/lib/utils';
 import { compressImage } from '@/lib/imageCompression';
+import { signStored } from '@/lib/signedUrls';
 import i18n from '@/i18n';
 
 // Cache configuration for performance
@@ -144,14 +145,12 @@ export function usePaymentDetail(paymentId: string | undefined) {
 
       const payment = data as Payment;
 
-      // Generate signed URL for beneficiary QR code if stored as path
-      if (payment.beneficiary_qr_code_url?.startsWith('payment-proofs/')) {
-        const storagePath = payment.beneficiary_qr_code_url.replace('payment-proofs/', '');
-        const { data: signedData } = await supabase.storage
-          .from('payment-proofs')
-          .createSignedUrl(storagePath, 3600); // 1 hour expiry
-
-        payment.beneficiary_qr_code_url = signedData?.signedUrl || payment.beneficiary_qr_code_url;
+      // Mint a fresh signed URL for the beneficiary QR. signStored heals raw
+      // paths AND values mistakenly persisted as signed/public URLs.
+      if (payment.beneficiary_qr_code_url) {
+        payment.beneficiary_qr_code_url =
+          (await signStored(supabase.storage, payment.beneficiary_qr_code_url)) ||
+          payment.beneficiary_qr_code_url;
       }
 
       return payment;
@@ -193,23 +192,13 @@ export function usePaymentProofs(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      // Generate signed URLs for all proofs
+      // Mint fresh signed URLs for every proof (heals raw paths and any value
+      // mistakenly stored as a signed/public URL).
       const proofsWithSignedUrls = await Promise.all(
-        (data as PaymentProof[]).map(async (proof) => {
-          // Check if file_url is a storage path (starts with 'payment-proofs/')
-          if (proof.file_url?.startsWith('payment-proofs/')) {
-            const storagePath = proof.file_url.replace('payment-proofs/', '');
-            const { data: signedData } = await supabase.storage
-              .from('payment-proofs')
-              .createSignedUrl(storagePath, 3600); // 1 hour expiry
-
-            return {
-              ...proof,
-              file_url: signedData?.signedUrl || proof.file_url,
-            };
-          }
-          return proof;
-        })
+        (data as PaymentProof[]).map(async (proof) => ({
+          ...proof,
+          file_url: (await signStored(supabase.storage, proof.file_url)) || proof.file_url,
+        })),
       );
 
       return proofsWithSignedUrls;
@@ -499,25 +488,20 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      // Fetch client info and signed URL in parallel (saves ~300ms per open)
-      const qrPath = payment.beneficiary_qr_code_url?.startsWith('payment-proofs/')
-        ? payment.beneficiary_qr_code_url.replace('payment-proofs/', '')
-        : null;
-
-      const [clientResult, signedUrlResult] = await Promise.all([
+      // Fetch client info and a FRESH signed QR URL in parallel (saves ~300ms
+      // per open). signStored heals raw paths and any signed/public URL.
+      const [clientResult, signedQr] = await Promise.all([
         supabaseAdmin
           .from('clients')
           .select('user_id, first_name, last_name, phone, company_name')
           .eq('user_id', payment.user_id)
           .maybeSingle(),
-        qrPath
-          ? supabaseAdmin.storage.from('payment-proofs').createSignedUrl(qrPath, 3600)
-          : Promise.resolve({ data: null }),
+        signStored(supabaseAdmin.storage, payment.beneficiary_qr_code_url),
       ]);
 
       return {
         ...payment,
-        beneficiary_qr_code_url: signedUrlResult.data?.signedUrl || payment.beneficiary_qr_code_url,
+        beneficiary_qr_code_url: signedQr || payment.beneficiary_qr_code_url,
         profiles: clientResult.data,
       };
     },
@@ -675,18 +659,13 @@ export function useAdminPaymentProofs(paymentId: string | undefined) {
 
       if (error) throw error;
 
-      // Generate signed URLs for all proofs
+      // Mint fresh signed URLs for every proof (heals raw paths and any value
+      // mistakenly stored as a signed/public URL).
       const proofsWithSignedUrls = await Promise.all(
-        (data as PaymentProof[]).map(async (proof) => {
-          if (proof.file_url?.startsWith('payment-proofs/')) {
-            const storagePath = proof.file_url.replace('payment-proofs/', '');
-            const { data: signedData } = await supabaseAdmin.storage
-              .from('payment-proofs')
-              .createSignedUrl(storagePath, 3600);
-            return { ...proof, file_url: signedData?.signedUrl || proof.file_url };
-          }
-          return proof;
-        })
+        (data as PaymentProof[]).map(async (proof) => ({
+          ...proof,
+          file_url: (await signStored(supabaseAdmin.storage, proof.file_url)) || proof.file_url,
+        })),
       );
 
       return proofsWithSignedUrls;

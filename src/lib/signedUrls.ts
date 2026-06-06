@@ -3,32 +3,78 @@ import { supabase } from '@/integrations/supabase/client';
 // Default signed URL expiration time in seconds (1 hour)
 const DEFAULT_EXPIRY = 3600;
 
+const STORAGE_BUCKETS = ['deposit-proofs', 'payment-proofs', 'cash-signatures'] as const;
+
 /**
- * Check if a URL is a storage path (bucket/path format) that needs signing
+ * Check if a value references one of our storage buckets (and therefore needs
+ * to be signed before display).
  */
 export function isStoragePath(url: string): boolean {
-  // Storage paths start with bucket names
-  return url.startsWith('deposit-proofs/') || 
-         url.startsWith('payment-proofs/') || 
-         url.startsWith('cash-signatures/');
+  return parseStoragePath(url) !== null;
 }
 
 /**
- * Parse a stored path into bucket and file path
+ * Extract { bucket, path } from ANY stored/displayed value that references one
+ * of our buckets:
+ *   - raw path:    "payment-proofs/beneficiary/<id>/qr.jpg"
+ *   - public URL:  "https://x/storage/v1/object/public/payment-proofs/.../qr.jpg"
+ *   - signed URL:  "https://x/storage/v1/object/sign/payment-proofs/.../qr.jpg?token=..."
+ *
+ * Crucially this lets us re-sign a value that was mistakenly stored as a signed
+ * URL: we drop the host AND the (expiring) "?token=..." query so the path is
+ * clean. Returns null when no known bucket is referenced.
  */
-export function parseStoragePath(storedPath: string): { bucket: string; path: string } | null {
-  const buckets = ['deposit-proofs', 'payment-proofs', 'cash-signatures'];
-  
-  for (const bucket of buckets) {
-    if (storedPath.startsWith(`${bucket}/`)) {
-      return {
-        bucket,
-        path: storedPath.substring(bucket.length + 1),
-      };
+export function parseStoragePath(stored: string): { bucket: string; path: string } | null {
+  for (const bucket of STORAGE_BUCKETS) {
+    const marker = `${bucket}/`;
+    const idx = stored.lastIndexOf(marker);
+    if (idx !== -1) {
+      const path = stored.slice(idx + marker.length).split('?')[0];
+      if (path) return { bucket, path };
     }
   }
-  
   return null;
+}
+
+/**
+ * Canonical "<bucket>/<path>" form to PERSIST in the database. Accepts a raw
+ * path, a public URL, or a (temporary) signed URL and strips the host + token,
+ * so we never store an expiring URL. Returns the input unchanged when it does
+ * not reference a known bucket (e.g. a legacy external URL).
+ *
+ * Use this at every write site that saves a QR / proof URL.
+ */
+export function toStoredPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = parseStoragePath(value);
+  return parsed ? `${parsed.bucket}/${parsed.path}` : value;
+}
+
+/**
+ * Heal-on-read signer: given any stored/displayed value, extract the storage
+ * path and mint a FRESH signed URL with the provided client's storage. Works
+ * for raw paths, public URLs and (expired) signed URLs alike, so rows that were
+ * previously corrupted with a signed URL display correctly again.
+ *
+ * Pass `supabase.storage` for the client app, `supabaseAdmin.storage` for admin.
+ */
+export async function signStored(
+  storage: typeof supabase.storage,
+  value: string | null | undefined,
+  expiresIn: number = DEFAULT_EXPIRY,
+): Promise<string | null> {
+  if (!value) return null;
+  const parsed = parseStoragePath(value);
+  if (!parsed) {
+    // Unknown form: keep a usable external URL, otherwise nothing to show.
+    return value.startsWith('http') ? value : null;
+  }
+  const { data, error } = await storage.from(parsed.bucket).createSignedUrl(parsed.path, expiresIn);
+  if (error) {
+    console.error('[signStored] failed to sign', parsed, error);
+    return null;
+  }
+  return data.signedUrl;
 }
 
 /**

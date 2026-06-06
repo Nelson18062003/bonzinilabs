@@ -63,10 +63,27 @@ interface Props {
   onQrRemove?: () => void;
   /** Existing stored QR (edit mode) so we can show "has QR". */
   hasStoredQr?: boolean;
+  /** Signed URL of the already-saved QR, so edit mode can PREVIEW it
+   *  (instead of a generic placeholder icon). */
+  storedQrUrl?: string | null;
 }
 
 const inputCls =
   'w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary';
+
+/** Preview of the already-saved QR; falls back to a generic icon if the
+ *  signed URL fails to load. */
+function StoredQr({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <QrCode className="w-10 h-10 text-muted-foreground" />
+      </div>
+    );
+  }
+  return <img src={src} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />;
+}
 
 export function BeneficiaryForm({
   values,
@@ -76,6 +93,7 @@ export function BeneficiaryForm({
   onQrSelect,
   onQrRemove,
   hasStoredQr,
+  storedQrUrl,
 }: Props) {
   const { t } = useTranslation('client');
   const [touched, setTouched] = useState(false);
@@ -166,10 +184,12 @@ export function BeneficiaryForm({
       {isAlipayWechat && onQrSelect && (
         <div>
           <label className="text-sm font-medium mb-1 block">{t('beneficiaries.fields.qrCode')}</label>
-          {qrPreview || hasStoredQr ? (
+          {qrPreview || storedQrUrl || hasStoredQr ? (
             <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-border">
               {qrPreview ? (
                 <img src={qrPreview} alt="" className="w-full h-full object-cover" />
+              ) : storedQrUrl ? (
+                <StoredQr src={storedQrUrl} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted">
                   <QrCode className="w-10 h-10 text-muted-foreground" />

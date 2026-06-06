@@ -17,6 +17,7 @@ import type {
   AdminCreateDepositData,
 } from '@/types/deposit';
 import { compressImage } from '@/lib/imageCompression';
+import { signStored } from '@/lib/signedUrls';
 
 async function getAdminUser() {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser();
@@ -668,18 +669,8 @@ export function useAdminDeleteProof() {
 // ── Helper: Generate signed URL for proof viewing ────────────
 
 export async function getProofSignedUrl(fileUrl: string): Promise<string | null> {
-  if (!fileUrl) return null;
-  // Already a usable signed URL (legacy rows) → use as-is.
-  if (fileUrl.includes('/object/sign/')) return fileUrl;
-  // Accept both the stored path ("deposit-proofs/<uid>/...") and any legacy
-  // full URL (e.g. public URL from when the bucket was public) that still
-  // contains the bucket segment — take everything after the last occurrence.
-  const path = fileUrl.includes('deposit-proofs/')
-    ? fileUrl.split('deposit-proofs/').pop()!
-    : fileUrl;
-  const { data, error } = await supabaseAdmin.storage
-    .from('deposit-proofs')
-    .createSignedUrl(path, 3600);
-  if (error) return null;
-  return data.signedUrl;
+  // signStored extracts the storage path from a raw path, a public URL OR a
+  // (possibly expired) signed URL, then mints a fresh signed URL — so rows
+  // previously corrupted with a signed URL heal on read.
+  return signStored(supabaseAdmin.storage, fileUrl);
 }
