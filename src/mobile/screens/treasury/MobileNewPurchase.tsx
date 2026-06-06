@@ -3,7 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, Plus, Trash2, ChevronDown } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
-import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { MoneyField } from '@/components/treasury/MoneyField';
 import { Segmented } from '@/components/treasury/Segmented';
 import { SelectField } from '@/components/treasury/SelectField';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -238,7 +239,7 @@ export function MobileNewPurchase() {
                     onChange={(v) => updateSplit(row.key, { accountId: v })}
                     options={(xafAccounts ?? []).map((a) => ({ value: a.id, label: a.label }))}
                   />
-                  <AmountField label="Montant débité" currency="XAF" value={row.amount} onValueChange={(v) => updateSplit(row.key, { amount: v })} allowDecimal decimals={0} max={null} />
+                  <MoneyField label="Montant débité" currency="XAF" value={row.amount} onValueChange={(v) => updateSplit(row.key, { amount: v })} allowDecimal decimals={0} max={null} />
                 </div>
               ))}
               <button
@@ -266,13 +267,13 @@ export function MobileNewPurchase() {
               {showEntryModes && <Segmented value={singleMode} onChange={setSingleMode} options={SINGLE_MODES} />}
 
               {(singleMode === 'xaf_usdt' || singleMode === 'xaf_rate') && (
-                <AmountField label="XAF payé" currency="XAF" value={xafAmount} onValueChange={setXafAmount} allowDecimal decimals={0} max={null} />
+                <MoneyField label="XAF payé" currency="XAF" value={xafAmount} onValueChange={setXafAmount} allowDecimal decimals={0} max={null} />
               )}
               {(singleMode === 'xaf_usdt' || singleMode === 'usdt_rate') && (
-                <AmountField label="USDT reçu" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
+                <MoneyField label="USDT reçu" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
               )}
               {(singleMode === 'xaf_rate' || singleMode === 'usdt_rate') && (
-                <AmountField label="Taux" currency="XAF/USDT" value={rate} onValueChange={setRate} allowDecimal decimals={4} max={null} />
+                <MoneyField label="Taux" currency="XAF/USDT" value={rate} onValueChange={setRate} allowDecimal decimals={4} max={null} />
               )}
 
               {singleMode === 'xaf_usdt' && <Computed label="Taux implicite" value={resolved.rate} unit="XAF/USDT" decimals={4} />}
@@ -297,9 +298,9 @@ export function MobileNewPurchase() {
                 ]}
               />
               {multiInput === 'usdt' ? (
-                <AmountField label="USDT reçu" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
+                <MoneyField label="USDT reçu" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
               ) : (
-                <AmountField label="Taux" currency="XAF/USDT" value={rate} onValueChange={setRate} allowDecimal decimals={4} max={null} />
+                <MoneyField label="Taux" currency="XAF/USDT" value={rate} onValueChange={setRate} allowDecimal decimals={4} max={null} />
               )}
               {multiInput === 'usdt' && <Computed label="Taux implicite" value={resolved.rate} unit="XAF/USDT" decimals={4} />}
               {multiInput === 'rate' && <Computed label="USDT reçu (calculé)" value={resolved.usdt} unit="USDT" decimals={4} />}
