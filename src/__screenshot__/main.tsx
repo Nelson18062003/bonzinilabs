@@ -33,6 +33,7 @@ import {
 } from '@/mobile/screens/treasury';
 import { DirectionA, DirectionB, DirectionC } from './directions';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
+import { MobileAnalyticsDashboard } from '@/mobile/screens/analytics';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -41,6 +42,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
   'dashboard-home': { Comp: MobileDashboard, route: '/m' },
+  analytics: { Comp: MobileAnalyticsDashboard, route: '/m/dashboard' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },
   dashboard: { Comp: MobileTreasuryDashboard, route: '/m/more/treasury/dashboard' },
   'new-purchase': { Comp: MobileNewPurchase, route: '/m/more/treasury/purchase' },
