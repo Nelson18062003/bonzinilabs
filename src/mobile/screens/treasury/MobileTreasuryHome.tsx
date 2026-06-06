@@ -40,27 +40,36 @@ function CurrencyCard({
   tone: 'violet' | 'amber' | 'orange';
   warning?: boolean;
 }) {
-  const toneClasses: Record<string, string> = {
-    violet: 'border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10',
-    amber: 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10',
-    orange: 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10',
+  const dotClasses: Record<string, string> = {
+    violet: 'bg-bonzini-violet',
+    amber: 'bg-bonzini-amber',
+    orange: 'bg-bonzini-orange',
   };
   const accentClasses: Record<string, string> = {
-    violet: 'text-violet-700 dark:text-violet-300',
-    amber: 'text-amber-700 dark:text-amber-300',
-    orange: 'text-orange-700 dark:text-orange-300',
+    violet: 'text-bonzini-violet',
+    amber: 'text-bonzini-amber',
+    orange: 'text-bonzini-orange',
   };
+  // Compact for the at-a-glance overview (exact balances live on the Accounts
+  // screen) so large XAF figures never overflow the 3-column grid.
+  const display =
+    Math.abs(amount) >= 1_000_000
+      ? `${(amount / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M`
+      : formatNumber(amount, 0);
 
   return (
-    <div className={cn('rounded-2xl border p-3.5', toneClasses[tone])}>
-      <div className="flex items-center justify-between mb-1">
-        <span className={cn('text-[11px] font-bold uppercase tracking-wide', accentClasses[tone])}>{label}</span>
-        {warning && <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
+    <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', warning ? 'bg-red-500' : dotClasses[tone])} />
+        <span className={cn('text-[10px] font-bold uppercase tracking-wider', warning ? 'text-red-600 dark:text-red-400' : accentClasses[tone])}>
+          {label}
+        </span>
+        {warning && <AlertTriangle className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
       </div>
-      <div className={cn('text-[20px] font-extrabold', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
-        {formatNumber(amount, unit === 'USDT' ? 2 : 0)}
+      <div className={cn('text-[17px] font-extrabold leading-none tracking-tight tabular-nums', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+        {display}
       </div>
-      <div className="text-[10px] text-muted-foreground mt-0.5">
+      <div className="mt-1.5 text-[10px] text-muted-foreground">
         {unit} · {accountCount} compte{accountCount > 1 ? 's' : ''}
       </div>
     </div>
@@ -170,15 +179,15 @@ export function MobileTreasuryHome() {
         </section>
 
         {/* WAC banner */}
-        <section className="bg-gradient-to-br from-amber-50 dark:from-amber-500/10 to-violet-50 dark:to-violet-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">WAC USDT courant</div>
-              <div className="text-2xl font-extrabold text-foreground">
-                {formatNumber(wac, 4)} <span className="text-sm font-semibold text-muted-foreground">XAF / USDT</span>
-              </div>
+        <section className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-bonzini-amber">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">WAC USDT courant</div>
+            <div className="text-2xl font-extrabold leading-tight tracking-tight tabular-nums text-foreground">
+              {formatNumber(wac, 4)} <span className="text-sm font-semibold text-muted-foreground">XAF/USDT</span>
             </div>
-            <TrendingUp className="w-8 h-8 text-amber-500" />
           </div>
         </section>
 
