@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import {
@@ -24,6 +24,22 @@ import { formatDate } from '@/lib/formatters';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
+
+// Vignette de preuve : affiche l'image signée et retombe sur une icône si le
+// chargement échoue (URL absente/expirée, fichier illisible…).
+function ProofThumb({ url, alt, fallback }: { url: string | null | undefined; alt: string; fallback: ReactNode }) {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) return <>{fallback}</>;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="w-full h-full object-cover"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export function MobileProofsScreen() {
   const { t } = useTranslation('common');
@@ -121,16 +137,11 @@ export function MobileProofsScreen() {
               >
                 {/* Thumbnail */}
                 <div className="aspect-square bg-muted flex items-center justify-center relative">
-                  {isImage(proof.file_name) ? (
-                    <img
-                      src={proof.file_url}
-                      alt={proof.file_name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    getFileIcon(proof.file_name)
-                  )}
+                  <ProofThumb
+                    url={isImage(proof.file_name) ? proof.signedUrl : null}
+                    alt={proof.file_name}
+                    fallback={getFileIcon(proof.file_name)}
+                  />
                   <div className="absolute top-2 right-2">
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/90 text-white font-medium">
                       Dépôt
@@ -172,9 +183,9 @@ export function MobileProofsScreen() {
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4">
-            {selectedProof?.file_url && isImage(selectedProof.file_name) && (
+            {selectedProof?.signedUrl && isImage(selectedProof.file_name) && (
               <img
-                src={selectedProof.file_url}
+                src={selectedProof.signedUrl}
                 alt={selectedProof.file_name}
                 className="w-full rounded-xl"
               />
@@ -200,8 +211,9 @@ export function MobileProofsScreen() {
 
           <DrawerFooter className="flex-row gap-3">
             <button
-              onClick={() => window.open(selectedProof?.file_url, '_blank')}
-              className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center gap-2 font-medium"
+              onClick={() => selectedProof?.signedUrl && window.open(selectedProof.signedUrl, '_blank')}
+              disabled={!selectedProof?.signedUrl}
+              className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center gap-2 font-medium disabled:opacity-50"
             >
               <Download className="w-5 h-5" />
               {t('download', { defaultValue: 'Télécharger' })}

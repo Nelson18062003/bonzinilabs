@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
+import { signStored } from '@/lib/signedUrls';
 import i18n from '@/i18n';
 import type {
   BeneficiaryMode,
@@ -115,22 +116,18 @@ async function uploadQr(
   return `${QR_BUCKET}/${filePath}`;
 }
 
-/** Replace stored QR paths with short-lived signed URLs for display. */
+/** Replace stored QR paths with short-lived signed URLs for display.
+ *  signStored heals raw paths AND any value mistakenly stored as a signed/
+ *  public URL, so old corrupted rows display again. */
 async function withSignedQr<T extends { qr_code_url: string | null }>(
   client: typeof supabase | typeof supabaseAdmin,
   rows: T[],
 ): Promise<T[]> {
   return Promise.all(
-    rows.map(async (b) => {
-      if (b.qr_code_url?.startsWith(`${QR_BUCKET}/`)) {
-        const storagePath = b.qr_code_url.replace(`${QR_BUCKET}/`, '');
-        const { data: signed } = await client.storage
-          .from(QR_BUCKET)
-          .createSignedUrl(storagePath, 3600);
-        return { ...b, qr_code_url: signed?.signedUrl || b.qr_code_url };
-      }
-      return b;
-    }),
+    rows.map(async (b) => ({
+      ...b,
+      qr_code_url: (await signStored(client.storage, b.qr_code_url)) || b.qr_code_url,
+    })),
   );
 }
 

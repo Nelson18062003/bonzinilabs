@@ -25,6 +25,7 @@ import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
 import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { signStored } from '@/lib/signedUrls';
 import { toast } from 'sonner';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
@@ -245,14 +246,8 @@ export function MobilePaymentsScreen() {
       // Generate signed URLs for QR codes
       const entries: BatchPaymentEntry[] = await Promise.all(
         payments.map(async (p) => {
-          let qrUrl = p.beneficiary_qr_code_url;
-          if (qrUrl && qrUrl.startsWith('payment-proofs/')) {
-            const storagePath = qrUrl.replace('payment-proofs/', '');
-            const { data: signedData } = await supabaseAdmin.storage
-              .from('payment-proofs')
-              .createSignedUrl(storagePath, 3600);
-            qrUrl = signedData?.signedUrl || null;
-          }
+          // Heals raw paths AND values stored as signed/public URLs.
+          const qrUrl = await signStored(supabaseAdmin.storage, p.beneficiary_qr_code_url);
           return {
             id: p.id,
             reference: p.reference,

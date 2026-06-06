@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
 import { uploadWithRetry } from '@/lib/storageUpload';
+import { signStored } from '@/lib/signedUrls';
 import i18n from '@/i18n';
 import type {
   Deposit,
@@ -99,12 +100,8 @@ export function useDepositProofs(depositId: string | undefined) {
 }
 
 async function getClientProofSignedUrl(fileUrl: string): Promise<string | null> {
-  const path = fileUrl.replace('deposit-proofs/', '');
-  const { data, error } = await supabase.storage
-    .from('deposit-proofs')
-    .createSignedUrl(path, 3600);
-  if (error) return null;
-  return data?.signedUrl || null;
+  // Heals raw paths AND values stored as signed/public URLs (see signStored).
+  return signStored(supabase.storage, fileUrl);
 }
 
 export function useDepositTimeline(depositId: string | undefined) {

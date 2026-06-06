@@ -9,6 +9,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
+import { toStoredPath } from '@/lib/signedUrls';
 import {
   useAdminPaymentDetail,
   useAdminPaymentTimeline,
@@ -292,7 +293,9 @@ export function MobilePaymentDetail() {
     }
 
     try {
-      let qrUrl = beneficiaryForm.beneficiary_qr_code_url;
+      // Normalize to the durable "<bucket>/<path>" form: never persist the
+      // temporary signed URL that the detail hook injected for display.
+      let qrUrl = toStoredPath(beneficiaryForm.beneficiary_qr_code_url) ?? '';
 
       if (qrFile && (payment.method === 'alipay' || payment.method === 'wechat')) {
         setIsUploadingQr(true);
