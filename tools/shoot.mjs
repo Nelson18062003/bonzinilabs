@@ -10,7 +10,7 @@ const iPhone = devices['iPhone 14'];
 const BASE = 'http://localhost:8080/screenshot.html';
 const SCREENS = process.env.ONLY
   ? process.env.ONLY.split(',')
-  : ['home', 'dashboard', 'new-purchase', 'new-sale', 'purchases', 'sales', 'operations', 'accounts', 'inventory', 'counterparties'];
+  : ['home', 'dashboard', 'new-purchase', 'new-sale', 'purchases', 'sales', 'operations', 'accounts', 'inventory', 'counterparties', 'balance-dashboard', 'purchase-detail', 'sale-detail', 'counterparty-edit'];
 const THEMES = ['light', 'dark'];
 
 const CORS = {
@@ -80,8 +80,14 @@ function respond(url, postData) {
   if (url.includes('/treasury_account_balances')) return balances;
   if (url.includes('/treasury_accounts')) return accounts;
   if (url.includes('/treasury_counterparties')) return counterparties;
-  if (url.includes('/usdt_purchases')) return purchases;
-  if (url.includes('/usdt_sales')) return sales;
+  if (url.includes('/usdt_purchases')) {
+    const m = url.match(/id=eq\.([^&]+)/);
+    return m ? (purchases.find((p) => p.id === decodeURIComponent(m[1])) ?? null) : purchases;
+  }
+  if (url.includes('/usdt_sales')) {
+    const m = url.match(/id=eq\.([^&]+)/);
+    return m ? (sales.find((s) => s.id === decodeURIComponent(m[1])) ?? null) : sales;
+  }
   if (url.includes('/treasury_ledger_entries')) return [];
   return [];
 }
@@ -91,6 +97,7 @@ const FONT = process.env.FONT || 'inter';
 const VIEWPORTS = {
   iphone: { ...iPhone },
   sm: { viewport: { width: 360, height: 820 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: iPhone.userAgent },
+  max: { viewport: { width: 430, height: 932 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: iPhone.userAgent },
 };
 
 const browser = await chromium.launch();

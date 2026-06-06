@@ -25,7 +25,7 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={cn('flex gap-1 rounded-xl bg-muted p-1', className)}>
+    <div className={cn('flex gap-1 rounded-2xl bg-muted p-1', className)}>
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -35,8 +35,8 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             aria-pressed={active}
             className={cn(
-              'flex min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-1 py-2 text-center transition-colors',
-              active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground active:bg-card/40',
+              'flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-1 py-2 text-center transition-colors',
+              active ? 'bg-card text-foreground ring-1 ring-border' : 'text-muted-foreground active:bg-card/40',
             )}
           >
             <span className="w-full truncate text-[12px] font-semibold leading-tight">{o.label}</span>

@@ -92,7 +92,7 @@ export function MobileCounterpartiesScreen() {
               <div className="flex gap-2.5 pt-1">
                 <button
                   onClick={resetForm}
-                  className="h-[52px] flex-1 rounded-full bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
+                  className="h-[52px] flex-1 rounded-2xl bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
                 >
                   Annuler
                 </button>

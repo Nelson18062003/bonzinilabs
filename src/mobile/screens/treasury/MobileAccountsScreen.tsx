@@ -212,7 +212,7 @@ function AdjustForm({
       <div className="flex gap-2.5">
         <button
           onClick={onClose}
-          className="h-12 flex-1 rounded-full bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
+          className="h-12 flex-1 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
         >
           Annuler
         </button>
@@ -220,7 +220,7 @@ function AdjustForm({
           onClick={handleSubmit}
           disabled={!valid || adjust.isPending}
           className={cn(
-            'flex h-12 flex-1 items-center justify-center rounded-full text-[14px] font-bold transition active:scale-[0.99]',
+            'flex h-12 flex-1 items-center justify-center rounded-2xl text-[14px] font-bold transition active:scale-[0.99]',
             !valid || adjust.isPending
               ? 'bg-muted text-muted-foreground'
               : direction === 'credit'

@@ -16,11 +16,13 @@ import { cn } from '@/lib/utils';
 
 export type Tone = 'violet' | 'amber' | 'orange' | 'neutral' | 'danger';
 
-/** Elevated surface: rounded-3xl, soft shadow, no border. The signature card. */
-export const SOFT_CARD =
-  'rounded-3xl bg-card shadow-[0_4px_20px_-6px_rgba(15,23,42,0.10)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5)]';
+/**
+ * Primary surface: rounded-3xl, flat, separated by a hairline border (NO drop
+ * shadow). The "épuré" fintech look — nothing floats, the figures lead.
+ */
+export const SOFT_CARD = 'rounded-3xl bg-card border border-border';
 
-/** Inset/nested surface (fields, split rows) — filled, no shadow. */
+/** Inset/nested surface (fields, split rows) — filled, no border, no shadow. */
 export const INSET = 'rounded-2xl bg-muted/60';
 
 export const TONE_BG: Record<Tone, string> = {
@@ -126,7 +128,7 @@ export function FieldLabel({ children, className }: { children: React.ReactNode;
   return <label className={cn('mb-1.5 block text-[13px] font-semibold text-foreground', className)}>{children}</label>;
 }
 
-/** Soft rounded-full chip — the single chip language for filters/toggles/tabs. */
+/** Soft chip — the single chip language for filters/toggles/tabs. */
 export function Pill({
   active,
   onClick,
@@ -142,7 +144,7 @@ export function Pill({
     <button
       onClick={onClick}
       className={cn(
-        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-colors',
+        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[12px] font-semibold transition-colors',
         active ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
         className,
       )}
@@ -153,8 +155,9 @@ export function Pill({
 }
 
 /**
- * The signature dark charcoal pill — reserved for the ONE primary action of a
- * screen (form submit). Disabled & loading states are baked in.
+ * The signature dark charcoal button — reserved for the ONE primary action of a
+ * screen (form submit). Moderate radius (sophisticated, not a playful pill).
+ * Disabled & loading states are baked in.
  */
 export function PrimaryPill({
   children,
@@ -178,7 +181,7 @@ export function PrimaryPill({
       onClick={onClick}
       disabled={dead}
       className={cn(
-        'flex h-[52px] w-full items-center justify-center rounded-full text-[15px] font-bold transition active:scale-[0.99]',
+        'flex h-[52px] w-full items-center justify-center rounded-2xl text-[15px] font-bold transition active:scale-[0.99]',
         dead ? 'bg-muted text-muted-foreground' : 'bg-foreground text-background hover:opacity-90',
         className,
       )}
@@ -189,8 +192,8 @@ export function PrimaryPill({
 }
 
 /**
- * Soft pill secondary button (outlined-on-muted, rounded-full) — for the small
- * round "+" / icon affordances that sit beside fields.
+ * Soft secondary button — for the small "+" / icon affordances beside fields.
+ * Same radius/height as the fields so the row reads as one control group.
  */
 export function SoftIconButton({
   icon: Icon,

@@ -10,8 +10,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
 import '@/index.css';
 import {
@@ -25,10 +24,16 @@ import {
   MobileAccountsScreen,
   MobileInventoryScreen,
   MobileCounterpartiesScreen,
+  MobileCounterpartyEdit,
+  MobilePurchaseDetail,
+  MobileSaleDetail,
+  MobileBalanceDashboard,
 } from '@/mobile/screens/treasury';
 import { DirectionA, DirectionB, DirectionC } from './directions';
 
-const SCREENS: Record<string, { Comp: React.ComponentType; route: string }> = {
+// `path` (optional) renders the component inside a matching <Route> so
+// useParams() resolves — needed for the detail/edit screens.
+const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string }> = {
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
@@ -42,6 +47,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string }> = {
   accounts: { Comp: MobileAccountsScreen, route: '/m/more/treasury/accounts' },
   inventory: { Comp: MobileInventoryScreen, route: '/m/more/treasury/inventory' },
   counterparties: { Comp: MobileCounterpartiesScreen, route: '/m/more/treasury/counterparties' },
+  'balance-dashboard': { Comp: MobileBalanceDashboard, route: '/m/more/treasury/balance-dashboard' },
+  'purchase-detail': { Comp: MobilePurchaseDetail, route: '/m/more/treasury/purchases/p1', path: '/m/more/treasury/purchases/:operationId' },
+  'sale-detail': { Comp: MobileSaleDetail, route: '/m/more/treasury/sales/sa1', path: '/m/more/treasury/sales/:operationId' },
+  'counterparty-edit': { Comp: MobileCounterpartyEdit, route: '/m/more/treasury/counterparties/s1', path: '/m/more/treasury/counterparties/:counterpartyId' },
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -75,7 +84,13 @@ createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={qc}>
     <AdminAuthContext.Provider value={fakeAuth}>
       <MemoryRouter initialEntries={[entry.route]}>
-        <Screen />
+        {entry.path ? (
+          <Routes>
+            <Route path={entry.path} element={<Screen />} />
+          </Routes>
+        ) : (
+          <Screen />
+        )}
       </MemoryRouter>
     </AdminAuthContext.Provider>
   </QueryClientProvider>,

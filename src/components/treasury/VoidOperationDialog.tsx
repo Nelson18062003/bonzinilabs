@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
  * Shared confirmation sheet for voiding a treasury operation (purchase OR sale).
  * Replaces the verbatim-duplicated dialog that lived in both list screens.
  * Bottom-sheet on mobile, centered on larger screens; soft rounded surface,
- * danger icon chip, two rounded-full pills (keep / delete).
+ * danger icon chip, two rounded-2xl buttons (keep / delete).
  */
 export function VoidOperationDialog({ op, onClose }: { op: OperationRow; onClose: () => void }) {
   const [reason, setReason] = useState('');
@@ -54,7 +54,7 @@ export function VoidOperationDialog({ op, onClose }: { op: OperationRow; onClose
         <div className="flex gap-2.5">
           <button
             onClick={onClose}
-            className="h-[52px] flex-1 rounded-full bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
+            className="h-[52px] flex-1 rounded-2xl bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
           >
             Garder
           </button>
@@ -62,7 +62,7 @@ export function VoidOperationDialog({ op, onClose }: { op: OperationRow; onClose
             onClick={handleConfirm}
             disabled={!valid || voidOp.isPending}
             className={cn(
-              'flex h-[52px] flex-1 items-center justify-center rounded-full text-[15px] font-bold transition active:scale-[0.99]',
+              'flex h-[52px] flex-1 items-center justify-center rounded-2xl text-[15px] font-bold transition active:scale-[0.99]',
               valid && !voidOp.isPending ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-muted text-muted-foreground',
             )}
           >

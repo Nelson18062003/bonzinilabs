@@ -4,9 +4,9 @@ import { Loader2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { OperationListItem } from '@/components/treasury/OperationListItem';
 import { Segmented } from '@/components/treasury/Segmented';
+import { Pill } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryOperations } from '@/hooks/useTreasury';
-import { cn } from '@/lib/utils';
 
 type Filter = 'all' | 'purchase' | 'sale' | 'voided';
 type Preset = '7d' | '30d' | '90d';
@@ -63,16 +63,9 @@ export function MobileOperationsHistory() {
             { value: 'sale' as const, label: 'Ventes' },
             { value: 'voided' as const, label: 'Annulées' },
           ]).map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={cn(
-                'h-9 shrink-0 rounded-full px-4 text-[12px] font-semibold transition-colors',
-                filter === f.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
-              )}
-            >
+            <Pill key={f.value} active={filter === f.value} onClick={() => setFilter(f.value)}>
               {f.label}
-            </button>
+            </Pill>
           ))}
         </div>
 

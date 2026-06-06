@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Loader2, Trash2, Archive, AlertTriangle, ArchiveRestore } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
 import { PhoneInputWithCountry, TextField } from '@/components/form';
+import { PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -54,7 +54,7 @@ export function MobileCounterpartyEdit() {
       <div className="flex flex-col min-h-full bg-background">
         <MobileHeader title="Contrepartie" showBack />
         <div className="flex justify-center py-8">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -64,20 +64,17 @@ export function MobileCounterpartyEdit() {
     return (
       <div className="flex flex-col min-h-full bg-background">
         <MobileHeader title="Contrepartie" showBack />
-        <div className="text-center text-muted-foreground py-8">Introuvable.</div>
+        <div className="py-8 text-center text-muted-foreground">Introuvable.</div>
       </div>
     );
   }
 
   const isSupplier = cp.type === 'usdt_supplier';
-  const tone = isSupplier ? 'violet' : 'amber';
-  const toneClasses: Record<string, string> = {
-    violet: 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300',
-    amber: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
-  };
+  const toneBadge = isSupplier ? 'bg-violet-500/10 text-bonzini-violet' : 'bg-amber-500/10 text-bonzini-amber';
+  const nameValid = displayName.trim().length >= 2;
 
   const handleSave = async () => {
-    if (!displayName.trim() || displayName.trim().length < 2) return;
+    if (!nameValid) return;
     const result = await update.mutateAsync({
       id: cp.id,
       display_name: displayName.trim(),
@@ -105,103 +102,91 @@ export function MobileCounterpartyEdit() {
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title={cp.display_name} showBack backTo="/m/more/treasury/counterparties" />
 
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-5 py-5 space-y-4">
         {/* Header */}
-        <div className="bg-card rounded-2xl border border-border p-3.5 flex items-center justify-between">
+        <div className={cn(SOFT_CARD, 'flex items-center justify-between p-4')}>
           <div>
-            <span className={cn('inline-block px-2 py-0.5 rounded-full text-[11px] font-bold', toneClasses[tone])}>
-              {cp.short_id}
-            </span>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              {isSupplier ? 'Fournisseur USDT' : 'Acheteur CNY'}
-            </div>
+            <span className={cn('inline-block rounded-lg px-2 py-1 text-[11px] font-bold', toneBadge)}>{cp.short_id}</span>
+            <div className="mt-1.5 text-[11px] text-muted-foreground">{isSupplier ? 'Fournisseur USDT' : 'Acheteur CNY'}</div>
           </div>
           {!cp.is_active && (
-            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-              <Archive className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-[10px] font-bold uppercase text-muted-foreground">
+              <Archive className="h-3 w-3" />
               Archivée
             </span>
           )}
         </div>
 
         {/* Form */}
-        <TextField label="Nom *" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-        <TextField label="Entreprise" value={legalName} onChange={(e) => setLegalName(e.target.value)} />
-        <PhoneInputWithCountry
-          label="Téléphone"
-          value={phone}
-          onValueChange={setPhone}
-          defaultDialCode={isSupplier ? '+237' : '+86'}
-        />
-        {!isSupplier && (
-          <TextField label="WeChat ID" value={wechat} onChange={(e) => setWechat(e.target.value)} />
-        )}
-        <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <div className="space-y-3">
+          <TextField label="Nom" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <TextField label="Entreprise" value={legalName} onChange={(e) => setLegalName(e.target.value)} />
+          <PhoneInputWithCountry label="Téléphone" value={phone} onValueChange={setPhone} defaultDialCode={isSupplier ? '+237' : '+86'} />
+          {!isSupplier && <TextField label="WeChat ID" value={wechat} onChange={(e) => setWechat(e.target.value)} />}
+          <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={update.isPending || !displayName.trim() || displayName.trim().length < 2}
-          className="w-full h-11 bg-violet-600 hover:bg-violet-700"
-        >
-          {update.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enregistrer les modifications'}
-        </Button>
+        <PrimaryPill onClick={handleSave} disabled={!nameValid} loading={update.isPending}>
+          Enregistrer les modifications
+        </PrimaryPill>
 
         {/* Archive / Reactivate */}
-        <Button
-          variant="outline"
+        <button
           onClick={handleToggleActive}
           disabled={update.isPending}
-          className="w-full h-10"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99] disabled:opacity-50"
         >
           {cp.is_active ? (
             <>
-              <Archive className="w-4 h-4 mr-2" />
+              <Archive className="h-4 w-4" />
               Archiver (masquer des listes)
             </>
           ) : (
             <>
-              <ArchiveRestore className="w-4 h-4 mr-2" />
+              <ArchiveRestore className="h-4 w-4" />
               Réactiver
             </>
           )}
-        </Button>
+        </button>
 
         {/* Delete section */}
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-3.5 mt-2">
-          {confirmDelete ? (
-            <>
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-red-700 dark:text-red-300" />
-                <span className="text-[13px] font-bold text-red-700 dark:text-red-300">Supprimer définitivement ?</span>
-              </div>
-              <p className="text-[12px] text-red-700 dark:text-red-300 mb-3">
-                Suppression possible uniquement si aucune opération n’est liée. Sinon, archive plutôt.
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)} className="flex-1">
-                  Annuler
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={del.isPending}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
-                >
-                  {del.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Supprimer'}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => setConfirmDelete(true)}
-              className="w-full border-red-300 dark:border-red-600/50 text-red-700 dark:text-red-300 hover:bg-red-100 dark:bg-red-500/20"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Supprimer définitivement
-            </Button>
-          )}
-        </div>
+        {confirmDelete ? (
+          <div className="space-y-3 rounded-2xl bg-red-500/10 p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <span className="text-[13px] font-bold text-red-700 dark:text-red-300">Supprimer définitivement ?</span>
+            </div>
+            <p className="text-[12px] leading-snug text-red-700 dark:text-red-300">
+              Suppression possible uniquement si aucune opération n’est liée. Sinon, archive plutôt.
+            </p>
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="h-12 flex-1 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={del.isPending}
+                className={cn(
+                  'flex h-12 flex-1 items-center justify-center rounded-2xl text-[14px] font-bold transition active:scale-[0.99]',
+                  del.isPending ? 'bg-muted text-muted-foreground' : 'bg-red-600 text-white hover:bg-red-700',
+                )}
+              >
+                {del.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-500/10 text-[14px] font-bold text-red-600 transition active:scale-[0.99] dark:text-red-400"
+          >
+            <Trash2 className="h-4 w-4" />
+            Supprimer définitivement
+          </button>
+        )}
       </div>
     </div>
   );
