@@ -87,6 +87,7 @@ function respond(url, postData) {
 }
 
 const SIZES = process.env.SIZES ? process.env.SIZES.split(',') : ['iphone'];
+const FONT = process.env.FONT || 'inter';
 const VIEWPORTS = {
   iphone: { ...iPhone },
   sm: { viewport: { width: 360, height: 820 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: iPhone.userAgent },
@@ -103,10 +104,10 @@ for (const size of SIZES) {
       const body = respond(req.url(), req.postData() ?? '');
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     });
-    const suffix = size === 'iphone' ? '' : `-${size}`;
+    const suffix = `${size === 'iphone' ? '' : `-${size}`}${FONT === 'dm' ? '-dm' : ''}`;
     for (const screen of SCREENS) {
       try {
-        await page.goto(`${BASE}?screen=${screen}&theme=${theme}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto(`${BASE}?screen=${screen}&theme=${theme}&font=${FONT}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(1200);
         await page.screenshot({ path: `shots/${screen}${suffix}-${theme}.png`, fullPage: true });
         console.log(`OK  ${screen}${suffix}-${theme}`);

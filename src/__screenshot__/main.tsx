@@ -44,6 +44,8 @@ const params = new URLSearchParams(window.location.search);
 const screenKey = params.get('screen') ?? 'home';
 const theme = params.get('theme') ?? 'light';
 if (theme === 'dark') document.documentElement.classList.add('dark');
+// Preview-only font toggle (?font=dm) to compare DM Sans vs the default Inter.
+if (params.get('font') === 'dm') document.documentElement.style.fontFamily = "'DM Sans', sans-serif";
 
 // Full-permission fake admin so permission guards pass.
 const fakeAuth = {

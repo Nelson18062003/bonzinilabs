@@ -4,6 +4,7 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { AmountField, OccurredAtField, PhoneInputWithCountry, TextField } from '@/components/form';
+import { Segmented } from '@/components/treasury/Segmented';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -193,26 +194,15 @@ export function MobileNewPurchase() {
         {/* 3. Comptes XAF débités (AVANT la saisie du deal) */}
         <div>
           <label className="block text-[13px] font-semibold mb-1.5">Compte(s) XAF débité(s) *</label>
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
-            <button
-              onClick={() => setAccountMode('single')}
-              className={cn(
-                'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors',
-                accountMode === 'single' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
-              )}
-            >
-              Compte unique
-            </button>
-            <button
-              onClick={() => setAccountMode('multi')}
-              className={cn(
-                'h-10 rounded-xl text-[13px] font-semibold border-2 transition-colors',
-                accountMode === 'multi' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
-              )}
-            >
-              Multi-comptes
-            </button>
-          </div>
+          <Segmented
+            className="mb-2"
+            value={accountMode}
+            onChange={setAccountMode}
+            options={[
+              { value: 'single', label: 'Compte unique' },
+              { value: 'multi', label: 'Multi-comptes' },
+            ]}
+          />
 
           {accountMode === 'single' ? (
             <select
@@ -291,21 +281,12 @@ export function MobileNewPurchase() {
 
           {accountMode === 'single' ? (
             <>
-              <div className="grid grid-cols-3 gap-1.5 mb-3">
-                {SINGLE_MODES.map((m) => (
-                  <button
-                    key={m.value}
-                    onClick={() => setSingleMode(m.value)}
-                    className={cn(
-                      'h-12 rounded-xl text-[11px] font-semibold border-2 transition-colors flex flex-col items-center justify-center px-1',
-                      singleMode === m.value ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
-                    )}
-                  >
-                    <span>{m.label}</span>
-                    <span className="text-[10px] opacity-70 font-normal">{m.hint}</span>
-                  </button>
-                ))}
-              </div>
+              <Segmented
+                className="mb-3"
+                value={singleMode}
+                onChange={setSingleMode}
+                options={SINGLE_MODES}
+              />
               <div className="space-y-3">
                 {(singleMode === 'xaf_usdt' || singleMode === 'xaf_rate') && (
                   <AmountField label="XAF payé *" currency="XAF" value={xafAmount} onValueChange={setXafAmount} allowDecimal decimals={0} max={null} />
@@ -326,26 +307,15 @@ export function MobileNewPurchase() {
               <p className="text-[12px] text-muted-foreground mb-2">
                 Le XAF total ({fmt(multiTotalXaf, 0)}) vient de tes comptes. Saisis juste l’USDT reçu OU le taux.
               </p>
-              <div className="grid grid-cols-2 gap-1.5 mb-3">
-                <button
-                  onClick={() => setMultiInput('usdt')}
-                  className={cn(
-                    'h-10 rounded-xl text-[12px] font-semibold border-2 transition-colors',
-                    multiInput === 'usdt' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
-                  )}
-                >
-                  Je saisis l’USDT reçu
-                </button>
-                <button
-                  onClick={() => setMultiInput('rate')}
-                  className={cn(
-                    'h-10 rounded-xl text-[12px] font-semibold border-2 transition-colors',
-                    multiInput === 'rate' ? 'border-violet-600 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'border-border bg-card text-muted-foreground',
-                  )}
-                >
-                  Je saisis le taux
-                </button>
-              </div>
+              <Segmented
+                className="mb-3"
+                value={multiInput}
+                onChange={setMultiInput}
+                options={[
+                  { value: 'usdt', label: 'Je saisis l’USDT reçu' },
+                  { value: 'rate', label: 'Je saisis le taux' },
+                ]}
+              />
               <div className="space-y-3">
                 {multiInput === 'usdt' ? (
                   <AmountField label="USDT reçu *" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} allowDecimal decimals={4} max={null} />
@@ -371,7 +341,10 @@ export function MobileNewPurchase() {
         <Button
           onClick={handleSubmit}
           disabled={!valid || submit.isPending}
-          className="w-full h-12 text-base font-bold rounded-xl bg-violet-600 hover:bg-violet-700"
+          className={cn(
+            'h-12 w-full rounded-xl text-base font-bold',
+            valid ? 'bg-bonzini-violet text-white hover:opacity-90' : 'bg-muted text-muted-foreground',
+          )}
         >
           {submit.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enregistrer l’achat'}
         </Button>
