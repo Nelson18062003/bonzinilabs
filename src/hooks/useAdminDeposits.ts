@@ -668,7 +668,15 @@ export function useAdminDeleteProof() {
 // ── Helper: Generate signed URL for proof viewing ────────────
 
 export async function getProofSignedUrl(fileUrl: string): Promise<string | null> {
-  const path = fileUrl.replace('deposit-proofs/', '');
+  if (!fileUrl) return null;
+  // Already a usable signed URL (legacy rows) → use as-is.
+  if (fileUrl.includes('/object/sign/')) return fileUrl;
+  // Accept both the stored path ("deposit-proofs/<uid>/...") and any legacy
+  // full URL (e.g. public URL from when the bucket was public) that still
+  // contains the bucket segment — take everything after the last occurrence.
+  const path = fileUrl.includes('deposit-proofs/')
+    ? fileUrl.split('deposit-proofs/').pop()!
+    : fileUrl;
   const { data, error } = await supabaseAdmin.storage
     .from('deposit-proofs')
     .createSignedUrl(path, 3600);
