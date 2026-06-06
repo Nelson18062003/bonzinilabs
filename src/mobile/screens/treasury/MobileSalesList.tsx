@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowUpFromLine, Trash2, Ban, ChevronRight, AlertTriangle, SlidersHorizontal, X } from 'lucide-react';
+import { Loader2, AlertTriangle, SlidersHorizontal, X } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { DateField, TextField } from '@/components/form';
+import { OperationListItem } from '@/components/treasury/OperationListItem';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useTreasuryAccounts, useTreasuryOperations, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
@@ -31,16 +32,6 @@ function getRange(preset: Preset, customFrom?: string, customTo?: string): { fro
 
 function fmt(n: number, decimals = 2): string {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 export function MobileSalesList() {
@@ -239,7 +230,7 @@ export function MobileSalesList() {
         ) : (
           <div className="space-y-2">
             {sales.map((op) => (
-              <SaleCard
+              <OperationListItem
                 key={op.id}
                 op={op}
                 canDelete={isSuperAdmin}
@@ -252,71 +243,6 @@ export function MobileSalesList() {
       </div>
 
       {confirmDelete && <DeleteDialog op={confirmDelete} onClose={() => setConfirmDelete(null)} />}
-    </div>
-  );
-}
-
-function SaleCard({
-  op,
-  canDelete,
-  onDelete,
-  onClick,
-}: {
-  op: Extract<OperationRow, { kind: 'sale' }>;
-  canDelete: boolean;
-  onDelete: () => void;
-  onClick: () => void;
-}) {
-  const voided = !!op.voided_at;
-
-  return (
-    <div
-      className={cn(
-        'bg-card rounded-2xl border p-3.5 flex items-center gap-3',
-        voided ? 'border-border opacity-60' : 'border-amber-200 dark:border-amber-500/30',
-      )}
-    >
-      <div
-        className={cn(
-          'w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0',
-          voided ? 'bg-slate-400 dark:bg-slate-600' : 'bg-amber-500',
-        )}
-      >
-        {voided ? <Ban className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
-      </div>
-
-      <button onClick={onClick} className="flex-1 text-left min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-[14px] truncate">{op.buyer?.display_name ?? '—'}</span>
-          {voided && (
-            <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
-              Supprimée
-            </span>
-          )}
-        </div>
-        <div className="text-[11px] text-muted-foreground">
-          {fmtDate(op.occurred_at)}
-          {op.cny_account?.label ? ` · ${op.cny_account.label}` : ''}
-        </div>
-        <div className="text-[12px] mt-0.5 tabular-nums">
-          <span className="font-bold">{fmt(Number(op.usdt_amount), 4)} USDT</span>
-          <span className="text-muted-foreground"> → </span>
-          <span className="font-bold">{fmt(Number(op.cny_amount), 2)} CNY</span>
-          <span className="text-muted-foreground ml-1">@ {fmt(Number(op.implicit_rate), 4)}</span>
-        </div>
-      </button>
-
-      {canDelete && !voided ? (
-        <button
-          onClick={onDelete}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-500/10 flex-shrink-0"
-          aria-label="Supprimer"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      ) : (
-        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      )}
     </div>
   );
 }

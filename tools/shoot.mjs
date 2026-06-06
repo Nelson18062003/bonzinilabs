@@ -86,27 +86,36 @@ function respond(url, postData) {
   return [];
 }
 
+const SIZES = process.env.SIZES ? process.env.SIZES.split(',') : ['iphone'];
+const VIEWPORTS = {
+  iphone: { ...iPhone },
+  sm: { viewport: { width: 360, height: 820 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: iPhone.userAgent },
+};
+
 const browser = await chromium.launch();
-for (const theme of THEMES) {
-  const ctx = await browser.newContext({ ...iPhone, colorScheme: theme });
-  const page = await ctx.newPage();
-  await page.route('**/*supabase.co/**', (route) => {
-    const req = route.request();
-    if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS, body: '' });
-    const body = respond(req.url(), req.postData() ?? '');
-    return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
-  });
-  for (const screen of SCREENS) {
-    try {
-      await page.goto(`${BASE}?screen=${screen}&theme=${theme}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(1300);
-      await page.screenshot({ path: `shots/${screen}-${theme}.png`, fullPage: true });
-      console.log(`OK  ${screen}-${theme}`);
-    } catch (e) {
-      console.log(`ERR ${screen}-${theme}: ${e.message}`);
+for (const size of SIZES) {
+  for (const theme of THEMES) {
+    const ctx = await browser.newContext({ ...VIEWPORTS[size], colorScheme: theme });
+    const page = await ctx.newPage();
+    await page.route('**/*supabase.co/**', (route) => {
+      const req = route.request();
+      if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS, body: '' });
+      const body = respond(req.url(), req.postData() ?? '');
+      return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    });
+    const suffix = size === 'iphone' ? '' : `-${size}`;
+    for (const screen of SCREENS) {
+      try {
+        await page.goto(`${BASE}?screen=${screen}&theme=${theme}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(1200);
+        await page.screenshot({ path: `shots/${screen}${suffix}-${theme}.png`, fullPage: true });
+        console.log(`OK  ${screen}${suffix}-${theme}`);
+      } catch (e) {
+        console.log(`ERR ${screen}${suffix}-${theme}: ${e.message}`);
+      }
     }
+    await ctx.close();
   }
-  await ctx.close();
 }
 await browser.close();
 console.log('done');
