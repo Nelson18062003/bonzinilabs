@@ -69,6 +69,15 @@ export function useSupplier360(supplierId: string | undefined) {
   });
 }
 
+export function usePurchaseOrder(poId: string | undefined) {
+  return useQuery({
+    queryKey: [KEY, 'po', poId],
+    queryFn: () => unwrap(proc.purchaseOrderDetail({ p_purchase_order_id: poId! })),
+    enabled: !!poId,
+    staleTime: 15_000,
+  });
+}
+
 // ─── Écritures (mutations) ──────────────────────────────────
 // Fabrique générique : appelle une RPC d'écriture, toast + invalidation.
 function useProcMutation<TArgs, TOut>(

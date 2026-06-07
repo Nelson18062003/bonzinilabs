@@ -96,7 +96,7 @@ export function MobileSupplier360() {
                   {data.purchase_orders.map((po) => (
                     <button
                       key={po.purchase_order_id}
-                      onClick={() => navigate(`/m/more/procurement/missions/${po.mission_id}`)}
+                      onClick={() => navigate(`/m/more/procurement/po/${po.purchase_order_id}`)}
                       className={cn(SOFT_CARD, 'flex w-full items-center gap-3.5 p-4 text-left active:scale-[0.99]')}
                     >
                       <IconChip icon={Package} tone="neutral" />

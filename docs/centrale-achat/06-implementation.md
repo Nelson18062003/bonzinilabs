@@ -169,9 +169,27 @@ affichent l'état vide, le code étant correct & buildé).
   **à l'écran** ; reste à le brancher au **PDF**.
 - Routes `/m/more/procurement/missions[/new|/:id]` + tuile « Missions » sur le control tower.
 
+### Tranche « fournisseurs » ✅
+RPC `proc_list_suppliers` + `MobileSuppliersList` (recherche) + `MobileSupplierEdit` (création/édition)
++ `MobileSupplier360` (fiche + commandes). Routes + tuile.
+
+### Tranche « chaîne de saisie » ✅ (le cœur : enregistrer une mission de bout en bout)
+RPC `proc_purchase_order_detail` + hook + écrans :
+- `MobileNewPurchaseOrder` (depuis le détail mission) : **picker fournisseur + quick-create**, devise,
+  total, acompte %, incoterm, date prévue, notes.
+- `MobilePurchaseOrderDetail` : entête (total/reste/acompte/incoterm/production) + lignes + paiements +
+  QC/commission, avec actions **+ Ligne** / **+ Paiement**.
+- `MobileAddOrderLine` : produit/SKU (qté, unité, prix, MOQ, délai, HS) + total ligne live.
+- `MobileRecordPayment` (**l'argent**) : type (acompte/solde/final/extra), montant, devise, moyen,
+  payé par, date (back-dating), réf, notes. Toast du **gate souple** (avertissement si solde sans QC).
+  *Mode attestation au MVP ; le lien rail (picker de paiement) viendra ensuite.*
+- Détail mission : commandes **cliquables** + bouton **+ Commande** ; fiche fournisseur → détail commande.
+
+**On peut désormais enregistrer une mission complète** (mission → fournisseur → commande → lignes →
+paiements) et la voir agrégée dans le rapport à l'écran. Vérifié : type-check + build + 118 tests.
+
 ### Reste à builder (UI)
-- Brancher `MobileMissionDetail` → **`generate-report-pdf`** (partage WhatsApp/email).
-- Écrans : fiche fournisseur 360, détail commande (PO).
-- **Formulaires de saisie** restants (fournisseur, commande, ligne, **paiement**, commission, QC,
-  production, frais) + **upload de preuve** (bucket `procurement-docs`) + **dictée Mola**.
+- Brancher `MobileMissionDetail` → **`generate-report-pdf`** (aperçu + partage WhatsApp/email).
+- Formulaires restants : **commission**, **QC**, **production**, **frais** + **upload de preuve**
+  (bucket `procurement-docs`) + **dictée Mola** + lien **rail** (picker de paiement).
 - Outils Mola dédiés + parité + eval ; puis **saisie réelle mai 2026**.

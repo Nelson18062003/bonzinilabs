@@ -194,6 +194,31 @@ export interface ProcOutstandingRow {
   status: ProcPoStatus;
 }
 
+export interface ProcPurchaseOrderDetail {
+  purchase_order: {
+    id: string;
+    reference: string;
+    currency: ProcCurrency;
+    total_amount: number;
+    deposit_pct: number;
+    incoterm: ProcIncoterm | null;
+    status: ProcPoStatus;
+    expected_ready_date: string | null;
+    total_cbm: number | null;
+    notes: string | null;
+    paid_amount: number;
+    outstanding_amount: number;
+    mission: { id: string; reference: string; label: string };
+    supplier: { id: string; display_name: string; supplier_kind: ProcSupplierKind };
+    production_status: ProcProductionStatus | null;
+  };
+  order_lines: ProcOrderLine[];
+  payments: ProcPaymentRead[];
+  qc: ProcQcRead[];
+  production_events: Array<{ id: string; status: ProcProductionStatus; occurred_at: string; note: string | null }>;
+  commission: ProcCommissionRead | null;
+}
+
 export interface ProcMissionSummary {
   id: string;
   reference: string;
@@ -401,4 +426,7 @@ export const proc = {
 
   listSuppliers: (a: { p_search?: string | null; p_active_only?: boolean } = {}) =>
     callProcRpc<{ suppliers: ProcSupplierListItem[] }>('proc_list_suppliers', a),
+
+  purchaseOrderDetail: (a: { p_purchase_order_id: string }) =>
+    callProcRpc<ProcPurchaseOrderDetail>('proc_purchase_order_detail', a),
 };

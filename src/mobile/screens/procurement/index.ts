@@ -7,3 +7,7 @@ export { MobileMissionDetail } from './MobileMissionDetail';
 export { MobileSuppliersList } from './MobileSuppliersList';
 export { MobileSupplierEdit } from './MobileSupplierEdit';
 export { MobileSupplier360 } from './MobileSupplier360';
+export { MobileNewPurchaseOrder } from './MobileNewPurchaseOrder';
+export { MobilePurchaseOrderDetail } from './MobilePurchaseOrderDetail';
+export { MobileRecordPayment } from './MobileRecordPayment';
+export { MobileAddOrderLine } from './MobileAddOrderLine';

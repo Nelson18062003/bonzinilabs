@@ -1,4 +1,4 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Package, AlertTriangle } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -26,7 +26,9 @@ function TotalRow({ label, by, accent }: { label: string; by: ByCurrency; accent
 
 export function MobileMissionDetail() {
   const { missionId } = useParams<{ missionId: string }>();
+  const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
+  const canManage = hasPermission('canManageProcurement');
   const { data, isLoading, isError } = useMissionReport(missionId);
 
   if (!hasPermission('canViewProcurement')) {
@@ -75,7 +77,7 @@ export function MobileMissionDetail() {
 
             {/* Fournisseurs → commandes */}
             <section>
-              <SectionTitle>Fournisseurs & commandes</SectionTitle>
+              <SectionTitle action={canManage ? { label: '+ Commande', onClick: () => navigate(`/m/more/procurement/missions/${m.id}/po/new`) } : undefined}>Fournisseurs & commandes</SectionTitle>
               {data.suppliers.length === 0 ? (
                 <div className="py-6 text-center text-[12px] text-muted-foreground">Aucune commande enregistrée.</div>
               ) : (
@@ -88,7 +90,7 @@ export function MobileMissionDetail() {
                         <span className="text-[11px] text-muted-foreground">{s.city ?? ''}</span>
                       </div>
                       {s.purchase_orders.map((po) => (
-                        <div key={po.purchase_order_id} className={cn(SOFT_CARD, 'p-4')}>
+                        <button key={po.purchase_order_id} onClick={() => navigate(`/m/more/procurement/po/${po.purchase_order_id}`)} className={cn(SOFT_CARD, 'block w-full p-4 text-left active:scale-[0.99]')}>
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[13px] font-bold text-foreground">{po.reference}</span>
                             <span className={cn(
@@ -153,7 +155,7 @@ export function MobileMissionDetail() {
                               )}
                             </div>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ))}

@@ -505,3 +505,82 @@ END;
 $$;
 COMMENT ON FUNCTION public.proc_list_suppliers(TEXT, BOOLEAN) IS
   '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Lister / rechercher les fournisseurs"}';
+
+-- ── RPC: proc_purchase_order_detail ── (commande + lignes/paiements/qc/prod/commission)
+CREATE OR REPLACE FUNCTION public.proc_purchase_order_detail(
+  p_purchase_order_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id  UUID;
+  v_po       JSONB;
+  v_lines    JSONB;
+  v_payments JSONB;
+  v_qc       JSONB;
+  v_prod     JSONB;
+  v_comm     JSONB;
+  v_paid     NUMERIC;
+BEGIN
+  v_user_id := auth.uid();
+  IF NOT public.can_access_procurement(v_user_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Acces centrale d''achat refuse');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.proc_purchase_orders WHERE id = p_purchase_order_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Commande introuvable');
+  END IF;
+
+  SELECT COALESCE(SUM(amount), 0) INTO v_paid
+  FROM public.proc_supplier_payments WHERE purchase_order_id = p_purchase_order_id AND voided_at IS NULL;
+
+  SELECT jsonb_build_object(
+    'id', po.id, 'reference', po.reference, 'currency', po.currency, 'total_amount', po.total_amount,
+    'deposit_pct', po.deposit_pct, 'incoterm', po.incoterm, 'status', po.status,
+    'expected_ready_date', po.expected_ready_date, 'total_cbm', po.total_cbm, 'notes', po.notes,
+    'paid_amount', v_paid::numeric(20,8), 'outstanding_amount', (po.total_amount - v_paid)::numeric(20,8),
+    'mission', jsonb_build_object('id', m.id, 'reference', m.reference, 'label', m.label),
+    'supplier', jsonb_build_object('id', s.id, 'display_name', s.display_name, 'supplier_kind', s.supplier_kind),
+    'production_status', (SELECT pe.status FROM public.proc_production_events pe
+                         WHERE pe.purchase_order_id = po.id ORDER BY pe.occurred_at DESC LIMIT 1)
+  ) INTO v_po
+  FROM public.proc_purchase_orders po
+  JOIN public.proc_missions m ON m.id = po.mission_id
+  JOIN public.proc_suppliers s ON s.id = po.supplier_id
+  WHERE po.id = p_purchase_order_id;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', id, 'description', description, 'specs', specs, 'quantity', quantity, 'unit', unit,
+    'unit_price', unit_price, 'line_total', line_total, 'moq', moq, 'lead_time_days', lead_time_days,
+    'hs_code', hs_code) ORDER BY created_at), '[]'::jsonb)
+  INTO v_lines FROM public.proc_order_lines WHERE purchase_order_id = p_purchase_order_id;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', id, 'reference', reference, 'leg', leg, 'amount', amount, 'currency', currency, 'method', method,
+    'occurred_at', occurred_at, 'settlement_mode', settlement_mode, 'rail_payment_id', rail_payment_id,
+    'paid_by', paid_by, 'external_ref', external_ref) ORDER BY occurred_at), '[]'::jsonb)
+  INTO v_payments FROM public.proc_supplier_payments WHERE purchase_order_id = p_purchase_order_id AND voided_at IS NULL;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', id, 'inspection_type', inspection_type, 'inspector_kind', inspector_kind, 'inspector_name', inspector_name,
+    'aql_level', aql_level, 'result', result, 'occurred_at', occurred_at) ORDER BY occurred_at), '[]'::jsonb)
+  INTO v_qc FROM public.proc_qc_inspections WHERE purchase_order_id = p_purchase_order_id AND voided_at IS NULL;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', id, 'status', status, 'occurred_at', occurred_at, 'note', note) ORDER BY occurred_at DESC), '[]'::jsonb)
+  INTO v_prod FROM public.proc_production_events WHERE purchase_order_id = p_purchase_order_id;
+
+  SELECT jsonb_build_object(
+    'id', id, 'input_mode', input_mode, 'input_value', input_value, 'computed_amount', computed_amount,
+    'computed_pct', computed_pct, 'currency', currency, 'client_visible', client_visible)
+  INTO v_comm FROM public.proc_commissions WHERE purchase_order_id = p_purchase_order_id ORDER BY created_at DESC LIMIT 1;
+
+  RETURN jsonb_build_object('success', true, 'purchase_order', v_po, 'order_lines', v_lines,
+    'payments', v_payments, 'qc', v_qc, 'production_events', v_prod, 'commission', v_comm);
+END;
+$$;
+COMMENT ON FUNCTION public.proc_purchase_order_detail(UUID) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Detail d''une commande fournisseur"}';
