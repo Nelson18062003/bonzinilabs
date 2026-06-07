@@ -1,0 +1,77 @@
+name: Mola — porte qualité
+
+# Mesure la qualité de Mola (juge-LLM sur la grille métier) et FERME la porte si une
+# modif du prompt/playbook fait baisser la note vs eval/assistant/quality-baseline.json.
+#
+# Tourne :
+#  - sur les PR qui touchent le prompt/playbook ou la boucle d'éval ;
+#  - à la demande (workflow_dispatch).
+#
+# Secrets requis (Settings → Secrets and variables → Actions) :
+#  - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (récolte des vraies conversations, LECTURE)
+#  - ANTHROPIC_API_KEY                         (le juge)
+# Si un secret manque, le job ne bloque PAS la PR (étape ignorée + avertissement) :
+# la mécanique pure reste validée par les tests vitest (gate.test.ts / judge.test.ts).
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/admin-assistant/**'
+      - 'eval/assistant/**'
+      - '.github/workflows/mola-quality-gate.yml'
+  workflow_dispatch:
+    inputs:
+      update_baseline:
+        description: "Figer la mesure courante comme nouvelle référence"
+        type: boolean
+        default: false
+
+jobs:
+  # 1) Toujours : valider la logique PURE (notation, porte) — sans secret, déterministe.
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Tests de la boucle qualité (juge + porte)
+        run: npx vitest run eval/assistant/judge.test.ts eval/assistant/gate.test.ts
+
+  # 2) Si les secrets sont présents : mesure live + porte anti-régression.
+  gate:
+    runs-on: ubuntu-latest
+    needs: unit
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Avertir si secrets manquants
+        if: ${{ env.ANTHROPIC_API_KEY == '' || env.SUPABASE_SERVICE_ROLE_KEY == '' }}
+        run: echo "::warning::Secrets qualité absents — mesure live ignorée (la logique pure reste testée). Ajoute SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY et ANTHROPIC_API_KEY pour activer la porte."
+
+      - name: Setup Deno
+        if: ${{ env.ANTHROPIC_API_KEY != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Mesurer + porte anti-régression
+        if: ${{ env.ANTHROPIC_API_KEY != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' && github.event.inputs.update_baseline != 'true' }}
+        run: deno run --allow-net --allow-env --allow-read --allow-write eval/assistant/quality-run.ts --gate
+
+      - name: (Manuel) Figer la nouvelle référence
+        if: ${{ env.ANTHROPIC_API_KEY != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' && github.event.inputs.update_baseline == 'true' }}
+        run: deno run --allow-net --allow-env --allow-read --allow-write eval/assistant/quality-run.ts --update-baseline
+
+      - name: Publier le rapport qualité (artifact)
+        if: ${{ always() && env.ANTHROPIC_API_KEY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mola-quality-report
+          path: eval/assistant/reports/
+          if-no-files-found: ignore
