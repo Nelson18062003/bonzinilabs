@@ -38,6 +38,7 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
+import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
 import { MobileAnalyticsDashboard } from '@/mobile/screens/analytics';
 
@@ -55,6 +56,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'mola-screen': { Comp: MolaScreen, route: '/' },
   'mola-real': { Comp: MobileAssistantScreen, route: '/m/more/assistant' },
   flyer: { Comp: Flyer, route: '/' },
+  kit: { Comp: Kit, route: '/' },
   'dashboard-home': { Comp: MobileDashboard, route: '/m' },
   analytics: { Comp: MobileAnalyticsDashboard, route: '/m/dashboard' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },

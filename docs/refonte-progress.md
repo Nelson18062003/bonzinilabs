@@ -26,7 +26,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 ### Phase 0 — Fondations
 - [x] **P0.1** Tokens couleurs centraux → `src/mobile/designKit/` (tokens.ts: SURFACE/TEXT/pills/TONE ; status.ts: depositStatusTone/paymentStatusTone/clientStatusTone + roleMeta unique ; methods.ts: PAYMENT_METHOD + LOGO_PATH alipay/wechat/whatsapp ; cash=rouge aligné flyer). type-check OK.
 - [x] **P0.2** Kit UI → `src/mobile/designKit/components.tsx` (+ export depuis `index.ts`) : `Card` (ombre douce), `Holder` (pastille neutre + variante par `Tone`), `Avatar` (initiales), `Row` (sans filets), `Amount` (chiffre neutre + unité atténuée, `tabular-nums`), `PrimaryPill`/`SoftPill`, `StatusPill` (tone+label), `StatCard`, `Segmented`, `FormField`/`TextInput` (h-12 rounded), `BottomSheet` (overlay + fermeture backdrop/Échap/X + lock scroll), `ScreenLoader`/`ScreenError`, `SectionTitle`. Présentationnels, typés, dark mode via tokens. type-check + build OK.
-- [ ] **P0.3** Preview du kit dans le harness (`screen=kit`) + capture clair/sombre dans `docs/maquettes/`.
+- [x] **P0.3** Preview du kit dans le harness → `src/__screenshot__/kit.tsx` (un échantillon de CHAQUE composant sur le canvas Ofspace), enregistré dans `main.tsx` (clé `kit`, route `/`). Captures clair+sombre faites via le harness et copiées dans `docs/maquettes/` (`kit-light.png` / `kit-dark.png`). Rendu validé visuellement (langage Ofspace respecté, dark mode OK).
 
 ### Phase 1 — Couleurs unifiées (faible risque, fort impact)
 - [ ] **P1.1** Rôles admin : source unique → MobileAdminsScreen, MobileCreateAdmin, MobileAdminDetail importent la même.
@@ -52,6 +52,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 - (init) Audit livré, plan validé par l'utilisateur, run autonome lancé.
 - P0.1 ✅ designKit (tokens/status/methods) créé — source unique couleurs/statuts/rôles/méthodes. Aucun écran modifié (sûr). Prochaine : P0.2 composants du kit.
 - P0.2 ✅ Kit de composants partagés `designKit/components.tsx` (Card, Holder, Avatar, Row, Amount, PrimaryPill/SoftPill, StatusPill, StatCard, Segmented, FormField/TextInput, BottomSheet, ScreenLoader/ScreenError, SectionTitle) — patterns copiés de MobileAssistantScreen + flyer, réutilise tokens + `cn`. Aucun écran métier touché. type-check + build verts. Prochaine : P0.3 preview du kit dans le harness.
+- P0.3 ✅ Écran de preview `src/__screenshot__/kit.tsx` (galerie : un échantillon de chaque composant, StatusPill câblés sur les helpers de tons unifiés) + enregistré dans `main.tsx` (clé `kit`). Serveur `SCREENSHOT_MOCK=1` + `ONLY=kit FONT=dm node tools/shoot-dash.mjs` → captures clair+sombre OK, copiées dans `docs/maquettes/kit-light.png` + `kit-dark.png`. type-check + build verts. **Phase 0 terminée.** Prochaine : Phase 1 (P1.1 rôles admin, P1.2 statuts) puis migration module par module.
 
 ## Résumé matin
 _(à remplir en fin de run)_
