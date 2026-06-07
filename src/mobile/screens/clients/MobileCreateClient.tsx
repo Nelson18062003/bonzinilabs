@@ -2,28 +2,26 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCreateClient } from '@/hooks/useClientManagement';
-import { Loader2, Check, Copy } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  Card,
+  Holder,
+  Row,
+  FormField,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+} from '@/mobile/designKit';
+import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 
 // ============================================================
-// BONZINI ADMIN — FORMULAIRE NOUVEAU CLIENT (redesign)
+// BONZINI ADMIN — FORMULAIRE NOUVEAU CLIENT (redesign · design kit)
 // 3 étapes : Identité → Contact → Vérification
 // Pas de Genre, boutons toujours visibles, bottom nav masquée
 // ============================================================
-
-const V = '#A947FE'; // violet
-const G = '#F3A745'; // gold
-const O = '#FE560D'; // orange
-const GR = '#34d399'; // green
-
-const theme = {
-  bg: '#f8f6fa',
-  card: '#ffffff',
-  text: '#1a1028',
-  sub: '#7a7290',
-  dim: '#c4bdd0',
-  border: '#ebe6f0',
-  inputBg: '#f8f6fa',
-};
 
 const COUNTRY_CODES: { country: string; code: string; flag: string }[] = [
   // ─── CEMAC (en premier) ───
@@ -94,34 +92,14 @@ interface FormData {
   ville: string;
 }
 
-const baseInputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '16px 18px',
-  borderRadius: 12,
-  fontSize: 17,
-  fontWeight: 600,
-  color: theme.text,
-  fontFamily: "'DM Sans', sans-serif",
-  outline: 'none',
-  boxSizing: 'border-box',
-  transition: 'border-color 0.2s',
-  background: theme.inputBg,
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 15,
-  fontWeight: 700,
-  color: theme.text,
-  marginBottom: 6,
-  display: 'block',
-};
-
-const optStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 500,
-  color: theme.dim,
-  marginLeft: 4,
-};
+// Shared classes for the native <select> controls (no kit Select; matched to TextInput).
+const selectClass = cn(
+  'h-12 w-full rounded-2xl px-4 text-[16px] outline-none transition',
+  SURFACE.card,
+  SURFACE.shadow,
+  TEXT.strong,
+  'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+);
 
 export function MobileCreateClient() {
   const { t } = useTranslation('common');
@@ -138,7 +116,6 @@ export function MobileCreateClient() {
     pays: 'Cameroun',
     ville: '',
   });
-  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState('+237');
 
   // Success state
@@ -196,91 +173,60 @@ export function MobileCreateClient() {
     setTimeout(() => setPasswordCopied(false), 2000);
   };
 
-  const inputStyle = (fieldName: string): React.CSSProperties => ({
-    ...baseInputStyle,
-    border: `1.5px solid ${focusedField === fieldName ? V : theme.border}`,
-  });
+  const optional = (
+    <span className={cn('ml-1 text-[12px] font-medium', TEXT.muted)}>optionnel</span>
+  );
+  const required = <span className="text-[#FE560D]">*</span>;
 
   // ── ÉCRAN SUCCÈS ──────────────────────────────────────────
   if (isSuccess) {
     return (
-      <div style={{
-        height: '100dvh', display: 'flex', flexDirection: 'column',
-        background: theme.bg, maxWidth: 560, margin: '0 auto',
-        fontFamily: "'DM Sans', sans-serif", color: theme.text, overflow: 'hidden',
-      }}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('newClient', { defaultValue: 'Nouveau client' })} />
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '40px 20px 20px' }}>
+        <div className="flex-1 overflow-y-auto px-4 py-8">
           {/* Icône succès */}
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: '50%',
-              background: `${GR}18`, display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 16px',
-            }}>
-              <Check size={32} color={GR} />
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
+              <Holder icon={Check} tone="success" size="lg" />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: theme.text }}>{t('clientCreatedSuccess', { defaultValue: 'Client créé avec succès' })}</div>
-            <div style={{ fontSize: 14, color: theme.sub, marginTop: 4 }}>
+            <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>
+              {t('clientCreatedSuccess', { defaultValue: 'Client créé avec succès' })}
+            </div>
+            <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
               {form.prenom} {form.nom} peut maintenant se connecter
             </div>
           </div>
 
           {/* Mot de passe temporaire */}
-          <div style={{
-            background: theme.card, border: `1px solid ${theme.border}`,
-            borderRadius: 14, padding: 16, marginBottom: 16,
-          }}>
-            <div style={{ fontSize: 13, color: theme.sub, marginBottom: 8 }}>{t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}</div>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: theme.bg, borderRadius: 10, padding: '14px 16px',
-            }}>
-              <code style={{ fontSize: 18, fontWeight: 700, color: theme.text, letterSpacing: '0.04em' }}>
+          <Card className="mb-4 p-4">
+            <div className={cn('mb-2 text-[13px]', TEXT.muted)}>
+              {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
+            </div>
+            <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-3.5', SURFACE.canvas)}>
+              <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>
                 {tempPassword}
               </code>
-              <button
+              <Holder
+                icon={passwordCopied ? Check : Copy}
+                tone={passwordCopied ? 'success' : 'neutral'}
+                size="sm"
                 onClick={handleCopyPassword}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-              >
-                {passwordCopied ? <Check size={20} color={GR} /> : <Copy size={20} color={theme.sub} />}
-              </button>
+              />
             </div>
-            <div style={{
-              marginTop: 10, padding: '10px 12px', borderRadius: 10,
-              background: `${G}10`, border: `1px solid ${G}20`,
-              fontSize: 12, color: theme.sub, lineHeight: 1.5,
-            }}>
+            <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
               Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.
             </div>
-          </div>
+          </Card>
 
           {/* Actions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button
-              onClick={() => navigate(`/m/clients/${createdClientId}`)}
-              style={{
-                padding: '17px 0', borderRadius: 12,
-                background: V, border: 'none',
-                fontSize: 16, fontWeight: 800, color: '#fff',
-                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
+          <div className="flex flex-col gap-2">
+            <PrimaryPill onClick={() => navigate(`/m/clients/${createdClientId}`)} className="w-full">
               {t('viewClientProfile', { defaultValue: 'Voir la fiche client' })}
-            </button>
-            <button
-              onClick={() => navigate('/m/clients')}
-              style={{
-                padding: '17px 0', borderRadius: 12,
-                background: 'none', border: `1px solid ${theme.border}`,
-                fontSize: 15, fontWeight: 700, color: theme.sub,
-                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
+            </PrimaryPill>
+            <SoftPill onClick={() => navigate('/m/clients')} className="w-full">
               {t('backToList', { defaultValue: 'Retour à la liste' })}
-            </button>
+            </SoftPill>
           </div>
         </div>
       </div>
@@ -289,44 +235,40 @@ export function MobileCreateClient() {
 
   // ── FORMULAIRE 3 ÉTAPES ───────────────────────────────────
   return (
-    <div style={{
-      height: '100dvh', display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', background: theme.bg, maxWidth: 560, margin: '0 auto',
-      fontFamily: "'DM Sans', sans-serif", color: theme.text,
-    }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
+    <div className={cn('flex h-[100dvh] flex-col overflow-hidden', SURFACE.canvas)}>
       {/* HEADER — fixe, ne scroll pas */}
-      <div style={{
-        flexShrink: 0, background: theme.card,
-        borderBottom: `1px solid ${theme.border}`,
-        padding: '14px 20px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-          <span
+      <div className={cn('shrink-0 px-4 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
+        <div className="flex h-14 items-center">
+          <button
             onClick={() => navigate('/m/clients')}
-            style={{ fontSize: 22, color: theme.sub, cursor: 'pointer', marginRight: 14, fontWeight: 300 }}
+            className={cn('-ml-2 mr-2 flex h-10 w-10 items-center justify-center rounded-full text-[26px] font-light active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
+            aria-label={t('back', { defaultValue: 'Retour' })}
           >
             ‹
+          </button>
+          <span className={cn('text-[15px] font-bold', TEXT.strong)}>
+            {t('newClient', { defaultValue: 'Nouveau client' })}
           </span>
-          <span style={{ fontSize: 15, fontWeight: 800, color: theme.text }}>{t('newClient', { defaultValue: 'Nouveau client' })}</span>
         </div>
 
         {/* Barre de progression 3 segments */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="flex gap-1.5 pb-3">
           {STEPS.map(s => (
-            <div key={s.num} style={{ flex: 1 }}>
-              <div style={{
-                height: 3, borderRadius: 2,
-                background: step >= s.num ? V : theme.border,
-                transition: 'background 0.3s',
-              }} />
-              <div style={{
-                fontSize: 10,
-                fontWeight: step === s.num ? 800 : 500,
-                color: step === s.num ? V : theme.dim,
-                marginTop: 5, textAlign: 'center',
-              }}>
+            <div key={s.num} className="flex-1">
+              <div
+                className={cn(
+                  'h-[3px] rounded-full transition-colors',
+                  step >= s.num ? 'bg-[#6B5BD2] dark:bg-[#A99BF0]' : 'bg-black/10 dark:bg-white/10',
+                )}
+              />
+              <div
+                className={cn(
+                  'mt-1.5 text-center text-[10px]',
+                  step === s.num
+                    ? 'font-extrabold text-[#6B5BD2] dark:text-[#A99BF0]'
+                    : cn('font-medium', TEXT.muted),
+                )}
+              >
                 {s.num}. {s.label}
               </div>
             </div>
@@ -335,102 +277,75 @@ export function MobileCreateClient() {
       </div>
 
       {/* CONTENU — scrollable entre le header et le footer */}
-      <div style={{
-        flex: 1, overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch',
-        padding: '20px 20px 0',
-      } as React.CSSProperties}>
-
+      <div className="flex-1 overflow-y-auto px-4 pt-5" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* ── ÉTAPE 1 : IDENTITÉ ─────────────────────────── */}
         {step === 1 && (
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
-              {t('whoIsYourClient', { defaultValue: 'Qui est votre client ?' })}
-            </div>
-            <div style={{ fontSize: 14, color: theme.sub, marginBottom: 28, lineHeight: 1.4 }}>
-              {t('firstNameLastNameCompany', { defaultValue: 'Prénom, nom et entreprise' })}
+          <div className="space-y-5">
+            <div>
+              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+                {t('whoIsYourClient', { defaultValue: 'Qui est votre client ?' })}
+              </div>
+              <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
+                {t('firstNameLastNameCompany', { defaultValue: 'Prénom, nom et entreprise' })}
+              </div>
             </div>
 
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                Prénom <span style={{ color: O }}>*</span>
-              </label>
-              <input
-                style={inputStyle('prenom')}
+            <FormField label={<>Prénom {required}</>} htmlFor="cc-prenom">
+              <TextInput
+                id="cc-prenom"
                 placeholder="Ex: Fabrice"
                 value={form.prenom}
                 onChange={e => set('prenom', e.target.value)}
-                onFocus={() => setFocusedField('prenom')}
-                onBlur={() => setFocusedField(null)}
                 autoComplete="given-name"
               />
-            </div>
+            </FormField>
 
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                Nom <span style={{ color: O }}>*</span>
-              </label>
-              <input
-                style={inputStyle('nom')}
+            <FormField label={<>Nom {required}</>} htmlFor="cc-nom">
+              <TextInput
+                id="cc-nom"
                 placeholder="Ex: Bienvenue"
                 value={form.nom}
                 onChange={e => set('nom', e.target.value)}
-                onFocus={() => setFocusedField('nom')}
-                onBlur={() => setFocusedField(null)}
                 autoComplete="family-name"
               />
-            </div>
+            </FormField>
 
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                Entreprise <span style={optStyle}>optionnel</span>
-              </label>
-              <input
-                style={inputStyle('entreprise')}
+            <FormField label={<>Entreprise {optional}</>} htmlFor="cc-entreprise">
+              <TextInput
+                id="cc-entreprise"
                 placeholder="Ex: Jako Cargo SARL"
                 value={form.entreprise}
                 onChange={e => set('entreprise', e.target.value)}
-                onFocus={() => setFocusedField('entreprise')}
-                onBlur={() => setFocusedField(null)}
                 autoComplete="organization"
               />
-            </div>
+            </FormField>
           </div>
         )}
 
         {/* ── ÉTAPE 2 : CONTACT ──────────────────────────── */}
         {step === 2 && (
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
-              {t('howToReachClient', { defaultValue: 'Comment le joindre ?' })}
-            </div>
-            <div style={{ fontSize: 14, color: theme.sub, marginBottom: 28, lineHeight: 1.4 }}>
-              {t('whatsappEmailLocation', { defaultValue: 'WhatsApp, email et localisation' })}
+          <div className="space-y-5">
+            <div>
+              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+                {t('howToReachClient', { defaultValue: 'Comment le joindre ?' })}
+              </div>
+              <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
+                {t('whatsappEmailLocation', { defaultValue: 'WhatsApp, email et localisation' })}
+              </div>
             </div>
 
             {/* WhatsApp avec sélecteur de code pays */}
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                WhatsApp <span style={{ color: O }}>*</span>
-              </label>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <FormField
+              label={<>WhatsApp {required}</>}
+              htmlFor="cc-phone"
+              hint="Le client recevra son mot de passe par WhatsApp"
+            >
+              <div className="flex gap-2">
                 <select
                   value={countryCode}
                   onChange={e => setCountryCode(e.target.value)}
-                  style={{
-                    padding: '14px 12px',
-                    borderRadius: 12,
-                    border: `1.5px solid ${theme.border}`,
-                    background: theme.inputBg,
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: theme.text,
-                    fontFamily: "'DM Sans', sans-serif",
-                    cursor: 'pointer',
-                    minWidth: 100,
-                    flexShrink: 0,
-                    outline: 'none',
-                  }}
+                  className={cn(selectClass, 'w-auto min-w-[104px] shrink-0 cursor-pointer px-3')}
+                  aria-label="Indicatif pays"
                 >
                   {COUNTRY_CODES.map(c => (
                     <option key={c.code} value={c.code}>
@@ -438,60 +353,42 @@ export function MobileCreateClient() {
                     </option>
                   ))}
                 </select>
-                <input
-                  style={{ ...inputStyle('phone'), flex: 1 }}
+                <TextInput
+                  id="cc-phone"
+                  className="flex-1"
                   placeholder="6XX XXX XXX"
                   value={form.phone}
                   onChange={e => set('phone', e.target.value)}
-                  onFocus={() => setFocusedField('phone')}
-                  onBlur={() => setFocusedField(null)}
                   type="tel"
                   inputMode="numeric"
                 />
               </div>
-              <div style={{ fontSize: 11, color: theme.dim, marginTop: 4 }}>
-                Le client recevra son mot de passe par WhatsApp
-              </div>
-            </div>
+            </FormField>
 
             {/* Email */}
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                Email <span style={optStyle}>optionnel</span>
-              </label>
-              <input
-                style={inputStyle('email')}
+            <FormField label={<>Email {optional}</>} htmlFor="cc-email">
+              <TextInput
+                id="cc-email"
                 placeholder="fabrice@jakocargo.com"
                 value={form.email}
                 onChange={e => set('email', e.target.value)}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
                 type="email"
                 autoComplete="email"
               />
-            </div>
+            </FormField>
 
-            {/* Pays — le changement met à jour le code pays WhatsApp */}
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                Pays <span style={{ color: O }}>*</span>
-              </label>
+            {/* Pays */}
+            <FormField label={<>Pays {required}</>} htmlFor="cc-pays">
               <select
+                id="cc-pays"
+                className={cn(selectClass, 'cursor-pointer appearance-none pr-9')}
                 style={{
-                  ...inputStyle('pays'),
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none',
-                  appearance: 'none',
-                  cursor: 'pointer',
-                  paddingRight: 36,
                   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%237a7290' stroke-width='1.5'/%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 14px center',
-                } as React.CSSProperties}
+                }}
                 value={form.pays}
                 onChange={e => set('pays', e.target.value)}
-                onFocus={() => setFocusedField('pays')}
-                onBlur={() => setFocusedField(null)}
               >
                 <optgroup label="Zone CEMAC">
                   <option>Cameroun</option>
@@ -553,59 +450,44 @@ export function MobileCreateClient() {
                   <option>Inde</option>
                 </optgroup>
               </select>
-            </div>
+            </FormField>
 
             {/* Ville */}
-            <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>
-                Ville <span style={optStyle}>optionnel</span>
-              </label>
-              <input
-                style={inputStyle('ville')}
+            <FormField label={<>Ville {optional}</>} htmlFor="cc-ville">
+              <TextInput
+                id="cc-ville"
                 placeholder="Ex: Douala"
                 value={form.ville}
                 onChange={e => set('ville', e.target.value)}
-                onFocus={() => setFocusedField('ville')}
-                onBlur={() => setFocusedField(null)}
               />
-            </div>
+            </FormField>
           </div>
         )}
 
         {/* ── ÉTAPE 3 : VÉRIFICATION ─────────────────────── */}
         {step === 3 && (
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
-              {t('everythingCorrect', { defaultValue: 'Tout est correct ?' })}
-            </div>
-            <div style={{ fontSize: 14, color: theme.sub, marginBottom: 28, lineHeight: 1.4 }}>
-              {t('verifyBeforeCreatingAccount', { defaultValue: 'Vérifiez avant de créer le compte' })}
+          <div className="space-y-3">
+            <div>
+              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+                {t('everythingCorrect', { defaultValue: 'Tout est correct ?' })}
+              </div>
+              <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
+                {t('verifyBeforeCreatingAccount', { defaultValue: 'Vérifiez avant de créer le compte' })}
+              </div>
             </div>
 
-            <div style={{
-              padding: '20px 16px', borderRadius: 14,
-              background: theme.card, border: `1px solid ${theme.border}`,
-            }}>
+            <Card className="p-4">
               {/* Initiales + nom complet */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                marginBottom: 16, paddingBottom: 16,
-                borderBottom: `1px solid ${theme.border}`,
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  background: `${V}12`, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontSize: 15, fontWeight: 800, color: V, flexShrink: 0,
-                }}>
+              <div className="mb-4 flex items-center gap-3">
+                <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold', SURFACE.holder)}>
                   {(form.prenom[0] ?? '').toUpperCase()}{(form.nom[0] ?? '').toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: theme.text }}>
+                  <div className={cn('text-[17px] font-bold', TEXT.strong)}>
                     {form.prenom} {form.nom}
                   </div>
                   {form.entreprise && (
-                    <div style={{ fontSize: 12, color: theme.sub, marginTop: 1 }}>{form.entreprise}</div>
+                    <div className={cn('text-[12px]', TEXT.muted)}>{form.entreprise}</div>
                   )}
                 </div>
               </div>
@@ -620,24 +502,13 @@ export function MobileCreateClient() {
                 ] as ({ label: string; value: string } | null)[]
               )
                 .filter((r): r is { label: string; value: string } => r !== null)
-                .map((row, i, arr) => (
-                  <div key={i} style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    padding: '10px 0',
-                    borderBottom: i < arr.length - 1 ? `1px solid ${theme.border}` : 'none',
-                  }}>
-                    <span style={{ fontSize: 13, color: theme.sub }}>{row.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: theme.text }}>{row.value}</span>
-                  </div>
+                .map((row, i) => (
+                  <Row key={i} label={row.label} value={row.value} />
                 ))}
-            </div>
+            </Card>
 
             {/* Note mot de passe */}
-            <div style={{
-              marginTop: 12, padding: '12px 14px', borderRadius: 12,
-              background: `${G}08`, border: `1px solid ${G}18`,
-              fontSize: 12, color: theme.sub, lineHeight: 1.5,
-            }}>
+            <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
               Un mot de passe temporaire sera envoyé au client par WhatsApp. Il devra le changer lors de sa première connexion.
             </div>
           </div>
@@ -645,54 +516,25 @@ export function MobileCreateClient() {
       </div>
 
       {/* FOOTER — boutons TOUJOURS visibles, jamais cachés */}
-      <div style={{
-        flexShrink: 0, padding: '12px 20px 20px',
-        background: theme.card, borderTop: `1px solid ${theme.border}`,
-        display: 'flex', gap: 10,
-      }}>
+      <div className={cn('flex shrink-0 gap-2.5 px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3', SURFACE.card, SURFACE.shadow)}>
         {/* Bouton Retour — absent à l'étape 1 */}
         {step > 1 && (
-          <button
-            onClick={handleBack}
-            style={{
-              flex: 1, padding: '17px 0', borderRadius: 12,
-              background: 'none', border: `1px solid ${theme.border}`,
-              fontSize: 15, fontWeight: 700, color: theme.sub,
-              cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
+          <SoftPill onClick={handleBack} className="flex-1">
             {t('back', { defaultValue: 'Retour' })}
-          </button>
+          </SoftPill>
         )}
 
         {/* Bouton Continuer / Créer le client */}
-        <button
+        <PrimaryPill
           onClick={step < 3 ? handleNext : handleCreateClient}
-          disabled={!canNext || createClientMutation.isPending}
-          style={{
-            flex: step === 1 ? 1 : 1.5,
-            padding: '17px 0', borderRadius: 12,
-            background: canNext && !createClientMutation.isPending ? V : theme.border,
-            border: 'none',
-            fontSize: 16, fontWeight: 800,
-            color: canNext && !createClientMutation.isPending ? '#fff' : theme.dim,
-            cursor: canNext && !createClientMutation.isPending ? 'pointer' : 'not-allowed',
-            fontFamily: "'DM Sans', sans-serif",
-            transition: 'background 0.2s',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
+          disabled={!canNext}
+          loading={createClientMutation.isPending}
+          className={step === 1 ? 'flex-1' : 'flex-[1.5]'}
         >
-          {createClientMutation.isPending ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              {t('creating', { defaultValue: 'Création...' })}
-            </>
-          ) : step === 3 ? (
-            t('createTheClient', { defaultValue: 'Créer le client' })
-          ) : (
-            `${t('continue', { defaultValue: 'Continuer' })} (${step}/3)`
-          )}
-        </button>
+          {step === 3
+            ? t('createTheClient', { defaultValue: 'Créer le client' })
+            : `${t('continue', { defaultValue: 'Continuer' })} (${step}/3)`}
+        </PrimaryPill>
       </div>
     </div>
   );
