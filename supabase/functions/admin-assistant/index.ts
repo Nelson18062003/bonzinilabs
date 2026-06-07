@@ -1494,6 +1494,29 @@ async function attachPaymentProofs(
   return attached;
 }
 
+/**
+ * Téléverse une pièce jointe IMAGE comme QR code d'un bénéficiaire (canal Alipay/WeChat) :
+ * copie assistant-attachments → payment-proofs et renvoie le chemin stocké à mettre dans
+ * beneficiaries.qr_code_url. Renvoie null si aucune image / échec.
+ */
+async function uploadBeneficiaryQr(
+  svc: AnyClient,
+  clientId: string,
+  attachments: Array<{ path: string; mime: string; name: string }>,
+): Promise<string | null> {
+  const img = (attachments ?? []).find((a) => String(a.mime).startsWith("image/"));
+  if (!img) return null;
+  try {
+    const { data: blob, error: dlErr } = await svc.storage.from(ATTACHMENT_BUCKET).download(img.path);
+    if (dlErr || !blob) return null;
+    const ext = (img.name.split(".").pop() || "jpg").toLowerCase();
+    const filePath = `beneficiary/${clientId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await svc.storage.from("payment-proofs").upload(filePath, blob, { contentType: img.mime, upsert: false });
+    if (upErr) return null;
+    return `payment-proofs/${filePath}`;
+  } catch (_) { return null; }
+}
+
 // payment_method (enum DB) → clé attendue par calculate_final_rate
 const PAYMENT_METHOD_TO_RATE: Record<string, string> = { alipay: "alipay", wechat: "wechat", cash: "cash", bank_transfer: "virement" };
 const PAYMENT_METHOD_LABEL: Record<string, string> = { alipay: "Alipay", wechat: "WeChat", cash: "Cash", bank_transfer: "Virement" };
@@ -2211,7 +2234,8 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_beneficiary",
     permission: "canProcessPayments",
-    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. Optionnels: identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    acceptsProof: true,
+    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. CANAL OBLIGATOIRE selon le mode (sinon la base refuse) : alipay/wechat → AU MOINS UN parmi { QR code (l'admin joint l'image au message), identifier (ID Alipay/WeChat), email, phone } ; bank_transfer → bank_name ET bank_account ; cash → phone. Si l'admin a JOINT un QR, c'est suffisant comme canal — n'exige pas d'identifiant en plus. Demande l'info manquante AVANT de proposer la carte. Optionnels: identifier_type, bank_extra, relation_type, notes.",
     input_schema: {
       type: "object",
       properties: {
@@ -2227,6 +2251,20 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!c.ok) return { ok: false, error: c.error };
       if (!["alipay", "wechat", "bank_transfer", "cash"].includes(a.payment_method)) return { ok: false, error: "payment_method invalide (alipay|wechat|bank_transfer|cash)." };
       if (!a.alias || !a.name) return { ok: false, error: "alias et name sont requis." };
+      // Complétude par mode (miroir de spec.ts / des CHECK base). On VALIDE ici → Mola DEMANDE
+      // l'info manquante au lieu d'échouer. Pour alipay/wechat, un QR JOINT (__hasAttachment)
+      // suffit comme canal — pas besoin d'identifiant en plus.
+      const hasQrAttached = a.__hasAttachment === true;
+      if (["alipay", "wechat"].includes(a.payment_method) && !a.identifier && !a.email && !a.phone && !hasQrAttached) {
+        const mode = a.payment_method === "alipay" ? "Alipay" : "WeChat";
+        return { ok: false, error: `Pour un bénéficiaire ${mode}, il faut AU MOINS UN canal de contact : un QR code (demande à l'admin de JOINDRE l'image du QR au message), OU l'identifiant ${mode}, OU un email, OU un téléphone. Demande l'un de ces éléments à l'admin.` };
+      }
+      if (a.payment_method === "bank_transfer" && (!a.bank_name || !a.bank_account)) {
+        return { ok: false, error: "Pour un virement bancaire, bank_name ET bank_account sont obligatoires. Demande-les à l'admin." };
+      }
+      if (a.payment_method === "cash" && !a.phone) {
+        return { ok: false, error: "Pour un bénéficiaire cash, le téléphone (phone) est obligatoire. Demande-le à l'admin." };
+      }
       const row = {
         client_id: c.uid, payment_method: a.payment_method, alias: String(a.alias).trim(), name: String(a.name).trim(),
         identifier: a.identifier || null, identifier_type: a.identifier_type || null, phone: a.phone || null, email: a.email || null,
@@ -2242,12 +2280,19 @@ const WRITE_TOOLS: WriteTool[] = [
       return { ok: true, args: { row }, summary: { title: "Enregistrer un bénéficiaire", subtitle: c.name, lines, confirmLabel: "Enregistrer le bénéficiaire" } };
     },
     execute: async (userClient, args, ctx) => {
-      const { error } = await userClient.from("beneficiaries").insert({ ...(args.row as Record<string, unknown>), created_by: ctx.adminUserId, created_by_role: "admin" });
+      const row = { ...(args.row as Record<string, unknown>) };
+      // QR joint au message → on l'enregistre comme qr_code_url (canal Alipay/WeChat).
+      const proofs = args.proofAttachments as Array<{ path: string; mime: string; name: string }> | undefined;
+      if (proofs?.length && !row.qr_code_url && ["alipay", "wechat"].includes(String(row.payment_method))) {
+        const qrPath = await uploadBeneficiaryQr(ctx.admin ?? userClient, String(row.client_id), proofs);
+        if (qrPath) row.qr_code_url = qrPath;
+      }
+      const { error } = await userClient.from("beneficiaries").insert({ ...row, created_by: ctx.adminUserId, created_by_role: "admin" });
       if (error) {
         if ((error as AnyClient)?.code === "23505") return { success: false, error: "Ce bénéficiaire est déjà enregistré pour ce client." };
         return { success: false, error: error.message };
       }
-      return { success: true };
+      return { success: true, qr_enregistre: !!row.qr_code_url };
     },
   },
   {
@@ -2870,6 +2915,9 @@ serve(async (req) => {
                     const wInput = (tu.input ?? {}) as Record<string, unknown>;
                     // Gateway générique : on injecte les permissions du rôle pour la garde par capacité.
                     if (tu.name === "do_capability") wInput.__perms = perms;
+                    // Outils acceptant une preuve : on signale à prepare qu'une pièce jointe existe
+                    // (ex. create_beneficiary : un QR joint suffit comme canal Alipay/WeChat).
+                    if (writeTool.acceptsProof && acceptedAttachments.length) wInput.__hasAttachment = true;
                     const prep = await writeTool.prepare(admin, wInput);
                     if (!prep.ok) { result = { error: prep.error }; }
                     else {
