@@ -126,6 +126,16 @@ const NEWS_SOURCES: Array<{ name: string; url: string }> = [
 
 const RELEVANCE_KEYWORDS = /iran|hormuz|tehran|nuclear|hezbollah|israel|trump|opec|brent|crude|oil|fed|federal\s+reserve|inflation|powell|netanyahu|gaza|lebanon|saudi|riyadh|yemen|houthi/i;
 
+// Comptes d'experts à suivre (via Google News search, X étant inaccessible
+// gratuitement). On cherche les articles qui les mentionnent + sujets Iran/oil.
+const EXPERT_QUERIES = [
+  { name: "Reuters Iran", query: "Reuters+Iran+nuclear" },
+  { name: "FirstSquawk", query: "FirstSquawk+Iran+OR+oil+OR+Hormuz" },
+  { name: "Mario Nawfal", query: "Mario+Nawfal+Iran" },
+  { name: "Jeffrey Lewis (Natsecjeff)", query: "Jeffrey+Lewis+Iran+nuclear" },
+  { name: "ZeroHedge", query: "ZeroHedge+Iran+OR+Hormuz+OR+oil" },
+];
+
 async function fetchAllNews(): Promise<Record<string, NewsItem[]>> {
   const grouped: Record<string, NewsItem[]> = {};
 
@@ -151,6 +161,40 @@ async function fetchAllNews(): Promise<Record<string, NewsItem[]>> {
           }));
         if (filtered.length > 0) grouped[s.name] = filtered;
       } catch { /* ignore failures */ }
+    }),
+  );
+
+  return grouped;
+}
+
+// ─── Expert mentions via Google News ────────────────────────────────────
+// X/Twitter scraping fiable nécessite l'API payante. On approxime en cherchant
+// les articles qui CITENT les experts sur les sujets Iran/oil.
+async function fetchExpertMentions(): Promise<Record<string, NewsItem[]>> {
+  const grouped: Record<string, NewsItem[]> = {};
+
+  await Promise.all(
+    EXPERT_QUERIES.map(async (eq) => {
+      try {
+        const url = `https://news.google.com/rss/search?q=${eq.query}&hl=en-US&gl=US&ceid=US:en`;
+        const res = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; BonziniMacro/1.0)" },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return;
+        const items = parseRssItems(await res.text());
+        // On garde les 3 plus récents qui matchent les keywords
+        const filtered = items
+          .filter((it) => RELEVANCE_KEYWORDS.test(it.title + " " + it.description))
+          .slice(0, 3)
+          .map((it) => ({
+            title: stripHtml(it.title),
+            source: eq.name,
+            published_at: it.pubDate,
+            link: it.link,
+          }));
+        if (filtered.length > 0) grouped[eq.name] = filtered;
+      } catch { /* ignore */ }
     }),
   );
 
@@ -191,6 +235,42 @@ async function fetchTrumpPosts(): Promise<TrumpPost[]> {
   }
 }
 
+// ─── Trigger alerte Telegram via send-brief ──────────────────────────────
+// Garde-fou anti-spam : on logge dans briefs_log côté send-brief; ici on
+// vérifie qu'on n'a pas déjà envoyé la même alerte dans la dernière heure.
+async function fireAlert(supabase: any, kind: string, details: string) {
+  // Anti-spam : pas plus d'une alerte du même kind par heure
+  const oneHourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
+  const { data: recent } = await supabase
+    .from("briefs_log")
+    .select("id")
+    .eq("brief_type", "alert")
+    .gte("sent_at", oneHourAgo)
+    .ilike("message_text", `%ALERTE ${kind}%`)
+    .limit(1);
+
+  if (recent && recent.length > 0) {
+    console.log(`Alert ${kind} skipped (already sent in last hour)`);
+    return;
+  }
+
+  // Appel send-brief en mode alert
+  try {
+    const url = Deno.env.get("SUPABASE_URL")! + "/functions/v1/send-brief";
+    const token = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ type: "alert", alert: { kind, details } }),
+    });
+  } catch (err) {
+    console.error("fireAlert failed:", (err as Error).message);
+  }
+}
+
 // ─── Flatten grouped news to top-N for the summary column ───────────────
 function flattenNews(grouped: Record<string, NewsItem[]>, limit = 8): NewsItem[] {
   const all: NewsItem[] = [];
@@ -227,7 +307,7 @@ serve(async (req: Request) => {
     errors: {},
   };
 
-  // Fetch en parallèle (data + news + Trump posts)
+  // Fetch en parallèle (data + news + Trump posts + experts)
   const results = await Promise.allSettled([
     fetchForex(),
     fetchCrypto(),
@@ -236,6 +316,7 @@ serve(async (req: Request) => {
     fetchYahoo("DX-Y.NYB"),   // Dollar Index
     fetchAllNews(),
     fetchTrumpPosts(),
+    fetchExpertMentions(),
   ]);
 
   // Forex
@@ -280,6 +361,14 @@ serve(async (req: Request) => {
     errors.trump = String((results[6] as PromiseRejectedResult).reason);
   }
 
+  // Experts mentions
+  let expertMentions: Record<string, NewsItem[]> = {};
+  if (results[7].status === "fulfilled") {
+    expertMentions = results[7].value;
+  } else {
+    errors.experts = String((results[7] as PromiseRejectedResult).reason);
+  }
+
   data.errors = errors;
 
   // Save to DB
@@ -302,6 +391,16 @@ serve(async (req: Request) => {
   });
   const trumpRecent = within24h.length >= 3 ? within24h.slice(0, 10) : within7d.slice(0, 5);
 
+  // Récupérer le snapshot précédent (~1h) pour calculer les alertes seuils
+  const oneHourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
+  const { data: prevSnap } = await supabase
+    .from("macro_snapshots")
+    .select("*")
+    .lte("captured_at", oneHourAgo)
+    .order("captured_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   // Insert snapshot
   const { data: inserted, error: insertErr } = await supabase
     .from("macro_snapshots")
@@ -316,6 +415,7 @@ serve(async (req: Request) => {
       news_headlines: data.news_headlines,
       news_by_source: newsBySource,
       trump_posts_recent: trumpRecent,
+      expert_mentions: expertMentions,
       errors: Object.keys(errors).length > 0 ? errors : null,
     })
     .select()
@@ -342,6 +442,53 @@ serve(async (req: Request) => {
       .upsert(toInsert, { onConflict: "external_id", ignoreDuplicates: true });
   }
 
+  // ─── Détection d'alertes urgentes (seuils horaires) ────────────────────
+  const alertsFired: string[] = [];
+  if (prevSnap) {
+    // Brent : +/- 3% en 1h
+    if (data.oil_brent && prevSnap.oil_brent) {
+      const pct = ((data.oil_brent - prevSnap.oil_brent) / prevSnap.oil_brent) * 100;
+      if (Math.abs(pct) >= 3) {
+        const dir = pct > 0 ? "📈 HAUSSE" : "📉 BAISSE";
+        await fireAlert(supabase, "PETROLE", `${dir} brutale du Brent : ${pct.toFixed(1)}% en 1h\nDe ${prevSnap.oil_brent.toFixed(2)} $ → ${data.oil_brent.toFixed(2)} $\n\n${pct > 0 ? "Impact attendu : pression hausse coût XAF" : "Impact attendu : détente possible coût XAF"}`);
+        alertsFired.push("oil_brent");
+      }
+    }
+    // DXY : +/- 0.5 point en 1h
+    if (data.dxy && prevSnap.dxy) {
+      const diff = data.dxy - prevSnap.dxy;
+      if (Math.abs(diff) >= 0.5) {
+        const dir = diff > 0 ? "📈 RENFORCEMENT" : "📉 AFFAIBLISSEMENT";
+        await fireAlert(supabase, "DOLLAR", `${dir} du dollar : ${diff > 0 ? "+" : ""}${diff.toFixed(2)} pts DXY en 1h\nDe ${prevSnap.dxy.toFixed(2)} → ${data.dxy.toFixed(2)}\n\n${diff > 0 ? "→ XAF sous pression, USDT plus cher" : "→ XAF respire, USDT moins cher"}`);
+        alertsFired.push("dxy");
+      }
+    }
+    // BTC : +/- 5% en 1h (signal sentiment risk-on/off)
+    if (data.btc_usd && prevSnap.btc_usd) {
+      const pct = ((data.btc_usd - prevSnap.btc_usd) / prevSnap.btc_usd) * 100;
+      if (Math.abs(pct) >= 5) {
+        const dir = pct > 0 ? "📈 PUMP" : "📉 DUMP";
+        await fireAlert(supabase, "BTC", `${dir} BTC : ${pct.toFixed(1)}% en 1h → ${Math.round(data.btc_usd)} $\nSignal sentiment ${pct > 0 ? "risk-on (positif marchés)" : "risk-off (négatif marchés)"}`);
+        alertsFired.push("btc");
+      }
+    }
+    // Nouveau post Trump Iran-related dans les dernières 2h
+    const twoHoursAgo = Date.now() - 2 * 3600 * 1000;
+    const freshIranPosts = trumpAll.filter((p) => {
+      const t = Date.parse(p.posted_at);
+      return p.is_iran_related && Number.isFinite(t) && t >= twoHoursAgo;
+    });
+    if (freshIranPosts.length > 0) {
+      const post = freshIranPosts[0];
+      await fireAlert(
+        supabase,
+        "TRUMP IRAN",
+        `Trump vient de poster sur Truth Social (Iran) :\n\n"${post.content.slice(0, 350)}${post.content.length > 350 ? "..." : ""}"\n\nSurveille l'impact sur les marchés dans les prochaines heures.`,
+      );
+      alertsFired.push("trump_iran");
+    }
+  }
+
   return new Response(
     JSON.stringify({
       success: true,
@@ -349,8 +496,10 @@ serve(async (req: Request) => {
       counts: {
         news_total: data.news_headlines.length,
         news_sources: Object.keys(newsBySource).length,
+        experts: Object.keys(expertMentions).length,
         trump_all: trumpAll.length,
         trump_iran_24h: trumpRecent.length,
+        alerts_fired: alertsFired,
       },
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

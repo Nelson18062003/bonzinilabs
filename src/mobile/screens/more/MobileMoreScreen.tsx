@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronRight,
   Settings,
+  Newspaper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -103,6 +104,12 @@ export function MobileMoreScreen() {
             label={t('exchangeRate', { defaultValue: 'Taux de change' })}
             description={t('manageRates', { defaultValue: 'Gérer les taux XAF/RMB' })}
             onClick={() => navigate('/m/more/rates')}
+          />
+          <MenuItem
+            icon={Newspaper}
+            label="Veille macro"
+            description="Macro, news Iran, posts Trump, prédictions IA"
+            onClick={() => navigate('/m/more/briefs')}
           />
           <MenuItem
             icon={FileText}

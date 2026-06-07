@@ -30,7 +30,8 @@ CREATE POLICY "Admins can read trump posts" ON public.trump_posts
 -- ============================================================
 ALTER TABLE public.macro_snapshots
   ADD COLUMN IF NOT EXISTS news_by_source JSONB DEFAULT '{}'::jsonb,
-  ADD COLUMN IF NOT EXISTS trump_posts_recent JSONB DEFAULT '[]'::jsonb;
+  ADD COLUMN IF NOT EXISTS trump_posts_recent JSONB DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS expert_mentions JSONB DEFAULT '{}'::jsonb;
 
 COMMENT ON COLUMN public.macro_snapshots.news_by_source IS
   'Headlines groupés par média: { "Reuters": [...], "Bloomberg": [...], ... }';

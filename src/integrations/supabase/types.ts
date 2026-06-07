@@ -830,6 +830,169 @@ export type Database = {
         }
         Relationships: []
       }
+      macro_snapshots: {
+        Row: {
+          id: number
+          captured_at: string
+          oil_brent: number | null
+          oil_wti: number | null
+          dxy: number | null
+          eur_usd: number | null
+          cny_usd: number | null
+          xaf_per_eur: number | null
+          btc_usd: number | null
+          eth_usd: number | null
+          news_headlines: Json | null
+          news_by_source: Json | null
+          trump_posts_recent: Json | null
+          expert_mentions: Json | null
+          errors: Json | null
+        }
+        Insert: {
+          id?: never
+          captured_at?: string
+          oil_brent?: number | null
+          oil_wti?: number | null
+          dxy?: number | null
+          eur_usd?: number | null
+          cny_usd?: number | null
+          xaf_per_eur?: number | null
+          btc_usd?: number | null
+          eth_usd?: number | null
+          news_headlines?: Json | null
+          news_by_source?: Json | null
+          trump_posts_recent?: Json | null
+          expert_mentions?: Json | null
+          errors?: Json | null
+        }
+        Update: {
+          id?: never
+          captured_at?: string
+          oil_brent?: number | null
+          oil_wti?: number | null
+          dxy?: number | null
+          eur_usd?: number | null
+          cny_usd?: number | null
+          xaf_per_eur?: number | null
+          btc_usd?: number | null
+          eth_usd?: number | null
+          news_headlines?: Json | null
+          news_by_source?: Json | null
+          trump_posts_recent?: Json | null
+          expert_mentions?: Json | null
+          errors?: Json | null
+        }
+        Relationships: []
+      }
+      briefs_log: {
+        Row: {
+          id: string
+          sent_at: string
+          brief_type: string
+          payload: Json
+          message_text: string
+          telegram_sent: boolean
+          telegram_error: string | null
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          brief_type: string
+          payload: Json
+          message_text: string
+          telegram_sent?: boolean
+          telegram_error?: string | null
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          brief_type?: string
+          payload?: Json
+          message_text?: string
+          telegram_sent?: boolean
+          telegram_error?: string | null
+        }
+        Relationships: []
+      }
+      trump_posts: {
+        Row: {
+          id: number
+          posted_at: string
+          fetched_at: string
+          content: string
+          external_id: string | null
+          is_iran_related: boolean
+          raw_link: string | null
+        }
+        Insert: {
+          id?: never
+          posted_at: string
+          fetched_at?: string
+          content: string
+          external_id?: string | null
+          is_iran_related?: boolean
+          raw_link?: string | null
+        }
+        Update: {
+          id?: never
+          posted_at?: string
+          fetched_at?: string
+          content?: string
+          external_id?: string | null
+          is_iran_related?: boolean
+          raw_link?: string | null
+        }
+        Relationships: []
+      }
+      rate_predictions: {
+        Row: {
+          id: string
+          created_at: string
+          based_on_rate_id: string | null
+          current_rate: number
+          predicted_rate: number
+          direction: string | null
+          confidence: number | null
+          key_drivers: Json | null
+          reasoning: string | null
+          scenarios: Json | null
+          action_recommended: string | null
+          actual_rate: number | null
+          error_abs: number | null
+          was_correct_direction: boolean | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          based_on_rate_id?: string | null
+          current_rate: number
+          predicted_rate: number
+          direction?: string | null
+          confidence?: number | null
+          key_drivers?: Json | null
+          reasoning?: string | null
+          scenarios?: Json | null
+          action_recommended?: string | null
+          actual_rate?: number | null
+          was_correct_direction?: boolean | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          based_on_rate_id?: string | null
+          current_rate?: number
+          predicted_rate?: number
+          direction?: string | null
+          confidence?: number | null
+          key_drivers?: Json | null
+          reasoning?: string | null
+          scenarios?: Json | null
+          action_recommended?: string | null
+          actual_rate?: number | null
+          was_correct_direction?: boolean | null
+        }
+        Relationships: []
+      }
       rate_suggestions: {
         Row: {
           applied: boolean
