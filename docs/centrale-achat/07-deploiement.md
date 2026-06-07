@@ -40,6 +40,18 @@ npm run type-check && npm run build
 La couche d'accès écrite à la main (`procurement.ts`) **reste valide** : `callProcRpc` caste `rpc`, donc
 même typé, rien ne casse. Le `type-check` doit rester à 0 erreur.
 
+## 2bis. Déployer l'edge function Mola (admin-assistant) 🟢
+Mise à jour pour le multi-rôle (fusion des permissions), les permissions procurement
+(`canViewProcurement`/`canManageProcurement` + rôle `sourcing_agent`), la résolution des références
+`BZ-MS/PO/SP` + nom de fournisseur, et la lecture SQL des tables `proc_*`.
+```bash
+npx supabase functions deploy admin-assistant
+```
+> ⚠️ **À déployer AVANT** l'ajout du 2ᵉ rôle au père (étape 3) — sinon sa requête Mola échouerait
+> (l'ancienne version lit un seul rôle via `.maybeSingle()`).
+> ⚠️ Code Deno **non testé en build-ahead** : juste après, faire un test Mola rapide (« quelles actions
+> centrale d'achat ? », puis une écriture dictée simple comme « ajoute un acompte de 1000 CNY sur BZ-PO-… »).
+
 ## 3. Donner le rôle au père 🔴 (action humaine)
 Le père **cumule** `treasurer` (déjà présent) **+** `sourcing_agent`. Il faut **ajouter une ligne**
 `user_roles` (le front gère désormais le multi-rôle). Remplacer `<USER_ID_DU_PERE>` :

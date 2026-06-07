@@ -71,7 +71,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_create_mission(UUID, TEXT, TEXT, DATE, DATE, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Creer une mission d''achat"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Creer une mission d''achat","resolve":{"p_client_user_id":"client"}}';
 
 -- ── RPC: proc_update_mission ──
 CREATE OR REPLACE FUNCTION public.proc_update_mission(
@@ -120,7 +120,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_update_mission(UUID, TEXT, TEXT, DATE, DATE, public.proc_mission_status, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Modifier une mission"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Modifier une mission","resolve":{"p_mission_id":"mission"}}';
 
 -- ── RPC: proc_upsert_supplier ──
 CREATE OR REPLACE FUNCTION public.proc_upsert_supplier(
@@ -261,7 +261,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_create_purchase_order(UUID, UUID, public.proc_currency, NUMERIC, NUMERIC, public.proc_incoterm, DATE, NUMERIC, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Creer une commande fournisseur"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Creer une commande fournisseur","resolve":{"p_mission_id":"mission","p_supplier_id":"supplier"}}';
 
 -- ── RPC: proc_update_purchase_order ──
 CREATE OR REPLACE FUNCTION public.proc_update_purchase_order(
@@ -318,7 +318,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_update_purchase_order(UUID, NUMERIC, NUMERIC, public.proc_incoterm, public.proc_po_status, DATE, NUMERIC, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Modifier une commande fournisseur"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Modifier une commande fournisseur","resolve":{"p_purchase_order_id":"purchase_order"}}';
 
 -- ── RPC: proc_add_order_line ──
 CREATE OR REPLACE FUNCTION public.proc_add_order_line(
@@ -373,7 +373,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_add_order_line(UUID, TEXT, NUMERIC, TEXT, NUMERIC, JSONB, NUMERIC, INTEGER, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Ajouter une ligne (produit) a une commande"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Ajouter une ligne (produit) a une commande","resolve":{"p_purchase_order_id":"purchase_order"}}';
 
 -- ── RPC: proc_record_supplier_payment ── (ARGENT, append-only)
 CREATE OR REPLACE FUNCTION public.proc_record_supplier_payment(
@@ -465,7 +465,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_record_supplier_payment(UUID, public.proc_payment_leg, NUMERIC, public.proc_payment_method, TIMESTAMPTZ, public.proc_currency, public.proc_settlement_mode, UUID, public.proc_paid_by, TEXT, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":true,"danger":true,"label":"Enregistrer un paiement fournisseur (acompte/solde)"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":true,"danger":true,"label":"Enregistrer un paiement fournisseur (acompte/solde)","resolve":{"p_purchase_order_id":"purchase_order","p_rail_payment_id":"payment"}}';
 
 -- ── RPC: proc_set_commission ──
 CREATE OR REPLACE FUNCTION public.proc_set_commission(
@@ -535,7 +535,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_set_commission(UUID, public.proc_commission_mode, NUMERIC, UUID, NUMERIC, NUMERIC, NUMERIC, NUMERIC, BOOLEAN, public.proc_currency, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":true,"danger":false,"label":"Definir la commission Bonzini d''une mission"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":true,"danger":false,"label":"Definir la commission Bonzini d''une mission","resolve":{"p_mission_id":"mission","p_purchase_order_id":"purchase_order"}}';
 
 -- ── RPC: proc_attach_document ── (preuve jointe, AUCUNE analyse)
 CREATE OR REPLACE FUNCTION public.proc_attach_document(
@@ -653,7 +653,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_record_qc(UUID, public.proc_qc_type, public.proc_qc_inspector_kind, public.proc_qc_result, TIMESTAMPTZ, TEXT, TEXT, JSONB, UUID, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Enregistrer une inspection qualite (QC)"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Enregistrer une inspection qualite (QC)","resolve":{"p_purchase_order_id":"purchase_order"}}';
 
 -- ── RPC: proc_log_production_event ── (append-only)
 CREATE OR REPLACE FUNCTION public.proc_log_production_event(
@@ -696,7 +696,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_log_production_event(UUID, public.proc_production_status, TIMESTAMPTZ, TEXT, UUID) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Journaliser un evenement de production"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":false,"danger":false,"label":"Journaliser un evenement de production","resolve":{"p_purchase_order_id":"purchase_order"}}';
 
 -- ── RPC: proc_record_expense ── (ARGENT, append-only)
 CREATE OR REPLACE FUNCTION public.proc_record_expense(
@@ -747,7 +747,7 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.proc_record_expense(UUID, public.proc_expense_category, NUMERIC, TIMESTAMPTZ, public.proc_currency, BOOLEAN, UUID, TEXT) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":true,"danger":true,"label":"Enregistrer un frais de mission"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageProcurement","confirm":true,"danger":true,"label":"Enregistrer un frais de mission","resolve":{"p_mission_id":"mission"}}';
 
 -- ── RPC: proc_void_record ── (super_admin uniquement)
 -- Annule (contre-marque voided_*) un enregistrement append-only :

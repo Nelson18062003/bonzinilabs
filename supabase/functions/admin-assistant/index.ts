@@ -65,15 +65,33 @@ type PermKey =
   | "canViewClients" | "canEditClients"
   | "canViewDeposits" | "canProcessDeposits"
   | "canViewPayments" | "canProcessPayments"
-  | "canManageRates" | "canViewLogs" | "canManageUsers" | "canViewTreasury";
+  | "canManageRates" | "canViewLogs" | "canManageUsers" | "canViewTreasury"
+  | "canViewProcurement" | "canManageProcurement";
 const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
-  super_admin:      { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: true,  canManageRates: true,  canViewLogs: true,  canManageUsers: true,  canViewTreasury: true },
-  ops:              { canViewClients: true,  canEditClients: false, canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: true,  canManageRates: true,  canViewLogs: true,  canManageUsers: false, canViewTreasury: false },
-  support:          { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: false, canViewPayments: true,  canProcessPayments: false, canManageRates: false, canViewLogs: true,  canManageUsers: false, canViewTreasury: false },
-  customer_success: { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
-  cash_agent:       { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true,  canProcessPayments: true,  canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
-  treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true },
+  super_admin:      { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: true,  canManageRates: true,  canViewLogs: true,  canManageUsers: true,  canViewTreasury: true,  canViewProcurement: true,  canManageProcurement: true },
+  ops:              { canViewClients: true,  canEditClients: false, canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: true,  canManageRates: true,  canViewLogs: true,  canManageUsers: false, canViewTreasury: false, canViewProcurement: false, canManageProcurement: false },
+  support:          { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: false, canViewPayments: true,  canProcessPayments: false, canManageRates: false, canViewLogs: true,  canManageUsers: false, canViewTreasury: false, canViewProcurement: false, canManageProcurement: false },
+  customer_success: { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canViewProcurement: false, canManageProcurement: false },
+  cash_agent:       { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true,  canProcessPayments: true,  canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canViewProcurement: false, canManageProcurement: false },
+  treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true,  canViewProcurement: false, canManageProcurement: false },
+  sourcing_agent:   { canViewClients: true,  canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canViewProcurement: true,  canManageProcurement: true },
 };
+const ALL_PERM_KEYS = Object.keys(ROLE_PERMISSIONS.super_admin) as PermKey[];
+// Un utilisateur peut cumuler plusieurs rôles (ex. père = treasurer + sourcing_agent).
+const ROLE_PRIORITY = ["super_admin", "ops", "customer_success", "support", "treasurer", "sourcing_agent", "cash_agent"];
+function pickPrimaryRole(roles: string[]): string {
+  for (const r of ROLE_PRIORITY) if (roles.includes(r)) return r;
+  return roles[0] ?? "customer_success";
+}
+function mergePerms(roles: string[]): Record<PermKey, boolean> {
+  const merged = Object.fromEntries(ALL_PERM_KEYS.map((k) => [k, false])) as Record<PermKey, boolean>;
+  for (const r of roles) {
+    const p = ROLE_PERMISSIONS[r];
+    if (!p) continue;
+    for (const k of ALL_PERM_KEYS) if (p[k]) merged[k] = true;
+  }
+  return merged;
+}
 
 // Tables lisibles en SQL libre selon les permissions du rôle (Lot 4b — confidentialité).
 function allowedTablesForRole(perms: Record<PermKey, boolean>): string[] {
@@ -82,6 +100,7 @@ function allowedTablesForRole(perms: Record<PermKey, boolean>): string[] {
   if (perms.canViewDeposits) t.push("deposits", "deposit_proofs", "deposit_timeline_events");
   if (perms.canViewPayments) t.push("payments", "beneficiaries", "daily_rates", "rate_adjustments");
   if (perms.canViewTreasury) t.push("treasury_accounts", "treasury_account_balances", "treasury_ledger_entries", "treasury_counterparties", "usdt_purchases", "usdt_sales", "treasury_inventory_snapshots");
+  if (perms.canViewProcurement) t.push("proc_missions", "proc_suppliers", "proc_purchase_orders", "proc_order_lines", "proc_supplier_payments", "proc_production_events", "proc_qc_inspections", "proc_commissions", "proc_documents", "proc_expenses", "proc_po_balances");
   if (perms.canViewLogs) t.push("admin_audit_logs", "user_roles");
   return t;
 }
@@ -1374,6 +1393,26 @@ async function resolveRef(admin: AnyClient, type: string, value: unknown): Promi
     if (clients.length > 1) return { ok: false, error: `Plusieurs clients « ${v} » : ${clients.map((c: AnyClient) => `${c.first_name} ${c.last_name}`).join(", ")}. Précise.` };
     return { ok: true, id: clients[0].user_id };
   }
+  // ── Centrale d'achat (références BZ-MS / BZ-PO / BZ-SP, ou nom de fournisseur) ──
+  if (type === "mission") {
+    const { data } = await admin.from("proc_missions").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Mission « ${v} » introuvable.` };
+  }
+  if (type === "purchase_order") {
+    const { data } = await admin.from("proc_purchase_orders").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Commande « ${v} » introuvable.` };
+  }
+  if (type === "supplier_payment") {
+    const { data } = await admin.from("proc_supplier_payments").select("id").eq("reference", v).maybeSingle();
+    return data ? { ok: true, id: data.id } : { ok: false, error: `Paiement fournisseur « ${v} » introuvable.` };
+  }
+  if (type === "supplier") {
+    const { data } = await admin.from("proc_suppliers").select("id, display_name").ilike("display_name", `%${v}%`).eq("is_active", true).limit(5);
+    const rows = (data ?? []) as AnyClient[];
+    if (rows.length === 0) return { ok: false, error: `Fournisseur « ${v} » introuvable.` };
+    if (rows.length > 1) return { ok: false, error: `Plusieurs fournisseurs « ${v} » : ${rows.map((r: AnyClient) => r.display_name).join(", ")}. Précise.` };
+    return { ok: true, id: rows[0].id };
+  }
   return { ok: false, error: `Type de référence inconnu : ${type}.` };
 }
 
@@ -2430,13 +2469,16 @@ serve(async (req) => {
     const { data: { user }, error: userErr } = await userClient.auth.getUser();
     if (userErr || !user) return json({ success: false, error: "Non authentifié" }, 401);
 
-    const { data: roleRow, error: roleErr } = await admin.from("user_roles").select("role, is_disabled, first_name").eq("user_id", user.id).maybeSingle();
+    const { data: roleRows, error: roleErr } = await admin.from("user_roles").select("role, is_disabled, first_name").eq("user_id", user.id);
     if (roleErr) return json({ success: false, error: "Erreur de vérification des permissions" }, 500);
-    if (!roleRow || roleRow.is_disabled) return json({ success: false, error: "Accès réservé aux administrateurs actifs" }, 403);
-
-    const role = String(roleRow.role);
-    const firstName = String(roleRow.first_name ?? "").trim();
-    const perms = ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS["customer_success"];
+    // Un utilisateur peut cumuler plusieurs rôles (ex. père = treasurer + sourcing_agent) :
+    // on ne garde que les rôles actifs et on FUSIONNE leurs permissions (OR).
+    const activeRows = ((roleRows ?? []) as AnyClient[]).filter((r) => !r.is_disabled);
+    if (activeRows.length === 0) return json({ success: false, error: "Accès réservé aux administrateurs actifs" }, 403);
+    const roles = activeRows.map((r: AnyClient) => String(r.role));
+    const role = pickPrimaryRole(roles);
+    const firstName = String(activeRows.find((r: AnyClient) => r.first_name)?.first_name ?? "").trim();
+    const perms = mergePerms(roles);
 
     // deno-lint-ignore no-explicit-any
     let body: any;

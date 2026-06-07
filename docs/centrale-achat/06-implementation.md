@@ -228,6 +228,23 @@ Manques fonctionnels comblés (RPC + hooks existaient déjà) :
 
 Vérifié : `type-check` 0 erreur · `build` OK · **128 tests**.
 
+## Intégration Mola (AI-native) 🔶 build-ahead (edge function — non testable ici)
+
+`supabase/functions/admin-assistant/index.ts` (Deno — **exclu du `type-check`, non testable sans
+déploiement** ; calqué sur les patterns existants) :
+- **Multi-rôle** : la résolution de rôle passe de `.maybeSingle()` à fetch + **fusion OR** des
+  permissions (`mergePerms`/`pickPrimaryRole`). ⚠️ **Nécessaire** : sans ça, le père (qui cumulera
+  `treasurer` + `sourcing_agent`) verrait son Mola casser (erreur multi-lignes).
+- **Permissions procurement** : `PermKey` += `canViewProcurement`/`canManageProcurement` ; rôle
+  `sourcing_agent` ajouté à `ROLE_PERMISSIONS`.
+- **Résolution de références** : `resolveRef` gère `mission` (BZ-MS), `purchase_order` (BZ-PO),
+  `supplier_payment` (BZ-SP), `supplier` (nom) → Mola accepte les références au lieu d'UUID.
+- **Lecture SQL** : `allowedTablesForRole` expose les tables `proc_*` sous `canViewProcurement`.
+- **Étiquettes `@mola`** : champ `resolve` ajouté aux RPC (migration 101003) → mapping param→type.
+
+Résultat (post-déploiement) : Mola **découvre** (find_capability), **exécute** (do_capability avec
+références) et **lit** la centrale d'achat, dans les limites des droits — la promesse AI-native.
+
 ## Revues sécurité & qualité ✅ (avant déploiement)
 
 Deux revues automatisées (agents `security-reviewer` + `code-simplifier`) sur tout le module, puis
