@@ -164,9 +164,11 @@ export function MobileMissionDetail() {
             </section>
 
             {/* Commissions mission + frais */}
-            {(data.mission_commissions.length > 0 || data.expenses.length > 0) && (
-              <section>
-                <SectionTitle>Commission & frais (mission)</SectionTitle>
+            <section className="space-y-3">
+              <SectionTitle action={canManage ? { label: '+ Frais', onClick: () => navigate(`/m/more/procurement/missions/${m.id}/expense/new`) } : undefined}>
+                Commission & frais (mission)
+              </SectionTitle>
+              {(data.mission_commissions.length > 0 || data.expenses.length > 0) ? (
                 <div className={cn(SOFT_CARD, 'divide-y divide-border px-4')}>
                   {data.mission_commissions.map((c) => (
                     <div key={c.id} className="flex items-center justify-between py-2 text-[12px]">
@@ -181,8 +183,16 @@ export function MobileMissionDetail() {
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+              ) : (
+                <div className="py-2 text-center text-[12px] text-muted-foreground">Aucun frais ni commission.</div>
+              )}
+              {canManage && (
+                <button onClick={() => navigate(`/m/more/procurement/missions/${m.id}/commission/new`)}
+                  className="w-full rounded-xl bg-muted/60 py-2.5 text-[12px] font-semibold text-foreground active:scale-95">
+                  + Commission (mission)
+                </button>
+              )}
+            </section>
 
             <div className="pt-2 text-center text-[10px] text-muted-foreground">
               Rapport généré le {new Date(data.generated_at).toLocaleString('fr-FR')}

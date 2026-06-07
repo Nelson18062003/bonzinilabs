@@ -120,11 +120,14 @@ export function MobilePurchaseOrderDetail() {
               )}
             </section>
 
-            {/* QC + commission */}
-            {(data.qc.length > 0 || data.commission) && (
-              <section>
-                <SectionTitle>Qualité & commission</SectionTitle>
+            {/* Qualité, production & commission */}
+            <section className="space-y-3">
+              <SectionTitle>Qualité, production & commission</SectionTitle>
+              {(data.qc.length > 0 || data.commission || po.production_status) && (
                 <div className="flex flex-wrap gap-1.5">
+                  {po.production_status && (
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">{PROD_LABEL[po.production_status]}</span>
+                  )}
                   {data.qc.map((q) => (
                     <span key={q.id} className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold',
                       q.result === 'pass' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -139,8 +142,15 @@ export function MobilePurchaseOrderDetail() {
                     </span>
                   )}
                 </div>
-              </section>
-            )}
+              )}
+              {canManage && (
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => navigate(`/m/more/procurement/po/${po.id}/qc/new`)} className="rounded-xl bg-muted/60 py-2.5 text-[12px] font-semibold text-foreground active:scale-95">+ QC</button>
+                  <button onClick={() => navigate(`/m/more/procurement/po/${po.id}/production/new`)} className="rounded-xl bg-muted/60 py-2.5 text-[12px] font-semibold text-foreground active:scale-95">+ Production</button>
+                  <button onClick={() => navigate(`/m/more/procurement/po/${po.id}/commission/new`)} className="rounded-xl bg-muted/60 py-2.5 text-[12px] font-semibold text-foreground active:scale-95">+ Commission</button>
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>

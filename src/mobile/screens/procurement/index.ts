@@ -11,3 +11,7 @@ export { MobileNewPurchaseOrder } from './MobileNewPurchaseOrder';
 export { MobilePurchaseOrderDetail } from './MobilePurchaseOrderDetail';
 export { MobileRecordPayment } from './MobileRecordPayment';
 export { MobileAddOrderLine } from './MobileAddOrderLine';
+export { MobileRecordQc } from './MobileRecordQc';
+export { MobileLogProduction } from './MobileLogProduction';
+export { MobileSetCommission } from './MobileSetCommission';
+export { MobileRecordExpense } from './MobileRecordExpense';
