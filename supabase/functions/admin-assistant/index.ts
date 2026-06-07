@@ -232,6 +232,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
     { capability: "créer / valider / rejeter un dépôt", tool: "create_deposit / create_and_validate_deposit / validate_deposit / reject_deposit" },
     { capability: "attacher une preuve (capture/PDF)", tool: "auto (pièces jointes du message)" },
     { capability: "AFFICHER la preuve image d'un dépôt dans le chat", tool: "show_deposit_proof" },
+    { capability: "demander une correction de dépôt / supprimer un dépôt", tool: null, note: "via find_capability + do_capability (request_deposit_correction, delete_deposit super_admin)" },
   ],
   paiements: [
     { capability: "créer un paiement au taux du jour OU à un taux personnalisé", tool: "create_payment", note: "exchange_rate optionnel = taux personnalisé, comme l'écran admin" },
@@ -250,6 +251,13 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   tresorerie: [
     { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
   ],
+  admins: [
+    { capability: "créer un admin, activer/désactiver, changer le rôle, modifier le profil", tool: null, note: "via find_capability + do_capability — réservé super_admin (canManageUsers), confirmation requise" },
+    { capability: "réinitialiser le mot de passe d'un admin ou d'un client", tool: null, note: "via do_capability (admin_reset_password / admin_reset_client_password), super_admin, sensible" },
+  ],
+  chat: [
+    { capability: "gérer les réponses pré-enregistrées et les réponses rapides", tool: null, note: "via find_capability + do_capability (admin_*_canned_response / admin_*_quick_reply), super_admin" },
+  ],
 };
 
 // Savoir métier détaillé — indexable en mémoire sémantique (reindex_knowledge) → récupéré just-in-time.
@@ -267,7 +275,7 @@ const READ_TOOLS: ReadTool[] = [
     name: "what_can_i_do",
     permission: "canViewPayments",
     always: true,
-    description: "INTROSPECTION : ce que TOI (l'assistant) peux faire, par domaine, et ce que la plateforme permet même sans outil dédié. À APPELER avant d'affirmer qu'une action est impossible. domain optionnel (clients|depots|paiements|taux|tresorerie).",
+    description: "INTROSPECTION : ce que TOI (l'assistant) peux faire, par domaine, et ce que la plateforme permet même sans outil dédié. À APPELER avant d'affirmer qu'une action est impossible. domain optionnel (clients|depots|paiements|taux|tresorerie|admins|chat).",
     input_schema: { type: "object", properties: { domain: { type: "string" } } },
     execute: (_admin, { domain }) => {
       const d = domain ? String(domain).toLowerCase() : null;
