@@ -67,5 +67,10 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 
 - M2 (1/5) ✅ `MobileClientsScreen` migré sur le kit : contenu sur canvas doux `SURFACE.canvas`, recherche en `TextInput` (icône `Search`), chips filtres statut en `PRIMARY_PILL`/`SOFT_PILL` (remplace `MobileFilterChips`), lignes client en carte (`SURFACE.card`+`shadow`, bouton) avec `Avatar` (initiales) + `StatusPill` toné (`clientStatusTone`) + solde en gros chiffre `tabular-nums` ; stats dépôts/paiements sans filet ; empty-state `Holder`+`PrimaryPill` (remplace `MobileEmptyState`) ; FAB en `PRIMARY_PILL`. Recherche debouncée + filtre statut client-side + navigation intacts. type-check + build verts.
 
+- M2 (2/5) ✅ `MobileClientDetail` + `components/clients/AdjustmentDrawer` migrés sur le kit :
+  - canvas doux ; profil en `Card` (holder initiales + `StatusPill` toné `clientStatusTone`, source UTM en `StatusPill` info) ; **hero solde** = `Card`+`Amount` (size `xl`, unité XAF atténuée) avec lien Historique + boutons Crédit (tone success) / Débit (tone danger) ; stats = 2× `StatCard` (dépôts success / paiements info) ; liste d'actions en `Card`+`ActionRow` (Holder toné + libellé/desc + chevron, calqué sur `MenuRow`, états loading/disabled pour relevé PDF et suppression).
+  - **4 drawers → `BottomSheet`** : édition profil (`FormField`/`TextInput` + `PrimaryPill`/`SoftPill`), confirmation suppression (`PrimaryPill danger`), confirmation reset mdp, résultat mdp (code + `Holder` copier toné success). `AdjustmentDrawer` (crédit/débit) : shell `Drawer` → `BottomSheet`, `AmountField`/`TextArea`/`useCreateAdjustment` conservés, solde courant en `Amount`, warning toné pending, CTA `PrimaryPill` (danger si débit) ; garde-fou `handleClose` (bloque la fermeture pendant l'envoi) intact.
+  - TOUTE la logique conservée : `useClient`/`useClientLedger`/`useUpdateClient`/`useResetClientPassword`/`useAdminDeleteClient`/`useCreateAdjustment`, garde `canManageUsers`, contrôle solde+paiements en cours avant suppression, génération relevé PDF, copie mot de passe. type-check + build verts.
+
 ## Résumé matin
 _(à remplir en fin de run)_

@@ -38,18 +38,26 @@ import {
   Users,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
-import { Button } from '@/components/ui/button';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-} from '@/components/ui/drawer';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { toast } from 'sonner';
 import type { AdjustmentType } from '@/types/admin';
-import { clientStatusTone, StatusPill } from '@/mobile/designKit';
+import {
+  SURFACE,
+  TEXT,
+  TONE_HOLDER,
+  type Tone,
+  clientStatusTone,
+  Card,
+  Amount,
+  StatCard,
+  StatusPill,
+  Holder,
+  BottomSheet,
+  FormField,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+} from '@/mobile/designKit';
 
 // Status labels are resolved via i18n inside the component
 const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> = {
@@ -58,6 +66,52 @@ const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> =
   SUSPENDED:   { key: 'suspendedStatus', defaultValue: 'Suspendu' },
   PENDING_KYC: { key: 'kycPending', defaultValue: 'KYC en attente' },
 };
+
+// Action row in the Ofspace/Mola language: neutral (or toned) round holder +
+// label/desc + chevron. No divider hairlines (cards group items).
+function ActionRow({
+  icon: Icon,
+  tone = 'neutral',
+  label,
+  description,
+  onClick,
+  disabled,
+  destructive,
+  loading,
+}: {
+  icon: React.ElementType;
+  tone?: Tone;
+  label: string;
+  description?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
+  loading?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.99] disabled:opacity-60"
+    >
+      <span
+        className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+          destructive ? TONE_HOLDER.danger : TONE_HOLDER[tone],
+        )}
+      >
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+          {label}
+        </span>
+        {description && <span className={cn('block truncate text-[12.5px]', TEXT.muted)}>{description}</span>}
+      </span>
+      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+    </button>
+  );
+}
 
 export function MobileClientDetail() {
   const { t } = useTranslation('common');
@@ -227,19 +281,21 @@ export function MobileClientDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
-        <SkeletonClientDetail />
+        <div className={cn('flex-1', SURFACE.canvas)}>
+          <SkeletonClientDetail />
+        </div>
       </div>
     );
   }
 
   if (!client) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-muted-foreground">{t('clientNotFound', { defaultValue: 'Client non trouvé' })}</p>
+        <div className={cn('flex flex-1 items-center justify-center p-4', SURFACE.canvas)}>
+          <p className={TEXT.muted}>{t('clientNotFound', { defaultValue: 'Client non trouvé' })}</p>
         </div>
       </div>
     );
@@ -248,280 +304,198 @@ export function MobileClientDetail() {
   const initials = `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`;
 
   return (
-    <div className="flex flex-col min-h-screen pb-4">
+    <div className="flex min-h-screen flex-col">
       <MobileHeader title={t('clientProfile', { defaultValue: 'Fiche client' })} showBack backTo="/m/clients" />
 
-      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
+      <div className={cn('flex-1 space-y-4 px-4 py-5', SURFACE.canvas)}>
         {/* Profile Card */}
-        <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center text-lg sm:text-xl font-semibold text-primary flex-shrink-0">
-              {initials}
+        <Card className="p-5">
+          <div className="flex items-start gap-4">
+            <div className={cn('flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold', SURFACE.holder)}>
+              {initials || '?'}
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold truncate">
+                <h2 className={cn('truncate text-[18px] font-bold', TEXT.strong)}>
                   {client.firstName} {client.lastName}
                 </h2>
                 <StatusPill
                   tone={clientStatusTone(client.status)}
                   label={t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status })}
-                  className="px-2 py-0.5 text-[10px]"
                 />
               </div>
 
               {client.phone && (
                 <a
                   href={`tel:${client.phone}`}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1"
+                  className={cn('mt-1.5 flex items-center gap-1.5 text-[13px]', TEXT.muted)}
                 >
-                  <Phone className="w-3.5 h-3.5" />
+                  <Phone className="h-3.5 w-3.5" />
                   {client.phone}
                 </a>
               )}
 
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                <Mail className="w-3.5 h-3.5" />
+              <div className={cn('mt-1 flex items-center gap-1.5 text-[13px]', TEXT.muted)}>
+                <Mail className="h-3.5 w-3.5" />
                 {client.email || t('notProvided', { defaultValue: 'Non renseigné' })}
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
-                <Calendar className="w-3 h-3" />
+              <div className={cn('mt-2 flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
+                <Calendar className="h-3 w-3" />
                 {t('clientSince', { defaultValue: 'Client depuis' })} {formatDate(client.createdAt)}
               </div>
 
               {client.utmSource && (
-                <div className="flex items-center gap-1.5 text-xs mt-1.5">
-                  <Link2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                  <span className="text-muted-foreground">Source :</span>
-                  <span className="font-medium capitalize px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                    {client.utmSource}
-                  </span>
+                <div className="mt-1.5 flex items-center gap-1.5 text-[12px]">
+                  <Link2 className={cn('h-3 w-3 shrink-0', TEXT.muted)} />
+                  <span className={TEXT.muted}>Source :</span>
+                  <StatusPill tone="info" label={<span className="capitalize">{client.utmSource}</span>} />
                   {client.utmCampaign && (
-                    <span className="text-muted-foreground truncate">· {client.utmCampaign}</span>
+                    <span className={cn('truncate', TEXT.muted)}>· {client.utmCampaign}</span>
                   )}
                 </div>
               )}
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Wallet Balance Card */}
-        <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
+        <Card className="p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Holder icon={Wallet} size="sm" />
+              <span className={cn('text-[13px] font-medium', TEXT.muted)}>{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
             </div>
             <button
               onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-              className="text-primary text-sm font-medium"
+              className="text-[13px] font-semibold text-[#6B5BD2] active:opacity-70 dark:text-[#A99BF0]"
             >
               {t('history', { defaultValue: 'Historique' })}
             </button>
           </div>
 
-          <p className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">
-            {formatXAF(client.walletBalance || 0)}{' '}
-            <span className="text-xl font-medium text-primary/70">XAF</span>
-          </p>
+          <Amount value={formatXAF(client.walletBalance || 0)} unit="XAF" size="xl" />
 
           {client.lastLedgerEntry && (
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className={cn('mt-2 text-[12px]', TEXT.muted)}>
               {t('lastMovement', { defaultValue: 'Dernier mouvement' })} : {formatDate(client.lastLedgerEntry.createdAt)}
             </p>
           )}
 
           {/* Quick Actions */}
-          <div className="flex gap-2 mt-4 pt-4 border-t border-primary/10">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/15"
+          <div className="mt-4 flex gap-2.5">
+            <button
               onClick={() => openAdjustment('CREDIT')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-full py-3 text-[14px] font-bold transition active:scale-[0.99]',
+                TONE_HOLDER.success,
+              )}
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="h-4 w-4" />
               {t('credit', { defaultValue: 'Crédit' })}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/15"
+            </button>
+            <button
               onClick={() => openAdjustment('DEBIT')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-full py-3 text-[14px] font-bold transition active:scale-[0.99]',
+                TONE_HOLDER.danger,
+              )}
             >
-              <Minus className="w-4 h-4 mr-1" />
+              <Minus className="h-4 w-4" />
               {t('debitLabel', { defaultValue: 'Débit' })}
-            </Button>
+            </button>
           </div>
-        </div>
+        </Card>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                <ArrowDownCircle className="w-4 h-4 text-green-500" />
-              </div>
-            </div>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">
-              {formatXAF(client.totalDeposits || 0)}{' '}
-              <span className="text-sm font-medium">XAF</span>
-            </p>
-            <p className="text-xs text-muted-foreground">{t('totalDeposits', { defaultValue: 'Total dépôts' })}</p>
-          </div>
-
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <ArrowUpCircle className="w-4 h-4 text-blue-500" />
-              </div>
-            </div>
-            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-              {formatXAF(client.totalPayments || 0)}{' '}
-              <span className="text-sm font-medium">XAF</span>
-            </p>
-            <p className="text-xs text-muted-foreground">{t('totalPayments', { defaultValue: 'Total paiements' })}</p>
-          </div>
+          <StatCard
+            icon={ArrowDownCircle}
+            tone="success"
+            label={t('totalDeposits', { defaultValue: 'Total dépôts' })}
+            value={formatXAF(client.totalDeposits || 0)}
+            unit="XAF"
+          />
+          <StatCard
+            icon={ArrowUpCircle}
+            tone="info"
+            label={t('totalPayments', { defaultValue: 'Total paiements' })}
+            value={formatXAF(client.totalPayments || 0)}
+            unit="XAF"
+          />
         </div>
 
         {/* Actions */}
-        <div className="space-y-2">
-          <button
+        <Card className="space-y-0.5 p-2">
+          <ActionRow
+            icon={History}
+            label={t('movementHistory', { defaultValue: 'Historique mouvements' })}
+            description={t('viewFullLedger', { defaultValue: 'Voir le ledger complet' })}
             onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <History className="w-5 h-5 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">{t('movementHistory', { defaultValue: 'Historique mouvements' })}</p>
-                <p className="text-xs text-muted-foreground">{t('viewFullLedger', { defaultValue: 'Voir le ledger complet' })}</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-
-          <button
+          />
+          <ActionRow
+            icon={ArrowDownCircle}
+            tone="success"
+            label={t('declareDeposit', { defaultValue: 'Déclarer un dépôt' })}
+            description={t('createNewDeposit', { defaultValue: 'Créer un nouveau dépôt' })}
             onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
-            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <ArrowDownCircle className="w-5 h-5 text-green-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">{t('declareDeposit', { defaultValue: 'Déclarer un dépôt' })}</p>
-                <p className="text-xs text-muted-foreground">{t('createNewDeposit', { defaultValue: 'Créer un nouveau dépôt' })}</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-
-          <button
+          />
+          <ActionRow
+            icon={Users}
+            tone="info"
+            label={t('beneficiaries', { defaultValue: 'Bénéficiaires' })}
+            description={t('manageBeneficiaries', { defaultValue: 'Gérer le carnet du client' })}
             onClick={() => navigate(`/m/clients/${client.id}/beneficiaries`)}
-            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center">
-                <Users className="w-5 h-5 text-violet-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">{t('beneficiaries', { defaultValue: 'Bénéficiaires' })}</p>
-                <p className="text-xs text-muted-foreground">{t('manageBeneficiaries', { defaultValue: 'Gérer le carnet du client' })}</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-
-          <button
+          />
+          <ActionRow
+            icon={FileDown}
+            tone="info"
+            label={isStatementGenerating ? t('generatingStatement', { defaultValue: 'Génération en cours…' }) : t('exportPDFStatement', { defaultValue: 'Exporter relevé PDF' })}
+            description={
+              ledgerEntries?.length
+                ? `${ledgerEntries.length} ${t('operations', { defaultValue: 'opération', count: ledgerEntries.length })}${ledgerEntries.length > 1 ? 's' : ''}`
+                : t('downloadHistory', { defaultValue: "Télécharger l'historique" })
+            }
             onClick={handleDownloadStatement}
             disabled={isStatementGenerating}
-            className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform disabled:opacity-60"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                {isStatementGenerating ? (
-                  <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                ) : (
-                  <FileDown className="w-5 h-5 text-blue-500" />
-                )}
-              </div>
-              <div className="text-left">
-                <p className="font-medium">
-                  {isStatementGenerating ? t('generatingStatement', { defaultValue: 'Génération en cours…' }) : t('exportPDFStatement', { defaultValue: 'Exporter relevé PDF' })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {ledgerEntries?.length
-                    ? `${ledgerEntries.length} ${t('operations', { defaultValue: 'opération', count: ledgerEntries.length })}${ledgerEntries.length > 1 ? 's' : ''}`
-                    : t('downloadHistory', { defaultValue: "Télécharger l'historique" })}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
+            loading={isStatementGenerating}
+          />
 
           {/* Edit Client */}
           {canManageUsers && (
-            <button
+            <ActionRow
+              icon={Pencil}
+              label={t('editProfile', { defaultValue: 'Modifier le profil' })}
+              description={t('namePhoneEmailCompany', { defaultValue: 'Nom, téléphone, email, entreprise…' })}
               onClick={openEdit}
-              className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Pencil className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">{t('editProfile', { defaultValue: 'Modifier le profil' })}</p>
-                  <p className="text-xs text-muted-foreground">{t('namePhoneEmailCompany', { defaultValue: 'Nom, téléphone, email, entreprise…' })}</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
+            />
           )}
 
           {/* Reset Password */}
           {canManageUsers && (
-            <button
+            <ActionRow
+              icon={Key}
+              tone="pending"
+              label={t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}
+              description={t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' })}
               onClick={() => setResetDrawerOpen(true)}
-              className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                  <Key className="w-5 h-5 text-amber-500" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">{t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}</p>
-                  <p className="text-xs text-muted-foreground">{t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' })}</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
+            />
           )}
 
           {/* Delete Client */}
           {canManageUsers && (
-            <button
+            <ActionRow
+              icon={Trash2}
+              destructive
+              label={t('deleteClient', { defaultValue: 'Supprimer le client' })}
+              description={t('permanentDeletion', { defaultValue: 'Suppression définitive et irréversible' })}
               onClick={handleDeleteCheck}
               disabled={deleteChecking}
-              className="w-full flex items-center justify-between p-4 bg-destructive/5 rounded-xl border border-destructive/20 active:scale-[0.98] transition-transform disabled:opacity-50"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                  {deleteChecking ? <Loader2 className="w-5 h-5 text-destructive animate-spin" /> : <Trash2 className="w-5 h-5 text-destructive" />}
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-destructive">{t('deleteClient', { defaultValue: 'Supprimer le client' })}</p>
-                  <p className="text-xs text-muted-foreground">{t('permanentDeletion', { defaultValue: 'Suppression définitive et irréversible' })}</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
+              loading={deleteChecking}
+            />
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Adjustment Drawer */}
@@ -537,142 +511,133 @@ export function MobileClientDetail() {
         }}
       />
 
-      {/* Edit Client Drawer */}
-      <Drawer open={editOpen} onOpenChange={setEditOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              <Pencil className="w-5 h-5 text-primary" />
-              {t('editProfile', { defaultValue: 'Modifier le profil' })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 space-y-3 overflow-y-auto max-h-[60vh]">
-            {[
-              { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: t('phoneWhatsApp', { defaultValue: 'Téléphone / WhatsApp' }), key: 'phone' as const, icon: <Phone className="w-4 h-4" /> },
-              { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const, icon: <Mail className="w-4 h-4" /> },
-              { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const, icon: <Building2 className="w-4 h-4" /> },
-              { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const, icon: <MapPin className="w-4 h-4" /> },
-              { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const, icon: <MapPin className="w-4 h-4" /> },
-            ].map(({ label, key }) => (
-              <div key={key}>
-                <label className="block text-sm font-bold mb-1">{label}</label>
-                <input
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                  value={editForm[key]}
-                  onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
-                  placeholder={label}
-                />
-              </div>
-            ))}
-          </div>
-          <DrawerFooter>
-            <Button onClick={handleSaveEdit} disabled={updateClientMutation.isPending}>
-              {updateClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('save', { defaultValue: 'Enregistrer' })}
-            </Button>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
-              {t('cancel', { defaultValue: 'Annuler' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {/* Edit Client Sheet */}
+      <BottomSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title={
+          <span className="flex items-center gap-2">
+            <Pencil className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            {t('editProfile', { defaultValue: 'Modifier le profil' })}
+          </span>
+        }
+      >
+        <div className="space-y-3">
+          {([
+            { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const },
+            { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const },
+            { label: t('phoneWhatsApp', { defaultValue: 'Téléphone / WhatsApp' }), key: 'phone' as const },
+            { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const },
+            { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const },
+            { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const },
+            { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const },
+          ]).map(({ label, key }) => (
+            <FormField key={key} label={label} htmlFor={`edit-${key}`}>
+              <TextInput
+                id={`edit-${key}`}
+                value={editForm[key]}
+                onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                placeholder={label}
+              />
+            </FormField>
+          ))}
+        </div>
+        <div className="mt-5 flex flex-col gap-2">
+          <PrimaryPill onClick={handleSaveEdit} loading={updateClientMutation.isPending} className="w-full">
+            {t('save', { defaultValue: 'Enregistrer' })}
+          </PrimaryPill>
+          <SoftPill onClick={() => setEditOpen(false)} className="w-full">
+            {t('cancel', { defaultValue: 'Annuler' })}
+          </SoftPill>
+        </div>
+      </BottomSheet>
 
-      {/* Delete Client Confirmation Drawer */}
-      <Drawer open={deleteDrawerOpen} onOpenChange={setDeleteDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="w-5 h-5" />
-              {t('deleteClient', { defaultValue: 'Supprimer le client' })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4">
-            <p className="text-muted-foreground">
-              Voulez-vous vraiment supprimer{' '}
-              <strong>{client?.firstName} {client?.lastName}</strong> ?
-              Cette action est <strong>irréversible</strong> et supprimera toutes ses données
-              (historique de transactions, relevés, etc.).
-            </p>
-          </div>
-          <DrawerFooter>
-            <Button
-              variant="destructive"
-              onClick={() => client && deleteClientMutation.mutate(client.id)}
-              disabled={deleteClientMutation.isPending}
-            >
-              {deleteClientMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('confirmDeletion', { defaultValue: 'Confirmer la suppression' })}
-            </Button>
-            <Button variant="outline" onClick={() => setDeleteDrawerOpen(false)}>
-              {t('cancel', { defaultValue: 'Annuler' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {/* Delete Client Confirmation Sheet */}
+      <BottomSheet
+        open={deleteDrawerOpen}
+        onClose={() => setDeleteDrawerOpen(false)}
+        title={
+          <span className="flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]">
+            <Trash2 className="h-5 w-5" />
+            {t('deleteClient', { defaultValue: 'Supprimer le client' })}
+          </span>
+        }
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>
+          Voulez-vous vraiment supprimer{' '}
+          <strong className={TEXT.strong}>{client?.firstName} {client?.lastName}</strong> ?
+          Cette action est <strong className={TEXT.strong}>irréversible</strong> et supprimera toutes ses données
+          (historique de transactions, relevés, etc.).
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <PrimaryPill
+            danger
+            onClick={() => client && deleteClientMutation.mutate(client.id)}
+            loading={deleteClientMutation.isPending}
+            className="w-full"
+          >
+            {t('confirmDeletion', { defaultValue: 'Confirmer la suppression' })}
+          </PrimaryPill>
+          <SoftPill onClick={() => setDeleteDrawerOpen(false)} className="w-full">
+            {t('cancel', { defaultValue: 'Annuler' })}
+          </SoftPill>
+        </div>
+      </BottomSheet>
 
-      {/* Reset Password Confirmation Drawer */}
-      <Drawer open={resetDrawerOpen} onOpenChange={setResetDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5 text-primary" />
-              {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4">
-            <p className="text-muted-foreground">
-              {t('resetPasswordClientMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
-              <strong>{client.firstName} {client.lastName}</strong>. {t('resetPasswordClientSuffix', { defaultValue: 'Vous devrez le transmettre manuellement au client.' })}
-            </p>
-          </div>
-          <DrawerFooter>
-            <Button onClick={handleResetPassword} disabled={resetPasswordMutation.isPending}>
-              {resetPasswordMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
-            </Button>
-            <Button variant="outline" onClick={() => setResetDrawerOpen(false)}>
-              {t('cancel', { defaultValue: 'Annuler' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {/* Reset Password Confirmation Sheet */}
+      <BottomSheet
+        open={resetDrawerOpen}
+        onClose={() => setResetDrawerOpen(false)}
+        title={
+          <span className="flex items-center gap-2">
+            <Key className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
+          </span>
+        }
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>
+          {t('resetPasswordClientMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
+          <strong className={TEXT.strong}>{client.firstName} {client.lastName}</strong>. {t('resetPasswordClientSuffix', { defaultValue: 'Vous devrez le transmettre manuellement au client.' })}
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <PrimaryPill onClick={handleResetPassword} loading={resetPasswordMutation.isPending} className="w-full">
+            {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
+          </PrimaryPill>
+          <SoftPill onClick={() => setResetDrawerOpen(false)} className="w-full">
+            {t('cancel', { defaultValue: 'Annuler' })}
+          </SoftPill>
+        </div>
+      </BottomSheet>
 
-      {/* Password Result Drawer */}
-      <Drawer open={passwordResultDrawerOpen} onOpenChange={setPasswordResultDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              <Check className="w-5 h-5 text-green-500" />
-              {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 space-y-4">
-            <p className="text-muted-foreground">
-              {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
-            </p>
-            <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
-              <code className="text-lg font-mono">{newPassword}</code>
-              <Button variant="ghost" size="icon" onClick={handleCopyPassword}>
-                {passwordCopied ? (
-                  <Check className="w-5 h-5 text-green-500" />
-                ) : (
-                  <Copy className="w-5 h-5" />
-                )}
-              </Button>
-            </div>
-            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-lg">
-              {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
-            </p>
+      {/* Password Result Sheet */}
+      <BottomSheet
+        open={passwordResultDrawerOpen}
+        onClose={() => setPasswordResultDrawerOpen(false)}
+        title={
+          <span className="flex items-center gap-2">
+            <Check className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
+            {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
+          </span>
+        }
+      >
+        <div className="space-y-4">
+          <p className={cn('text-[14px]', TEXT.muted)}>
+            {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
+          </p>
+          <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-4', SURFACE.canvas)}>
+            <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>
+            <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
           </div>
-          <DrawerFooter>
-            <Button onClick={() => setPasswordResultDrawerOpen(false)}>{t('close', { defaultValue: 'Fermer' })}</Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          <p className="rounded-2xl bg-[#F8EFD8] p-3 text-[13px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
+          </p>
+        </div>
+        <div className="mt-5">
+          <PrimaryPill onClick={() => setPasswordResultDrawerOpen(false)} className="w-full">
+            {t('close', { defaultValue: 'Fermer' })}
+          </PrimaryPill>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
