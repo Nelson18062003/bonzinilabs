@@ -33,7 +33,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 - [x] **P1.2** Statuts : source unique → clients, deposits, payments (badges) importent la même.
 
 ### Phase 2 — Migration module par module
-- [ ] **M1** More (hub + settings + profile + notifications + history + proofs)
+- [x] **M1** More (hub + settings + profile + notifications + history + proofs)
 - [ ] **M2** Clients (liste · détail · create · ledger · beneficiaries)
 - [ ] **M3** Deposits (liste V2 · détail V2 · new) — logique intacte
 - [ ] **M4** Payments (liste · détail · new)
@@ -56,6 +56,13 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 - P1.1 ✅ Rôles admin sur source unique : les 3 `ROLE_BADGE_COLORS` dupliqués (MobileAdminsScreen, MobileCreateAdmin, MobileAdminDetail) supprimés → remplacés par `roleMeta()` (tone) + `StatusPill`/`Holder` du kit. Libellés conservés via `ADMIN_ROLE_LABELS`. Ajout du rôle `treasurer` (tone `success`) à `ROLE_META` pour compléter la source unique (parité avec `AppRole`). Logique/permissions/filtres intacts. type-check + build verts.
 - P1.2 ✅ Statuts sur source unique (badges liste + détail des écrans VIVANTS) : clients (`MobileClientsScreen`, `MobileClientDetail` → `clientStatusTone`), dépôts V2 (`MobileDepositsScreenV2`, `MobileDepositDetailV2` → `depositStatusTone`, dicos `STATUS_COLOR` inline + const `BLUE` orpheline supprimés), paiements (`MobilePaymentsScreen` → `paymentStatusTone`, import `PAYMENT_STATUS_COLORS` retiré ; `MobilePaymentDetailV2` → `paymentStatusTone`, dico `STATUS_COLOR` local supprimé). Tous les badges passent par `StatusPill`. Libellés existants conservés (`*_STATUS_LABELS`, `STATUS_LABEL_KEYS`, `PAYMENT_STATUS_CONFIG`, ternaires i18n). V1 morts (`MobileDepositsScreen`/`MobileDepositDetail`) NON touchés (non routés). Logique/filtres/permissions intacts. type-check + build verts.
 - M1 (1/6) ✅ `MobileMoreScreen` (hub) migré sur le kit : contenu sur canvas doux `SURFACE.canvas`, items regroupés en `Card`s par section (`SectionTitle` : Outils / Activité / Support / Administration), nouveau `MenuRow` au langage Ofspace (Holder neutre + libellé/desc + pastille de compteur + chevron, sans filets), profil en `Card` cliquable, toggles thème/langue en `Card`, déconnexion en `Card` (tone danger). Navigation, permissions (`canViewTreasury`/`canAccessSupportChat`/`canManageUsers`), badges (notif + support) et `ThemeToggleCompact`/`LanguageSwitcher` intacts. type-check + build verts.
+- M1 (6/6) ✅ **Module More terminé.** 5 écrans restants migrés sur le kit :
+  - `more/MobileSettingsScreen` → canvas + `SectionTitle` (Apparence/Compte/À propos) + `Card`/`Row` ; `ThemeToggle` conservé ; rôle affiché en `StatusPill` (`roleMeta`).
+  - `MobileAdminProfile` → canvas + holder avatar (overlay caméra conservé) + `FormField`/`TextInput` + `PrimaryPill`. TOUTE la logique upload Storage (`avatars`) + RPC `update_my_admin_profile` + `refreshProfile` + `validateUploadFile` intacte.
+  - `MobileNotificationsScreen` → canvas + groupes par date en `SectionTitle` + cartes (`SURFACE.card`) + `Holder` toné par type (`TYPE_CONFIG` → `Tone` au lieu de classes hex) ; groupement/relative-date intacts.
+  - `MobileHistoryScreen` → canvas + recherche `TextInput` + chips filtres (`PRIMARY_PILL`/`SOFT_PILL`) + lignes en `Card` avec `Avatar` + badge cible en `StatusPill` toné (`getTargetTone`) ; recherche debouncée + filtre type intacts.
+  - `MobileProofsScreen` → canvas + 2× `StatCard` + recherche `TextInput` + grille de vignettes (`SURFACE.card`) avec badge `StatusPill` ; **drawer de prévisualisation → `BottomSheet`** (fermeture backdrop/Échap/X + lock scroll du kit) avec `Row`/`PrimaryPill` ; `ProofThumb` + URLs signées + ouverture fichier intacts.
+  - type-check + build verts.
 
 ## Résumé matin
 _(à remplir en fin de run)_

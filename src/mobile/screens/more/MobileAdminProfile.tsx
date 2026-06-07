@@ -5,8 +5,8 @@ import { Camera, Loader2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import { validateUploadFile } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { validateUploadFile, cn } from '@/lib/utils';
+import { SURFACE, TEXT, FormField, TextInput, PrimaryPill } from '@/mobile/designKit';
 
 /**
  * Profil admin éditable par soi-même : nom, prénom, photo de profil.
@@ -81,32 +81,32 @@ export function MobileAdminProfile() {
   };
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full flex-col">
       <MobileHeader title="Mon profil" showBack />
 
-      <div className="flex-1 px-4 py-6 space-y-6">
+      <div className={cn('flex-1 space-y-6 px-4 py-6', SURFACE.canvas)}>
         {/* Avatar */}
         <div className="flex flex-col items-center">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="relative w-24 h-24 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary"
+            className={cn('relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full text-2xl font-bold', SURFACE.holder)}
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Photo de profil" className="w-full h-full object-cover" />
+              <img src={avatarUrl} alt="Photo de profil" className="h-full w-full object-cover" />
             ) : (
               <span>{initials}</span>
             )}
-            <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 active:opacity-100 transition-opacity">
-              {uploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity active:opacity-100">
+              {uploading ? <Loader2 className="h-6 w-6 animate-spin text-white" /> : <Camera className="h-6 w-6 text-white" />}
             </span>
           </button>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="mt-3 text-sm text-primary font-medium disabled:opacity-50"
+            className="mt-3 text-[13px] font-semibold text-[#6B5BD2] disabled:opacity-50 dark:text-[#A99BF0]"
           >
             {uploading ? 'Téléchargement…' : 'Changer la photo'}
           </button>
@@ -121,41 +121,40 @@ export function MobileAdminProfile() {
 
         {/* Champs */}
         <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Prénom *</label>
-            <input
+          <FormField label="Prénom *" htmlFor="firstName">
+            <TextInput
+              id="firstName"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="Votre prénom"
-              className="w-full h-12 rounded-xl border border-border bg-background px-3 text-sm"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Nom</label>
-            <input
+          </FormField>
+          <FormField label="Nom" htmlFor="lastName">
+            <TextInput
+              id="lastName"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Votre nom"
-              className="w-full h-12 rounded-xl border border-border bg-background px-3 text-sm"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Email</label>
-            <input
+          </FormField>
+          <FormField label="Email" htmlFor="email">
+            <TextInput
+              id="email"
               value={currentUser?.email ?? ''}
               disabled
-              className="w-full h-12 rounded-xl border border-border bg-muted px-3 text-sm text-muted-foreground"
+              className={cn('opacity-70', TEXT.muted)}
             />
-          </div>
+          </FormField>
         </div>
 
-        <Button onClick={handleSave} disabled={saving || uploading} className="w-full h-12">
-          {saving ? (
-            <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement…</span>
-          ) : (
-            'Enregistrer'
-          )}
-        </Button>
+        <PrimaryPill
+          onClick={handleSave}
+          disabled={saving || uploading}
+          loading={saving}
+          className="w-full"
+        >
+          Enregistrer
+        </PrimaryPill>
       </div>
     </div>
   );

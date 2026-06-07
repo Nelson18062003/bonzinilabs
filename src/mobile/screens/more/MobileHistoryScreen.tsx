@@ -16,6 +16,18 @@ import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  type Tone,
+  Card,
+  Avatar,
+  StatusPill,
+  TextInput,
+  Holder,
+} from '@/mobile/designKit';
 
 const FILTERS = [
   { value: 'all', label: 'Tous' },
@@ -42,64 +54,61 @@ export function MobileHistoryScreen() {
 
   const getActionIcon = (actionType: string) => {
     if (actionType.includes('deposit') || actionType.includes('DEPOSIT')) {
-      return <ArrowDownToLine className="w-4 h-4" />;
+      return <ArrowDownToLine className="h-3 w-3" />;
     }
     if (actionType.includes('payment') || actionType.includes('PAYMENT')) {
-      return <ArrowUpFromLine className="w-4 h-4" />;
+      return <ArrowUpFromLine className="h-3 w-3" />;
     }
     if (actionType.includes('rate') || actionType.includes('RATE')) {
-      return <TrendingUp className="w-4 h-4" />;
+      return <TrendingUp className="h-3 w-3" />;
     }
     if (actionType.includes('client') || actionType.includes('CLIENT')) {
-      return <User className="w-4 h-4" />;
+      return <User className="h-3 w-3" />;
     }
-    return <Shield className="w-4 h-4" />;
+    return <Shield className="h-3 w-3" />;
   };
 
-  const getTargetColor = (targetType: string) => {
+  // Target type → unified tone (color carries meaning only).
+  const getTargetTone = (targetType: string): Tone => {
     switch (targetType) {
       case 'deposit':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'success';
       case 'payment':
-        return 'bg-blue-100 text-blue-700';
-      case 'client':
-        return 'bg-purple-100 text-purple-700';
+        return 'info';
       case 'rate':
-        return 'bg-amber-100 text-amber-700';
+        return 'pending';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'neutral';
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col">
       <MobileHeader title={t('history', { defaultValue: 'Historique' })} backTo="/m/more" showBack />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 overflow-y-auto">
-        <div className="px-4 py-4 space-y-4">
+      <PullToRefresh onRefresh={refetch} className={cn('flex-1 overflow-y-auto', SURFACE.canvas)}>
+        <div className="space-y-4 px-4 py-5">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
+            <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+            <TextInput
               type="text"
               placeholder={t('searchAction', { defaultValue: 'Rechercher une action...' })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="pl-10"
             />
           </div>
 
           {/* Filter chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {FILTERS.map((filter) => (
               <button
                 key={filter.value}
                 onClick={() => setTypeFilter(filter.value)}
                 className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
-                  typeFilter === filter.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground',
+                  'whitespace-nowrap px-4 py-2 text-[13px] font-semibold transition-colors',
+                  typeFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
                 )}
               >
                 {filter.label}
@@ -109,58 +118,51 @@ export function MobileHistoryScreen() {
         </div>
 
         {/* Logs list */}
-        {isLoading ? (
-          <div className="px-4">
+        <div className="px-4 pb-5">
+          {isLoading ? (
             <SkeletonListScreen count={8} />
-          </div>
-        ) : filteredLogs.length > 0 ? (
-          <div className="divide-y divide-border">
-            {filteredLogs.map((log) => (
-              <div key={log.id} className="flex gap-3 px-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-primary">
-                    {log.adminProfile
-                      ? `${log.adminProfile.first_name[0]}${log.adminProfile.last_name[0]}`
-                      : 'AD'}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {log.adminProfile
-                          ? `${log.adminProfile.first_name} ${log.adminProfile.last_name}`
-                          : 'Admin'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {log.action_type}
+          ) : filteredLogs.length > 0 ? (
+            <div className="space-y-2">
+              {filteredLogs.map((log) => {
+                const name = log.adminProfile
+                  ? `${log.adminProfile.first_name} ${log.adminProfile.last_name}`
+                  : 'Admin';
+                return (
+                  <Card key={log.id} className="flex gap-3 p-3.5">
+                    <Avatar name={name} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{name}</p>
+                          <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
+                            {log.action_type}
+                          </p>
+                        </div>
+                        <StatusPill
+                          tone={getTargetTone(log.target_type)}
+                          label={
+                            <span className="flex items-center gap-1">
+                              {getActionIcon(log.action_type)}
+                              {log.target_type}
+                            </span>
+                          }
+                        />
+                      </div>
+                      <p className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                        {formatDate(log.created_at)}
                       </p>
                     </div>
-                    <span
-                      className={cn(
-                        'flex items-center gap-1 text-[10px] px-2 py-1 rounded-full flex-shrink-0',
-                        getTargetColor(log.target_type),
-                      )}
-                    >
-                      {getActionIcon(log.action_type)}
-                      {log.target_type}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {formatDate(log.created_at)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <History className="w-6 h-6 text-muted-foreground" />
+                  </Card>
+                );
+              })}
             </div>
-            <p className="text-muted-foreground">{t('noLogsFound', { defaultValue: 'Aucun log trouvé' })}</p>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Holder icon={History} size="lg" />
+              <p className={cn('mt-4', TEXT.muted)}>{t('noLogsFound', { defaultValue: 'Aucun log trouvé' })}</p>
+            </div>
+          )}
+        </div>
       </PullToRefresh>
     </div>
   );

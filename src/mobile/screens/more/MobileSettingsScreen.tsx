@@ -1,78 +1,64 @@
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { Monitor, Palette, Info } from 'lucide-react';
+import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
+import { Palette } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
 
 export function MobileSettingsScreen() {
   const { t } = useTranslation('common');
   const { profile } = useAdminAuth();
+  const role = profile?.role;
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full flex-col">
       <MobileHeader title={t('settings', { defaultValue: 'Paramètres' })} showBack />
 
-      <div className="flex-1 px-4 py-4 space-y-6">
-        {/* Theme Section */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Palette className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              {t('appearance', { defaultValue: 'Apparence' })}
-            </h3>
-          </div>
-          <div className="bg-card rounded-xl border border-border p-4">
-            <p className="text-sm font-medium mb-3">{t('appTheme', { defaultValue: "Thème de l'application" })}</p>
+      <div className={cn('flex-1 space-y-5 px-4 py-5', SURFACE.canvas)}>
+        {/* Apparence */}
+        <div>
+          <SectionTitle>{t('appearance', { defaultValue: 'Apparence' })}</SectionTitle>
+          <Card>
+            <div className="mb-3 flex items-center gap-2">
+              <Palette className={cn('h-4 w-4', TEXT.muted)} />
+              <p className={cn('text-[14px] font-semibold', TEXT.strong)}>
+                {t('appTheme', { defaultValue: "Thème de l'application" })}
+              </p>
+            </div>
             <ThemeToggle />
-            <p className="text-xs text-muted-foreground mt-3">
+            <p className={cn('mt-3 text-[12px]', TEXT.muted)}>
               {t('systemModeNote', { defaultValue: "Le mode Système s'adapte automatiquement aux préférences de votre appareil." })}
             </p>
-          </div>
-        </section>
+          </Card>
+        </div>
 
-        {/* Account Section */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Monitor className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              {t('account', { defaultValue: 'Compte' })}
-            </h3>
-          </div>
-          <div className="bg-card rounded-xl border border-border divide-y divide-border">
-            <div className="p-4">
-              <p className="text-xs text-muted-foreground">{t('name', { defaultValue: 'Nom' })}</p>
-              <p className="text-sm font-medium mt-0.5">
-                {profile?.first_name} {profile?.last_name}
-              </p>
+        {/* Compte */}
+        <div>
+          <SectionTitle>{t('account', { defaultValue: 'Compte' })}</SectionTitle>
+          <Card>
+            <Row
+              label={t('name', { defaultValue: 'Nom' })}
+              value={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim() || '—'}
+            />
+            <div className="flex items-center justify-between gap-3 py-[7px] text-[13.5px]">
+              <span className={TEXT.muted}>{t('role', { defaultValue: 'Rôle' })}</span>
+              <StatusPill
+                tone={role ? roleMeta(role).tone : 'neutral'}
+                label={role ? (ADMIN_ROLE_LABELS[role as AppRole] || role) : 'Admin'}
+              />
             </div>
-            <div className="p-4">
-              <p className="text-xs text-muted-foreground">{t('role', { defaultValue: 'Rôle' })}</p>
-              <p className="text-sm font-medium mt-0.5 capitalize">
-                {profile?.role?.replace('_', ' ') || 'Admin'}
-              </p>
-            </div>
-          </div>
-        </section>
+          </Card>
+        </div>
 
-        {/* About Section */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              {t('about', { defaultValue: 'À propos' })}
-            </h3>
-          </div>
-          <div className="bg-card rounded-xl border border-border divide-y divide-border">
-            <div className="p-4 flex items-center justify-between">
-              <p className="text-sm">Version</p>
-              <p className="text-sm text-muted-foreground">1.0.0</p>
-            </div>
-            <div className="p-4 flex items-center justify-between">
-              <p className="text-sm">Plateforme</p>
-              <p className="text-sm text-muted-foreground">Bonzini Admin</p>
-            </div>
-          </div>
-        </section>
+        {/* À propos */}
+        <div>
+          <SectionTitle>{t('about', { defaultValue: 'À propos' })}</SectionTitle>
+          <Card>
+            <Row label="Version" value="1.0.0" />
+            <Row label="Plateforme" value="Bonzini Admin" />
+          </Card>
+        </div>
       </div>
     </div>
   );
