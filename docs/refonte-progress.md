@@ -30,7 +30,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 
 ### Phase 1 — Couleurs unifiées (faible risque, fort impact)
 - [x] **P1.1** Rôles admin : source unique → MobileAdminsScreen, MobileCreateAdmin, MobileAdminDetail importent la même.
-- [ ] **P1.2** Statuts : source unique → clients, deposits, payments (badges) importent la même.
+- [x] **P1.2** Statuts : source unique → clients, deposits, payments (badges) importent la même.
 
 ### Phase 2 — Migration module par module
 - [ ] **M1** More (hub + settings + profile + notifications + history + proofs)
@@ -54,6 +54,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 - P0.2 ✅ Kit de composants partagés `designKit/components.tsx` (Card, Holder, Avatar, Row, Amount, PrimaryPill/SoftPill, StatusPill, StatCard, Segmented, FormField/TextInput, BottomSheet, ScreenLoader/ScreenError, SectionTitle) — patterns copiés de MobileAssistantScreen + flyer, réutilise tokens + `cn`. Aucun écran métier touché. type-check + build verts. Prochaine : P0.3 preview du kit dans le harness.
 - P0.3 ✅ Écran de preview `src/__screenshot__/kit.tsx` (galerie : un échantillon de chaque composant, StatusPill câblés sur les helpers de tons unifiés) + enregistré dans `main.tsx` (clé `kit`). Serveur `SCREENSHOT_MOCK=1` + `ONLY=kit FONT=dm node tools/shoot-dash.mjs` → captures clair+sombre OK, copiées dans `docs/maquettes/kit-light.png` + `kit-dark.png`. type-check + build verts. **Phase 0 terminée.** Prochaine : Phase 1 (P1.1 rôles admin, P1.2 statuts) puis migration module par module.
 - P1.1 ✅ Rôles admin sur source unique : les 3 `ROLE_BADGE_COLORS` dupliqués (MobileAdminsScreen, MobileCreateAdmin, MobileAdminDetail) supprimés → remplacés par `roleMeta()` (tone) + `StatusPill`/`Holder` du kit. Libellés conservés via `ADMIN_ROLE_LABELS`. Ajout du rôle `treasurer` (tone `success`) à `ROLE_META` pour compléter la source unique (parité avec `AppRole`). Logique/permissions/filtres intacts. type-check + build verts.
+- P1.2 ✅ Statuts sur source unique (badges liste + détail des écrans VIVANTS) : clients (`MobileClientsScreen`, `MobileClientDetail` → `clientStatusTone`), dépôts V2 (`MobileDepositsScreenV2`, `MobileDepositDetailV2` → `depositStatusTone`, dicos `STATUS_COLOR` inline + const `BLUE` orpheline supprimés), paiements (`MobilePaymentsScreen` → `paymentStatusTone`, import `PAYMENT_STATUS_COLORS` retiré ; `MobilePaymentDetailV2` → `paymentStatusTone`, dico `STATUS_COLOR` local supprimé). Tous les badges passent par `StatusPill`. Libellés existants conservés (`*_STATUS_LABELS`, `STATUS_LABEL_KEYS`, `PAYMENT_STATUS_CONFIG`, ternaires i18n). V1 morts (`MobileDepositsScreen`/`MobileDepositDetail`) NON touchés (non routés). Logique/filtres/permissions intacts. type-check + build verts.
 
 ## Résumé matin
 _(à remplir en fin de run)_

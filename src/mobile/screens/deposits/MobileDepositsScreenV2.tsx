@@ -21,6 +21,7 @@ import { formatXAF, formatRelativeDate } from '@/lib/formatters';
 import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
 import { useNavigate } from 'react-router-dom';
 import { FileText } from 'lucide-react';
+import { depositStatusTone, StatusPill } from '@/mobile/designKit';
 
 // ── Couleurs maquette ────────────────────────────────────────
 const GR = '#34d399';
@@ -122,18 +123,6 @@ function SlaDot({ level }: { level: SlaLevel }) {
     />
   );
 }
-
-// ── Status colors inline ─────────────────────────────────────
-const STATUS_COLOR: Record<string, string> = {
-  created: t.sub,
-  awaiting_proof: '#F3A745',
-  proof_submitted: BLUE,
-  admin_review: V,
-  validated: GR,
-  rejected: RED,
-  pending_correction: O,
-  cancelled: t.sub,
-};
 
 // ── Filtres statut ───────────────────────────────────────────
 type FilterKey = DepositStatus | 'all' | 'to_process';
@@ -611,7 +600,6 @@ export function MobileDepositsScreenV2() {
                 const proofCount = deposit.proof_count || 0;
                 const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
                 const family = getFamilyFromMethod(deposit.method);
-                const statusColor = STATUS_COLOR[deposit.status] || t.sub;
                 const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
                 const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
 
@@ -670,18 +658,7 @@ export function MobileDepositsScreenV2() {
                         }}
                       >
                         {slaLevel && <SlaDot level={slaLevel} />}
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: statusColor,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: `${statusColor}10`,
-                          }}
-                        >
-                          {statusLabel}
-                        </span>
+                        <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
                       </div>
                       <div style={{ fontSize: 9, color: t.dim, marginTop: 1 }}>
                         {formatRelativeDate(deposit.created_at)}

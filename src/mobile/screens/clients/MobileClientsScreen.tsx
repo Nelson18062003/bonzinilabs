@@ -10,7 +10,7 @@ import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
 import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { formatCurrency, formatXAF } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { clientStatusTone, StatusPill } from '@/mobile/designKit';
 import type { ClientStatus } from '@/types/admin';
 
 // Filter labels are static since they're defined outside the component.
@@ -22,13 +22,6 @@ const STATUS_FILTER_KEYS: { value: ClientStatus | 'all'; labelKey: string; defau
   { value: 'SUSPENDED', labelKey: 'suspended', defaultLabel: 'Suspendus' },
   { value: 'PENDING_KYC', labelKey: 'kyc', defaultLabel: 'KYC' },
 ];
-
-const STATUS_BADGE_STYLES: Record<ClientStatus, string> = {
-  ACTIVE: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  INACTIVE: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-  SUSPENDED: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-};
 
 export function MobileClientsScreen() {
   const { t } = useTranslation('common');
@@ -102,14 +95,13 @@ export function MobileClientsScreen() {
                       <p className="font-medium truncate">
                         {client.firstName} {client.lastName}
                       </p>
-                      <span className={cn(
-                        'px-1.5 py-0.5 rounded text-[10px] font-medium',
-                        STATUS_BADGE_STYLES[client.status]
-                      )}>
-                        {client.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) :
-                         client.status === 'INACTIVE' ? t('inactive', { defaultValue: 'Inactif' }) :
-                         client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
-                      </span>
+                      <StatusPill
+                        tone={clientStatusTone(client.status)}
+                        label={client.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) :
+                          client.status === 'INACTIVE' ? t('inactive', { defaultValue: 'Inactif' }) :
+                          client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
+                        className="px-2 py-0.5 text-[10px]"
+                      />
                     </div>
                     {client.phone && (
                       <p className="text-sm text-muted-foreground truncate">

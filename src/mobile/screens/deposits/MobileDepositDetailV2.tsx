@@ -28,6 +28,7 @@ import {
 import { buildDepositTimelineSteps, getStepColors, getDepositSlaLevel } from '@/lib/depositTimeline';
 import { formatXAF, formatCurrency, formatRelativeDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { depositStatusTone, StatusPill } from '@/mobile/designKit';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -58,7 +59,6 @@ const GR = '#34d399';
 const V = '#A947FE';
 const O = '#FE560D';
 const RED = '#ef4444';
-const BLUE = '#3b82f6';
 const GOLD = '#F3A745';
 const t = {
   bg: '#f5f3f7',
@@ -129,18 +129,6 @@ function SlaDot({ level }: { level: 'fresh' | 'aging' | 'overdue' }) {
     />
   );
 }
-
-// ── Status colors inline ─────────────────────────────────────
-const STATUS_COLOR: Record<string, string> = {
-  created: t.sub,
-  awaiting_proof: GOLD,
-  proof_submitted: BLUE,
-  admin_review: V,
-  validated: GR,
-  rejected: RED,
-  pending_correction: O,
-  cancelled: t.sub,
-};
 
 // ── Formatage montant ────────────────────────────────────────
 function fmt(n: number) {
@@ -423,7 +411,6 @@ export function MobileDepositDetailV2() {
   const confirmedAmountNum = Number(confirmedAmount) || 0;
   const amountDiffers = confirmedAmountNum !== deposit.amount_xaf && confirmedAmountNum > 0;
   const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
-  const statusColor = STATUS_COLOR[deposit.status] || t.sub;
   const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
   const family = getFamilyFromMethod(deposit.method);
   const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
@@ -500,18 +487,7 @@ export function MobileDepositDetailV2() {
           borderBottom: `1px solid ${t.border}`,
         }}
       >
-        <span
-          style={{
-            padding: '4px 10px',
-            borderRadius: 6,
-            background: `${statusColor}10`,
-            fontSize: 12,
-            fontWeight: 800,
-            color: statusColor,
-          }}
-        >
-          {statusLabel}
-        </span>
+        <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} className="text-[12px] px-2.5 py-1" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <MIcon family={family} size={20} />
           <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{methodShort}</span>

@@ -10,12 +10,12 @@ import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from 
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
   PAYMENT_STATUS_LABELS,
-  PAYMENT_STATUS_COLORS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHOD_ICONS,
   TO_PROCESS_STATUSES,
 } from '@/types/payment';
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
+import { paymentStatusTone, StatusPill } from '@/mobile/designKit';
 import {
   Plus, Search, Clock, PlayCircle, CheckCircle, TrendingUp,
   Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
@@ -595,14 +595,11 @@ export function MobilePaymentsScreen() {
                     {/* Right: Amount + status + SLA + date */}
                     <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
                       <p className="font-bold text-sm tabular-nums">{formatCurrencyRMB(payment.amount_rmb)}</p>
-                      <span
-                        className={cn(
-                          'inline-block px-2 py-0.5 rounded-full text-[10px] font-medium',
-                          PAYMENT_STATUS_COLORS[payment.status as PaymentStatus] || 'bg-gray-100 text-gray-700',
-                        )}
-                      >
-                        {PAYMENT_STATUS_LABELS[payment.status as PaymentStatus] || payment.status}
-                      </span>
+                      <StatusPill
+                        tone={paymentStatusTone(payment.status)}
+                        label={PAYMENT_STATUS_LABELS[payment.status as PaymentStatus] || payment.status}
+                        className="px-2 py-0.5 text-[10px]"
+                      />
                       <div className="flex items-center gap-1.5">
                         {slaLevel && <SlaDot level={slaLevel} />}
                         <span className="text-[10px] text-muted-foreground">

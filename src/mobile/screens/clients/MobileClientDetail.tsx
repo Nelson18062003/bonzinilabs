@@ -49,13 +49,7 @@ import {
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { toast } from 'sonner';
 import type { AdjustmentType } from '@/types/admin';
-
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  ACTIVE:      'bg-green-500/10 text-green-600 dark:text-green-400',
-  INACTIVE:    'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-  SUSPENDED:   'bg-red-500/10 text-red-600 dark:text-red-400',
-  PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-};
+import { clientStatusTone, StatusPill } from '@/mobile/designKit';
 
 // Status labels are resolved via i18n inside the component
 const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> = {
@@ -270,12 +264,11 @@ export function MobileClientDetail() {
                 <h2 className="text-lg font-semibold truncate">
                   {client.firstName} {client.lastName}
                 </h2>
-                <span className={cn(
-                  'px-2 py-0.5 rounded text-[10px] font-medium',
-                  STATUS_BADGE_STYLES[client.status]
-                )}>
-                  {t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status })}
-                </span>
+                <StatusPill
+                  tone={clientStatusTone(client.status)}
+                  label={t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status })}
+                  className="px-2 py-0.5 text-[10px]"
+                />
               </div>
 
               {client.phone && (

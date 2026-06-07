@@ -30,6 +30,7 @@ import {
   PAYMENT_REJECTION_REASONS,
 } from '@/types/payment';
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
+import { paymentStatusTone, StatusPill } from '@/mobile/designKit';
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
 import { getPaymentSlaLevel } from '@/lib/paymentSla';
 import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
@@ -75,18 +76,6 @@ const C = {
   dim:    '#c4bdd0',
   border: '#ebe6f0',
 } as const;
-
-// ── Statut → couleur ─────────────────────────────────────────
-const STATUS_COLOR: Record<string, string> = {
-  created:                  C.dim,
-  waiting_beneficiary_info: C.G,
-  ready_for_payment:        '#3b82f6',
-  processing:               C.V,
-  completed:                C.GR,
-  rejected:                 C.RED,
-  cash_pending:             C.G,
-  cash_scanned:             C.V,
-};
 
 // ── Méthode → icône + couleur ────────────────────────────────
 const METHOD_CFG: Record<string, { icon: string; color: string }> = {
@@ -493,7 +482,6 @@ export function MobilePaymentDetail() {
     || { label: payment.status };
   const methodLabel  = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
   const methodCfg    = METHOD_CFG[payment.method] || { icon: '?', color: C.dim };
-  const statusColor  = STATUS_COLOR[payment.status] || C.dim;
   const slaLevel     = getPaymentSlaLevel(payment.created_at, payment.status);
 
   // Rétro-compat taux : anciens paiements stockent décimal (0.01153), admin stocke entier (11530)
@@ -569,13 +557,7 @@ export function MobilePaymentDetail() {
             {slaLevel && (
               <span className={`sla-dot sla-${slaLevel}${slaLevel === 'overdue' ? ' animate' : ''}`} />
             )}
-            <span style={{
-              padding: '4px 10px', borderRadius: 6,
-              background: `${statusColor}18`,
-              fontSize: 12, fontWeight: 800, color: statusColor,
-            }}>
-              {statusConfig.label}
-            </span>
+            <StatusPill tone={paymentStatusTone(payment.status)} label={statusConfig.label} className="text-[12px] px-2.5 py-1" />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{
