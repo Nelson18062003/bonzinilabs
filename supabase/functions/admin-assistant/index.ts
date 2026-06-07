@@ -2193,7 +2193,7 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_beneficiary",
     permission: "canProcessPayments",
-    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. Optionnels: identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. COMPLÉTUDE OBLIGATOIRE selon le mode (sinon la base refuse) : alipay/wechat → identifier (l'ID Alipay/WeChat) requis ; bank_transfer → bank_name ET bank_account requis ; cash → phone requis. Demande l'info manquante à l'admin AVANT de proposer la carte. Optionnels: identifier_type, email, bank_extra, relation_type, notes.",
     input_schema: {
       type: "object",
       properties: {
@@ -2209,6 +2209,18 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!c.ok) return { ok: false, error: c.error };
       if (!["alipay", "wechat", "bank_transfer", "cash"].includes(a.payment_method)) return { ok: false, error: "payment_method invalide (alipay|wechat|bank_transfer|cash)." };
       if (!a.alias || !a.name) return { ok: false, error: "alias et name sont requis." };
+      // Complétude par mode (miroir des CHECK de la base : un bénéficiaire ne doit jamais être
+      // incomplet pour son mode). On VALIDE ici → Mola DEMANDE l'info manquante au lieu d'échouer.
+      if (["alipay", "wechat"].includes(a.payment_method) && !a.identifier) {
+        const mode = a.payment_method === "alipay" ? "Alipay" : "WeChat";
+        return { ok: false, error: `Pour un bénéficiaire ${mode}, l'identifiant (ID ${mode}, ex. numéro/compte) est OBLIGATOIRE — la base le refuse sinon. Demande l'ID ${mode} à l'admin et passe-le dans le paramètre identifier. (Si seul un QR code est disponible sans identifiant, il faut l'enregistrer via l'écran Bénéficiaires, qui gère l'upload du QR.)` };
+      }
+      if (a.payment_method === "bank_transfer" && (!a.bank_name || !a.bank_account)) {
+        return { ok: false, error: "Pour un virement bancaire, bank_name ET bank_account sont obligatoires. Demande-les à l'admin." };
+      }
+      if (a.payment_method === "cash" && !a.phone) {
+        return { ok: false, error: "Pour un bénéficiaire cash, le téléphone (phone) est obligatoire. Demande-le à l'admin." };
+      }
       const row = {
         client_id: c.uid, payment_method: a.payment_method, alias: String(a.alias).trim(), name: String(a.name).trim(),
         identifier: a.identifier || null, identifier_type: a.identifier_type || null, phone: a.phone || null, email: a.email || null,
