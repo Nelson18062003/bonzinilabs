@@ -1,239 +1,237 @@
 /**
- * DEV-ONLY maquette — redesign of Mola's in-chat cards with the new flat design
- * language (hairline borders, no gradients/shadows, IconChip, charcoal focal
- * amount, tonal status). Static mock data; rendered by the screenshot harness
- * at /screenshot.html?screen=mola. Never imported by the production app.
+ * DEV-ONLY maquette — Mola's in-chat cards redrawn in the language of the
+ * reference (Ofspace "Banking App UI", dribbble 21114606):
+ *   soft lilac canvas · white cards w/ soft diffuse shadow (no hard borders) ·
+ *   neutral circular holders (no colored chips) · NO row dividers · no gradients ·
+ *   big focal numbers · dark rounded-full pill CTAs · very restrained color.
  *
- * Keeps the exact data contract of ProposalSummary (title, subtitle, amount,
- * lines, confirmLabel, danger) + states — only the presentation changes.
+ * Static mock data; rendered by the harness at /screenshot.html?screen=mola.
+ * Keeps the exact ProposalSummary contract (title/subtitle/amount/lines/
+ * confirmLabel/danger + states) — only presentation changes.
  */
 import type { ReactNode } from 'react';
-import {
-  ArrowUpFromLine,
-  ArrowDownToLine,
-  AlertTriangle,
-  Check,
-  ChevronRight,
-  ShieldAlert,
-  RotateCw,
-  Bot,
-} from 'lucide-react';
+import { Check, AlertTriangle, ChevronRight, RotateCw, Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-/* ── shared bits ─────────────────────────────────────────────────────────── */
+/* ── primitives ──────────────────────────────────────────────────────────── */
+
+function MCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-[26px] bg-white p-5 shadow-[0_8px_30px_-10px_rgba(46,32,92,0.20)] dark:bg-[#211F2B] dark:shadow-none">
+      {children}
+    </div>
+  );
+}
+
+const HOLDER_NEUTRAL = 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]';
+
+function Avatar({ children, tone }: { children: ReactNode; tone?: string }) {
+  return (
+    <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold', tone ?? HOLDER_NEUTRAL)}>
+      {children}
+    </div>
+  );
+}
+
+function Title({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="truncate text-[16px] font-bold leading-tight text-[#1B1A24] dark:text-[#F2F1F7]">{title}</div>
+      <div className="mt-0.5 truncate text-[13px] text-[#8E8BA0] dark:text-[#9B98AD]">{subtitle}</div>
+    </div>
+  );
+}
+
+function Amount({ value, unit }: { value: string; unit: string }) {
+  return (
+    <div className="text-[30px] font-extrabold leading-none tracking-tight tabular-nums text-[#1B1A24] dark:text-[#F2F1F7]">
+      {value}
+      <span className="ml-1.5 text-[15px] font-bold text-[#AAA7BD] dark:text-[#6F6C82]">{unit}</span>
+    </div>
+  );
+}
+
+function Label({ children }: { children: ReactNode }) {
+  return <div className="text-[12px] font-medium text-[#8E8BA0] dark:text-[#9B98AD]">{children}</div>;
+}
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border/50 py-2 text-[13px] last:border-0">
-      <span className="shrink-0 text-muted-foreground">{label}</span>
-      <span className="text-right font-semibold tabular-nums text-foreground">{value}</span>
+    <div className="flex items-center justify-between gap-3 py-[7px] text-[13.5px]">
+      <span className="text-[#8E8BA0] dark:text-[#9B98AD]">{label}</span>
+      <span className="text-right font-semibold tabular-nums text-[#1B1A24] dark:text-[#F2F1F7]">{value}</span>
     </div>
   );
 }
 
-function Caption({ children }: { children: ReactNode }) {
-  return <p className="px-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">{children}</p>;
-}
-
-/* ── BEFORE: replica of today's ConfirmationCard ─────────────────────────── */
-
-function OldConfirmCard() {
-  const accent = 'hsl(258,100%,60%)';
+function PrimaryPill({ children, danger }: { children: ReactNode; danger?: boolean }) {
   return (
-    <div
-      className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-      style={{ borderLeftWidth: 4, borderLeftColor: accent }}
+    <button
+      className={cn(
+        'flex-1 rounded-full py-[13px] text-[14px] font-bold',
+        danger ? 'bg-[#D14343] text-white' : 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]',
+      )}
     >
-      <div className="px-4 pb-2 pt-3">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">À confirmer</p>
-        <p className="text-[15px] font-semibold">Régler Shenzhen Tech Co.</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Paiement fournisseur</p>
-      </div>
-      <div className="px-4 pb-1">
-        <span className="text-2xl font-extrabold tracking-tight">12 500 000 XAF</span>
-      </div>
-      <div className="space-y-1.5 px-4 py-2">
-        {[['Client', 'Awa Diop'], ['Méthode', 'Alipay'], ['Solde après', '36 250 000 XAF']].map(([l, v]) => (
-          <div key={l} className="flex items-center justify-between gap-3 text-[13px]">
-            <span className="shrink-0 text-muted-foreground">{l}</span>
-            <span className="text-right font-medium">{v}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-2 p-3">
-        <button
-          className="flex-1 rounded-xl py-3 text-sm font-bold text-white"
-          style={{ background: `linear-gradient(135deg, ${accent}, hsl(16,100%,55%))` }}
-        >
-          Confirmer
-        </button>
-        <button className="rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-foreground">Annuler</button>
-      </div>
-    </div>
+      {children}
+    </button>
   );
 }
 
-/* ── AFTER: redesigned cards ─────────────────────────────────────────────── */
+function SoftPill({ children, full }: { children: ReactNode; full?: boolean }) {
+  return (
+    <button
+      className={cn(
+        'rounded-full bg-[#EDEAFA] text-[14px] font-semibold text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]',
+        full ? 'flex w-full items-center justify-center gap-1 py-[13px] text-[13.5px]' : 'px-6 py-[13px]',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A short Mola "chat line" preceding a card, for context. */
+function Says({ children }: { children: ReactNode }) {
+  return <p className="px-1 pt-1 text-[13.5px] leading-snug text-[#6B6880] dark:text-[#9B98AD]">{children}</p>;
+}
+
+/* ── cards ───────────────────────────────────────────────────────────────── */
 
 function ConfirmPayment() {
   return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-card">
-      <div className="flex items-start gap-3 p-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-600">
-          <ArrowUpFromLine className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Paiement fournisseur · à confirmer</div>
-          <div className="mt-0.5 text-[16px] font-bold leading-tight text-foreground">Régler Shenzhen Tech Co.</div>
-        </div>
+    <MCard>
+      <div className="flex items-center gap-3">
+        <Avatar>ST</Avatar>
+        <Title title="Régler Shenzhen Tech Co." subtitle="Paiement fournisseur · pour Awa Diop" />
       </div>
-
-      <div className="mx-4 rounded-2xl bg-muted/60 px-4 py-3">
-        <div className="text-[11px] font-medium text-muted-foreground">Montant à débiter</div>
-        <div className="mt-0.5 text-[26px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">12 500 000 XAF</div>
-        <div className="mt-1 text-[12px] text-muted-foreground">≈ 178 500 CNY · taux 70,03</div>
+      <div className="mt-5">
+        <Label>Montant à débiter</Label>
+        <div className="mt-1.5"><Amount value="12 500 000" unit="XAF" /></div>
+        <div className="mt-1.5 text-[12px] text-[#8E8BA0] dark:text-[#9B98AD]">≈ 178 500 CNY · taux 70,03</div>
       </div>
-
-      <div className="px-4 py-3">
+      <div className="mt-4">
         <Row label="Client" value="Awa Diop · BZ-CL-0042" />
         <Row label="Méthode" value="Alipay" />
         <Row label="Solde du client après" value="36 250 000 XAF" />
       </div>
-
-      <div className="flex gap-2 px-4 pb-4">
-        <button className="flex-1 rounded-2xl bg-foreground py-3 text-[14px] font-bold text-background">Confirmer le paiement</button>
-        <button className="rounded-2xl bg-muted px-5 py-3 text-[14px] font-semibold text-foreground">Annuler</button>
+      <div className="mt-5 flex gap-2.5">
+        <PrimaryPill>Confirmer</PrimaryPill>
+        <SoftPill>Annuler</SoftPill>
       </div>
-    </div>
+    </MCard>
   );
 }
 
 function ConfirmDanger() {
   return (
-    <div className="overflow-hidden rounded-3xl border border-orange-500/30 bg-card">
-      <div className="flex items-start gap-3 p-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600">
-          <ShieldAlert className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-orange-600">Action sensible</div>
-          <div className="mt-0.5 text-[16px] font-bold leading-tight text-foreground">Rejeter le dépôt BZ-DP-0188</div>
-        </div>
+    <MCard>
+      <div className="flex items-center gap-3">
+        <Avatar tone="bg-[#FBE7E7] text-[#B23A3A] dark:bg-[#3A2526] dark:text-[#E79A9A]">JK</Avatar>
+        <Title title="Rejeter le dépôt" subtitle="Jean Kamga · BZ-DP-0188" />
       </div>
-
-      <div className="mx-4 flex items-start gap-2 rounded-2xl bg-orange-500/10 px-3.5 py-2.5">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
-        <p className="text-[12px] leading-snug text-orange-700 dark:text-orange-300">
-          Le client sera notifié et les fonds ne seront pas crédités. Action irréversible.
+      <div className="mt-4 flex items-start gap-2 rounded-2xl bg-[#FBEFEF] px-3.5 py-2.5 dark:bg-[#2C1F20]">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D]" />
+        <p className="text-[12.5px] leading-snug text-[#9B4A47] dark:text-[#E0A3A1]">
+          Action irréversible. Le client sera notifié et les fonds ne seront pas crédités.
         </p>
       </div>
-
-      <div className="px-4 py-3">
-        <Row label="Client" value="Jean Kamga" />
+      <div className="mt-3">
         <Row label="Montant" value="2 500 000 XAF" />
         <Row label="Motif" value="Justificatif illisible" />
       </div>
-
-      <div className="flex gap-2 px-4 pb-4">
-        <button className="flex-1 rounded-2xl bg-orange-600 py-3 text-[14px] font-bold text-white">Rejeter le dépôt</button>
-        <button className="rounded-2xl bg-muted px-5 py-3 text-[14px] font-semibold text-foreground">Annuler</button>
+      <div className="mt-5 flex gap-2.5">
+        <PrimaryPill danger>Rejeter le dépôt</PrimaryPill>
+        <SoftPill>Annuler</SoftPill>
       </div>
-    </div>
+    </MCard>
   );
 }
 
 function ResultDone() {
   return (
-    <div className="rounded-3xl border border-border bg-card p-4">
+    <MCard>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+        <Avatar tone="bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
           <Check className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-bold text-foreground">Paiement exécuté</div>
-          <div className="text-[12px] text-muted-foreground">12 500 000 XAF · réf BZ-PM-2026-0042</div>
-        </div>
-        <button className="flex items-center gap-0.5 text-[12px] font-semibold text-violet-600">
-          Reçu <ChevronRight className="h-3.5 w-3.5" />
+        </Avatar>
+        <Title title="Paiement exécuté" subtitle="12 500 000 XAF · BZ-PM-2026-0042" />
+        <button className="flex shrink-0 items-center gap-0.5 text-[13px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+          Reçu <ChevronRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </MCard>
   );
 }
 
 function ResultFailed() {
   return (
-    <div className="rounded-3xl border border-border bg-card p-4">
+    <MCard>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-600">
+        <Avatar tone="bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
           <AlertTriangle className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-bold text-foreground">Paiement non exécuté</div>
-          <div className="text-[12px] text-muted-foreground">Solde insuffisant (manque 1 250 000 XAF)</div>
-        </div>
-        <button className="flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-[12px] font-semibold text-foreground">
+        </Avatar>
+        <Title title="Paiement non exécuté" subtitle="Solde insuffisant — manque 1 250 000 XAF" />
+        <button className="flex shrink-0 items-center gap-1 rounded-full bg-[#EDEAFA] px-3 py-1.5 text-[12px] font-semibold text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
           <RotateCw className="h-3.5 w-3.5" /> Réessayer
         </button>
       </div>
-    </div>
+    </MCard>
   );
 }
 
 function DisplayElement() {
   return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-card">
-      <div className="flex items-center gap-3 p-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-          <ArrowDownToLine className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Dépôt · BZ-DP-2026-0188</div>
-          <div className="mt-0.5 text-[16px] font-bold text-foreground">Awa Diop</div>
-        </div>
-        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-600">Validé</span>
+    <MCard>
+      <div className="flex items-center gap-3">
+        <Avatar>AD</Avatar>
+        <Title title="Awa Diop" subtitle="Dépôt · BZ-DP-2026-0188" />
+        <span className="shrink-0 rounded-full bg-[#DEEFE5] px-2.5 py-1 text-[11px] font-bold text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
+          Validé
+        </span>
       </div>
-
-      <div className="mx-4 rounded-2xl bg-muted/60 px-4 py-3">
-        <div className="text-[26px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">2 500 000 XAF</div>
+      <div className="mt-5">
+        <Label>Montant</Label>
+        <div className="mt-1.5"><Amount value="2 500 000" unit="XAF" /></div>
       </div>
-
-      <div className="px-4 py-3">
+      <div className="mt-4">
         <Row label="Méthode" value="Virement bancaire" />
         <Row label="Reçu le" value="7 juin 2026 · 14:32" />
         <Row label="Validé par" value="Demo Admin" />
       </div>
-
-      <button className="flex w-full items-center justify-center gap-1 border-t border-border/60 py-3 text-[13px] font-semibold text-violet-600">
-        Ouvrir la fiche <ChevronRight className="h-4 w-4" />
-      </button>
-    </div>
+      <div className="mt-5">
+        <SoftPill full>Ouvrir la fiche <ChevronRight className="h-4 w-4" /></SoftPill>
+      </div>
+    </MCard>
   );
 }
 
 export function MolaCards() {
   return (
-    <div className="min-h-screen space-y-3 bg-muted/30 px-4 py-5">
-      <div className="flex items-center gap-2 pb-1">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(258,100%,60%)] to-[hsl(16,100%,55%)] text-white">
+    <div className="min-h-screen space-y-3.5 bg-[#ECEAF7] px-4 py-6 dark:bg-[#141320]">
+      {/* Mola header */}
+      <div className="flex items-center gap-2.5 pb-1">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2C2740] shadow-[0_4px_14px_-4px_rgba(46,32,92,0.3)] dark:bg-[#211F2B] dark:text-[#E7E5F0] dark:shadow-none">
           <Bot className="h-4 w-4" />
         </div>
-        <span className="text-[13px] font-semibold text-muted-foreground">Mola · cartes (maquette)</span>
+        <div>
+          <div className="text-[14px] font-bold text-[#1B1A24] dark:text-[#F2F1F7]">Mola</div>
+          <div className="text-[11px] text-[#8E8BA0] dark:text-[#9B98AD]">Directeur des opérations</div>
+        </div>
       </div>
 
-      <Caption>Aujourd'hui</Caption>
-      <OldConfirmCard />
-
-      <Caption>Proposition — confirmation</Caption>
+      <Says>Voici le paiement à confirmer 👇</Says>
       <ConfirmPayment />
 
-      <Caption>Proposition — action sensible</Caption>
+      <Says>Confirme le rejet de ce dépôt.</Says>
       <ConfirmDanger />
 
-      <Caption>Proposition — résultats</Caption>
+      <Says>C'est fait ✅</Says>
       <ResultDone />
+
+      <Says>Ça n'a pas pu aboutir :</Says>
       <ResultFailed />
 
-      <Caption>Proposition — affichage d'un élément</Caption>
+      <Says>Voici le dépôt BZ-DP-0188.</Says>
       <DisplayElement />
     </div>
   );
