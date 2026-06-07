@@ -25,8 +25,8 @@ aujourd'hui ; 5, 10, 50 demain. **Sans système, ingérable.**
 
 | Phase | Objet | Fichier | Statut |
 |------:|-------|---------|--------|
-| 0 | **Cadrage & diagnostic de l'existant** : reformulation, diagnostic Bonzini/Mola, réutilisable vs manquant, proposition de workflow, questions de conception | [`00-cadrage.md`](./00-cadrage.md) | ⏳ **Rendu — en attente de validation** |
-| 1 | **Apprentissage du domaine procurement** (OBLIGATOIRE) : vocabulaire + patterns (PO/PI, deposit/balance, incoterms, AQL/QC, factoring, consolidation conteneur), étude Anvyl / Flexport / Alibaba / sourcing agents | `01-domaine.md` | À venir |
+| 0 | **Cadrage & diagnostic de l'existant** : reformulation, diagnostic Bonzini/Mola, réutilisable vs manquant, proposition de workflow, questions de conception | [`00-cadrage.md`](./00-cadrage.md) | ✅ **Validé** (4 forks tranchés : workflow approuvé · agent à commission · étendre Mola · pas de POC précoce) |
+| 1 | **Apprentissage du domaine procurement** (OBLIGATOIRE) : glossaire vérifié (cycle PI/PO/CI, deposit/balance 30/70, Incoterms 2020, AQL/ISO 2859-1 & types PSI/DUPRO, LCL/FCL, **compliance CEMAC**) + étude Anvyl(→Sage) / Flexport / Alibaba / **agences-portail** (emprunter/jeter) | [`01-domaine.md`](./01-domaine.md) | ⏳ **Rendu — en attente de validation** (8 questions ouvertes pour la Phase 2) |
 | 2 | **Modèle conceptuel & entités** (conçu AI-first) : entités, master-data partagée vs par-client, lien au rail paiement/trésorerie, append-only, multi-tenancy, coûts | `02-modele-donnees.md` | À venir |
 | 3 | **Couche IA (le cœur)** : ingestion-first (OCR/vision/voix/exports WeChat), capacités `@mola`, outils riches, RAG métier, canal du père, reporting, self-correction, coûts | `03-couche-ia.md` | À venir |
 | 4 | **Parcours & UX terrain** : flux père-sur-le-terrain, flux admin, vue reporting client, wireframes | `04-parcours.md` | À venir |
