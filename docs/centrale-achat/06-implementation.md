@@ -188,8 +188,16 @@ RPC `proc_purchase_order_detail` + hook + écrans :
 **On peut désormais enregistrer une mission complète** (mission → fournisseur → commande → lignes →
 paiements) et la voir agrégée dans le rapport à l'écran. Vérifié : type-check + build + 118 tests.
 
-### Reste à builder (UI)
-- Brancher `MobileMissionDetail` → **`generate-report-pdf`** (aperçu + partage WhatsApp/email).
-- Formulaires restants : **commission**, **QC**, **production**, **frais** + **upload de preuve**
-  (bucket `procurement-docs`) + **dictée Mola** + lien **rail** (picker de paiement).
-- Outils Mola dédiés + parité + eval ; puis **saisie réelle mai 2026**.
+### Tranche « rapport PDF » ✅
+`src/lib/pdf/templates/MissionReportPDF.tsx` (système `@react-pdf/renderer` existant, header tricolore +
+`PDFFooter` réutilisé) : entête mission/client, totaux par devise, fournisseurs → commandes →
+lignes/paiements/QC/commission, commissions & frais. Bouton **télécharger** (icône) dans
+`MobileMissionDetail` via **import dynamique** (n'alourdit pas le chunk). **Le rapport propre de mai
+2026 est générable en PDF.** Vérifié : type-check + build + 118 tests.
+
+### Reste à builder (UI) — finitions
+- **Upload de preuve** (bucket `procurement-docs` prêt) + affichage des pièces jointes.
+- **Dictée Mola** (auto-découverte via `@mola` ; à tester le flux conversationnel).
+- Lien **rail** (picker de paiement existant) sur `MobileRecordPayment`.
+- Partage natif du PDF (WhatsApp/email), outils Mola dédiés + parité + eval.
+- Puis **saisie réelle mai 2026** (opérationnel) — après déploiement + `gen-types`.

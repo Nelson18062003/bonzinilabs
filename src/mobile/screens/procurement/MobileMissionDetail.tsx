@@ -1,5 +1,6 @@
+import { useState, createElement } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Package, AlertTriangle } from 'lucide-react';
+import { Package, AlertTriangle, Download } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useMissionReport } from '@/hooks/useProcurement';
@@ -30,6 +31,21 @@ export function MobileMissionDetail() {
   const { hasPermission } = useAdminAuth();
   const canManage = hasPermission('canManageProcurement');
   const { data, isLoading, isError } = useMissionReport(missionId);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handlePdf = async () => {
+    if (!data || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const [{ downloadPDF }, { MissionReportPDF }] = await Promise.all([
+        import('@/lib/pdf/downloadPDF'),
+        import('@/lib/pdf/templates/MissionReportPDF'),
+      ]);
+      await downloadPDF(createElement(MissionReportPDF, { report: data }), `${data.mission.reference}.pdf`);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   if (!hasPermission('canViewProcurement')) {
     return <Navigate to="/m/more" replace />;
@@ -39,7 +55,13 @@ export function MobileMissionDetail() {
 
   return (
     <div className="flex flex-col min-h-full bg-background">
-      <MobileHeader title={m?.label ?? 'Mission'} showBack backTo="/m/more/procurement/missions" />
+      <MobileHeader title={m?.label ?? 'Mission'} showBack backTo="/m/more/procurement/missions"
+        rightElement={data ? (
+          <button onClick={handlePdf} disabled={pdfLoading} aria-label="Télécharger le rapport PDF"
+            className="flex h-10 w-10 items-center justify-center rounded-full active:bg-muted disabled:opacity-50">
+            <Download className="h-5 w-5" />
+          </button>
+        ) : undefined} />
 
       <div className="px-5 py-6 space-y-6">
         {isLoading ? (
