@@ -106,7 +106,7 @@ l'ACTIONNEUR que la boucle règle. Composé dans `buildSystemPrompt` (index.ts).
 4. Quand une amélioration est confirmée, figer la nouvelle référence
    (`--update-baseline`) — le niveau de qualité ne peut plus régresser ensuite.
 
-## Slice 4 — Profondeur métier + radar partagé + digest auto (livré sur main)
+## Slice 4 — Profondeur métier + radar partagé + digest auto
 
 Rebasé sur `main` (qui avait ajouté `get_pending_summary` et ouvert la lecture à tout
 admin). Adaptations :
