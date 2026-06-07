@@ -460,3 +460,48 @@ END;
 $$;
 COMMENT ON FUNCTION public.proc_list_missions(public.proc_mission_status, UUID) IS
   '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Lister les missions d''achat"}';
+
+-- ── RPC: proc_list_suppliers ── (annuaire + recherche)
+CREATE OR REPLACE FUNCTION public.proc_list_suppliers(
+  p_search      TEXT DEFAULT NULL,
+  p_active_only BOOLEAN DEFAULT TRUE
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_rows    JSONB;
+  v_q       TEXT;
+BEGIN
+  v_user_id := auth.uid();
+  IF NOT public.can_access_procurement(v_user_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Acces centrale d''achat refuse');
+  END IF;
+
+  v_q := '%' || COALESCE(trim(p_search), '') || '%';
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', s.id, 'display_name', s.display_name, 'legal_name', s.legal_name,
+    'supplier_kind', s.supplier_kind, 'verification_status', s.verification_status,
+    'category', s.category, 'city', s.city, 'province', s.province,
+    'wechat_id', s.wechat_id, 'phone', s.phone, 'email', s.email, 'is_active', s.is_active,
+    'purchase_order_count', (SELECT count(*) FROM public.proc_purchase_orders po WHERE po.supplier_id = s.id)
+  ) ORDER BY s.display_name), '[]'::jsonb)
+  INTO v_rows
+  FROM public.proc_suppliers s
+  WHERE (p_active_only IS NOT TRUE OR s.is_active = TRUE)
+    AND (
+      p_search IS NULL OR trim(p_search) = ''
+      OR s.display_name ILIKE v_q OR s.legal_name ILIKE v_q
+      OR s.wechat_id ILIKE v_q OR s.phone ILIKE v_q OR s.city ILIKE v_q
+    );
+
+  RETURN jsonb_build_object('success', true, 'suppliers', v_rows);
+END;
+$$;
+COMMENT ON FUNCTION public.proc_list_suppliers(TEXT, BOOLEAN) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Lister / rechercher les fournisseurs"}';

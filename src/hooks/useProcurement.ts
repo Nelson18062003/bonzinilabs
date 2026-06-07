@@ -35,6 +35,14 @@ export function useMissions(status?: ProcMissionStatus | null, clientUserId?: st
   });
 }
 
+export function useSuppliers(search?: string, activeOnly = true) {
+  return useQuery({
+    queryKey: [KEY, 'suppliers', search ?? '', activeOnly],
+    queryFn: () => unwrap(proc.listSuppliers({ p_search: search ?? null, p_active_only: activeOnly })),
+    staleTime: 30_000,
+  });
+}
+
 export function useOutstandingBalances(missionId?: string | null) {
   return useQuery({
     queryKey: [KEY, 'outstanding', missionId ?? 'all'],

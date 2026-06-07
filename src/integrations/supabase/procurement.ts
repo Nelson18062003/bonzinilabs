@@ -255,6 +255,22 @@ export interface ProcSupplierRecord {
   created_at: string;
 }
 
+export interface ProcSupplierListItem {
+  id: string;
+  display_name: string;
+  legal_name: string | null;
+  supplier_kind: ProcSupplierKind;
+  verification_status: ProcVerificationStatus;
+  category: string[];
+  city: string | null;
+  province: string | null;
+  wechat_id: string | null;
+  phone: string | null;
+  email: string | null;
+  is_active: boolean;
+  purchase_order_count: number;
+}
+
 export interface ProcSupplier360 {
   supplier: ProcSupplierRecord;
   purchase_orders: Array<{
@@ -382,4 +398,7 @@ export const proc = {
 
   listMissions: (a: { p_status?: ProcMissionStatus | null; p_client_user_id?: string | null } = {}) =>
     callProcRpc<{ missions: ProcMissionListItem[] }>('proc_list_missions', a),
+
+  listSuppliers: (a: { p_search?: string | null; p_active_only?: boolean } = {}) =>
+    callProcRpc<{ suppliers: ProcSupplierListItem[] }>('proc_list_suppliers', a),
 };

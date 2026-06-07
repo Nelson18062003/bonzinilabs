@@ -7,6 +7,7 @@ import {
   Ship,
   Receipt,
   ListChecks,
+  Factory,
 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -136,6 +137,13 @@ export function MobileProcurementHome() {
               description="Projets d'achat, commandes, rapport"
               onClick={() => navigate('/m/more/procurement/missions')}
               tone="amber"
+            />
+            <ActionTile
+              icon={Factory}
+              label="Fournisseurs"
+              description="Usines & négociants, fiches 360"
+              onClick={() => navigate('/m/more/procurement/suppliers')}
+              tone="violet"
             />
             <ActionTile
               icon={Wallet}
