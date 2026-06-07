@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, SquarePen } from 'lucide-react';
+import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, Plus, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ViewportShell } from '@/components/layout/ViewportShell';
@@ -14,11 +14,17 @@ const SUGGESTIONS = [
   'Paiements en cours',
 ];
 
-// Dégradé d'identité (3 couleurs du logo : violet → orange)
-const BRAND_GRADIENT = 'bg-gradient-to-br from-[hsl(258,100%,60%)] to-[hsl(16,100%,55%)]';
 const MAX_FILES = 5;
 // Hauteur max du champ de saisie avant qu'il ne défile lui-même (≈ 5 lignes).
 const COMPOSER_MAX_H = 128;
+
+// Langage visuel (réf Ofspace "Banking App UI") : canvas lilas doux, cartes
+// blanches à ombre diffuse (sans bordure dure), pastilles rondes neutres,
+// chiffres focaux, pilules sombres. Aucun dégradé, aucun trait de séparation.
+const CANVAS = 'bg-[#ECEAF7] dark:bg-[#141320]';
+const CARD = 'bg-white dark:bg-[#211F2B]';
+const SOFT = 'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:shadow-none';
+const HOLDER = 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]';
 
 interface PendingFile {
   id: string;
@@ -42,7 +48,8 @@ function RichText({ text }: { text: string }) {
   );
 }
 
-// Carte de confirmation d'une action sensible (créer/valider dépôt, paiement, taux…)
+// Carte de confirmation d'une action sensible (créer/valider dépôt, paiement, taux…).
+// Même contrat de données (ProposalSummary) ; seul l'habillage change.
 function ConfirmationCard({
   proposal,
   onConfirm,
@@ -52,70 +59,88 @@ function ConfirmationCard({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const { summary, state } = proposal;
-  const accent = summary.danger ? 'hsl(16,100%,55%)' : 'hsl(258,100%,60%)';
+  const { summary, state, resultText } = proposal;
 
+  // États « résultat » → carte compacte (la proposition se replie en résultat).
+  if (state === 'done' || state === 'failed' || state === 'cancelled') {
+    const variant = {
+      done: { holder: 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]', Icon: Check, title: 'Action exécutée' },
+      failed: { holder: 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]', Icon: AlertTriangle, title: 'Échec' },
+      cancelled: { holder: HOLDER, Icon: X, title: 'Action annulée' },
+    }[state];
+    const Icon = variant.Icon;
+    return (
+      <div className={cn('w-full rounded-[22px] p-4', CARD, SOFT)}>
+        <div className="flex items-center gap-3">
+          <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', variant.holder)}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[14px] font-bold text-[#1B1A24] dark:text-[#F2F1F7]">{variant.title}</div>
+            {resultText && <div className="text-[12.5px] text-[#8E8BA0] dark:text-[#9B98AD]">{resultText}</div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // pending / executing → carte complète
+  const danger = !!summary.danger;
+  const executing = state === 'executing';
   return (
-    <div
-      className="w-full max-w-[92%] rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
-      style={{ borderLeftWidth: 4, borderLeftColor: accent }}
-    >
-      <div className="px-4 pt-3 pb-2">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-          {summary.danger ? 'Action sensible' : 'À confirmer'}
-        </p>
-        <p className="font-semibold text-[15px]">{summary.title}</p>
-        {summary.subtitle && <p className="text-xs text-muted-foreground mt-0.5">{summary.subtitle}</p>}
+    <div className={cn('w-full rounded-[26px] p-5', CARD, SOFT)}>
+      <div className="flex items-center gap-3">
+        <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full', danger ? 'bg-[#FBE7E7] text-[#B23A3A] dark:bg-[#3A2526] dark:text-[#E79A9A]' : HOLDER)}>
+          {danger ? <AlertTriangle className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[16px] font-bold leading-tight text-[#1B1A24] dark:text-[#F2F1F7]">{summary.title}</div>
+          {summary.subtitle && <div className="mt-0.5 text-[13px] text-[#8E8BA0] dark:text-[#9B98AD]">{summary.subtitle}</div>}
+        </div>
       </div>
 
-      {summary.amount && (
-        <div className="px-4 pb-1">
-          <span className="text-2xl font-extrabold tracking-tight">{summary.amount}</span>
+      {danger && (
+        <div className="mt-4 flex items-start gap-2 rounded-2xl bg-[#FBEFEF] px-3.5 py-2.5 dark:bg-[#2C1F20]">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D]" />
+          <p className="text-[12.5px] leading-snug text-[#9B4A47] dark:text-[#E0A3A1]">Action sensible — vérifie bien avant de confirmer.</p>
         </div>
       )}
 
-      <div className="px-4 py-2 space-y-1.5">
-        {summary.lines.map((l, i) => (
-          <div key={i} className="flex items-center justify-between gap-3 text-[13px]">
-            <span className="text-muted-foreground shrink-0">{l.label}</span>
-            <span className="font-medium text-right">{l.value}</span>
-          </div>
-        ))}
-      </div>
+      {summary.amount && (
+        <div className="mt-5 text-[30px] font-extrabold leading-none tracking-tight tabular-nums text-[#1B1A24] dark:text-[#F2F1F7]">
+          {summary.amount}
+        </div>
+      )}
 
-      {/* Zone d'action / état */}
-      {state === 'pending' && (
-        <div className="flex gap-2 p-3">
+      {summary.lines.length > 0 && (
+        <div className="mt-4">
+          {summary.lines.map((l, i) => (
+            <div key={i} className="flex items-center justify-between gap-3 py-[7px] text-[13.5px]">
+              <span className="text-[#8E8BA0] dark:text-[#9B98AD]">{l.label}</span>
+              <span className="text-right font-semibold tabular-nums text-[#1B1A24] dark:text-[#F2F1F7]">{l.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {executing ? (
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-full bg-[#EDEAFA] py-[13px] text-[14px] font-semibold text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+          <Loader className="h-4 w-4 animate-spin" /> Exécution…
+        </div>
+      ) : (
+        <div className="mt-5 flex gap-2.5">
           <button
             onClick={onConfirm}
-            className="flex-1 rounded-xl py-3 text-sm font-bold text-white"
-            style={{ background: `linear-gradient(135deg, ${accent}, hsl(16,100%,55%))` }}
+            className={cn('flex-1 rounded-full py-[13px] text-[14px] font-bold', danger ? 'bg-[#D14343] text-white' : 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]')}
           >
             {summary.confirmLabel}
           </button>
-          <button onClick={onCancel} className="px-4 rounded-xl py-3 text-sm font-semibold bg-muted text-foreground">
+          <button
+            onClick={onCancel}
+            className="rounded-full bg-[#EDEAFA] px-6 py-[13px] text-[14px] font-semibold text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]"
+          >
             Annuler
           </button>
-        </div>
-      )}
-      {state === 'executing' && (
-        <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
-          <Loader className="w-4 h-4 animate-spin" /> Exécution…
-        </div>
-      )}
-      {state === 'done' && (
-        <div className="flex items-center gap-2 p-3 text-sm font-medium text-green-600 dark:text-green-400">
-          <Check className="w-4 h-4" /> {proposal.resultText || 'Action exécutée'}
-        </div>
-      )}
-      {state === 'cancelled' && (
-        <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
-          <X className="w-4 h-4" /> Action annulée
-        </div>
-      )}
-      {state === 'failed' && (
-        <div className="flex items-center gap-2 p-3 text-sm text-destructive">
-          <AlertTriangle className="w-4 h-4" /> {proposal.resultText || 'Échec'}
         </div>
       )}
     </div>
@@ -225,43 +250,50 @@ export function MobileAssistantScreen() {
   const isEmpty = messages.length === 0;
 
   const header = (
-    <MobileHeader
-      title="Mola"
-      subtitle="Directeur des Opérations"
-      showBack
-      rightElement={
-        <button
-          onClick={handleNew}
-          aria-label="Nouvelle conversation"
-          className="flex items-center justify-center w-10 h-10 -mr-2 rounded-full active:bg-muted transition-colors"
-        >
-          <SquarePen className="w-5 h-5" />
-        </button>
-      }
-    />
+    <div className={CANVAS}>
+      <MobileHeader
+        title="Mola"
+        subtitle="Directeur des Opérations"
+        showBack
+        className="border-transparent bg-transparent backdrop-blur-none"
+      />
+      {/* Bouton explicite « nouvelle conversation » — visible uniquement quand
+          une conversation existe, et toujours présent (zone d'en-tête fixe). */}
+      {!isEmpty && (
+        <div className="px-4 pb-2">
+          <button
+            onClick={handleNew}
+            disabled={isLoading}
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1C1B22] py-2.5 text-[13.5px] font-bold text-white transition-opacity active:opacity-90 disabled:opacity-50 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+          >
+            <Plus className="h-4 w-4" /> Nouvelle conversation
+          </button>
+        </div>
+      )}
+    </div>
   );
 
   const composer = (
-    <div className="border-t border-border bg-background px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <div className={cn(CANVAS, 'px-4 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]')}>
       {/* Plateau d'aperçu des pièces jointes en attente */}
       {pending.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
           {pending.map((p) => (
             <div key={p.id} className="relative shrink-0">
               {p.isPdf ? (
-                <div className="w-16 h-16 rounded-lg border border-border bg-muted flex flex-col items-center justify-center px-1 text-[10px] text-muted-foreground">
-                  <FileText className="w-5 h-5 mb-1" />
-                  <span className="truncate max-w-[56px]">{p.file.name}</span>
+                <div className={cn('flex h-16 w-16 flex-col items-center justify-center rounded-2xl px-1 text-[10px] text-[#8E8BA0]', CARD, SOFT)}>
+                  <FileText className="mb-1 h-5 w-5" />
+                  <span className="max-w-[56px] truncate">{p.file.name}</span>
                 </div>
               ) : (
-                <img src={p.url} alt={p.file.name} className="w-16 h-16 object-cover rounded-lg border border-border" />
+                <img src={p.url} alt={p.file.name} className={cn('h-16 w-16 rounded-2xl object-cover', SOFT)} />
               )}
               <button
                 onClick={() => removePending(p.id)}
                 aria-label="Retirer"
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center"
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
               >
-                <X className="w-3 h-3" />
+                <X className="h-3 w-3" />
               </button>
             </div>
           ))}
@@ -281,9 +313,9 @@ export function MobileAssistantScreen() {
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
           aria-label="Joindre un fichier"
-          className="w-11 h-11 rounded-full flex items-center justify-center bg-muted text-foreground shrink-0 active:bg-muted/70 disabled:opacity-40"
+          className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#2C2740] disabled:opacity-40 dark:text-[#E7E5F0]', CARD, SOFT)}
         >
-          <Paperclip className="w-5 h-5" />
+          <Paperclip className="h-5 w-5" />
         </button>
         {/* Composeur de chat : textarea brut requis pour l'auto-grow (type
             WhatsApp). La police est fixée à 16px → le zoom iOS visé par la règle
@@ -303,45 +335,44 @@ export function MobileAssistantScreen() {
           }}
           rows={1}
           placeholder="Écris, dicte ou joins un fichier…"
-          className="flex-1 resize-none max-h-32 px-4 py-3 rounded-2xl bg-muted text-[16px] outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
+          className={cn('max-h-32 flex-1 resize-none rounded-[22px] px-4 py-3 text-[16px] text-[#1B1A24] outline-none placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:text-[#F2F1F7] dark:focus:ring-[#4A4660]', CARD, SOFT)}
         />
         <button
           onClick={handleSend}
           disabled={!canSend}
           aria-label="Envoyer"
           className={cn(
-            'w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-opacity',
-            BRAND_GRADIENT,
-            (!canSend) && 'opacity-40',
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1C1B22] text-white transition-opacity dark:bg-[#F2F1F7] dark:text-[#1B1A24]',
+            !canSend && 'opacity-40',
           )}
         >
-          <Send className="w-5 h-5" />
+          <Send className="h-5 w-5" />
         </button>
       </div>
     </div>
   );
 
   return (
-    <ViewportShell header={header} footer={composer} scrollRef={scrollRef} scrollClassName="px-4 py-4">
+    <ViewportShell header={header} footer={composer} scrollRef={scrollRef} scrollClassName="px-4 py-3" className={CANVAS}>
       {isEmpty ? (
-        <div className="flex flex-col items-center text-center pt-10">
-          <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg', BRAND_GRADIENT)}>
-            <Bot className="w-8 h-8" />
+        <div className="flex flex-col items-center pt-10 text-center">
+          <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
+            <Bot className="h-8 w-8" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold">
+          <h2 className="mt-4 text-lg font-bold text-[#1B1A24] dark:text-[#F2F1F7]">
             Bonjour {profile?.first_name || ''} 👋
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground max-w-xs">
+          <p className="mt-1 max-w-xs text-sm text-[#6B6880] dark:text-[#9B98AD]">
             Je suis Mola, ton directeur des opérations. Pose-moi une question sur la plateforme — clients, dépôts, paiements, taux, statistiques.
-            Tu peux écrire, <span className="font-medium text-foreground">dicter avec le micro du clavier</span>,
-            ou <span className="font-medium text-foreground">joindre une capture ou un PDF</span> (📎).
+            Tu peux écrire, <span className="font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">dicter avec le micro du clavier</span>,
+            ou <span className="font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">joindre une capture ou un PDF</span> (📎).
           </p>
-          <div className="mt-6 grid grid-cols-1 gap-2 w-full max-w-sm">
+          <div className="mt-6 grid w-full max-w-sm grid-cols-1 gap-2">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="text-left text-sm px-4 py-3 rounded-xl border border-border bg-card active:bg-muted transition-colors"
+                className={cn('rounded-[18px] px-4 py-3 text-left text-sm font-medium text-[#1B1A24] transition-opacity active:opacity-80 dark:text-[#F2F1F7]', CARD, SOFT)}
               >
                 {s}
               </button>
@@ -354,12 +385,12 @@ export function MobileAssistantScreen() {
             <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'items-start')}>
               <div
                 className={cn(
-                  'max-w-[85%] px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words rounded-2xl',
+                  'max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] px-4 py-2.5 text-[15px] leading-relaxed',
                   m.role === 'user'
-                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    ? 'rounded-br-md bg-[#1C1B22] text-white dark:bg-[#34323F]'
                     : m.error
-                      ? 'bg-destructive/10 text-destructive rounded-bl-md'
-                      : 'bg-muted text-foreground rounded-bl-md',
+                      ? 'rounded-bl-md bg-[#FBEFEF] text-[#9B4A47] dark:bg-[#2C1F20] dark:text-[#E0A3A1]'
+                      : cn('rounded-bl-md text-[#1B1A24] dark:text-[#F2F1F7]', CARD, SOFT),
                 )}
               >
                 {m.attachments?.length ? (
@@ -370,12 +401,12 @@ export function MobileAssistantScreen() {
                           key={i}
                           src={a.url}
                           alt={a.name}
-                          className="w-24 h-24 object-cover rounded-lg border border-black/10"
+                          className="h-24 w-24 rounded-xl object-cover"
                         />
                       ) : (
-                        <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/40 border border-black/10 text-xs">
-                          <FileText className="w-4 h-4 shrink-0" />
-                          <span className="truncate max-w-[140px]">{a.name}</span>
+                        <div key={i} className="flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-xs dark:bg-white/10">
+                          <FileText className="h-4 w-4 shrink-0" />
+                          <span className="max-w-[140px] truncate">{a.name}</span>
                         </div>
                       ),
                     )}
@@ -390,11 +421,11 @@ export function MobileAssistantScreen() {
                   target="_blank"
                   rel="noopener noreferrer"
                   download={img.name}
-                  className="block max-w-[85%] rounded-2xl overflow-hidden border border-border bg-card"
+                  className={cn('block max-w-[85%] overflow-hidden rounded-[20px]', CARD, SOFT)}
                 >
-                  <img src={img.url} alt={img.name} className="w-full h-auto" />
-                  <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5" /> {img.name} — appuyer pour ouvrir / télécharger
+                  <img src={img.url} alt={img.name} className="h-auto w-full" />
+                  <div className="flex items-center gap-2 px-3 py-2 text-xs text-[#8E8BA0] dark:text-[#9B98AD]">
+                    <FileText className="h-3.5 w-3.5" /> {img.name} — appuyer pour ouvrir / télécharger
                   </div>
                 </a>
               ))}
@@ -410,8 +441,8 @@ export function MobileAssistantScreen() {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-muted text-muted-foreground rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+              <div className={cn('flex items-center gap-2 rounded-[20px] rounded-bl-md px-4 py-3 text-[#6B6880] dark:text-[#9B98AD]', CARD, SOFT)}>
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">Mola réfléchit…</span>
               </div>
             </div>
