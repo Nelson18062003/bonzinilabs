@@ -216,6 +216,18 @@ dans `MobileMissionDetail`.
 
 ---
 
+## Édition & cycle de vie ✅ (CRUD complété)
+
+Manques fonctionnels comblés (RPC + hooks existaient déjà) :
+- **`MobileEditMission`** : modifier libellé/lieu/dates/note + **statut** (clôturer, archiver). Crayon
+  sur l'entête du détail mission.
+- **`MobileEditPurchaseOrder`** : modifier total/acompte/incoterm/date/notes + **statut** (solder,
+  annuler). Crayon sur l'en-tête du détail commande.
+- **Annulation de paiement** (super_admin) : depuis le détail commande, bouton « Annuler » sur chaque
+  paiement → motif obligatoire (≥10 car.) → `proc_void_record`. Le reste-à-payer se recalcule.
+
+Vérifié : `type-check` 0 erreur · `build` OK · **128 tests**.
+
 ## Revues sécurité & qualité ✅ (avant déploiement)
 
 Deux revues automatisées (agents `security-reviewer` + `code-simplifier`) sur tout le module, puis

@@ -15,3 +15,5 @@ export { MobileRecordQc } from './MobileRecordQc';
 export { MobileLogProduction } from './MobileLogProduction';
 export { MobileSetCommission } from './MobileSetCommission';
 export { MobileRecordExpense } from './MobileRecordExpense';
+export { MobileEditMission } from './MobileEditMission';
+export { MobileEditPurchaseOrder } from './MobileEditPurchaseOrder';

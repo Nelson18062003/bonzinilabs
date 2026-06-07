@@ -26,9 +26,13 @@ export function formatByCurrency(by: ByCurrency, separator = ' · '): string {
 export const PO_STATUS_LABEL: Record<ProcPoStatus, string> = {
   open: 'Ouverte', closed: 'Soldée', cancelled: 'Annulée',
 };
+export const PO_STATUS_OPTIONS = (Object.entries(PO_STATUS_LABEL) as [ProcPoStatus, string][])
+  .map(([value, label]) => ({ value, label }));
 export const MISSION_STATUS_LABEL: Record<ProcMissionStatus, string> = {
   active: 'Active', closed: 'Clôturée', archived: 'Archivée',
 };
+export const MISSION_STATUS_OPTIONS = (Object.entries(MISSION_STATUS_LABEL) as [ProcMissionStatus, string][])
+  .map(([value, label]) => ({ value, label }));
 export const PROD_STATUS_LABEL: Record<ProcProductionStatus, string> = {
   po_confirmed: 'Commande confirmée', materials_purchased: 'Matières achetées', in_production: 'En production',
   production_done: 'Production terminée', ready_for_qc: 'Prête pour QC', shipped: 'Expédiée',

@@ -97,6 +97,8 @@ const MobileProcurementQc = lazy(() => import("./mobile/screens/procurement").th
 const MobileProcurementProduction = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileLogProduction })));
 const MobileProcurementCommission = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileSetCommission })));
 const MobileProcurementExpense = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileRecordExpense })));
+const MobileProcurementEditMission = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileEditMission })));
+const MobileProcurementEditPO = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileEditPurchaseOrder })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
@@ -240,12 +242,14 @@ const App = () => (
                 <Route path="/m/more/procurement/missions" element={<MobileRouteWrapper><MobileProcurementMissions /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/missions/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementNewMission /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/missions/:missionId" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementMissionDetail /></MobileRouteWrapper>} />
+                <Route path="/m/more/procurement/missions/:missionId/edit" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementEditMission /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/suppliers" element={<MobileRouteWrapper><MobileProcurementSuppliers /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/suppliers/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementSupplierEdit /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/suppliers/:supplierId" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementSupplier360 /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/suppliers/:supplierId/edit" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementSupplierEdit /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/missions/:missionId/po/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementNewPO /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/po/:poId" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementPODetail /></MobileRouteWrapper>} />
+                <Route path="/m/more/procurement/po/:poId/edit" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementEditPO /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/po/:poId/line/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementAddLine /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/po/:poId/payment/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementRecordPayment /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/po/:poId/qc/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementQc /></MobileRouteWrapper>} />

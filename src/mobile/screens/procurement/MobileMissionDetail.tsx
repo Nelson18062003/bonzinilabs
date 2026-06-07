@@ -1,6 +1,6 @@
 import { useState, createElement } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Package, AlertTriangle, Share2 } from 'lucide-react';
+import { Package, AlertTriangle, Share2, Pencil } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useMissionReport } from '@/hooks/useProcurement';
@@ -70,7 +70,15 @@ export function MobileMissionDetail() {
           <>
             {/* Entête */}
             <section className={cn(SOFT_CARD, 'p-4')}>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{m.reference}</div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{m.reference}</div>
+                {canManage && (
+                  <button onClick={() => navigate(`/m/more/procurement/missions/${m.id}/edit`)} aria-label="Modifier la mission"
+                    className="-mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground active:bg-muted">
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
               <div className="mt-1 text-[18px] font-extrabold leading-tight text-foreground">{m.label}</div>
               <div className="mt-2 space-y-0.5 text-[12px] text-muted-foreground">
                 <div>{m.client.company_name || `${m.client.first_name ?? ''} ${m.client.last_name ?? ''}`.trim() || 'Client ?'}{m.client.phone ? ` · ${m.client.phone}` : ''}</div>

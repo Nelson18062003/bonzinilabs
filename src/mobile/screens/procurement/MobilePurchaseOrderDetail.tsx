@@ -1,18 +1,22 @@
+import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Receipt, AlertTriangle } from 'lucide-react';
+import { Receipt, AlertTriangle, Pencil } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { usePurchaseOrder } from '@/hooks/useProcurement';
+import { usePurchaseOrder, useVoidRecord } from '@/hooks/useProcurement';
 import { IconChip, INSET, SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
 import { ProcProofs } from '@/mobile/components/procurement/ProcProofs';
-import { PO_STATUS_LABEL, PROD_STATUS_LABEL } from './shared';
+import { PO_STATUS_LABEL, PROD_STATUS_LABEL, PROC_INPUT } from './shared';
 import { cn } from '@/lib/utils';
 
 export function MobilePurchaseOrderDetail() {
   const navigate = useNavigate();
   const { poId } = useParams<{ poId: string }>();
-  const { hasPermission } = useAdminAuth();
+  const { hasPermission, currentUser } = useAdminAuth();
   const { data, isLoading, isError } = usePurchaseOrder(poId);
+  const voidRecord = useVoidRecord();
+  const [voidId, setVoidId] = useState<string | null>(null);
+  const [voidReason, setVoidReason] = useState('');
 
   if (!hasPermission('canViewProcurement')) {
     return <Navigate to="/m/more" replace />;
@@ -20,12 +24,28 @@ export function MobilePurchaseOrderDetail() {
 
   const po = data?.purchase_order;
   const canManage = hasPermission('canManageProcurement');
+  const isSuperAdmin = currentUser?.role === 'super_admin';
   const cur = po?.currency ?? '';
+
+  const confirmVoid = async () => {
+    if (!voidId || voidReason.trim().length < 10) return;
+    try {
+      await voidRecord.mutateAsync({ p_record_kind: 'supplier_payment', p_id: voidId, p_reason: voidReason.trim() });
+      setVoidId(null);
+      setVoidReason('');
+    } catch { /* toast */ }
+  };
 
   return (
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title={po?.reference ?? 'Commande'} showBack
-        backTo={po ? `/m/more/procurement/missions/${po.mission.id}` : '/m/more/procurement'} />
+        backTo={po ? `/m/more/procurement/missions/${po.mission.id}` : '/m/more/procurement'}
+        rightElement={canManage && po ? (
+          <button onClick={() => navigate(`/m/more/procurement/po/${po.id}/edit`)} aria-label="Modifier la commande"
+            className="flex h-10 w-10 items-center justify-center rounded-full active:bg-muted">
+            <Pencil className="h-5 w-5" />
+          </button>
+        ) : undefined} />
 
       <div className="px-5 py-6 space-y-6">
         {isLoading ? (
@@ -100,15 +120,41 @@ export function MobilePurchaseOrderDetail() {
               ) : (
                 <div className={cn(SOFT_CARD, 'divide-y divide-border')}>
                   {data.payments.map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 p-3.5">
-                      <IconChip icon={Receipt} tone="neutral" size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-semibold text-foreground">{p.leg} · {p.method}</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {new Date(p.occurred_at).toLocaleDateString('fr-FR')} · {p.settlement_mode === 'rail' ? 'rail' : 'attestation'}
+                    <div key={p.id} className="p-3.5">
+                      {voidId === p.id ? (
+                        <div className="space-y-2">
+                          <div className="text-[12px] font-semibold text-foreground">Annuler {p.amount.toLocaleString('fr-FR')} {p.currency} ({p.leg}) ?</div>
+                          <textarea value={voidReason} onChange={(e) => setVoidReason(e.target.value)} rows={2}
+                            placeholder="Motif de l'annulation (10 caractères min)" className={cn(PROC_INPUT, 'h-auto py-2.5 leading-relaxed')} />
+                          <div className="flex gap-2">
+                            <button onClick={confirmVoid} disabled={voidReason.trim().length < 10 || voidRecord.isPending}
+                              className="flex-1 rounded-xl bg-red-600 py-2.5 text-[12px] font-semibold text-white active:scale-95 disabled:opacity-50">
+                              Confirmer l'annulation
+                            </button>
+                            <button onClick={() => { setVoidId(null); setVoidReason(''); }}
+                              className="rounded-xl bg-muted/60 px-4 py-2.5 text-[12px] font-semibold text-foreground active:scale-95">
+                              Retour
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="shrink-0 text-[13px] font-bold tabular-nums text-foreground">{p.amount.toLocaleString('fr-FR')} {p.currency}</div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <IconChip icon={Receipt} tone="neutral" size="sm" />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[13px] font-semibold text-foreground">{p.leg} · {p.method}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {new Date(p.occurred_at).toLocaleDateString('fr-FR')} · {p.settlement_mode === 'rail' ? 'rail' : 'attestation'}
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-[13px] font-bold tabular-nums text-foreground">{p.amount.toLocaleString('fr-FR')} {p.currency}</div>
+                            {isSuperAdmin && (
+                              <button onClick={() => { setVoidId(p.id); setVoidReason(''); }}
+                                className="text-[11px] font-semibold text-red-600 active:opacity-70 dark:text-red-400">Annuler</button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
