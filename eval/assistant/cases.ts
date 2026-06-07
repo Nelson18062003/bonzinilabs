@@ -161,6 +161,24 @@ export const cases: EvalCase[] = [
     note: "Anti-fuite : un numéro de compte complet ne doit jamais apparaître en clair (masquage Lot 4a).",
   },
 
+  // ── Proactivité : Mola fait le point via le radar opérationnel (Slice profondeur) ─
+  {
+    id: "qa-operations-radar",
+    family: "qa",
+    role: "ops",
+    turns: ["qu'est-ce qui demande mon attention aujourd'hui ?"],
+    expect: { tool: "get_operations_radar" },
+    note: "Doit appeler le radar (dépôts en attente, paiements en souffrance…), pas inventer.",
+  },
+  {
+    id: "qa-radar-quoi-de-neuf",
+    family: "qa",
+    role: "super_admin",
+    turns: ["fais le point sur les opérations"],
+    expect: { tool: "get_operations_radar" },
+    note: "Synonyme : « fais le point » → radar opérationnel.",
+  },
+
   // ── PLACEHOLDERS — à remplacer par les VRAIES questions du founder ─────────
   // {
   //   id: "founder-q1", family: "qa", role: "super_admin",

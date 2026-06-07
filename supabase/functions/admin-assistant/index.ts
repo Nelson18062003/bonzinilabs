@@ -1,6 +1,7 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.6 — 73 outils (46 lecture + 27 écriture) + découverte de capacités (do_capability),
-// top clients par volume, crédit/débit wallet, preuves auto, processLock.
+// Version: 2026-06-07.1 — 74 outils (47 lecture + 27 écriture) + découverte de capacités (do_capability),
+// top clients par volume, crédit/débit wallet, preuves auto, processLock, radar opérationnel,
+// playbook métier (profondeur/proactivité).
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
@@ -560,6 +561,78 @@ const READ_TOOLS: ReadTool[] = [
           par_statut: p.byStatus,
         },
         ...(truncated ? { warning: `Période très large (≥ ${CAP} lignes) : chiffres possiblement plafonnés — restreins la période.` } : {}),
+      };
+    },
+  },
+  {
+    name: "get_operations_radar",
+    permission: "canViewDeposits",
+    description:
+      "RADAR OPÉRATIONNEL — ce qui demande attention MAINTENANT, en un seul appel. Remonte : (1) dépôts en attente de validation depuis trop longtemps (argent du client qui attend d'être crédité), (2) paiements en souffrance (fournisseur qui attend, ou infos bénéficiaire manquantes), (3) gros soldes wallet dormants (argent immobile), (4) paiements à taux personnalisé récents (à vérifier côté marge). Utilise-le pour « quoi de neuf ? », « qu'est-ce qui demande mon attention ? », « fais le point », ou DE TOI-MÊME quand c'est pertinent pour être proactif. Seuils réglables.",
+    input_schema: { type: "object", properties: {
+      deposit_age_hours: { type: "number", description: "âge mini d'un dépôt en attente (défaut 48)" },
+      payment_age_hours: { type: "number", description: "âge mini d'un paiement en souffrance (défaut 24)" },
+      dormant_min_xaf: { type: "number", description: "solde wallet mini pour 'dormant' (défaut 2 000 000)" },
+      custom_rate_days: { type: "number", description: "fenêtre des paiements à taux perso (défaut 7 jours)" },
+    } },
+    execute: async (admin, a) => {
+      const depAgeH = clamp(a.deposit_age_hours, 48, 24 * 30);
+      const payAgeH = clamp(a.payment_age_hours, 24, 24 * 30);
+      const dormantMin = clamp(a.dormant_min_xaf, 2_000_000, 50_000_000);
+      const customDays = clamp(a.custom_rate_days, 7, 90);
+      const nowMs = Date.now();
+      const depBefore = new Date(nowMs - depAgeH * 3600_000).toISOString();
+      const payBefore = new Date(nowMs - payAgeH * 3600_000).toISOString();
+      const customSince = new Date(nowMs - customDays * 86400_000).toISOString();
+
+      const [depRes, payRes, walRes, custRes] = await Promise.all([
+        admin.from("deposits").select("reference, amount_xaf, confirmed_amount_xaf, status, created_at, user_id")
+          .in("status", ["admin_review", "proof_submitted"]).lt("created_at", depBefore)
+          .order("created_at", { ascending: true }).limit(15),
+        admin.from("payments").select("reference, amount_xaf, status, created_at, user_id")
+          .in("status", ["processing", "waiting_beneficiary_info", "cash_pending"]).lt("created_at", payBefore)
+          .order("created_at", { ascending: true }).limit(15),
+        admin.from("wallets").select("user_id, balance_xaf")
+          .gte("balance_xaf", dormantMin).order("balance_xaf", { ascending: false }).limit(10),
+        admin.from("payments").select("reference, amount_xaf, exchange_rate, status, created_at, user_id")
+          .eq("rate_is_custom", true).gte("created_at", customSince)
+          .order("created_at", { ascending: false }).limit(15),
+      ]);
+      const firstErr = depRes.error || payRes.error || walRes.error || custRes.error;
+      if (firstErr) return { error: firstErr.message };
+      const deps = depRes.data ?? [], pays = payRes.data ?? [], wals = walRes.data ?? [], customs = custRes.data ?? [];
+
+      // Noms clients en un seul lookup.
+      const ids = new Set<string>();
+      for (const r of [...deps, ...pays, ...wals, ...customs]) if (r.user_id) ids.add(String(r.user_id));
+      const names = new Map<string, string>();
+      if (ids.size) {
+        const { data: cl } = await admin.from("clients").select("user_id, first_name, last_name").in("user_id", [...ids]);
+        for (const c of cl ?? []) names.set(String(c.user_id), `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "?");
+      }
+      const nameOf = (uid: unknown) => names.get(String(uid)) ?? "?";
+      const ageH = (iso: string) => Math.round((nowMs - new Date(iso).getTime()) / 3600_000);
+
+      return {
+        genere_a: new Date().toISOString(),
+        seuils: { depot_age_h: depAgeH, paiement_age_h: payAgeH, dormant_min_xaf: dormantMin, taux_perso_jours: customDays },
+        depots_en_attente: {
+          count: deps.length,
+          items: deps.map((d: AnyClient) => ({ reference: d.reference, client: nameOf(d.user_id), montant: fmtXAF(d.confirmed_amount_xaf ?? d.amount_xaf), statut: d.status, age_heures: ageH(d.created_at) })),
+        },
+        paiements_en_souffrance: {
+          count: pays.length,
+          items: pays.map((p: AnyClient) => ({ reference: p.reference, client: nameOf(p.user_id), montant: fmtXAF(p.amount_xaf), statut: p.status, age_heures: ageH(p.created_at) })),
+        },
+        soldes_dormants: {
+          count: wals.length,
+          items: wals.map((w: AnyClient) => ({ client: nameOf(w.user_id), solde: fmtXAF(w.balance_xaf) })),
+        },
+        taux_personnalises_recents: {
+          count: customs.length,
+          items: customs.map((p: AnyClient) => ({ reference: p.reference, client: nameOf(p.user_id), montant: fmtXAF(p.amount_xaf), taux: p.exchange_rate, statut: p.status })),
+        },
+        note: "Présente d'abord le plus URGENT (dépôts/paiements les plus vieux, plus gros montants). Si toutes les sections sont vides, dis simplement que rien ne demande attention pour l'instant.",
       };
     },
   },
