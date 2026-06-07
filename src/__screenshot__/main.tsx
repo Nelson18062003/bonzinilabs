@@ -49,6 +49,11 @@ import {
   MobileHistoryScreen,
   MobileProofsScreen,
 } from '@/mobile/screens/more';
+import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
+import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
+import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
+import MobileClientBeneficiaries from '@/mobile/screens/clients/MobileClientBeneficiaries';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -88,6 +93,12 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'more-notifications': { Comp: MobileNotificationsScreen, route: '/m/more/notifications' },
   'more-history': { Comp: MobileHistoryScreen, route: '/m/more/history' },
   'more-proofs': { Comp: MobileProofsScreen, route: '/m/more/proofs' },
+  // Clients module (Phase 2 M2)
+  clients: { Comp: MobileClientsScreen, route: '/m/clients' },
+  'client-detail': { Comp: MobileClientDetail, route: '/m/clients/u1', path: '/m/clients/:clientId' },
+  'client-create': { Comp: MobileCreateClient, route: '/m/clients/new' },
+  'client-ledger': { Comp: MobileClientLedger, route: '/m/clients/u1/ledger', path: '/m/clients/:clientId/ledger' },
+  'client-beneficiaries': { Comp: MobileClientBeneficiaries, route: '/m/clients/u1/beneficiaries', path: '/m/clients/:clientId/beneficiaries' },
 };
 
 const params = new URLSearchParams(window.location.search);

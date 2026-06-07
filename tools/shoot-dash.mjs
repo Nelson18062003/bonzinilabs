@@ -57,16 +57,56 @@ const proofClients = [
   { user_id: 'u3', first_name: 'Marie', last_name: 'Nkolo' },
 ];
 
+// Clients module (M2) fixtures — list + single client + wallet + ledger + carnet.
+const clientsList = [
+  { user_id: 'u1', first_name: 'Awa', last_name: 'Diop', phone: '+237 6 91 23 45 67', email: 'awa@jakocargo.cm', company_name: 'Jako Cargo SARL', country: 'Cameroun', city: 'Douala', status: 'ACTIVE', created_at: new Date(Date.now() - 9e9).toISOString(), updated_at: new Date().toISOString(), utm_source: 'whatsapp', utm_campaign: 'promo-juin' },
+  { user_id: 'u2', first_name: 'Jean', last_name: 'Kamga', phone: '+237 6 55 11 22 33', email: 'jean@import.cm', company_name: 'Kamga Import', country: 'Cameroun', city: 'Yaoundé', status: 'PENDING_KYC', created_at: new Date(Date.now() - 5e9).toISOString(), updated_at: new Date().toISOString() },
+  { user_id: 'u3', first_name: 'Marie', last_name: 'Nkolo', phone: '+237 6 77 88 99 00', email: '', company_name: '', country: 'Cameroun', city: 'Bafoussam', status: 'SUSPENDED', created_at: new Date(Date.now() - 2e9).toISOString(), updated_at: new Date().toISOString() },
+];
+const wallets = [
+  { id: 'w1', user_id: 'u1', balance_xaf: 4250000 },
+  { id: 'w2', user_id: 'u2', balance_xaf: 0 },
+  { id: 'w3', user_id: 'u3', balance_xaf: 120000 },
+];
+const clientDeposits = [
+  { user_id: 'u1', amount_xaf: 6500000, status: 'validated' },
+  { user_id: 'u1', amount_xaf: 1800000, status: 'validated' },
+];
+const clientPayments = [
+  { user_id: 'u1', amount_xaf: 4050000, status: 'completed' },
+];
+const ledgerEntries = [
+  { id: 'le1', wallet_id: 'w1', user_id: 'u1', entry_type: 'ADMIN_CREDIT', amount_xaf: 500000, balance_before: 3750000, balance_after: 4250000, reference_type: null, reference_id: null, description: 'Ajustement manuel — régularisation', created_at: new Date(Date.now() - 12e5).toISOString(), created_by_admin_id: 'a1' },
+  { id: 'le2', wallet_id: 'w1', user_id: 'u1', entry_type: 'PAYMENT_RESERVED', amount_xaf: 1200000, balance_before: 4950000, balance_after: 3750000, reference_type: 'payment', reference_id: 'p1', description: 'Paiement fournisseur Alipay', created_at: new Date(Date.now() - 8e6).toISOString(), created_by_admin_id: null },
+  { id: 'le3', wallet_id: 'w1', user_id: 'u1', entry_type: 'DEPOSIT_VALIDATED', amount_xaf: 1800000, balance_before: 3150000, balance_after: 4950000, reference_type: 'deposit', reference_id: 'd2', description: 'Dépôt validé — virement', created_at: new Date(Date.now() - 2e7).toISOString(), created_by_admin_id: null },
+];
+const beneficiaries = [
+  { id: 'b1', client_id: 'u1', payment_method: 'alipay', alias: 'Fournisseur Shenzhen', name: 'Li Wei', identifier: 'liwei@alipay.cn', identifier_type: 'email', phone: '+86 138 0000 1111', email: null, bank_name: null, bank_account: null, bank_extra: null, relation_type: 'supplier', notes: null, qr_code_url: null, is_archived: false, created_at: new Date().toISOString() },
+  { id: 'b2', client_id: 'u1', payment_method: 'wechat', alias: 'Atelier textile', name: 'Zhang Min', identifier: 'zhangmin_wx', identifier_type: 'id', phone: null, email: null, bank_name: null, bank_account: null, bank_extra: null, relation_type: 'supplier', notes: null, qr_code_url: null, is_archived: false, created_at: new Date().toISOString() },
+  { id: 'b3', client_id: 'u1', payment_method: 'bank_transfer', alias: 'Usine Guangzhou', name: 'Guangzhou Trading Co', identifier: null, identifier_type: 'id', phone: null, email: null, bank_name: 'ICBC', bank_account: '6222 0000 1234 5678', bank_extra: 'SWIFT ICBKCNBJ', relation_type: 'supplier', notes: null, qr_code_url: null, is_archived: false, created_at: new Date().toISOString() },
+];
+
+// This Supabase client version slices maybeSingle()/single() client-side (Accept
+// stays application/json), so we discriminate by URL instead: a query filtered to
+// one user (user_id=eq.…) is the detail/ledger fetch; an unfiltered query is a list.
 function respond(url) {
+  const single = url.includes('user_id=eq.'); // one specific client
   if (url.includes('/rpc/get_dashboard_stats')) return stats;
   if (url.includes('/rpc/get_deposit_stats')) return depositStats;
   if (url.includes('/daily_rates')) return rate; // maybeSingle → object
   if (url.includes('/admin_audit_logs')) return auditLogs;
   if (url.includes('/user_roles')) return adminRoles;
   if (url.includes('/deposit_proofs')) return proofs;
-  if (url.includes('/deposits')) return deposits;
-  if (url.includes('/clients')) return proofClients;
-  if (url.includes('/payments')) return [];
+  if (url.includes('/beneficiaries')) return beneficiaries;
+  if (url.includes('/wallets')) return single ? wallets[0] : wallets;
+  if (url.includes('/ledger_entries')) return ledgerEntries;
+  if (url.includes('/deposits')) return single ? clientDeposits : deposits;
+  if (url.includes('/clients')) {
+    if (single) return clientsList[0]; // detail (maybeSingle slices client-side)
+    // proofs screen joins clients by user_id; clients list needs the full rows.
+    return url.includes('select=user_id') ? proofClients : clientsList;
+  }
+  if (url.includes('/payments')) return single ? clientPayments : [];
   return [];
 }
 
