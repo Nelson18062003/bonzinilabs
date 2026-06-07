@@ -1,0 +1,61 @@
+# Module « Centrale d'Achat » — Dossier de conception
+
+> Système de gestion **sourcing → commande → production → QC → expédition → livraison**
+> pour les missions d'achat des clients de Bonzini en Chine, avec une **couche IA native**
+> (ingestion + pilotage + reporting) construite dans la lignée de Mola, sans ses défauts.
+
+> **Source de vérité.** Ce dossier est la référence vivante de la conception. Chaque phase y est
+> écrite incrémentalement. **Aucune ligne de code applicatif n'est écrite avant la phase
+> d'implémentation, validée explicitement par le porteur produit.** Seuls les fichiers de
+> documentation sont créés avant.
+
+---
+
+## Pourquoi ce module existe (histoire déclenchante)
+
+Mai 2026 : un client camerounais vient en Chine. Le père accompagne dans **30+ usines** (voitures,
+meubles, matériaux, fenêtres…). Avances déposées chez chaque fournisseur (cash, Alipay, WeChat).
+Volume total **> 3 M CNY**. Aujourd'hui, **impossible de produire un rapport propre** : tout est
+dispersé entre photos, PDFs, conversations WeChat, et la mémoire du père. 1 client comme ça
+aujourd'hui ; 5, 10, 50 demain. **Sans système, ingérable.**
+
+---
+
+## Suivi des phases (proposition — à valider en Phase 0)
+
+| Phase | Objet | Fichier | Statut |
+|------:|-------|---------|--------|
+| 0 | **Cadrage & diagnostic de l'existant** : reformulation, diagnostic Bonzini/Mola, réutilisable vs manquant, proposition de workflow, questions de conception | [`00-cadrage.md`](./00-cadrage.md) | ⏳ **Rendu — en attente de validation** |
+| 1 | **Apprentissage du domaine procurement** (OBLIGATOIRE) : vocabulaire + patterns (PO/PI, deposit/balance, incoterms, AQL/QC, factoring, consolidation conteneur), étude Anvyl / Flexport / Alibaba / sourcing agents | `01-domaine.md` | À venir |
+| 2 | **Modèle conceptuel & entités** (conçu AI-first) : entités, master-data partagée vs par-client, lien au rail paiement/trésorerie, append-only, multi-tenancy, coûts | `02-modele-donnees.md` | À venir |
+| 3 | **Couche IA (le cœur)** : ingestion-first (OCR/vision/voix/exports WeChat), capacités `@mola`, outils riches, RAG métier, canal du père, reporting, self-correction, coûts | `03-couche-ia.md` | À venir |
+| 4 | **Parcours & UX terrain** : flux père-sur-le-terrain, flux admin, vue reporting client, wireframes | `04-parcours.md` | À venir |
+| 5 | **Plan d'implémentation par lots** : lots ordonnés + estimations + critères de « fait », **catch-up rétroactif mission mai 2026 en Lot 1** | `05-plan-implementation.md` | À venir |
+| 6 | **Implémentation** (après GO explicite), par lots | `06-implementation.md` | À venir |
+| 7 | **Vérification** : type-check + build + jeu d'eval + scénario bout-en-bout (le rapport mai 2026 = test d'acceptation) | `07-verification.md` | À venir |
+
+---
+
+## Règles de travail (rappel)
+
+- **Une phase à la fois.** Pas de saut. Je rends, tu valides, on avance.
+- **Apprentissage du domaine obligatoire (Phase 1)** : aucun design avant de connaître le vocabulaire
+  et les patterns du procurement. Anti-réinvention : si Anvyl/Flexport/Alibaba ont résolu un
+  sous-problème, on l'étudie avant de proposer.
+- **Lecture seule jusqu'à la Phase 6** (sauf l'écriture de ce dossier de doc).
+- **IA en couche au-dessus, pas en remplacement.** Une base métier propre d'abord ; l'IA hallucine
+  sur des données pourries. Mais la base est conçue **AI-first** dès la Phase 2.
+- **Hériter de Mola sans répéter ses erreurs** : outils qui inspectent la base en temps réel,
+  mémoire à l'endroit, vision activée, self-correction, parité outil↔plateforme.
+- **Père sur le terrain = persona #1.** Si ce n'est pas utilisable depuis un téléphone en Chine
+  pendant une visite d'usine, ça ne sert à rien.
+- **Documents hétérogènes = réalité** (photos floues, exports WeChat, PDFs scannés) → acceptés tels
+  quels, OCR best-effort, validation humaine.
+- **Cash sans reçu = réalité** → workflow d'attestation conçu pour cette réalité.
+- **Audit trail non négociable** (argent du client).
+- **Coût mensuel chiffré** pour chaque décision (stockage, OCR, inférence).
+- **`fichier:ligne`** pour toute affirmation codebase ; **URL + date** pour la recherche web.
+- **Vérifié / supposé / à confirmer** systématique.
+
+**Légende confiance :** 🟢 vérifié (lecture directe / `fichier:ligne`) · 🟡 supposé (déduit, à valider)
+· 🔴 à confirmer (décision métier / mesure / config prod).
