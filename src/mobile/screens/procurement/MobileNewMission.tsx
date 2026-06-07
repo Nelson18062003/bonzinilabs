@@ -6,9 +6,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useSearchClients } from '@/hooks/useClientManagement';
 import { useCreateMission } from '@/hooks/useProcurement';
 import { FieldLabel, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 
 interface SelectedClient { id: string; name: string; phone: string }
 

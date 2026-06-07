@@ -15,7 +15,8 @@ VALUES (
   'procurement-docs',
   false,
   10485760, -- 10 Mo
-  ARRAY['image/png','image/jpeg','image/jpg','image/webp','image/heic','image/heif','application/pdf']
+  -- Aligné sur validateUploadFile (src/lib/utils.ts) : le front filtre en premier.
+  ARRAY['image/jpeg','image/png','image/webp','application/pdf']
 )
 ON CONFLICT (id) DO NOTHING;
 

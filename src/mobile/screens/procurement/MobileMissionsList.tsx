@@ -4,16 +4,14 @@ import { Plus, Boxes, ChevronRight } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useMissions } from '@/hooks/useProcurement';
-import type { ByCurrency, ProcCurrency, ProcMissionStatus } from '@/integrations/supabase/procurement';
+import type { ByCurrency } from '@/integrations/supabase/procurement';
 import { IconChip, Pill, SOFT_CARD } from '@/components/treasury/ui';
+import { MISSION_STATUS_LABEL, formatByCurrency } from './shared';
 import { cn } from '@/lib/utils';
 
-const STATUS_LABEL: Record<ProcMissionStatus, string> = { active: 'Active', closed: 'Clôturée', archived: 'Archivée' };
-
 function outstandingLabel(by: ByCurrency): string | null {
-  const entries = (Object.entries(by) as [ProcCurrency, number][]).filter(([, v]) => Math.abs(v) > 0.000001);
-  if (entries.length === 0) return null;
-  return entries.map(([c, v]) => `${v.toLocaleString('fr-FR')} ${c}`).join(' · ');
+  const s = formatByCurrency(by);
+  return s === '—' ? null : s;
 }
 
 export function MobileMissionsList() {
@@ -75,7 +73,7 @@ export function MobileMissionsList() {
                       <span className={cn(
                         'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold',
                         m.status === 'active' ? 'bg-bonzini-amber/15 text-bonzini-amber' : 'bg-muted text-muted-foreground',
-                      )}>{STATUS_LABEL[m.status]}</span>
+                      )}>{MISSION_STATUS_LABEL[m.status]}</span>
                     </div>
                     <div className="truncate text-[12px] text-muted-foreground">
                       {m.reference} · {m.company_name || m.client_name || 'Client ?'}

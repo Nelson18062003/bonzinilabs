@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { usePurchaseOrder, useSetCommission } from '@/hooks/useProcurement';
 import type { ProcCommissionMode, ProcCurrency } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT, isValidAmount } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 
 export function MobileSetCommission() {
   const navigate = useNavigate();
@@ -29,6 +28,9 @@ export function MobileSetCommission() {
   const [currency, setCurrency] = useState<ProcCurrency>('CNY');
   const [notes, setNotes] = useState('');
 
+  // Devise par défaut = celle de la commande, une fois chargée (modifiable ensuite).
+  useEffect(() => { if (po) setCurrency(po.currency); }, [po?.currency]);
+
   if (!hasPermission('canManageProcurement') || (!poId && !missionId)) {
     return <Navigate to="/m/more/procurement" replace />;
   }
@@ -38,7 +40,6 @@ export function MobileSetCommission() {
   const valNum = Number(value) || 0;
   const computedAmount = mode === 'percentage' ? (baseNum * valNum) / 100 : valNum;
   const computedPct = mode === 'fixed_amount' ? (baseNum > 0 ? (valNum / baseNum) * 100 : 0) : valNum;
-  const effectiveCurrency = po && currency === 'CNY' && po.currency !== 'CNY' ? po.currency : currency;
   const backTo = poId ? `/m/more/procurement/po/${poId}` : `/m/more/procurement/missions/${missionId}`;
 
   const handleSubmit = async () => {
@@ -54,7 +55,7 @@ export function MobileSetCommission() {
         p_client_price: clientPrice ? Number(clientPrice) : null,
         p_negotiated_discount: discount ? Number(discount) : null,
         p_client_visible: clientVisible,
-        p_currency: effectiveCurrency,
+        p_currency: currency,
         p_notes: notes.trim() || null,
       });
       navigate(backTo, { replace: true });
@@ -87,7 +88,7 @@ export function MobileSetCommission() {
         <div className={cn(SOFT_CARD, 'flex items-center justify-between p-3.5')}>
           <span className="text-[12px] text-muted-foreground">Commission calculée</span>
           <span className="text-[15px] font-extrabold tabular-nums text-bonzini-violet">
-            {computedAmount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {effectiveCurrency}
+            {computedAmount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {currency}
             <span className="ml-1 text-[12px] font-medium text-muted-foreground">({computedPct.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %)</span>
           </span>
         </div>
@@ -107,8 +108,8 @@ export function MobileSetCommission() {
           <div className="flex-1">
             <FieldLabel>Devise</FieldLabel>
             <div className="flex gap-2">
-              <Pill active={effectiveCurrency === 'CNY'} onClick={() => setCurrency('CNY')}>CNY</Pill>
-              <Pill active={effectiveCurrency === 'XAF'} onClick={() => setCurrency('XAF')}>XAF</Pill>
+              <Pill active={currency === 'CNY'} onClick={() => setCurrency('CNY')}>CNY</Pill>
+              <Pill active={currency === 'XAF'} onClick={() => setCurrency('XAF')}>XAF</Pill>
             </div>
           </div>
           <button onClick={() => setClientVisible((v) => !v)} type="button"
@@ -120,7 +121,7 @@ export function MobileSetCommission() {
 
         <div><FieldLabel>Notes</FieldLabel><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={cn(INPUT, 'h-auto py-3 leading-relaxed')} /></div>
 
-        <PrimaryPill onClick={handleSubmit} disabled={valNum <= 0 || setCommission.isPending} loading={setCommission.isPending} type="button">
+        <PrimaryPill onClick={handleSubmit} disabled={!isValidAmount(valNum) || setCommission.isPending} loading={setCommission.isPending} type="button">
           Enregistrer la commission
         </PrimaryPill>
       </div>

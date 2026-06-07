@@ -6,6 +6,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useSuppliers } from '@/hooks/useProcurement';
 import type { ProcSupplierKind } from '@/integrations/supabase/procurement';
 import { IconChip, SOFT_CARD } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT } from './shared';
 import { cn } from '@/lib/utils';
 
 const KIND_META: Record<ProcSupplierKind, { label: string; icon: typeof Factory }> = {
@@ -13,8 +14,6 @@ const KIND_META: Record<ProcSupplierKind, { label: string; icon: typeof Factory 
   trading_company: { label: 'Négociant', icon: Store },
   unknown: { label: 'À qualifier', icon: HelpCircle },
 };
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 
 export function MobileSuppliersList() {
   const navigate = useNavigate();

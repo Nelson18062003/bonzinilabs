@@ -6,9 +6,9 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useSuppliers, useCreatePurchaseOrder, useUpsertSupplier } from '@/hooks/useProcurement';
 import type { ProcCurrency, ProcIncoterm } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT } from './shared';
 import { cn } from '@/lib/utils';
 
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 const INCOTERMS: ProcIncoterm[] = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
 export function MobileNewPurchaseOrder() {

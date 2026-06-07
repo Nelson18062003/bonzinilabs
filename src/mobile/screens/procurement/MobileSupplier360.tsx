@@ -3,17 +3,9 @@ import { Pencil, AlertTriangle, Package } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useSupplier360 } from '@/hooks/useProcurement';
-import type { ByCurrency, ProcCurrency, ProcSupplierKind, ProcVerificationStatus } from '@/integrations/supabase/procurement';
 import { IconChip, INSET, SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
+import { SUPPLIER_KIND_LABEL as KIND_LABEL, VERIF_LABEL, formatByCurrency as money } from './shared';
 import { cn } from '@/lib/utils';
-
-const KIND_LABEL: Record<ProcSupplierKind, string> = { factory: 'Usine', trading_company: 'Négociant', unknown: 'À qualifier' };
-const VERIF_LABEL: Record<ProcVerificationStatus, string> = { unverified: 'Non vérifié', docs_seen: 'Docs vus', visited: 'Visité', audited: 'Audité' };
-
-function money(by: ByCurrency): string {
-  const e = (Object.entries(by) as [ProcCurrency, number][]).filter(([, v]) => Math.abs(v) > 0.000001);
-  return e.length === 0 ? '—' : e.map(([c, v]) => `${v.toLocaleString('fr-FR')} ${c}`).join(' · ');
-}
 
 export function MobileSupplier360() {
   const navigate = useNavigate();

@@ -213,3 +213,34 @@ dans `MobileMissionDetail`.
   attestation, suffisant pour le catch-up mai 2026).
 - Outils Mola dédiés (`tool` dans l'étiquette) + entrées de parité + eval procurement (Lot 5).
 - Puis **saisie réelle mai 2026** (opérationnel) — après déploiement + `gen-types`.
+
+---
+
+## Revues sécurité & qualité ✅ (avant déploiement)
+
+Deux revues automatisées (agents `security-reviewer` + `code-simplifier`) sur tout le module, puis
+correctifs appliqués.
+
+**Sécurité** — aucun finding Critique. Architecture validée (RLS SELECT-only, écritures via RPC
+`SECURITY DEFINER` + gate sur chaque RPC, void super_admin, audit, params typés, upload scopé). Corrigé :
+- **#1 (Élevé)** `proc_record_supplier_payment` mode rail : on vérifie désormais que le
+  `rail_payment_id` **appartient au client de la mission** (jointure `payments`→PO→mission) — sinon on
+  pourrait gonfler le « payé » avec un paiement sans rapport.
+- **#4 (Moyen)** `proc_attach_document` : exige le **préfixe `procurement-docs/`** (pas d'URL externe
+  arbitraire rendue) + **existence de l'entité cible** (CASE/EXISTS, pas de preuve orpheline).
+- **#2 (Moyen)** bornes montant front : `isValidAmount` (fini, > 0, < plafond) sur paiement, frais,
+  commission.
+- Bucket `procurement-docs` : MIME **alignés** sur `validateUploadFile`.
+- Confirmé sans action : multi-rôle sans escalade, marge interne (`factory_cost`…) jamais exposée hors
+  procurement (in-app, gate `can_access_procurement`), cast `rpc` inoffensif.
+
+**Qualité** — dédup & nettoyage appliqués (nouveau `src/mobile/screens/procurement/shared.ts`) :
+- `PROC_INPUT` (champ texte) factorisé (10 écrans) · `formatByCurrency` (3 écrans + variante) ·
+  `PO_STATUS_LABEL`/`PROD_STATUS_LABEL`/`MISSION_STATUS_LABEL`/`SUPPLIER_KIND_*`/`VERIF_*` partagés.
+- Imports morts supprimés (`AlertTriangle`, `Plus`).
+- **Bug UX corrigé** : forçage silencieux de la devise (commission + paiement) → la devise s'initialise
+  sur celle de la commande puis reste **librement modifiable** (`useEffect`).
+- Reporté (non bloquant) : extraction `PoCard` (imbrication du détail mission), adoption des primitives
+  `@/components/form` (TextField/MoneyField) à la place des `input` nus.
+
+**Vérifié après refactor** : `type-check` 0 erreur · `build` OK · **118 tests** verts.

@@ -417,8 +417,15 @@ BEGIN
     IF p_rail_payment_id IS NULL THEN
       RETURN jsonb_build_object('success', false, 'error', 'Le mode rail exige un paiement lie (rail_payment_id)');
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM public.payments WHERE id = p_rail_payment_id) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Paiement rail introuvable');
+    -- Le paiement du rail doit appartenir au CLIENT de la mission de cette commande
+    -- (sinon on pourrait gonfler le "payé" d'une commande avec un paiement sans rapport).
+    IF NOT EXISTS (
+      SELECT 1 FROM public.payments pay
+      JOIN public.proc_purchase_orders po ON po.id = p_purchase_order_id
+      JOIN public.proc_missions mi ON mi.id = po.mission_id
+      WHERE pay.id = p_rail_payment_id AND pay.user_id = mi.client_user_id
+    ) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Paiement rail introuvable ou rattache a un autre client');
     END IF;
   END IF;
 
@@ -557,6 +564,24 @@ BEGIN
 
   IF p_file_url IS NULL OR length(trim(p_file_url)) = 0 THEN
     RETURN jsonb_build_object('success', false, 'error', 'URL du fichier obligatoire');
+  END IF;
+  -- La preuve DOIT vivre dans notre bucket privé (pas d'URL externe arbitraire).
+  IF trim(p_file_url) NOT LIKE 'procurement-docs/%' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Chemin de fichier invalide (hors bucket procurement-docs)');
+  END IF;
+  -- L'entité cible doit exister (pas de preuve orpheline / mal rattachée).
+  IF NOT (
+    CASE p_entity_type
+      WHEN 'mission'          THEN EXISTS (SELECT 1 FROM public.proc_missions          WHERE id = p_entity_id)
+      WHEN 'supplier'         THEN EXISTS (SELECT 1 FROM public.proc_suppliers         WHERE id = p_entity_id)
+      WHEN 'purchase_order'   THEN EXISTS (SELECT 1 FROM public.proc_purchase_orders   WHERE id = p_entity_id)
+      WHEN 'supplier_payment' THEN EXISTS (SELECT 1 FROM public.proc_supplier_payments WHERE id = p_entity_id)
+      WHEN 'qc'               THEN EXISTS (SELECT 1 FROM public.proc_qc_inspections    WHERE id = p_entity_id)
+      WHEN 'order_line'       THEN EXISTS (SELECT 1 FROM public.proc_order_lines       WHERE id = p_entity_id)
+      ELSE FALSE
+    END
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Entite cible introuvable');
   END IF;
 
   INSERT INTO public.proc_documents (

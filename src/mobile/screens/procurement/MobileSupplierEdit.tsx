@@ -5,21 +5,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useSupplier360, useUpsertSupplier } from '@/hooks/useProcurement';
 import type { ProcSupplierKind, ProcVerificationStatus } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT, SUPPLIER_KIND_OPTIONS, VERIF_OPTIONS } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
-
-const KINDS: { value: ProcSupplierKind; label: string }[] = [
-  { value: 'factory', label: 'Usine' },
-  { value: 'trading_company', label: 'Négociant' },
-  { value: 'unknown', label: 'À qualifier' },
-];
-const VERIFS: { value: ProcVerificationStatus; label: string }[] = [
-  { value: 'unverified', label: 'Non vérifié' },
-  { value: 'docs_seen', label: 'Docs vus' },
-  { value: 'visited', label: 'Visité' },
-  { value: 'audited', label: 'Audité' },
-];
 
 export function MobileSupplierEdit() {
   const navigate = useNavigate();
@@ -103,14 +90,14 @@ export function MobileSupplierEdit() {
         <div>
           <FieldLabel>Type</FieldLabel>
           <div className="flex flex-wrap gap-2">
-            {KINDS.map((k) => <Pill key={k.value} active={kind === k.value} onClick={() => setKind(k.value)}>{k.label}</Pill>)}
+            {SUPPLIER_KIND_OPTIONS.map((k) => <Pill key={k.value} active={kind === k.value} onClick={() => setKind(k.value)}>{k.label}</Pill>)}
           </div>
         </div>
 
         <div>
           <FieldLabel>Vérification</FieldLabel>
           <div className="flex flex-wrap gap-2">
-            {VERIFS.map((v) => <Pill key={v.value} active={verif === v.value} onClick={() => setVerif(v.value)}>{v.label}</Pill>)}
+            {VERIF_OPTIONS.map((v) => <Pill key={v.value} active={verif === v.value} onClick={() => setVerif(v.value)}>{v.label}</Pill>)}
           </div>
         </div>
 

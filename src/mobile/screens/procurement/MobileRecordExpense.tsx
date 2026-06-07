@@ -5,9 +5,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRecordExpense } from '@/hooks/useProcurement';
 import type { ProcCurrency, ProcExpenseCategory } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT, isValidAmount } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 const CATEGORIES: { v: ProcExpenseCategory; l: string }[] = [
   { v: 'hotel', l: 'Hôtel' }, { v: 'transport', l: 'Transport' }, { v: 'driver', l: 'Chauffeur' },
   { v: 'meals', l: 'Repas' }, { v: 'other', l: 'Autre' },
@@ -69,7 +68,7 @@ export function MobileRecordExpense() {
           {billable ? 'Refacturable au client ✓' : 'Non refacturable'}
         </button>
         <div><FieldLabel>Notes</FieldLabel><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={cn(INPUT, 'h-auto py-3 leading-relaxed')} /></div>
-        <PrimaryPill onClick={handleSubmit} disabled={amt <= 0 || recordExpense.isPending} loading={recordExpense.isPending} type="button">Enregistrer le frais</PrimaryPill>
+        <PrimaryPill onClick={handleSubmit} disabled={!isValidAmount(amt) || recordExpense.isPending} loading={recordExpense.isPending} type="button">Enregistrer le frais</PrimaryPill>
       </div>
     </div>
   );

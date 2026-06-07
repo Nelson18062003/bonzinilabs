@@ -1,7 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Wallet,
-  AlertTriangle,
   Boxes,
   ClipboardCheck,
   Ship,

@@ -5,17 +5,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLogProductionEvent } from '@/hooks/useProcurement';
 import type { ProcProductionStatus } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT, PROD_STATUS_OPTIONS } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
-const STATUSES: { v: ProcProductionStatus; l: string }[] = [
-  { v: 'po_confirmed', l: 'Commande confirmée' },
-  { v: 'materials_purchased', l: 'Matières achetées' },
-  { v: 'in_production', l: 'En production' },
-  { v: 'production_done', l: 'Production terminée' },
-  { v: 'ready_for_qc', l: 'Prête pour QC' },
-  { v: 'shipped', l: 'Expédiée' },
-];
 
 export function MobileLogProduction() {
   const navigate = useNavigate();
@@ -49,7 +40,7 @@ export function MobileLogProduction() {
       <div className="px-5 py-6 space-y-5">
         <div>
           <FieldLabel>Statut</FieldLabel>
-          <div className="flex flex-wrap gap-2">{STATUSES.map((x) => <Pill key={x.v} active={status === x.v} onClick={() => setStatus(x.v)}>{x.l}</Pill>)}</div>
+          <div className="flex flex-wrap gap-2">{PROD_STATUS_OPTIONS.map((x) => <Pill key={x.value} active={status === x.value} onClick={() => setStatus(x.value)}>{x.label}</Pill>)}</div>
         </div>
         <div><FieldLabel>Date</FieldLabel><input type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className={INPUT} /></div>
         <div><FieldLabel>Note</FieldLabel><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={cn(INPUT, 'h-auto py-3 leading-relaxed')} /></div>

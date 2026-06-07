@@ -4,18 +4,11 @@ import { Package, AlertTriangle, Share2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useMissionReport } from '@/hooks/useProcurement';
-import type { ByCurrency, ProcCurrency, ProcPoStatus } from '@/integrations/supabase/procurement';
+import type { ByCurrency } from '@/integrations/supabase/procurement';
 import { IconChip, INSET, SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
 import { ProcProofs } from '@/mobile/components/procurement/ProcProofs';
+import { PO_STATUS_LABEL, formatByCurrency as money } from './shared';
 import { cn } from '@/lib/utils';
-
-const PO_STATUS_LABEL: Record<ProcPoStatus, string> = { open: 'Ouverte', closed: 'Soldée', cancelled: 'Annulée' };
-
-function money(by: ByCurrency): string {
-  const entries = (Object.entries(by) as [ProcCurrency, number][]).filter(([, v]) => Math.abs(v) > 0.000001);
-  if (entries.length === 0) return '—';
-  return entries.map(([c, v]) => `${v.toLocaleString('fr-FR')} ${c}`).join(' · ');
-}
 
 function TotalRow({ label, by, accent }: { label: string; by: ByCurrency; accent?: boolean }) {
   return (

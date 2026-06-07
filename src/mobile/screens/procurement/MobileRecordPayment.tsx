@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { usePurchaseOrder, useRecordSupplierPayment } from '@/hooks/useProcurement';
 import type { ProcCurrency, ProcPaymentLeg, ProcPaymentMethod, ProcPaidBy } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT, isValidAmount } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 const LEGS: { v: ProcPaymentLeg; l: string }[] = [
   { v: 'deposit', l: 'Acompte' }, { v: 'balance', l: 'Solde' }, { v: 'final', l: 'Final' }, { v: 'extra', l: 'Extra' },
 ];
@@ -36,15 +35,15 @@ export function MobileRecordPayment() {
   const [externalRef, setExternalRef] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Devise par défaut = celle de la commande (une fois chargée).
-  const effectiveCurrency = po && currency === 'CNY' && po.currency !== 'CNY' ? po.currency : currency;
+  // Devise par défaut = celle de la commande, une fois chargée (modifiable ensuite).
+  useEffect(() => { if (po) setCurrency(po.currency); }, [po?.currency]);
 
   if (!hasPermission('canManageProcurement') || !poId) {
     return <Navigate to="/m/more/procurement" replace />;
   }
 
   const amt = Number(amount);
-  const canSubmit = amt > 0 && !recordPayment.isPending;
+  const canSubmit = isValidAmount(amt) && !recordPayment.isPending;
 
   const handleSubmit = async () => {
     try {
@@ -53,7 +52,7 @@ export function MobileRecordPayment() {
         p_leg: leg,
         p_amount: amt,
         p_method: method,
-        p_currency: effectiveCurrency,
+        p_currency: currency,
         p_occurred_at: occurredAt || undefined,
         p_paid_by: paidBy || null,
         p_external_ref: externalRef.trim() || null,
@@ -88,8 +87,8 @@ export function MobileRecordPayment() {
           <div className="w-32">
             <FieldLabel>Devise</FieldLabel>
             <div className="flex gap-2">
-              <Pill active={effectiveCurrency === 'CNY'} onClick={() => setCurrency('CNY')}>CNY</Pill>
-              <Pill active={effectiveCurrency === 'XAF'} onClick={() => setCurrency('XAF')}>XAF</Pill>
+              <Pill active={currency === 'CNY'} onClick={() => setCurrency('CNY')}>CNY</Pill>
+              <Pill active={currency === 'XAF'} onClick={() => setCurrency('XAF')}>XAF</Pill>
             </div>
           </div>
         </div>

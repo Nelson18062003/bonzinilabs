@@ -5,9 +5,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRecordQc } from '@/hooks/useProcurement';
 import type { ProcQcType, ProcQcInspectorKind, ProcQcResult } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill } from '@/components/treasury/ui';
+import { PROC_INPUT as INPUT } from './shared';
 import { cn } from '@/lib/utils';
-
-const INPUT = 'h-[52px] w-full rounded-2xl bg-muted/60 px-4 text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-foreground/10';
 const TYPES: { v: ProcQcType; l: string }[] = [
   { v: 'PPI', l: 'Pré-prod (PPI)' }, { v: 'DUPRO', l: 'En cours (DUPRO)' }, { v: 'PSI', l: 'Final (PSI)' }, { v: 'loading', l: 'Chargement' },
 ];
