@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'sourcing_agent';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -13,7 +13,10 @@ export interface AdminUser {
   email: string;
   firstName: string;
   lastName: string;
+  /** Primary role (highest-priority), used for display + `=== 'super_admin'` checks. */
   role: AppRole;
+  /** All non-disabled roles of this user. Permissions are the OR-merge of these. */
+  roles: AppRole[];
   avatarUrl?: string;
 }
 
@@ -29,6 +32,8 @@ export interface RolePermission {
   canManageUsers: boolean;
   canViewTreasury: boolean;
   canManageTreasury: boolean;
+  canViewProcurement: boolean;
+  canManageProcurement: boolean;
   canAccessSupportChat: boolean;
 }
 
@@ -45,6 +50,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: true,
     canViewTreasury: true,
     canManageTreasury: true,
+    canViewProcurement: true,
+    canManageProcurement: true,
     canAccessSupportChat: true,
   },
   ops: {
@@ -59,6 +66,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canViewProcurement: false,
+    canManageProcurement: false,
     canAccessSupportChat: true,
   },
   support: {
@@ -73,6 +82,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canViewProcurement: false,
+    canManageProcurement: false,
     canAccessSupportChat: true,
   },
   customer_success: {
@@ -87,6 +98,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canViewProcurement: false,
+    canManageProcurement: false,
     canAccessSupportChat: true,
   },
   cash_agent: {
@@ -101,6 +114,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: false,
     canManageTreasury: false,
+    canViewProcurement: false,
+    canManageProcurement: false,
     canAccessSupportChat: false,
   },
   treasurer: {
@@ -115,6 +130,26 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageUsers: false,
     canViewTreasury: true,
     canManageTreasury: true,
+    canViewProcurement: false,
+    canManageProcurement: false,
+    canAccessSupportChat: false,
+  },
+  // Agent de sourcing (père) — pilote la centrale d'achat. Voit les clients
+  // pour rattacher une mission ; ne touche ni trésorerie, ni admins, ni taux.
+  sourcing_agent: {
+    canViewClients: true,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canViewProcurement: true,
+    canManageProcurement: true,
     canAccessSupportChat: false,
   },
 };
@@ -126,7 +161,29 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   customer_success: 'Chargé de clientèle',
   cash_agent: 'Agent Cash',
   treasurer: 'Trésorier',
+  sourcing_agent: 'Agent Sourcing',
 };
+
+// Priorité pour choisir le rôle « primaire » (affichage + checks `=== 'super_admin'`).
+const ROLE_PRIORITY: AppRole[] = ['super_admin', 'ops', 'customer_success', 'support', 'treasurer', 'sourcing_agent', 'cash_agent'];
+
+function pickPrimaryRole(roles: AppRole[]): AppRole {
+  for (const r of ROLE_PRIORITY) if (roles.includes(r)) return r;
+  return roles[0];
+}
+
+// Un utilisateur peut cumuler plusieurs rôles (ex. père = treasurer + sourcing_agent).
+// Les permissions effectives sont l'OR-merge des permissions de chaque rôle.
+function mergePermissions(roles: AppRole[]): RolePermission {
+  const keys = Object.keys(ROLE_PERMISSIONS.super_admin) as (keyof RolePermission)[];
+  const merged = Object.fromEntries(keys.map((k) => [k, false])) as RolePermission;
+  for (const role of roles) {
+    const perms = ROLE_PERMISSIONS[role];
+    if (!perms) continue;
+    for (const k of keys) if (perms[k]) merged[k] = true;
+  }
+  return merged;
+}
 
 interface AdminAuthContextType {
   currentUser: AdminUser | null;
@@ -165,12 +222,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const fetchAdminData = async (user: User) => {
     try {
       // Check if user has an admin role (avec timeout pour ne jamais rester bloqué)
-      const { data: roleData, error: roleError } = await withTimeout(
+      const { data: roleRows, error: roleError } = await withTimeout(
         supabaseAdmin
           .from('user_roles')
           .select('role, first_name, last_name, avatar_url, is_disabled')
-          .eq('user_id', user.id)
-          .maybeSingle(),
+          .eq('user_id', user.id),
         10000,
         'chargement du rôle',
       );
@@ -180,23 +236,30 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (!roleData) {
+      if (!roleRows || roleRows.length === 0) {
         // User is not an admin/agent
         return null;
       }
 
-      // Check if account is disabled
-      if (roleData.is_disabled) {
+      // Un utilisateur peut cumuler plusieurs rôles. On ne garde que les rôles actifs.
+      const activeRows = roleRows.filter((r) => !r.is_disabled);
+      if (activeRows.length === 0) {
+        // A des rôles mais tous désactivés → compte désactivé.
         return { disabled: true as const };
       }
+
+      const roles = activeRows.map((r) => r.role as AppRole);
+      // Nom/avatar : prendre la première ligne renseignée (dupliquées en pratique).
+      const profileRow = activeRows.find((r) => r.first_name || r.last_name) ?? activeRows[0];
 
       const adminUser: AdminUser = {
         id: user.id,
         email: user.email || '',
-        firstName: roleData.first_name || 'Admin',
-        lastName: roleData.last_name || '',
-        role: roleData.role as AppRole,
-        avatarUrl: roleData.avatar_url || undefined,
+        firstName: profileRow.first_name || 'Admin',
+        lastName: profileRow.last_name || '',
+        role: pickPrimaryRole(roles),
+        roles,
+        avatarUrl: profileRow.avatar_url || undefined,
       };
 
       return adminUser;
@@ -298,7 +361,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   };
 
-  const permissions = currentUser ? ROLE_PERMISSIONS[currentUser.role] : null;
+  const permissions = currentUser ? mergePermissions(currentUser.roles) : null;
 
   const hasPermission = (permission: keyof RolePermission): boolean => {
     if (!permissions) return false;

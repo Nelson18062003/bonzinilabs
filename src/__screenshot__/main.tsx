@@ -70,7 +70,7 @@ if (params.get('font') === 'dm') document.documentElement.style.fontFamily = "'D
 
 // Full-permission fake admin so permission guards pass.
 const fakeAuth = {
-  currentUser: { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: 'super_admin' },
+  currentUser: { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: 'super_admin', roles: ['super_admin'] },
   isAuthenticated: true,
   isLoading: false,
   hasPermission: () => true,
