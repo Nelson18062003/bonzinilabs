@@ -76,6 +76,7 @@ export const ROLE_META: Record<string, { label: string; tone: Tone }> = {
   support: { label: 'Support', tone: 'success' },
   customer_success: { label: 'Customer success', tone: 'pending' },
   cash_agent: { label: 'Agent cash', tone: 'pending' },
+  treasurer: { label: 'Trésorier', tone: 'success' },
   admin: { label: 'Admin', tone: 'info' },
 };
 

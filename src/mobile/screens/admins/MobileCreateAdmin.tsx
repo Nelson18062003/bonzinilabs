@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmailField, TextField } from '@/components/form';
+import { roleMeta, StatusPill, Holder } from '@/mobile/designKit';
 
 type Step = 'personal' | 'role' | 'confirm' | 'success';
 
@@ -43,15 +44,6 @@ const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefa
     descriptionDefault: 'Trésorerie : achats/ventes USDT, contreparties, inventaire',
   },
 ];
-
-const ROLE_BADGE_COLORS: Record<AppRole, string> = {
-  super_admin: 'bg-purple-100 text-purple-700 border-purple-200',
-  ops: 'bg-blue-100 text-blue-700 border-blue-200',
-  support: 'bg-green-100 text-green-700 border-green-200',
-  customer_success: 'bg-orange-100 text-orange-700 border-orange-200',
-  cash_agent: 'bg-amber-100 text-amber-700 border-amber-200',
-  treasurer: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-};
 
 export function MobileCreateAdmin() {
   const { t } = useTranslation('common');
@@ -211,14 +203,7 @@ export function MobileCreateAdmin() {
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
-                        ROLE_BADGE_COLORS[item.role]?.replace('text-', 'text-').replace('bg-', 'bg-')
-                      )}
-                    >
-                      <Shield className="w-5 h-5" />
-                    </div>
+                    <Holder icon={Shield} tone={roleMeta(item.role).tone} />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{ADMIN_ROLE_LABELS[item.role]}</p>
@@ -258,14 +243,10 @@ export function MobileCreateAdmin() {
                   <p className="font-semibold text-lg">
                     {firstName} {lastName}
                   </p>
-                  <span
-                    className={cn(
-                      'inline-block px-2 py-0.5 rounded-full text-xs font-medium',
-                      ROLE_BADGE_COLORS[selectedRole]
-                    )}
-                  >
-                    {ADMIN_ROLE_LABELS[selectedRole]}
-                  </span>
+                  <StatusPill
+                    tone={roleMeta(selectedRole).tone}
+                    label={ADMIN_ROLE_LABELS[selectedRole]}
+                  />
                 </div>
               </div>
 

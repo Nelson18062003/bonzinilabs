@@ -39,14 +39,7 @@ import { TextField } from '@/components/form';
 import { Label } from '@/components/ui/label';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-const ROLE_BADGE_COLORS: Record<AppRole, string> = {
-  super_admin: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  ops: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  support: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  customer_success: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  cash_agent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-};
+import { roleMeta, StatusPill } from '@/mobile/designKit';
 
 const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent'];
 
@@ -190,14 +183,11 @@ export function MobileAdminDetail() {
 
           <div className="flex flex-wrap gap-2 justify-center mt-3">
             {/* Role Badge */}
-            <span
-              className={cn(
-                'px-3 py-1 rounded-full text-sm font-medium',
-                ROLE_BADGE_COLORS[admin.role as AppRole] || 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
-              )}
-            >
-              {ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
-            </span>
+            <StatusPill
+              tone={roleMeta(admin.role).tone}
+              label={ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
+              className="px-3 py-1 text-sm"
+            />
 
             {/* Status Badge */}
             <span

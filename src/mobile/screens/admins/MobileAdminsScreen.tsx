@@ -13,17 +13,11 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { roleMeta } from '@/mobile/designKit';
+import { StatusPill } from '@/mobile/designKit';
 
 type RoleFilter = AppRole | 'all';
 type StatusFilter = AdminStatus | 'all';
-
-const ROLE_BADGE_COLORS: Record<AppRole, string> = {
-  super_admin: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  ops: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  support: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  customer_success: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  cash_agent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-};
 
 export function MobileAdminsScreen() {
   const { t } = useTranslation('common');
@@ -143,14 +137,10 @@ export function MobileAdminsScreen() {
 
                   {/* Role Badge */}
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span
-                      className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-medium',
-                        ROLE_BADGE_COLORS[admin.role as AppRole] || 'bg-gray-100 text-gray-700'
-                      )}
-                    >
-                      {ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
-                    </span>
+                    <StatusPill
+                      tone={roleMeta(admin.role).tone}
+                      label={ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
+                    />
                     {admin.lastLoginAt && (
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(admin.lastLoginAt), {
