@@ -201,8 +201,15 @@ RPC `proc_list_documents` + `useDocuments`/`useUploadProof` + composant réutili
 miniatures via **URLs signées** `signStored(supabaseAdmin.storage, …)`). `procurement-docs` ajouté à
 `STORAGE_BUCKETS` (signedUrls). Intégré au **détail commande** et au **détail mission**.
 
-### Reste à builder (UI) — finitions
-- **Dictée Mola** (auto-découverte via `@mola` ; à tester le flux conversationnel après déploiement).
-- Lien **rail** (picker de paiement existant) sur `MobileRecordPayment`.
-- Partage natif du PDF (Web Share API), outils Mola dédiés + parité + eval.
+### Partage natif du PDF ✅
+`src/lib/pdf/sharePDF.ts` : Web Share API (`navigator.share({ files })`) → WhatsApp/email/etc. sur
+mobile, **repli sur téléchargement** (desktop/anciens navigateurs/annulation). Bouton partage (icône)
+dans `MobileMissionDetail`.
+
+### Reste (post-déploiement ou avancé)
+- **Dictée Mola** : aucune UI à coder — les RPC `@mola` sont auto-découvertes ; **tester** le flux
+  conversationnel après déploiement.
+- Lien **rail** (Cas 2) : picker de paiement existant sur `MobileRecordPayment` (le MVP couvre Cas 1
+  attestation, suffisant pour le catch-up mai 2026).
+- Outils Mola dédiés (`tool` dans l'étiquette) + entrées de parité + eval procurement (Lot 5).
 - Puis **saisie réelle mai 2026** (opérationnel) — après déploiement + `gen-types`.

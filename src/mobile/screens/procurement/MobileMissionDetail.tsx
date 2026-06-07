@@ -1,6 +1,6 @@
 import { useState, createElement } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Package, AlertTriangle, Download } from 'lucide-react';
+import { Package, AlertTriangle, Share2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useMissionReport } from '@/hooks/useProcurement';
@@ -38,11 +38,11 @@ export function MobileMissionDetail() {
     if (!data || pdfLoading) return;
     setPdfLoading(true);
     try {
-      const [{ downloadPDF }, { MissionReportPDF }] = await Promise.all([
-        import('@/lib/pdf/downloadPDF'),
+      const [{ sharePDF }, { MissionReportPDF }] = await Promise.all([
+        import('@/lib/pdf/sharePDF'),
         import('@/lib/pdf/templates/MissionReportPDF'),
       ]);
-      await downloadPDF(createElement(MissionReportPDF, { report: data }), `${data.mission.reference}.pdf`);
+      await sharePDF(createElement(MissionReportPDF, { report: data }), `${data.mission.reference}.pdf`);
     } finally {
       setPdfLoading(false);
     }
@@ -58,9 +58,9 @@ export function MobileMissionDetail() {
     <div className="flex flex-col min-h-full bg-background">
       <MobileHeader title={m?.label ?? 'Mission'} showBack backTo="/m/more/procurement/missions"
         rightElement={data ? (
-          <button onClick={handlePdf} disabled={pdfLoading} aria-label="Télécharger le rapport PDF"
+          <button onClick={handlePdf} disabled={pdfLoading} aria-label="Partager le rapport PDF"
             className="flex h-10 w-10 items-center justify-center rounded-full active:bg-muted disabled:opacity-50">
-            <Download className="h-5 w-5" />
+            <Share2 className="h-5 w-5" />
           </button>
         ) : undefined} />
 
