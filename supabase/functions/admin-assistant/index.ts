@@ -75,17 +75,6 @@ const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
   treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true },
 };
 
-// Tables lisibles en SQL libre selon les permissions du rôle (Lot 4b — confidentialité).
-function allowedTablesForRole(perms: Record<PermKey, boolean>): string[] {
-  const t: string[] = [];
-  if (perms.canViewClients) t.push("clients", "wallets", "ledger_entries");
-  if (perms.canViewDeposits) t.push("deposits", "deposit_proofs", "deposit_timeline_events");
-  if (perms.canViewPayments) t.push("payments", "beneficiaries", "daily_rates", "rate_adjustments");
-  if (perms.canViewTreasury) t.push("treasury_accounts", "treasury_account_balances", "treasury_ledger_entries", "treasury_counterparties", "usdt_purchases", "usdt_sales", "treasury_inventory_snapshots");
-  if (perms.canViewLogs) t.push("admin_audit_logs", "user_roles");
-  return t;
-}
-
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -2541,8 +2530,13 @@ serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
-    // Outils autorisés pour ce rôle (lecture + écriture)
-    const allowedRead = READ_TOOLS.filter((t) => t.always || (perms[t.permission] && !(t.superAdminOnly && role !== "super_admin")));
+    // Outils autorisés pour ce rôle.
+    // LECTURE — ouverte à TOUT admin : Mola est AI-native et doit pouvoir RÉPONDRE à
+    // n'importe quelle question sur toute la plateforme (trésorerie, reporting, dashboard,
+    // clients, dépôts, paiements, audit), peu importe le rôle. On ne bride plus la lecture
+    // par permission. Seuls les outils de MAINTENANCE (superAdminOnly, ex. reindex_knowledge)
+    // restent réservés au super_admin. Les ÉCRITURES, elles, restent gardées par rôle (ci-dessous).
+    const allowedRead = READ_TOOLS.filter((t) => t.always || !(t.superAdminOnly && role !== "super_admin"));
     const allowedWrite = WRITE_TOOLS.filter((t) => {
       if (!perms[t.permission]) return false;
       if (t.superAdminOnly && role !== "super_admin") return false;
@@ -2609,8 +2603,9 @@ serve(async (req) => {
                 if (readTool) {
                   // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
                   const toolInput = (tu.input ?? {}) as Record<string, unknown>;
-                  // SQL libre : injecte l'allowlist de tables du rôle (sauf super_admin = accès complet).
-                  if (tu.name === "query_database" && role !== "super_admin") toolInput.__allowed_tables = allowedTablesForRole(perms);
+                  // SQL libre : accès LECTURE complet pour tout admin (aucune restriction de table).
+                  // La RPC assistant_readonly_query garantit le read-only ; p_allowed_tables=null = aucune
+                  // restriction. Mola doit pouvoir répondre à toute question chiffrée, sur tout module.
                   try { result = await readTool.execute(admin, toolInput, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
                   // Si l'outil a produit une image (ex. flyer), on l'envoie au chat.
