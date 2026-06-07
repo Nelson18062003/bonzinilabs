@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Default signed URL expiration time in seconds (1 hour)
 const DEFAULT_EXPIRY = 3600;
 
-const STORAGE_BUCKETS = ['deposit-proofs', 'payment-proofs', 'cash-signatures'] as const;
+const STORAGE_BUCKETS = ['deposit-proofs', 'payment-proofs', 'cash-signatures', 'procurement-docs'] as const;
 
 /**
  * Check if a value references one of our storage buckets (and therefore needs

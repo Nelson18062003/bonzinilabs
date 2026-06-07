@@ -6,6 +6,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useMissionReport } from '@/hooks/useProcurement';
 import type { ByCurrency, ProcCurrency, ProcPoStatus } from '@/integrations/supabase/procurement';
 import { IconChip, INSET, SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
+import { ProcProofs } from '@/mobile/components/procurement/ProcProofs';
 import { cn } from '@/lib/utils';
 
 const PO_STATUS_LABEL: Record<ProcPoStatus, string> = { open: 'Ouverte', closed: 'Soldée', cancelled: 'Annulée' };
@@ -215,6 +216,8 @@ export function MobileMissionDetail() {
                 </button>
               )}
             </section>
+
+            <ProcProofs entityType="mission" entityId={m.id} />
 
             <div className="pt-2 text-center text-[10px] text-muted-foreground">
               Rapport généré le {new Date(data.generated_at).toLocaleString('fr-FR')}

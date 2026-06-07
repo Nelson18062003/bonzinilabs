@@ -195,9 +195,14 @@ lignes/paiements/QC/commission, commissions & frais. Bouton **télécharger** (i
 `MobileMissionDetail` via **import dynamique** (n'alourdit pas le chunk). **Le rapport propre de mai
 2026 est générable en PDF.** Vérifié : type-check + build + 118 tests.
 
+### Tranche « photo-preuve » ✅
+RPC `proc_list_documents` + `useDocuments`/`useUploadProof` + composant réutilisable `ProcProofs`
+(upload image/PDF → bucket `procurement-docs` dossier `{uid}/…`, **compression**, `validateUploadFile`,
+miniatures via **URLs signées** `signStored(supabaseAdmin.storage, …)`). `procurement-docs` ajouté à
+`STORAGE_BUCKETS` (signedUrls). Intégré au **détail commande** et au **détail mission**.
+
 ### Reste à builder (UI) — finitions
-- **Upload de preuve** (bucket `procurement-docs` prêt) + affichage des pièces jointes.
-- **Dictée Mola** (auto-découverte via `@mola` ; à tester le flux conversationnel).
+- **Dictée Mola** (auto-découverte via `@mola` ; à tester le flux conversationnel après déploiement).
 - Lien **rail** (picker de paiement existant) sur `MobileRecordPayment`.
-- Partage natif du PDF (WhatsApp/email), outils Mola dédiés + parité + eval.
+- Partage natif du PDF (Web Share API), outils Mola dédiés + parité + eval.
 - Puis **saisie réelle mai 2026** (opérationnel) — après déploiement + `gen-types`.

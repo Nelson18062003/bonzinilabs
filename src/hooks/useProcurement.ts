@@ -7,7 +7,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { proc } from '@/integrations/supabase/procurement';
-import type { ProcMissionStatus } from '@/integrations/supabase/procurement';
+import type { ProcMissionStatus, ProcDocumentEntity, ProcDocumentType } from '@/integrations/supabase/procurement';
+import { supabaseAdmin } from '@/integrations/supabase/client';
+import { validateUploadFile } from '@/lib/utils';
+import { compressImage } from '@/lib/imageCompression';
+import { uploadWithRetry } from '@/lib/storageUpload';
 
 const KEY = 'procurement';
 
@@ -69,6 +73,15 @@ export function useSupplier360(supplierId: string | undefined) {
   });
 }
 
+export function useDocuments(entityType: ProcDocumentEntity, entityId: string | undefined) {
+  return useQuery({
+    queryKey: [KEY, 'documents', entityType, entityId],
+    queryFn: () => unwrap(proc.listDocuments({ p_entity_type: entityType, p_entity_id: entityId! })),
+    enabled: !!entityId,
+    staleTime: 30_000,
+  });
+}
+
 export function usePurchaseOrder(poId: string | undefined) {
   return useQuery({
     queryKey: [KEY, 'po', poId],
@@ -115,3 +128,40 @@ export const useRecordSupplierPayment = () =>
       ? `Paiement enregistré. Attention : aucun QC « pass » sur cette commande.`
       : `Paiement enregistré. Reste à payer : ${r.outstanding_after?.toLocaleString('fr-FR')}`,
   );
+
+// Upload d'une preuve (photo/PDF) → bucket procurement-docs (dossier {uid}/…)
+// puis attache via proc_attach_document. Stocke le chemin "procurement-docs/…"
+// (signé à la lecture). Compression des images. validateUploadFile (10 Mo, MIME).
+export function useUploadProof() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      entityType: ProcDocumentEntity; entityId: string; file: File;
+      docType?: ProcDocumentType; caption?: string;
+    }) => {
+      validateUploadFile(args.file);
+      const { data: { user } } = await supabaseAdmin.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
+      const isImage = args.file.type.startsWith('image/');
+      const file = isImage ? await compressImage(args.file) : args.file;
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const path = `${user.id}/${args.entityType}/${args.entityId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await uploadWithRetry(() => supabaseAdmin.storage.from('procurement-docs').upload(path, file));
+      if (error) throw error;
+      const r = await proc.attachDocument({
+        p_entity_type: args.entityType,
+        p_entity_id: args.entityId,
+        p_file_url: `procurement-docs/${path}`,
+        p_doc_type: args.docType ?? 'other',
+        p_file_name: file.name,
+        p_file_type: file.type,
+        p_caption: args.caption ?? null,
+        p_uploaded_by_kind: 'admin',
+      });
+      if (!r.success) throw new Error(r.error);
+      return r;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [KEY] }); toast.success('Preuve ajoutée'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

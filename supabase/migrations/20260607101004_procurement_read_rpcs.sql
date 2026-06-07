@@ -584,3 +584,36 @@ END;
 $$;
 COMMENT ON FUNCTION public.proc_purchase_order_detail(UUID) IS
   '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Detail d''une commande fournisseur"}';
+
+-- ── RPC: proc_list_documents ── (preuves jointes d'une entité)
+CREATE OR REPLACE FUNCTION public.proc_list_documents(
+  p_entity_type public.proc_document_entity,
+  p_entity_id   UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_rows    JSONB;
+BEGIN
+  v_user_id := auth.uid();
+  IF NOT public.can_access_procurement(v_user_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Acces centrale d''achat refuse');
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', id, 'doc_type', doc_type, 'file_url', file_url, 'file_name', file_name,
+    'file_type', file_type, 'caption', caption, 'created_at', created_at) ORDER BY created_at DESC), '[]'::jsonb)
+  INTO v_rows
+  FROM public.proc_documents
+  WHERE entity_type = p_entity_type AND entity_id = p_entity_id AND is_active = TRUE;
+
+  RETURN jsonb_build_object('success', true, 'documents', v_rows);
+END;
+$$;
+COMMENT ON FUNCTION public.proc_list_documents(public.proc_document_entity, UUID) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Lister les preuves d''une entité"}';

@@ -5,6 +5,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { usePurchaseOrder } from '@/hooks/useProcurement';
 import type { ProcPoStatus, ProcProductionStatus } from '@/integrations/supabase/procurement';
 import { IconChip, INSET, SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
+import { ProcProofs } from '@/mobile/components/procurement/ProcProofs';
 import { cn } from '@/lib/utils';
 
 const PO_STATUS_LABEL: Record<ProcPoStatus, string> = { open: 'Ouverte', closed: 'Soldée', cancelled: 'Annulée' };
@@ -151,6 +152,9 @@ export function MobilePurchaseOrderDetail() {
                 </div>
               )}
             </section>
+
+            {/* Preuves jointes */}
+            <ProcProofs entityType="purchase_order" entityId={po.id} />
           </>
         )}
       </div>

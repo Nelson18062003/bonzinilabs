@@ -219,6 +219,16 @@ export interface ProcPurchaseOrderDetail {
   commission: ProcCommissionRead | null;
 }
 
+export interface ProcDocument {
+  id: string;
+  doc_type: ProcDocumentType;
+  file_url: string;
+  file_name: string | null;
+  file_type: string | null;
+  caption: string | null;
+  created_at: string;
+}
+
 export interface ProcMissionSummary {
   id: string;
   reference: string;
@@ -429,4 +439,7 @@ export const proc = {
 
   purchaseOrderDetail: (a: { p_purchase_order_id: string }) =>
     callProcRpc<ProcPurchaseOrderDetail>('proc_purchase_order_detail', a),
+
+  listDocuments: (a: { p_entity_type: ProcDocumentEntity; p_entity_id: string }) =>
+    callProcRpc<{ documents: ProcDocument[] }>('proc_list_documents', a),
 };
