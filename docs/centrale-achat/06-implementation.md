@@ -101,3 +101,34 @@ outils dédiés** (lot ultérieur), après déploiement + `gen-types`.
 ### Partie B — Saisie (formulaires + dictée) + catch-up mai 2026 ⏳ BLOQUÉ sur déploiement
 Les écrans TypeScript appellent les tables/RPC `proc_*` → nécessitent **déploiement Lot 0+1 sur
 Supabase puis `gen-types`** (sinon non typés). À faire dès que tu déploies (ou me donnes l'accès).
+
+---
+
+## Lot 2/3 — RPC de LECTURE & RAPPORT 🔶 (SQL écrit ; non déployé)
+
+| Fichier | Contenu |
+|---|---|
+| `supabase/migrations/20260607101004_procurement_read_rpcs.sql` | **4 RPC lecture** `@mola kind:"read"` (`permission: canViewProcurement`) |
+
+- `proc_outstanding_balances(p_mission_id?)` — reste-à-payer par commande + totaux par devise.
+- `proc_supplier_360(p_supplier_id)` — fiche fournisseur + ses commandes (toutes missions) + totaux.
+- **`proc_mission_report(p_mission_id)`** — l'**agrégat imbriqué** du rapport/PDF : mission + client
+  → fournisseurs → commandes → (lignes, paiements actifs, QC, statut production, commission, totaux)
+  + commissions mission + frais + totaux par devise. **C'est ce qui alimentera `generate-report-pdf`
+  pour le rapport propre de mai 2026.**
+- `proc_procurement_dashboard(p_client_user_id?)` — control tower : missions actives, reste-à-payer
+  global, **alertes** (solde payé sans QC `pass` ; production en retard), paiements récents.
+
+**Conventions** : `STABLE`, `SECURITY DEFINER`, gate `can_access_procurement`, `jsonb_object_agg` par
+devise, `row_to_json`+`jsonb_agg` (pattern trésorerie). Vue `proc_po_balances` réutilisée.
+
+**Auto-revue** : `jsonb_agg(row_to_json(rp))` rendu déterministe via `ORDER BY` dans l'agrégat.
+
+**Limites** : SQL **non exécuté** ici (pas de Postgres/creds) — revue manuelle. TS toolchain non
+affectée (SQL pur) : `type-check`/`build`/118 tests restent valides depuis le Lot 1A.
+
+### Ce qui reste (tout dépend du déploiement + gen-types)
+- Brancher `proc_mission_report` → `generate-report-pdf` (partage WhatsApp/email).
+- Formulaires + dictée Mola (Lot 1B), écrans de consultation (Lot 2 UI).
+- Outils Mola dédiés + entrées de parité + eval procurement (Lot 5).
+- **Saisie réelle de la mission mai 2026** (opérationnel).
