@@ -34,6 +34,7 @@ import {
 import { DirectionA, DirectionB, DirectionC } from './directions';
 import { DashDirA, DashDirB, DashDirC } from './dashDirections';
 import { MolaCards } from './molaCards';
+import { MolaNav } from './molaNav';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
 import { MobileAnalyticsDashboard } from '@/mobile/screens/analytics';
 
@@ -47,6 +48,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'dash-b': { Comp: DashDirB, route: '/' },
   'dash-c': { Comp: DashDirC, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
+  'mola-nav': { Comp: MolaNav, route: '/' },
   'dashboard-home': { Comp: MobileDashboard, route: '/m' },
   analytics: { Comp: MobileAnalyticsDashboard, route: '/m/dashboard' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },
