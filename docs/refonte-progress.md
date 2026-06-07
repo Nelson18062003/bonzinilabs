@@ -25,7 +25,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 
 ### Phase 0 — Fondations
 - [x] **P0.1** Tokens couleurs centraux → `src/mobile/designKit/` (tokens.ts: SURFACE/TEXT/pills/TONE ; status.ts: depositStatusTone/paymentStatusTone/clientStatusTone + roleMeta unique ; methods.ts: PAYMENT_METHOD + LOGO_PATH alipay/wechat/whatsapp ; cash=rouge aligné flyer). type-check OK.
-- [ ] **P0.2** Kit UI (évolution `treasury/ui.tsx`) : `Card` (ombre douce), `Holder` (pastille neutre + variante logo), `Row` (sans filets), `Amount`, `PrimaryPill`/`SoftPill`, `StatusPill`, `StatCard`, `BottomSheet`, `FormField/Input`, `Segmented`/`Tabs`, `ScreenLoader`/`ScreenError`.
+- [x] **P0.2** Kit UI → `src/mobile/designKit/components.tsx` (+ export depuis `index.ts`) : `Card` (ombre douce), `Holder` (pastille neutre + variante par `Tone`), `Avatar` (initiales), `Row` (sans filets), `Amount` (chiffre neutre + unité atténuée, `tabular-nums`), `PrimaryPill`/`SoftPill`, `StatusPill` (tone+label), `StatCard`, `Segmented`, `FormField`/`TextInput` (h-12 rounded), `BottomSheet` (overlay + fermeture backdrop/Échap/X + lock scroll), `ScreenLoader`/`ScreenError`, `SectionTitle`. Présentationnels, typés, dark mode via tokens. type-check + build OK.
 - [ ] **P0.3** Preview du kit dans le harness (`screen=kit`) + capture clair/sombre dans `docs/maquettes/`.
 
 ### Phase 1 — Couleurs unifiées (faible risque, fort impact)
@@ -51,6 +51,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 ## Journal
 - (init) Audit livré, plan validé par l'utilisateur, run autonome lancé.
 - P0.1 ✅ designKit (tokens/status/methods) créé — source unique couleurs/statuts/rôles/méthodes. Aucun écran modifié (sûr). Prochaine : P0.2 composants du kit.
+- P0.2 ✅ Kit de composants partagés `designKit/components.tsx` (Card, Holder, Avatar, Row, Amount, PrimaryPill/SoftPill, StatusPill, StatCard, Segmented, FormField/TextInput, BottomSheet, ScreenLoader/ScreenError, SectionTitle) — patterns copiés de MobileAssistantScreen + flyer, réutilise tokens + `cn`. Aucun écran métier touché. type-check + build verts. Prochaine : P0.3 preview du kit dans le harness.
 
 ## Résumé matin
 _(à remplir en fin de run)_
