@@ -41,6 +41,14 @@ import { Flyer } from './flyer';
 import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
 import { MobileAnalyticsDashboard } from '@/mobile/screens/analytics';
+import {
+  MobileMoreScreen,
+  MobileSettingsScreen,
+  MobileAdminProfile,
+  MobileNotificationsScreen,
+  MobileHistoryScreen,
+  MobileProofsScreen,
+} from '@/mobile/screens/more';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -73,6 +81,13 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'purchase-detail': { Comp: MobilePurchaseDetail, route: '/m/more/treasury/purchases/p1', path: '/m/more/treasury/purchases/:operationId' },
   'sale-detail': { Comp: MobileSaleDetail, route: '/m/more/treasury/sales/sa1', path: '/m/more/treasury/sales/:operationId' },
   'counterparty-edit': { Comp: MobileCounterpartyEdit, route: '/m/more/treasury/counterparties/s1', path: '/m/more/treasury/counterparties/:counterpartyId' },
+  // More module (Phase 2 M1)
+  more: { Comp: MobileMoreScreen, route: '/m/more' },
+  'more-settings': { Comp: MobileSettingsScreen, route: '/m/more/settings' },
+  'more-profile': { Comp: MobileAdminProfile, route: '/m/more/profile' },
+  'more-notifications': { Comp: MobileNotificationsScreen, route: '/m/more/notifications' },
+  'more-history': { Comp: MobileHistoryScreen, route: '/m/more/history' },
+  'more-proofs': { Comp: MobileProofsScreen, route: '/m/more/proofs' },
 };
 
 const params = new URLSearchParams(window.location.search);

@@ -34,12 +34,38 @@ const deposits = [
   { id: 'd4', user_id: 'u4', amount_xaf: 4200000, status: 'rejected', created_at: new Date(Date.now() - 9e7).toISOString(), profiles: { first_name: 'Paul', last_name: 'Mballa' } },
 ];
 
+// More module (M1) fixtures — history (audit logs) + proofs.
+const auditLogs = [
+  { id: 'l1', admin_user_id: 'a1', action_type: 'deposit_validated', target_type: 'deposit', created_at: new Date(Date.now() - 12e5).toISOString() },
+  { id: 'l2', admin_user_id: 'a2', action_type: 'payment_processing', target_type: 'payment', created_at: new Date(Date.now() - 36e5).toISOString() },
+  { id: 'l3', admin_user_id: 'a1', action_type: 'rate_updated', target_type: 'rate', created_at: new Date(Date.now() - 9e6).toISOString() },
+  { id: 'l4', admin_user_id: 'a3', action_type: 'client_created', target_type: 'client', created_at: new Date(Date.now() - 9e7).toISOString() },
+];
+const adminRoles = [
+  { user_id: 'a1', first_name: 'Awa', last_name: 'Diop' },
+  { user_id: 'a2', first_name: 'Jean', last_name: 'Kamga' },
+  { user_id: 'a3', first_name: 'Marie', last_name: 'Nkolo' },
+];
+const proofs = [
+  { id: 'pr1', file_name: 'recu_alipay.jpg', file_url: 'u1/recu_alipay.jpg', uploaded_at: new Date(Date.now() - 12e5).toISOString(), deposits: { id: 'd1', user_id: 'u1' } },
+  { id: 'pr2', file_name: 'virement.pdf', file_url: 'u2/virement.pdf', uploaded_at: new Date(Date.now() - 8e6).toISOString(), deposits: { id: 'd2', user_id: 'u2' } },
+  { id: 'pr3', file_name: 'preuve_wechat.png', file_url: 'u3/preuve_wechat.png', uploaded_at: new Date(Date.now() - 2e7).toISOString(), deposits: { id: 'd3', user_id: 'u3' } },
+];
+const proofClients = [
+  { user_id: 'u1', first_name: 'Awa', last_name: 'Diop' },
+  { user_id: 'u2', first_name: 'Jean', last_name: 'Kamga' },
+  { user_id: 'u3', first_name: 'Marie', last_name: 'Nkolo' },
+];
+
 function respond(url) {
   if (url.includes('/rpc/get_dashboard_stats')) return stats;
   if (url.includes('/rpc/get_deposit_stats')) return depositStats;
   if (url.includes('/daily_rates')) return rate; // maybeSingle → object
+  if (url.includes('/admin_audit_logs')) return auditLogs;
+  if (url.includes('/user_roles')) return adminRoles;
+  if (url.includes('/deposit_proofs')) return proofs;
   if (url.includes('/deposits')) return deposits;
-  if (url.includes('/clients')) return [];
+  if (url.includes('/clients')) return proofClients;
   if (url.includes('/payments')) return [];
   return [];
 }
