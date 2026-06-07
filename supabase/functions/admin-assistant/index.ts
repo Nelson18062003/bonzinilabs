@@ -1,6 +1,6 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.7 — 76 outils (49 lecture + 27 écriture) + découverte de capacités (do_capability),
-// top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), processLock.
+// Version: 2026-06-03.8 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
+// top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), reçu PDF, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
@@ -241,6 +241,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
     { capability: "enregistrer / modifier / archiver un bénéficiaire RÉUTILISABLE", tool: "create_beneficiary / update_beneficiary / archive_beneficiary" },
     { capability: "AFFICHER la preuve image d'un paiement (QR Alipay/WeChat, reçu) dans le chat", tool: "show_payment_proof" },
     { capability: "AFFICHER le QR code d'un bénéficiaire dans le chat", tool: "show_beneficiary_qr" },
+    { capability: "GÉNÉRER le reçu d'un paiement (image dans le chat + PDF téléchargeable)", tool: "generate_payment_receipt" },
     { capability: "joindre un QR à un bénéficiaire enregistré", tool: null, note: "pas encore d'outil — possible via l'écran Bénéficiaires" },
   ],
   taux: [
@@ -418,6 +419,70 @@ const READ_TOOLS: ReadTool[] = [
         }
       }
       return { found: false, beneficiary: label, message: `Aucun QR ni preuve image trouvé pour ${label}.` };
+    },
+  },
+  {
+    name: "generate_payment_receipt",
+    permission: "canViewPayments",
+    description: "GÉNÉRER le reçu officiel d'un paiement : AFFICHE l'image du reçu dans le chat ET fournit le PDF téléchargeable (lien). Donne reference (BZ-PY-…) ou payment_id. À utiliser dès qu'on demande « le reçu », « le récépissé », « génère/envoie le reçu » d'un paiement — ne renvoie PAS l'admin vers l'écran.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    execute: async (admin, { reference, payment_id }) => {
+      let q = admin.from("payments").select("id, reference, created_at, processed_at, amount_xaf, amount_rmb, exchange_rate, method, status, user_id, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_identifier");
+      if (payment_id) q = q.eq("id", payment_id);
+      else if (reference) q = q.eq("reference", reference);
+      else return { error: "Fournir reference (BZ-PY-…) ou payment_id." };
+      const { data: pay } = await q.maybeSingle();
+      if (!pay) return { found: false, message: "Paiement introuvable." };
+
+      const { data: client } = await admin.from("clients").select("first_name, last_name, phone").eq("user_id", pay.user_id).maybeSingle();
+      const clientName = client ? `${client.first_name ?? ""} ${client.last_name ?? ""}`.trim() : null;
+
+      // Détails bénéficiaire selon le mode de paiement.
+      let line1: string | null = null, line2: string | null = null;
+      if (pay.method === "alipay") { const v = pay.beneficiary_email || pay.beneficiary_identifier; line1 = v ? `Alipay : ${v}` : null; }
+      else if (pay.method === "wechat") { const v = pay.beneficiary_phone || pay.beneficiary_identifier; line1 = v ? `WeChat : ${v}` : null; }
+      else if (pay.method === "bank_transfer") { line1 = pay.beneficiary_bank_name || null; line2 = pay.beneficiary_bank_account || null; }
+      else if (pay.method === "cash") line1 = pay.beneficiary_phone ? `Téléphone : ${pay.beneficiary_phone}` : null;
+
+      const receipt = {
+        reference: pay.reference, created_at: pay.created_at, processed_at: pay.processed_at,
+        amount_xaf: pay.amount_xaf, amount_rmb: pay.amount_rmb, exchange_rate: pay.exchange_rate,
+        method: pay.method, status: pay.status, client_name: clientName, client_phone: client?.phone ?? null,
+        beneficiary_name: pay.beneficiary_name, beneficiary_line1: line1, beneficiary_line2: line2,
+      };
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      let png_b64 = "", pdf_b64 = "";
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/generate-receipt`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
+          body: JSON.stringify({ receipt }),
+        });
+        if (!res.ok) return { error: `Génération du reçu échouée (${res.status}).` };
+        const j = await res.json();
+        png_b64 = j.png_b64; pdf_b64 = j.pdf_b64;
+      } catch (e) { return { error: `Génération du reçu : ${String((e as Error)?.message ?? e)}` }; }
+      if (!png_b64) return { error: "Reçu indisponible." };
+
+      const b64ToBytes = (b: string) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0));
+      const stamp = Date.now();
+      const pngPath = `receipts/${stamp}-${pay.reference}.png`;
+      const pdfPath = `receipts/${stamp}-${pay.reference}.pdf`;
+      const up1 = await admin.storage.from(ATTACHMENT_BUCKET).upload(pngPath, b64ToBytes(png_b64), { contentType: "image/png", upsert: true });
+      if (up1.error) return { error: `Stockage du reçu : ${up1.error.message}` };
+      if (pdf_b64) await admin.storage.from(ATTACHMENT_BUCKET).upload(pdfPath, b64ToBytes(pdf_b64), { contentType: "application/pdf", upsert: true });
+      const pngSigned = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(pngPath, 3600);
+      const pdfSigned = pdf_b64 ? await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(pdfPath, 3600) : null;
+      if (pngSigned.error || !pngSigned.data?.signedUrl) return { error: "URL du reçu indisponible." };
+
+      return {
+        success: true, reference: pay.reference,
+        __image: { url: pngSigned.data.signedUrl, name: `Reçu ${pay.reference}`, kind: "image" },
+        documents: pdfSigned?.data?.signedUrl ? [{ name: `Reçu ${pay.reference} (PDF)`, url: pdfSigned.data.signedUrl }] : undefined,
+        message: `Reçu du paiement ${pay.reference} généré et affiché dans le chat. PDF téléchargeable fourni.`,
+      };
     },
   },
   {
@@ -2372,6 +2437,7 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
     `AFFICHER UNE IMAGE (preuves, QR codes) — TU EN ES CAPABLE, ne dis JAMAIS « je ne peux pas afficher l'image ». Pour montrer dans le chat la preuve d'un paiement (QR Alipay/WeChat, reçu) : show_payment_proof (reference BZ-PY-… ou payment_id). Pour la preuve d'un dépôt : show_deposit_proof (BZ-DP-… ou deposit_id). Pour le QR d'un bénéficiaire : show_beneficiary_qr (beneficiary_id via list_beneficiaries — il replie tout seul sur le QR du dernier paiement si le bénéficiaire n'en a pas). Ces outils renvoient l'image directement à l'écran. Quand on te demande « montre/affiche le QR / la preuve / la capture », APPELLE l'outil au lieu de renvoyer l'admin vers l'interface.`,
+    `REÇU D'UN PAIEMENT : quand on demande « le reçu », « le récépissé », « génère/envoie le reçu » d'un paiement, utilise generate_payment_receipt (reference BZ-PY-… ou payment_id). Il AFFICHE l'image du reçu dans le chat ET renvoie un lien PDF téléchargeable. Ne dis jamais que tu ne peux pas générer un reçu, et ne renvoie pas vers l'écran.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
