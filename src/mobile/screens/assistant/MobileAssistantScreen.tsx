@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, SquarePen } from 'lucide-react';
+import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, SquarePen, Download, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ViewportShell } from '@/components/layout/ViewportShell';
@@ -39,6 +39,64 @@ function RichText({ text }: { text: string }) {
           : <span key={i}>{p}</span>,
       )}
     </>
+  );
+}
+
+// Prévisualisation plein écran d'une image générée (flyer, preuve, QR, reçu).
+// Tap sur le fond ou Échap → ferme. Bouton dédié pour télécharger / ouvrir.
+function ImagePreview({ image, onClose }: { image: { url: string; name: string }; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex flex-col bg-black/90 backdrop-blur-md animate-in fade-in duration-150"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Prévisualisation : ${image.name}`}
+    >
+      {/* Barre haut : nom + fermer */}
+      <div
+        className="flex items-center justify-between gap-3 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+14px)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="truncate text-sm font-medium text-white/90">{image.name}</span>
+        <button
+          onClick={onClose}
+          aria-label="Fermer la prévisualisation"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition active:scale-95 active:bg-white/20"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Image centrée, contenue dans l'écran */}
+      <div className="flex flex-1 items-center justify-center overflow-auto px-3 py-1" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={image.url}
+          alt={image.name}
+          className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
+        />
+      </div>
+
+      {/* Barre bas : télécharger / ouvrir */}
+      <div className="px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-3" onClick={(e) => e.stopPropagation()}>
+        <a
+          href={image.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          download={image.name}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-semibold text-black transition active:scale-[0.99] active:bg-white/85"
+        >
+          <Download className="h-4 w-4" /> Télécharger / ouvrir
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -127,6 +185,8 @@ export function MobileAssistantScreen() {
   const { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset, loadHistory } = useAdminAssistant();
   const [input, setInput] = useState('');
   const [pending, setPending] = useState<PendingFile[]>([]);
+  // Image en cours de prévisualisation plein écran (générée par Mola ou pièce jointe).
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -366,12 +426,18 @@ export function MobileAssistantScreen() {
                   <div className="mb-2 flex flex-wrap gap-2">
                     {m.attachments.map((a, i) =>
                       a.kind === 'image' && a.url ? (
-                        <img
+                        <button
                           key={i}
-                          src={a.url}
-                          alt={a.name}
-                          className="w-24 h-24 object-cover rounded-lg border border-black/10"
-                        />
+                          type="button"
+                          onClick={() => setPreview({ url: a.url!, name: a.name })}
+                          className="overflow-hidden rounded-lg border border-black/10 transition active:scale-95"
+                        >
+                          <img
+                            src={a.url}
+                            alt={a.name}
+                            className="h-24 w-24 object-cover"
+                          />
+                        </button>
                       ) : (
                         <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/40 border border-black/10 text-xs">
                           <FileText className="w-4 h-4 shrink-0" />
@@ -384,19 +450,21 @@ export function MobileAssistantScreen() {
                 {m.text && <RichText text={m.text} />}
               </div>
               {m.images?.map((img, i) => (
-                <a
+                <button
                   key={i}
-                  href={img.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={img.name}
-                  className="block max-w-[85%] rounded-2xl overflow-hidden border border-border bg-card"
+                  type="button"
+                  onClick={() => setPreview({ url: img.url, name: img.name })}
+                  className="group relative block max-w-[85%] overflow-hidden rounded-2xl border border-border bg-card text-left transition active:scale-[0.99]"
                 >
-                  <img src={img.url} alt={img.name} className="w-full h-auto" />
-                  <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5" /> {img.name} — appuyer pour ouvrir / télécharger
+                  <img src={img.url} alt={img.name} className="h-auto w-full" />
+                  {/* Pastille d'agrandissement en coin */}
+                  <div className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+                    <Maximize2 className="h-4 w-4" />
                   </div>
-                </a>
+                  <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" /> {img.name} — appuyer pour prévisualiser
+                  </div>
+                </button>
               ))}
               {m.proposals?.map((p) => (
                 <ConfirmationCard
@@ -418,6 +486,8 @@ export function MobileAssistantScreen() {
           )}
         </div>
       )}
+
+      {preview && <ImagePreview image={preview} onClose={() => setPreview(null)} />}
     </ViewportShell>
   );
 }
