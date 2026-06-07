@@ -1,6 +1,9 @@
 -- ╔══════════════════════════════════════════════════════════════════════════╗
--- ║ Mola — Couverture étendue des capacités (« tout piloter depuis Mola »)     ║
--- ║ FICHIER UNIQUE : à exécuter tel quel (idempotent, CREATE OR REPLACE).      ║
+-- ║ MIGRATION À FAIRE — Mola : couverture complète des actions                 ║
+-- ║ Fichier : 20260607000000_mola_actions_coverage.sql                         ║
+-- ║ UNIQUE fichier à appliquer. Idempotent (CREATE OR REPLACE) → relançable.   ║
+-- ║ Appliquer : « npx supabase db push --linked »  OU  copier tout ce fichier  ║
+-- ║ dans l'éditeur SQL Supabase puis « Run ».                                  ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 --
 -- Contenu :
