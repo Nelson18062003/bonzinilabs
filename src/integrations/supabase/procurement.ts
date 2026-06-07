@@ -203,6 +203,21 @@ export interface ProcMissionSummary {
   client_user_id: string;
 }
 
+export interface ProcMissionListItem {
+  id: string;
+  reference: string;
+  label: string;
+  location: string | null;
+  status: ProcMissionStatus;
+  started_on: string | null;
+  ended_on: string | null;
+  client_user_id: string;
+  client_name: string | null;
+  company_name: string | null;
+  purchase_order_count: number;
+  outstanding_by_currency: ByCurrency;
+}
+
 export interface ProcDashboard {
   active_missions: ProcMissionSummary[];
   active_mission_count: number;
@@ -364,4 +379,7 @@ export const proc = {
 
   dashboard: (a: { p_client_user_id?: string | null } = {}) =>
     callProcRpc<ProcDashboard>('proc_procurement_dashboard', a),
+
+  listMissions: (a: { p_status?: ProcMissionStatus | null; p_client_user_id?: string | null } = {}) =>
+    callProcRpc<{ missions: ProcMissionListItem[] }>('proc_list_missions', a),
 };

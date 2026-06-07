@@ -131,6 +131,13 @@ export function MobileProcurementHome() {
           <SectionTitle>Suivi</SectionTitle>
           <div className="space-y-2.5">
             <ActionTile
+              icon={Boxes}
+              label="Missions"
+              description="Projets d'achat, commandes, rapport"
+              onClick={() => navigate('/m/more/procurement/missions')}
+              tone="amber"
+            />
+            <ActionTile
               icon={Wallet}
               label="Reste à payer"
               description="Soldes ouverts par commande"

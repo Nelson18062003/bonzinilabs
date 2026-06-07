@@ -159,9 +159,19 @@ affectée (SQL pur) : `type-check`/`build`/118 tests restent valides depuis le L
 loading/empty/erreur (react-query) — fonctionnels en lecture **dès le déploiement** (avant ça, ils
 affichent l'état vide, le code étant correct & buildé).
 
+### Tranche « missions » ✅ (liste + création + rapport à l'écran)
+- RPC ajoutée à la migration lecture : **`proc_list_missions`** (`@mola`, filtre statut/client).
+- `MobileMissionsList` (filtres Actives/Toutes, reste-à-payer par mission, bouton + Mission).
+- `MobileNewMission` (formulaire : **picker client** via `useSearchClients`, libellé, lieu, dates,
+  note) → crée la mission puis ouvre son détail.
+- `MobileMissionDetail` = **la vue rapport** (entête client, totaux par devise, fournisseurs →
+  commandes → lignes/paiements/QC/commission, commissions & frais mission). C'est le rapport mai 2026
+  **à l'écran** ; reste à le brancher au **PDF**.
+- Routes `/m/more/procurement/missions[/new|/:id]` + tuile « Missions » sur le control tower.
+
 ### Reste à builder (UI)
-- Écrans : liste missions, **rapport mission** (→ PDF), fiche fournisseur 360, détail commande.
-- **Formulaires de saisie** (mission, fournisseur, commande, ligne, paiement, commission, QC,
+- Brancher `MobileMissionDetail` → **`generate-report-pdf`** (partage WhatsApp/email).
+- Écrans : fiche fournisseur 360, détail commande (PO).
+- **Formulaires de saisie** restants (fournisseur, commande, ligne, **paiement**, commission, QC,
   production, frais) + **upload de preuve** (bucket `procurement-docs`) + **dictée Mola**.
-- Brancher `proc_mission_report` → `generate-report-pdf`.
 - Outils Mola dédiés + parité + eval ; puis **saisie réelle mai 2026**.

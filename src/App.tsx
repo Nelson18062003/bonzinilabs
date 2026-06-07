@@ -83,6 +83,9 @@ const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").th
 // ── Centrale d'achat (procurement) ─────────────────────────────
 const MobileProcurementHome = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileProcurementHome })));
 const MobileProcurementOutstanding = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileOutstandingBalances })));
+const MobileProcurementMissions = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileMissionsList })));
+const MobileProcurementNewMission = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileNewMission })));
+const MobileProcurementMissionDetail = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileMissionDetail })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
@@ -223,6 +226,9 @@ const App = () => (
                 {/* Centrale d'achat (visible only to roles with canViewProcurement — guard is in-screen) */}
                 <Route path="/m/more/procurement" element={<MobileRouteWrapper><MobileProcurementHome /></MobileRouteWrapper>} />
                 <Route path="/m/more/procurement/outstanding" element={<MobileRouteWrapper><MobileProcurementOutstanding /></MobileRouteWrapper>} />
+                <Route path="/m/more/procurement/missions" element={<MobileRouteWrapper><MobileProcurementMissions /></MobileRouteWrapper>} />
+                <Route path="/m/more/procurement/missions/new" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementNewMission /></MobileRouteWrapper>} />
+                <Route path="/m/more/procurement/missions/:missionId" element={<MobileRouteWrapper showTabBar={false}><MobileProcurementMissionDetail /></MobileRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />

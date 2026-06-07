@@ -415,3 +415,48 @@ END;
 $$;
 COMMENT ON FUNCTION public.proc_procurement_dashboard(UUID) IS
   '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Tableau de bord centrale d''achat (control tower)"}';
+
+-- ── RPC: proc_list_missions ── (liste + filtre statut/client)
+CREATE OR REPLACE FUNCTION public.proc_list_missions(
+  p_status         public.proc_mission_status DEFAULT NULL,
+  p_client_user_id UUID DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_rows    JSONB;
+BEGIN
+  v_user_id := auth.uid();
+  IF NOT public.can_access_procurement(v_user_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Acces centrale d''achat refuse');
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', m.id, 'reference', m.reference, 'label', m.label, 'location', m.location,
+    'status', m.status, 'started_on', m.started_on, 'ended_on', m.ended_on,
+    'client_user_id', m.client_user_id,
+    'client_name', NULLIF(trim(COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')), ''),
+    'company_name', c.company_name,
+    'purchase_order_count', (SELECT count(*) FROM public.proc_purchase_orders po WHERE po.mission_id = m.id),
+    'outstanding_by_currency', COALESCE((SELECT jsonb_object_agg(currency, total) FROM (
+        SELECT b.currency::text AS currency, SUM(b.outstanding_amount)::numeric(20,8) AS total
+        FROM public.proc_po_balances b
+        JOIN public.proc_purchase_orders po ON po.id = b.purchase_order_id
+        WHERE po.mission_id = m.id AND po.status <> 'cancelled' GROUP BY b.currency) o), '{}'::jsonb)
+  ) ORDER BY m.created_at DESC), '[]'::jsonb)
+  INTO v_rows
+  FROM public.proc_missions m
+  LEFT JOIN public.clients c ON c.user_id = m.client_user_id
+  WHERE (p_status IS NULL OR m.status = p_status)
+    AND (p_client_user_id IS NULL OR m.client_user_id = p_client_user_id);
+
+  RETURN jsonb_build_object('success', true, 'missions', v_rows);
+END;
+$$;
+COMMENT ON FUNCTION public.proc_list_missions(public.proc_mission_status, UUID) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewProcurement","confirm":false,"danger":false,"label":"Lister les missions d''achat"}';

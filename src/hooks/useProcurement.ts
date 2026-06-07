@@ -7,6 +7,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { proc } from '@/integrations/supabase/procurement';
+import type { ProcMissionStatus } from '@/integrations/supabase/procurement';
 
 const KEY = 'procurement';
 
@@ -22,6 +23,14 @@ export function useProcurementDashboard(clientUserId?: string | null) {
   return useQuery({
     queryKey: [KEY, 'dashboard', clientUserId ?? 'all'],
     queryFn: () => unwrap(proc.dashboard({ p_client_user_id: clientUserId ?? null })),
+    staleTime: 20_000,
+  });
+}
+
+export function useMissions(status?: ProcMissionStatus | null, clientUserId?: string | null) {
+  return useQuery({
+    queryKey: [KEY, 'missions', status ?? 'all', clientUserId ?? 'all'],
+    queryFn: () => unwrap(proc.listMissions({ p_status: status ?? null, p_client_user_id: clientUserId ?? null })),
     staleTime: 20_000,
   });
 }
