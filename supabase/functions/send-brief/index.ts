@@ -78,7 +78,7 @@ async function getBonziniRate(s: SupabaseClient) {
 }
 
 // ─── AI Interpretation via Claude API ────────────────────────────────────
-// Génère une lecture courte (4-6 lignes) qui croise macro + taux Bonzini + news.
+// Génère une lecture intelligente qui croise macro + Bonzini + news + tweets Trump.
 // Retourne null si la clé API n'est pas configurée ou si l'appel échoue.
 async function getAIInterpretation(
   type: "morning" | "evening",
@@ -98,47 +98,73 @@ async function getAIInterpretation(
   const ctx = {
     moment: type,
     bonzini: r ? {
-      taux_actuel: r.suggested_rate,
+      taux_actuel_cny_par_million_xaf: r.suggested_rate,
       taux_24h_avant: rp?.suggested_rate ?? null,
-      cout_xaf: r.cmr_rate_max + (r.cmr_margin_xaf ?? 3),
+      cout_xaf_par_usdt: r.cmr_rate_max + (r.cmr_margin_xaf ?? 3),
       cout_xaf_24h_avant: rp ? rp.cmr_rate_max + (rp.cmr_margin_xaf ?? 3) : null,
-      marche_chn: r.chn_rate_avg,
+      marche_chn_cny_par_usdt: r.chn_rate_avg,
       marche_chn_24h_avant: rp?.chn_rate_avg ?? null,
     } : null,
     macro: {
-      brent: m.oil_brent,
+      brent_usd: m.oil_brent,
       brent_24h: p?.oil_brent ?? null,
       dxy: m.dxy,
       dxy_24h: p?.dxy ?? null,
       eur_usd: m.eur_usd,
       eur_usd_24h: p?.eur_usd ?? null,
-      cny_usd: m.cny_usd,
+      cny_par_usd: m.cny_usd,
       cny_usd_24h: p?.cny_usd ?? null,
-      btc: m.btc_usd,
+      btc_usd: m.btc_usd,
       btc_24h: p?.btc_usd ?? null,
     },
-    news: (m.news_headlines || []).slice(0, 5).map((h: any) => h.title),
+    news_par_source: m.news_by_source ?? {},
+    trump_posts_iran_24h: (m.trump_posts_recent ?? []).map((p: any) => ({
+      heure: p.posted_at,
+      texte: p.content?.slice(0, 400),
+    })),
   };
 
-  const systemPrompt = `Tu es l'assistant de Nelson, qui dirige Bonzini : une fintech qui aide les importateurs africains (Cameroun, Gabon...) à payer leurs fournisseurs chinois. Il achète des USDT au Cameroun en XAF, puis les vend en Chine contre des CNY.
+  const systemPrompt = `Tu es l'assistant macro de Nelson, qui dirige Bonzini : une fintech qui aide les importateurs africains (Cameroun, Gabon...) à payer leurs fournisseurs chinois. Il achète des USDT au Cameroun en XAF, puis les vend en Chine contre des CNY. Son taux publié = combien de CNY un client reçoit pour 1 million de XAF.
 
-Tu interprètes les données macro et le marché Bonzini pour lui donner une lecture courte, actionnable, en français.
+Ton rôle : croiser les données macro + le marché Bonzini + l'actualité Iran/pétrole/Fed + les tweets Trump pour donner à Nelson une lecture COURTE, CONCRÈTE et ACTIONNABLE en français.
 
-Format attendu : 4 à 6 bullets courts (1 ligne max chacun), commençant par un emoji pertinent. Sois CONCRET et lié à son business : que veut dire ce mouvement pour son taux, son coût XAF, sa marge ? Pas de phrases vagues type "marché incertain".
+Tu disposes :
+- des prix marché (Brent, DXY, EUR/USD, BTC, USD/CNY)
+- du taux Bonzini suggéré et son évolution 24h
+- des headlines récents groupés par média (Bloomberg, Al Jazeera, Google News, BBC...)
+- des derniers tweets Trump (verbatim, Truth Social, filtrés Iran)
 
-À la fin, termine par une seule ligne "🎯 Action : ..." avec un conseil tactique précis (publier maintenant, attendre, élargir marge, etc.).
+Format STRICT à respecter :
 
-Pas de markdown, pas de gras, pas de listes numérotées. Juste les bullets et l'action finale.`;
+📰 RÉSUMÉ ACTU (2-3 lignes, max 30 mots chacune)
+[Synthèse des news + tweets Trump les plus importants]
 
-  const userPrompt = `Voici le contexte. Donne-moi ta lecture pour le brief ${type === "morning" ? "du matin" : "du soir"} :
+💡 LECTURE MARCHÉ (4-5 bullets, 1 ligne chacun, commencer par un emoji)
+[Chaque bullet relie un mouvement macro à l'impact concret sur Bonzini]
+
+🎯 ACTION (1 ligne max)
+[Conseil tactique précis : publier maintenant, élargir marge, attendre, etc.]
+
+Règles :
+- Pas de markdown, pas de gras, pas de # ou *
+- Pas de phrases vagues type "marché incertain" — sois précis
+- Toujours faire le lien avec Bonzini : coût XAF, marché CHN, marge, taux à publier
+- Pour les tweets Trump : cite verbatim 1-2 mots-clés entre guillemets si pertinent
+- Reste court : le brief doit tenir sur un écran mobile Telegram`;
+
+  const userPrompt = `Brief ${type === "morning" ? "du matin" : "du soir"} pour Nelson. Voici tout le contexte :
 
 ${JSON.stringify(ctx, null, 2)}
 
-Rappels :
+Rappels métier :
 - XAF est pegged à EUR (655,957 XAF/EUR), donc EUR faible = XAF faible = USDT plus cher au Cameroun
-- USDT/CNY baisse quand la Chine vend des USDT (panique, intervention PBOC)
-- Pétrole haut → inflation → Fed reste serrée → dollar fort → mauvais pour le XAF
-- Bonzini gagne quand le coût XAF baisse OU quand le marché CHN monte`;
+- USDT/CNY baisse quand la Chine vend des USDT (panique, intervention PBOC, capital flight)
+- Pétrole haut → inflation US → Fed reste serrée → dollar fort → mauvais pour le XAF
+- Bonzini gagne quand le coût XAF baisse OU quand le marché CHN monte
+- Trump tweets favorables au deal = bon pour Bonzini ; menaces de frappe = mauvais
+- Fenêtre matinale (4h-7h Douala) = en général la plus favorable du jour
+
+Produis ton brief maintenant.`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -206,13 +232,60 @@ async function composeBrief(
     macroSection += "(pas de snapshot macro — fetch-macro pas exécuté ?)\n";
   }
 
-  // ─── Section News
+  // ─── Section Trump (posts verbatim, Iran-related, dernières 24h)
+  let trumpSection = "";
+  const trumpPosts = macro.latest?.trump_posts_recent;
+  if (Array.isArray(trumpPosts) && trumpPosts.length > 0) {
+    trumpSection = "\n🇺🇸 TRUMP (Truth Social, 24h)\n";
+    for (const p of trumpPosts.slice(0, 3)) {
+      const when = (() => {
+        const t = Date.parse(p.posted_at);
+        if (!Number.isFinite(t)) return "";
+        return new Date(t).toLocaleString("fr-FR", {
+          hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit",
+          timeZone: "Africa/Douala",
+        });
+      })();
+      const text = (p.content || "").slice(0, 200).replace(/\s+/g, " ").trim();
+      trumpSection += `📅 ${when}\n"${text}${p.content.length > 200 ? "..." : ""}"\n\n`;
+    }
+  }
+
+  // ─── Section News (groupées par source, top 1-2 par média)
   let newsSection = "";
-  if (macro.latest?.news_headlines && Array.isArray(macro.latest.news_headlines) && macro.latest.news_headlines.length > 0) {
+  const newsBySource = macro.latest?.news_by_source;
+  if (newsBySource && typeof newsBySource === "object" && Object.keys(newsBySource).length > 0) {
+    newsSection = "\n📰 NEWS PAR SOURCE\n";
+    // Ordre prioritaire des sources
+    const priority = ["Bloomberg Markets", "Al Jazeera English", "BBC World", "Google News (Iran-Trump)", "Google News (Hormuz-oil)", "Google News (Fed-inflation)"];
+    const sourcesShown = new Set<string>();
+    for (const src of priority) {
+      const items = newsBySource[src];
+      if (Array.isArray(items) && items.length > 0) {
+        const shortSrc = src.replace("Google News (", "").replace(")", "").replace(" Markets", "").replace(" English", "");
+        newsSection += `\n[${shortSrc}]\n`;
+        for (const h of items.slice(0, 2)) {
+          newsSection += `• ${(h.title || "").slice(0, 130)}\n`;
+        }
+        sourcesShown.add(src);
+      }
+    }
+    // Sources non prioritaires (au cas où)
+    for (const [src, items] of Object.entries(newsBySource)) {
+      if (sourcesShown.has(src)) continue;
+      if (Array.isArray(items) && items.length > 0) {
+        const shortSrc = src.replace("Google News (", "").replace(")", "");
+        newsSection += `\n[${shortSrc}]\n`;
+        for (const h of (items as any[]).slice(0, 1)) {
+          newsSection += `• ${(h.title || "").slice(0, 130)}\n`;
+        }
+      }
+    }
+  } else if (macro.latest?.news_headlines && Array.isArray(macro.latest.news_headlines) && macro.latest.news_headlines.length > 0) {
+    // Fallback : ancien format
     newsSection = "\n📰 NEWS\n";
-    for (const h of macro.latest.news_headlines.slice(0, 3)) {
-      const title = (h.title || "").slice(0, 120);
-      newsSection += `• ${title}\n`;
+    for (const h of macro.latest.news_headlines.slice(0, 5)) {
+      newsSection += `• ${(h.title || "").slice(0, 130)}\n`;
     }
   }
 
@@ -261,7 +334,7 @@ async function composeBrief(
       : "\n\n🎯 Action : surveille la nuit asiatique pour signal de demain.";
   }
 
-  return header + rateSection + macroSection + newsSection + lectureSection;
+  return header + rateSection + macroSection + trumpSection + newsSection + lectureSection;
 }
 
 // ─── Compose alerte urgente ──────────────────────────────────────────────
