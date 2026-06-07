@@ -240,7 +240,8 @@ correctifs appliqués.
 - Imports morts supprimés (`AlertTriangle`, `Plus`).
 - **Bug UX corrigé** : forçage silencieux de la devise (commission + paiement) → la devise s'initialise
   sur celle de la commande puis reste **librement modifiable** (`useEffect`).
-- Reporté (non bloquant) : extraction `PoCard` (imbrication du détail mission), adoption des primitives
-  `@/components/form` (TextField/MoneyField) à la place des `input` nus.
+- ✅ Extraction `ReportPoCard` (`src/mobile/components/procurement/`) → détail mission allégé.
+- Reporté (non bloquant) : adoption des primitives `@/components/form` (TextField/MoneyField) à la place
+  des `input` nus (refactor large, faible gain).
 
 **Vérifié après refactor** : `type-check` 0 erreur · `build` OK · **118 tests** verts.
