@@ -56,5 +56,48 @@ mono-rôle (merge d'un seul rôle = ce rôle).
 
 ---
 
-## Lot 1 — Saisie cœur + catch-up mai 2026 ⏳
-À venir (RPC `@mola` d'écriture + parité + formulaires + dictée Mola + saisie réelle mai 2026).
+## Lot 1 — Saisie cœur + catch-up mai 2026 🔶 (RPC livrées ; formulaires + saisie à venir)
+
+### Partie A — Couche d'écriture (RPC) ✅ écrite & auto-revue
+| Fichier | Contenu |
+|---|---|
+| `supabase/migrations/20260607101003_procurement_rpcs.sql` | **13 RPC SECURITY DEFINER**, toutes étiquetées `@mola` dans la même migration |
+
+**RPC livrées** (toutes : check `can_access_procurement`, params **typés enum**, validation,
+audit `admin_audit_logs`, retour `jsonb_build_object('success', …)`) :
+`proc_create_mission`, `proc_update_mission`, `proc_upsert_supplier`,
+`proc_create_purchase_order`, `proc_update_purchase_order`, `proc_add_order_line`,
+`proc_record_supplier_payment` (**argent** ; Cas 3 attestation/rail + **gate souple** = avertissement
+`warning_no_qc_pass`, jamais de blocage), `proc_set_commission` (double-mode, `computed_*` calculés
+côté RPC), `proc_attach_document`, `proc_record_qc`, `proc_log_production_event`,
+`proc_record_expense` (**argent**), `proc_void_record` (**super_admin** uniquement, motif ≥10).
+
+**Conventions** : moule `treasury_rpcs` (erreurs ASCII, `NULLIF(trim(...))`, `RETURNING id`,
+plafond anti-faute de frappe 10 G). Étiquettes `@mola` `permission:"canManageProcurement"`,
+`danger/confirm` à `true` sur l'argent et le void.
+
+### Auto-revue (2 bugs trouvés & corrigés avant de m'y fier)
+1. `proc_void_record` lisait l'existence via `SELECT … INTO v_found` → **NULL sur 0 ligne** (pas
+   `false`), donc la branche « introuvable » ne se déclenchait pas. Corrigé avec l'idiome **`FOUND`**.
+2. `proc_upsert_supplier` avait `p_category DEFAULT '{}'` → **écrasait** le tableau en update si omis.
+   Passé à `DEFAULT NULL` + `COALESCE(p_category, '{}')` à l'insert.
+
+### Parité — volontairement INCHANGÉE
+Les RPC procurement passent par le **générique `do_capability`** (pas d'outil dédié `"tool"`), donc
+aucune entrée à ajouter dans `eval/assistant/parity.manifest.ts` (qui ne couvre que les outils
+**riches** redéclarant des params). Y ajouter les RPC maintenant **casserait** le test
+(`rpcFound=false` tant que `types.ts` n'est pas régénéré). Les entrées de parité viendront **avec les
+outils dédiés** (lot ultérieur), après déploiement + `gen-types`.
+
+### Vérification ✅ / limites ⚠️
+- ✅ `type-check` : 0 erreur · `build` : succès (inchangés — Lot 1A est du SQL pur).
+- ✅ Suite vitest : **118 tests passent** (`grade`, `authGate`… verts → le multi-rôle n'a rien cassé).
+- ⚠️ `parity.test.ts` **ne se charge pas** dans ce conteneur (`readFileSync(new URL(…, import.meta.url))`
+  → URL non-`file` sous jsdom de vitest 3.2.4). **Échec de chargement, pas d'assertion** ; fichiers
+  non modifiés par moi → quirk d'env, vert en CI normale.
+- ⚠️ **SQL non exécuté** (pas de Postgres/creds ici) : correction reposant sur la revue manuelle +
+  le moule trésorerie. À valider au déploiement.
+
+### Partie B — Saisie (formulaires + dictée) + catch-up mai 2026 ⏳ BLOQUÉ sur déploiement
+Les écrans TypeScript appellent les tables/RPC `proc_*` → nécessitent **déploiement Lot 0+1 sur
+Supabase puis `gen-types`** (sinon non typés). À faire dès que tu déploies (ou me donnes l'accès).
