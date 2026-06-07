@@ -209,8 +209,8 @@ dans `MobileMissionDetail`.
 ### Reste (post-déploiement ou avancé)
 - **Dictée Mola** : aucune UI à coder — les RPC `@mola` sont auto-découvertes ; **tester** le flux
   conversationnel après déploiement.
-- Lien **rail** (Cas 2) : picker de paiement existant sur `MobileRecordPayment` (le MVP couvre Cas 1
-  attestation, suffisant pour le catch-up mai 2026).
+- ✅ **Lien rail (Cas 2)** : `MobileRecordPayment` propose le mode attestation/rail + un **picker des
+  paiements du client** (`useClientPaymentsForRail`) ; rattachement vérifié côté serveur (revue #1).
 - Outils Mola dédiés (`tool` dans l'étiquette) + entrées de parité + eval procurement (Lot 5).
 - Puis **saisie réelle mai 2026** (opérationnel) — après déploiement + `gen-types`.
 

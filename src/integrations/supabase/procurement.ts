@@ -208,7 +208,7 @@ export interface ProcPurchaseOrderDetail {
     notes: string | null;
     paid_amount: number;
     outstanding_amount: number;
-    mission: { id: string; reference: string; label: string };
+    mission: { id: string; reference: string; label: string; client_user_id: string };
     supplier: { id: string; display_name: string; supplier_kind: ProcSupplierKind };
     production_status: ProcProductionStatus | null;
   };

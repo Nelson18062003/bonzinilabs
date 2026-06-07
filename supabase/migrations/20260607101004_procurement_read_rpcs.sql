@@ -542,7 +542,7 @@ BEGIN
     'deposit_pct', po.deposit_pct, 'incoterm', po.incoterm, 'status', po.status,
     'expected_ready_date', po.expected_ready_date, 'total_cbm', po.total_cbm, 'notes', po.notes,
     'paid_amount', v_paid::numeric(20,8), 'outstanding_amount', (po.total_amount - v_paid)::numeric(20,8),
-    'mission', jsonb_build_object('id', m.id, 'reference', m.reference, 'label', m.label),
+    'mission', jsonb_build_object('id', m.id, 'reference', m.reference, 'label', m.label, 'client_user_id', m.client_user_id),
     'supplier', jsonb_build_object('id', s.id, 'display_name', s.display_name, 'supplier_kind', s.supplier_kind),
     'production_status', (SELECT pe.status FROM public.proc_production_events pe
                          WHERE pe.purchase_order_id = po.id ORDER BY pe.occurred_at DESC LIMIT 1)

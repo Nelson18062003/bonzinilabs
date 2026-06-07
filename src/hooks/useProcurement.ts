@@ -91,6 +91,34 @@ export function usePurchaseOrder(poId: string | undefined) {
   });
 }
 
+export interface RailPaymentOption {
+  id: string;
+  reference: string;
+  amount_rmb: number;
+  beneficiary_name: string | null;
+  status: string;
+  created_at: string;
+}
+
+/** Paiements du rail (table payments) d'un client — pour lier un paiement fournisseur (Cas 2). */
+export function useClientPaymentsForRail(clientUserId: string | undefined) {
+  return useQuery({
+    queryKey: [KEY, 'rail-payments', clientUserId],
+    enabled: !!clientUserId,
+    staleTime: 30_000,
+    queryFn: async (): Promise<RailPaymentOption[]> => {
+      const { data, error } = await supabaseAdmin
+        .from('payments')
+        .select('id, reference, amount_rmb, beneficiary_name, status, created_at')
+        .eq('user_id', clientUserId!)
+        .order('created_at', { ascending: false })
+        .limit(25);
+      if (error) throw error;
+      return (data ?? []) as RailPaymentOption[];
+    },
+  });
+}
+
 // ─── Écritures (mutations) ──────────────────────────────────
 // Fabrique générique : appelle une RPC d'écriture, toast + invalidation.
 function useProcMutation<TArgs, TOut>(

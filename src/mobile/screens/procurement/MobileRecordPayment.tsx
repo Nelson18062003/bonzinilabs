@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { usePurchaseOrder, useRecordSupplierPayment } from '@/hooks/useProcurement';
-import type { ProcCurrency, ProcPaymentLeg, ProcPaymentMethod, ProcPaidBy } from '@/integrations/supabase/procurement';
+import { usePurchaseOrder, useRecordSupplierPayment, useClientPaymentsForRail } from '@/hooks/useProcurement';
+import type { ProcCurrency, ProcPaymentLeg, ProcPaymentMethod, ProcPaidBy, ProcSettlementMode } from '@/integrations/supabase/procurement';
 import { FieldLabel, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
 import { PROC_INPUT as INPUT, isValidAmount } from './shared';
 import { cn } from '@/lib/utils';
@@ -34,16 +34,20 @@ export function MobileRecordPayment() {
   const [occurredAt, setOccurredAt] = useState('');
   const [externalRef, setExternalRef] = useState('');
   const [notes, setNotes] = useState('');
+  const [settlementMode, setSettlementMode] = useState<ProcSettlementMode>('attestation');
+  const [railPaymentId, setRailPaymentId] = useState<string | null>(null);
 
   // Devise par défaut = celle de la commande, une fois chargée (modifiable ensuite).
   useEffect(() => { if (po) setCurrency(po.currency); }, [po?.currency]);
+  const { data: railPayments } = useClientPaymentsForRail(settlementMode === 'rail' ? po?.mission.client_user_id : undefined);
 
   if (!hasPermission('canManageProcurement') || !poId) {
     return <Navigate to="/m/more/procurement" replace />;
   }
 
   const amt = Number(amount);
-  const canSubmit = isValidAmount(amt) && !recordPayment.isPending;
+  const railOk = settlementMode === 'attestation' || !!railPaymentId;
+  const canSubmit = isValidAmount(amt) && railOk && !recordPayment.isPending;
 
   const handleSubmit = async () => {
     try {
@@ -55,6 +59,8 @@ export function MobileRecordPayment() {
         p_currency: currency,
         p_occurred_at: occurredAt || undefined,
         p_paid_by: paidBy || null,
+        p_settlement_mode: settlementMode,
+        p_rail_payment_id: settlementMode === 'rail' ? railPaymentId : null,
         p_external_ref: externalRef.trim() || null,
         p_notes: notes.trim() || null,
       });
@@ -106,6 +112,43 @@ export function MobileRecordPayment() {
         </div>
 
         <div>
+          <FieldLabel>Mode de règlement</FieldLabel>
+          <div className="flex gap-2">
+            <Pill active={settlementMode === 'attestation'} onClick={() => { setSettlementMode('attestation'); setRailPaymentId(null); }}>Attestation</Pill>
+            <Pill active={settlementMode === 'rail'} onClick={() => setSettlementMode('rail')}>Lié au rail</Pill>
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {settlementMode === 'attestation'
+              ? 'Preuve autonome (paiement constaté hors plateforme).'
+              : 'Lié à un paiement réel effectué via Bonzini pour ce client.'}
+          </p>
+        </div>
+
+        {settlementMode === 'rail' && (
+          <div>
+            <FieldLabel>Paiement du rail à lier *</FieldLabel>
+            {(railPayments ?? []).length === 0 ? (
+              <div className="rounded-2xl bg-muted/50 p-3.5 text-[12px] text-muted-foreground">
+                Aucun paiement disponible pour ce client (ou accès restreint).
+              </div>
+            ) : (
+              <div className={cn(SOFT_CARD, 'max-h-56 divide-y divide-border overflow-y-auto')}>
+                {(railPayments ?? []).map((p) => (
+                  <button key={p.id} type="button" onClick={() => setRailPaymentId(p.id)}
+                    className={cn('flex w-full items-center justify-between p-3.5 text-left active:bg-muted/50', railPaymentId === p.id && 'bg-bonzini-violet/10')}>
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-semibold text-foreground">{p.reference}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">{p.beneficiary_name ?? '—'} · {new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
+                    </div>
+                    <div className="shrink-0 text-[13px] font-bold tabular-nums text-foreground">{p.amount_rmb.toLocaleString('fr-FR')} ¥</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div>
           <FieldLabel>Date du paiement</FieldLabel>
           <input type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className={INPUT} />
         </div>
@@ -123,7 +166,6 @@ export function MobileRecordPayment() {
         <PrimaryPill onClick={handleSubmit} disabled={!canSubmit} loading={recordPayment.isPending} type="button">
           Enregistrer le paiement
         </PrimaryPill>
-        <p className="text-center text-[11px] text-muted-foreground">Mode attestation (preuve autonome). Le lien vers un paiement du rail viendra plus tard.</p>
       </div>
     </div>
   );
