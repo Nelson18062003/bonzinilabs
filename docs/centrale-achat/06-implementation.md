@@ -132,3 +132,36 @@ affectée (SQL pur) : `type-check`/`build`/118 tests restent valides depuis le L
 - Formulaires + dictée Mola (Lot 1B), écrans de consultation (Lot 2 UI).
 - Outils Mola dédiés + entrées de parité + eval procurement (Lot 5).
 - **Saisie réelle de la mission mai 2026** (opérationnel).
+
+---
+
+## UI — frontend (build SANS déploiement) 🔶
+
+> Décision (porteur) : **on ne déploie pas maintenant**, une seule grosse migration plus tard. On
+> continue donc à builder l'UI. Astuce pour rester typé/vérifiable sans `gen-types` : une **couche
+> d'accès écrite à la main**.
+
+| Fichier | Rôle |
+|---|---|
+| `src/integrations/supabase/procurement.ts` | **Couche d'accès typée** : enums + shapes de lecture (dont `ProcMissionReport`) + `proc.*` (17 wrappers RPC). Le **seul** cast non typé = `callProcRpc` (le client ne connaît pas encore `proc_*`). Survivra à `gen-types`. |
+| `src/hooks/useProcurement.ts` | Hooks react-query (reads + 14 mutations) sur `proc.*`, toasts + invalidation `['procurement']`. |
+| `src/mobile/screens/procurement/MobileProcurementHome.tsx` | **Control tower** : KPIs (missions actives, reste-à-payer par devise), **alertes** (solde sans QC, production en retard), paiements récents. |
+| `src/mobile/screens/procurement/MobileOutstandingBalances.tsx` | Reste-à-payer par commande + total dû. |
+| `src/mobile/screens/procurement/index.ts` | Barrel (lazy-import). |
+| `src/App.tsx` | Routes `/m/more/procurement` + `/m/more/procurement/outstanding` (`MobileRouteWrapper`). |
+| `src/mobile/screens/more/MobileMoreScreen.tsx` | Entrée menu « Centrale d'achat » (gardée `canViewProcurement`). |
+
+**Design** : `/frontend-design` absent du repo → j'applique le **langage de design existant** (primitives
+`@/components/treasury/ui` : `SOFT_CARD`, `IconChip`, `ActionTile`, `SectionTitle`, tons
+`bonzini-violet/amber/orange`) pour rester cohérent et production-grade (pas d'esthétique générique).
+
+**Vérifié** ✅ : `type-check` 0 erreur · `build` succès · **118 tests verts**. Les écrans gèrent
+loading/empty/erreur (react-query) — fonctionnels en lecture **dès le déploiement** (avant ça, ils
+affichent l'état vide, le code étant correct & buildé).
+
+### Reste à builder (UI)
+- Écrans : liste missions, **rapport mission** (→ PDF), fiche fournisseur 360, détail commande.
+- **Formulaires de saisie** (mission, fournisseur, commande, ligne, paiement, commission, QC,
+  production, frais) + **upload de preuve** (bucket `procurement-docs`) + **dictée Mola**.
+- Brancher `proc_mission_report` → `generate-report-pdf`.
+- Outils Mola dédiés + parité + eval ; puis **saisie réelle mai 2026**.

@@ -18,6 +18,7 @@ import {
   MessageCircle,
   MessageSquareQuote,
   Sparkles,
+  Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -68,6 +69,7 @@ export function MobileMoreScreen() {
   const { t } = useTranslation('common');
   const { profile, logout, canManageUsers, hasPermission } = useAdminAuth();
   const canViewTreasury = hasPermission('canViewTreasury');
+  const canViewProcurement = hasPermission('canViewProcurement');
   const canAccessSupportChat = hasPermission('canAccessSupportChat');
   const { data: notifCount } = useAdminNotificationCount();
   const { data: convs } = useAdminConversations();
@@ -133,6 +135,14 @@ export function MobileMoreScreen() {
               label="Trésorerie"
               description="Achats/ventes USDT, soldes, inventaire"
               onClick={() => navigate('/m/more/treasury')}
+            />
+          )}
+          {canViewProcurement && (
+            <MenuItem
+              icon={Package}
+              label="Centrale d'achat"
+              description="Missions, fournisseurs, commandes, reste à payer"
+              onClick={() => navigate('/m/more/procurement')}
             />
           )}
           <MenuItem

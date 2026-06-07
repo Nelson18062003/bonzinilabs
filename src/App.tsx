@@ -80,6 +80,10 @@ const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").t
 // ── AI Assistant (Directeur des Opérations) ────────────────────
 const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").then(m => ({ default: m.MobileAssistantScreen })));
 
+// ── Centrale d'achat (procurement) ─────────────────────────────
+const MobileProcurementHome = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileProcurementHome })));
+const MobileProcurementOutstanding = lazy(() => import("./mobile/screens/procurement").then(m => ({ default: m.MobileOutstandingBalances })));
+
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
@@ -215,6 +219,10 @@ const App = () => (
                 <Route path="/m/more/treasury/sales" element={<MobileRouteWrapper><MobileTreasurySalesList /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/balance-dashboard" element={<MobileRouteWrapper><MobileTreasuryBalanceDashboard /></MobileRouteWrapper>} />
                 <Route path="/m/more/treasury/sales/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></MobileRouteWrapper>} />
+
+                {/* Centrale d'achat (visible only to roles with canViewProcurement — guard is in-screen) */}
+                <Route path="/m/more/procurement" element={<MobileRouteWrapper><MobileProcurementHome /></MobileRouteWrapper>} />
+                <Route path="/m/more/procurement/outstanding" element={<MobileRouteWrapper><MobileProcurementOutstanding /></MobileRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
