@@ -23,9 +23,12 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-// Sonnet par défaut (qualité de compréhension). Le streaming assure la rapidité
-// ressentie. Surchargables par secret si besoin (ex. Haiku pour la vitesse pure).
-const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-sonnet-4-6";
+// VITESSE : Haiku par défaut pour le chemin rapide (lecture, Q&A, décision d'outil) —
+// nettement plus rapide (time-to-first-token) et largement suffisant pour lire la base
+// et appeler les bons outils. On bascule sur Sonnet (MODEL_SMART) dès qu'une ÉCRITURE
+// est proposée → la qualité de raisonnement reste sur les actions sensibles.
+// Surchargables par secret ASSISTANT_MODEL_* (remettre Sonnet en FAST si besoin de finesse).
+const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5-20251001";
 const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 14;
 const MIN_PAYMENT_XAF = 10_000;
@@ -2483,22 +2486,31 @@ async function embedText(text: string): Promise<number[] | null> {
 
 // Bloc de contexte mémoire : profil (toujours) + résumé roulant + souvenirs récupérés (best-effort).
 async function buildMemoryContext(admin: AnyClient, adminUserId: string, conversationId: string, message: string): Promise<string> {
-  const parts: string[] = [];
-  try {
-    const { data: prof } = await admin.from("mola_user_memory").select("key, value").eq("admin_user_id", adminUserId).limit(40);
-    if (prof?.length) parts.push(`Profil de cet admin (ce que tu sais déjà) :\n` + prof.map((p: AnyClient) => `- ${p.key}: ${typeof p.value === "string" ? p.value : JSON.stringify(p.value)}`).join("\n"));
-  } catch (_) { /* best-effort */ }
-  try {
-    const { data: conv } = await admin.from("assistant_conversations").select("rolling_summary").eq("id", conversationId).maybeSingle();
-    if (conv?.rolling_summary) parts.push(`Résumé du début de cette conversation :\n${conv.rolling_summary}`);
-  } catch (_) { /* best-effort */ }
-  try {
-    const emb = await embedText(message);
-    if (emb) {
-      const { data: hits } = await admin.rpc("mola_search_memory", { p_embedding: emb, p_admin: adminUserId, p_limit: 6 });
-      if (hits?.length) parts.push(`Souvenirs pertinents (mémoire) :\n` + hits.map((h: AnyClient) => `- ${h.content}`).join("\n"));
-    }
-  } catch (_) { /* best-effort */ }
+  // VITESSE : les 3 sources (profil, résumé roulant, recherche sémantique) sont indépendantes
+  // → on les lit EN PARALLÈLE au lieu de 3 awaits en série (l'embedding domine le temps).
+  const [profPart, convPart, memPart] = await Promise.all([
+    (async () => {
+      try {
+        const { data: prof } = await admin.from("mola_user_memory").select("key, value").eq("admin_user_id", adminUserId).limit(40);
+        return prof?.length ? `Profil de cet admin (ce que tu sais déjà) :\n` + prof.map((p: AnyClient) => `- ${p.key}: ${typeof p.value === "string" ? p.value : JSON.stringify(p.value)}`).join("\n") : "";
+      } catch (_) { return ""; }
+    })(),
+    (async () => {
+      try {
+        const { data: conv } = await admin.from("assistant_conversations").select("rolling_summary").eq("id", conversationId).maybeSingle();
+        return conv?.rolling_summary ? `Résumé du début de cette conversation :\n${conv.rolling_summary}` : "";
+      } catch (_) { return ""; }
+    })(),
+    (async () => {
+      try {
+        const emb = await embedText(message);
+        if (!emb) return "";
+        const { data: hits } = await admin.rpc("mola_search_memory", { p_embedding: emb, p_admin: adminUserId, p_limit: 6 });
+        return hits?.length ? `Souvenirs pertinents (mémoire) :\n` + hits.map((h: AnyClient) => `- ${h.content}`).join("\n") : "";
+      } catch (_) { return ""; }
+    })(),
+  ]);
+  const parts = [profPart, convPart, memPart].filter(Boolean);
   return parts.length ? `MÉMOIRE (contexte rappelé — appuie-toi dessus si pertinent, ne l'invente pas) :\n${parts.join("\n\n")}` : "";
 }
 
@@ -2630,6 +2642,11 @@ serve(async (req) => {
       conversationId = conv.id;
     }
 
+    // VITESSE : on lance la construction du contexte mémoire (lectures DB + embedding, ~150-250ms)
+    // EN PARALLÈLE du reste de la préparation (historique, outils, prompt). On l'attend juste avant
+    // l'appel modèle → son temps est recouvert au lieu de s'ajouter.
+    const memoryPromise = buildMemoryContext(admin, user.id, String(conversationId), message);
+
     // Les N derniers messages (les plus RÉCENTS), remis dans l'ordre chronologique pour le modèle.
     const { data: histRaw } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(40);
     const hist = (histRaw ?? []).reverse();
@@ -2681,14 +2698,15 @@ serve(async (req) => {
 
     const system = buildSystemPrompt(role, firstName);
     // Mémoire (Lot 3) : contexte rappelé (profil + résumé roulant + souvenirs), best-effort.
-    const memoryContext = await buildMemoryContext(admin, user.id, String(conversationId), message);
+    // Lancée plus haut en parallèle (memoryPromise) → ici on ne fait qu'attendre le résultat déjà en cours.
+    const memoryContext = await memoryPromise;
     // deno-lint-ignore no-explicit-any
     const systemBlocks: any[] = [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
     if (memoryContext) systemBlocks.push({ type: "text", text: memoryContext });
 
     // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
-    // MODEL_FAST par défaut (Sonnet 4.6) ; bascule sur MODEL_SMART dès qu'une action
-    // d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
+    // MODEL_FAST par défaut (Haiku — rapide) ; bascule sur MODEL_SMART (Sonnet) dès qu'une
+    // action d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
     const convId = conversationId;
     const stream = new ReadableStream({
       async start(controller) {
@@ -2706,7 +2724,7 @@ serve(async (req) => {
           for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
             const resp = await streamAnthropic(
               apiKey,
-              { model, max_tokens: 4000, system: systemBlocks, tools: toolDefs, messages },
+              { model, max_tokens: 2000, system: systemBlocks, tools: toolDefs, messages },
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
