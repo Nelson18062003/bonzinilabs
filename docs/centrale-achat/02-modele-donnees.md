@@ -25,7 +25,8 @@
    contre-écriture sur le money-bearing, vues dérivées `security_invoker = true`.
 3. **AI-first, pas IA-bolt-on.** Trois exigences structurantes dès le schéma :
    - **toute action = une RPC `SECURITY DEFINER` taguée `@mola`** (Mola la découvre, parité testée) ;
-   - **tout document est ingérable** : entité `proc_documents` avec `ocr_extracted JSONB` au cœur ;
+   - **tout document est joignable comme preuve** (`proc_documents`) — les valeurs sont saisies à la
+     main (formulaire) ou dictées à Mola, **aucune analyse** de document (décision produit) ;
    - **toute entité a une référence humaine** (`BZ-MS-…`, `BZ-PO-…`) résolvable par Mola (pas d'UUID
      à taper).
 4. **Append-only sur l'argent, mutable+audité sur le descriptif.** Les paiements fournisseurs et les
@@ -57,7 +58,7 @@
                                                           │
                                                           ├─ Cas 1: attestation autonome (cash/alipay/wechat)
                                                           └─ Cas 2: rail_payment_id ─► payments (existant)
-   proc_documents (polymorphe + OCR) ──► rattaché à mission / supplier / PO / payment / qc
+   proc_documents (polymorphe, PREUVES jointes — aucune analyse) ──► mission/supplier/PO/payment/qc
    proc_commissions ──► par PO (et agrégat mission), double-mode (% | montant), coût usine vs prix client
 ```
 
@@ -221,28 +222,25 @@ Ta réponse : Bonzini fixe la valeur, **en % OU en montant**, le système calcul
   pour préparer le portail client (où le client ne verra que `client_price` + éventuel « frais de
   service », jamais `factory_cost` ni `negotiated_discount`).
 
-### 3.9 `proc_documents` — coffre + **OCR (cœur AI-first)** 🟡
+### 3.9 `proc_documents` — coffre de **preuves** (révisé : aucune analyse) 🟡
 
-Polymorphe, rattaché à n'importe quelle entité. **C'est la brique d'ingestion.**
+Polymorphe, rattaché à n'importe quelle entité. **Décision produit : les documents sont des PREUVES
+jointes, jamais analysés (pas d'OCR/vision).** Les vraies données sont saisies à la main (formulaire
+ou dictée à Mola) ; le document confirme visuellement.
 
 | Colonne | Type | Notes |
 |---|---|---|
 | `entity_type` | enum (`mission`,`supplier`,`purchase_order`,`supplier_payment`,`qc`,`order_line`) | rattachement |
 | `entity_id` | UUID | |
-| `doc_type` | enum (`PI`,`PO`,`CI`,`packing_list`,`bill_of_lading`,`contract`,`qc_report`,`payment_receipt`,`product_photo`,`wechat_screenshot`,`other`) | §A.1 |
-| `file_url` | TEXT | bucket `procurement-docs` (pattern `{owner}/...`) |
+| `doc_type` | enum (`invoice_photo`,`payment_receipt`,`pi`,`contract`,`qc_report`,`packing_list`,`bill_of_lading`,`wechat_screenshot`,`product_photo`,`other`) | nature de la preuve |
+| `file_url` | TEXT | bucket `procurement-docs` (pattern `{owner}/...`), compression à l'upload |
 | `file_name` / `file_type` | TEXT | |
-| `language` | enum (`zh`,`fr`,`en`,`mixed`,`unknown`) | |
-| `ocr_status` | enum (`pending`,`extracted`,`confirmed`,`failed`,`skipped`) | |
-| `ocr_extracted` | JSONB | **champs extraits par le LLM vision** (schéma par `doc_type`) |
-| `ocr_confidence` | NUMERIC | best-effort |
+| `caption` | TEXT | légende libre saisie par l'humain (pas d'extraction) |
 | `uploaded_by_kind` | enum (`father`,`admin`,`client`) | |
 
-- **Flux d'ingestion** (détaillé Phase 3) : upload image → RPC/tool `proc_ingest_document` → LLM
-  vision → `ocr_extracted` (JSON strict par type) → **carte de confirmation** (champs monétaires en
-  tête) → sur validation, crée/met à jour Supplier/PO/Payment. **Jamais** d'écriture argent sans tap
-  humain (charte Mola + `isSafeInteger` + cap 50 M XAF).
-- **Append-only** : on n'efface pas un document, on l'archive.
+- **Pas de colonnes OCR** (`ocr_status/ocr_extracted/ocr_confidence` supprimées) ni d'analyse de
+  langue. Le fichier sert de **preuve consultable**, attachée à la mission/commande/paiement/QC.
+- **Append-only** : on n'efface pas une preuve, on l'archive.
 
 ### 3.10 `proc_expenses` — frais de mission 🟡
 
@@ -314,9 +312,10 @@ Polymorphe, rattaché à n'importe quelle entité. **C'est la brique d'ingestion
    ```
    → Mola **découvre** l'action sans outil codé à la main ; la **parité** est testée
    (`eval/assistant/parity.test.ts`).
-2. **Ingestion = tool riche `proc_ingest_document`** (`tool` dédié dans l'edge function) : image →
-   **vision LLM** → JSON strict → carte de confirmation → écritures. **Réactive la vision de Mola**
-   (P2-B) — coût ~0,5-2 ¢/page (§C.5 Phase 1).
+2. **Saisie conversationnelle (pas d'OCR)** : le père **dicte les valeurs** (« pour tel fournisseur,
+   montant…, acompte…, commission… ») → Mola mappe vers les params RPC → carte de confirmation →
+   écriture. **Aucune analyse de document.** Les photos sont jointes en **preuves** (`proc_documents`).
+   Coût ≈ inférence conversationnelle seule (pas de tokens image).
 3. **Résolution de référence** : `BZ-MS-…`, `BZ-PO-…`, `BZ-SP-…`, fournisseur par nom → UUID (façon
    `resolveRef`, Mola `index.ts`). Le père dit « le fournisseur de meubles », pas un UUID.
 4. **RAG métier** : le glossaire Phase 1 (incoterms, AQL, **compliance CEMAC**, cycle PI/PO/CI) →
@@ -346,10 +345,10 @@ Polymorphe, rattaché à n'importe quelle entité. **C'est la brique d'ingestion
 |---|---|---|
 | Schéma `proc_*` (10 tables) | Postgres Supabase déjà payé | **~0 $** marginal |
 | Documents (`procurement-docs` bucket) | Storage Supabase | quelques $/mois ; **politique de compression** (pré-resize ~1600px) pour éviter la dérive sur scans HD 🔴 |
-| **OCR/vision** (ingestion) | tokens image Claude | **~0,5-2 ¢/page** (§C.5) → 1 000 docs/mois ≈ **5-20 $** |
-| Inférence Mola (Q&A + actions) | Sonnet 4.6, cache outils | marginal sur l'existant (~1-4 ¢/conv) |
+| ~~OCR/vision~~ | **supprimé** (pas d'analyse de doc) | **0 $** |
+| Inférence Mola (saisie conversationnelle + Q&A + rapports) | Sonnet 4.6, cache outils | marginal (~1-4 ¢/conv) |
 | RAG procurement (embeddings glossaire) | gte-small Supabase.ai | **~1-5 $/mois** |
-| **Total IA additionnel** | | **~10-40 $/mois** 🟡 (à instrumenter, comme Mola §06-EVAL-ET-COUT) |
+| **Total IA additionnel** | | **~quelques $/mois** 🟡 (bien moins sans OCR ; à instrumenter comme Mola) |
 
 ---
 
@@ -386,8 +385,8 @@ Polymorphe, rattaché à n'importe quelle entité. **C'est la brique d'ingestion
 
 ## Auto-contrôle Phase 2
 
-- ✅ **Conçu AI-first** : RPC `@mola` pour toute écriture, `proc_documents.ocr_extracted` au cœur,
-  références humaines résolvables, RAG métier prévu.
+- ✅ **Conçu AI-first** : RPC `@mola` pour toute écriture (saisie manuelle/dictée, **pas d'OCR**),
+  `proc_documents` = preuves jointes, références humaines résolvables, RAG métier prévu.
 - ✅ **Réutilise l'existant** (`clients`, `payments`, `ledger_entries`, `admin_audit_logs`, Storage,
   `@mola`) ; **greenfield** sinon ; **copie le moule trésorerie** (`fichier:ligne`).
 - ✅ **Cas 3 modélisé** (attestation autonome + lien rail, anti-double-comptage).
