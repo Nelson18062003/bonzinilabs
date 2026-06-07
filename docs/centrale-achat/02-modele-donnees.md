@@ -369,6 +369,21 @@ Polymorphe, rattaché à n'importe quelle entité. **C'est la brique d'ingestion
 
 ---
 
+## 11. Validations du porteur produit (reçues après rendu)
+
+- **Rôle du père (Q2)** → il **garde `treasurer`** + reçoit un **nouveau rôle `sourcing_agent`** avec
+  tout le contrôle procurement. *(Un user peut cumuler des rôles : `user_roles` UNIQUE(user_id, role)
+  → plusieurs lignes. `can_access_procurement()` matchera `super_admin` OU `sourcing_agent`.)*
+- **Gate solde ↔ QC (Q3)** → **alerte + justification écrite** (souple), pas de blocage dur. Le père
+  peut enregistrer le solde sans QC `pass`, mais le système avertit et exige un motif.
+- **QC interne/tiers (Q5)** → **les deux** : équipe Bonzini (`internal`) **ou** cabinet tiers
+  (`third_party`). `inspector_kind` couvre déjà.
+- **Réconciliation Cas 2 (Q1)** → **tolérance 0, tout écart = alerte** (reco acceptée).
+- **Granularité commission (Q4)** → **par mission ET par PO** (`purchase_order_id` nullable) (acceptée).
+- **Frais de mission (Q6)** → **gardés au MVP** (acceptée).
+
+→ Phase 2 close. Reste **Q-réconciliation détail** (mécanisme exact) à raffiner en Phase 6.
+
 ## Auto-contrôle Phase 2
 
 - ✅ **Conçu AI-first** : RPC `@mola` pour toute écriture, `proc_documents.ocr_extracted` au cœur,
