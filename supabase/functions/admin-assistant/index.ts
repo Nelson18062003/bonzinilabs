@@ -1,11 +1,11 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.6 — 73 outils (46 lecture + 27 écriture) + découverte de capacités (do_capability),
-// top clients par volume, crédit/débit wallet, preuves auto, processLock.
+// Version: 2026-06-03.7 — 76 outils (49 lecture + 27 écriture) + découverte de capacités (do_capability),
+// top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
 // - Détient la clé ANTHROPIC_API_KEY (secret) — jamais exposée au frontend.
-// - LECTURE : nombreux outils filtrés par les permissions du rôle.
+// - LECTURE : ouverte à tout admin (répondre à toute question, tout module). Affiche aussi les images.
 // - ÉCRITURE : l'IA ne fait que PROPOSER une action (carte de confirmation).
 //   Rien n'est exécuté tant que l'admin n'a pas confirmé. L'exécution passe par
 //   les RPC existantes, appelées avec le JWT de l'admin (is_admin(auth.uid())).
@@ -137,6 +137,39 @@ function resolveRange(a: { from_date?: string; to_date?: string; year?: number; 
 // deno-lint-ignore no-explicit-any
 type AnyClient = any;
 
+// ════════════════════════ STOCKAGE / IMAGES ════════════════════════
+// Buckets privés où sont stockées les preuves et QR codes. Miroir de src/lib/signedUrls.ts.
+const PROOF_BUCKETS = ["payment-proofs", "deposit-proofs", "cash-signatures"];
+
+/** Extrait { bucket, path } d'une valeur stockée (chemin brut, URL publique ou URL signée). */
+function parseStoragePath(stored: string): { bucket: string; path: string } | null {
+  for (const bucket of PROOF_BUCKETS) {
+    const marker = `${bucket}/`;
+    const idx = stored.lastIndexOf(marker);
+    if (idx !== -1) {
+      const path = stored.slice(idx + marker.length).split("?")[0];
+      if (path) return { bucket, path };
+    }
+  }
+  return null;
+}
+
+/** Mint une URL signée FRAÎCHE (lecture temporaire) pour afficher un fichier stocké au chat. */
+async function signStoredUrl(admin: AnyClient, value: string | null | undefined, expiresIn = 3600): Promise<string | null> {
+  if (!value) return null;
+  const parsed = parseStoragePath(String(value));
+  if (!parsed) return String(value).startsWith("http") ? String(value) : null;
+  const { data, error } = await admin.storage.from(parsed.bucket).createSignedUrl(parsed.path, expiresIn);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
+/** Vrai si le fichier est une image affichable inline (jpeg/png/webp/gif). */
+function isDisplayableImage(fileType?: string | null, fileName?: string | null): boolean {
+  return String(fileType ?? "").toLowerCase().startsWith("image/")
+    || /\.(jpe?g|png|webp|gif)$/i.test(String(fileName ?? ""));
+}
+
 // ════════════════════════ OUTILS DE LECTURE ════════════════════════
 interface ReadTool {
   name: string;
@@ -195,12 +228,15 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   depots: [
     { capability: "créer / valider / rejeter un dépôt", tool: "create_deposit / create_and_validate_deposit / validate_deposit / reject_deposit" },
     { capability: "attacher une preuve (capture/PDF)", tool: "auto (pièces jointes du message)" },
+    { capability: "AFFICHER la preuve image d'un dépôt dans le chat", tool: "show_deposit_proof" },
   ],
   paiements: [
     { capability: "créer un paiement au taux du jour OU à un taux personnalisé", tool: "create_payment", note: "exchange_rate optionnel = taux personnalisé, comme l'écran admin" },
     { capability: "compléter le bénéficiaire d'UN paiement", tool: "update_payment_beneficiary" },
     { capability: "annuler un paiement non finalisé (rembourse)", tool: "cancel_payment", note: "super_admin" },
     { capability: "enregistrer / modifier / archiver un bénéficiaire RÉUTILISABLE", tool: "create_beneficiary / update_beneficiary / archive_beneficiary" },
+    { capability: "AFFICHER la preuve image d'un paiement (QR Alipay/WeChat, reçu) dans le chat", tool: "show_payment_proof" },
+    { capability: "AFFICHER le QR code d'un bénéficiaire dans le chat", tool: "show_beneficiary_qr" },
     { capability: "joindre un QR à un bénéficiaire enregistré", tool: null, note: "pas encore d'outil — possible via l'écran Bénéficiaires" },
   ],
   taux: [
@@ -280,6 +316,97 @@ const READ_TOOLS: ReadTool[] = [
       const { data, error } = await admin.from("payment_proofs").select("id, file_name, file_type, uploaded_by_type, created_at").eq("payment_id", pid).order("created_at", { ascending: false });
       if (error) return { error: error.message };
       return { payment_id: pid, count: data?.length ?? 0, proofs: data ?? [] };
+    },
+  },
+  {
+    name: "show_payment_proof",
+    permission: "canViewPayments",
+    description: "AFFICHER dans le chat la/les preuve(s) image attachée(s) à un paiement : QR Alipay/WeChat, capture du règlement, reçu. Donne reference (BZ-PY-…) ou payment_id. Les images s'affichent directement dans la conversation ; les PDF/documents sont renvoyés en lien à ouvrir. Si aucune preuve n'est attachée, replie sur le QR du bénéficiaire mémorisé sur le paiement.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    execute: async (admin, { reference, payment_id }) => {
+      let q = admin.from("payments").select("id, reference, beneficiary_name, beneficiary_qr_code_url, cash_signature_url");
+      if (payment_id) q = q.eq("id", payment_id);
+      else if (reference) q = q.eq("reference", reference);
+      else return { error: "Fournir reference (BZ-PY-…) ou payment_id." };
+      const { data: pay } = await q.maybeSingle();
+      if (!pay) return { found: false, message: "Paiement introuvable." };
+      const { data: proofs, error } = await admin.from("payment_proofs")
+        .select("file_name, file_type, file_url, created_at").eq("payment_id", pay.id).order("created_at", { ascending: false });
+      if (error) return { error: error.message };
+      const images: Array<{ url: string; name: string }> = [];
+      const documents: Array<{ name: string; url: string }> = [];
+      for (const p of proofs ?? []) {
+        const signed = await signStoredUrl(admin, p.file_url);
+        if (!signed) continue;
+        if (isDisplayableImage(p.file_type, p.file_name)) images.push({ url: signed, name: p.file_name ?? "Preuve" });
+        else documents.push({ name: p.file_name ?? "Document", url: signed });
+      }
+      // Repli : le QR du bénéficiaire (snapshot au moment du paiement) ou la signature cash.
+      if (images.length === 0) {
+        const qr = await signStoredUrl(admin, pay.beneficiary_qr_code_url);
+        if (qr) images.push({ url: qr, name: `QR ${pay.beneficiary_name ?? "bénéficiaire"}` });
+        const sig = await signStoredUrl(admin, pay.cash_signature_url);
+        if (sig) images.push({ url: sig, name: "Signature cash" });
+      }
+      if (images.length === 0 && documents.length === 0) return { found: false, reference: pay.reference, message: "Aucune preuve image trouvée sur ce paiement." };
+      return { found: true, reference: pay.reference, count: images.length + documents.length, documents: documents.length ? documents : undefined, __images: images, message: `${images.length} image(s) affichée(s)${documents.length ? `, ${documents.length} document(s) disponible(s) en lien` : ""}.` };
+    },
+  },
+  {
+    name: "show_deposit_proof",
+    permission: "canViewDeposits",
+    description: "AFFICHER dans le chat la/les preuve(s) image d'un dépôt : capture du virement / justificatif de versement. Donne reference (BZ-DP-…) ou deposit_id. Les images s'affichent directement ; les PDF sont renvoyés en lien.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, deposit_id: { type: "string" } } },
+    execute: async (admin, { reference, deposit_id }) => {
+      let did = deposit_id;
+      let ref = reference;
+      if (!did && reference) { const { data } = await admin.from("deposits").select("id, reference").eq("reference", reference).maybeSingle(); did = data?.id; ref = data?.reference; }
+      else if (did) { const { data } = await admin.from("deposits").select("reference").eq("id", did).maybeSingle(); ref = data?.reference; }
+      if (!did) return { error: "Fournir reference (BZ-DP-…) ou deposit_id." };
+      const { data: proofs, error } = await admin.from("deposit_proofs")
+        .select("file_name, file_type, file_url, uploaded_at").eq("deposit_id", did).is("deleted_at", null).order("uploaded_at", { ascending: false });
+      if (error) return { error: error.message };
+      const images: Array<{ url: string; name: string }> = [];
+      const documents: Array<{ name: string; url: string }> = [];
+      for (const p of proofs ?? []) {
+        const signed = await signStoredUrl(admin, p.file_url);
+        if (!signed) continue;
+        if (isDisplayableImage(p.file_type, p.file_name)) images.push({ url: signed, name: p.file_name ?? "Preuve" });
+        else documents.push({ name: p.file_name ?? "Document", url: signed });
+      }
+      if (images.length === 0 && documents.length === 0) return { found: false, reference: ref, message: "Aucune preuve trouvée sur ce dépôt." };
+      return { found: true, reference: ref, count: images.length + documents.length, documents: documents.length ? documents : undefined, __images: images, message: `${images.length} image(s) affichée(s)${documents.length ? `, ${documents.length} document(s) en lien` : ""}.` };
+    },
+  },
+  {
+    name: "show_beneficiary_qr",
+    permission: "canViewPayments",
+    description: "AFFICHER dans le chat le QR code (ou la capture de paiement) d'un bénéficiaire enregistré. Donne beneficiary_id (UUID, via list_beneficiaries). Si le bénéficiaire n'a pas de QR enregistré, replie automatiquement sur la preuve du dernier paiement effectué vers lui.",
+    input_schema: { type: "object", properties: { beneficiary_id: { type: "string" } }, required: ["beneficiary_id"] },
+    execute: async (admin, { beneficiary_id }) => {
+      const { data: ben } = await admin.from("beneficiaries").select("id, alias, name, qr_code_url, client_id").eq("id", beneficiary_id).maybeSingle();
+      if (!ben) return { found: false, message: "Bénéficiaire introuvable. Récupère son id via list_beneficiaries." };
+      const label = ben.alias || ben.name || "bénéficiaire";
+      // 1) QR stocké directement sur le bénéficiaire.
+      const direct = await signStoredUrl(admin, ben.qr_code_url);
+      if (direct) return { found: true, beneficiary: label, source: "beneficiary", __images: [{ url: direct, name: `QR ${label}` }], message: `QR de ${label} affiché.` };
+      // 2) Repli : dernier paiement vers ce bénéficiaire portant un QR ou une preuve.
+      const { data: pays } = await admin.from("payments")
+        .select("reference, beneficiary_qr_code_url").eq("beneficiary_id", beneficiary_id)
+        .not("beneficiary_qr_code_url", "is", null).order("created_at", { ascending: false }).limit(1);
+      const snap = await signStoredUrl(admin, pays?.[0]?.beneficiary_qr_code_url);
+      if (snap) return { found: true, beneficiary: label, source: "payment", reference: pays?.[0]?.reference, __images: [{ url: snap, name: `QR ${label}` }], message: `Pas de QR enregistré sur le bénéficiaire ; voici celui du paiement ${pays?.[0]?.reference}.` };
+      // 3) Dernier recours : une preuve image sur le dernier paiement vers ce bénéficiaire.
+      const { data: lastPay } = await admin.from("payments").select("id, reference").eq("beneficiary_id", beneficiary_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (lastPay?.id) {
+        const { data: proofs } = await admin.from("payment_proofs").select("file_name, file_type, file_url").eq("payment_id", lastPay.id).order("created_at", { ascending: false });
+        for (const p of proofs ?? []) {
+          if (!isDisplayableImage(p.file_type, p.file_name)) continue;
+          const signed = await signStoredUrl(admin, p.file_url);
+          if (signed) return { found: true, beneficiary: label, source: "payment_proof", reference: lastPay.reference, __images: [{ url: signed, name: p.file_name ?? `QR ${label}` }], message: `Pas de QR enregistré ; voici la preuve du paiement ${lastPay.reference}.` };
+        }
+      }
+      return { found: false, beneficiary: label, message: `Aucun QR ni preuve image trouvé pour ${label}.` };
     },
   },
   {
@@ -2233,6 +2360,7 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `DÉCOUVERTE DE CAPACITÉS : si aucun de tes outils dédiés ne correspond à une action demandée, appelle d'abord find_capability (ex. « annuler dépôt », « confirmer cash ») — la plateforme expose peut-être déjà cette action, prête à l'emploi. Puis exécute-la via do_capability (son name + les paramètres ; donne une référence BZ-…, l'identifiant est résolu, et une carte de confirmation s'affiche). Ne dis « je ne peux pas » qu'APRÈS avoir cherché une capacité.`,
     `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
+    `AFFICHER UNE IMAGE (preuves, QR codes) — TU EN ES CAPABLE, ne dis JAMAIS « je ne peux pas afficher l'image ». Pour montrer dans le chat la preuve d'un paiement (QR Alipay/WeChat, reçu) : show_payment_proof (reference BZ-PY-… ou payment_id). Pour la preuve d'un dépôt : show_deposit_proof (BZ-DP-… ou deposit_id). Pour le QR d'un bénéficiaire : show_beneficiary_qr (beneficiary_id via list_beneficiaries — il replie tout seul sur le QR du dernier paiement si le bénéficiaire n'en a pas). Ces outils renvoient l'image directement à l'écran. Quand on te demande « montre/affiche le QR / la preuve / la capture », APPELLE l'outil au lieu de renvoyer l'admin vers l'interface.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
@@ -2616,6 +2744,14 @@ serve(async (req) => {
                     // On retire l'image du résultat transmis au modèle (inutile en texte).
                     // deno-lint-ignore no-explicit-any
                     delete (result as any).__image;
+                  }
+                  // Idem pour PLUSIEURS images (ex. preuves d'un paiement, QR bénéficiaire).
+                  // deno-lint-ignore no-explicit-any
+                  const imgs = (result as any)?.__images;
+                  if (Array.isArray(imgs)) {
+                    for (const im of imgs) if (im?.url) send({ type: "image", image: { url: im.url, name: im.name ?? "Image" } });
+                    // deno-lint-ignore no-explicit-any
+                    delete (result as any).__images;
                   }
                 } else if (writeTool) {
                   try {
