@@ -20,10 +20,19 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
-  buildJudgeSystem, buildJudgeUser, parseJudgeVerdict,
+  buildJudgeSystem, buildJudgeUser, parseJudgeVerdict, aggregateQuality,
   type JudgeSample, type JudgeVerdict,
 } from "./judge.ts";
 import { renderReport } from "./report.ts";
+import { compareToBaseline, makeBaseline, type Baseline } from "./gate.ts";
+
+// Modes :
+//   (défaut)            récolte → juge → rapport Markdown
+//   --gate              + compare à quality-baseline.json ; sort en code ≠0 si régression
+//   --update-baseline   + fige la mesure courante comme nouvelle référence
+const GATE = Deno.args.includes("--gate");
+const UPDATE_BASELINE = Deno.args.includes("--update-baseline");
+const BASELINE_URL = new URL("./quality-baseline.json", import.meta.url);
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -147,6 +156,27 @@ async function main() {
   await Deno.writeTextFile(out, md);
   console.log(`\nRapport écrit : ${out.pathname}`);
   console.log(md.split("\n").slice(0, 12).join("\n"));
+
+  const candidate = aggregateQuality(verdicts);
+
+  // Mode --update-baseline : on fige la mesure courante comme référence.
+  if (UPDATE_BASELINE) {
+    const b = makeBaseline(candidate, `run ${date} (${corpus})`);
+    await Deno.writeTextFile(BASELINE_URL, JSON.stringify(b, null, 2) + "\n");
+    console.log(`\nRéférence qualité mise à jour : ${candidate.overall}/100`);
+    return;
+  }
+
+  // Mode --gate : on compare à la référence et on ferme la porte si régression.
+  if (GATE) {
+    let baseline: Baseline;
+    try { baseline = JSON.parse(await Deno.readTextFile(BASELINE_URL)); }
+    catch { baseline = { seeded: false, updatedAt: "", aggregate: candidate }; }
+    const gate = compareToBaseline(baseline, candidate);
+    console.log(`\n──────── PORTE QUALITÉ ────────`);
+    for (const l of gate.lines) console.log(l);
+    if (!gate.pass) Deno.exit(1);
+  }
 }
 
 if (import.meta.main) main();

@@ -75,10 +75,33 @@ deno run --allow-net --allow-env --allow-write eval/assistant/quality-run.ts
 Sortie : `eval/assistant/reports/quality-AAAA-MM-JJ.md` — score global, axe le plus
 faible, thèmes robotiques classés, et la liste des ratés à coller dans `cases.ts`.
 
-## Suite (slices non encore livrées)
+## Slice 2 — Connaissances métier versionnées (livré)
 
-- **Slice 2 — Connaissances métier versionnées** : extraire un bloc « playbook
-  Bonzini » (glossaire fournisseurs, règles de proactivité, modèle économique) que
-  le system prompt compose ; promouvoir les ratés récoltés en cas de `cases.ts`.
-- **Slice 3 — Porte automatique** : job CI hebdo (cron / `/loop`) qui récolte,
-  juge, et bloque toute baisse du score global avant merge d'un changement de prompt.
+`supabase/functions/admin-assistant/playbook.ts` : bloc isolé de CONNAISSANCE et de
+JUGEMENT métier (pourquoi Bonzini existe et la douleur de l'importateur ; l'économie
+du spread USDT→CNY, volume ≠ marge ; un réflexe de proactivité concret — signaler un
+dépôt bloqué en admin_review >48 h, un paiement en souffrance, un solde dormant ; les
+signaux normal-vs-alarmant ; un ton de vrai directeur des opérations). C'est
+l'ACTIONNEUR que la boucle règle. Composé dans `buildSystemPrompt` (index.ts).
+
+## Slice 3 — Porte anti-régression (livré)
+
+- `eval/assistant/gate.ts` : compare une mesure à la RÉFÉRENCE
+  (`quality-baseline.json`) ; ferme la porte si la note baisse (globale ou par axe,
+  tolérances réglables). PUR + testé (`gate.test.ts`).
+- `eval/assistant/quality-baseline.json` : la référence (seeded=false au départ → la
+  porte est informative tant qu'aucun vrai run n'a figé une référence).
+- `quality-run.ts` gagne deux modes : `--gate` (compare, sort ≠0 si régression) et
+  `--update-baseline` (fige la mesure courante comme nouvelle référence).
+- `.github/workflows/mola-quality-gate.yml` : sur chaque PR touchant le
+  prompt/playbook/éval → (1) tests purs de la boucle ; (2) si les secrets sont là,
+  mesure live + porte. Secrets absents → la PR n'est pas bloquée (avertissement),
+  la logique pure reste validée.
+
+### Cycle complet d'amélioration (mode d'emploi)
+
+1. Lire le dernier rapport → repérer l'axe faible et les thèmes robotiques.
+2. Éditer `playbook.ts` (ou ajouter un outil) pour corriger l'axe faible.
+3. La PR déclenche la porte : on ne merge que si la note ne baisse pas.
+4. Quand une amélioration est confirmée, figer la nouvelle référence
+   (`--update-baseline`) — le niveau de qualité ne peut plus régresser ensuite.
