@@ -24,7 +24,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 ## Checklist
 
 ### Phase 0 — Fondations
-- [ ] **P0.1** Tokens couleurs centraux (`src/mobile/designKit/` ou `src/lib/ui/`): palette **statut unique** (client/dépôt/paiement → mapping statut→ton cohérent), **rôles unique** (remplace les 3 `ROLE_BADGE_COLORS`), **méthodes** (Alipay/WeChat/Virement/Cash) + logos officiels (chemins simple-icons déjà connus).
+- [x] **P0.1** Tokens couleurs centraux → `src/mobile/designKit/` (tokens.ts: SURFACE/TEXT/pills/TONE ; status.ts: depositStatusTone/paymentStatusTone/clientStatusTone + roleMeta unique ; methods.ts: PAYMENT_METHOD + LOGO_PATH alipay/wechat/whatsapp ; cash=rouge aligné flyer). type-check OK.
 - [ ] **P0.2** Kit UI (évolution `treasury/ui.tsx`) : `Card` (ombre douce), `Holder` (pastille neutre + variante logo), `Row` (sans filets), `Amount`, `PrimaryPill`/`SoftPill`, `StatusPill`, `StatCard`, `BottomSheet`, `FormField/Input`, `Segmented`/`Tabs`, `ScreenLoader`/`ScreenError`.
 - [ ] **P0.3** Preview du kit dans le harness (`screen=kit`) + capture clair/sombre dans `docs/maquettes/`.
 
@@ -50,6 +50,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 
 ## Journal
 - (init) Audit livré, plan validé par l'utilisateur, run autonome lancé.
+- P0.1 ✅ designKit (tokens/status/methods) créé — source unique couleurs/statuts/rôles/méthodes. Aucun écran modifié (sûr). Prochaine : P0.2 composants du kit.
 
 ## Résumé matin
 _(à remplir en fin de run)_
