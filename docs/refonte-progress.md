@@ -34,7 +34,7 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 
 ### Phase 2 — Migration module par module
 - [x] **M1** More (hub + settings + profile + notifications + history + proofs)
-- [ ] **M2** Clients (liste · détail · create · ledger · beneficiaries)
+- [x] **M2** Clients (liste · détail · create · ledger · beneficiaries)
 - [ ] **M3** Deposits (liste V2 · détail V2 · new) — logique intacte
 - [ ] **M4** Payments (liste · détail · new)
 - [ ] **M5** Rates (onglets unifiés · simulator · porter le flyer v3 dans `generate-flyer` Satori)
@@ -75,6 +75,9 @@ Réfs : `docs/audit-refonte-mobile.md` + langage **Ofspace/Mola** (voir
 - M2 (3/5) ✅ `MobileCreateClient` migré du **100 % inline `React.CSSProperties`** vers Tailwind + kit : suppression du thème inline + `<link>` DM Sans + `focusedField` (focus ring géré par `TextInput`) ; canvas doux ; header fixe (back ‹ + titre) + **barre de progression 3 segments** restylée (violet actif, tokens) ; contenu scrollable ; **footer collé avec CTA TOUJOURS visibles**. Étape 1/2/3 en `FormField`+`TextInput` ; 2 `<select>` natifs (indicatif pays + pays avec optgroups) stylés au gabarit `TextInput` (h-12, carte, ring) ; récap étape 3 en `Card` (holder initiales + `Row`) ; notes mot de passe tonées pending ; **écran succès** en `Card`+`Holder` succès + code + `Holder` copier (toné success) + `PrimaryPill`/`SoftPill`. TOUTE la logique conservée : `STEPS`, `COUNTRY_CODES`, `canNext`/`handleNext`/`handleBack`, `handleCreateClient` (clean phone + `useCreateClient`), `handleCopyPassword`, états succès (tempPassword/clientId). type-check + build verts.
 
 - M2 (4/5) ✅ `MobileClientLedger` (mouvements) migré sur le kit : canvas doux ; carte info client en `Card` ; chips filtres en `PRIMARY_PILL`/`SOFT_PILL` (remplace `MobileFilterChips`) ; lignes en `Card` avec `Holder` toné + montant coloré par tone (`AMOUNT_TONE` calqué sur la palette des pills) ; empty-state `Holder`+texte (remplace `MobileEmptyState`). `ENTRY_TYPE_CONFIG` simplifié (classes hex bg/icon/amount → `tone`) en gardant icône/préfixe/label/`isInformational` (les écritures informatives = tone neutre) ; filtres + `useClient`/`useClientLedger` + refresh intacts. type-check + build verts.
+
+- M2 (5/5) ✅ **Module Clients terminé.** `MobileClientBeneficiaries` (+ `BeneficiaryEditor`) migré sur le kit : canvas doux ; bouton d'ajout (header rightElement) en `PRIMARY_PILL` ; recherche `TextInput` ; chips filtres en pills du kit, **l'accent de marque du mode actif est conservé** (`modeColor` — la couleur porte le sens du mode, comme `methods.ts`) ; lignes en `Card` (avatar rond couleur de marque + alias/identifiant + badge mode coloré + `Holder` éditer / `Holder` archiver toné danger) ; empty-state `Holder`+`PrimaryPill` ; skeletons sur surface carte. **Modal d'archivage → `BottomSheet`** (`SoftPill`/`PrimaryPill danger`). `BeneficiaryEditor` : canvas + `BeneficiaryForm` conservé + footer collé toujours visible (`SoftPill`/`PrimaryPill`). TOUTE la logique conservée : scoping `clientId`, hooks admin (`useAdminClientBeneficiaries`/Create/Update/Archive), `BeneficiaryForm`/validation/QR (preview + revokeObjectURL), modes + recherche + archive. type-check + build verts.
+- **M2 cochée** : les 5 écrans clients sont sur le kit (liste, détail, création, ledger, bénéficiaires) + `AdjustmentDrawer` en `BottomSheet`. Captures à tenter ci-dessous.
 
 ## Résumé matin
 _(à remplir en fin de run)_

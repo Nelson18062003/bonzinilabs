@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { Plus, Search, User, Pencil, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
+import { Plus, Search, User, Pencil, Trash2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { cn } from '@/lib/utils';
 import { useClient } from '@/hooks/useClientManagement';
@@ -34,6 +34,18 @@ import {
   isBeneficiaryFormValid,
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  Card,
+  Holder,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+  BottomSheet,
+} from '@/mobile/designKit';
 
 type View = { kind: 'list' } | { kind: 'add' } | { kind: 'edit'; beneficiary: Beneficiary };
 
@@ -144,7 +156,7 @@ export default function MobileClientBeneficiaries() {
 
   // ── List view ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
       <MobileHeader
         title={t('beneficiaries.title')}
         subtitle={clientName || undefined}
@@ -154,26 +166,26 @@ export default function MobileClientBeneficiaries() {
           <button
             onClick={() => setView({ kind: 'add' })}
             aria-label={t('beneficiaries.add')}
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+            className={cn('flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="h-5 w-5" />
           </button>
         }
       />
 
-      <div className="px-4 py-3 space-y-3">
+      <div className="flex-1 space-y-3 px-4 py-5">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+          <TextInput
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('beneficiaries.search')}
-            className="w-full h-11 pl-10 pr-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary"
+            className="pl-10"
           />
         </div>
 
-        <div className="flex gap-1 overflow-x-auto pb-1">
+        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <FilterChip active={modeFilter === 'all'} onClick={() => setModeFilter('all')}>
             {t('beneficiaries.allModes')}
           </FilterChip>
@@ -192,89 +204,82 @@ export default function MobileClientBeneficiaries() {
         {isLoading ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
+              <div key={i} className={cn('h-16 animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <User className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground mb-2">{t('beneficiaries.noBeneficiary')}</p>
-            <p className="text-sm text-muted-foreground mb-4">{t('beneficiaries.emptyHint')}</p>
-            <button onClick={() => setView({ kind: 'add' })} className="text-sm text-primary font-medium">
+          <div className="py-12 text-center">
+            <Holder icon={User} size="lg" className="mx-auto" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.strong)}>{t('beneficiaries.noBeneficiary')}</p>
+            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('beneficiaries.emptyHint')}</p>
+            <PrimaryPill onClick={() => setView({ kind: 'add' })} className="mt-4">
               {t('beneficiaries.add')}
-            </button>
+            </PrimaryPill>
           </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((b) => (
-              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl border border-border">
+              <Card key={b.id} className="flex items-center gap-3 p-3">
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
                   style={{ backgroundColor: modeColor(b.payment_method) }}
                 >
                   {(b.alias || b.name || '?')[0]?.toUpperCase()}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{b.alias || b.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
+                <div className="min-w-0 flex-1">
+                  <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{b.alias || b.name}</p>
+                  <p className={cn('truncate text-[12px]', TEXT.muted)}>
                     {b.identifier || b.bank_account || b.phone || b.name || ''}
                   </p>
                 </div>
                 <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
                   style={{ backgroundColor: `${modeColor(b.payment_method)}1a`, color: modeColor(b.payment_method) }}
                 >
                   {modeLabel(b.payment_method)}
                 </span>
-                <button
+                <Holder
+                  icon={Pencil}
+                  size="sm"
                   onClick={() => setView({ kind: 'edit', beneficiary: b })}
-                  aria-label={t('beneficiaries.edit')}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button
+                />
+                <Holder
+                  icon={Trash2}
+                  tone="danger"
+                  size="sm"
                   onClick={() => setConfirmArchive(b)}
-                  aria-label={t('beneficiaries.actions.archive')}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                />
+              </Card>
             ))}
           </div>
         )}
       </div>
 
-      {confirmArchive && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-background p-5 space-y-4">
-            <h3 className="text-lg font-semibold">{t('beneficiaries.actions.confirmArchiveTitle')}</h3>
-            <p className="text-sm text-muted-foreground">{t('beneficiaries.actions.confirmArchiveBody')}</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmArchive(null)}
-                className="flex-1 py-3 rounded-xl border border-border font-medium"
-              >
-                {t('beneficiaries.actions.cancel')}
-              </button>
-              <button
-                onClick={async () => {
-                  await archiveBeneficiary.mutateAsync(confirmArchive.id);
-                  setConfirmArchive(null);
-                }}
-                disabled={archiveBeneficiary.isPending}
-                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium flex items-center justify-center gap-2"
-              >
-                {archiveBeneficiary.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t('beneficiaries.actions.confirmArchive')}
-              </button>
-            </div>
-          </div>
+      {/* Archive confirmation */}
+      <BottomSheet
+        open={!!confirmArchive}
+        onClose={() => setConfirmArchive(null)}
+        title={t('beneficiaries.actions.confirmArchiveTitle')}
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>{t('beneficiaries.actions.confirmArchiveBody')}</p>
+        <div className="mt-5 flex gap-2">
+          <SoftPill onClick={() => setConfirmArchive(null)} className="flex-1">
+            {t('beneficiaries.actions.cancel')}
+          </SoftPill>
+          <PrimaryPill
+            danger
+            onClick={async () => {
+              if (!confirmArchive) return;
+              await archiveBeneficiary.mutateAsync(confirmArchive.id);
+              setConfirmArchive(null);
+            }}
+            loading={archiveBeneficiary.isPending}
+            className="flex-1"
+          >
+            {t('beneficiaries.actions.confirmArchive')}
+          </PrimaryPill>
         </div>
-      )}
+      </BottomSheet>
     </div>
   );
 }
@@ -294,10 +299,11 @@ function FilterChip({
     <button
       onClick={onClick}
       className={cn(
-        'whitespace-nowrap px-3 h-8 rounded-full text-sm font-medium border-2 transition-colors',
-        active ? 'border-current' : 'border-border text-muted-foreground',
+        'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+        active ? PRIMARY_PILL : SOFT_PILL,
       )}
-      style={active ? { color: color ?? 'hsl(var(--primary))' } : undefined}
+      // Active mode chip keeps its brand accent (color carries the mode meaning).
+      style={active && color ? { backgroundColor: color, color: '#fff' } : undefined}
     >
       {children}
     </button>
@@ -330,15 +336,15 @@ function BeneficiaryEditor({
   const valid = isBeneficiaryFormValid(values, { hasQr });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
       <MobileHeader
         title={isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}
         showBack
         onBack={onCancel}
       />
-      <div className="px-4 py-4 flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-4 py-5">
         {isEdit && (
-          <p className="text-xs text-muted-foreground mb-3 bg-muted/50 rounded-lg p-2">
+          <p className={cn('mb-3 rounded-2xl p-3 text-[12px]', SURFACE.card, SURFACE.shadow, TEXT.muted)}>
             {t('beneficiaries.snapshotNotice')}
           </p>
         )}
@@ -361,26 +367,18 @@ function BeneficiaryEditor({
           }}
         />
       </div>
-      <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 flex gap-2 border-t border-border">
-        <button onClick={onCancel} className="flex-1 py-3 rounded-xl border border-border font-medium">
-          <span className="inline-flex items-center gap-1 justify-center w-full">
-            <ArrowLeft className="w-4 h-4" />
-            {t('beneficiaries.actions.cancel')}
-          </span>
-        </button>
-        <button
+      <div className={cn('flex gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2', SURFACE.card, SURFACE.shadow)}>
+        <SoftPill onClick={onCancel} className="flex-1">
+          {t('beneficiaries.actions.cancel')}
+        </SoftPill>
+        <PrimaryPill
           onClick={() => onSave(values, qrFile ?? undefined)}
-          disabled={!valid || saving}
-          className={cn(
-            'flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2',
-            !valid || saving
-              ? 'bg-muted text-muted-foreground cursor-not-allowed'
-              : 'bg-primary text-primary-foreground',
-          )}
+          disabled={!valid}
+          loading={saving}
+          className="flex-1"
         >
-          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {t('beneficiaries.actions.save')}
-        </button>
+        </PrimaryPill>
       </div>
     </div>
   );
