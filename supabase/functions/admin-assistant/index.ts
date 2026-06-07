@@ -1,11 +1,11 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.6 — 73 outils (46 lecture + 27 écriture) + découverte de capacités (do_capability),
-// top clients par volume, crédit/débit wallet, preuves auto, processLock.
+// Version: 2026-06-03.8 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
+// top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), reçu PDF, processLock.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
 // - Détient la clé ANTHROPIC_API_KEY (secret) — jamais exposée au frontend.
-// - LECTURE : nombreux outils filtrés par les permissions du rôle.
+// - LECTURE : ouverte à tout admin (répondre à toute question, tout module). Affiche aussi les images.
 // - ÉCRITURE : l'IA ne fait que PROPOSER une action (carte de confirmation).
 //   Rien n'est exécuté tant que l'admin n'a pas confirmé. L'exécution passe par
 //   les RPC existantes, appelées avec le JWT de l'admin (is_admin(auth.uid())).
@@ -23,9 +23,12 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-// Sonnet par défaut (qualité de compréhension). Le streaming assure la rapidité
-// ressentie. Surchargables par secret si besoin (ex. Haiku pour la vitesse pure).
-const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-sonnet-4-6";
+// VITESSE : Haiku par défaut pour le chemin rapide (lecture, Q&A, décision d'outil) —
+// nettement plus rapide (time-to-first-token) et largement suffisant pour lire la base
+// et appeler les bons outils. On bascule sur Sonnet (MODEL_SMART) dès qu'une ÉCRITURE
+// est proposée → la qualité de raisonnement reste sur les actions sensibles.
+// Surchargables par secret ASSISTANT_MODEL_* (remettre Sonnet en FAST si besoin de finesse).
+const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5-20251001";
 const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
 const MAX_TOOL_ITERATIONS = 14;
 const MIN_PAYMENT_XAF = 10_000;
@@ -74,17 +77,6 @@ const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
   cash_agent:       { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true,  canProcessPayments: true,  canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
   treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true },
 };
-
-// Tables lisibles en SQL libre selon les permissions du rôle (Lot 4b — confidentialité).
-function allowedTablesForRole(perms: Record<PermKey, boolean>): string[] {
-  const t: string[] = [];
-  if (perms.canViewClients) t.push("clients", "wallets", "ledger_entries");
-  if (perms.canViewDeposits) t.push("deposits", "deposit_proofs", "deposit_timeline_events");
-  if (perms.canViewPayments) t.push("payments", "beneficiaries", "daily_rates", "rate_adjustments");
-  if (perms.canViewTreasury) t.push("treasury_accounts", "treasury_account_balances", "treasury_ledger_entries", "treasury_counterparties", "usdt_purchases", "usdt_sales", "treasury_inventory_snapshots");
-  if (perms.canViewLogs) t.push("admin_audit_logs", "user_roles");
-  return t;
-}
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -148,6 +140,39 @@ function resolveRange(a: { from_date?: string; to_date?: string; year?: number; 
 // deno-lint-ignore no-explicit-any
 type AnyClient = any;
 
+// ════════════════════════ STOCKAGE / IMAGES ════════════════════════
+// Buckets privés où sont stockées les preuves et QR codes. Miroir de src/lib/signedUrls.ts.
+const PROOF_BUCKETS = ["payment-proofs", "deposit-proofs", "cash-signatures"];
+
+/** Extrait { bucket, path } d'une valeur stockée (chemin brut, URL publique ou URL signée). */
+function parseStoragePath(stored: string): { bucket: string; path: string } | null {
+  for (const bucket of PROOF_BUCKETS) {
+    const marker = `${bucket}/`;
+    const idx = stored.lastIndexOf(marker);
+    if (idx !== -1) {
+      const path = stored.slice(idx + marker.length).split("?")[0];
+      if (path) return { bucket, path };
+    }
+  }
+  return null;
+}
+
+/** Mint une URL signée FRAÎCHE (lecture temporaire) pour afficher un fichier stocké au chat. */
+async function signStoredUrl(admin: AnyClient, value: string | null | undefined, expiresIn = 3600): Promise<string | null> {
+  if (!value) return null;
+  const parsed = parseStoragePath(String(value));
+  if (!parsed) return String(value).startsWith("http") ? String(value) : null;
+  const { data, error } = await admin.storage.from(parsed.bucket).createSignedUrl(parsed.path, expiresIn);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
+/** Vrai si le fichier est une image affichable inline (jpeg/png/webp/gif). */
+function isDisplayableImage(fileType?: string | null, fileName?: string | null): boolean {
+  return String(fileType ?? "").toLowerCase().startsWith("image/")
+    || /\.(jpe?g|png|webp|gif)$/i.test(String(fileName ?? ""));
+}
+
 // ════════════════════════ OUTILS DE LECTURE ════════════════════════
 interface ReadTool {
   name: string;
@@ -206,12 +231,17 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   depots: [
     { capability: "créer / valider / rejeter un dépôt", tool: "create_deposit / create_and_validate_deposit / validate_deposit / reject_deposit" },
     { capability: "attacher une preuve (capture/PDF)", tool: "auto (pièces jointes du message)" },
+    { capability: "AFFICHER la preuve image d'un dépôt dans le chat", tool: "show_deposit_proof" },
+    { capability: "demander une correction de dépôt / supprimer un dépôt", tool: null, note: "via find_capability + do_capability (request_deposit_correction, delete_deposit super_admin)" },
   ],
   paiements: [
     { capability: "créer un paiement au taux du jour OU à un taux personnalisé", tool: "create_payment", note: "exchange_rate optionnel = taux personnalisé, comme l'écran admin" },
     { capability: "compléter le bénéficiaire d'UN paiement", tool: "update_payment_beneficiary" },
     { capability: "annuler un paiement non finalisé (rembourse)", tool: "cancel_payment", note: "super_admin" },
     { capability: "enregistrer / modifier / archiver un bénéficiaire RÉUTILISABLE", tool: "create_beneficiary / update_beneficiary / archive_beneficiary" },
+    { capability: "AFFICHER la preuve image d'un paiement (QR Alipay/WeChat, reçu) dans le chat", tool: "show_payment_proof" },
+    { capability: "AFFICHER le QR code d'un bénéficiaire dans le chat", tool: "show_beneficiary_qr" },
+    { capability: "GÉNÉRER le reçu d'un paiement (image dans le chat + PDF téléchargeable)", tool: "generate_payment_receipt" },
     { capability: "joindre un QR à un bénéficiaire enregistré", tool: null, note: "pas encore d'outil — possible via l'écran Bénéficiaires" },
   ],
   taux: [
@@ -221,6 +251,13 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   ],
   tresorerie: [
     { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
+  ],
+  admins: [
+    { capability: "créer un admin, activer/désactiver, changer le rôle, modifier le profil", tool: null, note: "via find_capability + do_capability — réservé super_admin (canManageUsers), confirmation requise" },
+    { capability: "réinitialiser le mot de passe d'un admin ou d'un client", tool: null, note: "via do_capability (admin_reset_password / admin_reset_client_password), super_admin, sensible" },
+  ],
+  chat: [
+    { capability: "gérer les réponses pré-enregistrées et les réponses rapides", tool: null, note: "via find_capability + do_capability (admin_*_canned_response / admin_*_quick_reply), super_admin" },
   ],
 };
 
@@ -239,7 +276,7 @@ const READ_TOOLS: ReadTool[] = [
     name: "what_can_i_do",
     permission: "canViewPayments",
     always: true,
-    description: "INTROSPECTION : ce que TOI (l'assistant) peux faire, par domaine, et ce que la plateforme permet même sans outil dédié. À APPELER avant d'affirmer qu'une action est impossible. domain optionnel (clients|depots|paiements|taux|tresorerie).",
+    description: "INTROSPECTION : ce que TOI (l'assistant) peux faire, par domaine, et ce que la plateforme permet même sans outil dédié. À APPELER avant d'affirmer qu'une action est impossible. domain optionnel (clients|depots|paiements|taux|tresorerie|admins|chat).",
     input_schema: { type: "object", properties: { domain: { type: "string" } } },
     execute: (_admin, { domain }) => {
       const d = domain ? String(domain).toLowerCase() : null;
@@ -291,6 +328,161 @@ const READ_TOOLS: ReadTool[] = [
       const { data, error } = await admin.from("payment_proofs").select("id, file_name, file_type, uploaded_by_type, created_at").eq("payment_id", pid).order("created_at", { ascending: false });
       if (error) return { error: error.message };
       return { payment_id: pid, count: data?.length ?? 0, proofs: data ?? [] };
+    },
+  },
+  {
+    name: "show_payment_proof",
+    permission: "canViewPayments",
+    description: "AFFICHER dans le chat la/les preuve(s) image attachée(s) à un paiement : QR Alipay/WeChat, capture du règlement, reçu. Donne reference (BZ-PY-…) ou payment_id. Les images s'affichent directement dans la conversation ; les PDF/documents sont renvoyés en lien à ouvrir. Si aucune preuve n'est attachée, replie sur le QR du bénéficiaire mémorisé sur le paiement.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    execute: async (admin, { reference, payment_id }) => {
+      let q = admin.from("payments").select("id, reference, beneficiary_name, beneficiary_qr_code_url, cash_signature_url");
+      if (payment_id) q = q.eq("id", payment_id);
+      else if (reference) q = q.eq("reference", reference);
+      else return { error: "Fournir reference (BZ-PY-…) ou payment_id." };
+      const { data: pay } = await q.maybeSingle();
+      if (!pay) return { found: false, message: "Paiement introuvable." };
+      const { data: proofs, error } = await admin.from("payment_proofs")
+        .select("file_name, file_type, file_url, created_at").eq("payment_id", pay.id).order("created_at", { ascending: false });
+      if (error) return { error: error.message };
+      const images: Array<{ url: string; name: string }> = [];
+      const documents: Array<{ name: string; url: string }> = [];
+      for (const p of proofs ?? []) {
+        const signed = await signStoredUrl(admin, p.file_url);
+        if (!signed) continue;
+        if (isDisplayableImage(p.file_type, p.file_name)) images.push({ url: signed, name: p.file_name ?? "Preuve" });
+        else documents.push({ name: p.file_name ?? "Document", url: signed });
+      }
+      // Repli : le QR du bénéficiaire (snapshot au moment du paiement) ou la signature cash.
+      if (images.length === 0) {
+        const qr = await signStoredUrl(admin, pay.beneficiary_qr_code_url);
+        if (qr) images.push({ url: qr, name: `QR ${pay.beneficiary_name ?? "bénéficiaire"}` });
+        const sig = await signStoredUrl(admin, pay.cash_signature_url);
+        if (sig) images.push({ url: sig, name: "Signature cash" });
+      }
+      if (images.length === 0 && documents.length === 0) return { found: false, reference: pay.reference, message: "Aucune preuve image trouvée sur ce paiement." };
+      return { found: true, reference: pay.reference, count: images.length + documents.length, documents: documents.length ? documents : undefined, __images: images, message: `${images.length} image(s) affichée(s)${documents.length ? `, ${documents.length} document(s) disponible(s) en lien` : ""}.` };
+    },
+  },
+  {
+    name: "show_deposit_proof",
+    permission: "canViewDeposits",
+    description: "AFFICHER dans le chat la/les preuve(s) image d'un dépôt : capture du virement / justificatif de versement. Donne reference (BZ-DP-…) ou deposit_id. Les images s'affichent directement ; les PDF sont renvoyés en lien.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, deposit_id: { type: "string" } } },
+    execute: async (admin, { reference, deposit_id }) => {
+      let did = deposit_id;
+      let ref = reference;
+      if (!did && reference) { const { data } = await admin.from("deposits").select("id, reference").eq("reference", reference).maybeSingle(); did = data?.id; ref = data?.reference; }
+      else if (did) { const { data } = await admin.from("deposits").select("reference").eq("id", did).maybeSingle(); ref = data?.reference; }
+      if (!did) return { error: "Fournir reference (BZ-DP-…) ou deposit_id." };
+      const { data: proofs, error } = await admin.from("deposit_proofs")
+        .select("file_name, file_type, file_url, uploaded_at").eq("deposit_id", did).is("deleted_at", null).order("uploaded_at", { ascending: false });
+      if (error) return { error: error.message };
+      const images: Array<{ url: string; name: string }> = [];
+      const documents: Array<{ name: string; url: string }> = [];
+      for (const p of proofs ?? []) {
+        const signed = await signStoredUrl(admin, p.file_url);
+        if (!signed) continue;
+        if (isDisplayableImage(p.file_type, p.file_name)) images.push({ url: signed, name: p.file_name ?? "Preuve" });
+        else documents.push({ name: p.file_name ?? "Document", url: signed });
+      }
+      if (images.length === 0 && documents.length === 0) return { found: false, reference: ref, message: "Aucune preuve trouvée sur ce dépôt." };
+      return { found: true, reference: ref, count: images.length + documents.length, documents: documents.length ? documents : undefined, __images: images, message: `${images.length} image(s) affichée(s)${documents.length ? `, ${documents.length} document(s) en lien` : ""}.` };
+    },
+  },
+  {
+    name: "show_beneficiary_qr",
+    permission: "canViewPayments",
+    description: "AFFICHER dans le chat le QR code (ou la capture de paiement) d'un bénéficiaire enregistré. Donne beneficiary_id (UUID, via list_beneficiaries). Si le bénéficiaire n'a pas de QR enregistré, replie automatiquement sur la preuve du dernier paiement effectué vers lui.",
+    input_schema: { type: "object", properties: { beneficiary_id: { type: "string" } }, required: ["beneficiary_id"] },
+    execute: async (admin, { beneficiary_id }) => {
+      const { data: ben } = await admin.from("beneficiaries").select("id, alias, name, qr_code_url, client_id").eq("id", beneficiary_id).maybeSingle();
+      if (!ben) return { found: false, message: "Bénéficiaire introuvable. Récupère son id via list_beneficiaries." };
+      const label = ben.alias || ben.name || "bénéficiaire";
+      // 1) QR stocké directement sur le bénéficiaire.
+      const direct = await signStoredUrl(admin, ben.qr_code_url);
+      if (direct) return { found: true, beneficiary: label, source: "beneficiary", __images: [{ url: direct, name: `QR ${label}` }], message: `QR de ${label} affiché.` };
+      // 2) Repli : dernier paiement vers ce bénéficiaire portant un QR ou une preuve.
+      const { data: pays } = await admin.from("payments")
+        .select("reference, beneficiary_qr_code_url").eq("beneficiary_id", beneficiary_id)
+        .not("beneficiary_qr_code_url", "is", null).order("created_at", { ascending: false }).limit(1);
+      const snap = await signStoredUrl(admin, pays?.[0]?.beneficiary_qr_code_url);
+      if (snap) return { found: true, beneficiary: label, source: "payment", reference: pays?.[0]?.reference, __images: [{ url: snap, name: `QR ${label}` }], message: `Pas de QR enregistré sur le bénéficiaire ; voici celui du paiement ${pays?.[0]?.reference}.` };
+      // 3) Dernier recours : une preuve image sur le dernier paiement vers ce bénéficiaire.
+      const { data: lastPay } = await admin.from("payments").select("id, reference").eq("beneficiary_id", beneficiary_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (lastPay?.id) {
+        const { data: proofs } = await admin.from("payment_proofs").select("file_name, file_type, file_url").eq("payment_id", lastPay.id).order("created_at", { ascending: false });
+        for (const p of proofs ?? []) {
+          if (!isDisplayableImage(p.file_type, p.file_name)) continue;
+          const signed = await signStoredUrl(admin, p.file_url);
+          if (signed) return { found: true, beneficiary: label, source: "payment_proof", reference: lastPay.reference, __images: [{ url: signed, name: p.file_name ?? `QR ${label}` }], message: `Pas de QR enregistré ; voici la preuve du paiement ${lastPay.reference}.` };
+        }
+      }
+      return { found: false, beneficiary: label, message: `Aucun QR ni preuve image trouvé pour ${label}.` };
+    },
+  },
+  {
+    name: "generate_payment_receipt",
+    permission: "canViewPayments",
+    description: "GÉNÉRER le reçu officiel d'un paiement : AFFICHE l'image du reçu dans le chat ET fournit le PDF téléchargeable (lien). Donne reference (BZ-PY-…) ou payment_id. À utiliser dès qu'on demande « le reçu », « le récépissé », « génère/envoie le reçu » d'un paiement — ne renvoie PAS l'admin vers l'écran.",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    execute: async (admin, { reference, payment_id }) => {
+      let q = admin.from("payments").select("id, reference, created_at, processed_at, amount_xaf, amount_rmb, exchange_rate, method, status, user_id, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_identifier");
+      if (payment_id) q = q.eq("id", payment_id);
+      else if (reference) q = q.eq("reference", reference);
+      else return { error: "Fournir reference (BZ-PY-…) ou payment_id." };
+      const { data: pay } = await q.maybeSingle();
+      if (!pay) return { found: false, message: "Paiement introuvable." };
+
+      const { data: client } = await admin.from("clients").select("first_name, last_name, phone").eq("user_id", pay.user_id).maybeSingle();
+      const clientName = client ? `${client.first_name ?? ""} ${client.last_name ?? ""}`.trim() : null;
+
+      // Détails bénéficiaire selon le mode de paiement.
+      let line1: string | null = null, line2: string | null = null;
+      if (pay.method === "alipay") { const v = pay.beneficiary_email || pay.beneficiary_identifier; line1 = v ? `Alipay : ${v}` : null; }
+      else if (pay.method === "wechat") { const v = pay.beneficiary_phone || pay.beneficiary_identifier; line1 = v ? `WeChat : ${v}` : null; }
+      else if (pay.method === "bank_transfer") { line1 = pay.beneficiary_bank_name || null; line2 = pay.beneficiary_bank_account || null; }
+      else if (pay.method === "cash") line1 = pay.beneficiary_phone ? `Téléphone : ${pay.beneficiary_phone}` : null;
+
+      const receipt = {
+        reference: pay.reference, created_at: pay.created_at, processed_at: pay.processed_at,
+        amount_xaf: pay.amount_xaf, amount_rmb: pay.amount_rmb, exchange_rate: pay.exchange_rate,
+        method: pay.method, status: pay.status, client_name: clientName, client_phone: client?.phone ?? null,
+        beneficiary_name: pay.beneficiary_name, beneficiary_line1: line1, beneficiary_line2: line2,
+      };
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      let png_b64 = "", pdf_b64 = "";
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/generate-receipt`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
+          body: JSON.stringify({ receipt }),
+        });
+        if (!res.ok) return { error: `Génération du reçu échouée (${res.status}).` };
+        const j = await res.json();
+        png_b64 = j.png_b64; pdf_b64 = j.pdf_b64;
+      } catch (e) { return { error: `Génération du reçu : ${String((e as Error)?.message ?? e)}` }; }
+      if (!png_b64) return { error: "Reçu indisponible." };
+
+      const b64ToBytes = (b: string) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0));
+      const stamp = Date.now();
+      const pngPath = `receipts/${stamp}-${pay.reference}.png`;
+      const pdfPath = `receipts/${stamp}-${pay.reference}.pdf`;
+      const up1 = await admin.storage.from(ATTACHMENT_BUCKET).upload(pngPath, b64ToBytes(png_b64), { contentType: "image/png", upsert: true });
+      if (up1.error) return { error: `Stockage du reçu : ${up1.error.message}` };
+      if (pdf_b64) await admin.storage.from(ATTACHMENT_BUCKET).upload(pdfPath, b64ToBytes(pdf_b64), { contentType: "application/pdf", upsert: true });
+      const pngSigned = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(pngPath, 3600);
+      const pdfSigned = pdf_b64 ? await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(pdfPath, 3600) : null;
+      if (pngSigned.error || !pngSigned.data?.signedUrl) return { error: "URL du reçu indisponible." };
+
+      return {
+        success: true, reference: pay.reference,
+        __image: { url: pngSigned.data.signedUrl, name: `Reçu ${pay.reference}`, kind: "image" },
+        documents: pdfSigned?.data?.signedUrl ? [{ name: `Reçu ${pay.reference} (PDF)`, url: pdfSigned.data.signedUrl }] : undefined,
+        message: `Reçu du paiement ${pay.reference} généré et affiché dans le chat. PDF téléchargeable fourni.`,
+      };
     },
   },
   {
@@ -2244,6 +2436,8 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `DÉCOUVERTE DE CAPACITÉS : si aucun de tes outils dédiés ne correspond à une action demandée, appelle d'abord find_capability (ex. « annuler dépôt », « confirmer cash ») — la plateforme expose peut-être déjà cette action, prête à l'emploi. Puis exécute-la via do_capability (son name + les paramètres ; donne une référence BZ-…, l'identifiant est résolu, et une carte de confirmation s'affiche). Ne dis « je ne peux pas » qu'APRÈS avoir cherché une capacité.`,
     `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
     `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
+    `AFFICHER UNE IMAGE (preuves, QR codes) — TU EN ES CAPABLE, ne dis JAMAIS « je ne peux pas afficher l'image ». Pour montrer dans le chat la preuve d'un paiement (QR Alipay/WeChat, reçu) : show_payment_proof (reference BZ-PY-… ou payment_id). Pour la preuve d'un dépôt : show_deposit_proof (BZ-DP-… ou deposit_id). Pour le QR d'un bénéficiaire : show_beneficiary_qr (beneficiary_id via list_beneficiaries — il replie tout seul sur le QR du dernier paiement si le bénéficiaire n'en a pas). Ces outils renvoient l'image directement à l'écran. Quand on te demande « montre/affiche le QR / la preuve / la capture », APPELLE l'outil au lieu de renvoyer l'admin vers l'interface.`,
+    `REÇU D'UN PAIEMENT : quand on demande « le reçu », « le récépissé », « génère/envoie le reçu » d'un paiement, utilise generate_payment_receipt (reference BZ-PY-… ou payment_id). Il AFFICHE l'image du reçu dans le chat ET renvoie un lien PDF téléchargeable. Ne dis jamais que tu ne peux pas générer un reçu, et ne renvoie pas vers l'écran.`,
     ``,
     `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
     `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
@@ -2366,22 +2560,31 @@ async function embedText(text: string): Promise<number[] | null> {
 
 // Bloc de contexte mémoire : profil (toujours) + résumé roulant + souvenirs récupérés (best-effort).
 async function buildMemoryContext(admin: AnyClient, adminUserId: string, conversationId: string, message: string): Promise<string> {
-  const parts: string[] = [];
-  try {
-    const { data: prof } = await admin.from("mola_user_memory").select("key, value").eq("admin_user_id", adminUserId).limit(40);
-    if (prof?.length) parts.push(`Profil de cet admin (ce que tu sais déjà) :\n` + prof.map((p: AnyClient) => `- ${p.key}: ${typeof p.value === "string" ? p.value : JSON.stringify(p.value)}`).join("\n"));
-  } catch (_) { /* best-effort */ }
-  try {
-    const { data: conv } = await admin.from("assistant_conversations").select("rolling_summary").eq("id", conversationId).maybeSingle();
-    if (conv?.rolling_summary) parts.push(`Résumé du début de cette conversation :\n${conv.rolling_summary}`);
-  } catch (_) { /* best-effort */ }
-  try {
-    const emb = await embedText(message);
-    if (emb) {
-      const { data: hits } = await admin.rpc("mola_search_memory", { p_embedding: emb, p_admin: adminUserId, p_limit: 6 });
-      if (hits?.length) parts.push(`Souvenirs pertinents (mémoire) :\n` + hits.map((h: AnyClient) => `- ${h.content}`).join("\n"));
-    }
-  } catch (_) { /* best-effort */ }
+  // VITESSE : les 3 sources (profil, résumé roulant, recherche sémantique) sont indépendantes
+  // → on les lit EN PARALLÈLE au lieu de 3 awaits en série (l'embedding domine le temps).
+  const [profPart, convPart, memPart] = await Promise.all([
+    (async () => {
+      try {
+        const { data: prof } = await admin.from("mola_user_memory").select("key, value").eq("admin_user_id", adminUserId).limit(40);
+        return prof?.length ? `Profil de cet admin (ce que tu sais déjà) :\n` + prof.map((p: AnyClient) => `- ${p.key}: ${typeof p.value === "string" ? p.value : JSON.stringify(p.value)}`).join("\n") : "";
+      } catch (_) { return ""; }
+    })(),
+    (async () => {
+      try {
+        const { data: conv } = await admin.from("assistant_conversations").select("rolling_summary").eq("id", conversationId).maybeSingle();
+        return conv?.rolling_summary ? `Résumé du début de cette conversation :\n${conv.rolling_summary}` : "";
+      } catch (_) { return ""; }
+    })(),
+    (async () => {
+      try {
+        const emb = await embedText(message);
+        if (!emb) return "";
+        const { data: hits } = await admin.rpc("mola_search_memory", { p_embedding: emb, p_admin: adminUserId, p_limit: 6 });
+        return hits?.length ? `Souvenirs pertinents (mémoire) :\n` + hits.map((h: AnyClient) => `- ${h.content}`).join("\n") : "";
+      } catch (_) { return ""; }
+    })(),
+  ]);
+  const parts = [profPart, convPart, memPart].filter(Boolean);
   return parts.length ? `MÉMOIRE (contexte rappelé — appuie-toi dessus si pertinent, ne l'invente pas) :\n${parts.join("\n\n")}` : "";
 }
 
@@ -2513,6 +2716,11 @@ serve(async (req) => {
       conversationId = conv.id;
     }
 
+    // VITESSE : on lance la construction du contexte mémoire (lectures DB + embedding, ~150-250ms)
+    // EN PARALLÈLE du reste de la préparation (historique, outils, prompt). On l'attend juste avant
+    // l'appel modèle → son temps est recouvert au lieu de s'ajouter.
+    const memoryPromise = buildMemoryContext(admin, user.id, String(conversationId), message);
+
     // Les N derniers messages (les plus RÉCENTS), remis dans l'ordre chronologique pour le modèle.
     const { data: histRaw } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(40);
     const hist = (histRaw ?? []).reverse();
@@ -2541,8 +2749,13 @@ serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     const messages: any[] = [...history, { role: "user", content: (message || "(pièces jointes)") + attachNote }];
 
-    // Outils autorisés pour ce rôle (lecture + écriture)
-    const allowedRead = READ_TOOLS.filter((t) => t.always || (perms[t.permission] && !(t.superAdminOnly && role !== "super_admin")));
+    // Outils autorisés pour ce rôle.
+    // LECTURE — ouverte à TOUT admin : Mola est AI-native et doit pouvoir RÉPONDRE à
+    // n'importe quelle question sur toute la plateforme (trésorerie, reporting, dashboard,
+    // clients, dépôts, paiements, audit), peu importe le rôle. On ne bride plus la lecture
+    // par permission. Seuls les outils de MAINTENANCE (superAdminOnly, ex. reindex_knowledge)
+    // restent réservés au super_admin. Les ÉCRITURES, elles, restent gardées par rôle (ci-dessous).
+    const allowedRead = READ_TOOLS.filter((t) => t.always || !(t.superAdminOnly && role !== "super_admin"));
     const allowedWrite = WRITE_TOOLS.filter((t) => {
       if (!perms[t.permission]) return false;
       if (t.superAdminOnly && role !== "super_admin") return false;
@@ -2559,14 +2772,15 @@ serve(async (req) => {
 
     const system = buildSystemPrompt(role, firstName);
     // Mémoire (Lot 3) : contexte rappelé (profil + résumé roulant + souvenirs), best-effort.
-    const memoryContext = await buildMemoryContext(admin, user.id, String(conversationId), message);
+    // Lancée plus haut en parallèle (memoryPromise) → ici on ne fait qu'attendre le résultat déjà en cours.
+    const memoryContext = await memoryPromise;
     // deno-lint-ignore no-explicit-any
     const systemBlocks: any[] = [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
     if (memoryContext) systemBlocks.push({ type: "text", text: memoryContext });
 
     // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
-    // MODEL_FAST par défaut (Sonnet 4.6) ; bascule sur MODEL_SMART dès qu'une action
-    // d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
+    // MODEL_FAST par défaut (Haiku — rapide) ; bascule sur MODEL_SMART (Sonnet) dès qu'une
+    // action d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
     const convId = conversationId;
     const stream = new ReadableStream({
       async start(controller) {
@@ -2584,7 +2798,7 @@ serve(async (req) => {
           for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
             const resp = await streamAnthropic(
               apiKey,
-              { model, max_tokens: 4000, system: systemBlocks, tools: toolDefs, messages },
+              { model, max_tokens: 2000, system: systemBlocks, tools: toolDefs, messages },
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
@@ -2609,8 +2823,9 @@ serve(async (req) => {
                 if (readTool) {
                   // Les outils needsAuth (ex. trésorerie via auth.uid()) reçoivent le client authentifié.
                   const toolInput = (tu.input ?? {}) as Record<string, unknown>;
-                  // SQL libre : injecte l'allowlist de tables du rôle (sauf super_admin = accès complet).
-                  if (tu.name === "query_database" && role !== "super_admin") toolInput.__allowed_tables = allowedTablesForRole(perms);
+                  // SQL libre : accès LECTURE complet pour tout admin (aucune restriction de table).
+                  // La RPC assistant_readonly_query garantit le read-only ; p_allowed_tables=null = aucune
+                  // restriction. Mola doit pouvoir répondre à toute question chiffrée, sur tout module.
                   try { result = await readTool.execute(admin, toolInput, readTool.needsAuth ? userClient : undefined); }
                   catch (e) { result = { error: String((e as Error)?.message ?? e) }; }
                   // Si l'outil a produit une image (ex. flyer), on l'envoie au chat.
@@ -2621,6 +2836,14 @@ serve(async (req) => {
                     // On retire l'image du résultat transmis au modèle (inutile en texte).
                     // deno-lint-ignore no-explicit-any
                     delete (result as any).__image;
+                  }
+                  // Idem pour PLUSIEURS images (ex. preuves d'un paiement, QR bénéficiaire).
+                  // deno-lint-ignore no-explicit-any
+                  const imgs = (result as any)?.__images;
+                  if (Array.isArray(imgs)) {
+                    for (const im of imgs) if (im?.url) send({ type: "image", image: { url: im.url, name: im.name ?? "Image" } });
+                    // deno-lint-ignore no-explicit-any
+                    delete (result as any).__images;
                   }
                 } else if (writeTool) {
                   try {
