@@ -32,6 +32,11 @@ import {
   MobileBalanceDashboard,
 } from '@/mobile/screens/treasury';
 import { DirectionA, DirectionB, DirectionC } from './directions';
+import { DashDirA, DashDirB, DashDirC } from './dashDirections';
+import { MolaCards } from './molaCards';
+import { MolaNav } from './molaNav';
+import { MolaScreen } from './molaScreen';
+import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
 import { MobileAnalyticsDashboard } from '@/mobile/screens/analytics';
 
@@ -41,6 +46,13 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
+  'dash-a': { Comp: DashDirA, route: '/' },
+  'dash-b': { Comp: DashDirB, route: '/' },
+  'dash-c': { Comp: DashDirC, route: '/' },
+  mola: { Comp: MolaCards, route: '/' },
+  'mola-nav': { Comp: MolaNav, route: '/' },
+  'mola-screen': { Comp: MolaScreen, route: '/' },
+  'mola-real': { Comp: MobileAssistantScreen, route: '/m/more/assistant' },
   'dashboard-home': { Comp: MobileDashboard, route: '/m' },
   analytics: { Comp: MobileAnalyticsDashboard, route: '/m/dashboard' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },

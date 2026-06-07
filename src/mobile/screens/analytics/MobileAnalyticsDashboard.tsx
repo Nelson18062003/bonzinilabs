@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import { RefreshCw, TrendingUp, Users, Wallet, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { RefreshCw, TrendingUp, Users, Wallet, CheckCircle2, Clock, AlertTriangle, ChevronDown, ArrowDownToLine, Percent, Layers } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart,
@@ -122,6 +122,40 @@ export function MobileAnalyticsDashboard() {
     <DateRangeProvider defaultPreset="last_30_days">
       <DashboardBody />
     </DateRangeProvider>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// CollapsibleSection — groups the dashboard into named, foldable themes so the
+// screen reads as a few clear sections instead of one endless scroll.
+// ────────────────────────────────────────────────────────────────────────────
+
+function CollapsibleSection({
+  title,
+  icon: Icon,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-1 py-1 text-left"
+      >
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground">{title}</h2>
+        <ChevronDown className={cn('ml-auto h-4 w-4 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+      </button>
+      {open ? <div className="mt-3 flex flex-col gap-4">{children}</div> : null}
+    </section>
   );
 }
 
@@ -295,6 +329,7 @@ function DashboardBody() {
           />
         </KpiRow>
 
+        <CollapsibleSection title="Capital & conversion" icon={Wallet} defaultOpen={false}>
         {/* SECTION 1b — Exposure & structural KPIs ──────────── */}
         <KpiRow columns={4}>
           <KpiCard
@@ -377,6 +412,9 @@ function DashboardBody() {
           />
         </KpiRow>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Flux & volumes" icon={TrendingUp} defaultOpen>
         {/* SECTION 3 — Flow chart ──────────────────────────── */}
         <ChartCard
           title="Flux financier"
@@ -578,6 +616,9 @@ function DashboardBody() {
           </ChartCard>
         </div>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Clients" icon={Users} defaultOpen={false}>
         {/* SECTION 4b — Clients: growth + registration source ── */}
         <div className="grid gap-4 md:grid-cols-2">
           <ChartCard
@@ -618,6 +659,9 @@ function DashboardBody() {
           error={countryDistribution.error as Error | null}
         />
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Opérations" icon={Clock} defaultOpen={false}>
         {/* SECTION 5 — Opérations (processing time + status) ── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard
@@ -656,6 +700,9 @@ function DashboardBody() {
           />
         </div>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Taux" icon={Percent} defaultOpen={false}>
         {/* SECTION 6 — Rate history ────────────────────────── */}
         <RateEvolutionReport
           data={rateHistory.data ?? []}
@@ -667,6 +714,9 @@ function DashboardBody() {
           range={range}
         />
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Équipe & top clients" icon={Layers} defaultOpen={false}>
         {/* SECTION 7 — Admin productivity ───────────────────── */}
         <ChartCard
           title="Productivité des admins"
@@ -714,6 +764,7 @@ function DashboardBody() {
         >
           <TopClientsList items={topClients.data ?? []} />
         </ChartCard>
+        </CollapsibleSection>
 
       </div>
     </PullToRefresh>
