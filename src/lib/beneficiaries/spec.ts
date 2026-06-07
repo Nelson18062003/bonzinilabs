@@ -87,8 +87,9 @@ export const IDENTIFIER_TYPES: readonly IdentifierType[] = ['qr', 'id', 'email',
 // ── Per-mode field specification ─────────────────────────────────────
 //
 // `requiredAll`  : every field must be non-empty.
-// `requireOneOf` : at least one field in each group must be non-empty
-//                  (used for Alipay/WeChat "identifier OR QR").
+// `requireOneOf` : at least one field in each group must be non-empty.
+//                  Alipay/WeChat: at least one reachability channel among
+//                  identifier / qr_code_url / email / phone.
 // `optional`     : surfaced in the form but never blocks save.
 // `naturalKeyColumn` : column used for the partial UNIQUE index / soft
 //                  duplicate detection (null = no hard dedup, e.g. cash).
@@ -106,14 +107,14 @@ export interface ModeFieldSpec {
 export const BENEFICIARY_SPEC: Record<BeneficiaryMode, ModeFieldSpec> = {
   alipay: {
     requiredAll: ['alias', 'name'],
-    requireOneOf: [['identifier', 'qr_code_url']],
-    optional: ['identifier_type', 'phone', 'email', 'relation_type', 'notes'],
+    requireOneOf: [['identifier', 'qr_code_url', 'email', 'phone']],
+    optional: ['identifier_type', 'relation_type', 'notes'],
     naturalKeyColumn: 'identifier',
   },
   wechat: {
     requiredAll: ['alias', 'name'],
-    requireOneOf: [['identifier', 'qr_code_url']],
-    optional: ['identifier_type', 'phone', 'email', 'relation_type', 'notes'],
+    requireOneOf: [['identifier', 'qr_code_url', 'email', 'phone']],
+    optional: ['identifier_type', 'relation_type', 'notes'],
     naturalKeyColumn: 'identifier',
   },
   bank_transfer: {

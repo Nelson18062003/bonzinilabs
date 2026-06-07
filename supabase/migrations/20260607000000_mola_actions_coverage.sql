@@ -15,6 +15,8 @@
 --               l'écran, donc invisibles à Mola.
 --   SECTION 3 — Étiquette @mola TOUTES les actions ci-dessus (+ quelques actions
 --               déjà en base) pour que Mola les découvre et les exécute.
+--   SECTION 5 — Bénéficiaires : élargit les canaux acceptés pour Alipay/WeChat
+--               (identifiant / QR / email / téléphone — au moins un).
 --
 -- Principe : chaque action porte la PERMISSION NATURELLE de son domaine → tout
 -- admin pilote depuis Mola ce que son rôle autorise déjà. do_capability garde la
@@ -666,5 +668,22 @@ begin
     end loop;
   end loop;
 end $$;
+
+
+-- ════════════════════════ SECTION 5 — BÉNÉFICIAIRES : canaux acceptés ════════════════════════
+-- Règle métier : pour un bénéficiaire Alipay/WeChat, le nom est obligatoire + AU MOINS UN
+-- canal de contact parmi { identifiant, QR code, email, téléphone } (avant : identifiant OU QR
+-- seulement). On élargit la contrainte en conséquence. Miroir de src/lib/beneficiaries/spec.ts.
+-- Une CHECK ne s'altère pas en place → drop puis re-add. NOT VALID : les lignes existantes ne
+-- sont pas re-scannées (et de toute façon cette règle est PLUS permissive qu'avant).
+alter table public.beneficiaries drop constraint if exists chk_benef_alipay_wechat_channel;
+alter table public.beneficiaries
+  add constraint chk_benef_alipay_wechat_channel check (
+    payment_method not in ('alipay', 'wechat')
+    or identifier is not null
+    or qr_code_url is not null
+    or email is not null
+    or phone is not null
+  ) not valid;
 
 notify pgrst, 'reload schema';

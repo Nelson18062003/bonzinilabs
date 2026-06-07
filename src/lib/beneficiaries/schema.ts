@@ -100,8 +100,11 @@ export const beneficiarySchema = z
     if (
       (data.payment_method === 'alipay' || data.payment_method === 'wechat') &&
       !data.identifier &&
-      !data.qr_code_url
+      !data.qr_code_url &&
+      !data.email &&
+      !data.phone
     ) {
+      // Alipay/WeChat : au moins un canal de contact (identifiant, QR, email ou téléphone).
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'beneficiaries.errors.accountChannelRequired',
