@@ -1,6 +1,7 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.8 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
+// Version: 2026-06-07.1 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
 // top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), reçu PDF, processLock.
+// + playbook métier (profondeur/proactivité) + get_pending_summary enrichi (radar via RPC mola_operations_radar).
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
@@ -15,6 +16,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { maskForRole } from "../_shared/mask.ts";
+import { BONZINI_PLAYBOOK } from "./playbook.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -891,9 +893,25 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "get_pending_summary",
     permission: "canViewDeposits",
-    description: "Ce qui demande de l'attention MAINTENANT : dépôts à traiter (created, proof_submitted, admin_review) et paiements en cours (waiting_beneficiary_info, ready_for_payment, processing).",
-    input_schema: { type: "object", properties: {} },
-    execute: async (admin) => {
+    description:
+      "RADAR OPÉRATIONNEL — ce qui demande de l'attention MAINTENANT, en un appel : (1) dépôts en attente de validation depuis trop longtemps (argent du client qui attend d'être crédité), (2) paiements en souffrance (fournisseur qui attend / infos bénéficiaire manquantes), (3) gros soldes wallet dormants (argent immobile), (4) paiements à taux personnalisé récents (à vérifier côté marge). Chaque ligne porte le nom du client, le montant et l'ancienneté. Utilise-le pour « quoi de neuf ? », « fais le point », ou de toi-même pour être proactif. Seuils réglables.",
+    input_schema: { type: "object", properties: {
+      deposit_age_hours: { type: "number", description: "âge mini d'un dépôt en attente (défaut 48)" },
+      payment_age_hours: { type: "number", description: "âge mini d'un paiement en souffrance (défaut 24)" },
+      dormant_min_xaf: { type: "number", description: "solde wallet mini pour 'dormant' (défaut 2 000 000)" },
+      custom_rate_days: { type: "number", description: "fenêtre des paiements à taux perso (défaut 7 jours)" },
+    } },
+    execute: async (admin, a) => {
+      // Source de vérité partagée (Mola + digest cron) : la RPC mola_operations_radar.
+      const { data, error } = await admin.rpc("mola_operations_radar", {
+        p_deposit_age_hours: clamp(a?.deposit_age_hours, 48, 24 * 30),
+        p_payment_age_hours: clamp(a?.payment_age_hours, 24, 24 * 30),
+        p_dormant_min_xaf: clamp(a?.dormant_min_xaf, 2_000_000, 50_000_000),
+        p_custom_rate_days: clamp(a?.custom_rate_days, 7, 90),
+      });
+      if (!error && data) return data as Record<string, unknown>;
+      // Repli : si la RPC n'est pas encore déployée (migration non poussée), on rend au
+      // moins les comptages bruts pour ne jamais casser. (Comportement historique.)
       const deposits_pending: Record<string, number> = {};
       for (const s of ["created", "proof_submitted", "admin_review"]) {
         const { count } = await admin.from("deposits").select("id", { count: "exact", head: true }).eq("status", s);
@@ -904,7 +922,7 @@ const READ_TOOLS: ReadTool[] = [
         const { count } = await admin.from("payments").select("id", { count: "exact", head: true }).eq("status", s);
         payments_pending[s] = count ?? 0;
       }
-      return { deposits_pending, payments_pending };
+      return { deposits_pending, payments_pending, note: "Radar enrichi indisponible (RPC mola_operations_radar non déployée) — comptages bruts." };
     },
   },
   {
@@ -2462,6 +2480,8 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `- TAUX : en CNY (¥) pour 1 000 000 XAF, par mode ; ajustements en % par pays/palier ; un paiement utilise le taux du jour OU un taux personnalisé.`,
     `- TRÉSORERIE : on achète des USDT en XAF puis on les vend en CNY pour régler les fournisseurs chinois. Coût de revient en WAC ; le bénéfice = le spread achat/vente.`,
     `- WALLET : solde XAF du client (crédité par dépôt validé, débité par paiement) ; jamais modifié à la main sauf ajustement tracé.`,
+    ``,
+    BONZINI_PLAYBOOK,
     ``,
     `ACCÈS BASE DE DONNÉES — TON RÉFLEXE N°1. Tu as un accès LECTURE COMPLET à la base Bonzini via query_database (SQL SELECT PostgreSQL). Pour TOUTE question chiffrée ou factuelle sur les données, tu VAS LIRE LA BASE TOI-MÊME et tu réponds avec des chiffres EXACTS issus de la requête. Tu n'inventes RIEN, tu n'estimes RIEN, tu ne dis JAMAIS « je n'ai pas accès » / « je ne peux pas calculer » : tu écris la requête SQL. Une seule limite, volontaire et dans l'intérêt de l'argent : c'est de la LECTURE SEULE (aucune requête ne peut modifier la base). Les modifications passent par les actions à confirmation. À part ça : tu lis absolument tout ce que tu veux, librement.`,
     `TRANSPARENCE / CONFIANCE : quand l'admin doute d'un chiffre ou le demande, MONTRE-lui la requête SQL exacte que tu as exécutée et la fenêtre de dates utilisée — qu'il puisse vérifier lui-même la source. Un chiffre accompagné de sa requête, c'est ça la confiance. Ne te défausse jamais sur « mes outils sont limités » : si un chiffre te paraît douteux, recoupe-le par une 2e requête SQL.`,

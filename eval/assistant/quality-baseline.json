@@ -1,0 +1,18 @@
+{
+  "seeded": false,
+  "updatedAt": "",
+  "note": "Référence non encore établie. Lancer `deno run ... quality-run.ts --update-baseline` après le 1er vrai run pour figer la qualité de référence. Tant que seeded=false, la porte est informative (ne bloque pas).",
+  "aggregate": {
+    "count": 0,
+    "overall": 0,
+    "byDimension": {
+      "business_depth": 0,
+      "proactivity": 0,
+      "grounding": 0,
+      "tone": 0,
+      "actionability": 0
+    },
+    "weakest": null,
+    "failing": 0
+  }
+}
