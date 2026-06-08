@@ -1,13 +1,26 @@
+// ============================================================
+// MODULE TAUX — RateSetTab (définir les taux du jour)
+// Présentation migrée sur le design kit (Ofspace/Mola), calquée
+// sur la maquette validée rates.tsx : segment direction · cartes
+// blanches par méthode (vrais logos + gros chiffre) · carte de
+// vérification · sélecteur de date en pilules · CTA Publier ·
+// carte Flyer.
+// Logique 100% préservée : useCreateDailyRates (RPC), direction,
+// getEffectiveAt (now/today/yesterday/custom + heure/minute),
+// flyerRates + RateFlyer + exports PNG/PDF, états.
+// ============================================================
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Check, Download, FileText, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { DateField, TextField } from '@/components/form';
-import { Button } from '@/components/ui/button';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
 import { useCreateDailyRates } from '@/hooks/useDailyRates';
 import { RateFlyer } from '@/mobile/components/rates/RateFlyer';
 import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
+import { SURFACE, TEXT, PrimaryPill } from '@/mobile/designKit';
+import { MethodLogo } from '../components/MethodLogo';
 
 interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
@@ -67,50 +80,50 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
     });
   };
 
+  // Pilule pleine vs douce (langage kit) — couleur d'accent violet.
+  const pillBase = 'rounded-full py-2.5 text-[13px] font-semibold transition-colors';
+
   return (
     <div className="space-y-5">
-      {/* Direction toggle */}
-      <div className="flex gap-2">
+      {/* Segment direction (XAF↔CNY) */}
+      <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
         {[
-          { key: 'cny_xaf' as const, label: '1 CNY \u2192 XAF' },
-          { key: 'xaf_cny' as const, label: '1M XAF \u2192 CNY' },
-        ].map((d) => (
-          <button
-            key={d.key}
-            onClick={() => setDirection(d.key)}
-            className={`flex-1 py-3 rounded-xl font-semibold text-[13px] cursor-pointer border-2 transition-colors ${
-              direction === d.key
-                ? 'border-purple-600 bg-purple-50 text-purple-600'
-                : 'border-border bg-white text-muted-foreground'
-            }`}
-          >
-            {d.label}
-          </button>
-        ))}
+          { key: 'cny_xaf' as const, label: '1 CNY → XAF' },
+          { key: 'xaf_cny' as const, label: '1M XAF → CNY' },
+        ].map((d) => {
+          const active = direction === d.key;
+          return (
+            <button
+              key={d.key}
+              onClick={() => setDirection(d.key)}
+              className={cn(
+                'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
+              )}
+            >
+              {d.label}
+            </button>
+          );
+        })}
       </div>
 
-      <p className="text-[13px] text-muted-foreground font-medium">
+      <p className={cn('text-[13px] font-medium', TEXT.muted)}>
         {direction === 'xaf_cny'
           ? 'CNY pour 1 000 000 XAF par mode :'
           : 'XAF pour 1 CNY par mode :'}
       </p>
 
-      {/* Rate inputs */}
+      {/* Cartes de saisie par méthode (vrais logos + gros chiffre) */}
       <div className="space-y-2.5">
         {PAYMENT_METHODS.map((pm) => (
           <div
             key={pm.key}
-            className="bg-white rounded-[14px] p-3.5 flex items-center gap-3 shadow-sm border border-border/50"
+            className={cn('flex items-center gap-3 rounded-[18px] p-3.5', SURFACE.card, SURFACE.shadow)}
           >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-              style={{ background: `${pm.color}15` }}
-            >
-              {pm.icon}
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-foreground">{pm.label}</div>
-              <div className="text-[11px] text-muted-foreground">
+            <MethodLogo method={pm.key} size={40} />
+            <div className="min-w-0 flex-1">
+              <div className={cn('text-[15px] font-bold leading-tight', TEXT.strong)}>{pm.label}</div>
+              <div className={cn('text-[11px]', TEXT.muted)}>
                 {direction === 'xaf_cny' ? 'CNY / 1M XAF' : 'XAF / 1 CNY'}
               </div>
             </div>
@@ -118,27 +131,21 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               variant="decimal"
               value={rates[pm.key]}
               onChange={(e) => setRates({ ...rates, [pm.key]: e.target.value })}
-              wrapperClassName="w-[108px]"
-              controlClassName="text-right font-bold"
+              wrapperClassName="w-[112px]"
+              controlClassName="text-right text-[18px] font-extrabold tabular-nums"
               aria-label={`Taux ${pm.label}`}
             />
           </div>
         ))}
       </div>
 
-      {/* Verification block */}
-      <div
-        className="rounded-[14px] p-4 border"
-        style={{
-          background: 'linear-gradient(135deg, #f8f0ff, #eef2ff)',
-          borderColor: '#e8daff',
-        }}
-      >
-        <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">
-          Verification de vos taux saisis
+      {/* Carte de vérification */}
+      <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
+        <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-[#6B5BD2] dark:text-[#A99BF0]">
+          Vérification de vos taux saisis
         </div>
-        <div className="text-[11px] text-muted-foreground mb-3">
-          Taux de base (meilleur cas : Cameroun, gros montant &ge; 1M XAF). Les
+        <div className={cn('mb-3 text-[11px]', TEXT.muted)}>
+          Taux de base (meilleur cas : Cameroun, gros montant ≥ 1M XAF). Les
           ajustements pays et tranches s'appliqueront automatiquement.
         </div>
         {PAYMENT_METHODS.map((pm) => {
@@ -146,164 +153,169 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           return (
             <div
               key={pm.key}
-              className="flex justify-between items-center py-2 border-b border-purple-600/10 last:border-0"
+              className="flex items-center justify-between py-2.5"
             >
-              <div className="flex items-center gap-2">
-                <span className="text-base">{pm.icon}</span>
+              <div className="flex items-center gap-2.5">
+                <MethodLogo method={pm.key} size={34} />
                 <div>
-                  <div className="text-[13px] font-semibold text-foreground">{pm.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className={cn('text-[13px] font-bold', TEXT.strong)}>{pm.label}</div>
+                  <div className={cn('text-[11px]', TEXT.muted)}>
                     1M XAF = {val.toLocaleString('fr-FR')} CNY
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-[15px] font-bold text-purple-600">
+              <div className="flex items-center gap-1.5 rounded-2xl bg-[#F3F1F9] px-3 py-2 dark:bg-[#2A2738]">
+                <span className="text-[15px] font-bold text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+                <span className={cn('text-[20px] font-black tabular-nums', TEXT.strong)}>
                   {val.toLocaleString('fr-FR')}
-                </div>
-                <div className="text-[10px] text-muted-foreground">CNY</div>
+                </span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Date selector */}
+      {/* Sélecteur de date d'effet */}
       <div>
-        <p className="text-sm font-semibold text-foreground mb-2.5">Date d'effet</p>
-        <div className="flex gap-2 mb-2.5">
+        <p className={cn('mb-2.5 text-[14px] font-bold', TEXT.strong)}>Date d'effet</p>
+        <div className="mb-2.5 flex gap-2">
           {[
             { key: 'now' as const, label: 'Maintenant' },
             { key: 'today' as const, label: "Aujourd'hui" },
             { key: 'yesterday' as const, label: 'Hier' },
-          ].map((d) => (
-            <button
-              key={d.key}
-              onClick={() => setDateOption(d.key)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer border-0 transition-colors ${
-                dateOption === d.key
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
+          ].map((d) => {
+            const active = dateOption === d.key;
+            return (
+              <button
+                key={d.key}
+                onClick={() => setDateOption(d.key)}
+                className={cn(
+                  'flex-1 rounded-full py-2.5 text-[12px] font-semibold transition-colors',
+                  active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
+                )}
+              >
+                {d.label}
+              </button>
+            );
+          })}
         </div>
 
         <button
           onClick={() => setDateOption('custom')}
-          className={`w-full py-3 rounded-xl text-[13px] font-medium cursor-pointer flex items-center justify-center gap-2 border-2 transition-colors ${
-            dateOption === 'custom'
-              ? 'border-purple-600 bg-purple-50 text-purple-600'
-              : 'border-border bg-white text-muted-foreground'
-          }`}
+          className={cn(
+            pillBase,
+            'flex w-full items-center justify-center gap-2',
+            dateOption === 'custom' ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
+          )}
         >
           Autre date...
         </button>
 
         {dateOption === 'custom' && (
-          <div className="bg-white rounded-xl p-3.5 border border-border mt-2.5 space-y-3">
+          <div className={cn('mt-2.5 space-y-3 rounded-2xl p-3.5', SURFACE.card, SURFACE.shadow)}>
             <DateField
               label="Date"
-              labelClassName="text-xs font-semibold text-muted-foreground"
+              labelClassName={cn('text-[12px] font-semibold', TEXT.muted)}
               value={customDate}
               onChange={(e) => setCustomDate(e.target.value)}
               controlClassName="font-semibold"
             />
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+              <label className={cn('mb-1.5 block text-[12px] font-semibold', TEXT.muted)}>
                 Heure
               </label>
               <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => setCustomHour((h) => Math.max(0, h - 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  className={cn('flex h-10 w-10 items-center justify-center rounded-xl text-lg', SURFACE.canvas, TEXT.strong)}
                 >
-                  &minus;
+                  −
                 </button>
-                <div className="w-14 h-11 rounded-xl bg-muted flex items-center justify-center text-[22px] font-extrabold text-foreground">
+                <div className={cn('flex h-11 w-14 items-center justify-center rounded-xl text-[22px] font-extrabold', SURFACE.canvas, TEXT.strong)}>
                   {String(customHour).padStart(2, '0')}
                 </div>
                 <button
                   onClick={() => setCustomHour((h) => Math.min(23, h + 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  className={cn('flex h-10 w-10 items-center justify-center rounded-xl text-lg', SURFACE.canvas, TEXT.strong)}
                 >
                   +
                 </button>
-                <span className="text-[22px] font-extrabold text-foreground">:</span>
+                <span className={cn('text-[22px] font-extrabold', TEXT.strong)}>:</span>
                 <button
                   onClick={() => setCustomMin((m) => Math.max(0, m - 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  className={cn('flex h-10 w-10 items-center justify-center rounded-xl text-lg', SURFACE.canvas, TEXT.strong)}
                 >
-                  &minus;
+                  −
                 </button>
-                <div className="w-14 h-11 rounded-xl bg-muted flex items-center justify-center text-[22px] font-extrabold text-foreground">
+                <div className={cn('flex h-11 w-14 items-center justify-center rounded-xl text-[22px] font-extrabold', SURFACE.canvas, TEXT.strong)}>
                   {String(customMin).padStart(2, '0')}
                 </div>
                 <button
                   onClick={() => setCustomMin((m) => Math.min(59, m + 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  className={cn('flex h-10 w-10 items-center justify-center rounded-xl text-lg', SURFACE.canvas, TEXT.strong)}
                 >
                   +
                 </button>
               </div>
             </div>
-            <div className="bg-purple-50 rounded-lg py-2 px-3 text-center text-[13px] text-purple-600 font-semibold">
-              {customDate.split('-').reverse().join('/')} a {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
+            <div className="rounded-xl bg-[#EDEAFA] px-3 py-2 text-center text-[13px] font-semibold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+              {customDate.split('-').reverse().join('/')} à {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
             </div>
           </div>
         )}
       </div>
 
-      {/* Apply button */}
-      <Button
+      {/* CTA Publier — pilule pleine (verte au succès) */}
+      <PrimaryPill
         onClick={handleApply}
-        disabled={createRates.isPending}
-        className="w-full py-6 rounded-[14px] text-base font-bold shadow-lg"
-        style={{
-          background: createRates.isSuccess
-            ? 'linear-gradient(135deg, #10b981, #059669)'
-            : 'linear-gradient(135deg, #a78bfa, #7c3aed)',
-        }}
+        loading={createRates.isPending}
+        className={cn(
+          'w-full py-[15px] text-[15px]',
+          createRates.isSuccess
+            ? 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white'
+            : 'bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white',
+        )}
       >
-        {createRates.isPending ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : createRates.isSuccess ? (
-          '\u2713 Taux appliques !'
+        {createRates.isSuccess ? (
+          <>
+            <Check className="h-[18px] w-[18px]" />
+            Taux appliqués !
+          </>
         ) : (
           'Appliquer les nouveaux taux'
         )}
-      </Button>
+      </PrimaryPill>
 
       {/* ── FLYER DU JOUR ── */}
-      <div className="mt-2 rounded-[18px] border border-border/60 overflow-hidden" style={{ background: 'linear-gradient(135deg,#f8f0ff,#eef2ff)' }}>
+      <div className={cn('overflow-hidden rounded-[20px]', SURFACE.card, SURFACE.shadow)}>
         {/* Header */}
-        <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+        <div className="flex items-center justify-between px-4 pb-3 pt-4">
           <div>
-            <div className="text-[14px] font-extrabold text-foreground">Flyer du jour</div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">Taux actuels — prêt à partager</div>
+            <div className={cn('text-[14px] font-extrabold', TEXT.strong)}>Flyer du jour</div>
+            <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>Taux actuels — prêt à partager</div>
           </div>
-          {/* Dark / Light toggle */}
+          {/* Toggle Dark / Light */}
           <div className="flex gap-1.5">
-            {(['dark', 'light'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setFlyerDark(t === 'dark')}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-0 transition-colors"
-                style={{
-                  background: (t === 'dark') === flyerDark ? '#7c3aed' : 'rgba(0,0,0,0.06)',
-                  color: (t === 'dark') === flyerDark ? '#fff' : 'rgba(0,0,0,0.4)',
-                }}
-              >
-                {t === 'dark' ? 'Dark' : 'Light'}
-              </button>
-            ))}
+            {(['dark', 'light'] as const).map((th) => {
+              const active = (th === 'dark') === flyerDark;
+              return (
+                <button
+                  key={th}
+                  onClick={() => setFlyerDark(th === 'dark')}
+                  className={cn(
+                    'rounded-lg px-3 py-1.5 text-[11px] font-bold transition-colors',
+                    active ? 'bg-[#8B5CF6] text-white' : cn('bg-[#EDEAFA] dark:bg-[#2A2738]', TEXT.muted),
+                  )}
+                >
+                  {th === 'dark' ? 'Dark' : 'Light'}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Miniature preview — flyer naturel 2150×2560, réduit à ~0.172 pour tenir sur mobile */}
-        <div className="px-4 pb-3 overflow-hidden flex justify-center">
+        <div className="flex justify-center overflow-hidden px-4 pb-3">
           <div style={{ transform: 'scale(0.172)', transformOrigin: 'top center', height: Math.round(2560 * 0.172), pointerEvents: 'none' }}>
             <RateFlyer
               alipay={parseFloat(rates.alipay) || currentRate?.rate_alipay || 0}
@@ -315,8 +327,8 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           </div>
         </div>
 
-        {/* Export buttons */}
-        <div className="px-4 pb-4 flex gap-2.5">
+        {/* Boutons d'export */}
+        <div className="flex gap-2.5 px-4 pb-4">
           <button
             onClick={async () => {
               if (exportingPNG) return;
@@ -324,10 +336,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               try { await downloadFlyerPNG(flyerRates(), flyerDark); }
               finally { setExportingPNG(false); }
             }}
-            className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
-            style={{ background: '#7c3aed', color: '#fff', opacity: exportingPNG ? 0.6 : 1 }}
+            disabled={exportingPNG}
+            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#8B5CF6] py-3 text-[13px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
           >
-            {exportingPNG ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
+            {exportingPNG ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-[15px] w-[15px]" />}
             PNG
           </button>
           <button
@@ -337,15 +349,14 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               try { await downloadFlyerPDF(flyerRates(), flyerDark); }
               finally { setExportingPDF(false); }
             }}
-            className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
-            style={{ background: '#f3a745', color: '#fff', opacity: exportingPDF ? 0.6 : 1 }}
+            disabled={exportingPDF}
+            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#E8932A] py-3 text-[13px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
           >
-            {exportingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+            {exportingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-[15px] w-[15px]" />}
             PDF
           </button>
         </div>
       </div>
-
     </div>
   );
 }

@@ -1,9 +1,20 @@
+// ============================================================
+// MODULE TAUX — MobileRatesScreen (shell + onglets)
+// Présentation migrée sur le design kit (Ofspace/Mola), calquée
+// sur la maquette validée rates.tsx : canvas doux · onglets en
+// pilule (Segmented) · sous-onglets en pilule · cartes à ombre
+// douce dans les tabs.
+// Logique 100% préservée : onglets principaux/sous-onglets,
+// hooks taux/ajustements, PullToRefresh + invalidations, bouton +.
+// ============================================================
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
 import { RateSetTab } from './tabs/RateSetTab';
 import { RateChartTab } from './tabs/RateChartTab';
 import { RateHistoryTab } from './tabs/RateHistoryTab';
@@ -20,7 +31,7 @@ const MAIN_TABS: { key: MainTab; label: string }[] = [
 ];
 
 const SUB_TABS: { key: RatesSubTab; label: string }[] = [
-  { key: 'set', label: 'Definir' },
+  { key: 'set', label: 'Définir' },
   { key: 'chart', label: 'Graphique' },
   { key: 'history', label: 'Historique' },
 ];
@@ -44,59 +55,66 @@ export function MobileRatesScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn('min-h-screen', SURFACE.canvas)}>
       <MobileHeader
         title="Taux de change"
         showBack
         backTo="/m/more"
+        className={SURFACE.canvas}
         rightElement={
           <button
             onClick={handlePlusClick}
-            className="flex items-center justify-center w-9 h-9 rounded-full text-white shadow-md"
-            style={{ background: '#7c3aed', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}
+            aria-label="Définir les taux"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8B5CF6] text-white shadow-[0_6px_16px_-4px_rgba(139,92,246,0.55)] transition active:scale-95"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="h-5 w-5" strokeWidth={2.6} />
           </button>
         }
       />
 
-      {/* Main tabs */}
-      <div className="flex bg-background border-b border-border px-3">
-        {MAIN_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 py-3.5 px-1.5 text-[13px] cursor-pointer border-b-[3px] transition-colors ${
-              activeTab === tab.key
-                ? 'border-purple-600 text-purple-600 font-bold'
-                : 'border-transparent text-muted-foreground font-medium'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Onglets principaux — pilule (langage Segmented du kit) */}
+      <div className="px-4 pt-3">
+        <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
+          {MAIN_TABS.map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                  active ? PRIMARY_PILL : cn('bg-transparent', TEXT.muted),
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <PullToRefresh onRefresh={handleRefresh} className="overflow-auto">
         <div className="p-4 pb-24">
-          {/* Rates tab */}
+          {/* Onglet Taux */}
           {activeTab === 'rates' && (
             <>
-              {/* Sub-tabs */}
-              <div className="flex bg-muted rounded-xl p-0.5 mb-4">
-                {SUB_TABS.map((st) => (
-                  <button
-                    key={st.key}
-                    onClick={() => setActiveSubTab(st.key)}
-                    className={`flex-1 py-2.5 rounded-xl text-[13px] cursor-pointer transition-all ${
-                      activeSubTab === st.key
-                        ? 'bg-white text-foreground font-semibold shadow-sm'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {st.label}
-                  </button>
-                ))}
+              {/* Sous-onglets — pilule douce */}
+              <div className={cn('mb-4 inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
+                {SUB_TABS.map((st) => {
+                  const active = activeSubTab === st.key;
+                  return (
+                    <button
+                      key={st.key}
+                      onClick={() => setActiveSubTab(st.key)}
+                      className={cn(
+                        'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                        active ? PRIMARY_PILL : cn('bg-transparent', TEXT.muted),
+                      )}
+                    >
+                      {st.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {activeSubTab === 'set' && <RateSetTab currentRate={activeRate} />}
@@ -105,10 +123,10 @@ export function MobileRatesScreen() {
             </>
           )}
 
-          {/* Config tab */}
+          {/* Onglet Config */}
           {activeTab === 'config' && <RateConfigTab />}
 
-          {/* Simulator tab */}
+          {/* Onglet Simulateur */}
           {activeTab === 'simulator' && (
             <RateSimulatorTab
               activeRate={activeRate}

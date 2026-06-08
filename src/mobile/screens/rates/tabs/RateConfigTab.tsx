@@ -1,11 +1,21 @@
+// ============================================================
+// MODULE TAUX — RateConfigTab (ajustements pays / tranches)
+// Présentation migrée sur le design kit (Ofspace/Mola) : cartes
+// blanches à ombre douce · lignes sans filet · badge REF en
+// StatusPill success · CTA Sauvegarder en pilule.
+// Logique 100% préservée : useRateAdjustments + useUpdateRate-
+// Adjustment (RPC), localValues, handleSave (seuls les non-
+// référence modifiés), métas pays/tranches, états load/erreur.
+// ============================================================
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
-import { Button } from '@/components/ui/button';
 import { useRateAdjustments, useUpdateRateAdjustment } from '@/hooks/useDailyRates';
 import { COUNTRIES, TIERS } from '@/types/rates';
 import type { RateAdjustment } from '@/types/rates';
 import { toast } from 'sonner';
+import { SURFACE, TEXT, PrimaryPill, StatusPill, ScreenError } from '@/mobile/designKit';
 
 export function RateConfigTab() {
   const { data: adjustments, isLoading, isError } = useRateAdjustments();
@@ -28,19 +38,17 @@ export function RateConfigTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
       </div>
     );
   }
 
   if (isError || !adjustments) {
     return (
-      <div className="bg-red-50 rounded-2xl p-6 text-center border border-red-200">
-        <div className="text-red-600 font-semibold text-sm mb-1">Erreur de chargement</div>
-        <div className="text-muted-foreground text-xs">
-          Impossible de charger la configuration. Verifiez que la migration SQL a ete executee.
-        </div>
-      </div>
+      <ScreenError
+        title="Erreur de chargement"
+        description="Impossible de charger la configuration. Vérifiez que la migration SQL a été exécutée."
+      />
     );
   }
 
@@ -82,28 +90,25 @@ export function RateConfigTab() {
   const renderAdjustmentRow = (adj: RateAdjustment, meta: { flag?: string; label: string; shortLabel?: string }) => (
     <div
       key={adj.id}
-      className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${
-        adj.is_reference ? 'bg-green-50 border border-green-200' : 'bg-muted/50 border border-border/50'
-      }`}
+      className={cn(
+        'flex items-center justify-between rounded-xl px-3 py-2.5',
+        adj.is_reference ? 'bg-[#DEEFE5] dark:bg-[#1E3A2C]' : SURFACE.canvas,
+      )}
     >
       <div className="flex items-center gap-2">
         {meta.flag && <span className="text-xl">{meta.flag}</span>}
         <div>
-          <span className="text-sm font-medium text-foreground">
+          <span className={cn('text-[14px] font-semibold', TEXT.strong)}>
             {meta.shortLabel || meta.label}
           </span>
           {meta.shortLabel && (
-            <div className="text-[11px] text-muted-foreground">{meta.label}</div>
+            <div className={cn('text-[11px]', TEXT.muted)}>{meta.label}</div>
           )}
         </div>
-        {adj.is_reference && (
-          <span className="text-[10px] font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-xl">
-            REF
-          </span>
-        )}
+        {adj.is_reference && <StatusPill tone="success" label="REF" />}
       </div>
       {adj.is_reference ? (
-        <span className="text-sm font-bold text-green-600">0 %</span>
+        <span className="text-[14px] font-bold text-[#2E7D52] dark:text-[#7FCBA0]">0 %</span>
       ) : (
         <div className="flex items-center gap-1">
           <TextField
@@ -114,10 +119,10 @@ export function RateConfigTab() {
               setLocalValues({ ...localValues, [adj.id]: e.target.value })
             }
             wrapperClassName="w-[72px]"
-            controlClassName="text-right font-bold text-red-600"
+            controlClassName="text-right font-bold text-[#C0504D] dark:text-[#E79A9A]"
             aria-label={`Ajustement ${meta.label}`}
           />
-          <span className="text-sm font-semibold text-muted-foreground">%</span>
+          <span className={cn('text-[14px] font-semibold', TEXT.muted)}>%</span>
         </div>
       )}
     </div>
@@ -125,14 +130,14 @@ export function RateConfigTab() {
 
   return (
     <div className="space-y-4">
-      {/* Country adjustments */}
-      <div className="bg-white rounded-[14px] p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-1">
+      {/* Ajustements par pays */}
+      <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
+        <div className="mb-1 flex items-center gap-2">
           <span className="text-lg">🌍</span>
-          <h3 className="text-base font-bold text-foreground">Ajustements par pays</h3>
+          <h3 className={cn('text-[16px] font-bold', TEXT.strong)}>Ajustements par pays</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-3.5">
-          Cameroun = reference (0%).
+        <p className={cn('mb-3.5 text-[12px]', TEXT.muted)}>
+          Cameroun = référence (0%).
         </p>
         <div className="space-y-2">
           {countryAdjs.map((adj) =>
@@ -144,13 +149,13 @@ export function RateConfigTab() {
         </div>
       </div>
 
-      {/* Tier adjustments */}
-      <div className="bg-white rounded-[14px] p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-1">
+      {/* Ajustements par tranche */}
+      <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
+        <div className="mb-1 flex items-center gap-2">
           <span className="text-lg">📊</span>
-          <h3 className="text-base font-bold text-foreground">Ajustements par tranche</h3>
+          <h3 className={cn('text-[16px] font-bold', TEXT.strong)}>Ajustements par tranche</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-3.5">
+        <p className={cn('mb-3.5 text-[12px]', TEXT.muted)}>
           Pourcentage selon le montant.
         </p>
         <div className="space-y-2">
@@ -164,21 +169,14 @@ export function RateConfigTab() {
         </div>
       </div>
 
-      {/* Save button */}
-      <Button
+      {/* CTA Sauvegarder — pilule ambre (couleur Config) */}
+      <PrimaryPill
         onClick={handleSave}
-        disabled={saving}
-        className="w-full py-6 rounded-[14px] text-base font-bold shadow-lg"
-        style={{
-          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-        }}
+        loading={saving}
+        className="w-full py-[15px] text-[15px] bg-[#E8932A] text-white dark:bg-[#E8932A] dark:text-white"
       >
-        {saving ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          'Sauvegarder la configuration'
-        )}
-      </Button>
+        Sauvegarder la configuration
+      </PrimaryPill>
     </div>
   );
 }
