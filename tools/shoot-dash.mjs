@@ -28,10 +28,10 @@ const rate = {
   effective_at: new Date().toISOString(),
 };
 const deposits = [
-  { id: 'd1', user_id: 'u1', amount_xaf: 2500000, status: 'pending_review', created_at: new Date(Date.now() - 36e5).toISOString(), profiles: { first_name: 'Awa', last_name: 'Diop' } },
-  { id: 'd2', user_id: 'u2', amount_xaf: 1800000, status: 'validated', created_at: new Date(Date.now() - 8e6).toISOString(), profiles: { first_name: 'Jean', last_name: 'Kamga' } },
-  { id: 'd3', user_id: 'u3', amount_xaf: 950000, status: 'validated', created_at: new Date(Date.now() - 1.5e7).toISOString(), profiles: { first_name: 'Marie', last_name: 'Nkolo' } },
-  { id: 'd4', user_id: 'u4', amount_xaf: 4200000, status: 'rejected', created_at: new Date(Date.now() - 9e7).toISOString(), profiles: { first_name: 'Paul', last_name: 'Mballa' } },
+  { id: 'd1', reference: 'BZ-DP-001', method: 'bank_transfer', bank_name: 'Afriland First Bank', agency_name: null, admin_comment: null, confirmed_amount_xaf: null, validated_at: null, user_id: 'u1', amount_xaf: 2500000, status: 'proof_submitted', proof_count: 1, created_at: new Date(Date.now() - 36e5).toISOString(), profiles: { first_name: 'Awa', last_name: 'Diop', phone: '+237 6 91 23 45 67', company_name: 'Jako Cargo SARL' } },
+  { id: 'd2', reference: 'BZ-DP-002', method: 'om_transfer', bank_name: null, agency_name: null, admin_comment: null, confirmed_amount_xaf: 1800000, validated_at: new Date(Date.now() - 7e6).toISOString(), user_id: 'u2', amount_xaf: 1800000, status: 'validated', proof_count: 2, created_at: new Date(Date.now() - 8e6).toISOString(), profiles: { first_name: 'Jean', last_name: 'Kamga', phone: '+237 6 55 11 22 33', company_name: 'Kamga Import' } },
+  { id: 'd3', reference: 'BZ-DP-003', method: 'wave', bank_name: null, agency_name: null, admin_comment: null, confirmed_amount_xaf: null, validated_at: new Date(Date.now() - 1.4e7).toISOString(), user_id: 'u3', amount_xaf: 950000, status: 'validated', proof_count: 0, created_at: new Date(Date.now() - 1.5e7).toISOString(), profiles: { first_name: 'Marie', last_name: 'Nkolo', phone: '+237 6 77 88 99 00', company_name: null } },
+  { id: 'd4', reference: 'BZ-DP-004', method: 'agency_cash', bank_name: null, agency_name: 'Agence Douala Akwa', admin_comment: 'Montant non conforme', confirmed_amount_xaf: null, validated_at: null, user_id: 'u4', amount_xaf: 4200000, status: 'rejected', proof_count: 1, created_at: new Date(Date.now() - 9e7).toISOString(), profiles: { first_name: 'Paul', last_name: 'Mballa', phone: '+237 6 33 44 55 66', company_name: 'Mballa Trading' } },
 ];
 
 // More module (M1) fixtures — history (audit logs) + proofs.
@@ -96,11 +96,18 @@ function respond(url) {
   if (url.includes('/daily_rates')) return rate; // maybeSingle → object
   if (url.includes('/admin_audit_logs')) return auditLogs;
   if (url.includes('/user_roles')) return adminRoles;
-  if (url.includes('/deposit_proofs')) return proofs;
+  // Proofs: the count query (?select=deposit_id) and the More screen want the
+  // list; the detail screen (deposit_id=eq.…) signs each file_url — return [] so
+  // it renders the clean "missing proof" state without hitting storage signing.
+  if (url.includes('/deposit_proofs')) return url.includes('deposit_id=eq.') ? [] : proofs;
   if (url.includes('/beneficiaries')) return beneficiaries;
   if (url.includes('/wallets')) return single ? wallets[0] : wallets;
   if (url.includes('/ledger_entries')) return ledgerEntries;
-  if (url.includes('/deposits')) return single ? clientDeposits : deposits;
+  // Deposit detail fetches one row by id (id=eq.…) and slices single() client-side.
+  if (url.includes('/deposits')) {
+    if (url.includes('id=eq.')) return deposits[0]; // detail → single deposit
+    return single ? clientDeposits : deposits;
+  }
   if (url.includes('/clients')) {
     if (single) return clientsList[0]; // detail (maybeSingle slices client-side)
     // proofs screen joins clients by user_id; clients list needs the full rows.

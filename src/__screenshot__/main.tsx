@@ -54,6 +54,11 @@ import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail'
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
 import MobileClientBeneficiaries from '@/mobile/screens/clients/MobileClientBeneficiaries';
+import {
+  MobileDepositsScreenV2,
+  MobileDepositDetailV2,
+  MobileNewDepositV2,
+} from '@/mobile/screens/deposits';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -99,6 +104,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'client-create': { Comp: MobileCreateClient, route: '/m/clients/new' },
   'client-ledger': { Comp: MobileClientLedger, route: '/m/clients/u1/ledger', path: '/m/clients/:clientId/ledger' },
   'client-beneficiaries': { Comp: MobileClientBeneficiaries, route: '/m/clients/u1/beneficiaries', path: '/m/clients/:clientId/beneficiaries' },
+  // Deposits module (Phase 2 M3)
+  deposits: { Comp: MobileDepositsScreenV2, route: '/m/deposits' },
+  'deposit-detail': { Comp: MobileDepositDetailV2, route: '/m/deposits/d1', path: '/m/deposits/:depositId' },
+  'deposit-new': { Comp: MobileNewDepositV2, route: '/m/deposits/new' },
 };
 
 const params = new URLSearchParams(window.location.search);
