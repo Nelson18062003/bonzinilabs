@@ -1,13 +1,23 @@
+// ============================================================
+// AGENT-CASH — AgentCashScanner (QR html5-qrcode + saisie manuelle)
+// Présentation migrée sur le design kit (Ofspace/Mola) : canvas doux ·
+//   cadre caméra + états en Card/Holder · saisie manuelle en Card +
+//   TextInput + PrimaryPill.
+// ⚠️ LOGIQUE CAMÉRA/SCANNER 100% INTACTE : safeStopScanner, l'effet de
+//   démarrage, handleScanResult, le mapping d'erreurs caméra, le div
+//   #agent-cash-qr-reader (cible de montage html5-qrcode) et ses classes,
+//   handleManualSearch — RIEN n'est touché côté scanner.
+// ============================================================
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/form';
 import { ScanLine, Search, AlertCircle, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, Card, Holder, TextInput, PrimaryPill } from '@/mobile/designKit';
 
 function safeStopScanner(scanner: Html5Qrcode | null) {
   if (!scanner) return;
@@ -115,25 +125,23 @@ export function AgentCashScanner() {
   };
 
   return (
-    <div>
+    <div className={cn('min-h-screen', SURFACE.canvas)}>
       <MobileHeader title={t('scanner')} />
 
       <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-4 sm:space-y-6">
         {/* Camera viewfinder */}
-        <div className="card-glass rounded-2xl overflow-hidden">
+        <Card className="overflow-hidden p-0">
           {isStarting && !cameraError && (
-            <div className="h-72 flex flex-col items-center justify-center gap-3 bg-black/5">
-              <Camera className="w-10 h-10 text-muted-foreground animate-pulse" />
-              <p className="text-sm text-muted-foreground">{t('scanning')}</p>
+            <div className="flex h-72 flex-col items-center justify-center gap-3">
+              <Holder icon={Camera} size="lg" className="animate-pulse" />
+              <p className={cn('text-sm', TEXT.muted)}>{t('scanning')}</p>
             </div>
           )}
 
           {cameraError && (
-            <div className="h-72 flex flex-col items-center justify-center gap-3 p-6 text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-destructive" />
-              </div>
-              <p className="text-sm text-muted-foreground">{cameraError}</p>
+            <div className="flex h-72 flex-col items-center justify-center gap-3 p-6 text-center">
+              <Holder icon={AlertCircle} tone="danger" size="lg" />
+              <p className={cn('text-sm', TEXT.muted)}>{cameraError}</p>
             </div>
           )}
 
@@ -145,35 +153,32 @@ export function AgentCashScanner() {
 
           {!cameraError && !isStarting && (
             <div className="p-3 text-center">
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className={cn('flex items-center justify-center gap-2 text-sm', TEXT.muted)}>
                 <ScanLine className="w-4 h-4" />
                 <span>{t('align_qr')}</span>
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Divider */}
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground uppercase tracking-wide">
+          <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+          <span className={cn('text-xs uppercase tracking-wide', TEXT.muted)}>
             {t('manual_entry')}
           </span>
-          <div className="flex-1 h-px bg-border" />
+          <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
         </div>
 
         {/* Manual entry */}
-        <div className="card-glass p-4 rounded-2xl space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {t('enter_payment_id')}
-          </p>
+        <Card className="space-y-3">
+          <p className={cn('text-sm', TEXT.muted)}>{t('enter_payment_id')}</p>
           <div className="flex gap-2">
-            <TextField
+            <TextInput
               value={manualId}
               onChange={(e) => setManualId(e.target.value)}
               placeholder="Payment ID / QR content"
-              wrapperClassName="flex-1"
-              controlClassName="font-mono"
+              className="flex-1 font-mono"
               autoComplete="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -182,15 +187,15 @@ export function AgentCashScanner() {
                 if (e.key === 'Enter') handleManualSearch();
               }}
             />
-            <Button
+            <PrimaryPill
               onClick={handleManualSearch}
               disabled={!manualId.trim()}
-              className="btn-primary-gradient"
+              className="shrink-0 px-4"
             >
               <Search className="w-4 h-4" />
-            </Button>
+            </PrimaryPill>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
