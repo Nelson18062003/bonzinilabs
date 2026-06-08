@@ -87,6 +87,7 @@ import {
 import { Area, AreaChart } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, PRIMARY_PILL, TONE_HOLDER, TONE_PILL } from '@/mobile/designKit';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Colour tokens — match the Bonzini brand palette used across the app.
@@ -259,13 +260,13 @@ function DashboardBody() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={refreshing}>
-      <div className="flex flex-col gap-6 p-4 pb-24 bg-muted/30 min-h-screen">
+      <div className={cn('flex min-h-screen flex-col gap-6 p-4 pb-24', SURFACE.canvas)}>
 
         {/* TOOLBAR ─────────────────────────────────────────── */}
         <header className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">Analytics</h1>
-            <p className="text-xs text-muted-foreground">
+            <h1 className={cn('text-xl font-extrabold tracking-tight', TEXT.strong)}>Analytics</h1>
+            <p className={cn('text-xs', TEXT.muted)}>
               Aperçu de l'activité sur la période sélectionnée — fuseau Africa/Douala.
             </p>
           </div>
@@ -275,7 +276,7 @@ function DashboardBody() {
               type="button"
               onClick={handleRefresh}
               aria-label="Rafraîchir"
-              className="rounded-xl border border-border bg-background p-2 hover:bg-muted/50"
+              className={cn('rounded-xl p-2.5', SURFACE.card, SURFACE.shadow, TEXT.strong)}
             >
               <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
             </button>
@@ -884,33 +885,22 @@ function AlertsSection({
   alerts: DashboardAlert[];
   onNavigate: (path: string) => void;
 }) {
-  const severityStyle: Record<DashboardAlert['severity'], { box: string; icon: string; title: string }> = {
-    critical: {
-      box: 'bg-red-500/10',
-      icon: 'text-red-600 dark:text-red-400',
-      title: 'text-red-700 dark:text-red-300',
-    },
-    warning: {
-      box: 'bg-amber-500/10',
-      icon: 'text-amber-600 dark:text-amber-400',
-      title: 'text-amber-700 dark:text-amber-300',
-    },
-    info: {
-      box: 'bg-blue-500/10',
-      icon: 'text-blue-600 dark:text-blue-400',
-      title: 'text-blue-700 dark:text-blue-300',
-    },
+  // Severity → unified kit tone (colour carries meaning only).
+  const severityTone: Record<DashboardAlert['severity'], 'danger' | 'pending' | 'info'> = {
+    critical: 'danger',
+    warning: 'pending',
+    info: 'info',
   };
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
+      <h2 className={cn('flex items-center gap-2 text-sm font-bold', TEXT.strong)}>
+        <AlertTriangle className="h-4 w-4 text-[#9A6B12] dark:text-[#E7C083]" />
         Alertes opérationnelles
       </h2>
       <div className="space-y-2">
         {alerts.map((alert) => {
-          const s = severityStyle[alert.severity];
+          const tone = severityTone[alert.severity];
           const Clickable = !!alert.actionHref;
           return (
             <button
@@ -918,17 +908,19 @@ function AlertsSection({
               type="button"
               disabled={!Clickable}
               onClick={Clickable ? () => onNavigate(alert.actionHref!) : undefined}
-              className={`flex w-full items-start gap-3 rounded-2xl p-3.5 text-left ${s.box} ${Clickable ? 'hover:opacity-90' : 'cursor-default'}`}
+              className={cn('flex w-full items-start gap-3 rounded-2xl p-3.5 text-left', SURFACE.card, SURFACE.shadow, Clickable ? 'transition active:scale-[0.99]' : 'cursor-default')}
             >
-              <AlertTriangle className={`mt-0.5 h-5 w-5 flex-shrink-0 ${s.icon}`} />
+              <span className={cn('mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full', TONE_HOLDER[tone])}>
+                <AlertTriangle className="h-4.5 w-4.5" />
+              </span>
               <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold ${s.title}`}>
-                  {alert.title}{' '}
-                  <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs tabular-nums">
+                <div className={cn('flex items-center gap-2 text-sm font-bold', TEXT.strong)}>
+                  {alert.title}
+                  <span className={cn('rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums', TONE_PILL[tone])}>
                     {alert.count}
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{alert.description}</p>
+                <p className={cn('mt-0.5 text-xs', TEXT.muted)}>{alert.description}</p>
               </div>
             </button>
           );
@@ -1062,29 +1054,29 @@ function CountryDistributionReport({
           {displayed.map((row) => (
             <div
               key={row.key}
-              className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-2.5 py-1.5 text-xs"
+              className={cn('flex items-center justify-between gap-3 rounded-xl px-2.5 py-1.5 text-xs', SURFACE.canvas)}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
                   style={{ background: row.color }}
                 />
-                <span className="font-medium truncate">{row.country}</span>
+                <span className={cn('font-medium truncate', TEXT.strong)}>{row.country}</span>
               </span>
-              <span className="flex-shrink-0 tabular-nums text-muted-foreground">
-                <span className="font-semibold text-foreground">{formatInteger(row.count)}</span>
+              <span className={cn('flex-shrink-0 tabular-nums', TEXT.muted)}>
+                <span className={cn('font-semibold', TEXT.strong)}>{formatInteger(row.count)}</span>
                 {' · '}
                 {(row.share * 100).toFixed(1)}%
               </span>
             </div>
           ))}
           {hasOther ? (
-            <p className="pt-1 text-[10px] text-muted-foreground">
+            <p className={cn('pt-1 text-[10px]', TEXT.muted)}>
               « Autres » regroupe les pays au-delà du top 5.
             </p>
           ) : null}
           {showQualityWarning ? (
-            <p className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700">
+            <p className={cn('rounded-lg px-2 py-1.5 text-[11px] font-medium', TONE_PILL.pending)}>
               ⚠ {(unknownShare * 100).toFixed(0)}% des clients n'ont pas de pays renseigné — pense à rendre le champ obligatoire à l'inscription.
             </p>
           ) : null}
@@ -1267,13 +1259,13 @@ function RateEvolutionReport({
             globalGranularity={globalGranularity}
             range={range}
           />
-          <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5 text-[11px]">
+          <div className={cn('inline-flex rounded-full p-0.5 text-[11px]', SURFACE.canvas)}>
             <button
               type="button"
               onClick={() => setMode('absolute')}
               className={cn(
-                'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'absolute' ? 'bg-background ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+                'rounded-full px-2.5 py-1 font-semibold transition-colors',
+                mode === 'absolute' ? PRIMARY_PILL : TEXT.muted,
               )}
             >
               Absolu
@@ -1282,8 +1274,8 @@ function RateEvolutionReport({
               type="button"
               onClick={() => setMode('variation')}
               className={cn(
-                'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'variation' ? 'bg-background ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+                'rounded-full px-2.5 py-1 font-semibold transition-colors',
+                mode === 'variation' ? PRIMARY_PILL : TEXT.muted,
               )}
             >
               Variation %
@@ -1405,13 +1397,13 @@ function RateInsightTile({
   color: string;
 }) {
   return (
-    <div className="rounded-2xl bg-muted/40 p-2.5">
+    <div className={cn('rounded-2xl p-2.5', SURFACE.canvas)}>
       <div className="flex items-center gap-1.5">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className={cn('text-[10px] uppercase tracking-wider', TEXT.muted)}>{label}</span>
       </div>
-      <div className="mt-1 text-base md:text-lg font-bold tabular-nums break-words">{value}</div>
-      <div className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{sub}</div>
+      <div className={cn('mt-1 text-base md:text-lg font-bold tabular-nums break-words', TEXT.strong)}>{value}</div>
+      <div className={cn('text-[10px] leading-snug line-clamp-2', TEXT.muted)}>{sub}</div>
     </div>
   );
 }
@@ -1763,37 +1755,37 @@ function RegistrationSourceBlock({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-muted/40 p-3">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Admin-créés</div>
-          <div className="mt-1 text-xl font-bold tabular-nums">{formatInteger(stats.adminCreated)}</div>
-          <div className="text-xs text-muted-foreground">{formatPercent(stats.adminCreatedPct)} du total</div>
+        <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
+          <div className={cn('text-[11px] uppercase tracking-wider', TEXT.muted)}>Admin-créés</div>
+          <div className={cn('mt-1 text-xl font-bold tabular-nums', TEXT.strong)}>{formatInteger(stats.adminCreated)}</div>
+          <div className={cn('text-xs', TEXT.muted)}>{formatPercent(stats.adminCreatedPct)} du total</div>
         </div>
-        <div className="rounded-2xl bg-muted/40 p-3">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Self-registered</div>
-          <div className="mt-1 text-xl font-bold tabular-nums">{formatInteger(stats.selfRegistered)}</div>
-          <div className="text-xs text-muted-foreground">{formatPercent(1 - stats.adminCreatedPct)} du total</div>
+        <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
+          <div className={cn('text-[11px] uppercase tracking-wider', TEXT.muted)}>Self-registered</div>
+          <div className={cn('mt-1 text-xl font-bold tabular-nums', TEXT.strong)}>{formatInteger(stats.selfRegistered)}</div>
+          <div className={cn('text-xs', TEXT.muted)}>{formatPercent(1 - stats.adminCreatedPct)} du total</div>
         </div>
       </div>
 
       {utm.length > 0 ? (
         <div>
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className={cn('mb-2 text-[11px] font-semibold uppercase tracking-wider', TEXT.muted)}>
             Top sources UTM
           </div>
           <div className="space-y-1">
             {utm.map((row) => (
               <div
                 key={`${row.source}-${row.medium}-${row.campaign}`}
-                className="flex items-center justify-between gap-2 rounded-xl bg-muted/40 px-2.5 py-1.5 text-xs"
+                className={cn('flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs', SURFACE.canvas)}
               >
                 <div className="min-w-0 flex-1 truncate">
-                  <span className="font-semibold">{row.source}</span>
-                  <span className="text-muted-foreground"> · {row.medium}</span>
+                  <span className={cn('font-semibold', TEXT.strong)}>{row.source}</span>
+                  <span className={TEXT.muted}> · {row.medium}</span>
                   {row.campaign !== '(none)' ? (
-                    <span className="text-muted-foreground"> · {row.campaign}</span>
+                    <span className={TEXT.muted}> · {row.campaign}</span>
                   ) : null}
                 </div>
-                <span className="flex-shrink-0 font-semibold tabular-nums">
+                <span className={cn('flex-shrink-0 font-semibold tabular-nums', TEXT.strong)}>
                   {formatInteger(row.count)}
                 </span>
               </div>
@@ -1801,7 +1793,7 @@ function RegistrationSourceBlock({
           </div>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Aucune source UTM sur la période.</p>
+        <p className={cn('text-xs', TEXT.muted)}>Aucune source UTM sur la période.</p>
       )}
     </div>
   );
