@@ -151,6 +151,22 @@ const beneficiaries = [
   { id: 'b3', client_id: 'u1', payment_method: 'bank_transfer', alias: 'Usine Guangzhou', name: 'Guangzhou Trading Co', identifier: null, identifier_type: 'id', phone: null, email: null, bank_name: 'ICBC', bank_account: '6222 0000 1234 5678', bank_extra: 'SWIFT ICBKCNBJ', relation_type: 'supplier', notes: null, qr_code_url: null, is_archived: false, created_at: new Date().toISOString() },
 ];
 
+// Agent-cash sub-app (M8) fixtures — cash payments (method=cash). The list
+// query filters by method=eq.cash + status; the detail/confirm/success fetch
+// one row by id=eq.<id>. A tiny inline data-URI signature renders the <img>
+// without hitting storage.
+const SIGNATURE_DATA_URI =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="100"><path d="M10 70 C 40 10, 70 90, 100 50 S 160 10, 190 60 S 220 40, 230 55" stroke="%231B1A24" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+  );
+const cashPaymentsPending = [
+  { id: 'cp1', reference: 'BZ-PM-CASH-001', amount_rmb: 12500, amount_xaf: 1150000, status: 'cash_scanned', method: 'cash', created_at: new Date(Date.now() - 18e5).toISOString(), cash_beneficiary_type: 'other', cash_beneficiary_first_name: 'Chen', cash_beneficiary_last_name: 'Wei', cash_beneficiary_phone: '+86 138 0000 2222', beneficiary_name: null, beneficiary_phone: null, beneficiary_email: 'chen.wei@example.cn', cash_paid_at: null, cash_paid_by: null, cash_scanned_by: 'demo', cash_signature_url: null, cash_signed_by_name: null, user_id: 'u1' },
+  { id: 'cp3', reference: 'BZ-PM-CASH-003', amount_rmb: 8200, amount_xaf: 760000, status: 'processing', method: 'cash', created_at: new Date(Date.now() - 9e6).toISOString(), cash_beneficiary_type: 'other', cash_beneficiary_first_name: 'Liu', cash_beneficiary_last_name: 'Yang', cash_beneficiary_phone: '+86 139 1111 3333', beneficiary_name: null, beneficiary_phone: null, beneficiary_email: null, cash_paid_at: null, cash_paid_by: null, cash_scanned_by: null, cash_signature_url: null, cash_signed_by_name: null, user_id: 'u2' },
+];
+const cashPaymentScanned = cashPaymentsPending[0]; // cp1 — detail/confirm
+const cashPaymentPaid = { id: 'cp2', reference: 'BZ-PM-CASH-002', amount_rmb: 15800, amount_xaf: 1460000, status: 'completed', method: 'cash', created_at: new Date(Date.now() - 6e6).toISOString(), cash_beneficiary_type: 'other', cash_beneficiary_first_name: 'Wang', cash_beneficiary_last_name: 'Fang', cash_beneficiary_phone: '+86 137 2222 4444', beneficiary_name: null, beneficiary_phone: null, beneficiary_email: null, cash_paid_at: new Date(Date.now() - 5e5).toISOString(), cash_paid_by: 'demo', cash_scanned_by: 'demo', cash_signature_url: SIGNATURE_DATA_URI, cash_signed_by_name: 'Wang Fang', user_id: 'u3' };
+
 // This Supabase client version slices maybeSingle()/single() client-side (Accept
 // stays application/json), so we discriminate by URL instead: a query filtered to
 // one user (user_id=eq.…) is the detail/ledger fetch; an unfiltered query is a list.
@@ -189,12 +205,21 @@ function respond(url) {
   }
   if (url.includes('/clients')) {
     if (single) return clientsList[0]; // detail (maybeSingle slices client-side)
+    // proofs + agent-cash list join clients by user_id (select=user_id,...).
+    // Checked before the chat `id=in.` rule (which would match "user_id=in." too).
+    if (url.includes('select=user_id')) return proofClients;
     // Support chat joins clients by id (select id,first_name,last_name,phone).
     if (url.includes('id=in.')) return chatClients;
-    // proofs screen joins clients by user_id; clients list needs the full rows.
-    return url.includes('select=user_id') ? proofClients : clientsList;
+    return clientsList;
   }
-  if (url.includes('/payments')) return single ? clientPayments : [];
+  if (url.includes('/payments')) {
+    // Agent-cash (M8): detail/confirm/success fetch one cash payment by id;
+    // the list filters by method=eq.cash. cp2 is the paid (signed) one.
+    if (url.includes('id=eq.cp2')) return cashPaymentPaid;
+    if (url.includes('id=eq.')) return cashPaymentScanned;
+    if (url.includes('method=eq.cash')) return cashPaymentsPending;
+    return single ? clientPayments : [];
+  }
   return [];
 }
 

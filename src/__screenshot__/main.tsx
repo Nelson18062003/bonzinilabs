@@ -73,10 +73,21 @@ import {
   MobileCannedResponsesScreen,
   MobileQuickRepliesScreen,
 } from '@/mobile/screens/support';
+import {
+  AgentCashLogin,
+  AgentCashPayments,
+  AgentCashScanner,
+  AgentCashPaymentDetail,
+  AgentCashConfirm,
+  AgentCashSuccess,
+} from '@/mobile/screens/agent-cash';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
-const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string }> = {
+// `wrap: 'lang'` wraps the screen in LanguageProvider (agent-cash sub-app uses
+// useLanguage() — EN/ZH bridge over react-i18next's `agent` namespace).
+const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string; wrap?: 'lang' }> = {
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
@@ -136,6 +147,13 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'support-stats': { Comp: MobileSupportStatsScreen, route: '/m/support/stats' },
   'support-canned': { Comp: MobileCannedResponsesScreen, route: '/m/support/canned' },
   'support-quick': { Comp: MobileQuickRepliesScreen, route: '/m/support/quick' },
+  // Agent-cash sub-app (Phase 2 M8) — routes are /a/*. wrap:'lang' provides useLanguage().
+  'agent-login': { Comp: AgentCashLogin, route: '/a/login', wrap: 'lang' },
+  'agent-payments': { Comp: AgentCashPayments, route: '/a', wrap: 'lang' },
+  'agent-scanner': { Comp: AgentCashScanner, route: '/a/scan', wrap: 'lang' },
+  'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
+  'agent-confirm': { Comp: AgentCashConfirm, route: '/a/payment/cp1/confirm', path: '/a/payment/:paymentId/confirm', wrap: 'lang' },
+  'agent-success': { Comp: AgentCashSuccess, route: '/a/payment/cp2/success', path: '/a/payment/:paymentId/success', wrap: 'lang' },
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -167,18 +185,22 @@ const qc = new QueryClient({
 const entry = SCREENS[screenKey] ?? SCREENS.home;
 const Screen = entry.Comp;
 
+const routed = entry.path ? (
+  <Routes>
+    <Route path={entry.path} element={<Screen />} />
+  </Routes>
+) : (
+  <Screen />
+);
+// Agent-cash screens need LanguageProvider (useLanguage bridge over i18next).
+const inner = entry.wrap === 'lang' ? <LanguageProvider>{routed}</LanguageProvider> : routed;
+
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider attribute="class" defaultTheme={theme} enableSystem={false}>
     <QueryClientProvider client={qc}>
       <AdminAuthContext.Provider value={fakeAuth}>
         <MemoryRouter initialEntries={[entry.route]}>
-          {entry.path ? (
-            <Routes>
-              <Route path={entry.path} element={<Screen />} />
-            </Routes>
-          ) : (
-            <Screen />
-          )}
+          {inner}
         </MemoryRouter>
       </AdminAuthContext.Provider>
     </QueryClientProvider>
