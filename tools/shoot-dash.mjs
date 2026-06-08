@@ -58,10 +58,12 @@ const auditLogs = [
   { id: 'l3', admin_user_id: 'a1', action_type: 'rate_updated', target_type: 'rate', created_at: new Date(Date.now() - 9e6).toISOString() },
   { id: 'l4', admin_user_id: 'a3', action_type: 'client_created', target_type: 'client', created_at: new Date(Date.now() - 9e7).toISOString() },
 ];
+// Superset used both by the audit-log join (reads first/last name) and the
+// Admins module (M6) list/detail (reads email, role, is_disabled, created_at).
 const adminRoles = [
-  { user_id: 'a1', first_name: 'Awa', last_name: 'Diop' },
-  { user_id: 'a2', first_name: 'Jean', last_name: 'Kamga' },
-  { user_id: 'a3', first_name: 'Marie', last_name: 'Nkolo' },
+  { user_id: 'a1', first_name: 'Awa', last_name: 'Diop', email: 'awa@bonzini.com', role: 'super_admin', is_disabled: false, created_at: new Date(Date.now() - 12e9).toISOString() },
+  { user_id: 'a2', first_name: 'Jean', last_name: 'Kamga', email: 'jean@bonzini.com', role: 'ops', is_disabled: false, created_at: new Date(Date.now() - 6e9).toISOString() },
+  { user_id: 'a3', first_name: 'Marie', last_name: 'Nkolo', email: 'marie@bonzini.com', role: 'cash_agent', is_disabled: true, created_at: new Date(Date.now() - 2e9).toISOString() },
 ];
 const proofs = [
   { id: 'pr1', file_name: 'recu_alipay.jpg', file_url: 'u1/recu_alipay.jpg', uploaded_at: new Date(Date.now() - 12e5).toISOString(), deposits: { id: 'd1', user_id: 'u1' } },

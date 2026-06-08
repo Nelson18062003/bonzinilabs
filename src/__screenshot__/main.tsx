@@ -61,6 +61,11 @@ import {
 } from '@/mobile/screens/deposits';
 import { MobileNewPayment } from '@/mobile/screens/payments';
 import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
+import {
+  MobileAdminsScreen,
+  MobileCreateAdmin,
+  MobileAdminDetail,
+} from '@/mobile/screens/admins';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -114,6 +119,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'payment-new': { Comp: MobileNewPayment, route: '/m/payments/new' },
   // Rates module (Phase 2 M5)
   rates: { Comp: MobileRatesScreen, route: '/m/rates' },
+  // Admins module (Phase 2 M6)
+  admins: { Comp: MobileAdminsScreen, route: '/m/more/admins' },
+  'admin-create': { Comp: MobileCreateAdmin, route: '/m/more/admins/new' },
+  'admin-detail': { Comp: MobileAdminDetail, route: '/m/more/admins/a1', path: '/m/more/admins/:adminId' },
 };
 
 const params = new URLSearchParams(window.location.search);
