@@ -477,7 +477,7 @@ export function MobileClientDetail() {
             <ActionRow
               icon={Key}
               tone="pending"
-              label={t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}
+              label={t('resetPasswordAction', { defaultValue: 'Réinitialiser mot de passe' })}
               description={t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' })}
               onClick={() => setResetDrawerOpen(true)}
             />
@@ -591,7 +591,7 @@ export function MobileClientDetail() {
         title={
           <span className="flex items-center gap-2">
             <Key className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
-            {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
+            {t('resetPasswordAction', { defaultValue: 'Réinitialiser le mot de passe' })}
           </span>
         }
       >

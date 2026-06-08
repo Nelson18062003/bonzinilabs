@@ -299,7 +299,7 @@ export function MobileAdminDetail() {
             <ActionRow
               icon={Key}
               tone="pending"
-              label={isSelf ? t('changeMyPassword', { defaultValue: 'Changer mon mot de passe' }) : t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}
+              label={isSelf ? t('changeMyPassword', { defaultValue: 'Changer mon mot de passe' }) : t('resetPasswordAction', { defaultValue: 'Réinitialiser mot de passe' })}
               description={isSelf ? t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' }) : t('generateTempPassword', { defaultValue: 'Générer un mot de passe temporaire' })}
               onClick={() => setResetDrawerOpen(true)}
             />
@@ -415,7 +415,7 @@ export function MobileAdminDetail() {
         title={
           <span className="flex items-center gap-2">
             <Key className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
-            {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
+            {t('resetPasswordAction', { defaultValue: 'Réinitialiser le mot de passe' })}
           </span>
         }
       >
