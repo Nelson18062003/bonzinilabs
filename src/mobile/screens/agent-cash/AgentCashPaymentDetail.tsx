@@ -1,3 +1,12 @@
+// ============================================================
+// AGENT-CASH — AgentCashPaymentDetail (fiche paiement cash)
+// Présentation migrée sur le design kit (Ofspace/Mola) : canvas doux ·
+//   hero Card + Holder + Amount + StatusPill toné · infos en Row ·
+//   boutons d'action en PrimaryPill · ScreenLoader/ScreenError.
+// Logique 100% préservée : useAgentCashPaymentDetail, useAgentScanCashPayment,
+//   handleProceedToPayment (scan → confirm, fallback déjà scanné), statuts
+//   (isPaid/isPending/isCashScanned), CashReceiptDownloadButton, signature.
+// ============================================================
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPaymentDetail } from '@/hooks/useAgentCashPayments';
@@ -5,9 +14,22 @@ import { useAgentScanCashPayment } from '@/hooks/useAgentCashActions';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatNumber, formatDate } from '@/lib/formatters';
-import { Loader2, Banknote, User, Phone, Mail, FileText, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Banknote, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  SURFACE,
+  TEXT,
+  Card,
+  Holder,
+  Amount,
+  Row,
+  StatusPill,
+  PrimaryPill,
+  ScreenLoader,
+  ScreenError,
+  type Tone,
+} from '@/mobile/designKit';
 
 export function AgentCashPaymentDetail() {
   const { paymentId } = useParams<{ paymentId: string }>();
@@ -36,6 +58,13 @@ export function AgentCashPaymentDetail() {
   const isPaid = payment?.status === 'completed';
   const isPending = payment?.status === 'processing' || payment?.status === 'ready_for_payment';
   const isCashScanned = payment?.status === 'cash_scanned' || payment?.status === 'cash_pending';
+
+  const statusTone: Tone = isPaid ? 'success' : isCashScanned ? 'info' : 'pending';
+  const statusLabel = isPaid
+    ? t('status_paid')
+    : isCashScanned
+      ? t('status_scanned') || 'Scanné'
+      : t('status_to_pay');
 
   const handleProceedToPayment = async () => {
     if (!payment) return;
@@ -66,129 +95,89 @@ export function AgentCashPaymentDetail() {
 
   if (isLoading) {
     return (
-      <div>
+      <div className={cn('min-h-screen', SURFACE.canvas)}>
         <MobileHeader title={t('payment_details')} showBack backTo="/a" />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
+        <ScreenLoader />
       </div>
     );
   }
 
   if (error || !payment) {
     return (
-      <div>
+      <div className={cn('min-h-screen', SURFACE.canvas)}>
         <MobileHeader title={t('payment_details')} showBack backTo="/a" />
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <AlertCircle className="w-10 h-10 text-destructive" />
-          <p className="text-muted-foreground">{t('payment_not_found')}</p>
-        </div>
+        <ScreenError title={t('payment_not_found')} />
       </div>
     );
   }
 
   const safeAmountRmb = typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0;
   const safeAmountXaf = typeof payment.amount_xaf === 'number' ? payment.amount_xaf : 0;
+  const beneficiaryPhone = payment.cash_beneficiary_phone || payment.beneficiary_phone;
 
   return (
-    <div>
+    <div className={cn('min-h-screen', SURFACE.canvas)}>
       <MobileHeader title={t('payment_details')} showBack backTo="/a" />
 
       <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-3 sm:space-y-4">
         {/* Amount card */}
-        <div className="card-glass p-6 rounded-2xl text-center animate-slide-up" style={{ animationFillMode: 'both' }}>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-            <Banknote className="w-7 h-7 text-primary" />
+        <Card className="animate-slide-up p-6 text-center" style={{ animationFillMode: 'both' }}>
+          <Holder icon={Banknote} size="lg" className="mx-auto mb-3" />
+          <Amount value={formatCurrencyRMB(safeAmountRmb)} size="xl" />
+          <p className={cn('mt-1 text-sm', TEXT.muted)}>{formatNumber(safeAmountXaf)} XAF</p>
+          <div className="mt-3 flex justify-center">
+            <StatusPill
+              tone={statusTone}
+              label={
+                <span className="inline-flex items-center gap-1.5">
+                  {isPaid ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                  {statusLabel}
+                </span>
+              }
+            />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {formatCurrencyRMB(safeAmountRmb)}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {formatNumber(safeAmountXaf)} XAF
-          </p>
-
-          {/* Status badge */}
-          <div className="mt-3">
-            <span className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium',
-              isPaid ? 'bg-green-500/10 text-green-600'
-                : isCashScanned ? 'bg-blue-500/10 text-blue-600'
-                : 'bg-amber-500/10 text-amber-600',
-            )}>
-              {isPaid ? <CheckCircle2 className="w-4 h-4" /> : null}
-              {isPaid ? t('status_paid') : isCashScanned ? t('status_scanned') || 'Scanné' : t('status_to_pay')}
-            </span>
-          </div>
-        </div>
+        </Card>
 
         {/* Beneficiary info */}
-        <div className="card-glass p-5 rounded-2xl space-y-3 animate-slide-up" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+        <Card className="animate-slide-up" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>
+          <h3 className={cn('mb-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
             {t('beneficiary_info')}
           </h3>
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-3">
-              <User className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="font-medium">{getBeneficiaryName()}</span>
-            </div>
-            {(payment.cash_beneficiary_phone || payment.beneficiary_phone) && (
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>{payment.cash_beneficiary_phone || payment.beneficiary_phone}</span>
-              </div>
-            )}
-            {payment.beneficiary_email && (
-              <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>{payment.beneficiary_email}</span>
-              </div>
-            )}
-          </div>
-        </div>
+          <Row label={t('beneficiary')} value={getBeneficiaryName()} />
+          {beneficiaryPhone && <Row label={t('phone')} value={beneficiaryPhone} />}
+          {payment.beneficiary_email && <Row label={t('email')} value={payment.beneficiary_email} />}
+        </Card>
 
         {/* Client info */}
-        <div className="card-glass p-5 rounded-2xl space-y-3 animate-slide-up" style={{ animationDelay: '120ms', animationFillMode: 'both' }}>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+        <Card className="animate-slide-up" style={{ animationDelay: '120ms', animationFillMode: 'both' }}>
+          <h3 className={cn('mb-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
             {t('client_info')}
           </h3>
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-3">
-              <User className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="font-medium">{getClientName()}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="font-mono text-sm">{payment.reference || '—'}</span>
-            </div>
-            {payment.created_at && (
-              <div className="flex items-center gap-3">
-                <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>{formatDate(payment.created_at, 'datetime')}</span>
-              </div>
-            )}
-          </div>
-        </div>
+          <Row label={t('client')} value={getClientName()} />
+          <Row label={t('reference')} value={<span className="font-mono text-xs">{payment.reference || '—'}</span>} />
+          {payment.created_at && <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />}
+        </Card>
 
         {/* Already paid info */}
         {isPaid && payment.cash_paid_at && (
-          <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '180ms', animationFillMode: 'both' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-600">{t('already_paid')}</span>
+          <Card className="animate-slide-up" style={{ animationDelay: '180ms', animationFillMode: 'both' }}>
+            <div className="mb-2 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
+              <span className="font-semibold text-[#2E7D52] dark:text-[#7FCBA0]">{t('already_paid')}</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className={cn('text-sm', TEXT.muted)}>
               {t('already_paid_on')} {formatDate(payment.cash_paid_at, 'datetime')}
             </p>
             {payment.cash_signed_by_name && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className={cn('mt-1 text-sm', TEXT.muted)}>
                 {t('signed_by') || 'Signé par'}: {payment.cash_signed_by_name}
               </p>
             )}
 
             {/* Signature image */}
             {payment.cash_signature_url && (
-              <div className="mt-3 p-3 bg-white rounded-xl border border-green-500/20">
-                <p className="text-xs text-muted-foreground mb-2 font-medium">
+              <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-[#DEEFE5] dark:ring-[#1E3A2C]">
+                <p className={cn('mb-2 text-xs font-medium', TEXT.muted)}>
                   {t('beneficiary_signature') || 'Signature du bénéficiaire'}
                 </p>
                 <img
@@ -199,7 +188,7 @@ export function AgentCashPaymentDetail() {
                 />
               </div>
             )}
-          </div>
+          </Card>
         )}
 
         {/* Action buttons */}
@@ -218,28 +207,25 @@ export function AgentCashPaymentDetail() {
           )}
 
           {isPending && (
-            <button
+            <PrimaryPill
               onClick={handleProceedToPayment}
-              disabled={scanMutation.isPending}
-              className="w-full btn-primary-gradient h-14 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold disabled:opacity-50"
+              loading={scanMutation.isPending}
+              className="h-14 w-full text-[16px]"
             >
-              {scanMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : null}
               {t('proceed_to_payment')}
-            </button>
+            </PrimaryPill>
           )}
 
           {isCashScanned && (
             <div className="space-y-3">
-              <button
+              <PrimaryPill
                 onClick={() => navigate(`/a/payment/${payment.id}/confirm`)}
-                className="w-full btn-primary-gradient h-14 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold"
+                className="h-14 w-full text-[16px]"
               >
-                <CheckCircle2 className="w-5 h-5" />
+                <CheckCircle2 className="h-5 w-5" />
                 {t('confirm_payment') || 'Confirmer le paiement'}
-              </button>
-              <p className="text-xs text-center text-muted-foreground">
+              </PrimaryPill>
+              <p className={cn('text-center text-xs', TEXT.muted)}>
                 {t('qr_already_scanned_continue') || 'QR déjà scanné — continuez vers la confirmation'}
               </p>
             </div>
