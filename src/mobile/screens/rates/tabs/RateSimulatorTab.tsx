@@ -1,11 +1,24 @@
+// ============================================================
+// MODULE TAUX — RateSimulatorTab (simulateur de conversion)
+// Présentation migrée sur le design kit (Ofspace/Mola), calquée
+// sur la maquette validée rates.tsx : carte blanche, segment
+// devise, montant + raccourcis, méthodes en grille avec vrais
+// logos, pays en grille, résultat en gros (SimulatorResult).
+// Logique 100% PRÉSERVÉE : calculateFinalRate / getBaseRate /
+// convertCNYtoXAF, result memo, handleCurrencySwitch (conversion
+// XAF↔CNY), minAmountCNY, quick amounts, emptyMessage.
+// ============================================================
 import { useState, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
 import { PAYMENT_METHODS, COUNTRIES, MIN_AMOUNT_XAF } from '@/types/rates';
 import type { PaymentMethodKey, RateAdjustment, DailyRate, InputCurrency } from '@/types/rates';
 import { calculateFinalRate, getBaseRate, convertCNYtoXAF } from '@/lib/rateCalculation';
 import { formatNumber } from '@/lib/formatters';
+import { SURFACE, TEXT, ScreenError } from '@/mobile/designKit';
 import { SimulatorResult } from '../components/SimulatorResult';
+import { MethodLogo } from '../components/MethodLogo';
 
 interface RateSimulatorTabProps {
   activeRate: DailyRate | null | undefined;
@@ -120,145 +133,146 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
   const emptyMessage = !activeRate
     ? 'Aucun taux actif'
     : inputCurrency === 'xaf'
-    ? `Saisissez un montant >= ${formatNumber(MIN_AMOUNT_XAF)} XAF`
+    ? `Saisissez un montant ≥ ${formatNumber(MIN_AMOUNT_XAF)} XAF`
     : minAmountCNY
-    ? `Saisissez un montant >= ${formatNumber(minAmountCNY)} CNY`
+    ? `Saisissez un montant ≥ ${formatNumber(minAmountCNY)} CNY`
     : 'Saisissez un montant valide';
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="bg-red-50 rounded-2xl p-6 text-center border border-red-200">
-        <div className="text-red-600 font-semibold text-sm mb-1">Erreur de chargement</div>
-        <div className="text-muted-foreground text-xs">
-          Impossible de charger les donnees. Verifiez que la migration SQL a ete executee.
-        </div>
-      </div>
+      <ScreenError
+        title="Erreur de chargement"
+        description="Impossible de charger les données. Vérifiez que la migration SQL a été exécutée."
+      />
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-[14px] p-4 shadow-sm">
-        <h3 className="text-base font-bold text-foreground mb-1">Simulateur de taux</h3>
-        <p className="text-xs text-muted-foreground mb-4">
+      <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
+        <h3 className={cn('mb-1 text-[16px] font-bold', TEXT.strong)}>Simulateur de taux</h3>
+        <p className={cn('mb-4 text-[12px]', TEXT.muted)}>
           Testez n'importe quelle combinaison.
         </p>
 
-        {/* Currency selector */}
+        {/* Segment devise de saisie */}
         <div className="mb-4">
-          <label className="text-[13px] font-semibold text-muted-foreground block mb-1.5">
+          <label className={cn('mb-1.5 block text-[13px] font-semibold', TEXT.muted)}>
             Devise de saisie
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['xaf', 'cny'] as InputCurrency[]).map((c) => (
-              <button
-                key={c}
-                onClick={() => handleCurrencySwitch(c)}
-                className={`py-2.5 rounded-xl text-[13px] font-bold cursor-pointer border-2 transition-colors ${
-                  inputCurrency === c
-                    ? 'border-purple-600 bg-purple-50 text-purple-600'
-                    : 'border-border bg-white text-muted-foreground'
-                }`}
-              >
-                {c === 'xaf' ? 'XAF (Franc CFA)' : 'CNY (¥ RMB)'}
-              </button>
-            ))}
+          <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.canvas)}>
+            {(['xaf', 'cny'] as InputCurrency[]).map((c) => {
+              const active = inputCurrency === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => handleCurrencySwitch(c)}
+                  className={cn(
+                    'flex-1 rounded-full py-2 text-[13px] font-bold transition-colors',
+                    active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
+                  )}
+                >
+                  {c === 'xaf' ? 'XAF (Franc CFA)' : 'CNY (¥ RMB)'}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Amount */}
+        {/* Montant */}
         <div className="mb-4">
           <TextField
             label={`Montant (${inputCurrency === 'xaf' ? 'XAF' : 'CNY'})`}
-            labelClassName="text-[13px] font-semibold text-muted-foreground"
+            labelClassName={cn('text-[13px] font-semibold', TEXT.muted)}
             variant="numeric"
             value={numAmount > 0 ? formatNumber(numAmount) : ''}
             onChange={handleAmountChange}
-            controlClassName="font-bold"
+            controlClassName="text-[18px] font-extrabold tabular-nums"
             placeholder={inputCurrency === 'xaf' ? '500 000' : '5 000'}
           />
-          <div className="flex gap-1.5 mt-2">
-            {quickAmounts.map((v) => (
-              <button
-                key={v}
-                onClick={() => setAmount(v)}
-                className={`flex-1 py-2 rounded-lg text-[11px] font-semibold cursor-pointer transition-colors ${
-                  amount === v
-                    ? 'border-2 border-purple-600 bg-purple-50 text-purple-600'
-                    : 'border border-border bg-white text-muted-foreground'
-                }`}
-              >
-                {getQuickLabel(v, inputCurrency)}
-              </button>
-            ))}
+          <div className="mt-2 flex gap-1.5">
+            {quickAmounts.map((v) => {
+              const active = amount === v;
+              return (
+                <button
+                  key={v}
+                  onClick={() => setAmount(v)}
+                  className={cn(
+                    'flex-1 rounded-lg py-2 text-[11px] font-bold transition-colors',
+                    active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.canvas, TEXT.muted),
+                  )}
+                >
+                  {getQuickLabel(v, inputCurrency)}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Payment method */}
+        {/* Mode de paiement — grille avec vrais logos */}
         <div className="mb-4">
-          <label className="text-[13px] font-semibold text-muted-foreground block mb-1.5">
+          <label className={cn('mb-1.5 block text-[13px] font-semibold', TEXT.muted)}>
             Mode de paiement
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {PAYMENT_METHODS.map((pm) => (
-              <button
-                key={pm.key}
-                onClick={() => setMethod(pm.key)}
-                className="p-3 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
-                style={{
-                  border:
-                    method === pm.key
-                      ? `2px solid ${pm.color}`
-                      : '2px solid var(--border)',
-                  background: method === pm.key ? `${pm.color}10` : 'white',
-                }}
-              >
-                <span className="text-lg">{pm.icon}</span>
-                <span className="text-[13px] font-semibold text-foreground">{pm.label}</span>
-              </button>
-            ))}
+            {PAYMENT_METHODS.map((pm) => {
+              const active = method === pm.key;
+              return (
+                <button
+                  key={pm.key}
+                  onClick={() => setMethod(pm.key)}
+                  className={cn(
+                    'flex items-center gap-2 rounded-xl p-2.5 transition active:scale-[0.98]',
+                    SURFACE.canvas,
+                  )}
+                  style={active ? { boxShadow: `0 0 0 2px ${pm.color}` } : undefined}
+                >
+                  <MethodLogo method={pm.key} size={28} />
+                  <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{pm.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Country */}
+        {/* Pays du client — grille */}
         <div>
-          <label className="text-[13px] font-semibold text-muted-foreground block mb-1.5">
+          <label className={cn('mb-1.5 block text-[13px] font-semibold', TEXT.muted)}>
             Pays du client
           </label>
           <div className="grid grid-cols-3 gap-1.5">
-            {COUNTRIES.map((c) => (
-              <button
-                key={c.key}
-                onClick={() => setCountry(c.key)}
-                className={`py-2.5 px-1.5 rounded-xl flex flex-col items-center gap-1 cursor-pointer border-2 transition-colors ${
-                  country === c.key
-                    ? 'border-purple-600 bg-purple-50'
-                    : 'border-border bg-white'
-                }`}
-              >
-                <span className="text-xl">{c.flag}</span>
-                <span
-                  className={`text-[10px] font-semibold ${
-                    country === c.key ? 'text-purple-600' : 'text-muted-foreground'
-                  }`}
+            {COUNTRIES.map((c) => {
+              const active = country === c.key;
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => setCountry(c.key)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-xl px-1.5 py-2.5 transition active:scale-[0.98]',
+                    SURFACE.canvas,
+                  )}
+                  style={active ? { boxShadow: '0 0 0 2px #8B5CF6' } : undefined}
                 >
-                  {c.label}
-                </span>
-              </button>
-            ))}
+                  <span className="text-xl">{c.flag}</span>
+                  <span className={cn('text-[10px] font-semibold', active ? 'text-[#5B4CC4] dark:text-[#B5AAF0]' : TEXT.muted)}>
+                    {c.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Result */}
+      {/* Résultat */}
       {result ? (
         <SimulatorResult
           amountXAF={result.amountXAF}
@@ -274,8 +288,8 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
           inputAmount={result.inputAmount}
         />
       ) : (
-        <div className="bg-muted/50 rounded-2xl p-6 text-center">
-          <div className="text-sm text-muted-foreground">{emptyMessage}</div>
+        <div className={cn('rounded-2xl p-6 text-center', SURFACE.card, SURFACE.shadow)}>
+          <div className={cn('text-[14px]', TEXT.muted)}>{emptyMessage}</div>
         </div>
       )}
     </div>
