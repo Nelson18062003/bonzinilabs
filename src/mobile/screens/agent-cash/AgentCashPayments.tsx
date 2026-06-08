@@ -1,3 +1,11 @@
+// ============================================================
+// AGENT-CASH — AgentCashPayments (liste, onglets À payer / Payés)
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   canvas doux · Segmented (onglets) · lignes Card + Holder + Amount +
+//   StatusPill toné + Row · ScreenLoader · empty-state Holder.
+// Logique 100% préservée : useAgentCashPayments(pending|paid), onglets,
+// logout, bascule EN/ZH, navigation détail, libellés de statut.
+// ============================================================
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -5,8 +13,28 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPayments, CashPayment } from '@/hooks/useAgentCashPayments';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatDate } from '@/lib/formatters';
-import { Loader2, LogOut, ChevronRight, Banknote, Inbox } from 'lucide-react';
+import { LogOut, ChevronRight, Banknote, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  Segmented,
+  Card,
+  Holder,
+  Amount,
+  Row,
+  StatusPill,
+  ScreenLoader,
+  type Tone,
+} from '@/mobile/designKit';
+
+// Statut paiement cash → tone (conserve l'intention visuelle d'origine :
+// payé=vert, scanné=bleu/info, à payer=ambre/pending).
+function cashStatusTone(status: string): Tone {
+  if (status === 'completed') return 'success';
+  if (status === 'cash_scanned' || status === 'cash_pending') return 'info';
+  return 'pending';
+}
 
 export function AgentCashPayments() {
   const navigate = useNavigate();
@@ -43,21 +71,28 @@ export function AgentCashPayments() {
     return '—';
   };
 
+  const statusLabel = (status: string) =>
+    status === 'completed'
+      ? t('status_paid')
+      : status === 'cash_scanned' || status === 'cash_pending'
+        ? t('status_scanned') || 'Scanné'
+        : t('status_to_pay'); /* covers ready_for_payment + processing */
+
   return (
-    <div>
+    <div className={cn('min-h-screen', SURFACE.canvas)}>
       <MobileHeader
         title={t('cash_payments')}
         rightElement={
           <div className="flex items-center gap-1">
             <button
               onClick={toggleLanguage}
-              className="px-2 py-1 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className={cn('px-2 py-1 rounded-md text-xs font-medium transition-colors hover:text-foreground', TEXT.muted)}
             >
               {language === 'en' ? '中文' : 'EN'}
             </button>
             <button
               onClick={handleLogout}
-              className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors"
+              className={cn('w-8 h-8 flex items-center justify-center rounded-full transition-colors hover:text-foreground', TEXT.muted)}
               aria-label={t('logout')}
             >
               <LogOut className="w-4 h-4" />
@@ -68,50 +103,35 @@ export function AgentCashPayments() {
 
       <div className="px-4 pt-4 pb-28 space-y-4">
         {/* Segment tabs */}
-        <div className="bg-muted rounded-xl p-1 flex">
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={cn(
-              'flex-1 py-2.5 rounded-lg text-sm font-medium transition-all',
-              activeTab === 'pending'
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-muted-foreground',
-            )}
-          >
-            {t('to_pay')}
-            {pendingPayments && pendingPayments.length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-xs font-semibold">
-                {pendingPayments.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('paid')}
-            className={cn(
-              'flex-1 py-2.5 rounded-lg text-sm font-medium transition-all',
-              activeTab === 'paid'
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-muted-foreground',
-            )}
-          >
-            {t('paid')}
-          </button>
-        </div>
+        <Segmented
+          value={activeTab}
+          onChange={setActiveTab}
+          options={[
+            {
+              value: 'pending',
+              label: (
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  {t('to_pay')}
+                  {pendingPayments && pendingPayments.length > 0 && (
+                    <span className="rounded-full bg-[#F8EFD8] px-1.5 py-0.5 text-[11px] font-bold text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+                      {pendingPayments.length}
+                    </span>
+                  )}
+                </span>
+              ),
+            },
+            { value: 'paid', label: t('paid') },
+          ]}
+        />
 
         {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        )}
+        {isLoading && <ScreenLoader />}
 
         {/* Empty state */}
         {!isLoading && (!payments || payments.length === 0) && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Inbox className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground text-sm">
+            <Holder icon={Inbox} size="lg" className="mb-4" />
+            <p className={cn('text-sm', TEXT.muted)}>
               {activeTab === 'pending' ? t('no_pending_payments') : t('no_paid_payments')}
             </p>
           </div>
@@ -124,59 +144,28 @@ export function AgentCashPayments() {
               <button
                 key={payment.id}
                 onClick={() => navigate(`/a/payment/${payment.id}`)}
-                className="w-full card-glass p-4 rounded-2xl text-left animate-slide-up"
+                className="w-full text-left animate-slide-up"
                 style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Banknote className="w-5 h-5 text-primary" />
+                <Card className="transition active:scale-[0.99]">
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Holder icon={Banknote} />
+                      <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
                     </div>
-                    <div>
-                      <p className="font-bold text-lg" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrencyRMB(payment.amount_rmb)}
-                      </p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <StatusPill tone={cashStatusTone(payment.status)} label={statusLabel(payment.status)} />
+                      <ChevronRight className={cn('h-4 w-4', TEXT.muted)} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium',
-                      payment.status === 'completed'
-                        ? 'bg-green-500/10 text-green-600'
-                        : (payment.status === 'cash_scanned' || payment.status === 'cash_pending')
-                          ? 'bg-blue-500/10 text-blue-600'
-                          : (payment.status === 'ready_for_payment' || payment.status === 'processing')
-                            ? 'bg-amber-500/10 text-amber-600'
-                            : 'bg-amber-500/10 text-amber-600',
-                    )}>
-                      {payment.status === 'completed'
-                        ? t('status_paid')
-                        : (payment.status === 'cash_scanned' || payment.status === 'cash_pending')
-                          ? (t('status_scanned') || 'Scanné')
-                          : t('status_to_pay') /* covers ready_for_payment + processing */}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </div>
 
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t('beneficiary')}</span>
-                    <span className="font-medium">{getBeneficiaryName(payment)}</span>
+                  <div>
+                    <Row label={t('beneficiary')} value={getBeneficiaryName(payment)} />
+                    <Row label={t('client')} value={getClientName(payment)} />
+                    <Row label={t('reference')} value={<span className="font-mono text-xs">{payment.reference}</span>} />
+                    <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t('client')}</span>
-                    <span className="font-medium">{getClientName(payment)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t('reference')}</span>
-                    <span className="font-mono text-xs">{payment.reference}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t('date')}</span>
-                    <span>{formatDate(payment.created_at, 'datetime')}</span>
-                  </div>
-                </div>
+                </Card>
               </button>
             ))}
           </div>
