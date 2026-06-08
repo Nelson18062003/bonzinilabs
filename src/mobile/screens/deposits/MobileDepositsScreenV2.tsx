@@ -1,8 +1,10 @@
 // ============================================================
 // MODULE DEPOTS V2 — MobileDepositsScreenV2
-// UI selon maquette v3 : KPIs compacts, icône entonnoir SVG,
-// filtres famille, présets période, cartes avec MIcon + SLA
-// Logique identique à MobileDepositsScreen.tsx
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   canvas doux · cartes à ombre douce · MIcon méthode · Amount ·
+//   StatusPill toné (depositStatusTone) · SlaDot · chips kit.
+// Logique 100% préservée : stats, recherche debouncée, filtres
+// (famille/période/tri), chips statut, infinite scroll, SLA.
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
@@ -16,29 +18,26 @@ import type { DepositStatus, DepositMethod } from '@/types/deposit';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
-import { formatXAF, formatRelativeDate } from '@/lib/formatters';
+import { formatRelativeDate } from '@/lib/formatters';
 import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
 import { useNavigate } from 'react-router-dom';
-import { FileText } from 'lucide-react';
-import { depositStatusTone, StatusPill } from '@/mobile/designKit';
+import { FileText, Search, SlidersHorizontal, Paperclip, Plus, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  type Tone,
+  depositStatusTone,
+  StatusPill,
+  TextInput,
+  Holder,
+  Amount,
+  Card,
+} from '@/mobile/designKit';
 
-// ── Couleurs maquette ────────────────────────────────────────
-const GR = '#34d399';
-const V = '#A947FE';
-const O = '#FE560D';
-const BLUE = '#3b82f6';
-const RED = '#ef4444';
-const t = {
-  bg: '#f5f3f7',
-  card: '#ffffff',
-  text: '#1a1028',
-  sub: '#7a7290',
-  dim: '#c4bdd0',
-  border: '#ebe6f0',
-};
-
-// ── Familles de méthode ──────────────────────────────────────
+// ── Familles de méthode (identité de marque conservée) ───────
 const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean; name: string }> = {
   BANK: { letter: 'B', bg: '#1e3a5f', name: 'Banque' },
   AGENCY_BONZINI: { letter: 'A', bg: '#A947FE', name: 'Agence' },
@@ -65,25 +64,20 @@ const FAMILY_TO_METHODS: Record<string, DepositMethod[]> = {
   WAVE: ['wave'],
 };
 
-// ── Composant MIcon ──────────────────────────────────────────
-function MIcon({ family, size = 34 }: { family: string; size?: number }) {
+// ── Composant MIcon (vignette méthode, couleur de marque) ────
+function MIcon({ family, size = 38 }: { family: string; size?: number }) {
   const f = FAMILIES_CONF[family];
   if (!f) return null;
   return (
     <div
+      className="flex shrink-0 items-center justify-center font-black"
       style={{
         width: size,
         height: size,
-        borderRadius: Math.round(size * 0.26),
+        borderRadius: Math.round(size * 0.3),
         background: f.bg,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         fontSize: Math.round(size * 0.38),
         color: f.dark ? '#1a1028' : '#fff',
-        fontWeight: 900,
-        flexShrink: 0,
-        fontFamily: "'DM Sans', sans-serif",
       }}
     >
       {f.letter}
@@ -91,33 +85,16 @@ function MIcon({ family, size = 34 }: { family: string; size?: number }) {
   );
 }
 
-// ── Icône entonnoir SVG ──────────────────────────────────────
-function FunnelIcon({ color = '#7a7290', size = 16 }: { color?: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path
-        d="M1.5 2h13l-5 6v4.5L7.5 14V8L1.5 2z"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 // ── Point SLA ────────────────────────────────────────────────
 function SlaDot({ level }: { level: SlaLevel }) {
-  const color =
-    level === 'fresh' ? GR : level === 'aging' ? '#F3A745' : RED;
+  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
   return (
-    <div
+    <span
+      className="inline-block shrink-0 rounded-full"
       style={{
         width: 6,
         height: 6,
-        borderRadius: '50%',
         background: color,
-        flexShrink: 0,
         animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined,
       }}
     />
@@ -127,13 +104,6 @@ function SlaDot({ level }: { level: SlaLevel }) {
 // ── Filtres statut ───────────────────────────────────────────
 type FilterKey = DepositStatus | 'all' | 'to_process';
 const TO_PROCESS_STATUSES: DepositStatus[] = ['proof_submitted', 'admin_review'];
-
-// ── Formatage montant ────────────────────────────────────────
-function fmt(n: number) {
-  return Math.abs(n)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
-}
 
 // ── Présets période ──────────────────────────────────────────
 type PeriodPreset = 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom';
@@ -162,6 +132,13 @@ function getPeriodDates(preset: PeriodPreset): { dateFrom: string; dateTo: strin
   }
   return { dateFrom: '', dateTo: '' };
 }
+
+// KPI rapides → tone unifié (la couleur porte le statut).
+const KPI_TILES: { label: string; key: FilterKey; tone: Tone; figure: string; ring: string }[] = [
+  { label: 'À traiter', key: 'to_process', tone: 'info', figure: 'text-[#5B4CC4] dark:text-[#B5AAF0]', ring: 'ring-[#C9C2F0] dark:ring-[#4A4660]' },
+  { label: 'À corriger', key: 'pending_correction', tone: 'pending', figure: 'text-[#9A6B12] dark:text-[#E7C083]', ring: 'ring-[#E7C083]' },
+  { label: 'Validés', key: 'validated', tone: 'success', figure: 'text-[#2E7D52] dark:text-[#7FCBA0]', ring: 'ring-[#7FCBA0]' },
+];
 
 // ── Composant principal ──────────────────────────────────────
 export function MobileDepositsScreenV2() {
@@ -259,437 +236,298 @@ export function MobileDepositsScreenV2() {
     return { toProcess: 0, correction: 0, validated: 0, rejected: 0, total: 0 };
   }, [stats]);
 
+  const kpiValue: Record<FilterKey, number> = {
+    to_process: counts.toProcess,
+    pending_correction: counts.correction,
+    validated: counts.validated,
+  } as Record<FilterKey, number>;
+
   const hasActiveFilters = familyFilter !== 'all' || periodPreset !== 'all';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100%',
-        background: t.bg,
-        fontFamily: "'DM Sans', sans-serif",
-        color: t.text,
-      }}
-    >
-      <style>{`
-        @keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-      `}</style>
+    <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
+      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <div
-        style={{
-          flexShrink: 0,
-          padding: '12px 20px',
-          background: t.card,
-          borderBottom: `1px solid ${t.border}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+      <header
+        className={cn(
+          'sticky top-0 z-40 flex shrink-0 items-center justify-between px-5 pt-[env(safe-area-inset-top)]',
+          SURFACE.canvas,
+        )}
       >
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Dépôts</span>
-        <button
-          onClick={() => navigate('/m/deposits/new')}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            background: GR,
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-            color: '#fff',
-            boxShadow: `0 4px 12px ${GR}40`,
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          +
-        </button>
-      </div>
+        <div className="flex h-14 w-full items-center justify-between">
+          <h1 className={cn('text-[20px] font-extrabold', TEXT.strong)}>Dépôts</h1>
+          <button
+            onClick={() => navigate('/m/deposits/new')}
+            aria-label="Nouveau dépôt"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#10B981] text-white shadow-[0_6px_16px_-4px_rgba(16,185,129,0.55)] transition active:scale-95"
+          >
+            <Plus className="h-5 w-5" strokeWidth={2.6} />
+          </button>
+        </div>
+      </header>
 
       <PullToRefresh
         onRefresh={refetch}
-        style={{ flex: 1, overflowY: 'auto' } as React.CSSProperties}
+        className="flex-1 space-y-3 overflow-y-auto px-5 pb-28 pt-1"
       >
-        {/* ── KPIs compacts ──────────────────────────────── */}
-        <div style={{ padding: '12px 20px 0', display: 'flex', gap: 6 }}>
-          {[
-            { label: 'À traiter', value: counts.toProcess, color: BLUE, key: 'to_process' as FilterKey },
-            { label: 'À corriger', value: counts.correction, color: O, key: 'pending_correction' as FilterKey },
-            { label: 'Validés', value: counts.validated, color: GR, key: 'validated' as FilterKey },
-          ].map((k) => (
-            <button
-              key={k.key}
-              onClick={() => setStatusFilter(statusFilter === k.key ? 'all' : k.key)}
-              style={{
-                flex: 1,
-                padding: '10px 0',
-                borderRadius: 10,
-                border: 'none',
-                cursor: 'pointer',
-                background: statusFilter === k.key ? `${k.color}10` : t.card,
-                outline: statusFilter === k.key ? `2px solid ${k.color}` : `1px solid ${t.border}`,
-                textAlign: 'center',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              <div style={{ fontSize: 22, fontWeight: 900, color: k.color, lineHeight: 1 }}>{k.value}</div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: t.sub, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {k.label}
-              </div>
-            </button>
-          ))}
+        {/* ── KPIs compacts (tap = filtre statut) ───────────── */}
+        <div className="flex gap-2.5">
+          {KPI_TILES.map((k) => {
+            const active = statusFilter === k.key;
+            return (
+              <button
+                key={k.key}
+                onClick={() => setStatusFilter(active ? 'all' : k.key)}
+                className={cn(
+                  'flex-1 rounded-[18px] py-3 text-center transition active:scale-[0.98]',
+                  SURFACE.card,
+                  SURFACE.shadow,
+                  active && cn('ring-2', k.ring),
+                )}
+              >
+                <div className={cn('text-[22px] font-extrabold leading-none tabular-nums', k.figure)}>
+                  {kpiValue[k.key] ?? 0}
+                </div>
+                <div className={cn('mt-1.5 text-[9px] font-bold uppercase tracking-wider', TEXT.muted)}>
+                  {k.label}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Recherche + entonnoir ──────────────────────── */}
-        <div style={{ padding: '10px 20px 0', display: 'flex', gap: 6 }}>
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '0 14px',
-              height: 42,
-              borderRadius: 10,
-              background: t.card,
-              border: `1px solid ${t.border}`,
-            }}
-          >
-            <span style={{ fontSize: 13, color: t.dim }}>🔍</span>
-            <input
-              style={{
-                border: 'none',
-                background: 'none',
-                outline: 'none',
-                fontSize: 13,
-                fontWeight: 500,
-                color: t.text,
-                width: '100%',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
+        {/* ── Recherche + bouton filtres ─────────────────────── */}
+        <div className="flex gap-2.5">
+          <div className="relative flex-1">
+            <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+            <TextInput
               placeholder="Nom, téléphone ou référence..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.dim, fontSize: 14, padding: 0 }}
+                aria-label="Effacer"
+                className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
               >
-                ×
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 10,
-              border: 'none',
-              cursor: 'pointer',
-              background: showFilters ? `${V}10` : t.card,
-              outline: showFilters ? `2px solid ${V}` : `1px solid ${t.border}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}
+            aria-label="Filtres avancés"
+            className={cn(
+              'relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition active:scale-95',
+              SURFACE.card,
+              SURFACE.shadow,
+              (showFilters || hasActiveFilters) && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
+            )}
           >
-            <FunnelIcon color={showFilters || hasActiveFilters ? V : t.sub} />
+            <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? 'text-[#6B5BD2] dark:text-[#A99BF0]' : TEXT.muted)} />
             {hasActiveFilters && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: -2,
-                  right: -2,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: V,
-                }}
-              />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#6B5BD2] dark:bg-[#A99BF0]" />
             )}
           </button>
         </div>
 
-        {/* ── Panneau filtres avancés ────────────────────── */}
+        {/* ── Panneau filtres avancés ────────────────────────── */}
         {showFilters && (
-          <div
-            style={{
-              margin: '8px 20px 0',
-              padding: 12,
-              borderRadius: 12,
-              background: t.card,
-              border: `1px solid ${t.border}`,
-            }}
-          >
+          <Card className="space-y-3">
             {/* Filtre méthode par famille */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.sub, marginBottom: 6 }}>Méthode</div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 12 }}>
-              {[
-                { k: 'all', l: 'Toutes' },
-                { k: 'BANK', l: 'Banque' },
-                { k: 'AGENCY_BONZINI', l: 'Agence' },
-                { k: 'ORANGE_MONEY', l: 'Orange' },
-                { k: 'MTN_MONEY', l: 'MTN' },
-                { k: 'WAVE', l: 'Wave' },
-              ].map((m) => (
-                <button
-                  key={m.k}
-                  onClick={() => setFamilyFilter(m.k)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 7,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: familyFilter === m.k ? V : t.bg,
-                    color: familyFilter === m.k ? '#fff' : t.sub,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {m.l}
-                </button>
-              ))}
+            <div>
+              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { k: 'all', l: 'Toutes' },
+                  { k: 'BANK', l: 'Banque' },
+                  { k: 'AGENCY_BONZINI', l: 'Agence' },
+                  { k: 'ORANGE_MONEY', l: 'Orange' },
+                  { k: 'MTN_MONEY', l: 'MTN' },
+                  { k: 'WAVE', l: 'Wave' },
+                ].map((m) => (
+                  <button
+                    key={m.k}
+                    onClick={() => setFamilyFilter(m.k)}
+                    className={cn(
+                      'rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
+                      familyFilter === m.k ? PRIMARY_PILL : SOFT_PILL,
+                    )}
+                  >
+                    {m.l}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Filtre période */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.sub, marginBottom: 6 }}>Période</div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-              {[
-                { k: 'all' as PeriodPreset, l: 'Toutes' },
-                { k: 'today' as PeriodPreset, l: "Aujourd'hui" },
-                { k: 'yesterday' as PeriodPreset, l: 'Hier' },
-                { k: 'week' as PeriodPreset, l: 'Cette semaine' },
-                { k: 'month' as PeriodPreset, l: 'Ce mois' },
-                { k: 'custom' as PeriodPreset, l: 'Personnalisé' },
-              ].map((p) => (
-                <button
-                  key={p.k}
-                  onClick={() => setPeriodPreset(p.k)}
-                  style={{
-                    padding: '6px 10px',
-                    borderRadius: 7,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: periodPreset === p.k ? V : t.bg,
-                    color: periodPreset === p.k ? '#fff' : t.sub,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {p.l}
-                </button>
-              ))}
+            <div>
+              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { k: 'all' as PeriodPreset, l: 'Toutes' },
+                  { k: 'today' as PeriodPreset, l: "Aujourd'hui" },
+                  { k: 'yesterday' as PeriodPreset, l: 'Hier' },
+                  { k: 'week' as PeriodPreset, l: 'Cette semaine' },
+                  { k: 'month' as PeriodPreset, l: 'Ce mois' },
+                  { k: 'custom' as PeriodPreset, l: 'Personnalisé' },
+                ].map((p) => (
+                  <button
+                    key={p.k}
+                    onClick={() => setPeriodPreset(p.k)}
+                    className={cn(
+                      'rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
+                      periodPreset === p.k ? PRIMARY_PILL : SOFT_PILL,
+                    )}
+                  >
+                    {p.l}
+                  </button>
+                ))}
+              </div>
             </div>
+
             {periodPreset === 'custom' && (
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
+              <div className="flex items-center gap-2">
+                <TextInput
                   type="date"
                   value={customDateFrom}
                   onChange={(e) => setCustomDateFrom(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: `1.5px solid ${t.border}`,
-                    background: t.bg,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: t.text,
-                    fontFamily: "'DM Sans', sans-serif",
-                    outline: 'none',
-                  }}
+                  className="flex-1"
                 />
-                <span style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: t.dim }}>→</span>
-                <input
+                <span className={cn('text-[13px]', TEXT.muted)}>→</span>
+                <TextInput
                   type="date"
                   value={customDateTo}
                   onChange={(e) => setCustomDateTo(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: `1.5px solid ${t.border}`,
-                    background: t.bg,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: t.text,
-                    fontFamily: "'DM Sans', sans-serif",
-                    outline: 'none',
-                  }}
+                  className="flex-1"
                 />
               </div>
             )}
-          </div>
+          </Card>
         )}
 
-        {/* ── Chips statut ───────────────────────────────── */}
-        <div
-          style={{
-            padding: '10px 20px 0',
-            display: 'flex',
-            gap: 4,
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
+        {/* ── Chips statut ───────────────────────────────────── */}
+        <div className="scrollbar-hide -mx-5 flex gap-2 overflow-x-auto px-5 pb-0.5">
           {[
             { k: 'all' as FilterKey, l: 'Tous', c: counts.total },
             { k: 'to_process' as FilterKey, l: 'À traiter', c: counts.toProcess },
             { k: 'pending_correction' as FilterKey, l: 'À corriger', c: counts.correction },
             { k: 'validated' as FilterKey, l: 'Validés', c: counts.validated },
             { k: 'rejected' as FilterKey, l: 'Rejetés', c: counts.rejected },
-          ].map((ch) => (
-            <button
-              key={ch.k}
-              onClick={() => setStatusFilter(ch.k)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                border: 'none',
-                cursor: 'pointer',
-                background: statusFilter === ch.k ? t.text : t.card,
-                color: statusFilter === ch.k ? '#fff' : t.sub,
-                fontSize: 11,
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                outline: statusFilter !== ch.k ? `1px solid ${t.border}` : 'none',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {ch.l}
-              {ch.c != null && ch.c > 0 && (
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 800,
-                    padding: '1px 5px',
-                    borderRadius: 8,
-                    background: statusFilter === ch.k ? 'rgba(255,255,255,0.2)' : t.bg,
-                  }}
-                >
-                  {ch.c}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Liste dépôts ────────────────────────────────── */}
-        <div style={{ padding: '10px 20px 100px' }}>
-          {isLoading ? (
-            <SkeletonListScreen count={4} />
-          ) : filteredDeposits.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {filteredDeposits.map((deposit) => {
-                const clientName = deposit.profiles
-                  ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
-                  : 'Client inconnu';
-                const proofCount = deposit.proof_count || 0;
-                const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
-                const family = getFamilyFromMethod(deposit.method);
-                const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
-                const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
-
-                return (
-                  <button
-                    key={deposit.id}
-                    onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '12px 14px',
-                      borderRadius: 14,
-                      width: '100%',
-                      background: t.card,
-                      border: `1px solid ${t.border}`,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
+          ].map((ch) => {
+            const active = statusFilter === ch.k;
+            return (
+              <button
+                key={ch.k}
+                onClick={() => setStatusFilter(ch.k)}
+                className={cn(
+                  'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
+                  active ? PRIMARY_PILL : SOFT_PILL,
+                )}
+              >
+                {ch.l}
+                {ch.c != null && ch.c > 0 && (
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
+                      active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
+                    )}
                   >
-                    <MIcon family={family} size={38} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            color: t.text,
-                          }}
-                        >
-                          {clientName}
-                        </span>
-                        {proofCount > 0 && (
-                          <span style={{ fontSize: 9, color: t.dim }}>📎{proofCount}</span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 11, color: t.dim, marginTop: 1 }}>
-                        {deposit.reference} · {methodShort}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: t.text }}>
-                        {fmt(deposit.amount_xaf)} XAF
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          justifyContent: 'flex-end',
-                          marginTop: 2,
-                        }}
-                      >
-                        {slaLevel && <SlaDot level={slaLevel} />}
-                        <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
-                      </div>
-                      <div style={{ fontSize: 9, color: t.dim, marginTop: 1 }}>
-                        {formatRelativeDate(deposit.created_at)}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-
-              {/* Infinite scroll — uniquement si pas de recherche en cours */}
-              {!debouncedSearch && (
-                <InfiniteScrollTrigger
-                  onLoadMore={handleLoadMore}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                />
-              )}
-            </div>
-          ) : (
-            <MobileEmptyState
-              icon={FileText}
-              title="Aucun dépôt trouvé"
-              description={
-                statusFilter !== 'all' || hasActiveFilters
-                  ? 'Essayez de modifier vos filtres'
-                  : 'Les dépôts apparaîtront ici'
-              }
-            />
-          )}
+                    {ch.c}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+
+        {/* ── Liste dépôts ───────────────────────────────────── */}
+        {isLoading ? (
+          <SkeletonListScreen count={4} />
+        ) : filteredDeposits.length > 0 ? (
+          <div className="space-y-2.5">
+            {filteredDeposits.map((deposit) => {
+              const clientName = deposit.profiles
+                ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
+                : 'Client inconnu';
+              const proofCount = deposit.proof_count || 0;
+              const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
+              const family = getFamilyFromMethod(deposit.method);
+              const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
+              const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
+
+              return (
+                <button
+                  key={deposit.id}
+                  onClick={() => navigate(`/m/deposits/${deposit.id}`)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    SURFACE.card,
+                    SURFACE.shadow,
+                  )}
+                >
+                  <MIcon family={family} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
+                        {clientName}
+                      </span>
+                      {proofCount > 0 && (
+                        <span className={cn('inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
+                          <Paperclip className="h-3 w-3" />
+                          {proofCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
+                      {deposit.reference} · {methodShort}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <Amount value={fmtAmount(deposit.amount_xaf)} unit="XAF" size="md" />
+                    <div className="mt-1 flex items-center justify-end gap-1.5">
+                      {slaLevel && <SlaDot level={slaLevel} />}
+                      <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
+                    </div>
+                    <div className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                      {formatRelativeDate(deposit.created_at)}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Infinite scroll — uniquement si pas de recherche en cours */}
+            {!debouncedSearch && (
+              <InfiniteScrollTrigger
+                onLoadMore={handleLoadMore}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-14 text-center">
+            <Holder icon={FileText} size="lg" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun dépôt trouvé</p>
+            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+              {statusFilter !== 'all' || hasActiveFilters
+                ? 'Essayez de modifier vos filtres'
+                : 'Les dépôts apparaîtront ici'}
+            </p>
+          </div>
+        )}
       </PullToRefresh>
     </div>
   );
+}
+
+// ── Formatage montant (espaces fines insécables) ─────────────
+function fmtAmount(n: number) {
+  return Math.abs(n)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
