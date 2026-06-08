@@ -58,12 +58,58 @@ const auditLogs = [
   { id: 'l3', admin_user_id: 'a1', action_type: 'rate_updated', target_type: 'rate', created_at: new Date(Date.now() - 9e6).toISOString() },
   { id: 'l4', admin_user_id: 'a3', action_type: 'client_created', target_type: 'client', created_at: new Date(Date.now() - 9e7).toISOString() },
 ];
-// Superset used both by the audit-log join (reads first/last name) and the
-// Admins module (M6) list/detail (reads email, role, is_disabled, created_at).
+// Superset used by: the audit-log join (first/last name), the Admins module
+// (M6: email/role/is_disabled/created_at) and Support assignment (M7:
+// useSupportAdmins reads id/user_id/role/is_disabled).
 const adminRoles = [
-  { user_id: 'a1', first_name: 'Awa', last_name: 'Diop', email: 'awa@bonzini.com', role: 'super_admin', is_disabled: false, created_at: new Date(Date.now() - 12e9).toISOString() },
-  { user_id: 'a2', first_name: 'Jean', last_name: 'Kamga', email: 'jean@bonzini.com', role: 'ops', is_disabled: false, created_at: new Date(Date.now() - 6e9).toISOString() },
-  { user_id: 'a3', first_name: 'Marie', last_name: 'Nkolo', email: 'marie@bonzini.com', role: 'cash_agent', is_disabled: true, created_at: new Date(Date.now() - 2e9).toISOString() },
+  { id: 'ur1', user_id: 'a1', first_name: 'Awa', last_name: 'Diop', email: 'awa@bonzini.com', role: 'super_admin', is_disabled: false, created_at: new Date(Date.now() - 12e9).toISOString() },
+  { id: 'ur2', user_id: 'a2', first_name: 'Jean', last_name: 'Kamga', email: 'jean@bonzini.com', role: 'ops', is_disabled: false, created_at: new Date(Date.now() - 6e9).toISOString() },
+  { id: 'ur3', user_id: 'a3', first_name: 'Marie', last_name: 'Nkolo', email: 'marie@bonzini.com', role: 'cash_agent', is_disabled: true, created_at: new Date(Date.now() - 2e9).toISOString() },
+];
+
+// Support module (M7) fixtures — conversations + messages + RPC stats/search +
+// canned responses + client quick replies.
+const chatConversations = [
+  { id: 'c1', client_id: 'u1', subject: 'Paiement Alipay en attente', assigned_admin_id: 'ur1', status: 'open', last_message_at: new Date(Date.now() - 6e5).toISOString(), last_client_message_at: new Date(Date.now() - 6e5).toISOString(), last_admin_message_at: new Date(Date.now() - 12e5).toISOString(), unread_count_client: 0, unread_count_admin: 2, created_at: new Date(Date.now() - 9e7).toISOString(), updated_at: new Date().toISOString() },
+  { id: 'c2', client_id: 'u2', subject: 'Question sur le taux du jour', assigned_admin_id: null, status: 'open', last_message_at: new Date(Date.now() - 36e5).toISOString(), last_client_message_at: new Date(Date.now() - 36e5).toISOString(), last_admin_message_at: null, unread_count_client: 0, unread_count_admin: 1, created_at: new Date(Date.now() - 5e7).toISOString(), updated_at: new Date().toISOString() },
+  { id: 'c3', client_id: 'u3', subject: null, assigned_admin_id: 'ur2', status: 'closed', last_message_at: new Date(Date.now() - 2e8).toISOString(), last_client_message_at: new Date(Date.now() - 2e8).toISOString(), last_admin_message_at: new Date(Date.now() - 2e8).toISOString(), unread_count_client: 0, unread_count_admin: 0, created_at: new Date(Date.now() - 3e8).toISOString(), updated_at: new Date().toISOString() },
+];
+// Clients keyed by id (the chat join selects id,first_name,last_name,phone).
+const chatClients = [
+  { id: 'u1', first_name: 'Awa', last_name: 'Diop', phone: '+237 6 91 23 45 67' },
+  { id: 'u2', first_name: 'Jean', last_name: 'Kamga', phone: '+237 6 55 11 22 33' },
+  { id: 'u3', first_name: 'Marie', last_name: 'Nkolo', phone: '+237 6 77 88 99 00' },
+];
+const chatMessages = [
+  { id: 'm1', conversation_id: 'c1', sender_type: 'client', sender_id: 'u1', content: 'Bonjour, mon paiement Alipay est toujours en attente, pouvez-vous vérifier ?', media_type: null, media_url: null, reply_to_message_id: null, read_at: null, created_at: new Date(Date.now() - 12e5).toISOString() },
+  { id: 'm2', conversation_id: 'c1', sender_type: 'admin', sender_id: 'a1', content: 'Bonjour Awa, je regarde ça tout de suite.', media_type: null, media_url: null, reply_to_message_id: null, read_at: new Date(Date.now() - 11e5).toISOString(), created_at: new Date(Date.now() - 11e5).toISOString() },
+  { id: 'm3', conversation_id: 'c1', sender_type: 'client', sender_id: 'u1', content: 'Merci beaucoup !', media_type: null, media_url: null, reply_to_message_id: null, read_at: null, created_at: new Date(Date.now() - 6e5).toISOString() },
+];
+const chatStats = {
+  period_days: 7, open_conversations: 12, closed_conversations: 48, unassigned_open: 3,
+  total_messages: 540, client_messages: 300, admin_messages: 240,
+  avg_response_seconds_global: 320, median_response_seconds_global: 180,
+  per_admin: [
+    { admin_user_id: 'a1', first_name: 'Awa', last_name: 'Diop', replies_count: 128, avg_response_seconds: 240 },
+    { admin_user_id: 'a2', first_name: 'Jean', last_name: 'Kamga', replies_count: 86, avg_response_seconds: 360 },
+    { admin_user_id: 'a3', first_name: 'Marie', last_name: 'Nkolo', replies_count: 54, avg_response_seconds: 420 },
+  ],
+  daily_volume: Array.from({ length: 7 }, (_, i) => ({
+    day: new Date(Date.now() - (6 - i) * 864e5).toISOString().slice(0, 10),
+    client_count: 20 + ((i * 7) % 25),
+    admin_count: 16 + ((i * 5) % 20),
+  })),
+  response_buckets: { under_1min: 180, one_to_five: 120, five_to_fifteen: 60, over_fifteen: 30 },
+};
+const cannedResponses = [
+  { id: 'cr1', label: 'Salutation', content: 'Bonjour {{client_first_name}}, merci de nous avoir contactés. Comment puis-je vous aider ?', sort_order: 0, created_by: 'a1', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'cr2', label: 'Dépôt en cours', content: 'Votre dépôt est en cours de vérification. Vous recevrez une confirmation sous peu.', sort_order: 1, created_by: 'a1', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'cr3', label: 'Clôture', content: 'Ravi d’avoir pu vous aider, {{client_first_name}} ! Bonne journée.', sort_order: 2, created_by: 'a1', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+];
+const quickReplies = [
+  { id: 'qr1', label: 'Mon solde', content: 'Quel est mon solde actuel ?', sort_order: 0, active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'qr2', label: 'Taux du jour', content: 'Quel est le taux du jour ?', sort_order: 1, active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 'qr3', label: 'Suivi paiement', content: 'Où en est mon paiement ?', sort_order: 2, active: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ];
 const proofs = [
   { id: 'pr1', file_name: 'recu_alipay.jpg', file_url: 'u1/recu_alipay.jpg', uploaded_at: new Date(Date.now() - 12e5).toISOString(), deposits: { id: 'd1', user_id: 'u1' } },
@@ -112,6 +158,9 @@ function respond(url) {
   const single = url.includes('user_id=eq.'); // one specific client
   if (url.includes('/rpc/get_dashboard_stats')) return stats;
   if (url.includes('/rpc/get_deposit_stats')) return depositStats;
+  // Support module (M7) RPCs.
+  if (url.includes('/rpc/get_chat_admin_stats')) return chatStats;
+  if (url.includes('/rpc/search_chat_conversations')) return [];
   // Active rate (is_active=true → maybeSingle → object) vs history/chart (order → array).
   if (url.includes('/daily_rates')) {
     return url.includes('is_active=eq.true') ? rate : ratesHistory;
@@ -131,8 +180,17 @@ function respond(url) {
     if (url.includes('id=eq.')) return deposits[0]; // detail → single deposit
     return single ? clientDeposits : deposits;
   }
+  // Support module (M7) tables.
+  if (url.includes('/chat_canned_responses')) return cannedResponses;
+  if (url.includes('/chat_client_quick_replies')) return quickReplies;
+  if (url.includes('/chat_messages')) return chatMessages;
+  if (url.includes('/chat_conversations')) {
+    return url.includes('id=eq.') ? chatConversations[0] : chatConversations;
+  }
   if (url.includes('/clients')) {
     if (single) return clientsList[0]; // detail (maybeSingle slices client-side)
+    // Support chat joins clients by id (select id,first_name,last_name,phone).
+    if (url.includes('id=in.')) return chatClients;
     // proofs screen joins clients by user_id; clients list needs the full rows.
     return url.includes('select=user_id') ? proofClients : clientsList;
   }

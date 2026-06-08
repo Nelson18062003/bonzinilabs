@@ -66,6 +66,13 @@ import {
   MobileCreateAdmin,
   MobileAdminDetail,
 } from '@/mobile/screens/admins';
+import {
+  MobileSupportListScreen,
+  MobileSupportConversationScreen,
+  MobileSupportStatsScreen,
+  MobileCannedResponsesScreen,
+  MobileQuickRepliesScreen,
+} from '@/mobile/screens/support';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -123,6 +130,12 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   admins: { Comp: MobileAdminsScreen, route: '/m/more/admins' },
   'admin-create': { Comp: MobileCreateAdmin, route: '/m/more/admins/new' },
   'admin-detail': { Comp: MobileAdminDetail, route: '/m/more/admins/a1', path: '/m/more/admins/:adminId' },
+  // Support module (Phase 2 M7)
+  support: { Comp: MobileSupportListScreen, route: '/m/support' },
+  'support-conversation': { Comp: MobileSupportConversationScreen, route: '/m/support/c1', path: '/m/support/:conversationId' },
+  'support-stats': { Comp: MobileSupportStatsScreen, route: '/m/support/stats' },
+  'support-canned': { Comp: MobileCannedResponsesScreen, route: '/m/support/canned' },
+  'support-quick': { Comp: MobileQuickRepliesScreen, route: '/m/support/quick' },
 };
 
 const params = new URLSearchParams(window.location.search);
