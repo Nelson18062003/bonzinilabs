@@ -13,7 +13,6 @@ import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminA
 import { formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import {
-  Loader2,
   Mail,
   Calendar,
   Clock,
@@ -25,23 +24,69 @@ import {
   Check,
   AlertTriangle,
   ChevronRight,
-  X,
 } from 'lucide-react';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-} from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/form';
-import { Label } from '@/components/ui/label';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { roleMeta, StatusPill } from '@/mobile/designKit';
+import {
+  SURFACE,
+  TEXT,
+  TONE_HOLDER,
+  type Tone,
+  roleMeta,
+  Card,
+  StatCard,
+  StatusPill,
+  Holder,
+  BottomSheet,
+  FormField,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+  ScreenLoader,
+} from '@/mobile/designKit';
 
 const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent'];
+
+// Action row in the Ofspace/Mola language: toned round holder + label/desc +
+// chevron. No divider hairlines (the card groups items). Mirrors MobileClientDetail.
+function ActionRow({
+  icon: Icon,
+  tone = 'neutral',
+  label,
+  description,
+  onClick,
+  destructive,
+}: {
+  icon: React.ElementType;
+  tone?: Tone;
+  label: string;
+  description?: string;
+  onClick: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.99]"
+    >
+      <span
+        className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+          destructive ? TONE_HOLDER.danger : TONE_HOLDER[tone],
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+          {label}
+        </span>
+        {description && <span className={cn('block truncate text-[12.5px]', TEXT.muted)}>{description}</span>}
+      </span>
+      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+    </button>
+  );
+}
 
 export function MobileAdminDetail() {
   const { t } = useTranslation('common');
@@ -72,7 +117,6 @@ export function MobileAdminDetail() {
   const canManageUsers = hasPermission('canManageUsers');
   const admin = admins?.find(a => a.id === adminId);
   const isSelf = admin?.id === currentUser?.id;
-  const canPerformActions = canManageUsers && !isSelf;
 
   const handleOpenEditDrawer = () => {
     if (!admin) return;
@@ -130,10 +174,10 @@ export function MobileAdminDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <MobileHeader title={t('adminDetail', { defaultValue: 'Détail admin' })} showBack backTo="/m/more/admins" />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className={cn('flex-1', SURFACE.canvas)}>
+          <ScreenLoader />
         </div>
       </div>
     );
@@ -141,351 +185,287 @@ export function MobileAdminDetail() {
 
   if (!admin) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <MobileHeader title={t('adminDetail', { defaultValue: 'Détail admin' })} showBack backTo="/m/more/admins" />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-muted-foreground">{t('adminNotFound', { defaultValue: 'Admin non trouvé' })}</p>
+        <div className={cn('flex flex-1 items-center justify-center p-4', SURFACE.canvas)}>
+          <p className={TEXT.muted}>{t('adminNotFound', { defaultValue: 'Admin non trouvé' })}</p>
         </div>
       </div>
     );
   }
 
   const initials = `${admin.firstName?.[0] || ''}${admin.lastName?.[0] || ''}`;
+  const isActive = admin.status === 'ACTIVE';
 
   return (
-    <div className="flex flex-col min-h-screen pb-4">
+    <div className="flex min-h-screen flex-col">
       <MobileHeader title={t('adminDetail', { defaultValue: 'Détail admin' })} showBack backTo="/m/more/admins" />
 
-      <div className="flex-1 px-4 py-4 space-y-4">
-        {/* Profile Header */}
-        <div className="bg-card rounded-2xl p-5 border border-border text-center">
-          <div className="relative inline-block">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary mx-auto mb-3">
-              {initials}
+      <div className={cn('flex-1 space-y-4 px-4 py-5', SURFACE.canvas)}>
+        {/* Profile Card */}
+        <Card className="p-5 text-center">
+          <div className="relative mx-auto mb-3 inline-block">
+            <div className={cn('flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold', SURFACE.holder)}>
+              {initials || '?'}
             </div>
-            {/* Status indicator */}
-            <div
+            <span
               className={cn(
-                'absolute bottom-3 right-0 w-4 h-4 rounded-full border-2 border-card',
-                admin.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
+                'absolute bottom-1 right-1 h-4 w-4 rounded-full ring-2 ring-white dark:ring-[#211F2B]',
+                isActive ? 'bg-[#2E7D52] dark:bg-[#7FCBA0]' : 'bg-[#C0504D] dark:bg-[#E79A9A]',
               )}
             />
           </div>
 
-          <h2 className="text-xl font-semibold">
+          <h2 className={cn('text-[20px] font-bold', TEXT.strong)}>
             {admin.firstName} {admin.lastName}
           </h2>
 
-          <div className="flex items-center justify-center gap-2 text-muted-foreground mt-1">
-            <Mail className="w-4 h-4" />
+          <div className={cn('mt-1 flex items-center justify-center gap-1.5 text-[13px]', TEXT.muted)}>
+            <Mail className="h-3.5 w-3.5" />
             {admin.email}
           </div>
 
-          <div className="flex flex-wrap gap-2 justify-center mt-3">
-            {/* Role Badge */}
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <StatusPill
               tone={roleMeta(admin.role).tone}
               label={ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
-              className="px-3 py-1 text-sm"
             />
-
-            {/* Status Badge */}
-            <span
-              className={cn(
-                'px-3 py-1 rounded-full text-sm font-medium',
-                admin.status === 'ACTIVE'
-                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                  : 'bg-red-500/10 text-red-600 dark:text-red-400'
-              )}
-            >
-              {admin.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) : t('disabled', { defaultValue: 'Désactivé' })}
-            </span>
-
+            <StatusPill
+              tone={isActive ? 'success' : 'danger'}
+              label={isActive ? t('active', { defaultValue: 'Actif' }) : t('disabled', { defaultValue: 'Désactivé' })}
+            />
             {isSelf && (
-              <span className="px-3 py-1 rounded-full text-sm font-medium bg-muted text-muted-foreground">
-                {t('itsYou', { defaultValue: "C'est vous" })}
-              </span>
+              <StatusPill tone="neutral" label={t('itsYou', { defaultValue: "C'est vous" })} />
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Info Cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-blue-500" />
-              </div>
-            </div>
-            <p className="text-sm font-medium">{formatDate(admin.createdAt)}</p>
-            <p className="text-xs text-muted-foreground">{t('createdOn', { defaultValue: 'Créé le' })}</p>
-          </div>
-
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-500" />
-              </div>
-            </div>
-            <p className="text-sm font-medium">
-              {admin.lastLoginAt
-                ? formatDistanceToNow(new Date(admin.lastLoginAt), {
-                    addSuffix: true,
-                    locale: fr,
-                  })
-                : t('never', { defaultValue: 'Jamais' })}
-            </p>
-            <p className="text-xs text-muted-foreground">{t('lastLogin', { defaultValue: 'Dernière connexion' })}</p>
-          </div>
+          <StatCard
+            icon={Calendar}
+            tone="info"
+            label={t('createdOn', { defaultValue: 'Créé le' })}
+            value={<span className="text-[15px]">{formatDate(admin.createdAt)}</span>}
+          />
+          <StatCard
+            icon={Clock}
+            tone="pending"
+            label={t('lastLogin', { defaultValue: 'Dernière connexion' })}
+            value={
+              <span className="text-[15px]">
+                {admin.lastLoginAt
+                  ? formatDistanceToNow(new Date(admin.lastLoginAt), { addSuffix: true, locale: fr })
+                  : t('never', { defaultValue: 'Jamais' })}
+              </span>
+            }
+          />
         </div>
 
         {/* Role Info */}
-        <div className="bg-card rounded-xl p-4 border border-border">
+        <Card>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-500" />
-            </div>
+            <Holder icon={Shield} tone={roleMeta(admin.role).tone} />
             <div>
-              <p className="font-medium">
+              <p className={cn('text-[15px] font-semibold', TEXT.strong)}>
                 {ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
               </p>
-              <p className="text-sm text-muted-foreground">{t('assignedRole', { defaultValue: 'Rôle attribué' })}</p>
+              <p className={cn('text-[13px]', TEXT.muted)}>{t('assignedRole', { defaultValue: 'Rôle attribué' })}</p>
             </div>
           </div>
-        </div>
-      </div>
+        </Card>
 
-      {/* Action Cards */}
-      {canManageUsers && (
-        <div className="px-4 pb-4 space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground px-1">{t('actions', { defaultValue: 'Actions' })}</h3>
-          <div className="space-y-2">
-            <button
+        {/* Action Cards */}
+        {canManageUsers && (
+          <Card className="space-y-0.5 p-2">
+            <ActionRow
+              icon={Edit2}
+              tone="info"
+              label={t('editProfile', { defaultValue: 'Modifier le profil' })}
+              description={t('nameAndRole', { defaultValue: 'Nom, prénom, rôle' })}
               onClick={handleOpenEditDrawer}
-              className="w-full flex items-center gap-3 bg-card rounded-xl p-4 border border-border active:scale-[0.98] transition-transform"
-            >
-              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                <Edit2 className="w-5 h-5 text-blue-500" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium">{t('editProfile', { defaultValue: 'Modifier le profil' })}</p>
-                <p className="text-xs text-muted-foreground">{t('nameAndRole', { defaultValue: 'Nom, prénom, rôle' })}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            </button>
+            />
 
             {!isSelf && (
-              <button
+              <ActionRow
+                icon={Power}
+                tone={isActive ? 'danger' : 'success'}
+                label={isActive ? t('deactivateAccount', { defaultValue: 'Désactiver le compte' }) : t('activateAccount', { defaultValue: 'Activer le compte' })}
+                description={isActive ? t('blockAccess', { defaultValue: "Bloquer l'accès" }) : t('restoreAccess', { defaultValue: "Restaurer l'accès" })}
                 onClick={() => setStatusDrawerOpen(true)}
-                className="w-full flex items-center gap-3 bg-card rounded-xl p-4 border border-border active:scale-[0.98] transition-transform"
-              >
-                <div className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
-                  admin.status === 'ACTIVE' ? 'bg-red-500/10' : 'bg-green-500/10'
-                )}>
-                  <Power className={cn('w-5 h-5', admin.status === 'ACTIVE' ? 'text-red-500' : 'text-green-500')} />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium">{admin.status === 'ACTIVE' ? t('deactivateAccount', { defaultValue: 'Désactiver le compte' }) : t('activateAccount', { defaultValue: 'Activer le compte' })}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {admin.status === 'ACTIVE' ? t('blockAccess', { defaultValue: "Bloquer l'accès" }) : t('restoreAccess', { defaultValue: "Restaurer l'accès" })}
-                  </p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              </button>
+              />
             )}
 
-            <button
+            <ActionRow
+              icon={Key}
+              tone="pending"
+              label={isSelf ? t('changeMyPassword', { defaultValue: 'Changer mon mot de passe' }) : t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}
+              description={isSelf ? t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' }) : t('generateTempPassword', { defaultValue: 'Générer un mot de passe temporaire' })}
               onClick={() => setResetDrawerOpen(true)}
-              className="w-full flex items-center gap-3 bg-card rounded-xl p-4 border border-border active:scale-[0.98] transition-transform"
-            >
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                <Key className="w-5 h-5 text-amber-500" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium">{isSelf ? t('changeMyPassword', { defaultValue: 'Changer mon mot de passe' }) : t('resetPassword', { defaultValue: 'Réinitialiser mot de passe' })}</p>
-                <p className="text-xs text-muted-foreground">
-                  {isSelf ? t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' }) : t('generateTempPassword', { defaultValue: 'Générer un mot de passe temporaire' })}
-                </p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            </button>
-          </div>
-        </div>
-      )}
+            />
+          </Card>
+        )}
+      </div>
 
-      {/* Edit Drawer */}
-      <Drawer open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
-        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
-          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle>{t('editAdmin', { defaultValue: "Modifier l'admin" })}</DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
-            <TextField
-              id="firstName"
-              label={t('firstName', { defaultValue: 'Prénom' })}
-              variant="name"
-              autoComplete="given-name"
-              enterKeyHint="next"
+      {/* Edit Sheet */}
+      <BottomSheet
+        open={editDrawerOpen}
+        onClose={() => setEditDrawerOpen(false)}
+        title={
+          <span className="flex items-center gap-2">
+            <Edit2 className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            {t('editAdmin', { defaultValue: "Modifier l'admin" })}
+          </span>
+        }
+      >
+        <div className="space-y-3">
+          <FormField label={t('firstName', { defaultValue: 'Prénom' })} htmlFor="ad-firstName">
+            <TextInput
+              id="ad-firstName"
               value={editFirstName}
               onChange={(e) => setEditFirstName(e.target.value)}
+              autoComplete="given-name"
+              enterKeyHint="next"
             />
-            <TextField
-              id="lastName"
-              label={t('lastName', { defaultValue: 'Nom' })}
-              variant="name"
-              autoComplete="family-name"
-              enterKeyHint="done"
+          </FormField>
+          <FormField label={t('lastName', { defaultValue: 'Nom' })} htmlFor="ad-lastName">
+            <TextInput
+              id="ad-lastName"
               value={editLastName}
               onChange={(e) => setEditLastName(e.target.value)}
+              autoComplete="family-name"
+              enterKeyHint="done"
             />
-            {!isSelf && (
-              <div>
-                <Label>{t('role', { defaultValue: 'Rôle' })}</Label>
-                <div className="grid grid-cols-1 gap-2 mt-1.5">
-                  {MANAGEABLE_ROLES.map((role) => (
+          </FormField>
+          {!isSelf && (
+            <FormField label={t('role', { defaultValue: 'Rôle' })}>
+              <div className="grid grid-cols-1 gap-2">
+                {MANAGEABLE_ROLES.map((role) => {
+                  const active = editRole === role;
+                  return (
                     <button
                       key={role}
                       onClick={() => setEditRole(role)}
                       className={cn(
-                        'p-3 rounded-lg border text-left transition-colors',
-                        editRole === role
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border'
+                        'flex items-center gap-3 rounded-2xl p-3 text-left transition',
+                        SURFACE.card,
+                        SURFACE.shadow,
+                        active && 'ring-2 ring-[#6B5BD2] dark:ring-[#A99BF0]',
                       )}
                     >
-                      <span className="font-medium">{ADMIN_ROLE_LABELS[role]}</span>
+                      <Holder icon={Shield} tone={roleMeta(role).tone} size="sm" />
+                      <span className={cn('flex-1 text-[14px] font-semibold', TEXT.strong)}>{ADMIN_ROLE_LABELS[role]}</span>
+                      {active && <Check className="h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
-          <DrawerFooter>
-            <Button
-              onClick={handleSaveEdit}
-              disabled={updateProfileMutation.isPending || updateRoleMutation.isPending}
-            >
-              {(updateProfileMutation.isPending || updateRoleMutation.isPending) && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {t('save', { defaultValue: 'Enregistrer' })}
-            </Button>
-            <Button variant="outline" onClick={() => setEditDrawerOpen(false)}>
-              {t('cancel', { defaultValue: 'Annuler' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+            </FormField>
+          )}
+        </div>
+        <div className="mt-5 flex flex-col gap-2">
+          <PrimaryPill
+            onClick={handleSaveEdit}
+            loading={updateProfileMutation.isPending || updateRoleMutation.isPending}
+            className="w-full"
+          >
+            {t('save', { defaultValue: 'Enregistrer' })}
+          </PrimaryPill>
+          <SoftPill onClick={() => setEditDrawerOpen(false)} className="w-full">
+            {t('cancel', { defaultValue: 'Annuler' })}
+          </SoftPill>
+        </div>
+      </BottomSheet>
 
-      {/* Toggle Status Drawer */}
-      <Drawer open={statusDrawerOpen} onOpenChange={setStatusDrawerOpen}>
-        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
-          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-              {admin.status === 'ACTIVE' ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })} {t('theAdmin', { defaultValue: "l'admin" })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-            <p className="text-muted-foreground">
-              {admin.status === 'ACTIVE'
-                ? t('confirmDeactivateAdmin', { defaultValue: `Voulez-vous vraiment désactiver ${admin.firstName} ${admin.lastName} ? Cet admin ne pourra plus se connecter.`, name: `${admin.firstName} ${admin.lastName}` })
-                : t('confirmReactivateAdmin', { defaultValue: `Voulez-vous vraiment réactiver ${admin.firstName} ${admin.lastName} ? Cet admin pourra à nouveau se connecter.`, name: `${admin.firstName} ${admin.lastName}` })}
-            </p>
-          </div>
-          <DrawerFooter>
-            <Button
-              onClick={handleToggleStatus}
-              variant={admin.status === 'ACTIVE' ? 'destructive' : 'default'}
-              disabled={toggleStatusMutation.isPending}
-            >
-              {toggleStatusMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {admin.status === 'ACTIVE' ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })}
-            </Button>
-            <Button variant="outline" onClick={() => setStatusDrawerOpen(false)}>
-              {t('cancel', { defaultValue: 'Annuler' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {/* Toggle Status Sheet */}
+      <BottomSheet
+        open={statusDrawerOpen}
+        onClose={() => setStatusDrawerOpen(false)}
+        title={
+          <span className={cn('flex items-center gap-2', isActive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+            <AlertTriangle className="h-5 w-5" />
+            {isActive ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })} {t('theAdmin', { defaultValue: "l'admin" })}
+          </span>
+        }
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>
+          {isActive
+            ? t('confirmDeactivateAdmin', { defaultValue: `Voulez-vous vraiment désactiver ${admin.firstName} ${admin.lastName} ? Cet admin ne pourra plus se connecter.`, name: `${admin.firstName} ${admin.lastName}` })
+            : t('confirmReactivateAdmin', { defaultValue: `Voulez-vous vraiment réactiver ${admin.firstName} ${admin.lastName} ? Cet admin pourra à nouveau se connecter.`, name: `${admin.firstName} ${admin.lastName}` })}
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <PrimaryPill
+            danger={isActive}
+            onClick={handleToggleStatus}
+            loading={toggleStatusMutation.isPending}
+            className="w-full"
+          >
+            {isActive ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })}
+          </PrimaryPill>
+          <SoftPill onClick={() => setStatusDrawerOpen(false)} className="w-full">
+            {t('cancel', { defaultValue: 'Annuler' })}
+          </SoftPill>
+        </div>
+      </BottomSheet>
 
-      {/* Reset Password Drawer */}
-      <Drawer open={resetDrawerOpen} onOpenChange={setResetDrawerOpen}>
-        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
-          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5 text-primary" />
-              {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-            <p className="text-muted-foreground">
-              {isSelf
-                ? t('resetPasswordSelfMessage', { defaultValue: 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.' })
-                : <>{t('resetPasswordOtherMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
-                  <strong>{admin.firstName} {admin.lastName}</strong>. {t('resetPasswordOtherMessageSuffix', { defaultValue: "Vous devrez le transmettre manuellement à l'administrateur." })}</>}
-            </p>
-          </div>
-          <DrawerFooter>
-            <Button
-              onClick={handleResetPassword}
-              disabled={resetPasswordMutation.isPending}
-            >
-              {resetPasswordMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
-            </Button>
-            <Button variant="outline" onClick={() => setResetDrawerOpen(false)}>
-              {t('cancel', { defaultValue: 'Annuler' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {/* Reset Password Sheet */}
+      <BottomSheet
+        open={resetDrawerOpen}
+        onClose={() => setResetDrawerOpen(false)}
+        title={
+          <span className="flex items-center gap-2">
+            <Key className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            {t('resetPassword', { defaultValue: 'Réinitialiser le mot de passe' })}
+          </span>
+        }
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>
+          {isSelf
+            ? t('resetPasswordSelfMessage', { defaultValue: 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.' })
+            : <>{t('resetPasswordOtherMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
+              <strong className={TEXT.strong}>{admin.firstName} {admin.lastName}</strong>. {t('resetPasswordOtherMessageSuffix', { defaultValue: "Vous devrez le transmettre manuellement à l'administrateur." })}</>}
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <PrimaryPill onClick={handleResetPassword} loading={resetPasswordMutation.isPending} className="w-full">
+            {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
+          </PrimaryPill>
+          <SoftPill onClick={() => setResetDrawerOpen(false)} className="w-full">
+            {t('cancel', { defaultValue: 'Annuler' })}
+          </SoftPill>
+        </div>
+      </BottomSheet>
 
-      {/* Password Result Drawer */}
-      <Drawer open={passwordResultDrawerOpen} onOpenChange={setPasswordResultDrawerOpen}>
-        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
-          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle className="flex items-center gap-2">
-              <Check className="w-5 h-5 text-green-500" />
-              {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
-            <p className="text-muted-foreground">
-              {isSelf
-                ? t('copyPasswordSelfMessage', { defaultValue: 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.' })
-                : t('copyPasswordOtherMessage', { defaultValue: "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur." })}
-            </p>
-            <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
-              <code className="text-lg font-mono">{newPassword}</code>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCopyPassword}
-              >
-                {passwordCopied ? (
-                  <Check className="w-5 h-5 text-green-500" />
-                ) : (
-                  <Copy className="w-5 h-5" />
-                )}
-              </Button>
-            </div>
-            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-lg">
-              {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
-            </p>
+      {/* Password Result Sheet */}
+      <BottomSheet
+        open={passwordResultDrawerOpen}
+        onClose={() => setPasswordResultDrawerOpen(false)}
+        title={
+          <span className="flex items-center gap-2">
+            <Check className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
+            {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
+          </span>
+        }
+      >
+        <div className="space-y-4">
+          <p className={cn('text-[14px]', TEXT.muted)}>
+            {isSelf
+              ? t('copyPasswordSelfMessage', { defaultValue: 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.' })
+              : t('copyPasswordOtherMessage', { defaultValue: "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur." })}
+          </p>
+          <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-4', SURFACE.canvas)}>
+            <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>
+            <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
           </div>
-          <DrawerFooter>
-            <Button onClick={() => setPasswordResultDrawerOpen(false)}>
-              {t('close', { defaultValue: 'Fermer' })}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          <p className="rounded-2xl bg-[#F8EFD8] p-3 text-[13px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
+          </p>
+        </div>
+        <div className="mt-5">
+          <PrimaryPill onClick={() => setPasswordResultDrawerOpen(false)} className="w-full">
+            {t('close', { defaultValue: 'Fermer' })}
+          </PrimaryPill>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

@@ -7,14 +7,21 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { Search, Plus, UserCog } from 'lucide-react';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { roleMeta } from '@/mobile/designKit';
-import { StatusPill } from '@/mobile/designKit';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  roleMeta,
+  Avatar,
+  StatusPill,
+  TextInput,
+  Holder,
+} from '@/mobile/designKit';
 
 type RoleFilter = AppRole | 'all';
 type StatusFilter = AdminStatus | 'all';
@@ -63,99 +70,130 @@ export function MobileAdminsScreen() {
   ];
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full flex-col pb-20">
       <MobileHeader title={t('administrators', { defaultValue: 'Administrateurs' })} showBack />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+      <PullToRefresh
+        onRefresh={refetch}
+        className={cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}
+      >
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+          <TextInput
             type="text"
             placeholder={t('searchAdmin', { defaultValue: 'Rechercher un admin...' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="pl-10"
           />
         </div>
 
-        {/* Role Filters */}
-        <MobileFilterChips
-          filters={roleOptions}
-          activeKey={roleFilter}
-          onChange={setRoleFilter}
-        />
+        {/* Role Filter Chips */}
+        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {roleOptions.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setRoleFilter(filter.value)}
+              className={cn(
+                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                roleFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Status Filters */}
-        <MobileFilterChips
-          filters={statusOptions}
-          activeKey={statusFilter}
-          onChange={setStatusFilter}
-        />
+        {/* Status Filter Chips */}
+        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {statusOptions.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setStatusFilter(filter.value)}
+              className={cn(
+                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                statusFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
         {/* Admins List */}
         {isLoading ? (
           <SkeletonListScreen count={4} />
         ) : filteredAdmins && filteredAdmins.length > 0 ? (
           <div className="space-y-3">
-            {filteredAdmins.map((admin) => (
-              <button
-                key={admin.id}
-                onClick={() => navigate(`/m/more/admins/${admin.id}`)}
-                className="w-full bg-card rounded-xl p-4 border border-border text-left active:scale-[0.98] transition-transform"
-              >
-                <div className="flex items-center gap-3">
-                  {/* Avatar */}
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-base font-medium text-primary flex-shrink-0">
-                      {admin.firstName?.[0] || '?'}
-                      {admin.lastName?.[0] || ''}
+            {filteredAdmins.map((admin) => {
+              const name = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim() || '?';
+              return (
+                <button
+                  key={admin.id}
+                  onClick={() => navigate(`/m/more/admins/${admin.id}`)}
+                  className={cn(
+                    'w-full rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    SURFACE.card,
+                    SURFACE.shadow,
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Avatar + status dot */}
+                    <div className="relative">
+                      <Avatar name={name} />
+                      <span
+                        className={cn(
+                          'absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-white dark:ring-[#211F2B]',
+                          admin.status === 'ACTIVE'
+                            ? 'bg-[#2E7D52] dark:bg-[#7FCBA0]'
+                            : 'bg-[#C0504D] dark:bg-[#E79A9A]',
+                        )}
+                      />
                     </div>
-                    {/* Status indicator */}
-                    <div
-                      className={cn(
-                        'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card',
-                        admin.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
-                      )}
-                    />
-                  </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium truncate">
-                        {admin.firstName} {admin.lastName}
-                      </p>
-                      {admin.id === currentUser?.id && (
-                        <span className="text-xs text-muted-foreground">({t('you', { defaultValue: 'vous' })})</span>
+                    {/* Info */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
+                          {admin.firstName} {admin.lastName}
+                        </p>
+                        {admin.id === currentUser?.id && (
+                          <span className={cn('shrink-0 text-[11px]', TEXT.muted)}>
+                            ({t('you', { defaultValue: 'vous' })})
+                          </span>
+                        )}
+                      </div>
+                      <p className={cn('truncate text-[13px]', TEXT.muted)}>{admin.email}</p>
+                    </div>
+
+                    {/* Role badge + last login */}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <StatusPill
+                        tone={roleMeta(admin.role).tone}
+                        label={ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
+                      />
+                      {admin.lastLoginAt && (
+                        <span className={cn('text-[10px]', TEXT.muted)}>
+                          {formatDistanceToNow(new Date(admin.lastLoginAt), {
+                            addSuffix: true,
+                            locale: fr,
+                          })}
+                        </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {admin.email}
-                    </p>
                   </div>
-
-                  {/* Role Badge */}
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <StatusPill
-                      tone={roleMeta(admin.role).tone}
-                      label={ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
-                    />
-                    {admin.lastLoginAt && (
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(admin.lastLoginAt), {
-                          addSuffix: true,
-                          locale: fr,
-                        })}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <MobileEmptyState icon={UserCog} title={t('noAdminFound', { defaultValue: 'Aucun admin trouvé' })} />
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Holder icon={UserCog} size="lg" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
+              {t('noAdminFound', { defaultValue: 'Aucun admin trouvé' })}
+            </p>
+          </div>
         )}
       </PullToRefresh>
 
@@ -163,9 +201,12 @@ export function MobileAdminsScreen() {
       {canManageUsers && (
         <button
           onClick={() => navigate('/m/more/admins/new')}
-          className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform z-10"
+          className={cn(
+            'fixed bottom-20 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95',
+            PRIMARY_PILL,
+          )}
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="h-6 w-6" />
         </button>
       )}
     </div>

@@ -1,26 +1,32 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCreateAdmin } from '@/hooks/useAdminManagement';
 import { ADMIN_ROLE_LABELS, type AppRole, useAdminAuth } from '@/contexts/AdminAuthContext';
 import { cn } from '@/lib/utils';
+import { Check, Shield, Copy } from 'lucide-react';
 import {
-  Loader2,
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  Mail,
-  User,
-  Shield,
-  Copy,
-  AlertTriangle,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { EmailField, TextField } from '@/components/form';
-import { roleMeta, StatusPill, Holder } from '@/mobile/designKit';
+  SURFACE,
+  TEXT,
+  roleMeta,
+  Card,
+  Row,
+  Holder,
+  StatusPill,
+  FormField,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+} from '@/mobile/designKit';
+import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 
-type Step = 'personal' | 'role' | 'confirm' | 'success';
+type Step = 'personal' | 'role' | 'confirm';
+
+const STEPS: { key: Step; num: number; labelKey: string; labelDefault: string }[] = [
+  { key: 'personal', num: 1, labelKey: 'personalInfoShort', labelDefault: 'Identité' },
+  { key: 'role', num: 2, labelKey: 'role', labelDefault: 'Rôle' },
+  { key: 'confirm', num: 3, labelKey: 'confirmation', labelDefault: 'Confirmation' },
+];
 
 const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefault: string }[] = [
   {
@@ -60,21 +66,18 @@ export function MobileCreateAdmin() {
   const [tempPassword, setTempPassword] = useState('');
   const [createdUserId, setCreatedUserId] = useState('');
   const [passwordCopied, setPasswordCopied] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   if (!hasPermission('canManageUsers')) {
     return <Navigate to="/m" replace />;
   }
 
   // Validation
-  const isPersonalValid = firstName.trim() && lastName.trim() && email.trim() && email.includes('@');
+  const isPersonalValid = !!(firstName.trim() && lastName.trim() && email.trim() && email.includes('@'));
   const isRoleValid = !!selectedRole;
+  const canNext = step === 'personal' ? isPersonalValid : step === 'role' ? isRoleValid : true;
 
-  // Progress percentage
-  const getProgress = () => {
-    const steps: Step[] = ['personal', 'role', 'confirm', 'success'];
-    const index = steps.indexOf(step);
-    return ((index + 1) / steps.length) * 100;
-  };
+  const currentStepNum = STEPS.find((s) => s.key === step)?.num ?? 1;
 
   const handleNext = () => {
     if (step === 'personal' && isPersonalValid) {
@@ -101,7 +104,7 @@ export function MobileCreateAdmin() {
       if (result.tempPassword) {
         setTempPassword(result.tempPassword);
         setCreatedUserId(result.userId || '');
-        setStep('success');
+        setIsSuccess(true);
       }
     } catch (error) {
       // Error is handled by the mutation
@@ -114,135 +117,223 @@ export function MobileCreateAdmin() {
     setTimeout(() => setPasswordCopied(false), 2000);
   };
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      <MobileHeader
-        title={t('newAdmin', { defaultValue: 'Nouvel admin' })}
-        showBack
-        backTo="/m/more/admins"
-      />
+  const required = <span className="text-[#FE560D]">*</span>;
 
-      {/* Progress Bar */}
-      {step !== 'success' && (
-        <div className="h-1 bg-muted">
-          <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${getProgress()}%` }}
-          />
+  // ── SUCCESS SCREEN ────────────────────────────────────────
+  if (isSuccess) {
+    return (
+      <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('newAdmin', { defaultValue: 'Nouvel admin' })} />
+
+        <div className="flex-1 overflow-y-auto px-4 py-8">
+          {/* Success icon */}
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
+              <Holder icon={Check} tone="success" size="lg" />
+            </div>
+            <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>
+              {t('adminCreatedSuccess', { defaultValue: 'Admin créé avec succès' })}
+            </div>
+            <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
+              {firstName} {lastName} peut maintenant se connecter
+            </div>
+          </div>
+
+          {/* Temporary password */}
+          <Card className="mb-4 p-4">
+            <div className={cn('mb-2 text-[13px]', TEXT.muted)}>
+              {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
+            </div>
+            <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-3.5', SURFACE.canvas)}>
+              <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>
+                {tempPassword}
+              </code>
+              <Holder
+                icon={passwordCopied ? Check : Copy}
+                tone={passwordCopied ? 'success' : 'neutral'}
+                size="sm"
+                onClick={handleCopyPassword}
+              />
+            </div>
+            <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+              Ce mot de passe ne sera plus affiché. Transmettez-le de manière sécurisée à l'administrateur.
+            </div>
+          </Card>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-2">
+            <PrimaryPill onClick={() => navigate(`/m/more/admins/${createdUserId}`)} className="w-full">
+              {t('viewAdminProfile', { defaultValue: 'Voir le profil admin' })}
+            </PrimaryPill>
+            <SoftPill onClick={() => navigate('/m/more/admins')} className="w-full">
+              {t('backToList', { defaultValue: 'Retour à la liste' })}
+            </SoftPill>
+          </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6">
+  // ── 3-STEP FORM ───────────────────────────────────────────
+  return (
+    <div className={cn('flex h-[100dvh] flex-col overflow-hidden', SURFACE.canvas)}>
+      {/* HEADER — fixed, does not scroll */}
+      <div className={cn('shrink-0 px-4 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
+        <div className="flex h-14 items-center">
+          <button
+            onClick={() => navigate('/m/more/admins')}
+            className={cn('-ml-2 mr-2 flex h-10 w-10 items-center justify-center rounded-full text-[26px] font-light active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
+            aria-label={t('back', { defaultValue: 'Retour' })}
+          >
+            ‹
+          </button>
+          <span className={cn('text-[15px] font-bold', TEXT.strong)}>
+            {t('newAdmin', { defaultValue: 'Nouvel admin' })}
+          </span>
+        </div>
+
+        {/* Progress bar — 3 segments */}
+        <div className="flex gap-1.5 pb-3">
+          {STEPS.map((s) => (
+            <div key={s.key} className="flex-1">
+              <div
+                className={cn(
+                  'h-[3px] rounded-full transition-colors',
+                  currentStepNum >= s.num ? 'bg-[#6B5BD2] dark:bg-[#A99BF0]' : 'bg-black/10 dark:bg-white/10',
+                )}
+              />
+              <div
+                className={cn(
+                  'mt-1.5 text-center text-[10px]',
+                  currentStepNum === s.num
+                    ? 'font-extrabold text-[#6B5BD2] dark:text-[#A99BF0]'
+                    : cn('font-medium', TEXT.muted),
+                )}
+              >
+                {s.num}. {t(s.labelKey, { defaultValue: s.labelDefault })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CONTENT — scrollable between header and footer */}
+      <div className="flex-1 overflow-y-auto px-4 pt-5" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Step 1: Personal Info */}
         {step === 'personal' && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold">{t('personalInfo', { defaultValue: 'Informations personnelles' })}</h2>
-              <p className="text-muted-foreground mt-1">
+              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+                {t('personalInfo', { defaultValue: 'Informations personnelles' })}
+              </div>
+              <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
                 {t('enterNewAdminInfo', { defaultValue: 'Entrez les informations de base du nouvel administrateur' })}
-              </p>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <TextField
-                id="firstName"
-                label={`${t('firstName', { defaultValue: 'Prénom' })} *`}
-                variant="name"
-                autoComplete="given-name"
-                enterKeyHint="next"
+            <FormField label={<>{t('firstName', { defaultValue: 'Prénom' })} {required}</>} htmlFor="ca-firstName">
+              <TextInput
+                id="ca-firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Jean"
-              />
-
-              <TextField
-                id="lastName"
-                label={`${t('lastName', { defaultValue: 'Nom' })} *`}
-                variant="name"
-                autoComplete="family-name"
+                autoComplete="given-name"
                 enterKeyHint="next"
+              />
+            </FormField>
+
+            <FormField label={<>{t('lastName', { defaultValue: 'Nom' })} {required}</>} htmlFor="ca-lastName">
+              <TextInput
+                id="ca-lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Dupont"
+                autoComplete="family-name"
+                enterKeyHint="next"
               />
+            </FormField>
 
-              <EmailField
-                id="email"
-                label="Email *"
-                autoComplete="email"
-                enterKeyHint="done"
+            <FormField label={<>Email {required}</>} htmlFor="ca-email">
+              <TextInput
+                id="ca-email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="jean.dupont@bonzini.com"
-                showIcon={false}
+                autoComplete="email"
+                enterKeyHint="done"
               />
-            </div>
+            </FormField>
           </div>
         )}
 
         {/* Step 2: Role Selection */}
         {step === 'role' && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold">{t('roleSelection', { defaultValue: 'Sélection du rôle' })}</h2>
-              <p className="text-muted-foreground mt-1">
+              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+                {t('roleSelection', { defaultValue: 'Sélection du rôle' })}
+              </div>
+              <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
                 {t('chooseRoleForAdmin', { defaultValue: 'Choisissez le rôle à attribuer à cet administrateur' })}
-              </p>
+              </div>
             </div>
 
             <div className="space-y-3">
-              {MANAGEABLE_ROLES.map((item) => (
-                <button
-                  key={item.role}
-                  onClick={() => setSelectedRole(item.role)}
-                  className={cn(
-                    'w-full p-4 rounded-xl border-2 text-left transition-all',
-                    selectedRole === item.role
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border bg-card'
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <Holder icon={Shield} tone={roleMeta(item.role).tone} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{ADMIN_ROLE_LABELS[item.role]}</p>
-                        {selectedRole === item.role && (
-                          <Check className="w-4 h-4 text-primary" />
-                        )}
+              {MANAGEABLE_ROLES.map((item) => {
+                const active = selectedRole === item.role;
+                return (
+                  <button
+                    key={item.role}
+                    onClick={() => setSelectedRole(item.role)}
+                    className={cn(
+                      'w-full rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                      active && 'ring-2 ring-[#6B5BD2] dark:ring-[#A99BF0]',
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Holder icon={Shield} tone={roleMeta(item.role).tone} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className={cn('text-[15px] font-semibold', TEXT.strong)}>{ADMIN_ROLE_LABELS[item.role]}</p>
+                          {active && <Check className="h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+                        </div>
+                        <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>
+                          {t(item.descriptionKey, { defaultValue: item.descriptionDefault })}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {t(item.descriptionKey, { defaultValue: item.descriptionDefault })}
-                      </p>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Step 3: Confirmation */}
         {step === 'confirm' && (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <div>
-              <h2 className="text-xl font-semibold">{t('confirmation', { defaultValue: 'Confirmation' })}</h2>
-              <p className="text-muted-foreground mt-1">
+              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+                {t('confirmation', { defaultValue: 'Confirmation' })}
+              </div>
+              <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
                 {t('verifyBeforeCreating', { defaultValue: "Vérifiez les informations avant de créer l'administrateur" })}
-              </p>
+              </div>
             </div>
 
-            <div className="bg-card rounded-xl border border-border p-4 space-y-4">
-              {/* Avatar Preview */}
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-medium text-primary">
-                  {firstName[0] || '?'}
-                  {lastName[0] || ''}
+            <Card className="p-4">
+              {/* Avatar + name */}
+              <div className="mb-4 flex items-center gap-3">
+                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold', SURFACE.holder)}>
+                  {(firstName[0] ?? '').toUpperCase()}{(lastName[0] ?? '').toUpperCase()}
                 </div>
-                <div>
-                  <p className="font-semibold text-lg">
+                <div className="min-w-0">
+                  <div className={cn('truncate text-[17px] font-bold', TEXT.strong)}>
                     {firstName} {lastName}
-                  </p>
+                  </div>
                   <StatusPill
                     tone={roleMeta(selectedRole).tone}
                     label={ADMIN_ROLE_LABELS[selectedRole]}
@@ -250,153 +341,37 @@ export function MobileCreateAdmin() {
                 </div>
               </div>
 
-              <div className="border-t border-border pt-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{t('fullName', { defaultValue: 'Nom complet' })}</p>
-                    <p className="font-medium">{firstName} {lastName}</p>
-                  </div>
-                </div>
+              <Row label={t('fullName', { defaultValue: 'Nom complet' })} value={`${firstName} ${lastName}`} />
+              <Row label="Email" value={email} />
+              <Row label={t('role', { defaultValue: 'Rôle' })} value={ADMIN_ROLE_LABELS[selectedRole]} />
+            </Card>
 
-                <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{email}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Shield className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{t('role', { defaultValue: 'Rôle' })}</p>
-                    <p className="font-medium">{ADMIN_ROLE_LABELS[selectedRole]}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-800">
-                Un mot de passe temporaire sera généré. Vous devrez le transmettre
-                manuellement à l'administrateur.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Success */}
-        {step === 'success' && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-              <h2 className="text-xl font-semibold">{t('adminCreatedSuccess', { defaultValue: 'Admin créé avec succès' })}</h2>
-              <p className="text-muted-foreground mt-1">
-                {firstName} {lastName} peut maintenant se connecter
-              </p>
-            </div>
-
-            <div className="bg-card rounded-xl border border-border p-4 space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
-                </p>
-                <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
-                  <code className="text-lg font-mono">{tempPassword}</code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCopyPassword}
-                  >
-                    {passwordCopied ? (
-                      <Check className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p className="text-sm text-amber-800">
-                  Ce mot de passe ne sera plus affiché. Transmettez-le de
-                  manière sécurisée à l'administrateur.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Button
-                className="w-full"
-                onClick={() => navigate(`/m/more/admins/${createdUserId}`)}
-              >
-                {t('viewAdminProfile', { defaultValue: 'Voir le profil admin' })}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/m/more/admins')}
-              >
-                {t('backToList', { defaultValue: 'Retour à la liste' })}
-              </Button>
+            <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+              Un mot de passe temporaire sera généré. Vous devrez le transmettre manuellement à l'administrateur.
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Navigation */}
-      {step !== 'success' && (
-        <div className="sticky bottom-0 bg-background border-t border-border px-4 py-3">
-          <div className="flex gap-3">
-            {step !== 'personal' && (
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleBack}
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                {t('back', { defaultValue: 'Retour' })}
-              </Button>
-            )}
+      {/* FOOTER — CTAs always visible */}
+      <div className={cn('flex shrink-0 gap-2.5 px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3', SURFACE.card, SURFACE.shadow)}>
+        {step !== 'personal' && (
+          <SoftPill onClick={handleBack} className="flex-1">
+            {t('back', { defaultValue: 'Retour' })}
+          </SoftPill>
+        )}
 
-            {step === 'confirm' ? (
-              <Button
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={createAdminMutation.isPending}
-              >
-                {createAdminMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {t('creating', { defaultValue: 'Création...' })}
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    {t('createAdmin', { defaultValue: "Créer l'admin" })}
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button
-                className="flex-1"
-                onClick={handleNext}
-                disabled={
-                  (step === 'personal' && !isPersonalValid) ||
-                  (step === 'role' && !isRoleValid)
-                }
-              >
-                {t('continue', { defaultValue: 'Continuer' })}
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+        <PrimaryPill
+          onClick={step === 'confirm' ? handleSubmit : handleNext}
+          disabled={!canNext}
+          loading={createAdminMutation.isPending}
+          className={step === 'personal' ? 'flex-1' : 'flex-[1.5]'}
+        >
+          {step === 'confirm'
+            ? t('createAdmin', { defaultValue: "Créer l'admin" })
+            : `${t('continue', { defaultValue: 'Continuer' })} (${currentStepNum}/3)`}
+        </PrimaryPill>
+      </div>
     </div>
   );
 }
