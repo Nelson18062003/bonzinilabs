@@ -167,11 +167,25 @@ const cashPaymentsPending = [
 const cashPaymentScanned = cashPaymentsPending[0]; // cp1 — detail/confirm
 const cashPaymentPaid = { id: 'cp2', reference: 'BZ-PM-CASH-002', amount_rmb: 15800, amount_xaf: 1460000, status: 'completed', method: 'cash', created_at: new Date(Date.now() - 6e6).toISOString(), cash_beneficiary_type: 'other', cash_beneficiary_first_name: 'Wang', cash_beneficiary_last_name: 'Fang', cash_beneficiary_phone: '+86 137 2222 4444', beneficiary_name: null, beneficiary_phone: null, beneficiary_email: null, cash_paid_at: new Date(Date.now() - 5e5).toISOString(), cash_paid_by: 'demo', cash_scanned_by: 'demo', cash_signature_url: SIGNATURE_DATA_URI, cash_signed_by_name: 'Wang Fang', user_id: 'u3' };
 
+// Treasury module (M9) — account balances view + WAC/stock RPCs so the
+// Treasury home/accounts cards render real figures (otherwise empty zeros).
+const treasuryBalances = [
+  { account_id: 't1', code: 'XAF-OM', label: 'Orange Money XAF', currency: 'XAF', kind: 'mobile_money', balance: 32500000 },
+  { account_id: 't2', code: 'XAF-BANK', label: 'Banque XAF', currency: 'XAF', kind: 'bank', balance: 14250000 },
+  { account_id: 't3', code: 'USDT-BIN', label: 'USDT Binance', currency: 'USDT', kind: 'crypto', balance: 18420.5 },
+  { account_id: 't4', code: 'CNY-ALI', label: 'Alipay CNY', currency: 'CNY', kind: 'alipay', balance: 86200 },
+];
+
 // This Supabase client version slices maybeSingle()/single() client-side (Accept
 // stays application/json), so we discriminate by URL instead: a query filtered to
 // one user (user_id=eq.…) is the detail/ledger fetch; an unfiltered query is a list.
 function respond(url) {
   const single = url.includes('user_id=eq.'); // one specific client
+  // Treasury (M9) — view + RPCs (return scalars/array for the home/accounts cards).
+  if (url.includes('/treasury_account_balances')) return treasuryBalances;
+  if (url.includes('/treasury_accounts')) return treasuryBalances;
+  if (url.includes('/rpc/get_wac_usdt')) return 605.4321;
+  if (url.includes('/rpc/get_usdt_stock')) return 18420.5;
   if (url.includes('/rpc/get_dashboard_stats')) return stats;
   if (url.includes('/rpc/get_deposit_stats')) return depositStats;
   // Support module (M7) RPCs.
