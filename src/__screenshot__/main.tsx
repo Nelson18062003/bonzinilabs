@@ -59,6 +59,8 @@ import {
   MobileDepositDetailV2,
   MobileNewDepositV2,
 } from '@/mobile/screens/deposits';
+import { MobileNewPayment } from '@/mobile/screens/payments';
+import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -108,6 +110,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   deposits: { Comp: MobileDepositsScreenV2, route: '/m/deposits' },
   'deposit-detail': { Comp: MobileDepositDetailV2, route: '/m/deposits/d1', path: '/m/deposits/:depositId' },
   'deposit-new': { Comp: MobileNewDepositV2, route: '/m/deposits/new' },
+  // Payments module (Phase 2 M4)
+  'payment-new': { Comp: MobileNewPayment, route: '/m/payments/new' },
+  // Rates module (Phase 2 M5)
+  rates: { Comp: MobileRatesScreen, route: '/m/rates' },
 };
 
 const params = new URLSearchParams(window.location.search);

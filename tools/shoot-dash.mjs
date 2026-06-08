@@ -27,6 +27,23 @@ const rate = {
   rate_cash: 86500, rate_alipay: 92100, rate_wechat: 91800, rate_virement: 90500,
   effective_at: new Date().toISOString(),
 };
+// Rates module (M5) — history (newest first) for the history/chart tabs.
+const ratesHistory = [
+  { id: 'r1', is_active: true, rate_cash: 86500, rate_alipay: 92100, rate_wechat: 91800, rate_virement: 90500, effective_at: new Date().toISOString(), created_at: new Date().toISOString(), created_by: 'a1' },
+  { id: 'r2', is_active: false, rate_cash: 86200, rate_alipay: 91800, rate_wechat: 91500, rate_virement: 90200, effective_at: new Date(Date.now() - 864e5).toISOString(), created_at: new Date(Date.now() - 864e5).toISOString(), created_by: 'a1' },
+  { id: 'r3', is_active: false, rate_cash: 85900, rate_alipay: 91500, rate_wechat: 91200, rate_virement: 89900, effective_at: new Date(Date.now() - 1728e5).toISOString(), created_at: new Date(Date.now() - 1728e5).toISOString(), created_by: 'a2' },
+  { id: 'r4', is_active: false, rate_cash: 86100, rate_alipay: 91700, rate_wechat: 91400, rate_virement: 90100, effective_at: new Date(Date.now() - 2592e5).toISOString(), created_at: new Date(Date.now() - 2592e5).toISOString(), created_by: 'a1' },
+  { id: 'r5', is_active: false, rate_cash: 85700, rate_alipay: 91300, rate_wechat: 91000, rate_virement: 89700, effective_at: new Date(Date.now() - 3456e5).toISOString(), created_at: new Date(Date.now() - 3456e5).toISOString(), created_by: 'a3' },
+];
+// Country (cameroun = REF 0%) + tier adjustments for Config/Simulator tabs.
+const rateAdjustments = [
+  { id: 'aj1', type: 'country', key: 'cameroun', label: 'Cameroun', percentage: 0, is_reference: true, sort_order: 0, updated_at: new Date().toISOString(), updated_by: null },
+  { id: 'aj2', type: 'country', key: 'gabon', label: 'Gabon', percentage: -1.5, is_reference: false, sort_order: 1, updated_at: new Date().toISOString(), updated_by: null },
+  { id: 'aj3', type: 'country', key: 'tchad', label: 'Tchad', percentage: -2, is_reference: false, sort_order: 2, updated_at: new Date().toISOString(), updated_by: null },
+  { id: 'aj4', type: 'tier', key: 't3', label: '≥ 1 000 000 XAF', percentage: 0, is_reference: true, sort_order: 0, updated_at: new Date().toISOString(), updated_by: null },
+  { id: 'aj5', type: 'tier', key: 't2', label: '400 000 – 999 999 XAF', percentage: -1, is_reference: false, sort_order: 1, updated_at: new Date().toISOString(), updated_by: null },
+  { id: 'aj6', type: 'tier', key: 't1', label: '10 000 – 399 999 XAF', percentage: -2.5, is_reference: false, sort_order: 2, updated_at: new Date().toISOString(), updated_by: null },
+];
 const deposits = [
   { id: 'd1', reference: 'BZ-DP-001', method: 'bank_transfer', bank_name: 'Afriland First Bank', agency_name: null, admin_comment: null, confirmed_amount_xaf: null, validated_at: null, user_id: 'u1', amount_xaf: 2500000, status: 'proof_submitted', proof_count: 1, created_at: new Date(Date.now() - 36e5).toISOString(), profiles: { first_name: 'Awa', last_name: 'Diop', phone: '+237 6 91 23 45 67', company_name: 'Jako Cargo SARL' } },
   { id: 'd2', reference: 'BZ-DP-002', method: 'om_transfer', bank_name: null, agency_name: null, admin_comment: null, confirmed_amount_xaf: 1800000, validated_at: new Date(Date.now() - 7e6).toISOString(), user_id: 'u2', amount_xaf: 1800000, status: 'validated', proof_count: 2, created_at: new Date(Date.now() - 8e6).toISOString(), profiles: { first_name: 'Jean', last_name: 'Kamga', phone: '+237 6 55 11 22 33', company_name: 'Kamga Import' } },
@@ -93,7 +110,11 @@ function respond(url) {
   const single = url.includes('user_id=eq.'); // one specific client
   if (url.includes('/rpc/get_dashboard_stats')) return stats;
   if (url.includes('/rpc/get_deposit_stats')) return depositStats;
-  if (url.includes('/daily_rates')) return rate; // maybeSingle → object
+  // Active rate (is_active=true → maybeSingle → object) vs history/chart (order → array).
+  if (url.includes('/daily_rates')) {
+    return url.includes('is_active=eq.true') ? rate : ratesHistory;
+  }
+  if (url.includes('/rate_adjustments')) return rateAdjustments;
   if (url.includes('/admin_audit_logs')) return auditLogs;
   if (url.includes('/user_roles')) return adminRoles;
   // Proofs: the count query (?select=deposit_id) and the More screen want the
