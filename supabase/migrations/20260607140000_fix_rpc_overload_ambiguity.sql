@@ -22,3 +22,5 @@ drop function if exists public.admin_adjust_wallet(uuid, bigint, text, text);
 drop function if exists public.reject_deposit(uuid, text, text, text);
 
 notify pgrst, 'reload schema';
+
+-- (re-déploiement : la tentative précédente a été bloquée par la limite Vercel free-tier, désormais réinitialisée)
