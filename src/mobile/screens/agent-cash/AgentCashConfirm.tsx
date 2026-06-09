@@ -165,7 +165,7 @@ export function AgentCashConfirm() {
             <p className={cn('text-xs', TEXT.muted)}>{t('signature_instruction')}</p>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl border-2 border-dashed border-[#C9C2F0] bg-white dark:border-[#4A4660]">
+          <div className="relative overflow-hidden rounded-xl bg-white ring-1 ring-black/[0.06] dark:ring-white/10">
             <SignaturePad
               ref={sigCanvas}
               canvasProps={{

@@ -161,14 +161,10 @@ export function AgentCashScanner() {
           )}
         </Card>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-          <span className={cn('text-xs uppercase tracking-wide', TEXT.muted)}>
-            {t('manual_entry')}
-          </span>
-          <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-        </div>
+        {/* Section label — whitespace only, no divider lines (kit language) */}
+        <p className={cn('px-1 pt-1 text-xs font-bold uppercase tracking-wider', TEXT.muted)}>
+          {t('manual_entry')}
+        </p>
 
         {/* Manual entry */}
         <Card className="space-y-3">

@@ -1115,7 +1115,7 @@ export function MobilePaymentDetail() {
                   return (
                     <div key={proof.id} className={cn('overflow-hidden rounded-2xl', SURFACE.canvas)}>
                       {/* Preview */}
-                      <div className="relative aspect-[16/9] w-full bg-gradient-to-br from-[#e8eef6] to-[#f0ecf8] dark:from-[#272233] dark:to-[#2A2536]">
+                      <div className="relative aspect-[16/9] w-full bg-[#ECE8F6] dark:bg-[#2A2738]">
                         <img
                           src={proof.file_url}
                           alt={proof.file_name || 'Preuve'}
