@@ -12,7 +12,7 @@
 // (now/today/yesterday/custom + heure/minute), flyerRates +
 // RateFlyer + exports PNG/PDF, états.
 // ============================================================
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Check, Download, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,18 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [flyerDark, setFlyerDark] = useState(true);
   const [exportingPNG, setExportingPNG] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
+
+  // Pré-remplit les champs quand le taux actif arrive APRÈS le montage
+  // (chargement réseau) — sans jamais écraser une saisie en cours.
+  useEffect(() => {
+    if (!currentRate) return;
+    setRates((prev) => ({
+      cash: prev.cash || currentRate.rate_cash?.toString() || '',
+      alipay: prev.alipay || currentRate.rate_alipay?.toString() || '',
+      wechat: prev.wechat || currentRate.rate_wechat?.toString() || '',
+      virement: prev.virement || currentRate.rate_virement?.toString() || '',
+    }));
+  }, [currentRate]);
 
   // Aperçu responsive du flyer : on mesure le conteneur, on déduit l'échelle.
   const previewRef = useRef<HTMLDivElement>(null);
