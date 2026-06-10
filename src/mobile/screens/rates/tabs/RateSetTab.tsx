@@ -1,13 +1,25 @@
-import { useState } from 'react';
+// ============================================================
+// MODULE TAUX — RateSetTab (« Définir les taux du jour »)
+// Section concentrée sur la SAISIE et la PUBLICATION :
+//   1. bandeau TAUX ACTIFS (état) ;
+//   2. saisie des nouveaux taux (gros chiffres, vrais logos) ;
+//   3. prise d'effet (pilules) ;
+//   4. PUBLIER.
+// Le FLYER est sorti d'ici → pilule « Voir le flyer du jour » au bas
+// du module (RateFlyerSheet), fidèle à la maquette validée.
+// Logique 100% préservée : useCreateDailyRates (RPC), direction,
+// getEffectiveAt (now/today/yesterday/custom + heure/minute), états.
+// ============================================================
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { DateField, TextField } from '@/components/form';
-import { Button } from '@/components/ui/button';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
 import { useCreateDailyRates } from '@/hooks/useDailyRates';
-import { RateFlyer } from '@/mobile/components/rates/RateFlyer';
-import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
+import { SURFACE, TEXT, PrimaryPill, StatusPill } from '@/mobile/designKit';
+import { MethodLogo } from '../components/MethodLogo';
 
 interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
@@ -25,19 +37,20 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [customDate, setCustomDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [customHour, setCustomHour] = useState(new Date().getHours());
   const [customMin, setCustomMin] = useState(0);
-  const [flyerDark, setFlyerDark] = useState(true);
-  const [exportingPNG, setExportingPNG] = useState(false);
-  const [exportingPDF, setExportingPDF] = useState(false);
+
+  // Pré-remplit les champs quand le taux actif arrive APRÈS le montage
+  // (chargement réseau) — sans jamais écraser une saisie en cours.
+  useEffect(() => {
+    if (!currentRate) return;
+    setRates((prev) => ({
+      cash: prev.cash || currentRate.rate_cash?.toString() || '',
+      alipay: prev.alipay || currentRate.rate_alipay?.toString() || '',
+      wechat: prev.wechat || currentRate.rate_wechat?.toString() || '',
+      virement: prev.virement || currentRate.rate_virement?.toString() || '',
+    }));
+  }, [currentRate]);
 
   const createRates = useCreateDailyRates();
-
-  // Helper: build the rates object passed to the Edge Function
-  const flyerRates = () => ({
-    alipay: parseFloat(rates.alipay)   || currentRate?.rate_alipay   || 0,
-    wechat: parseFloat(rates.wechat)   || currentRate?.rate_wechat   || 0,
-    bank:   parseFloat(rates.virement) || currentRate?.rate_virement || 0,
-    cash:   parseFloat(rates.cash)     || currentRate?.rate_cash     || 0,
-  });
 
   const getEffectiveAt = (): string => {
     const now = new Date();
@@ -51,7 +64,6 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       now.setHours(0, 0, 0, 0);
       return now.toISOString();
     }
-    // custom
     const d = new Date(customDate);
     d.setHours(customHour, customMin, 0, 0);
     return d.toISOString();
@@ -67,285 +79,202 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
     });
   };
 
+  const activeSince = currentRate?.effective_at
+    ? new Date(currentRate.effective_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : null;
+
   return (
     <div className="space-y-5">
-      {/* Direction toggle */}
-      <div className="flex gap-2">
-        {[
-          { key: 'cny_xaf' as const, label: '1 CNY \u2192 XAF' },
-          { key: 'xaf_cny' as const, label: '1M XAF \u2192 CNY' },
-        ].map((d) => (
-          <button
-            key={d.key}
-            onClick={() => setDirection(d.key)}
-            className={`flex-1 py-3 rounded-xl font-semibold text-[13px] cursor-pointer border-2 transition-colors ${
-              direction === d.key
-                ? 'border-purple-600 bg-purple-50 text-purple-600'
-                : 'border-border bg-white text-muted-foreground'
-            }`}
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
-
-      <p className="text-[13px] text-muted-foreground font-medium">
-        {direction === 'xaf_cny'
-          ? 'CNY pour 1 000 000 XAF par mode :'
-          : 'XAF pour 1 CNY par mode :'}
-      </p>
-
-      {/* Rate inputs */}
-      <div className="space-y-2.5">
-        {PAYMENT_METHODS.map((pm) => (
-          <div
-            key={pm.key}
-            className="bg-white rounded-[14px] p-3.5 flex items-center gap-3 shadow-sm border border-border/50"
-          >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-              style={{ background: `${pm.color}15` }}
-            >
-              {pm.icon}
+      {/* ── 1. ÉTAT — taux actuellement actifs ── */}
+      {currentRate && (
+        <div className={cn('rounded-[20px] p-4', SURFACE.card, SURFACE.shadow)}>
+          <div className="flex items-center justify-between">
+            <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Taux actifs</span>
+            <div className="flex items-center gap-2">
+              <StatusPill tone="success" label="En ligne" />
+              {activeSince && <span className={cn('text-[11px]', TEXT.muted)}>depuis le {activeSince}</span>}
             </div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-foreground">{pm.label}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {direction === 'xaf_cny' ? 'CNY / 1M XAF' : 'XAF / 1 CNY'}
-              </div>
-            </div>
-            <TextField
-              variant="decimal"
-              value={rates[pm.key]}
-              onChange={(e) => setRates({ ...rates, [pm.key]: e.target.value })}
-              wrapperClassName="w-[108px]"
-              controlClassName="text-right font-bold"
-              aria-label={`Taux ${pm.label}`}
-            />
           </div>
-        ))}
-      </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {PAYMENT_METHODS.map((pm) => {
+              const v = currentRate[`rate_${pm.key}` as keyof DailyRate] as number | undefined;
+              return (
+                <div key={pm.key} className="flex flex-col items-center gap-1.5">
+                  <MethodLogo method={pm.key} size={34} />
+                  <span className={cn('text-[14px] font-extrabold tabular-nums', TEXT.strong)}>
+                    {v ? Number(v).toLocaleString('fr-FR') : '—'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      {/* Verification block */}
-      <div
-        className="rounded-[14px] p-4 border"
-        style={{
-          background: 'linear-gradient(135deg, #f8f0ff, #eef2ff)',
-          borderColor: '#e8daff',
-        }}
-      >
-        <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">
-          Verification de vos taux saisis
+      {/* ── 2. SAISIE — nouveaux taux ── */}
+      <div>
+        <p className={cn('mb-2.5 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
+          Nouveaux taux
+        </p>
+
+        {/* Segment direction (XAF↔CNY) */}
+        <div className={cn('mb-3 inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
+          {[
+            { key: 'xaf_cny' as const, label: 'Pour 1M XAF' },
+            { key: 'cny_xaf' as const, label: 'Pour 1 CNY' },
+          ].map((d) => {
+            const active = direction === d.key;
+            return (
+              <button
+                key={d.key}
+                onClick={() => setDirection(d.key)}
+                className={cn(
+                  'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                  active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
+                )}
+              >
+                {d.label}
+              </button>
+            );
+          })}
         </div>
-        <div className="text-[11px] text-muted-foreground mb-3">
-          Taux de base (meilleur cas : Cameroun, gros montant &ge; 1M XAF). Les
-          ajustements pays et tranches s'appliqueront automatiquement.
-        </div>
-        {PAYMENT_METHODS.map((pm) => {
-          const val = parseFloat(rates[pm.key]) || 0;
-          return (
+
+        {/* Une grande ligne de saisie par méthode — gros chiffres, vrais logos */}
+        <div className="space-y-2.5">
+          {PAYMENT_METHODS.map((pm) => (
             <div
               key={pm.key}
-              className="flex justify-between items-center py-2 border-b border-purple-600/10 last:border-0"
+              className={cn('flex items-center gap-3.5 rounded-[20px] p-4', SURFACE.card, SURFACE.shadow)}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-base">{pm.icon}</span>
-                <div>
-                  <div className="text-[13px] font-semibold text-foreground">{pm.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    1M XAF = {val.toLocaleString('fr-FR')} CNY
-                  </div>
+              <MethodLogo method={pm.key} size={46} />
+              <div className="min-w-0 flex-1">
+                <div className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>{pm.label}</div>
+                <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
+                  {direction === 'xaf_cny' ? 'CNY pour 1M XAF' : 'XAF pour 1 CNY'}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-[15px] font-bold text-purple-600">
-                  {val.toLocaleString('fr-FR')}
-                </div>
-                <div className="text-[10px] text-muted-foreground">CNY</div>
-              </div>
+              <TextField
+                variant="decimal"
+                value={rates[pm.key]}
+                onChange={(e) => setRates({ ...rates, [pm.key]: e.target.value })}
+                wrapperClassName="w-[128px]"
+                controlClassName="h-12 text-right text-[22px] font-black tabular-nums"
+                aria-label={`Taux ${pm.label}`}
+              />
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        <p className={cn('mt-2.5 px-1 text-[11px] leading-relaxed', TEXT.muted)}>
+          Taux de base (meilleur cas : Cameroun, ≥ 1M XAF). Les ajustements pays et
+          tranches s'appliquent automatiquement — voir Réglages.
+        </p>
       </div>
 
-      {/* Date selector */}
+      {/* ── 3. PRISE D'EFFET ── */}
       <div>
-        <p className="text-sm font-semibold text-foreground mb-2.5">Date d'effet</p>
-        <div className="flex gap-2 mb-2.5">
+        <p className={cn('mb-2.5 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
+          Prise d'effet
+        </p>
+        <div className="flex gap-2">
           {[
             { key: 'now' as const, label: 'Maintenant' },
             { key: 'today' as const, label: "Aujourd'hui" },
             { key: 'yesterday' as const, label: 'Hier' },
-          ].map((d) => (
-            <button
-              key={d.key}
-              onClick={() => setDateOption(d.key)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer border-0 transition-colors ${
-                dateOption === d.key
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
+            { key: 'custom' as const, label: 'Autre…' },
+          ].map((d) => {
+            const active = dateOption === d.key;
+            return (
+              <button
+                key={d.key}
+                onClick={() => setDateOption(d.key)}
+                className={cn(
+                  'flex-1 rounded-full py-2.5 text-[12px] font-semibold transition-colors',
+                  active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
+                )}
+              >
+                {d.label}
+              </button>
+            );
+          })}
         </div>
 
-        <button
-          onClick={() => setDateOption('custom')}
-          className={`w-full py-3 rounded-xl text-[13px] font-medium cursor-pointer flex items-center justify-center gap-2 border-2 transition-colors ${
-            dateOption === 'custom'
-              ? 'border-purple-600 bg-purple-50 text-purple-600'
-              : 'border-border bg-white text-muted-foreground'
-          }`}
-        >
-          Autre date...
-        </button>
-
         {dateOption === 'custom' && (
-          <div className="bg-white rounded-xl p-3.5 border border-border mt-2.5 space-y-3">
+          <div className={cn('mt-2.5 space-y-3 rounded-2xl p-3.5', SURFACE.card, SURFACE.shadow)}>
             <DateField
               label="Date"
-              labelClassName="text-xs font-semibold text-muted-foreground"
+              labelClassName={cn('text-[12px] font-semibold', TEXT.muted)}
               value={customDate}
               onChange={(e) => setCustomDate(e.target.value)}
               controlClassName="font-semibold"
             />
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+              <label className={cn('mb-1.5 block text-[12px] font-semibold', TEXT.muted)}>
                 Heure
               </label>
               <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => setCustomHour((h) => Math.max(0, h - 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  aria-label="Heure précédente"
+                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
                 >
-                  &minus;
+                  −
                 </button>
-                <div className="w-14 h-11 rounded-xl bg-muted flex items-center justify-center text-[22px] font-extrabold text-foreground">
+                <div className={cn('flex h-11 w-14 items-center justify-center rounded-xl text-[22px] font-extrabold tabular-nums', SURFACE.canvas, TEXT.strong)}>
                   {String(customHour).padStart(2, '0')}
                 </div>
                 <button
                   onClick={() => setCustomHour((h) => Math.min(23, h + 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  aria-label="Heure suivante"
+                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
                 >
                   +
                 </button>
-                <span className="text-[22px] font-extrabold text-foreground">:</span>
+                <span className={cn('text-[22px] font-extrabold', TEXT.strong)}>:</span>
                 <button
                   onClick={() => setCustomMin((m) => Math.max(0, m - 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  aria-label="Minute précédente"
+                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
                 >
-                  &minus;
+                  −
                 </button>
-                <div className="w-14 h-11 rounded-xl bg-muted flex items-center justify-center text-[22px] font-extrabold text-foreground">
+                <div className={cn('flex h-11 w-14 items-center justify-center rounded-xl text-[22px] font-extrabold tabular-nums', SURFACE.canvas, TEXT.strong)}>
                   {String(customMin).padStart(2, '0')}
                 </div>
                 <button
                   onClick={() => setCustomMin((m) => Math.min(59, m + 1))}
-                  className="w-10 h-10 rounded-xl border border-border bg-muted/50 text-lg cursor-pointer flex items-center justify-center"
+                  aria-label="Minute suivante"
+                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
                 >
                   +
                 </button>
               </div>
             </div>
-            <div className="bg-purple-50 rounded-lg py-2 px-3 text-center text-[13px] text-purple-600 font-semibold">
-              {customDate.split('-').reverse().join('/')} a {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
+            <div className="rounded-xl bg-[#EDEAFA] px-3 py-2 text-center text-[13px] font-semibold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+              {customDate.split('-').reverse().join('/')} à {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
             </div>
           </div>
         )}
       </div>
 
-      {/* Apply button */}
-      <Button
+      {/* ── 4. PUBLIER — l'action du jour (pilule charbon du kit) ── */}
+      <PrimaryPill
         onClick={handleApply}
-        disabled={createRates.isPending}
-        className="w-full py-6 rounded-[14px] text-base font-bold shadow-lg"
-        style={{
-          background: createRates.isSuccess
-            ? 'linear-gradient(135deg, #10b981, #059669)'
-            : 'linear-gradient(135deg, #a78bfa, #7c3aed)',
-        }}
-      >
-        {createRates.isPending ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : createRates.isSuccess ? (
-          '\u2713 Taux appliques !'
-        ) : (
-          'Appliquer les nouveaux taux'
+        loading={createRates.isPending}
+        className={cn(
+          'w-full py-[15px] text-[15px]',
+          createRates.isSuccess && 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white',
         )}
-      </Button>
-
-      {/* ── FLYER DU JOUR ── */}
-      <div className="mt-2 rounded-[18px] border border-border/60 overflow-hidden" style={{ background: 'linear-gradient(135deg,#f8f0ff,#eef2ff)' }}>
-        {/* Header */}
-        <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-          <div>
-            <div className="text-[14px] font-extrabold text-foreground">Flyer du jour</div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">Taux actuels — prêt à partager</div>
-          </div>
-          {/* Dark / Light toggle */}
-          <div className="flex gap-1.5">
-            {(['dark', 'light'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setFlyerDark(t === 'dark')}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-0 transition-colors"
-                style={{
-                  background: (t === 'dark') === flyerDark ? '#7c3aed' : 'rgba(0,0,0,0.06)',
-                  color: (t === 'dark') === flyerDark ? '#fff' : 'rgba(0,0,0,0.4)',
-                }}
-              >
-                {t === 'dark' ? 'Dark' : 'Light'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Miniature preview — flyer naturel 2150×2560, réduit à ~0.172 pour tenir sur mobile */}
-        <div className="px-4 pb-3 overflow-hidden flex justify-center">
-          <div style={{ transform: 'scale(0.172)', transformOrigin: 'top center', height: Math.round(2560 * 0.172), pointerEvents: 'none' }}>
-            <RateFlyer
-              alipay={parseFloat(rates.alipay) || currentRate?.rate_alipay || 0}
-              wechat={parseFloat(rates.wechat) || currentRate?.rate_wechat || 0}
-              bank={parseFloat(rates.virement) || currentRate?.rate_virement || 0}
-              cash={parseFloat(rates.cash) || currentRate?.rate_cash || 0}
-              theme={flyerDark ? 'dark' : 'light'}
-            />
-          </div>
-        </div>
-
-        {/* Export buttons */}
-        <div className="px-4 pb-4 flex gap-2.5">
-          <button
-            onClick={async () => {
-              if (exportingPNG) return;
-              setExportingPNG(true);
-              try { await downloadFlyerPNG(flyerRates(), flyerDark); }
-              finally { setExportingPNG(false); }
-            }}
-            className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
-            style={{ background: '#7c3aed', color: '#fff', opacity: exportingPNG ? 0.6 : 1 }}
-          >
-            {exportingPNG ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
-            PNG
-          </button>
-          <button
-            onClick={async () => {
-              if (exportingPDF) return;
-              setExportingPDF(true);
-              try { await downloadFlyerPDF(flyerRates(), flyerDark); }
-              finally { setExportingPDF(false); }
-            }}
-            className="flex-1 py-3 rounded-[12px] text-[13px] font-bold cursor-pointer border-0 flex items-center justify-center gap-2 transition-opacity"
-            style={{ background: '#f3a745', color: '#fff', opacity: exportingPDF ? 0.6 : 1 }}
-          >
-            {exportingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
-            PDF
-          </button>
-        </div>
-      </div>
-
+      >
+        {createRates.isSuccess ? (
+          <>
+            <Check className="h-[18px] w-[18px]" />
+            Taux publiés !
+          </>
+        ) : (
+          'Publier les taux du jour'
+        )}
+      </PrimaryPill>
     </div>
   );
 }

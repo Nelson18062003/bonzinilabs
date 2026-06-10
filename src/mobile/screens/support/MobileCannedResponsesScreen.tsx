@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
-  Loader2,
   Trash2,
   Edit3,
   MessageSquareQuote,
@@ -12,7 +11,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCannedResponses,
@@ -25,6 +23,28 @@ import { TEMPLATE_VARIABLES, previewWithExamples } from '@/lib/template-vars';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ChatCannedResponse } from '@/types/chat';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  Card,
+  Holder,
+  FormField,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+  BottomSheet,
+  ScreenLoader,
+} from '@/mobile/designKit';
+
+// Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
+const textareaClass = cn(
+  'w-full rounded-2xl px-4 py-3 text-[16px] outline-none transition',
+  SURFACE.card,
+  SURFACE.shadow,
+  TEXT.strong,
+  'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+);
 
 export function MobileCannedResponsesScreen() {
   const { t } = useTranslation('support');
@@ -52,14 +72,17 @@ export function MobileCannedResponsesScreen() {
 
   if (!canAccess) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
-        Vous n'avez pas accès au support chat.
+      <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
+        <Holder icon={MessageSquareQuote} size="lg" />
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>
+          Vous n'avez pas accès au support chat.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background">
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       <MobileHeader
         title={t('templates.screenTitle')}
         showBack
@@ -69,7 +92,7 @@ export function MobileCannedResponsesScreen() {
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-bonzini-violet text-white hover:bg-bonzini-violet/90"
+              className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
               aria-label={t('templates.create')}
             >
               <Plus className="h-4 w-4" />
@@ -78,82 +101,58 @@ export function MobileCannedResponsesScreen() {
         }
       />
 
-      {!isSuperAdmin && (
-        <div className="border-b border-border bg-bonzini-amber/10 p-3 text-xs text-bonzini-amber">
-          {t('templates.readOnlyHint')}
-        </div>
-      )}
+      <div className="space-y-3 px-4 py-4">
+        {!isSuperAdmin && (
+          <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            {t('templates.readOnlyHint')}
+          </div>
+        )}
 
-      {isLoading ? (
-        <div className="flex flex-1 items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (templates ?? []).length === 0 ? (
-        <MobileEmptyState
-          icon={MessageSquareQuote}
-          title={t('templates.empty')}
-          description={isSuperAdmin ? t('templates.emptyHint') : undefined}
-        />
-      ) : (
-        <ul className="divide-y divide-border">
-          {(templates ?? []).map((tpl, idx) => (
-            <li key={tpl.id} className="p-4">
+        {isLoading ? (
+          <ScreenLoader />
+        ) : (templates ?? []).length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Holder icon={MessageSquareQuote} size="lg" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>{t('templates.empty')}</p>
+            {isSuperAdmin && (
+              <p className={cn('mt-1 max-w-xs text-[13px]', TEXT.muted)}>{t('templates.emptyHint')}</p>
+            )}
+          </div>
+        ) : (
+          (templates ?? []).map((tpl, idx) => (
+            <Card key={tpl.id}>
               <div className="mb-2 flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-foreground">{tpl.label}</p>
+                <p className={cn('text-[14px] font-bold', TEXT.strong)}>{tpl.label}</p>
                 {isSuperAdmin && (
                   <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => move(idx, 'up')}
-                      disabled={idx === 0}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:opacity-30"
-                      aria-label="Up"
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => move(idx, 'down')}
-                      disabled={idx === (templates ?? []).length - 1}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:opacity-30"
-                      aria-label="Down"
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(tpl)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                      aria-label="Edit"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
+                    <Holder icon={ArrowUp} size="sm" onClick={idx === 0 ? undefined : () => move(idx, 'up')} className={cn('h-7 w-7', idx === 0 && 'pointer-events-none opacity-30')} />
+                    <Holder icon={ArrowDown} size="sm" onClick={idx === (templates ?? []).length - 1 ? undefined : () => move(idx, 'down')} className={cn('h-7 w-7', idx === (templates ?? []).length - 1 && 'pointer-events-none opacity-30')} />
+                    <Holder icon={Edit3} size="sm" onClick={() => setEditing(tpl)} className="h-7 w-7" />
+                    <Holder
+                      icon={Trash2}
+                      tone="danger"
+                      size="sm"
                       onClick={() => {
                         if (confirm(t('templates.confirmDelete'))) {
                           del.mutate(tpl.id);
                         }
                       }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
-                      aria-label="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                      className="h-7 w-7"
+                    />
                   </div>
                 )}
               </div>
-              <p className="whitespace-pre-wrap text-xs text-muted-foreground">{tpl.content}</p>
+              <p className={cn('whitespace-pre-wrap text-[12px]', TEXT.muted)}>{tpl.content}</p>
               {/\{\{[a-z_]+\}\}/i.test(tpl.content) && (
-                <p className="mt-2 flex items-center gap-1 text-[10px] text-bonzini-amber">
+                <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
                   <Sparkles className="h-2.5 w-2.5" />
                   {t('templates.varsInside')}
                 </p>
               )}
-            </li>
-          ))}
-        </ul>
-      )}
+            </Card>
+          ))
+        )}
+      </div>
 
       {(creating || editing) && isSuperAdmin && (
         <TemplateEditor
@@ -203,56 +202,48 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end bg-black/40 sm:items-center sm:justify-center"
-      onClick={onClose}
+    <BottomSheet
+      open
+      onClose={onClose}
+      title={initial ? t('templates.editTitle') : t('templates.createTitle')}
     >
-      <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-background p-4 sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-3 text-base font-semibold">
-          {initial ? t('templates.editTitle') : t('templates.createTitle')}
-        </h3>
+      <div className="space-y-3">
+        <FormField label={t('templates.labelField')} htmlFor="tpl-label">
+          <TextInput
+            id="tpl-label"
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={60}
+            placeholder={t('templates.labelPlaceholder')}
+          />
+        </FormField>
 
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          {t('templates.labelField')}
-        </label>
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <input
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          maxLength={60}
-          placeholder={t('templates.labelPlaceholder')}
-          className="mb-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
-        />
+        <FormField label={t('templates.contentField')} htmlFor="tpl-content">
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <textarea
+            id="tpl-content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            maxLength={2000}
+            rows={5}
+            placeholder={t('templates.contentPlaceholder')}
+            className={textareaClass}
+          />
+        </FormField>
 
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          {t('templates.contentField')}
-        </label>
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={2000}
-          rows={5}
-          placeholder={t('templates.contentPlaceholder')}
-          className="mb-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
-        />
-
-        <div className="mb-3">
-          <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-            <Sparkles className="mr-1 inline h-3 w-3 text-bonzini-amber" />
+        <div>
+          <p className={cn('mb-1.5 flex items-center gap-1 text-[11px] font-medium', TEXT.muted)}>
+            <Sparkles className="h-3 w-3 text-[#9A6B12] dark:text-[#E7C083]" />
             {t('templates.varsAvailable')}
           </p>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {TEMPLATE_VARIABLES.map((v) => (
               <button
                 key={v.key}
                 type="button"
                 onClick={() => insertVar(v.key)}
-                className="rounded-full bg-bonzini-amber/15 px-2 py-1 text-[10px] font-mono text-bonzini-amber hover:bg-bonzini-amber/25"
+                className="rounded-full bg-[#F8EFD8] px-2.5 py-1 font-mono text-[10px] font-semibold text-[#9A6B12] transition active:scale-95 dark:bg-[#372D14] dark:text-[#E7C083]"
                 title={v.label}
               >
                 {`{{${v.key}}}`}
@@ -262,42 +253,35 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
         </div>
 
         {content && (
-          <div className="mb-3 rounded-xl border border-bonzini-violet/20 bg-bonzini-violet/5 p-3">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-bonzini-violet">
+          <div className="rounded-2xl bg-[#EAE7FA] p-3 dark:bg-[#272252]">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#5B4CC4] dark:text-[#B5AAF0]">
               {t('templates.preview')}
             </p>
-            <p className="whitespace-pre-wrap text-xs text-foreground">{preview}</p>
+            <p className={cn('whitespace-pre-wrap text-[12px]', TEXT.strong)}>{preview}</p>
           </div>
         )}
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-xl border border-border px-3 py-2.5 text-sm"
-          >
-            {t('list.cancel')}
-          </button>
-          <button
-            type="button"
-            disabled={!canSave}
-            onClick={async () => {
-              setSaving(true);
-              try {
-                await onSubmit({ label, content });
-              } finally {
-                setSaving(false);
-              }
-            }}
-            className={cn(
-              'flex-1 rounded-xl bg-bonzini-violet px-3 py-2.5 text-sm font-medium text-white',
-              !canSave && 'opacity-50'
-            )}
-          >
-            {saving ? '…' : t('templates.save')}
-          </button>
-        </div>
       </div>
-    </div>
+
+      <div className="mt-5 flex gap-2">
+        <SoftPill onClick={onClose} className="flex-1">
+          {t('list.cancel')}
+        </SoftPill>
+        <PrimaryPill
+          disabled={!canSave}
+          loading={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await onSubmit({ label, content });
+            } finally {
+              setSaving(false);
+            }
+          }}
+          className="flex-1"
+        >
+          {t('templates.save')}
+        </PrimaryPill>
+      </div>
+    </BottomSheet>
   );
 }

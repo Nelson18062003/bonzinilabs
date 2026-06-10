@@ -1,13 +1,22 @@
 import * as React from 'react';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
 
 /**
- * Treasury design language — the SINGLE source of truth for the module's look,
- * distilled from the chosen premium banking reference:
- *  - elevated surfaces with a soft shadow and NO hard border (`SOFT_CARD`)
- *  - round, soft-tinted icon chips (`IconChip`) instead of loud solid squares
- *  - a dark charcoal "pill" for the ONE primary action of a screen (`PrimaryPill`)
+ * Treasury design language — the SINGLE source of truth for the module's look.
+ *
+ * Evolved (refonte M9) onto the shared Ofspace/Mola design kit
+ * (src/mobile/designKit) so the 12 Treasury screens align with the rest of the
+ * mobile app WITHOUT being rewritten — only the tokens behind these primitives
+ * changed; the exported API (names + props) is identical:
+ *  - elevated white surfaces with a soft diffuse shadow and NO hard border
+ *    (`SOFT_CARD` → kit `SURFACE.card` + `SURFACE.shadow`)
+ *  - round, soft-tinted icon chips (`IconChip`) — neutral routed through the
+ *    kit holder, brand tones (violet/amber/orange) kept since colour carries
+ *    currency/method meaning here
+ *  - the kit charcoal "pill" for the ONE primary action (`PrimaryPill`) and the
+ *    kit chip language for filters/toggles (`Pill`)
  *  - calm uppercase section labels with an optional "Voir tout" link (`SectionTitle`)
  *
  * Every Treasury screen imports from here so the module speaks ONE language —
@@ -17,26 +26,26 @@ import { cn } from '@/lib/utils';
 export type Tone = 'violet' | 'amber' | 'orange' | 'neutral' | 'danger';
 
 /**
- * Primary surface: rounded-3xl, flat, separated by a hairline border (NO drop
- * shadow). The "épuré" fintech look — nothing floats, the figures lead.
+ * Primary surface: rounded-3xl white card with the kit's soft diffuse shadow
+ * (no hard border). Keeps the Treasury signature radius so no layout shifts.
  */
-export const SOFT_CARD = 'rounded-3xl bg-card border border-border';
+export const SOFT_CARD = cn('rounded-3xl', SURFACE.card, SURFACE.shadow);
 
-/** Inset/nested surface (fields, split rows) — filled, no border, no shadow. */
-export const INSET = 'rounded-2xl bg-muted/60';
+/** Inset/nested surface (fields, split rows) — the calm kit canvas tone. */
+export const INSET = cn('rounded-2xl', SURFACE.canvas);
 
 export const TONE_BG: Record<Tone, string> = {
   violet: 'bg-violet-500/10',
   amber: 'bg-amber-500/10',
   orange: 'bg-orange-500/10',
-  neutral: 'bg-muted',
+  neutral: 'bg-[#EDEAFA] dark:bg-[#2F2C3D]',
   danger: 'bg-red-500/10',
 };
 export const TONE_TEXT: Record<Tone, string> = {
   violet: 'text-bonzini-violet',
   amber: 'text-bonzini-amber',
   orange: 'text-bonzini-orange',
-  neutral: 'text-muted-foreground',
+  neutral: 'text-[#2C2740] dark:text-[#E7E5F0]',
   danger: 'text-red-600 dark:text-red-400',
 };
 export const TONE_DOT: Record<Tone, string> = {
@@ -144,8 +153,8 @@ export function Pill({
     <button
       onClick={onClick}
       className={cn(
-        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[12px] font-semibold transition-colors',
-        active ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
+        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-colors',
+        active ? PRIMARY_PILL : SOFT_PILL,
         className,
       )}
     >
@@ -182,7 +191,7 @@ export function PrimaryPill({
       disabled={dead}
       className={cn(
         'flex h-[52px] w-full items-center justify-center rounded-2xl text-[15px] font-bold transition active:scale-[0.99]',
-        dead ? 'bg-muted text-muted-foreground' : 'bg-foreground text-background hover:opacity-90',
+        dead ? 'bg-muted text-muted-foreground' : cn(PRIMARY_PILL, 'rounded-2xl hover:opacity-90'),
         className,
       )}
     >
@@ -212,7 +221,9 @@ export function SoftIconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-muted/70 text-foreground transition active:scale-95',
+        'flex h-[52px] w-[52px] shrink-0 items-center justify-center transition active:scale-95',
+        SOFT_PILL,
+        'rounded-2xl',
         className,
       )}
     >

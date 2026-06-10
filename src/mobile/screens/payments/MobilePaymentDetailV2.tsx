@@ -1,11 +1,15 @@
 // ============================================================
 // MODULE PAIEMENTS — MobilePaymentDetail V2
-// Redesign basé sur maquette_admin_fiche_paiement_v4.jsx
-// UI épurée, logique métier 100% préservée de l'ancienne version.
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   canvas doux · DetailHeader · cartes à ombre douce · hero Amount ·
+//   StatusPill toné (paymentStatusTone) · CopyRow · bottom-sheets du kit.
+// Logique métier 100% préservée de l'ancienne version :
+//   bénéficiaire éditable inline (Alipay/WeChat/Virement), QR, preuves
+//   upload/delete, signature cash, reject (catégories + message client),
+//   complete, annulation, taux XAF/CNY, relevé PDF.
 // ============================================================
 import { useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
@@ -30,12 +34,27 @@ import {
   PAYMENT_REJECTION_REASONS,
 } from '@/types/payment';
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
+import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  paymentStatusTone,
+  StatusPill,
+  Card,
+  Amount,
+  Row,
+  PrimaryPill,
+  SoftPill,
+  BottomSheet,
+  FormField,
+  TextInput,
+} from '@/mobile/designKit';
+import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
-import { getPaymentSlaLevel } from '@/lib/paymentSla';
+import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
 import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
 import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
 import { format } from 'date-fns';
@@ -51,61 +70,56 @@ import {
   Upload,
   QrCode,
   Trash2,
-  ZoomIn,
-  FileDown,
+  ChevronLeft,
+  Copy,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 
-// ── Design tokens (maquette v4) ──────────────────────────────
-const C = {
-  V:      '#A947FE',  // violet – primaire
-  G:      '#F3A745',  // or    – warning
-  O:      '#FE560D',  // orange – cash
-  GR:     '#34d399',  // vert   – terminé
-  RED:    '#ef4444',  // rouge  – refus/suppr
-  AL:     '#1677ff',  // alipay
-  WC:     '#07c160',  // wechat
-  bg:     '#f8f6fa',
-  card:   '#ffffff',
-  text:   '#1a1028',
-  sub:    '#7a7290',
-  dim:    '#c4bdd0',
-  border: '#ebe6f0',
-} as const;
+// Map méthode DB → logo (PaymentMethodLogo n'accepte que 4 clés).
+function logoMethod(method: string): 'alipay' | 'wechat' | 'bank_transfer' | 'cash' {
+  if (method === 'alipay' || method === 'wechat' || method === 'cash') return method;
+  return 'bank_transfer';
+}
 
-// ── Statut → couleur ─────────────────────────────────────────
-const STATUS_COLOR: Record<string, string> = {
-  created:                  C.dim,
-  waiting_beneficiary_info: C.G,
-  ready_for_payment:        '#3b82f6',
-  processing:               C.V,
-  completed:                C.GR,
-  rejected:                 C.RED,
-  cash_pending:             C.G,
-  cash_scanned:             C.V,
-};
+// ── Point SLA (calqué sur deposits/payments V2) ──────────────
+function SlaDot({ level }: { level: SlaLevel }) {
+  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
+  return (
+    <span
+      className="inline-block shrink-0 rounded-full"
+      style={{
+        width: 6,
+        height: 6,
+        background: color,
+        animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined,
+      }}
+    />
+  );
+}
 
-// ── Méthode → icône + couleur ────────────────────────────────
-const METHOD_CFG: Record<string, { icon: string; color: string }> = {
-  alipay:        { icon: '支', color: C.AL },
-  wechat:        { icon: '微', color: C.WC },
-  bank_transfer: { icon: 'B',  color: C.V  },
-  cash:          { icon: '¥',  color: C.O  },
-};
+// ── En-tête simple (back + titre + action) — réutilisé loading/error ──
+function DetailHeader({ title, onBack, right }: { title: string; onBack: () => void; right?: React.ReactNode }) {
+  return (
+    <header className={cn('sticky top-0 z-40 flex shrink-0 items-center justify-between gap-2 px-4 pt-[env(safe-area-inset-top)]', SURFACE.canvas)}>
+      <div className="flex h-14 min-w-0 flex-1 items-center gap-1">
+        <button
+          onClick={onBack}
+          aria-label="Retour"
+          className={cn('-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <span className={cn('truncate text-[15px] font-bold', TEXT.strong)}>{title}</span>
+      </div>
+      {right}
+    </header>
+  );
+}
 
-// ── Style input inline bénéficiaire ──────────────────────────
-// fontSize must stay ≥ 16 so iOS Safari doesn't zoom on focus.
-const INP: React.CSSProperties = {
-  width: '100%', padding: '12px 14px', borderRadius: 10,
-  border: `1.5px solid ${C.border}`, background: C.bg,
-  fontSize: 16, fontWeight: 600, color: C.text,
-  fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box',
-};
-
-// ── CopyRow: label + value tap-to-copy (lisible, complet, monospace opt-in)
+// ── CopyRow: label + value tap-to-copy (sur le kit) ──────────
 function CopyRow({
   label,
   value,
@@ -119,54 +133,60 @@ function CopyRow({
   highlight?: string;
   multiline?: boolean;
 }) {
-  const onCopy = () => {
-    copyToClipboard(value, label);
-  };
   return (
     <button
-      onClick={onCopy}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'stretch',
-        gap: 3,
-        padding: '8px 10px',
-        borderRadius: 10,
-        background: highlight ? `${highlight}08` : C.bg,
-        border: `1px solid ${highlight ? `${highlight}30` : C.border}`,
-        cursor: 'pointer',
-        textAlign: 'left',
-        width: '100%',
-      }}
+      onClick={() => copyToClipboard(value, label)}
+      style={highlight ? { borderColor: `${highlight}55` } : undefined}
+      className={cn(
+        'group flex w-full items-start justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.99]',
+        highlight ? 'ring-1' : SURFACE.canvas,
+        !highlight && 'ring-0',
+      )}
     >
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: highlight || C.sub,
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-        }}
-      >
-        {label}
+      <div className="min-w-0 flex-1">
+        <div
+          className="text-[10px] font-bold uppercase tracking-wider"
+          style={highlight ? { color: highlight } : undefined}
+        >
+          <span className={highlight ? '' : TEXT.muted}>{label}</span>
+        </div>
+        <div
+          className={cn(
+            'mt-0.5 text-[14px] font-bold leading-snug',
+            mono && 'font-mono tracking-tight',
+            multiline ? 'whitespace-pre-wrap break-words' : 'break-words',
+            TEXT.strong,
+          )}
+        >
+          {value}
+        </div>
       </div>
-      <div
-        style={{
-          fontSize: mono ? 15 : 14,
-          fontWeight: 700,
-          color: C.text,
-          fontFamily: mono ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : "'DM Sans',sans-serif",
-          letterSpacing: mono ? 0.3 : 0,
-          wordBreak: 'break-word',
-          whiteSpace: multiline ? 'pre-wrap' : 'normal',
-          lineHeight: 1.3,
-        }}
-      >
-        {value}
-      </div>
+      <Copy className={cn('mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-60 group-active:opacity-100', TEXT.muted)} />
     </button>
   );
 }
+
+// ── Textarea au gabarit kit ──────────────────────────────────
+function KitTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const { className, ...rest } = props;
+  return (
+    <textarea
+      className={cn(
+        'w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition',
+        SURFACE.card,
+        SURFACE.shadow,
+        TEXT.strong,
+        'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+        className,
+      )}
+      {...rest}
+    />
+  );
+}
+
+// ── Petite pill d'action sur une vignette (Agrandir/Télécharger…) ──
+const TILE_BTN =
+  'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition active:scale-95';
 
 // ─────────────────────────────────────────────────────────────
 export function MobilePaymentDetail() {
@@ -177,7 +197,8 @@ export function MobilePaymentDetail() {
 
   // ── Data hooks ────────────────────────────────────────────
   const { data: payment, isLoading } = useAdminPaymentDetail(paymentId);
-  const { data: timeline }           = useAdminPaymentTimeline(paymentId);
+  // Préchauffe le cache de la timeline (parité avec l'ancienne version).
+  useAdminPaymentTimeline(paymentId);
   const { data: proofs }             = useAdminPaymentProofs(paymentId);
 
   // ── Mutation hooks ────────────────────────────────────────
@@ -464,8 +485,8 @@ export function MobilePaymentDetail() {
   // ─────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Paiement" showBack backTo="/m/payments" />
+      <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+        <DetailHeader title="Paiement" onBack={() => navigate('/m/payments')} />
         <SkeletonDetail />
       </div>
     );
@@ -473,10 +494,10 @@ export function MobilePaymentDetail() {
 
   if (!payment) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <MobileHeader title="Paiement" showBack backTo="/m/payments" />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <p style={{ color: C.sub }}>Paiement non trouvé</p>
+      <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+        <DetailHeader title="Paiement" onBack={() => navigate('/m/payments')} />
+        <div className="flex flex-1 items-center justify-center p-4">
+          <p className={TEXT.muted}>Paiement non trouvé</p>
         </div>
       </div>
     );
@@ -492,8 +513,6 @@ export function MobilePaymentDetail() {
   const statusConfig = PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus]
     || { label: payment.status };
   const methodLabel  = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
-  const methodCfg    = METHOD_CFG[payment.method] || { icon: '?', color: C.dim };
-  const statusColor  = STATUS_COLOR[payment.status] || C.dim;
   const slaLevel     = getPaymentSlaLevel(payment.created_at, payment.status);
 
   // Rétro-compat taux : anciens paiements stockent décimal (0.01153), admin stocke entier (11530)
@@ -531,118 +550,94 @@ export function MobilePaymentDetail() {
     : clientName;
   const isCashSelf = (payment as { cash_beneficiary_type?: string | null }).cash_beneficiary_type !== 'other';
 
+  // Couleur de marque de la méthode (accent QR / IDs).
+  const methodColor = isCash ? '#E0322B'
+    : payment.method === 'alipay' ? '#1677FF'
+    : payment.method === 'wechat' ? '#07C160'
+    : '#8B5CF6';
+
   // Main action
   const mainAction = canStartProcessing
-    ? { label: 'Passer en cours', color: C.V, icon: <Play className="w-4 h-4" />, onClick: handleStartProcessing }
+    ? { label: 'Passer en cours', tone: 'info' as const, icon: <Play className="h-4 w-4" />, onClick: handleStartProcessing }
     : canComplete
-    ? { label: 'Valider le paiement', color: C.GR, icon: <CheckCircle className="w-4 h-4" />, onClick: () => setIsCompleteOpen(true) }
+    ? { label: 'Valider le paiement', tone: 'success' as const, icon: <CheckCircle className="h-4 w-4" />, onClick: () => setIsCompleteOpen(true) }
     : null;
 
   // ─────────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: "'DM Sans',sans-serif", maxWidth: 480, margin: '0 auto' }}>
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
       {/* ── Header ────────────────────────────────────────── */}
-      <MobileHeader
+      <DetailHeader
         title={payment.reference}
-        showBack
-        backTo="/m/payments"
-        rightElement={
+        onBack={() => navigate('/m/payments')}
+        right={
           <button
             onClick={handleDownloadReceipt}
             disabled={isGeneratingPDF}
-            style={{ padding: '5px 12px', borderRadius: 7, background: C.V, border: 'none', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', opacity: isGeneratingPDF ? 0.6 : 1 }}
+            className="flex h-9 items-center gap-1.5 rounded-full bg-[#8B5CF6] px-3.5 text-[12px] font-bold text-white transition active:scale-95 disabled:opacity-60"
           >
-            {isGeneratingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin inline" /> : 'Reçu'}
+            {isGeneratingPDF ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Reçu'}
           </button>
         }
       />
 
       {/* ── Contenu scrollable ────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px 24px' }}>
+      <div className="flex-1 space-y-2.5 overflow-y-auto px-4 pb-8 pt-1">
 
         {/* ── Statut + Méthode ──────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {slaLevel && (
-              <span className={`sla-dot sla-${slaLevel}${slaLevel === 'overdue' ? ' animate' : ''}`} />
-            )}
-            <span style={{
-              padding: '4px 10px', borderRadius: 6,
-              background: `${statusColor}18`,
-              fontSize: 12, fontWeight: 800, color: statusColor,
-            }}>
-              {statusConfig.label}
-            </span>
+        <div className="flex items-center justify-between py-1">
+          <div className="flex items-center gap-2">
+            {slaLevel && <SlaDot level={slaLevel} />}
+            <StatusPill tone={paymentStatusTone(payment.status)} label={statusConfig.label} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{
-              width: 22, height: 22, borderRadius: 5,
-              background: `${methodCfg.color}15`,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, fontWeight: 800, color: methodCfg.color,
-            }}>
-              {methodCfg.icon}
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700 }}>{methodLabel}</span>
+          <div className="flex items-center gap-2">
+            <PaymentMethodLogo method={logoMethod(payment.method)} size={22} />
+            <span className={cn('text-[12px] font-bold', TEXT.strong)}>{methodLabel}</span>
           </div>
         </div>
 
         {/* ── Carte montant ─────────────────────────────────── */}
-        <div style={{
-          padding: '20px 16px', borderRadius: 14,
-          background: C.card, border: `1px solid ${C.border}`,
-          textAlign: 'center', marginBottom: 8,
-        }}>
-          <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1 }}>
-            {formatCurrencyRMB(payment.amount_rmb)}
-          </div>
-          <div style={{ fontSize: 14, color: C.sub, marginTop: 6 }}>
+        <Card className="text-center">
+          <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="xl" />
+          <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
             {formatNumber(payment.amount_xaf)} XAF
           </div>
-          <div style={{ height: 1, background: C.border, margin: '12px 32px' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: 11 }}>
+          <div className="mt-3 flex items-center justify-around text-[11px]">
             <div>
-              <span style={{ color: C.dim }}>Taux </span>
-              <span style={{ fontWeight: 700 }}>1M XAF = ¥{formatNumber(rateInt)}</span>
+              <span className={TEXT.muted}>Taux </span>
+              <span className={cn('font-bold', TEXT.strong)}>1M XAF = ¥{formatNumber(rateInt)}</span>
             </div>
             <button
               onClick={() => navigate(`/m/clients/${payment.user_id}`)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              className="active:opacity-70"
             >
-              <span style={{ color: C.dim }}>Client </span>
-              <span style={{ fontWeight: 700, color: C.V }}>{clientName}</span>
+              <span className={TEXT.muted}>Client </span>
+              <span className="font-bold text-[#6B5BD2] dark:text-[#A99BF0]">{clientName}</span>
             </button>
           </div>
-        </div>
+        </Card>
 
         {/* ── QR Code cash (cash_pending / cash_scanned) ────── */}
         {isCash && !['completed', 'rejected'].includes(payment.status) && (
-          <div style={{ marginBottom: 8 }}>
-            <CashQRCode
-              paymentId={payment.id}
-              paymentReference={payment.reference}
-              amountRMB={payment.amount_rmb}
-              beneficiaryName={cashBeneficiaryName}
-            />
-          </div>
+          <CashQRCode
+            paymentId={payment.id}
+            paymentReference={payment.reference}
+            amountRMB={payment.amount_rmb}
+            beneficiaryName={cashBeneficiaryName}
+          />
         )}
 
         {/* ── Bénéficiaire ──────────────────────────────────── */}
-        <div style={{
-          padding: '12px 14px', borderRadius: 12,
-          background: C.card, border: `1px solid ${C.border}`, marginBottom: 8,
-        }}>
+        <Card>
           {/* Header bénéficiaire */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 800 }}>Bénéficiaire</span>
+          <div className="mb-2 flex items-center justify-between">
+            <span className={cn('text-[12px] font-extrabold uppercase tracking-wider', TEXT.muted)}>Bénéficiaire</span>
             {hasBeneficiaryInfo && canEditBeneficiary && !editBenef && !isCash && (
-              <button
-                onClick={openEdit}
-                style={{ fontSize: 10, fontWeight: 600, color: C.V, background: 'none', border: 'none', cursor: 'pointer' }}
-              >
+              <button onClick={openEdit} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
                 Modifier
               </button>
             )}
@@ -654,35 +649,19 @@ export function MobilePaymentDetail() {
               {/* ÉTAT : infos manquantes */}
               {!hasBeneficiaryInfo && !isCash && (
                 <div>
-                  <div style={{
-                    padding: 14, borderRadius: 8, textAlign: 'center',
-                    border: `2px dashed ${C.G}30`, background: `${C.G}05`, marginBottom: 6,
-                  }}>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>Infos manquantes</div>
-                    <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
+                  <div className="mb-2 rounded-2xl bg-[#F8EFD8] p-3.5 text-center dark:bg-[#372D14]">
+                    <div className="text-[13px] font-bold text-[#9A6B12] dark:text-[#E7C083]">Infos manquantes</div>
+                    <div className="mt-0.5 text-[11px] text-[#9A6B12]/80 dark:text-[#E7C083]/80">
                       Ajoutez les infos pour traiter ce paiement
                     </div>
                   </div>
                   {canEditBeneficiary && (
-                    <button
-                      onClick={openEdit}
-                      style={{
-                        width: '100%', padding: 10, borderRadius: 8,
-                        background: C.V, border: 'none',
-                        fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer',
-                      }}
-                    >
-                      Ajouter
-                    </button>
+                    <PrimaryPill onClick={openEdit} className="w-full">Ajouter</PrimaryPill>
                   )}
                   {missingBeneficiary && (
-                    <div style={{
-                      marginTop: 6, display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '8px 10px', borderRadius: 8,
-                      background: `${C.G}10`, border: `1px solid ${C.G}30`,
-                    }}>
-                      <AlertTriangle className="w-4 h-4" style={{ color: C.G, flexShrink: 0 }} />
-                      <span style={{ fontSize: 11, color: C.G, fontWeight: 600 }}>
+                    <div className="mt-2 flex items-center gap-2 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 dark:bg-[#372D14]">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
+                      <span className="text-[11px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
                         Paiement impossible sans ces infos
                       </span>
                     </div>
@@ -693,8 +672,8 @@ export function MobilePaymentDetail() {
               {/* CASH */}
               {isCash && (
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{cashBeneficiaryName}</div>
-                  <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
+                  <div className={cn('text-[15px] font-bold', TEXT.strong)}>{cashBeneficiaryName}</div>
+                  <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
                     {isCashSelf ? 'Le client' : 'Tiers'}
                     {(payment as { cash_beneficiary_phone?: string | null }).cash_beneficiary_phone && (
                       <> · {(payment as { cash_beneficiary_phone?: string | null }).cash_beneficiary_phone}</>
@@ -705,7 +684,7 @@ export function MobilePaymentDetail() {
 
               {/* VIREMENT */}
               {payment.method === 'bank_transfer' && hasBeneficiaryInfo && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                <div className="flex flex-col gap-2">
                   {payment.beneficiary_name && (
                     <CopyRow label="Titulaire" value={payment.beneficiary_name} />
                   )}
@@ -713,11 +692,7 @@ export function MobilePaymentDetail() {
                     <CopyRow label="Banque" value={payment.beneficiary_bank_name} />
                   )}
                   {payment.beneficiary_bank_account && (
-                    <CopyRow
-                      label="N° de compte"
-                      value={payment.beneficiary_bank_account}
-                      mono
-                    />
+                    <CopyRow label="N° de compte" value={payment.beneficiary_bank_account} mono />
                   )}
                   {(payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra && (
                     <CopyRow
@@ -740,7 +715,7 @@ export function MobilePaymentDetail() {
 
               {/* ALIPAY / WECHAT */}
               {(payment.method === 'alipay' || payment.method === 'wechat') && hasBeneficiaryInfo && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                <div className="flex flex-col gap-2">
                   {payment.beneficiary_name && (
                     <CopyRow label="Nom" value={payment.beneficiary_name} />
                   )}
@@ -749,7 +724,7 @@ export function MobilePaymentDetail() {
                       label={payment.method === 'wechat' ? 'WeChat ID' : 'Alipay ID'}
                       value={(payment as { beneficiary_identifier?: string | null }).beneficiary_identifier as string}
                       mono
-                      highlight={methodCfg.color}
+                      highlight={methodColor}
                     />
                   )}
                   {payment.beneficiary_phone && (
@@ -765,51 +740,41 @@ export function MobilePaymentDetail() {
                   {/* QR Code controls */}
                   {payment.beneficiary_qr_code_url && (
                     <>
-                      <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+                      <div className="mt-1 flex gap-2">
                         <button
                           onClick={() => setShowQR(v => !v)}
-                          style={{
-                            padding: '4px 10px', borderRadius: 5,
-                            background: `${methodCfg.color}08`, border: `1px solid ${methodCfg.color}15`,
-                            fontSize: 10, fontWeight: 700, color: methodCfg.color, cursor: 'pointer',
-                          }}
+                          style={{ background: `${methodColor}15`, color: methodColor }}
+                          className={TILE_BTN}
                         >
                           {showQR ? 'Masquer QR' : 'Voir QR'}
                         </button>
                         {canEditBeneficiary && (
                           <button
                             onClick={() => qrInputRef.current?.click()}
-                            style={{
-                              padding: '4px 8px', borderRadius: 5,
-                              background: 'none', border: `1px solid ${C.border}`,
-                              fontSize: 10, fontWeight: 600, color: C.sub, cursor: 'pointer',
-                            }}
+                            className={cn(TILE_BTN, SURFACE.canvas, TEXT.muted)}
                           >
                             Changer QR
                           </button>
                         )}
                       </div>
                       {showQR && (
-                        <div style={{
-                          marginTop: 8, borderRadius: 10, overflow: 'hidden',
-                          border: `1px solid ${C.border}`, background: C.bg,
-                        }}>
+                        <div className={cn('mt-1 overflow-hidden rounded-2xl', SURFACE.canvas)}>
                           <img
                             src={payment.beneficiary_qr_code_url}
                             alt="QR Code bénéficiaire"
-                            style={{ width: '100%', maxHeight: 220, objectFit: 'contain', background: '#fff' }}
+                            className="max-h-[220px] w-full bg-white object-contain"
                           />
-                          <div style={{ display: 'flex', gap: 4, padding: '6px 8px' }}>
+                          <div className="flex gap-2 p-2">
                             <button
                               onClick={() => setFullscreenProof(payment.beneficiary_qr_code_url)}
-                              style={{ padding: '3px 8px', borderRadius: 4, background: 'none', border: `1px solid ${C.border}`, fontSize: 9, fontWeight: 600, color: C.sub, cursor: 'pointer' }}
+                              className={cn(TILE_BTN, SURFACE.card, SURFACE.shadow, TEXT.muted)}
                             >
                               Agrandir
                             </button>
                             <a
                               href={payment.beneficiary_qr_code_url}
                               download="qr-code-beneficiaire"
-                              style={{ padding: '3px 8px', borderRadius: 4, background: 'none', border: `1px solid ${C.border}`, fontSize: 9, fontWeight: 600, color: C.sub, textDecoration: 'none' }}
+                              className={cn(TILE_BTN, SURFACE.card, SURFACE.shadow, TEXT.muted)}
                             >
                               Télécharger
                             </a>
@@ -822,14 +787,12 @@ export function MobilePaymentDetail() {
                   {!payment.beneficiary_qr_code_url && canEditBeneficiary && (
                     <button
                       onClick={() => qrInputRef.current?.click()}
-                      style={{
-                        marginTop: 8, width: '100%', padding: 10, borderRadius: 8,
-                        background: 'none', border: `1.5px dashed ${C.border}`,
-                        fontSize: 11, fontWeight: 600, color: C.sub, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      }}
+                      className={cn(
+                        'mt-1 flex w-full items-center justify-center gap-1.5 rounded-2xl py-2.5 text-[12px] font-semibold ring-1 ring-dashed ring-black/15 dark:ring-white/15',
+                        TEXT.muted,
+                      )}
                     >
-                      <QrCode className="w-4 h-4" />
+                      <QrCode className="h-4 w-4" />
                       Ajouter un QR code
                     </button>
                   )}
@@ -872,27 +835,20 @@ export function MobilePaymentDetail() {
 
           {/* ── Mode édition inline ─── */}
           {editBenef && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="flex flex-col gap-3">
 
               {/* ALIPAY / WECHAT */}
               {(payment.method === 'alipay' || payment.method === 'wechat') && (
                 <>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Nom <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
-                    </label>
-                    <input
-                      style={INP}
+                  <FormField label={<>Nom <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
+                    <TextInput
                       value={beneficiaryForm.beneficiary_name}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
                       placeholder="Nom du bénéficiaire"
                       autoComplete="off"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      QR Code
-                    </label>
+                  </FormField>
+                  <FormField label="QR Code">
                     <input
                       type="file"
                       accept="image/*"
@@ -908,195 +864,141 @@ export function MobilePaymentDetail() {
                       id="qr-edit-input"
                     />
                     {qrPreview || beneficiaryForm.beneficiary_qr_code_url ? (
-                      <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                      <div className={cn('relative overflow-hidden rounded-2xl', SURFACE.canvas)}>
                         <img
                           src={qrPreview ?? beneficiaryForm.beneficiary_qr_code_url}
                           alt="QR"
-                          style={{ width: '100%', maxHeight: 160, objectFit: 'contain', background: '#fff' }}
+                          className="max-h-40 w-full bg-white object-contain"
                         />
                         <button
                           onClick={() => { setQrFile(null); setQrPreview(null); setBeneficiaryForm(f => ({ ...f, beneficiary_qr_code_url: '' })); }}
-                          style={{ position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white"
                         >
-                          <X className="w-4 h-4" style={{ color: '#fff' }} />
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
                     ) : (
                       <label
                         htmlFor="qr-edit-input"
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          gap: 4, width: '100%', padding: '14px 10px', borderRadius: 8,
-                          border: `2px dashed ${C.border}`, background: C.bg, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 700, color: C.sub,
-                        }}
+                        className={cn(
+                          'flex w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl py-4 text-[12px] font-bold ring-1 ring-dashed ring-black/15 dark:ring-white/15',
+                          TEXT.muted,
+                        )}
                       >
-                        <QrCode className="w-5 h-5" />
+                        <QrCode className="h-5 w-5" />
                         Importer le QR Code
                       </label>
                     )}
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      ID {methodLabel} <span style={{ fontWeight: 400, color: C.dim }}>(téléphone)</span>
-                    </label>
-                    <input
-                      style={INP}
+                  </FormField>
+                  <FormField label={<>ID {methodLabel} <span className={cn('font-normal', TEXT.muted)}>(téléphone)</span></>}>
+                    <TextInput
                       type="tel"
                       value={beneficiaryForm.beneficiary_phone}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_phone: e.target.value }))}
                       placeholder="+86 138 0000 0000"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Email <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
-                    </label>
-                    <input
-                      style={INP}
+                  </FormField>
+                  <FormField label={<>Email <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
+                    <TextInput
                       type="email"
                       value={beneficiaryForm.beneficiary_email}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_email: e.target.value }))}
                       placeholder="beneficiaire@example.com"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Identifiant {payment.method === 'wechat' ? 'WeChat' : 'Alipay'}{' '}
-                      <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
-                    </label>
-                    <input
-                      style={INP}
+                  </FormField>
+                  <FormField label={<>Identifiant {payment.method === 'wechat' ? 'WeChat' : 'Alipay'} <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
+                    <TextInput
                       value={beneficiaryForm.beneficiary_identifier}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_identifier: e.target.value }))}
                       placeholder={payment.method === 'wechat' ? 'WeChat ID / 微信号' : 'Alipay ID / 支付宝账号'}
                       autoComplete="off"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Notes <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
-                    </label>
-                    <textarea
-                      style={{ ...INP, height: 72, resize: 'none' }}
+                  </FormField>
+                  <FormField label={<>Notes <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
+                    <KitTextarea
                       value={beneficiaryForm.beneficiary_notes}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
                       rows={3}
                     />
-                  </div>
+                  </FormField>
                 </>
               )}
 
               {/* VIREMENT */}
               {payment.method === 'bank_transfer' && (
                 <>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Titulaire <span style={{ color: C.RED }}>*</span>
-                    </label>
-                    <input
-                      style={INP}
+                  <FormField label={<>Titulaire <span className="text-[#C0504D]">*</span></>}>
+                    <TextInput
                       value={beneficiaryForm.beneficiary_name}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
                       placeholder="Nom complet"
                       autoComplete="off"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Banque <span style={{ color: C.RED }}>*</span>
-                    </label>
-                    <input
-                      style={INP}
+                  </FormField>
+                  <FormField label={<>Banque <span className="text-[#C0504D]">*</span></>}>
+                    <TextInput
                       value={beneficiaryForm.beneficiary_bank_name}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_name: e.target.value }))}
                       placeholder="Bank of China, ICBC…"
                       autoComplete="off"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      N° de compte <span style={{ color: C.RED }}>*</span>
-                    </label>
-                    <input
-                      style={{ ...INP, fontFamily: 'monospace' }}
+                  </FormField>
+                  <FormField label={<>N° de compte <span className="text-[#C0504D]">*</span></>}>
+                    <TextInput
+                      className="font-mono"
                       value={beneficiaryForm.beneficiary_bank_account}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_account: e.target.value }))}
                       placeholder="6214 8888 1234 5678"
                       autoComplete="off"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Infos complémentaires <span style={{ fontWeight: 400, color: C.dim }}>(SWIFT / IBAN / adresse)</span>
-                    </label>
-                    <input
-                      style={INP}
+                  </FormField>
+                  <FormField label={<>Infos complémentaires <span className={cn('font-normal', TEXT.muted)}>(SWIFT / IBAN / adresse)</span></>}>
+                    <TextInput
                       value={beneficiaryForm.beneficiary_bank_extra}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_extra: e.target.value }))}
                       placeholder="SWIFT / IBAN / adresse banque"
                       autoComplete="off"
                     />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>
-                      Notes <span style={{ fontWeight: 400, color: C.dim }}>(optionnel)</span>
-                    </label>
-                    <textarea
-                      style={{ ...INP, height: 72, resize: 'none' }}
+                  </FormField>
+                  <FormField label={<>Notes <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
+                    <KitTextarea
                       value={beneficiaryForm.beneficiary_notes}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
                       rows={3}
                     />
-                  </div>
+                  </FormField>
                 </>
               )}
 
               {/* Boutons Annuler / Enregistrer */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                <button
+              <div className="flex gap-2">
+                <SoftPill
                   onClick={() => { setEditBenef(false); setQrFile(null); setQrPreview(null); }}
                   disabled={adminUpdateBeneficiaryInfo.isPending || isUploadingQr}
-                  style={{
-                    flex: 1, padding: 10, borderRadius: 8, background: 'none',
-                    border: `1px solid ${C.border}`,
-                    fontSize: 12, fontWeight: 700, color: C.sub, cursor: 'pointer',
-                    opacity: adminUpdateBeneficiaryInfo.isPending || isUploadingQr ? 0.5 : 1,
-                  }}
+                  className="flex-1"
                 >
                   Annuler
-                </button>
-                <button
+                </SoftPill>
+                <PrimaryPill
                   onClick={handleSaveBeneficiaryInfo}
-                  disabled={adminUpdateBeneficiaryInfo.isPending || isUploadingQr}
-                  style={{
-                    flex: 1, padding: 10, borderRadius: 8, background: C.V,
-                    border: 'none', fontSize: 12, fontWeight: 700, color: '#fff',
-                    cursor: 'pointer', opacity: adminUpdateBeneficiaryInfo.isPending || isUploadingQr ? 0.6 : 1,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                  }}
+                  loading={adminUpdateBeneficiaryInfo.isPending || isUploadingQr}
+                  className="flex-1"
                 >
-                  {(adminUpdateBeneficiaryInfo.isPending || isUploadingQr)
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <CheckCircle className="w-4 h-4" />
-                  }
+                  <CheckCircle className="h-4 w-4" />
                   OK
-                </button>
+                </PrimaryPill>
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* ── Preuves OU Signature (selon mode) ─────────────── */}
         {isCash ? (
           /* ─── CASH : bloc signature ─── */
-          <div style={{
-            padding: '12px 14px', borderRadius: 12,
-            background: C.card, border: `1px solid ${C.border}`, marginBottom: 8,
-          }}>
-            <span style={{ fontSize: 12, fontWeight: 800, display: 'block', marginBottom: 8 }}>Signature</span>
+          <Card>
+            <span className={cn('mb-2 block text-[12px] font-extrabold uppercase tracking-wider', TEXT.muted)}>Signature</span>
 
             {/* Signature existante */}
             {(payment as { cash_signature_url?: string | null }).cash_signature_url ? (
@@ -1104,9 +1006,9 @@ export function MobilePaymentDetail() {
                 <img
                   src={(payment as { cash_signature_url?: string | null }).cash_signature_url!}
                   alt="Signature"
-                  style={{ width: '100%', maxHeight: 100, objectFit: 'contain', borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff' }}
+                  className={cn('max-h-[100px] w-full rounded-2xl bg-white object-contain', SURFACE.shadow)}
                 />
-                <div style={{ fontSize: 10, color: C.dim, marginTop: 4 }}>
+                <div className={cn('mt-1.5 text-[10px]', TEXT.muted)}>
                   {(payment as { cash_signature_url?: string | null; cash_paid_at?: string | null }).cash_paid_at
                     ? `Signé le ${format(new Date((payment as { cash_paid_at?: string | null }).cash_paid_at!), 'dd MMM yyyy à HH:mm', { locale: fr })}`
                     : 'Signature capturée'}
@@ -1116,7 +1018,7 @@ export function MobilePaymentDetail() {
                 </div>
                 {/* Reçu PDF pour cash complété */}
                 {payment.status === 'completed' && (
-                  <div style={{ marginTop: 8 }}>
+                  <div className="mt-2">
                     <CashReceiptDownloadButton
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       payment={payment as any}
@@ -1137,59 +1039,45 @@ export function MobilePaymentDetail() {
             ) : (
               /* Pas encore signé */
               <div>
-                <div style={{
-                  padding: 16, borderRadius: 8, textAlign: 'center',
-                  border: `2px dashed ${C.border}`, background: C.bg, marginBottom: 8,
-                }}>
-                  <div style={{ fontSize: 12, color: C.sub }}>
+                <div className={cn('mb-2 rounded-2xl p-4 text-center', SURFACE.canvas)}>
+                  <div className={cn('text-[12px]', TEXT.muted)}>
                     Le bénéficiaire doit signer avant la remise des fonds
                   </div>
                 </div>
                 {!isLocked && (
                   <button
                     onClick={() => setSigning(true)}
-                    style={{
-                      width: '100%', padding: 10, borderRadius: 8,
-                      background: C.O, border: 'none',
-                      fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer',
-                    }}
+                    className="w-full rounded-full bg-[#E0322B] py-3 text-[13px] font-bold text-white transition active:scale-[0.99]"
                   >
                     Faire signer
                   </button>
                 )}
               </div>
             )}
-          </div>
+          </Card>
         ) : (
           /* ─── NON-CASH : preuves ─── */
-          <div style={{
-            padding: '12px 14px', borderRadius: 12,
-            background: C.card, border: `1px solid ${C.border}`, marginBottom: 8,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800 }}>
+          <Card>
+            <div className="mb-2 flex items-center justify-between">
+              <span className={cn('text-[12px] font-extrabold uppercase tracking-wider', TEXT.muted)}>
                 Preuves ({allProofs.length})
               </span>
               {canAddProof && (
                 <button
                   onClick={() => standaloneProofRef.current?.click()}
                   disabled={adminProofUpload.isPending}
-                  style={{ fontSize: 10, fontWeight: 700, color: C.V, background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]"
                 >
-                  {adminProofUpload.isPending ? <Loader2 className="w-3 h-3 animate-spin inline" /> : '+ Ajouter'}
+                  {adminProofUpload.isPending ? <Loader2 className="inline h-3 w-3 animate-spin" /> : '+ Ajouter'}
                 </button>
               )}
             </div>
 
             {/* Warning preuve manquante */}
             {missingAdminProof && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8,
-                padding: '8px 10px', borderRadius: 8,
-                background: `${C.G}10`, border: `1px solid ${C.G}30`,
-              }}>
-                <AlertTriangle className="w-4 h-4" style={{ color: C.G, flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: C.G, fontWeight: 600 }}>
+              <div className="mb-2 flex items-center gap-2 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 dark:bg-[#372D14]">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
+                <span className="text-[11px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
                   Ajoutez une preuve avant de valider
                 </span>
               </div>
@@ -1206,80 +1094,63 @@ export function MobilePaymentDetail() {
 
             {allProofs.length === 0 ? (
               <div>
-                <div style={{
-                  padding: 14, borderRadius: 8, textAlign: 'center',
-                  border: `2px dashed ${C.border}`, background: C.bg,
-                }}>
-                  <div style={{ fontSize: 12, color: C.sub }}>Aucune preuve ajoutée</div>
+                <div className={cn('rounded-2xl p-3.5 text-center', SURFACE.canvas)}>
+                  <div className={cn('text-[12px]', TEXT.muted)}>Aucune preuve ajoutée</div>
                 </div>
                 {canAddProof && (
                   <button
                     onClick={() => standaloneProofRef.current?.click()}
                     disabled={adminProofUpload.isPending}
-                    style={{
-                      width: '100%', padding: 10, borderRadius: 8, marginTop: 6,
-                      background: 'none', border: `1px solid ${C.V}25`,
-                      fontSize: 12, fontWeight: 700, color: C.V, cursor: 'pointer',
-                    }}
+                    className="mt-2 w-full rounded-2xl py-2.5 text-[12px] font-bold text-[#6B5BD2] ring-1 ring-[#6B5BD2]/25 dark:text-[#A99BF0] dark:ring-[#A99BF0]/25"
                   >
                     + Ajouter une preuve
                   </button>
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {allProofs.map((proof, idx) => {
+              <div className="flex flex-col gap-2">
+                {allProofs.map((proof) => {
                   const isAdminProof = proof.uploaded_by_type === 'admin';
                   const canDeleteThis = canProcess && (isAdminProof || isSuperAdmin) && (!isLocked || isSuperAdmin);
                   return (
-                    <div key={proof.id} style={{ borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+                    <div key={proof.id} className={cn('overflow-hidden rounded-2xl', SURFACE.canvas)}>
                       {/* Preview */}
-                      <div style={{
-                        width: '100%', aspectRatio: idx === 0 ? '16/9' : '16/7',
-                        background: `linear-gradient(135deg, #e8eef6, #f0ecf8)`,
-                        position: 'relative',
-                      }}>
+                      <div className="relative aspect-[16/9] w-full bg-[#ECE8F6] dark:bg-[#2A2738]">
                         <img
                           src={proof.file_url}
                           alt={proof.file_name || 'Preuve'}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          className="h-full w-full object-cover"
                           onError={(e) => {
-                            // Fallback visuel si l'image ne charge pas
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                         {/* Badge type */}
-                        <div style={{
-                          position: 'absolute', top: 4, left: 4,
-                          padding: '2px 5px', borderRadius: 3,
-                          background: 'rgba(255,255,255,0.85)',
-                          fontSize: 8, fontWeight: 700, color: C.sub,
-                        }}>
+                        <div className={cn('absolute left-2 top-2 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-bold dark:bg-black/55', TEXT.muted)}>
                           {proof.file_name ? proof.file_name.slice(0, 20) : 'Preuve'}
                           {!isAdminProof && ' · Client'}
                         </div>
                       </div>
                       {/* Actions */}
-                      <div style={{ display: 'flex', gap: 4, padding: '6px 8px', background: C.bg }}>
+                      <div className="flex items-center gap-2 p-2">
                         <button
                           onClick={() => setFullscreenProof(proof.file_url)}
-                          style={{ padding: '3px 6px', borderRadius: 4, background: 'none', border: `1px solid ${C.border}`, fontSize: 9, fontWeight: 600, color: C.sub, cursor: 'pointer' }}
+                          className={cn(TILE_BTN, SURFACE.card, SURFACE.shadow, TEXT.muted)}
                         >
                           Agrandir
                         </button>
                         <a
                           href={proof.file_url}
                           download={proof.file_name || 'preuve'}
-                          style={{ padding: '3px 6px', borderRadius: 4, background: 'none', border: `1px solid ${C.border}`, fontSize: 9, fontWeight: 600, color: C.sub, textDecoration: 'none' }}
+                          className={cn(TILE_BTN, SURFACE.card, SURFACE.shadow, TEXT.muted)}
                         >
                           Télécharger
                         </a>
                         {canDeleteThis && (
                           <>
-                            <span style={{ flex: 1 }} />
+                            <span className="flex-1" />
                             <button
                               onClick={() => setProofToDelete(proof.id)}
-                              style={{ padding: '3px 6px', borderRadius: 4, background: 'none', border: `1px solid ${C.RED}15`, fontSize: 9, fontWeight: 600, color: C.RED, cursor: 'pointer' }}
+                              className={cn(TILE_BTN, 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]')}
                             >
                               Supprimer
                             </button>
@@ -1307,28 +1178,21 @@ export function MobilePaymentDetail() {
                   <button
                     onClick={() => instructionInputRef.current?.click()}
                     disabled={instructionUpload.isPending}
-                    style={{
-                      marginTop: 6, width: '100%', padding: 8, borderRadius: 8,
-                      background: 'none', border: `1px solid ${C.border}`,
-                      fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer',
-                    }}
+                    className={cn('mt-2 w-full rounded-2xl py-2 text-[11px] font-semibold ring-1 ring-black/[0.08] dark:ring-white/[0.08]', TEXT.muted)}
                   >
                     {instructionUpload.isPending
-                      ? <Loader2 className="w-3 h-3 animate-spin inline" />
+                      ? <Loader2 className="inline h-3 w-3 animate-spin" />
                       : '+ Ajouter une instruction'}
                   </button>
                 )}
               </>
             )}
-          </div>
+          </Card>
         )}
 
         {/* ── Infos ─────────────────────────────────────────── */}
-        <div style={{
-          padding: '10px 14px', borderRadius: 10,
-          background: C.card, border: `1px solid ${C.border}`, marginBottom: 8,
-        }}>
-          {[
+        <Card className="py-2">
+          {([
             { l: 'Référence', v: payment.reference },
             {
               l: 'Date',
@@ -1341,59 +1205,45 @@ export function MobilePaymentDetail() {
             payment.rejection_reason ? {
               l: 'Motif refus',
               v: payment.rejection_reason,
-              color: C.RED,
+              danger: true,
             } : null,
             payment.admin_comment ? {
               l: 'Commentaire',
               v: payment.admin_comment,
             } : null,
-          ].filter(Boolean).map((row, i, arr) => (
-            <div
+          ].filter(Boolean) as { l: string; v: string; danger?: boolean }[]).map((row, i) => (
+            <Row
               key={i}
-              style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                padding: '6px 0',
-                borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
-                gap: 8,
-              }}
-            >
-              <span style={{ fontSize: 11, color: C.sub, flexShrink: 0 }}>{row!.l}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: (row as { color?: string }).color || C.text, textAlign: 'right' }}>
-                {row!.v}
-              </span>
-            </div>
+              label={row.l}
+              value={
+                <span className={row.danger ? 'text-[#C0504D] dark:text-[#E79A9A]' : undefined}>{row.v}</span>
+              }
+            />
           ))}
-        </div>
+        </Card>
 
         {/* ── Actions ───────────────────────────────────────── */}
         {(mainAction || canReject || canDelete) && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 4 }}>
+          <div className="flex flex-col gap-2 pt-1">
             {mainAction && (
-              <button
+              <PrimaryPill
                 onClick={mainAction.onClick}
-                disabled={processPayment.isPending}
-                style={{
-                  width: '100%', padding: 13, borderRadius: 10,
-                  background: mainAction.color, border: 'none',
-                  fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  opacity: processPayment.isPending ? 0.6 : 1,
-                }}
+                loading={processPayment.isPending}
+                className={cn(
+                  'w-full',
+                  mainAction.tone === 'info'
+                    ? 'bg-[#6B5BD2] text-white dark:bg-[#6B5BD2] dark:text-white'
+                    : 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white',
+                )}
               >
-                {processPayment.isPending
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : mainAction.icon}
+                {mainAction.icon}
                 {mainAction.label}
-              </button>
+              </PrimaryPill>
             )}
             {canReject && (
               <button
                 onClick={() => setIsRejectOpen(true)}
-                style={{
-                  width: '100%', padding: 11, borderRadius: 10,
-                  background: 'none', border: `1px solid ${C.RED}20`,
-                  fontSize: 12, fontWeight: 600, color: C.RED, cursor: 'pointer',
-                }}
+                className="w-full rounded-full py-3 text-[12px] font-semibold text-[#C0504D] ring-1 ring-[#C0504D]/20 transition active:scale-[0.99] dark:text-[#E79A9A] dark:ring-[#E79A9A]/20"
               >
                 Refuser
               </button>
@@ -1401,11 +1251,7 @@ export function MobilePaymentDetail() {
             {canDelete && (
               <button
                 onClick={() => setIsDeletePaymentOpen(true)}
-                style={{
-                  width: '100%', padding: 11, borderRadius: 10,
-                  background: 'none', border: `1px solid ${C.border}`,
-                  fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer',
-                }}
+                className={cn('w-full rounded-full py-3 text-[11px] font-semibold ring-1 ring-black/[0.08] transition active:scale-[0.99] dark:ring-white/[0.08]', TEXT.muted)}
               >
                 Annuler ce paiement
               </button>
@@ -1415,242 +1261,223 @@ export function MobilePaymentDetail() {
       </div>
 
       {/* ══════════════════════════════════════════════════════
-          DRAWERS
+          BOTTOM-SHEETS
       ══════════════════════════════════════════════════════ */}
 
-      {/* ── Reject Drawer ────────────────────────────────── */}
-      <Drawer open={isRejectOpen} onOpenChange={(open) => {
-        setIsRejectOpen(open);
-        if (!open) { setRejectionCategory(''); setRejectReason(''); }
-      }}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              Rejeter le paiement
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 py-2 space-y-4 max-h-[60vh] overflow-y-auto">
-            <div className="bg-red-50 dark:bg-red-950/30 rounded-xl p-4 border border-red-200 dark:border-red-800">
-              <p className="text-sm text-red-800 dark:text-red-400">
-                Cette action va rejeter le paiement et rembourser {formatCurrency(payment.amount_xaf)} au wallet du client.
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">Motif du refus</p>
-              <div className="space-y-2">
-                {PAYMENT_REJECTION_REASONS.map((reason) => (
-                  <button
-                    key={reason}
-                    onClick={() => {
-                      setRejectionCategory(reason);
-                      if (!rejectReason.trim()) setRejectReason(`Paiement refusé : ${reason.toLowerCase()}.`);
-                    }}
-                    className={`w-full p-3 rounded-xl border text-left text-sm transition-all ${
-                      rejectionCategory === reason
-                        ? 'border-red-500 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'
-                        : 'border-border hover:border-muted-foreground'
-                    }`}
-                  >
-                    {reason}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Message au client <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                placeholder="Expliquez pourquoi le paiement est rejeté..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full h-24 p-3 rounded-xl border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">Ce message sera visible par le client</p>
-            </div>
-          </div>
-          <DrawerFooter className="flex-row gap-3">
-            <button onClick={() => setIsRejectOpen(false)} className="flex-1 h-12 rounded-xl border border-border font-medium">
-              Annuler
-            </button>
-            <button
-              onClick={handleReject}
-              disabled={processPayment.isPending || !rejectReason.trim()}
-              className="flex-1 h-12 rounded-xl bg-red-500 text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {processPayment.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <XCircle className="w-5 h-5" />}
-              Rejeter
-            </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* ── Complete Drawer ──────────────────────────────── */}
-      <Drawer open={isCompleteOpen} onOpenChange={(open) => {
-        setIsCompleteOpen(open);
-        if (!open) { setCompleteProofFile(null); setCompleteProofPreview(null); }
-      }}>
-        <DrawerContent className="flex flex-col" style={{ maxHeight: '92dvh' }}>
-          <DrawerHeader className="flex-shrink-0 border-b border-border/20">
-            <DrawerTitle>Confirmer le paiement</DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
-            <div className="bg-green-50 dark:bg-green-950/30 rounded-xl p-4 border border-green-200 dark:border-green-800">
-              <p className="text-sm text-green-800 dark:text-green-400">
-                Confirmez que le paiement de <strong>{formatCurrencyRMB(payment.amount_rmb)}</strong> a été effectué au bénéficiaire.
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Preuve de paiement (optionnel)</label>
-              <input
-                ref={proofInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setCompleteProofFile(file);
-                  const reader = new FileReader();
-                  reader.onloadend = () => setCompleteProofPreview(reader.result as string);
-                  reader.readAsDataURL(file);
-                }}
-              />
-              {completeProofPreview ? (
-                <div className="relative">
-                  <img src={completeProofPreview} alt="Preuve" className="w-full h-40 object-cover rounded-xl border border-border" />
-                  <button
-                    onClick={() => { setCompleteProofFile(null); setCompleteProofPreview(null); if (proofInputRef.current) proofInputRef.current.value = ''; }}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => proofInputRef.current?.click()}
-                  className="w-full h-24 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground active:bg-muted/50"
-                >
-                  <Upload className="w-6 h-6" />
-                  <span className="text-sm">Ajouter une preuve</span>
-                </button>
-              )}
-            </div>
-          </div>
-          <DrawerFooter className="flex-row gap-3">
-            <button onClick={() => setIsCompleteOpen(false)} className="flex-1 h-12 rounded-xl border border-border font-medium">
-              Annuler
-            </button>
-            <button
-              onClick={handleComplete}
-              disabled={processPayment.isPending || adminProofUpload.isPending}
-              className="flex-1 h-12 rounded-xl bg-green-500 text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {(processPayment.isPending || adminProofUpload.isPending)
-                ? <Loader2 className="w-5 h-5 animate-spin" />
-                : <CheckCircle className="w-5 h-5" />}
-              Confirmer
-            </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* ── Cancel Payment Drawer ────────────────────────── */}
-      <Drawer open={isDeletePaymentOpen} onOpenChange={setIsDeletePaymentOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="w-5 h-5" />
-              Annuler ce paiement
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4">
-            <p className="text-muted-foreground text-sm">
-              Voulez-vous vraiment annuler ce paiement ?
-              Le paiement sera marqué comme annulé et le solde du client sera recrédité si nécessaire.
+      {/* ── Reject ───────────────────────────────────────── */}
+      <BottomSheet
+        open={isRejectOpen}
+        onClose={() => { setIsRejectOpen(false); setRejectionCategory(''); setRejectReason(''); }}
+        title={
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
+            Rejeter le paiement
+          </span>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
+            <p className="text-[13px] text-[#C0504D] dark:text-[#E79A9A]">
+              Cette action va rejeter le paiement et rembourser {formatCurrency(payment.amount_xaf)} au wallet du client.
             </p>
           </div>
-          <DrawerFooter>
-            <button
+          <div>
+            <p className={cn('mb-2 text-[13px]', TEXT.muted)}>Motif du refus</p>
+            <div className="space-y-2">
+              {PAYMENT_REJECTION_REASONS.map((reason) => (
+                <button
+                  key={reason}
+                  onClick={() => {
+                    setRejectionCategory(reason);
+                    if (!rejectReason.trim()) setRejectReason(`Paiement refusé : ${reason.toLowerCase()}.`);
+                  }}
+                  className={cn(
+                    'w-full rounded-2xl p-3 text-left text-[13px] ring-1 transition-all',
+                    rejectionCategory === reason
+                      ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                      : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
+                  )}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+          </div>
+          <FormField label={<>Message au client <span className="text-[#C0504D]">*</span></>}>
+            <KitTextarea
+              placeholder="Expliquez pourquoi le paiement est rejeté..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+              required
+            />
+            <p className={cn('mt-1 text-[10px]', TEXT.muted)}>Ce message sera visible par le client</p>
+          </FormField>
+          <div className="flex gap-2">
+            <SoftPill onClick={() => setIsRejectOpen(false)} className="flex-1">Annuler</SoftPill>
+            <PrimaryPill
+              onClick={handleReject}
+              loading={processPayment.isPending}
+              disabled={!rejectReason.trim()}
+              danger
+              className="flex-1"
+            >
+              <XCircle className="h-5 w-5" />
+              Rejeter
+            </PrimaryPill>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* ── Complete ─────────────────────────────────────── */}
+      <BottomSheet
+        open={isCompleteOpen}
+        onClose={() => { setIsCompleteOpen(false); setCompleteProofFile(null); setCompleteProofPreview(null); }}
+        title="Confirmer le paiement"
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-[#DEEFE5] p-4 dark:bg-[#1E3A2C]">
+            <p className="text-[13px] text-[#2E7D52] dark:text-[#7FCBA0]">
+              Confirmez que le paiement de <strong>{formatCurrencyRMB(payment.amount_rmb)}</strong> a été effectué au bénéficiaire.
+            </p>
+          </div>
+          <FormField label="Preuve de paiement (optionnel)">
+            <input
+              ref={proofInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setCompleteProofFile(file);
+                const reader = new FileReader();
+                reader.onloadend = () => setCompleteProofPreview(reader.result as string);
+                reader.readAsDataURL(file);
+              }}
+            />
+            {completeProofPreview ? (
+              <div className="relative">
+                <img src={completeProofPreview} alt="Preuve" className={cn('h-40 w-full rounded-2xl object-cover', SURFACE.shadow)} />
+                <button
+                  onClick={() => { setCompleteProofFile(null); setCompleteProofPreview(null); if (proofInputRef.current) proofInputRef.current.value = ''; }}
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => proofInputRef.current?.click()}
+                className={cn('flex h-24 w-full flex-col items-center justify-center gap-2 rounded-2xl ring-1 ring-dashed ring-black/15 transition active:scale-[0.99] dark:ring-white/15', TEXT.muted)}
+              >
+                <Upload className="h-6 w-6" />
+                <span className="text-[13px]">Ajouter une preuve</span>
+              </button>
+            )}
+          </FormField>
+          <div className="flex gap-2">
+            <SoftPill onClick={() => setIsCompleteOpen(false)} className="flex-1">Annuler</SoftPill>
+            <PrimaryPill
+              onClick={handleComplete}
+              loading={processPayment.isPending || adminProofUpload.isPending}
+              className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+            >
+              <CheckCircle className="h-5 w-5" />
+              Confirmer
+            </PrimaryPill>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* ── Cancel Payment ───────────────────────────────── */}
+      <BottomSheet
+        open={isDeletePaymentOpen}
+        onClose={() => setIsDeletePaymentOpen(false)}
+        title={
+          <span className="flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]">
+            <Trash2 className="h-5 w-5" />
+            Annuler ce paiement
+          </span>
+        }
+      >
+        <div className="space-y-4">
+          <p className={cn('text-[13px]', TEXT.muted)}>
+            Voulez-vous vraiment annuler ce paiement ? Le paiement sera marqué comme annulé et le solde du client sera recrédité si nécessaire.
+          </p>
+          <div className="flex flex-col gap-2">
+            <PrimaryPill
               onClick={() => {
                 if (!paymentId) return;
                 deletePayment.mutate(paymentId, {
                   onSuccess: () => navigate('/m/payments'),
                 });
               }}
-              disabled={deletePayment.isPending}
-              className="w-full h-12 rounded-xl bg-destructive text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              loading={deletePayment.isPending}
+              danger
+              className="w-full"
             >
-              {deletePayment.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Confirmer l'annulation
-            </button>
-            <button onClick={() => setIsDeletePaymentOpen(false)} className="w-full h-12 rounded-xl border border-border font-medium text-sm">
-              Retour
-            </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* ── Delete Proof Drawer ──────────────────────────── */}
-      <Drawer open={!!proofToDelete} onOpenChange={(open) => { if (!open) setProofToDelete(null); }}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="w-5 h-5" />
-              Supprimer cette preuve
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4">
-            <p className="text-muted-foreground text-sm">
-              Voulez-vous supprimer cette preuve de paiement ? Cette action est irréversible.
-            </p>
+            </PrimaryPill>
+            <SoftPill onClick={() => setIsDeletePaymentOpen(false)} className="w-full">Retour</SoftPill>
           </div>
-          <DrawerFooter>
-            <button
+        </div>
+      </BottomSheet>
+
+      {/* ── Delete Proof ─────────────────────────────────── */}
+      <BottomSheet
+        open={!!proofToDelete}
+        onClose={() => setProofToDelete(null)}
+        title={
+          <span className="flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]">
+            <Trash2 className="h-5 w-5" />
+            Supprimer cette preuve
+          </span>
+        }
+      >
+        <div className="space-y-4">
+          <p className={cn('text-[13px]', TEXT.muted)}>
+            Voulez-vous supprimer cette preuve de paiement ? Cette action est irréversible.
+          </p>
+          <div className="flex flex-col gap-2">
+            <PrimaryPill
               onClick={() => {
                 if (!proofToDelete) return;
                 deletePaymentProof.mutate(proofToDelete, {
                   onSuccess: () => setProofToDelete(null),
                 });
               }}
-              disabled={deletePaymentProof.isPending}
-              className="w-full h-12 rounded-xl bg-destructive text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              loading={deletePaymentProof.isPending}
+              danger
+              className="w-full"
             >
-              {deletePaymentProof.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Supprimer
-            </button>
-            <button onClick={() => setProofToDelete(null)} className="w-full h-12 rounded-xl border border-border font-medium text-sm">
-              Annuler
-            </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* ── Fullscreen Image Drawer ──────────────────────── */}
-      <Drawer open={!!fullscreenProof} onOpenChange={() => setFullscreenProof(null)}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>Aperçu</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-3">
-            {fullscreenProof && (
-              <>
-                <img src={fullscreenProof} alt="Aperçu" className="w-full rounded-xl" />
-                <a
-                  href={fullscreenProof}
-                  download
-                  className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-border font-medium text-sm active:scale-[0.98] transition-transform"
-                >
-                  <Download className="w-4 h-4" />
-                  Télécharger
-                </a>
-              </>
-            )}
+            </PrimaryPill>
+            <SoftPill onClick={() => setProofToDelete(null)} className="w-full">Annuler</SoftPill>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </div>
+      </BottomSheet>
+
+      {/* ── Fullscreen Image ─────────────────────────────── */}
+      <BottomSheet
+        open={!!fullscreenProof}
+        onClose={() => setFullscreenProof(null)}
+        title="Aperçu"
+      >
+        {fullscreenProof && (
+          <div className="space-y-3">
+            <img src={fullscreenProof} alt="Aperçu" className="w-full rounded-2xl" />
+            <a
+              href={fullscreenProof}
+              download
+              className={cn('flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-semibold transition active:scale-[0.99]', SURFACE.canvas, TEXT.strong)}
+            >
+              <Download className="h-4 w-4" />
+              Télécharger
+            </a>
+          </div>
+        )}
+      </BottomSheet>
 
     </div>
   );

@@ -6,11 +6,21 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { Search, Plus, User } from 'lucide-react';
 import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { formatCurrency, formatXAF } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  clientStatusTone,
+  Avatar,
+  StatusPill,
+  TextInput,
+  Holder,
+  PrimaryPill,
+} from '@/mobile/designKit';
 import type { ClientStatus } from '@/types/admin';
 
 // Filter labels are static since they're defined outside the component.
@@ -22,13 +32,6 @@ const STATUS_FILTER_KEYS: { value: ClientStatus | 'all'; labelKey: string; defau
   { value: 'SUSPENDED', labelKey: 'suspended', defaultLabel: 'Suspendus' },
   { value: 'PENDING_KYC', labelKey: 'kyc', defaultLabel: 'KYC' },
 ];
-
-const STATUS_BADGE_STYLES: Record<ClientStatus, string> = {
-  ACTIVE: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  INACTIVE: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-  SUSPENDED: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  PENDING_KYC: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-};
 
 export function MobileClientsScreen() {
   const { t } = useTranslation('common');
@@ -51,28 +54,40 @@ export function MobileClientsScreen() {
   });
 
   return (
-    <div className="flex flex-col min-h-full pb-20">
+    <div className="flex min-h-full flex-col pb-20">
       <MobileHeader title={t('clients', { defaultValue: 'Clients' })} />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 overflow-y-auto">
+      <PullToRefresh
+        onRefresh={refetch}
+        className={cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}
+      >
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+          <TextInput
             type="text"
             placeholder={t('searchByNamePhone', { defaultValue: 'Rechercher par nom, téléphone...' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="pl-10"
           />
         </div>
 
         {/* Status Filter Chips */}
-        <MobileFilterChips
-          filters={STATUS_FILTERS}
-          activeKey={statusFilter}
-          onChange={setStatusFilter}
-        />
+        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setStatusFilter(filter.value)}
+              className={cn(
+                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                statusFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
         {/* Clients List */}
         {isLoading ? (
@@ -83,73 +98,79 @@ export function MobileClientsScreen() {
           </div>
         ) : filteredClients && filteredClients.length > 0 ? (
           <div className="space-y-3">
-            {filteredClients.map((client) => (
-              <button
-                key={client.id}
-                onClick={() => navigate(`/m/clients/${client.id}`)}
-                className="w-full bg-card rounded-xl p-4 border border-border text-left active:scale-[0.98] transition-transform"
-              >
-                <div className="flex items-center gap-3">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center text-sm sm:text-base font-medium text-primary flex-shrink-0">
-                    {client.firstName?.[0] || '?'}
-                    {client.lastName?.[0] || ''}
-                  </div>
+            {filteredClients.map((client) => {
+              const name = `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || '?';
+              return (
+                <button
+                  key={client.id}
+                  onClick={() => navigate(`/m/clients/${client.id}`)}
+                  className={cn(
+                    'w-full rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    SURFACE.card,
+                    SURFACE.shadow,
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar name={name} />
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium truncate">
-                        {client.firstName} {client.lastName}
-                      </p>
-                      <span className={cn(
-                        'px-1.5 py-0.5 rounded text-[10px] font-medium',
-                        STATUS_BADGE_STYLES[client.status]
-                      )}>
-                        {client.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) :
-                         client.status === 'INACTIVE' ? t('inactive', { defaultValue: 'Inactif' }) :
-                         client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
-                      </span>
+                    {/* Info */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
+                          {client.firstName} {client.lastName}
+                        </p>
+                        <StatusPill
+                          tone={clientStatusTone(client.status)}
+                          label={client.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) :
+                            client.status === 'INACTIVE' ? t('inactive', { defaultValue: 'Inactif' }) :
+                            client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
+                        />
+                      </div>
+                      {client.phone && (
+                        <p className={cn('truncate text-[13px]', TEXT.muted)}>{client.phone}</p>
+                      )}
                     </div>
-                    {client.phone && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        {client.phone}
+
+                    {/* Balance */}
+                    <div className="shrink-0 text-right">
+                      <p className={cn('text-[15px] font-bold tabular-nums', TEXT.strong)}>
+                        {formatXAF(client.walletBalance || 0)}
                       </p>
-                    )}
+                      <p className={cn('text-[10px]', TEXT.muted)}>XAF</p>
+                    </div>
                   </div>
 
-                  {/* Balance */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-semibold text-primary">
-                      {formatXAF(client.walletBalance || 0)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">XAF</p>
+                  {/* Stats Row */}
+                  <div className={cn('mt-3 flex items-center gap-4 text-[12px]', TEXT.muted)}>
+                    <span>{t('deposits', { defaultValue: 'Dépôts' })}: {formatCurrency(client.totalDeposits || 0)}</span>
+                    <span>{t('payments', { defaultValue: 'Paiements' })}: {formatCurrency(client.totalPayments || 0)}</span>
                   </div>
-                </div>
-
-                {/* Stats Row */}
-                <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50 text-xs text-muted-foreground">
-                  <span>{t('deposits', { defaultValue: 'Dépôts' })}: {formatCurrency(client.totalDeposits || 0)}</span>
-                  <span>{t('payments', { defaultValue: 'Paiements' })}: {formatCurrency(client.totalPayments || 0)}</span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <MobileEmptyState
-            icon={User}
-            title={searchQuery ? t('noClientFound', { defaultValue: 'Aucun client trouvé' }) : t('noClientsYet', { defaultValue: 'Aucun client pour le moment' })}
-            action={{ label: t('createClient', { defaultValue: 'Créer un client' }), onClick: () => navigate('/m/clients/new') }}
-          />
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Holder icon={User} size="lg" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
+              {searchQuery ? t('noClientFound', { defaultValue: 'Aucun client trouvé' }) : t('noClientsYet', { defaultValue: 'Aucun client pour le moment' })}
+            </p>
+            <PrimaryPill onClick={() => navigate('/m/clients/new')} className="mt-4">
+              {t('createClient', { defaultValue: 'Créer un client' })}
+            </PrimaryPill>
+          </div>
         )}
       </PullToRefresh>
 
       {/* FAB - Create Client */}
       <button
         onClick={() => navigate('/m/clients/new')}
-        className="fixed bottom-20 right-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform z-10"
+        className={cn(
+          'fixed bottom-20 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95',
+          PRIMARY_PILL,
+        )}
       >
-        <Plus className="w-6 h-6" />
+        <Plus className="h-6 w-6" />
       </button>
     </div>
   );

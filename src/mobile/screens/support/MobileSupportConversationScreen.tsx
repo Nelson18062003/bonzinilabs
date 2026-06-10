@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ChatMessage } from '@/types/chat';
 import type { TemplateContext } from '@/lib/template-vars';
+import { SURFACE, TEXT, StatusPill, Avatar, Holder } from '@/mobile/designKit';
 
 // Fond de la zone de messages (identique côté client — cohérence cross-app).
 const CHAT_BG = 'bg-[hsl(30_8%_96%)] dark:bg-[hsl(220_20%_11%)]';
@@ -106,8 +107,11 @@ export function MobileSupportConversationScreen() {
 
   if (!canAccess) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
-        Vous n'avez pas accès au support chat.
+      <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
+        <Holder icon={UserCheck} size="lg" />
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>
+          Vous n'avez pas accès au support chat.
+        </p>
       </div>
     );
   }
@@ -185,26 +189,24 @@ export function MobileSupportConversationScreen() {
 
   const header = (
     <header
-      className="relative flex items-center gap-2 border-b border-border bg-background px-2 py-2.5"
+      className={cn('relative flex items-center gap-2 px-2 py-2.5', SURFACE.card, 'border-b border-black/5 dark:border-white/5')}
       style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}
     >
       <button
         type="button"
         onClick={() => navigate('/m/support')}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted -ml-1"
+        className={cn('-ml-1 flex h-9 w-9 items-center justify-center rounded-full active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
         aria-label={t('detail.back')}
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-sm font-semibold text-white">
-        {(conversation?.client_first_name?.[0] ?? 'C').toUpperCase()}
-      </div>
+      <Avatar name={clientName || (conversation?.client_first_name ?? 'C')} tone="info" size="sm" />
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+        <h1 className={cn('truncate text-[15px] font-bold leading-tight tracking-tight', TEXT.strong)}>
           {clientName || t('admin.noClientName')}
         </h1>
         {(conversation?.subject || conversation?.client_phone) && (
-          <p className="truncate text-[11px] leading-tight text-muted-foreground">
+          <p className={cn('truncate text-[11px] leading-tight', TEXT.muted)}>
             {conversation?.subject || conversation?.client_phone}
           </p>
         )}
@@ -214,7 +216,7 @@ export function MobileSupportConversationScreen() {
         <button
           type="button"
           onClick={handleClaim}
-          className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-bonzini-violet px-2.5 text-[11px] font-semibold text-white shadow-[0_6px_18px_hsl(258_95%_60%/_0.22)]"
+          className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#6B5BD2] px-3 text-[11px] font-bold text-white transition active:scale-95 dark:bg-[#A99BF0] dark:text-[#1B1A24]"
           aria-label={t('admin.actions.claim')}
         >
           <UserPlus className="h-3 w-3" />
@@ -222,22 +224,32 @@ export function MobileSupportConversationScreen() {
         </button>
       )}
       {conversation && conversation.assigned_admin_id && !isAssignedToMe && assignedName && (
-        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-muted px-2 text-[10px] font-medium text-muted-foreground">
-          <UserCheck className="h-3 w-3" />
-          {assignedName}
-        </span>
+        <StatusPill
+          tone="neutral"
+          label={
+            <span className="flex items-center gap-1">
+              <UserCheck className="h-3 w-3" />
+              {assignedName}
+            </span>
+          }
+        />
       )}
       {isAssignedToMe && (
-        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[hsl(258_100%_97%)] px-2 text-[10px] font-medium text-bonzini-violet dark:bg-[hsl(258_45%_22%)]">
-          <UserCheck className="h-3 w-3" />
-          {t('admin.actions.assignedToMe')}
-        </span>
+        <StatusPill
+          tone="info"
+          label={
+            <span className="flex items-center gap-1">
+              <UserCheck className="h-3 w-3" />
+              {t('admin.actions.assignedToMe')}
+            </span>
+          }
+        />
       )}
 
       <button
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
         aria-label="Menu"
       >
         <MoreVertical className="h-4 w-4" />
@@ -250,7 +262,7 @@ export function MobileSupportConversationScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-2 top-full z-20 mt-1 flex w-56 flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1 shadow-lg"
+            className={cn('absolute right-2 top-full z-20 mt-1 flex w-56 flex-col gap-0.5 rounded-2xl p-1', SURFACE.card, SURFACE.shadow)}
           >
             <MenuItem
               icon={ExternalLink}
@@ -362,14 +374,15 @@ export function MobileSupportConversationScreen() {
               initial={{ y: 40 }}
               animate={{ y: 0 }}
               exit={{ y: 40 }}
-              className="w-full max-w-sm rounded-t-2xl bg-background p-4 sm:rounded-2xl"
+              className={cn('w-full max-w-sm rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:rounded-[28px]', SURFACE.card, SURFACE.shadow)}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="mb-3 text-base font-semibold">{t('admin.actions.assignTo')}</h3>
+              <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-black/10 dark:bg-white/15 sm:hidden" />
+              <h3 className={cn('mb-3 text-[17px] font-bold', TEXT.strong)}>{t('admin.actions.assignTo')}</h3>
               <button
                 type="button"
                 onClick={() => handleAssign(null)}
-                className="mb-1 flex w-full items-center justify-between rounded-xl border border-border px-4 py-3 text-left text-sm hover:bg-muted"
+                className={cn('mb-2 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-[14px] font-medium transition active:scale-[0.99]', SURFACE.canvas, TEXT.strong)}
               >
                 <span>{t('admin.actions.unassign')}</span>
               </button>
@@ -382,10 +395,10 @@ export function MobileSupportConversationScreen() {
                     type="button"
                     onClick={() => handleAssign(a.id as string)}
                     className={cn(
-                      'mb-1 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm',
+                      'mb-2 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-[14px] font-medium transition active:scale-[0.99]',
                       isCurrent
-                        ? 'border-bonzini-violet bg-[hsl(258_100%_97%)] text-bonzini-violet dark:bg-[hsl(258_45%_22%)]'
-                        : 'border-border hover:bg-muted'
+                        ? 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]'
+                        : cn(SURFACE.canvas, TEXT.strong),
                     )}
                   >
                     <span>{name}</span>
@@ -411,9 +424,9 @@ function MenuItem({ icon: Icon, label, onClick }: MenuItemProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted"
+      className={cn('flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium transition active:scale-[0.99] hover:bg-black/[0.03] dark:hover:bg-white/[0.04]', TEXT.strong)}
     >
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <Icon className={cn('h-4 w-4', TEXT.muted)} />
       <span>{label}</span>
     </button>
   );

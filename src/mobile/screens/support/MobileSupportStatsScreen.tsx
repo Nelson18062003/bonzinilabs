@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Loader2,
   MessageSquare,
   Users,
   Timer,
@@ -24,20 +23,40 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useChatAdminStats } from '@/hooks/useAdminChatTools';
 import { formatDuration } from '@/lib/voice-recording';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  Card,
+  StatCard,
+  Holder,
+  ScreenLoader,
+} from '@/mobile/designKit';
 
 type Period = 7 | 14 | 30;
 
-// Couleurs de la charte Bonzini
+// Brand chart colors (carry meaning on the curves/bars — kept per logo charte).
 const VIOLET = 'hsl(258 100% 60%)';
 const AMBER = 'hsl(36 100% 55%)';
 const ORANGE = 'hsl(16 100% 55%)';
+
+// Softened neutral chart chrome (axes/grid) — matches MultiCurveChart (M5).
+const GRID = 'rgba(120,120,140,0.15)';
+const AXIS_LINE = 'rgba(120,120,140,0.2)';
+const AXIS_TICK = { fontSize: 11, fill: '#9B98AD' } as const;
+const TOOLTIP_STYLE = {
+  background: 'hsl(var(--background))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: 14,
+  fontSize: 12,
+} as const;
 
 export function MobileSupportStatsScreen() {
   const { t } = useTranslation('support');
@@ -58,8 +77,11 @@ export function MobileSupportStatsScreen() {
 
   if (!canAccess) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
-        Vous n'avez pas accès au support chat.
+      <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
+        <Holder icon={MessageSquare} size="lg" />
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>
+          Vous n'avez pas accès au support chat.
+        </p>
       </div>
     );
   }
@@ -89,54 +111,64 @@ export function MobileSupportStatsScreen() {
       avgSeconds: a.avg_response_seconds,
     })) ?? [];
 
+  const periodFilters: { value: Period; label: string }[] = [
+    { value: 7, label: t('admin.statsPeriod7d') },
+    { value: 14, label: t('admin.statsPeriod14d') },
+    { value: 30, label: t('admin.statsPeriod30d') },
+  ];
+
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background">
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       <MobileHeader
         title={t('admin.statsTitle')}
         showBack
         onBack={() => navigate('/m/support')}
       />
 
-      <div className="px-4 py-3 border-b border-border">
-        <MobileFilterChips<Period>
-          filters={[
-            { value: 7, label: t('admin.statsPeriod7d') },
-            { value: 14, label: t('admin.statsPeriod14d') },
-            { value: 30, label: t('admin.statsPeriod30d') },
-          ]}
-          activeKey={period}
-          onChange={setPeriod}
-        />
+      <div className="px-4 pt-4">
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
+          {periodFilters.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setPeriod(filter.value)}
+              className={cn(
+                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                period === filter.value ? PRIMARY_PILL : SOFT_PILL,
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading || !stats ? (
-        <div className="flex flex-1 items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <ScreenLoader />
       ) : (
         <div className="space-y-4 p-4">
           {/* KPI cards */}
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               icon={Inbox}
+              tone="info"
               label={t('admin.statsOpenConvs')}
               value={String(stats.open_conversations)}
-              tone="violet"
             />
             <StatCard
               icon={MessageSquare}
+              tone="neutral"
               label={t('admin.statsTotalMessages')}
               value={String(stats.total_messages)}
-              tone="amber"
             />
             <StatCard
               icon={Users}
+              tone="pending"
               label={t('admin.statsUnassigned')}
               value={String(stats.unassigned_open)}
-              tone="orange"
             />
             <StatCard
               icon={Timer}
+              tone="info"
               label={t('admin.statsAvgResponse')}
               value={stats.avg_response_seconds_global > 0 ? formatDuration(stats.avg_response_seconds_global) : '—'}
               hint={
@@ -144,7 +176,6 @@ export function MobileSupportStatsScreen() {
                   ? `${t('admin.statsMedian')} ${formatDuration(stats.median_response_seconds_global)}`
                   : undefined
               }
-              tone="violet"
             />
           </div>
 
@@ -152,20 +183,13 @@ export function MobileSupportStatsScreen() {
           <ChartCard title={t('admin.chartDailyVolume')} subtitle={t('admin.chartDailyVolumeHint')}>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={dailyChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="dayLabel" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+                <XAxis dataKey="dayLabel" tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="Client" stroke={ORANGE} strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="Bonzini" stroke={VIOLET} strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="Client" stroke={ORANGE} strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="Bonzini" stroke={VIOLET} strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -177,17 +201,10 @@ export function MobileSupportStatsScreen() {
           >
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={bucketsChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="bucket" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+                <XAxis dataKey="bucket" tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {bucketsChartData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
@@ -204,7 +221,7 @@ export function MobileSupportStatsScreen() {
             icon={TrendingUp}
           >
             {topAdminsChartData.length === 0 ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">
+              <p className={cn('py-6 text-center text-[12px]', TEXT.muted)}>
                 {t('admin.statsNoData')}
               </p>
             ) : (
@@ -214,22 +231,18 @@ export function MobileSupportStatsScreen() {
                   layout="vertical"
                   margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
+                  <XAxis type="number" tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} allowDecimals={false} />
                   <YAxis
                     dataKey="name"
                     type="category"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={11}
+                    tick={AXIS_TICK}
+                    axisLine={{ stroke: AXIS_LINE }}
+                    tickLine={false}
                     width={80}
                   />
                   <Tooltip
-                    contentStyle={{
-                      background: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
+                    contentStyle={TOOLTIP_STYLE}
                     formatter={(value: number, name: string) => {
                       if (name === 'avgSeconds') return [formatDuration(value), t('admin.statsAvgResponse')];
                       return [value, t('admin.statsReplies')];
@@ -243,61 +256,36 @@ export function MobileSupportStatsScreen() {
 
           {/* Détail per-admin (cards) */}
           {stats.per_admin.length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-4">
-              <h3 className="mb-3 text-sm font-semibold">{t('admin.statsPerAdmin')}</h3>
-              <ul className="divide-y divide-border">
+            <Card>
+              <h3 className={cn('mb-3 text-[14px] font-bold', TEXT.strong)}>{t('admin.statsPerAdmin')}</h3>
+              <div className="space-y-0.5">
                 {stats.per_admin.map((a) => {
                   const name = `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim() || 'Admin';
                   return (
-                    <li key={a.admin_user_id} className="flex items-center justify-between py-2.5">
+                    <div key={a.admin_user_id} className="flex items-center justify-between py-2.5">
                       <div>
-                        <p className="text-sm font-medium">{name}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className={cn('text-[14px] font-semibold', TEXT.strong)}>{name}</p>
+                        <p className={cn('text-[11px]', TEXT.muted)}>
                           {a.replies_count} {t('admin.statsReplies')}
                         </p>
                       </div>
-                      <span className="text-xs font-mono text-bonzini-violet">
+                      <span className="font-mono text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
                         ⏱ {formatDuration(a.avg_response_seconds || 0)}
                       </span>
-                    </li>
+                    </div>
                   );
                 })}
-              </ul>
-            </div>
+              </div>
+            </Card>
           )}
 
-          <div className="rounded-2xl border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          <Card className={cn('text-[12px]', TEXT.muted)}>
             <p>
-              <strong>{t('admin.statsLegendTitle')}</strong> — {t('admin.statsLegend')}
+              <strong className={TEXT.strong}>{t('admin.statsLegendTitle')}</strong> — {t('admin.statsLegend')}
             </p>
-          </div>
+          </Card>
         </div>
       )}
-    </div>
-  );
-}
-
-interface StatCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  hint?: string;
-  tone: 'violet' | 'amber' | 'orange';
-}
-function StatCard({ icon: Icon, label, value, hint, tone }: StatCardProps) {
-  const colors = {
-    violet: 'bg-bonzini-violet/10 text-bonzini-violet',
-    amber: 'bg-bonzini-amber/10 text-bonzini-amber',
-    orange: 'bg-bonzini-orange/10 text-bonzini-orange',
-  };
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4">
-      <div className={cn('mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full', colors[tone])}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-2xl font-semibold">{value}</p>
-      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -310,15 +298,15 @@ interface ChartCardProps {
 }
 function ChartCard({ title, subtitle, icon: Icon, children }: ChartCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <Card>
       <div className="mb-3 flex items-start gap-2">
-        {Icon && <Icon className="h-4 w-4 text-bonzini-violet mt-0.5" />}
+        {Icon && <Icon className="mt-0.5 h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
         <div>
-          <h3 className="text-sm font-semibold">{title}</h3>
-          {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+          <h3 className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</h3>
+          {subtitle && <p className={cn('text-[11px]', TEXT.muted)}>{subtitle}</p>}
         </div>
       </div>
       {children}
-    </div>
+    </Card>
   );
 }

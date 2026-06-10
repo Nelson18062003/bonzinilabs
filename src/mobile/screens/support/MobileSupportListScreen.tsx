@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, Loader2, BarChart3 } from 'lucide-react';
+import { MessageCircle, BarChart3, Search, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { MobileFilterChips } from '@/mobile/components/ui/MobileFilterChips';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
-import { SearchField } from '@/components/form';
 import { HighlightedSnippet } from '@/components/support/HighlightedSnippet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminConversations } from '@/hooks/useAdminChat';
@@ -15,6 +12,16 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  Avatar,
+  TextInput,
+  Holder,
+  ScreenLoader,
+} from '@/mobile/designKit';
 
 type StatusFilter = 'open' | 'all' | 'closed';
 type AssignFilter = 'all' | 'mine' | 'unassigned';
@@ -73,23 +80,37 @@ export function MobileSupportListScreen() {
 
   const isSearching = debouncedSearch.trim().length >= 2;
 
+  const assignFilters: { value: AssignFilter; label: string }[] = [
+    { value: 'all', label: t('admin.filterAll') },
+    { value: 'mine', label: t('admin.filterMine') },
+    { value: 'unassigned', label: t('admin.filterUnassigned') },
+  ];
+  const statusFilters: { value: StatusFilter; label: string }[] = [
+    { value: 'open', label: t('admin.filterOpen') },
+    { value: 'all', label: t('admin.filterAllStatus') },
+    { value: 'closed', label: t('admin.filterClosed') },
+  ];
+
   if (!canAccess) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
-        Vous n'avez pas accès au support chat.
+      <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
+        <Holder icon={MessageCircle} size="lg" />
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>
+          Vous n'avez pas accès au support chat.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background">
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       <MobileHeader
         title={t('admin.listTitle')}
         rightElement={
           <button
             type="button"
             onClick={() => navigate('/m/support/stats')}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-bonzini-violet hover:bg-bonzini-violet/10"
+            className={cn('flex h-9 w-9 items-center justify-center rounded-full', TEXT.muted)}
             aria-label={t('admin.statsLink')}
           >
             <BarChart3 className="h-4 w-4" />
@@ -97,46 +118,73 @@ export function MobileSupportListScreen() {
         }
       />
 
-      <div className="px-4 py-3 space-y-3 border-b border-border">
-        <SearchField
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onClear={() => setSearch('')}
-          placeholder={t('admin.searchPlaceholder')}
-        />
+      <div className="space-y-3 px-4 py-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+          <TextInput
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('admin.searchPlaceholder')}
+            className="pl-10 pr-10"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className={cn('absolute right-3 top-1/2 z-10 -translate-y-1/2', TEXT.muted)}
+              aria-label="Clear"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
 
-        <MobileFilterChips<AssignFilter>
-          filters={[
-            { value: 'all', label: t('admin.filterAll') },
-            { value: 'mine', label: t('admin.filterMine') },
-            { value: 'unassigned', label: t('admin.filterUnassigned') },
-          ]}
-          activeKey={assignFilter}
-          onChange={setAssignFilter}
-        />
+        {/* Assign filter chips */}
+        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {assignFilters.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setAssignFilter(filter.value)}
+              className={cn(
+                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                assignFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
-        <MobileFilterChips<StatusFilter>
-          filters={[
-            { value: 'open', label: t('admin.filterOpen') },
-            { value: 'all', label: t('admin.filterAllStatus') },
-            { value: 'closed', label: t('admin.filterClosed') },
-          ]}
-          activeKey={statusFilter}
-          onChange={setStatusFilter}
-        />
+        {/* Status filter chips */}
+        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {statusFilters.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setStatusFilter(filter.value)}
+              className={cn(
+                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                statusFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading || (debouncedSearch.length >= 2 && isSearchLoading) ? (
-        <div className="flex flex-1 items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <ScreenLoader />
       ) : filtered.length === 0 ? (
-        <MobileEmptyState
-          icon={MessageCircle}
-          title={debouncedSearch.length >= 2 ? t('admin.noMatch') : t('admin.listEmpty')}
-        />
+        <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+          <Holder icon={MessageCircle} size="lg" />
+          <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
+            {debouncedSearch.length >= 2 ? t('admin.noMatch') : t('admin.listEmpty')}
+          </p>
+        </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <div className="space-y-3 px-4 pb-6">
           {filtered.map((c) => {
             const name =
               `${c.client_first_name ?? ''} ${c.client_last_name ?? ''}`.trim() ||
@@ -155,68 +203,61 @@ export function MobileSupportListScreen() {
             const subject = c.subject;
 
             return (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/m/support/${c.id}`)}
-                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-muted/40"
-                >
-                  <div
-                    className={cn(
-                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-semibold',
-                      c.status === 'closed' && 'opacity-50',
-                      unread > 0
-                        ? 'bg-bonzini-violet text-white'
-                        : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {(c.client_first_name?.[0] ?? '?').toUpperCase()}
-                  </div>
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => navigate(`/m/support/${c.id}`)}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                  SURFACE.card,
+                  SURFACE.shadow,
+                  c.status === 'closed' && 'opacity-60',
+                )}
+              >
+                <div className="relative">
+                  <Avatar name={name} tone={unread > 0 ? 'info' : 'neutral'} />
+                </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className={cn('truncate text-sm', unread > 0 ? 'font-semibold' : 'font-medium', c.status === 'closed' && 'text-muted-foreground')}>
-                        {name}
-                      </span>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">{time}</span>
-                    </div>
-                    {subject && (
-                      <p className="truncate text-[11px] font-medium text-bonzini-violet">
-                        {subject}
-                      </p>
-                    )}
-                    {isSearching && searchSnippetByConv.has(c.id) ? (
-                      <HighlightedSnippet
-                        text={searchSnippetByConv.get(c.id) ?? ''}
-                        query={debouncedSearch}
-                        maxLength={100}
-                        className={cn(
-                          'truncate text-xs mt-0.5',
-                          unread > 0 ? 'text-foreground' : 'text-muted-foreground'
-                        )}
-                      />
-                    ) : (
-                      <p className={cn('truncate text-xs mt-0.5', unread > 0 ? 'text-foreground' : 'text-muted-foreground')}>
-                        {c.last_message_preview || '—'}
-                      </p>
-                    )}
-                    {assignedName && (
-                      <p className="mt-0.5 text-[10px] text-bonzini-amber">
-                        {t('admin.assignedToLabel')} {assignedName}
-                      </p>
-                    )}
-                  </div>
-
-                  {unread > 0 && (
-                    <span className="shrink-0 rounded-full bg-bonzini-orange px-2 py-0.5 text-[11px] font-semibold text-white">
-                      {unread}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className={cn('truncate text-[14px]', unread > 0 ? 'font-bold' : 'font-semibold', TEXT.strong)}>
+                      {name}
                     </span>
+                    <span className={cn('shrink-0 text-[11px]', TEXT.muted)}>{time}</span>
+                  </div>
+                  {subject && (
+                    <p className="truncate text-[11px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                      {subject}
+                    </p>
                   )}
-                </button>
-              </li>
+                  {isSearching && searchSnippetByConv.has(c.id) ? (
+                    <HighlightedSnippet
+                      text={searchSnippetByConv.get(c.id) ?? ''}
+                      query={debouncedSearch}
+                      maxLength={100}
+                      className={cn('mt-0.5 truncate text-[12px]', unread > 0 ? TEXT.strong : TEXT.muted)}
+                    />
+                  ) : (
+                    <p className={cn('mt-0.5 truncate text-[12px]', unread > 0 ? TEXT.strong : TEXT.muted)}>
+                      {c.last_message_preview || '—'}
+                    </p>
+                  )}
+                  {assignedName && (
+                    <p className="mt-0.5 text-[10px] text-[#9A6B12] dark:text-[#E7C083]">
+                      {t('admin.assignedToLabel')} {assignedName}
+                    </p>
+                  )}
+                </div>
+
+                {unread > 0 && (
+                  <span className="shrink-0 rounded-full bg-[#FE560D] px-2 py-0.5 text-[11px] font-bold text-white">
+                    {unread}
+                  </span>
+                )}
+              </button>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

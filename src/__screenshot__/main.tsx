@@ -37,12 +37,57 @@ import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
+import { Flyer } from './flyer';
+import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
 import { MobileAnalyticsDashboard } from '@/mobile/screens/analytics';
+import {
+  MobileMoreScreen,
+  MobileSettingsScreen,
+  MobileAdminProfile,
+  MobileNotificationsScreen,
+  MobileHistoryScreen,
+  MobileProofsScreen,
+} from '@/mobile/screens/more';
+import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
+import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
+import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
+import MobileClientBeneficiaries from '@/mobile/screens/clients/MobileClientBeneficiaries';
+import {
+  MobileDepositsScreenV2,
+  MobileDepositDetailV2,
+  MobileNewDepositV2,
+} from '@/mobile/screens/deposits';
+import { MobileNewPayment } from '@/mobile/screens/payments';
+import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
+import {
+  MobileAdminsScreen,
+  MobileCreateAdmin,
+  MobileAdminDetail,
+} from '@/mobile/screens/admins';
+import {
+  MobileSupportListScreen,
+  MobileSupportConversationScreen,
+  MobileSupportStatsScreen,
+  MobileCannedResponsesScreen,
+  MobileQuickRepliesScreen,
+} from '@/mobile/screens/support';
+import {
+  AgentCashLogin,
+  AgentCashPayments,
+  AgentCashScanner,
+  AgentCashPaymentDetail,
+  AgentCashConfirm,
+  AgentCashSuccess,
+} from '@/mobile/screens/agent-cash';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
-const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string }> = {
+// `wrap: 'lang'` wraps the screen in LanguageProvider (agent-cash sub-app uses
+// useLanguage() — EN/ZH bridge over react-i18next's `agent` namespace).
+const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string; wrap?: 'lang' }> = {
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
@@ -53,6 +98,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
   'mola-real': { Comp: MobileAssistantScreen, route: '/m/more/assistant' },
+  flyer: { Comp: Flyer, route: '/' },
+  kit: { Comp: Kit, route: '/' },
   'dashboard-home': { Comp: MobileDashboard, route: '/m' },
   analytics: { Comp: MobileAnalyticsDashboard, route: '/m/dashboard' },
   home: { Comp: MobileTreasuryHome, route: '/m/more/treasury' },
@@ -69,6 +116,44 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'purchase-detail': { Comp: MobilePurchaseDetail, route: '/m/more/treasury/purchases/p1', path: '/m/more/treasury/purchases/:operationId' },
   'sale-detail': { Comp: MobileSaleDetail, route: '/m/more/treasury/sales/sa1', path: '/m/more/treasury/sales/:operationId' },
   'counterparty-edit': { Comp: MobileCounterpartyEdit, route: '/m/more/treasury/counterparties/s1', path: '/m/more/treasury/counterparties/:counterpartyId' },
+  // More module (Phase 2 M1)
+  more: { Comp: MobileMoreScreen, route: '/m/more' },
+  'more-settings': { Comp: MobileSettingsScreen, route: '/m/more/settings' },
+  'more-profile': { Comp: MobileAdminProfile, route: '/m/more/profile' },
+  'more-notifications': { Comp: MobileNotificationsScreen, route: '/m/more/notifications' },
+  'more-history': { Comp: MobileHistoryScreen, route: '/m/more/history' },
+  'more-proofs': { Comp: MobileProofsScreen, route: '/m/more/proofs' },
+  // Clients module (Phase 2 M2)
+  clients: { Comp: MobileClientsScreen, route: '/m/clients' },
+  'client-detail': { Comp: MobileClientDetail, route: '/m/clients/u1', path: '/m/clients/:clientId' },
+  'client-create': { Comp: MobileCreateClient, route: '/m/clients/new' },
+  'client-ledger': { Comp: MobileClientLedger, route: '/m/clients/u1/ledger', path: '/m/clients/:clientId/ledger' },
+  'client-beneficiaries': { Comp: MobileClientBeneficiaries, route: '/m/clients/u1/beneficiaries', path: '/m/clients/:clientId/beneficiaries' },
+  // Deposits module (Phase 2 M3)
+  deposits: { Comp: MobileDepositsScreenV2, route: '/m/deposits' },
+  'deposit-detail': { Comp: MobileDepositDetailV2, route: '/m/deposits/d1', path: '/m/deposits/:depositId' },
+  'deposit-new': { Comp: MobileNewDepositV2, route: '/m/deposits/new' },
+  // Payments module (Phase 2 M4)
+  'payment-new': { Comp: MobileNewPayment, route: '/m/payments/new' },
+  // Rates module (Phase 2 M5)
+  rates: { Comp: MobileRatesScreen, route: '/m/rates' },
+  // Admins module (Phase 2 M6)
+  admins: { Comp: MobileAdminsScreen, route: '/m/more/admins' },
+  'admin-create': { Comp: MobileCreateAdmin, route: '/m/more/admins/new' },
+  'admin-detail': { Comp: MobileAdminDetail, route: '/m/more/admins/a1', path: '/m/more/admins/:adminId' },
+  // Support module (Phase 2 M7)
+  support: { Comp: MobileSupportListScreen, route: '/m/support' },
+  'support-conversation': { Comp: MobileSupportConversationScreen, route: '/m/support/c1', path: '/m/support/:conversationId' },
+  'support-stats': { Comp: MobileSupportStatsScreen, route: '/m/support/stats' },
+  'support-canned': { Comp: MobileCannedResponsesScreen, route: '/m/support/canned' },
+  'support-quick': { Comp: MobileQuickRepliesScreen, route: '/m/support/quick' },
+  // Agent-cash sub-app (Phase 2 M8) — routes are /a/*. wrap:'lang' provides useLanguage().
+  'agent-login': { Comp: AgentCashLogin, route: '/a/login', wrap: 'lang' },
+  'agent-payments': { Comp: AgentCashPayments, route: '/a', wrap: 'lang' },
+  'agent-scanner': { Comp: AgentCashScanner, route: '/a/scan', wrap: 'lang' },
+  'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
+  'agent-confirm': { Comp: AgentCashConfirm, route: '/a/payment/cp1/confirm', path: '/a/payment/:paymentId/confirm', wrap: 'lang' },
+  'agent-success': { Comp: AgentCashSuccess, route: '/a/payment/cp2/success', path: '/a/payment/:paymentId/success', wrap: 'lang' },
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -100,18 +185,22 @@ const qc = new QueryClient({
 const entry = SCREENS[screenKey] ?? SCREENS.home;
 const Screen = entry.Comp;
 
+const routed = entry.path ? (
+  <Routes>
+    <Route path={entry.path} element={<Screen />} />
+  </Routes>
+) : (
+  <Screen />
+);
+// Agent-cash screens need LanguageProvider (useLanguage bridge over i18next).
+const inner = entry.wrap === 'lang' ? <LanguageProvider>{routed}</LanguageProvider> : routed;
+
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider attribute="class" defaultTheme={theme} enableSystem={false}>
     <QueryClientProvider client={qc}>
       <AdminAuthContext.Provider value={fakeAuth}>
         <MemoryRouter initialEntries={[entry.route]}>
-          {entry.path ? (
-            <Routes>
-              <Route path={entry.path} element={<Screen />} />
-            </Routes>
-          ) : (
-            <Screen />
-          )}
+          {inner}
         </MemoryRouter>
       </AdminAuthContext.Provider>
     </QueryClientProvider>

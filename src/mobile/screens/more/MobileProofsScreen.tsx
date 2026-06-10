@@ -5,25 +5,27 @@ import {
   Search,
   FileText,
   Download,
-  Eye,
   Image,
   File,
   ArrowDownToLine,
-  X,
 } from 'lucide-react';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-  DrawerClose,
-} from '@/components/ui/drawer';
 import { useAdminProofs } from '@/hooks/useAdminData';
 import { formatDate } from '@/lib/formatters';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
+import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  Card,
+  Row,
+  StatCard,
+  StatusPill,
+  TextInput,
+  BottomSheet,
+  PrimaryPill,
+} from '@/mobile/designKit';
 
 // Vignette de preuve : affiche l'image signée et retombe sur une icône si le
 // chargement échoue (URL absente/expirée, fichier illisible…).
@@ -34,7 +36,7 @@ function ProofThumb({ url, alt, fallback }: { url: string | null | undefined; al
     <img
       src={url}
       alt={alt}
-      className="w-full h-full object-cover"
+      className="h-full w-full object-cover"
       loading="lazy"
       onError={() => setFailed(true)}
     />
@@ -61,9 +63,9 @@ export function MobileProofsScreen() {
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
-      return <Image className="w-6 h-6 text-blue-500" />;
+      return <Image className={cn('h-6 w-6', TEXT.muted)} />;
     }
-    return <File className="w-6 h-6 text-gray-500" />;
+    return <File className={cn('h-6 w-6', TEXT.muted)} />;
   };
 
   const isImage = (fileName: string) => {
@@ -77,46 +79,26 @@ export function MobileProofsScreen() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col">
       <MobileHeader title={t('proofs', { defaultValue: 'Justificatifs' })} backTo="/m/more" showBack />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 overflow-y-auto">
+      <PullToRefresh onRefresh={refetch} className={cn('flex-1 overflow-y-auto', SURFACE.canvas)}>
         {/* Stats */}
-        <div className="px-4 py-4 grid grid-cols-2 gap-3">
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{proofs?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">Total</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <ArrowDownToLine className="w-5 h-5 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{proofs?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">Dépôts</p>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-3 px-4 py-5">
+          <StatCard icon={FileText} label="Total" value={proofs?.length || 0} />
+          <StatCard icon={ArrowDownToLine} label="Dépôts" value={proofs?.length || 0} tone="success" />
         </div>
 
         {/* Search */}
         <div className="px-4 pb-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
+            <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+            <TextInput
               type="text"
               placeholder={t('searchByClientOrFile', { defaultValue: 'Rechercher par client ou fichier...' })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="pl-10"
             />
           </div>
         </div>
@@ -127,100 +109,72 @@ export function MobileProofsScreen() {
             <SkeletonListScreen count={4} />
           </div>
         ) : (
-        <div className="px-4 pb-6">
-          <div className="grid grid-cols-2 gap-3">
-            {filteredProofs.map((proof) => (
-              <button
-                key={proof.id}
-                onClick={() => handlePreview(proof)}
-                className="bg-card rounded-xl border border-border overflow-hidden active:scale-[0.98] transition-transform text-left"
-              >
-                {/* Thumbnail */}
-                <div className="aspect-square bg-muted flex items-center justify-center relative">
-                  <ProofThumb
-                    url={isImage(proof.file_name) ? proof.signedUrl : null}
-                    alt={proof.file_name}
-                    fallback={getFileIcon(proof.file_name)}
-                  />
-                  <div className="absolute top-2 right-2">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/90 text-white font-medium">
-                      Dépôt
-                    </span>
+          <div className="px-4 pb-6">
+            <div className="grid grid-cols-2 gap-3">
+              {filteredProofs.map((proof) => (
+                <button
+                  key={proof.id}
+                  onClick={() => handlePreview(proof)}
+                  className={cn('overflow-hidden rounded-[22px] text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative flex aspect-square items-center justify-center bg-[#EDEAFA] dark:bg-[#2F2C3D]">
+                    <ProofThumb
+                      url={isImage(proof.file_name) ? proof.signedUrl : null}
+                      alt={proof.file_name}
+                      fallback={getFileIcon(proof.file_name)}
+                    />
+                    <div className="absolute right-2 top-2">
+                      <StatusPill tone="success" label="Dépôt" className="px-2 py-0.5 text-[10px]" />
+                    </div>
                   </div>
-                </div>
 
-                {/* Info */}
-                <div className="p-3">
-                  <p className="text-sm font-medium truncate">{proof.file_name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{proof.clientName}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {formatDate(proof.uploaded_at)}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {filteredProofs.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              {t('noProofsFound', { defaultValue: 'Aucun justificatif trouvé' })}
+                  {/* Info */}
+                  <div className="p-3">
+                    <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{proof.file_name}</p>
+                    <p className={cn('truncate text-[12px]', TEXT.muted)}>{proof.clientName}</p>
+                    <p className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                      {formatDate(proof.uploaded_at)}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+
+            {filteredProofs.length === 0 && (
+              <div className={cn('py-12 text-center', TEXT.muted)}>
+                {t('noProofsFound', { defaultValue: 'Aucun justificatif trouvé' })}
+              </div>
+            )}
+          </div>
         )}
       </PullToRefresh>
 
-      {/* Preview Drawer */}
-      <Drawer open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="flex flex-row items-center justify-between">
-            <DrawerTitle className="truncate pr-4">{selectedProof?.file_name}</DrawerTitle>
-            <DrawerClose asChild>
-              <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                <X className="w-4 h-4" />
-              </button>
-            </DrawerClose>
-          </DrawerHeader>
+      {/* Preview */}
+      <BottomSheet open={previewOpen} onClose={() => setPreviewOpen(false)} title={selectedProof?.file_name}>
+        {selectedProof?.signedUrl && isImage(selectedProof.file_name) && (
+          <img
+            src={selectedProof.signedUrl}
+            alt={selectedProof.file_name}
+            className="w-full rounded-2xl"
+          />
+        )}
 
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
-            {selectedProof?.signedUrl && isImage(selectedProof.file_name) && (
-              <img
-                src={selectedProof.signedUrl}
-                alt={selectedProof.file_name}
-                className="w-full rounded-xl"
-              />
-            )}
+        <div className="mt-4">
+          <Row label="Client" value={selectedProof?.clientName ?? '—'} />
+          <Row label="Type" value="Dépôt" />
+          <Row label="Date" value={selectedProof ? formatDate(selectedProof.uploaded_at) : '—'} />
+        </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Client</span>
-                <span className="font-medium">{selectedProof?.clientName}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Type</span>
-                <span className="font-medium">Dépôt</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Date</span>
-                <span className="font-medium">
-                  {selectedProof && formatDate(selectedProof.uploaded_at)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <DrawerFooter className="flex-row gap-3">
-            <button
-              onClick={() => selectedProof?.signedUrl && window.open(selectedProof.signedUrl, '_blank')}
-              disabled={!selectedProof?.signedUrl}
-              className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center gap-2 font-medium disabled:opacity-50"
-            >
-              <Download className="w-5 h-5" />
-              {t('download', { defaultValue: 'Télécharger' })}
-            </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+        <PrimaryPill
+          onClick={() => selectedProof?.signedUrl && window.open(selectedProof.signedUrl, '_blank')}
+          disabled={!selectedProof?.signedUrl}
+          className="mt-5 w-full"
+        >
+          <Download className="h-5 w-5" />
+          {t('download', { defaultValue: 'Télécharger' })}
+        </PrimaryPill>
+      </BottomSheet>
     </div>
   );
 }

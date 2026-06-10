@@ -1,3 +1,12 @@
+// ============================================================
+// MODULE TAUX — MultiCurveChart (Recharts)
+// Présentation migrée sur le design kit (Ofspace/Mola) : conteneurs
+// en cartes douces, stats Min/Moy/Max tonées, toggles en pilules,
+// barres d'écart par mode. **Recharts conservé** (AreaChart/Area/
+// axes/tooltip) — seuls les conteneurs/couleurs passent aux tokens.
+// Logique 100% préservée : chartData/stats/visibleLines/toggleLine,
+// `pm.chartColor` des courbes, écart vs Cash.
+// ============================================================
 import { useMemo, useState } from 'react';
 import {
   AreaChart,
@@ -10,8 +19,11 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
+import { SURFACE, TEXT } from '@/mobile/designKit';
+import { MethodLogo } from './MethodLogo';
 
 interface MultiCurveChartProps {
   data: DailyRate[];
@@ -21,12 +33,12 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   if (!active || !payload) return null;
   return (
     <div className="rounded-xl p-3 shadow-lg" style={{ background: 'rgba(26,26,46,0.95)' }}>
-      <div className="text-[11px] text-white/50 mb-1.5">{label}</div>
+      <div className="mb-1.5 text-[11px] text-white/50">{label}</div>
       {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-1.5 mb-0.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+        <div key={i} className="mb-0.5 flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full" style={{ background: p.color }} />
           <span className="text-xs text-white/70">{p.name}</span>
-          <span className="text-xs font-bold text-white ml-auto pl-3">
+          <span className="ml-auto pl-3 text-xs font-bold text-white">
             {p.value.toLocaleString('fr-FR')}
           </span>
         </div>
@@ -74,11 +86,11 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
 
   return (
     <div className="space-y-4">
-      {/* Chart */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <div className="px-1 mb-3">
-          <div className="text-[15px] font-bold text-foreground">Tendance des taux</div>
-          <div className="text-xs text-muted-foreground">CNY pour 1 000 000 XAF</div>
+      {/* Graphique */}
+      <div className={cn('rounded-2xl p-4', SURFACE.card, SURFACE.shadow)}>
+        <div className="mb-3 px-1">
+          <div className={cn('text-[15px] font-bold', TEXT.strong)}>Tendance des taux</div>
+          <div className={cn('text-[12px]', TEXT.muted)}>CNY pour 1 000 000 XAF</div>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
@@ -90,15 +102,15 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
                 </linearGradient>
               ))}
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,140,0.15)" />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: '#aaa' }}
-              axisLine={{ stroke: '#eee' }}
+              tick={{ fontSize: 10, fill: '#9B98AD' }}
+              axisLine={{ stroke: 'rgba(120,120,140,0.2)' }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#aaa' }}
+              tick={{ fontSize: 10, fill: '#9B98AD' }}
               axisLine={false}
               tickLine={false}
               domain={['dataMin - 50', 'dataMax + 50']}
@@ -124,89 +136,89 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
           </AreaChart>
         </ResponsiveContainer>
 
-        {/* Toggle buttons */}
-        <div className="flex gap-1.5 pt-2.5 px-1 flex-wrap justify-center">
-          {PAYMENT_METHODS.map((pm) => (
-            <button
-              key={pm.key}
-              onClick={() => toggleLine(pm.key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer text-[11px] font-semibold"
-              style={{
-                border: `2px solid ${visibleLines[pm.key] ? pm.chartColor : '#ddd'}`,
-                background: visibleLines[pm.key] ? `${pm.chartColor}12` : '#fafafa',
-                color: visibleLines[pm.key] ? pm.chartColor : '#aaa',
-              }}
-            >
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ background: visibleLines[pm.key] ? pm.chartColor : '#ccc' }}
-              />
-              {pm.label}
-            </button>
-          ))}
+        {/* Toggles de courbes — pilules */}
+        <div className="flex flex-wrap justify-center gap-1.5 px-1 pt-2.5">
+          {PAYMENT_METHODS.map((pm) => {
+            const on = visibleLines[pm.key];
+            return (
+              <button
+                key={pm.key}
+                onClick={() => toggleLine(pm.key)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition',
+                  on ? SURFACE.card : SURFACE.canvas,
+                  on ? '' : 'opacity-60',
+                )}
+                style={on ? { boxShadow: `0 0 0 2px ${pm.chartColor}`, color: pm.chartColor } : undefined}
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: on ? pm.chartColor : '#9B98AD' }} />
+                {pm.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Stats: Min / Moy / Max */}
+      {/* Stats : Min / Moy / Max */}
       <div className="flex gap-2">
         {[
-          { label: 'Min', value: stats.min, color: '#ef4444' },
-          { label: 'Moy', value: stats.avg, color: '#f59e0b' },
-          { label: 'Max', value: stats.max, color: '#10b981' },
+          { label: 'Min', value: stats.min, color: '#C0504D' },
+          { label: 'Moy', value: stats.avg, color: '#E8932A' },
+          { label: 'Max', value: stats.max, color: '#2E7D52' },
         ].map((s) => (
           <div
             key={s.label}
-            className="flex-1 bg-white rounded-xl p-3 text-center shadow-sm"
+            className={cn('flex-1 rounded-xl p-3 text-center', SURFACE.card, SURFACE.shadow)}
           >
-            <div className="text-[10px] text-muted-foreground font-semibold uppercase mb-1">
+            <div className={cn('mb-1 text-[10px] font-semibold uppercase', TEXT.muted)}>
               {s.label}
             </div>
-            <div className="text-base font-extrabold" style={{ color: s.color }}>
+            <div className="text-[16px] font-extrabold tabular-nums" style={{ color: s.color }}>
               {s.value.toLocaleString('fr-FR')}
             </div>
-            <div className="text-[10px] text-muted-foreground/60">CNY (Cash)</div>
+            <div className={cn('text-[10px]', TEXT.muted)}>CNY (Cash)</div>
           </div>
         ))}
       </div>
 
-      {/* Spread between modes */}
+      {/* Écart entre modes */}
       {lastPoint && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <div className="text-sm font-bold text-foreground mb-1">
-            Ecart entre modes
+        <div className={cn('rounded-2xl p-4', SURFACE.card, SURFACE.shadow)}>
+          <div className={cn('mb-1 text-[14px] font-bold', TEXT.strong)}>
+            Écart entre modes
           </div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Difference vs Cash (reference)
+          <div className={cn('mb-3 text-[12px]', TEXT.muted)}>
+            Différence vs Cash (référence)
           </div>
           {PAYMENT_METHODS.map((pm) => {
-            const diff = lastPoint[pm.key as keyof typeof lastPoint] as number - lastPoint.cash;
+            const diff = (lastPoint[pm.key as keyof typeof lastPoint] as number) - lastPoint.cash;
             const barW =
               pm.key === 'cash' ? 100 : Math.max(8, (1 - Math.abs(diff) / 200) * 100);
             return (
               <div key={pm.key} className="mb-3">
-                <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm">{pm.icon}</span>
-                    <span className="text-[13px] font-medium text-muted-foreground">
+                <div className="mb-1 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MethodLogo method={pm.key} size={24} />
+                    <span className={cn('text-[13px] font-medium', TEXT.muted)}>
                       {pm.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-foreground">
+                    <span className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
                       {(lastPoint[pm.key as keyof typeof lastPoint] as number).toLocaleString('fr-FR')}
                     </span>
                     {pm.key !== 'cash' ? (
-                      <span className="text-[11px] font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-xl">
+                      <span className="rounded-xl bg-[#FBE7E7] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
                         {diff}
                       </span>
                     ) : (
-                      <span className="text-[10px] font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-xl">
+                      <span className="rounded-xl bg-[#DEEFE5] px-2 py-0.5 text-[10px] font-semibold text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
                         REF
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className={cn('h-1.5 overflow-hidden rounded-full', SURFACE.canvas)}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{ width: `${barW}%`, background: pm.chartColor }}

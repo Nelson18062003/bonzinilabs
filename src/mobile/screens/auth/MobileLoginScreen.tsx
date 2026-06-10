@@ -156,7 +156,7 @@ export function MobileLoginScreen() {
                 <button
                   type="submit"
                   disabled={!email}
-                  className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-12 rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24] text-[15px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('continue', { defaultValue: 'Continuer' })}
                 </button>
@@ -214,7 +214,7 @@ export function MobileLoginScreen() {
               <button
                 type="submit"
                 disabled={isLoading || !password}
-                className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24] text-[15px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>

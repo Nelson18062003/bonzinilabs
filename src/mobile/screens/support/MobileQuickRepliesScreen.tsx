@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
-  Loader2,
   Trash2,
   Edit3,
   ArrowUp,
@@ -11,9 +10,9 @@ import {
   Sparkles,
   Eye,
   EyeOff,
+  Check,
 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useAdminAllQuickReplies,
@@ -25,6 +24,29 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ChatClientQuickReply } from '@/types/chat';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  Card,
+  Holder,
+  StatusPill,
+  FormField,
+  TextInput,
+  PrimaryPill,
+  SoftPill,
+  BottomSheet,
+  ScreenLoader,
+} from '@/mobile/designKit';
+
+// Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
+const textareaClass = cn(
+  'w-full rounded-2xl px-4 py-3 text-[16px] outline-none transition',
+  SURFACE.card,
+  SURFACE.shadow,
+  TEXT.strong,
+  'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+);
 
 export function MobileQuickRepliesScreen() {
   const { t } = useTranslation('support');
@@ -52,14 +74,17 @@ export function MobileQuickRepliesScreen() {
 
   if (!canAccess) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
-        Vous n'avez pas accès au support chat.
+      <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
+        <Holder icon={Sparkles} size="lg" />
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>
+          Vous n'avez pas accès au support chat.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background">
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       <MobileHeader
         title={t('quickReplies.screenTitle')}
         showBack
@@ -69,7 +94,7 @@ export function MobileQuickRepliesScreen() {
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-bonzini-violet text-white hover:bg-bonzini-violet/90"
+              className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
               aria-label={t('quickReplies.create')}
             >
               <Plus className="h-4 w-4" />
@@ -78,95 +103,67 @@ export function MobileQuickRepliesScreen() {
         }
       />
 
-      <div className="border-b border-border bg-bonzini-violet/5 p-3 text-xs text-muted-foreground">
-        {t('quickReplies.hint')}
-      </div>
-
-      {!isSuperAdmin && (
-        <div className="border-b border-border bg-bonzini-amber/10 p-3 text-xs text-bonzini-amber">
-          {t('quickReplies.readOnlyHint')}
+      <div className="space-y-3 px-4 py-4">
+        <div className="rounded-2xl bg-[#EAE7FA] px-3.5 py-3 text-[12px] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+          {t('quickReplies.hint')}
         </div>
-      )}
 
-      {isLoading ? (
-        <div className="flex flex-1 items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (replies ?? []).length === 0 ? (
-        <MobileEmptyState
-          icon={Sparkles}
-          title={t('quickReplies.empty')}
-          description={isSuperAdmin ? t('quickReplies.emptyHint') : undefined}
-        />
-      ) : (
-        <ul className="divide-y divide-border">
-          {(replies ?? []).map((qr, idx) => (
-            <li key={qr.id} className={cn('p-4', !qr.active && 'opacity-60')}>
+        {!isSuperAdmin && (
+          <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            {t('quickReplies.readOnlyHint')}
+          </div>
+        )}
+
+        {isLoading ? (
+          <ScreenLoader />
+        ) : (replies ?? []).length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Holder icon={Sparkles} size="lg" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>{t('quickReplies.empty')}</p>
+            {isSuperAdmin && (
+              <p className={cn('mt-1 max-w-xs text-[13px]', TEXT.muted)}>{t('quickReplies.emptyHint')}</p>
+            )}
+          </div>
+        ) : (
+          (replies ?? []).map((qr, idx) => (
+            <Card key={qr.id} className={cn(!qr.active && 'opacity-60')}>
               <div className="mb-2 flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">{qr.label}</p>
+                <div className="min-w-0 flex-1">
+                  <p className={cn('text-[14px] font-bold', TEXT.strong)}>{qr.label}</p>
                   {!qr.active && (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {t('quickReplies.inactive')}
-                    </span>
+                    <StatusPill tone="neutral" label={t('quickReplies.inactive')} className="mt-1" />
                   )}
                 </div>
                 {isSuperAdmin && (
                   <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => move(idx, 'up')}
-                      disabled={idx === 0}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:opacity-30"
-                      aria-label="Up"
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => move(idx, 'down')}
-                      disabled={idx === (replies ?? []).length - 1}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:opacity-30"
-                      aria-label="Down"
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
+                    <Holder icon={ArrowUp} size="sm" onClick={idx === 0 ? undefined : () => move(idx, 'up')} className={cn('h-7 w-7', idx === 0 && 'pointer-events-none opacity-30')} />
+                    <Holder icon={ArrowDown} size="sm" onClick={idx === (replies ?? []).length - 1 ? undefined : () => move(idx, 'down')} className={cn('h-7 w-7', idx === (replies ?? []).length - 1 && 'pointer-events-none opacity-30')} />
+                    <Holder
+                      icon={qr.active ? EyeOff : Eye}
+                      size="sm"
                       onClick={() => update.mutate({ id: qr.id, active: !qr.active })}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                      aria-label={qr.active ? 'Hide' : 'Show'}
-                    >
-                      {qr.active ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(qr)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                      aria-label="Edit"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
+                      className="h-7 w-7"
+                    />
+                    <Holder icon={Edit3} size="sm" onClick={() => setEditing(qr)} className="h-7 w-7" />
+                    <Holder
+                      icon={Trash2}
+                      tone="danger"
+                      size="sm"
                       onClick={() => {
                         if (confirm(t('quickReplies.confirmDelete'))) {
                           del.mutate(qr.id);
                         }
                       }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
-                      aria-label="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                      className="h-7 w-7"
+                    />
                   </div>
                 )}
               </div>
-              <p className="whitespace-pre-wrap text-xs text-muted-foreground">{qr.content}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+              <p className={cn('whitespace-pre-wrap text-[12px]', TEXT.muted)}>{qr.content}</p>
+            </Card>
+          ))
+        )}
+      </div>
 
       {(creating || editing) && isSuperAdmin && (
         <QuickReplyEditor
@@ -212,82 +209,74 @@ function QuickReplyEditor({ initial, onClose, onSubmit }: QuickReplyEditorProps)
   const canSave = label.trim().length > 0 && content.trim().length > 0 && !saving;
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end bg-black/40 sm:items-center sm:justify-center"
-      onClick={onClose}
+    <BottomSheet
+      open
+      onClose={onClose}
+      title={initial ? t('quickReplies.editTitle') : t('quickReplies.createTitle')}
     >
-      <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-background p-4 sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-3 text-base font-semibold">
-          {initial ? t('quickReplies.editTitle') : t('quickReplies.createTitle')}
-        </h3>
-
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          {t('quickReplies.labelField')}
-        </label>
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <input
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          maxLength={40}
-          placeholder={t('quickReplies.labelPlaceholder')}
-          className="mb-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
-        />
-
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          {t('quickReplies.contentField')}
-        </label>
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={500}
-          rows={3}
-          placeholder={t('quickReplies.contentPlaceholder')}
-          className="mb-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-bonzini-violet/40"
-        />
-
-        <label className="mb-3 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={active}
-            onChange={(e) => setActive(e.target.checked)}
-            className="h-4 w-4 rounded border-border accent-bonzini-violet"
+      <div className="space-y-3">
+        <FormField label={t('quickReplies.labelField')} htmlFor="qr-label">
+          <TextInput
+            id="qr-label"
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={40}
+            placeholder={t('quickReplies.labelPlaceholder')}
           />
-          {t('quickReplies.activeLabel')}
-        </label>
+        </FormField>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-xl border border-border px-3 py-2.5 text-sm"
-          >
-            {t('list.cancel')}
-          </button>
-          <button
-            type="button"
-            disabled={!canSave}
-            onClick={async () => {
-              setSaving(true);
-              try {
-                await onSubmit({ label, content, active });
-              } finally {
-                setSaving(false);
-              }
-            }}
+        <FormField label={t('quickReplies.contentField')} htmlFor="qr-content">
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <textarea
+            id="qr-content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder={t('quickReplies.contentPlaceholder')}
+            className={textareaClass}
+          />
+        </FormField>
+
+        {/* Active toggle */}
+        <button
+          type="button"
+          onClick={() => setActive((a) => !a)}
+          className={cn('flex w-full items-center gap-3 rounded-2xl p-3 text-left transition active:scale-[0.99]', SURFACE.canvas)}
+        >
+          <span
             className={cn(
-              'flex-1 rounded-xl bg-bonzini-violet px-3 py-2.5 text-sm font-medium text-white',
-              !canSave && 'opacity-50'
+              'flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors',
+              active ? 'bg-[#6B5BD2] text-white dark:bg-[#A99BF0] dark:text-[#1B1A24]' : 'bg-black/10 dark:bg-white/10',
             )}
           >
-            {saving ? '…' : t('templates.save')}
-          </button>
-        </div>
+            {active && <Check className="h-4 w-4" />}
+          </span>
+          <span className={cn('text-[14px] font-medium', TEXT.strong)}>{t('quickReplies.activeLabel')}</span>
+        </button>
       </div>
-    </div>
+
+      <div className="mt-5 flex gap-2">
+        <SoftPill onClick={onClose} className="flex-1">
+          {t('list.cancel')}
+        </SoftPill>
+        <PrimaryPill
+          disabled={!canSave}
+          loading={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await onSubmit({ label, content, active });
+            } finally {
+              setSaving(false);
+            }
+          }}
+          className="flex-1"
+        >
+          {t('templates.save')}
+        </PrimaryPill>
+      </div>
+    </BottomSheet>
   );
 }

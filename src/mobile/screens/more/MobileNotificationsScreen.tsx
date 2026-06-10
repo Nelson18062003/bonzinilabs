@@ -16,32 +16,14 @@ import {
   Clock,
   Bell,
 } from 'lucide-react';
+import { SURFACE, TEXT, type Tone, Card, Holder, SectionTitle } from '@/mobile/designKit';
 
-const TYPE_CONFIG: Record<AdminNotificationType, {
-  icon: React.ElementType;
-  iconColor: string;
-  bgColor: string;
-}> = {
-  deposit_needs_review: {
-    icon: ArrowDownToLine,
-    iconColor: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-  },
-  deposit_needs_correction: {
-    icon: AlertCircle,
-    iconColor: 'text-orange-600',
-    bgColor: 'bg-orange-100',
-  },
-  payment_ready: {
-    icon: ArrowUpFromLine,
-    iconColor: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-  },
-  payment_processing: {
-    icon: Clock,
-    iconColor: 'text-cyan-600',
-    bgColor: 'bg-cyan-100',
-  },
+// Notification type → icon + unified tone (color carries meaning only).
+const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone: Tone }> = {
+  deposit_needs_review: { icon: ArrowDownToLine, tone: 'info' },
+  deposit_needs_correction: { icon: AlertCircle, tone: 'pending' },
+  payment_ready: { icon: ArrowUpFromLine, tone: 'info' },
+  payment_processing: { icon: Clock, tone: 'info' },
 };
 
 function formatRelativeDate(dateStr: string) {
@@ -72,50 +54,41 @@ export function MobileNotificationsScreen() {
   const groupKeys = grouped ? Object.keys(grouped) : [];
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full flex-col">
       <MobileHeader title="Notifications" backTo="/m/more" showBack />
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+      <PullToRefresh onRefresh={refetch} className={cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}>
         {isLoading ? (
           <SkeletonListScreen count={6} />
         ) : groupKeys.length > 0 ? (
           <div className="space-y-6">
             {groupKeys.map((dateKey) => (
               <div key={dateKey}>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  {dateKey}
-                </p>
+                <SectionTitle>{dateKey}</SectionTitle>
                 <div className="space-y-2">
                   {grouped![dateKey].map((notif) => {
                     const config = TYPE_CONFIG[notif.type];
-                    const Icon = config.icon;
-
                     return (
                       <button
                         key={notif.id}
                         onClick={() => navigate(notif.targetPath)}
-                        className="w-full bg-card rounded-xl p-4 border border-border text-left active:scale-[0.98] transition-transform"
+                        className={cn('w-full rounded-[22px] p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={cn(
-                            'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
-                            config.bgColor,
-                          )}>
-                            <Icon className={cn('w-5 h-5', config.iconColor)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
+                          <Holder icon={config.icon} tone={config.tone} />
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="font-medium text-sm">{notif.title}</p>
-                                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>{notif.title}</p>
+                                <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
                                   {notif.subtitle}
                                 </p>
                               </div>
-                              <p className="font-semibold text-sm flex-shrink-0">
+                              <p className={cn('shrink-0 text-[14px] font-bold tabular-nums', TEXT.strong)}>
                                 {formatXAF(notif.amount)}
                               </p>
                             </div>
-                            <p className="text-[10px] text-muted-foreground mt-1">
+                            <p className={cn('mt-1 text-[10px]', TEXT.muted)}>
                               {formatRelativeDate(notif.createdAt)}
                             </p>
                           </div>
@@ -129,11 +102,9 @@ export function MobileNotificationsScreen() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Bell className="w-6 h-6 text-muted-foreground" />
-            </div>
-            <p className="font-medium text-muted-foreground">{t('allUpToDate', { defaultValue: 'Tout est à jour' })}</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <Holder icon={Bell} size="lg" />
+            <p className={cn('mt-4 font-semibold', TEXT.strong)}>{t('allUpToDate', { defaultValue: 'Tout est à jour' })}</p>
+            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>
               {t('noPendingItems', { defaultValue: "Aucun élément en attente d'action" })}
             </p>
           </div>

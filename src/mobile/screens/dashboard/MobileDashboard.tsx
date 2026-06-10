@@ -1,13 +1,16 @@
 /**
  * Admin home screen — quick glance + urgent actions.
  *
- * Consumes the new analytics primitives (<KpiCard>, <KpiRow>) on top of
- * shadcn <Card>. Matches the visual language of the /m/dashboard page
- * so the two screens feel like one product.
+ * Migrated onto the shared design kit (src/mobile/designKit) — the Ofspace/Mola
+ * visual language used across the whole mobile app: soft tinted canvas, white
+ * cards with a soft shadow, a hero balance card with a big neutral figure,
+ * neutral holders, dark pills, restrained colour (colour carries meaning only).
  *
  * Data still comes from the existing `useDashboardStats` RPC +
- * `useDepositStats` / `usePaymentStats` — this screen is operational
- * (not time-series), so the new TZ-safe range layer isn't required.
+ * `useDepositStats` / `usePaymentStats` / `useActiveDailyRate` /
+ * `useAdminDeposits` — this screen is operational (not time-series), so the
+ * new TZ-safe range layer isn't required. The hooks, navigation, RateCard and
+ * PullToRefresh are all preserved; only the presentation changed.
  */
 
 import { useTranslation } from 'react-i18next';
@@ -17,7 +20,6 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   BarChart3,
-  ChevronRight,
   Plus,
   Send,
   Sparkles,
@@ -25,7 +27,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaymentStats } from '@/hooks/usePaginatedPayments';
@@ -34,14 +36,27 @@ import { RateCard } from '@/components/rates/RateCard';
 import { useGreeting } from '@/hooks/useGreeting';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { SkeletonDashboard } from '@/mobile/components/ui/SkeletonCard';
-import { KpiCard, KpiRow, formatCurrency, formatCurrencyFull } from '@/components/analytics';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { formatCurrency, formatCurrencyFull } from '@/components/analytics';
 import {
   formatRelativeDate,
   getDepositStatusLabel,
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import {
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  depositStatusTone,
+  roleMeta,
+  Card,
+  Amount,
+  Avatar,
+  Holder,
+  StatCard,
+  StatusPill,
+  SectionTitle,
+} from '@/mobile/designKit';
 
 export function MobileDashboard() {
   const { t } = useTranslation('common');
@@ -79,7 +94,7 @@ export function MobileDashboard() {
 
   if (statsLoading) {
     return (
-      <div className="flex flex-col min-h-full">
+      <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
         <SkeletonDashboard />
       </div>
     );
@@ -92,31 +107,33 @@ export function MobileDashboard() {
     !pendingPaymentCount &&
     recentDeposits.length === 0;
 
+  const role = currentUser?.role;
+
   return (
-    <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto">
+    <PullToRefresh onRefresh={handleRefresh} className={cn('flex-1 overflow-y-auto', SURFACE.canvas)}>
       <div
-        className="px-5 pb-24 space-y-6"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}
+        className="space-y-6 px-4 pb-24"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1.25rem)' }}
       >
         {/* ── 1. GREETING ── */}
-        <header className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold">{greeting}</h1>
-            {currentUser?.role ? (
-              <span className="mt-1.5 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                {ADMIN_ROLE_LABELS[currentUser.role]}
-              </span>
+        <header className="flex items-start justify-between gap-3 px-1">
+          <div className="min-w-0">
+            <h1 className={cn('truncate text-[22px] font-extrabold tracking-tight', TEXT.strong)}>{greeting}</h1>
+            {role ? (
+              <div className="mt-1.5">
+                <StatusPill tone={roleMeta(role).tone} label={roleMeta(role).label} />
+              </div>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {pendingDepositCount > 0 ? (
               <button
                 onClick={() => navigate('/m/deposits')}
                 aria-label={`${pendingDepositCount} dépôts en attente`}
-                className="relative rounded-full bg-orange-500/10 p-2.5 active:scale-[0.95] transition-transform"
+                className="relative"
               >
-                <ArrowDownToLine className="h-5 w-5 text-orange-600" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                <Holder icon={ArrowDownToLine} tone="pending" />
+                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FE560D] px-1 text-[10px] font-bold text-white">
                   {pendingDepositCount}
                 </span>
               </button>
@@ -125,10 +142,10 @@ export function MobileDashboard() {
               <button
                 onClick={() => navigate('/m/payments')}
                 aria-label={`${pendingPaymentCount} paiements en attente`}
-                className="relative rounded-full bg-violet-500/10 p-2.5 active:scale-[0.95] transition-transform"
+                className="relative"
               >
-                <ArrowUpFromLine className="h-5 w-5 text-violet-600" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white">
+                <Holder icon={ArrowUpFromLine} tone="info" />
+                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#6B5BD2] px-1 text-[10px] font-bold text-white">
                   {pendingPaymentCount}
                 </span>
               </button>
@@ -136,108 +153,115 @@ export function MobileDashboard() {
           </div>
         </header>
 
-        {/* ── 2. KPI HERO — same primitives as /m/dashboard ── */}
-        <KpiRow columns={2}>
-          <KpiCard
-            accent="violet"
-            icon={<Wallet className="h-4 w-4" />}
-            label="Solde plateforme"
-            value={formatCurrency(balanceXAF, 'XAF', { compact: true })}
-            description="Somme totale XAF actuellement détenue par tous les wallets clients — ton engagement financier à l'instant T."
-          />
-          <KpiCard
-            accent="amber"
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="Volume 7 jours"
-            value={formatCurrency(weekVolume, 'XAF', { compact: true })}
-            description="Volume cumulé des paiements exécutés sur les 7 derniers jours."
-          />
-          <KpiCard
-            accent="emerald"
-            label="Dépôts aujourd'hui"
-            value={formatCurrency(todayDepositAmount, 'XAF', { compact: true })}
-            description="Dépôts validés depuis minuit (heure Douala)."
-          />
-          <KpiCard
-            accent="orange"
-            label="Paiements aujourd'hui"
-            value={formatCurrency(todayPaymentAmount, 'XAF', { compact: true })}
-            description="Paiements exécutés depuis minuit (heure Douala)."
-          />
-        </KpiRow>
+        {/* ── 2. HERO — platform balance ── */}
+        <Card className="p-5">
+          <div className="flex items-center gap-3">
+            <Holder icon={Wallet} tone="info" size="lg" />
+            <div className="min-w-0 flex-1">
+              <p className={cn('text-[12px] font-medium', TEXT.muted)}>
+                {t('platformBalance', { defaultValue: 'Solde plateforme' })}
+              </p>
+              <Amount value={formatCurrency(balanceXAF, 'XAF', { compact: true })} size="xl" className="mt-1.5" />
+            </div>
+          </div>
+          <p className={cn('mt-3 text-[12px] leading-snug', TEXT.muted)}>
+            {t('platformBalanceHint', {
+              defaultValue: 'Somme totale XAF détenue par tous les wallets clients à l’instant T.',
+            })}
+          </p>
+        </Card>
 
-        {/* ── 3. PRIORITY ACTIONS ── */}
+        {/* ── 3. SECONDARY KPIs ── */}
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard
+            icon={TrendingUp}
+            tone="info"
+            label={t('volume7days', { defaultValue: 'Volume 7j' })}
+            value={formatCurrency(weekVolume, 'XAF', { compact: true })}
+          />
+          <StatCard
+            tone="success"
+            label={t('depositsToday', { defaultValue: 'Dépôts auj.' })}
+            value={formatCurrency(todayDepositAmount, 'XAF', { compact: true })}
+          />
+          <StatCard
+            tone="pending"
+            label={t('paymentsToday', { defaultValue: 'Paiements auj.' })}
+            value={formatCurrency(todayPaymentAmount, 'XAF', { compact: true })}
+          />
+        </div>
+
+        {/* ── 4. PRIORITY ── */}
         {(pendingDepositCount > 0 || pendingPaymentCount > 0) ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {pendingDepositCount > 0 ? (
-              <Card
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/m/deposits')}
-                onKeyDown={(e) => e.key === 'Enter' && navigate('/m/deposits')}
-                className="cursor-pointer rounded-2xl border-0 bg-orange-500/10 p-4 shadow-none transition-transform active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
-                    {pendingDepositCount}
-                  </div>
-                  <p className="flex-1 text-left text-sm font-semibold text-orange-700 dark:text-orange-300">
+          <section>
+            <SectionTitle>{t('toProcess', { defaultValue: 'À traiter' })}</SectionTitle>
+            <div className="space-y-2.5">
+              {pendingDepositCount > 0 ? (
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate('/m/deposits')}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate('/m/deposits')}
+                  className="flex cursor-pointer items-center gap-3 transition active:scale-[0.99]"
+                >
+                  <Holder tone="pending" size="md">
+                    <span className="text-[15px] font-bold tabular-nums">{pendingDepositCount}</span>
+                  </Holder>
+                  <p className={cn('flex-1 text-[14px] font-semibold', TEXT.strong)}>
                     {t('depositsToValidate', {
                       defaultValue: 'dépôt(s) à valider',
                       count: pendingDepositCount,
                     })}
                   </p>
-                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-orange-600" />
-                </div>
-              </Card>
-            ) : null}
-            {pendingPaymentCount > 0 ? (
-              <Card
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/m/payments')}
-                onKeyDown={(e) => e.key === 'Enter' && navigate('/m/payments')}
-                className="cursor-pointer rounded-2xl border-0 bg-violet-500/10 p-4 shadow-none transition-transform active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white">
-                    {pendingPaymentCount}
-                  </div>
-                  <p className="flex-1 text-left text-sm font-semibold text-violet-700 dark:text-violet-300">
+                  <StatusPill tone="pending" label={t('toProcess', { defaultValue: 'À traiter' })} />
+                </Card>
+              ) : null}
+              {pendingPaymentCount > 0 ? (
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate('/m/payments')}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate('/m/payments')}
+                  className="flex cursor-pointer items-center gap-3 transition active:scale-[0.99]"
+                >
+                  <Holder tone="info" size="md">
+                    <span className="text-[15px] font-bold tabular-nums">{pendingPaymentCount}</span>
+                  </Holder>
+                  <p className={cn('flex-1 text-[14px] font-semibold', TEXT.strong)}>
                     {t('paymentsPending', {
                       defaultValue: 'paiement(s) en attente',
                       count: pendingPaymentCount,
                     })}
                   </p>
-                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-violet-600" />
-                </div>
-              </Card>
-            ) : null}
-          </div>
+                  <StatusPill tone="info" label={t('inProgress', { defaultValue: 'En cours' })} />
+                </Card>
+              ) : null}
+            </div>
+          </section>
         ) : null}
 
-        {/* ── 4. QUICK ACTIONS ── */}
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { icon: Plus, label: t('deposit', { defaultValue: 'Dépôt' }), to: '/m/deposits/new', bg: 'bg-emerald-500/10', color: 'text-emerald-600' },
-            { icon: Send, label: t('payment', { defaultValue: 'Paiement' }), to: '/m/payments/new', bg: 'bg-violet-500/10', color: 'text-violet-600' },
-            { icon: Users, label: t('clients', { defaultValue: 'Clients' }), to: '/m/clients', bg: 'bg-orange-500/10', color: 'text-orange-600' },
-            { icon: BarChart3, label: 'Analytics', to: '/m/dashboard', bg: 'bg-amber-500/10', color: 'text-amber-600' },
-          ].map(({ icon: Icon, label, to, bg, color }) => (
-            <button
-              key={to}
-              onClick={() => navigate(to)}
-              className="flex flex-col items-center gap-2 py-3 transition-transform active:scale-[0.95]"
-            >
-              <div className={cn('flex h-12 w-12 items-center justify-center rounded-full', bg)}>
-                <Icon className={cn('h-5 w-5', color)} />
-              </div>
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
-            </button>
-          ))}
-        </div>
+        {/* ── 5. QUICK ACTIONS ── */}
+        <Card>
+          <div className="grid grid-cols-4 gap-1">
+            {[
+              { icon: Plus, label: t('deposit', { defaultValue: 'Dépôt' }), to: '/m/deposits/new', tone: 'success' as const },
+              { icon: Send, label: t('payment', { defaultValue: 'Paiement' }), to: '/m/payments/new', tone: 'info' as const },
+              { icon: Users, label: t('clients', { defaultValue: 'Clients' }), to: '/m/clients', tone: 'pending' as const },
+              { icon: BarChart3, label: 'Analytics', to: '/m/dashboard', tone: 'neutral' as const },
+            ].map(({ icon: Icon, label, to, tone }) => (
+              <button
+                key={to}
+                onClick={() => navigate(to)}
+                className="flex flex-col items-center gap-2 py-1.5 transition active:scale-[0.96]"
+              >
+                <Holder icon={Icon} tone={tone} size="lg" />
+                <span className={cn('text-[12px] font-medium', TEXT.muted)}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
 
-        {/* ── 5. RATES ── */}
+        {/* ── 6. RATES ── */}
         <RateCard
           rates={activeDailyRate ? {
             rate_cash: activeDailyRate.rate_cash,
@@ -249,94 +273,65 @@ export function MobileDashboard() {
           detailsHref="/m/more/rates"
         />
 
-        {/* ── 6. RECENT ACTIVITY ── */}
+        {/* ── 7. RECENT ACTIVITY ── */}
         {recentDeposits.length > 0 ? (
-          <Card className="overflow-hidden rounded-2xl shadow-none">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h3 className="text-sm font-semibold">
-                {t('recentActivity', { defaultValue: 'Activité récente' })}
-              </h3>
-              <button
-                onClick={() => navigate('/m/deposits')}
-                className="flex items-center gap-1 text-xs font-medium text-primary"
-              >
-                {t('viewAll', { defaultValue: 'Voir tous' })}
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <ul className="divide-y divide-border">
+          <section>
+            <SectionTitle action={{ label: t('viewAll', { defaultValue: 'Voir tous' }), onClick: () => navigate('/m/deposits') }}>
+              {t('recentActivity', { defaultValue: 'Activité récente' })}
+            </SectionTitle>
+            <Card className="space-y-1 p-2">
               {recentDeposits.map((deposit) => {
-                const statusColor =
-                  deposit.status === 'validated'
-                    ? 'text-emerald-600 bg-emerald-500/10'
-                    : deposit.status === 'rejected'
-                      ? 'text-red-600 bg-red-500/10'
-                      : 'text-orange-600 bg-orange-500/10';
                 const name = `${deposit.profiles?.first_name ?? ''} ${deposit.profiles?.last_name ?? ''}`.trim() || 'Client';
-                const initials = `${deposit.profiles?.first_name?.[0] ?? '?'}${deposit.profiles?.last_name?.[0] ?? ''}`;
 
                 return (
-                  <li key={deposit.id}>
-                    <button
-                      onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                      className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50"
-                    >
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                        {initials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatRelativeDate(deposit.created_at)}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 text-right">
-                        <p className="text-sm font-semibold tabular-nums">
-                          {formatCurrencyFull(deposit.amount_xaf, 'XAF')}
-                        </p>
-                        <span
-                          className={cn(
-                            'mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                            statusColor,
-                          )}
-                        >
-                          {getDepositStatusLabel(deposit.status)}
-                        </span>
-                      </div>
-                    </button>
-                  </li>
+                  <button
+                    key={deposit.id}
+                    onClick={() => navigate(`/m/deposits/${deposit.id}`)}
+                    className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition active:scale-[0.99]"
+                  >
+                    <Avatar name={name} />
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{name}</p>
+                      <p className={cn('text-[12px]', TEXT.muted)}>
+                        {formatRelativeDate(deposit.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <Amount value={formatCurrencyFull(deposit.amount_xaf, 'XAF')} size="md" />
+                      <StatusPill tone={depositStatusTone(deposit.status)} label={getDepositStatusLabel(deposit.status)} />
+                    </div>
+                  </button>
                 );
               })}
-            </ul>
-          </Card>
+            </Card>
+          </section>
         ) : null}
 
-        {/* ── 7. EMPTY STATE ── */}
+        {/* ── 8. EMPTY STATE ── */}
         {hasNoData ? (
-          <Card className="rounded-2xl border-border bg-muted/40 p-6 text-center shadow-none">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="mt-3 text-lg font-semibold">
+          <Card className="flex flex-col items-center p-6 text-center">
+            <Holder icon={Sparkles} tone="info" size="lg" />
+            <h3 className={cn('mt-3 text-[17px] font-bold', TEXT.strong)}>
               {t('welcomeToBonzini', { defaultValue: 'Bienvenue sur Bonzini' })}
             </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>
               {t('welcomeMessage', {
                 defaultValue: 'Commencez par créer vos premiers clients et configurer le taux de change.',
               })}
             </p>
             <div className="mt-4 flex justify-center gap-2">
-              <Button onClick={() => navigate('/m/clients/new')} size="sm">
+              <button
+                onClick={() => navigate('/m/clients/new')}
+                className={cn('rounded-full px-5 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
+              >
                 {t('createClient', { defaultValue: 'Créer un client' })}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </button>
+              <button
                 onClick={() => navigate('/m/more/rates')}
+                className={cn('rounded-full px-5 py-2.5 text-[13px] font-semibold', SOFT_PILL)}
               >
                 {t('exchangeRate', { defaultValue: 'Taux de change' })}
-              </Button>
+              </button>
             </div>
           </Card>
         ) : null}

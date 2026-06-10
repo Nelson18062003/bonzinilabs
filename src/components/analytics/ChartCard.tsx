@@ -5,8 +5,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, TONE_PILL } from '@/mobile/designKit';
 
 export interface ChartCardProps {
   title: React.ReactNode;
@@ -47,13 +47,13 @@ export function ChartCard({
   footer,
 }: ChartCardProps) {
   return (
-    <Card className={cn('overflow-hidden rounded-2xl shadow-none', className)}>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-4 pb-2">
+    <div className={cn('overflow-hidden rounded-[22px]', SURFACE.card, SURFACE.shadow, className)}>
+      <div className="flex flex-row items-start justify-between gap-3 space-y-0 p-4 pb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1.5">
-            <CardTitle className="text-sm font-semibold tracking-normal leading-snug line-clamp-2 break-words">
+            <h3 className={cn('text-sm font-bold tracking-normal leading-snug line-clamp-2 break-words', TEXT.strong)}>
               {title}
-            </CardTitle>
+            </h3>
             {description ? (
               <Popover>
                 <PopoverTrigger asChild>
@@ -77,41 +77,41 @@ export function ChartCard({
             ) : null}
           </div>
           {subtitle ? (
-            <CardDescription className="mt-0.5 text-[11px] leading-snug">
+            <p className={cn('mt-0.5 text-[11px] leading-snug', TEXT.muted)}>
               {subtitle}
-            </CardDescription>
+            </p>
           ) : null}
         </div>
         {toolbar ? <div className="flex-shrink-0">{toolbar}</div> : null}
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-4 pt-2">
+      <div className="p-4 pt-2">
         {error ? (
-          <div className="flex items-center gap-2 rounded-md bg-red-500/10 px-3 py-2 text-xs text-red-600">
+          <div className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-xs', TONE_PILL.danger)}>
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{typeof error === 'string' ? error : error.message}</span>
           </div>
         ) : empty ? (
-          <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">
+          <div className={cn('flex min-h-[160px] items-center justify-center text-sm', TEXT.muted)}>
             {emptyState ?? 'Aucune donnée sur la période sélectionnée.'}
           </div>
         ) : (
           <div className="relative">
             {loading ? (
-              <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/60 z-10">
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/60">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : null}
             <div className={cn(loading && 'opacity-40 transition-opacity pointer-events-none')}>{children}</div>
           </div>
         )}
-      </CardContent>
+      </div>
 
       {footer && !error ? (
-        <CardFooter className="border-t border-border/50 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+        <div className={cn('px-4 py-3 text-xs', TEXT.muted)}>
           {footer}
-        </CardFooter>
+        </div>
       ) : null}
-    </Card>
+    </div>
   );
 }
