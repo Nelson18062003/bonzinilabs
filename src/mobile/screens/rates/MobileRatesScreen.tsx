@@ -11,13 +11,14 @@
 // Logique 100% préservée (hooks, RPC, calculs, exports).
 // ============================================================
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { SURFACE, TEXT } from '@/mobile/designKit';
+import { SURFACE, TEXT, SOFT_PILL, BottomSheet } from '@/mobile/designKit';
+import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
 import { RateSetTab } from './tabs/RateSetTab';
 import { RateChartTab } from './tabs/RateChartTab';
 import { RateHistoryTab } from './tabs/RateHistoryTab';
@@ -57,6 +58,15 @@ export function MobileRatesScreen() {
 
   const { data: activeRate, isLoading: rateLoading, isError: rateError } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
+
+  const [flyerOpen, setFlyerOpen] = useState(false);
+  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les clients.
+  const flyerRates = {
+    alipay: activeRate?.rate_alipay || 0,
+    wechat: activeRate?.rate_wechat || 0,
+    bank: activeRate?.rate_virement || 0,
+    cash: activeRate?.rate_cash || 0,
+  };
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
@@ -102,8 +112,20 @@ export function MobileRatesScreen() {
               <RateConfigTab />
             </Collapsible>
           </section>
+
+          {/* ── Flyer du jour — pilule en bas, fidèle à la maquette validée ── */}
+          <button
+            onClick={() => setFlyerOpen(true)}
+            className={cn('flex w-full items-center justify-center gap-1.5 py-[14px] text-[14px] font-semibold', SOFT_PILL)}
+          >
+            Voir le flyer du jour <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </PullToRefresh>
+
+      <BottomSheet open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour">
+        <RateFlyerSheet rates={flyerRates} />
+      </BottomSheet>
     </div>
   );
 }

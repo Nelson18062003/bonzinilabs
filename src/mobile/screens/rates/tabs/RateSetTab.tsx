@@ -1,38 +1,29 @@
 // ============================================================
-// MODULE TAUX — RateSetTab (« Aujourd'hui » : définir + flyer)
-// Repensé (passe Fable) autour du flux réel de l'admin :
-//   1. voir les TAUX ACTIFS (bandeau d'état) ;
-//   2. saisir les nouveaux taux (gros chiffres, vrais logos) ;
-//   3. choisir la prise d'effet (pilules, sans friction) ;
-//   4. PUBLIER (pilule charbon, libellé explicite) ;
-//   5. partager le FLYER (aperçu responsive + exports nommés).
-// Supprimé : la carte « Vérification » qui dupliquait 2× les
-// mêmes chiffres (remplissage). Logique 100% préservée :
-// useCreateDailyRates (RPC), direction, getEffectiveAt
-// (now/today/yesterday/custom + heure/minute), flyerRates +
-// RateFlyer + exports PNG/PDF, états.
+// MODULE TAUX — RateSetTab (« Définir les taux du jour »)
+// Section concentrée sur la SAISIE et la PUBLICATION :
+//   1. bandeau TAUX ACTIFS (état) ;
+//   2. saisie des nouveaux taux (gros chiffres, vrais logos) ;
+//   3. prise d'effet (pilules) ;
+//   4. PUBLIER.
+// Le FLYER est sorti d'ici → pilule « Voir le flyer du jour » au bas
+// du module (RateFlyerSheet), fidèle à la maquette validée.
+// Logique 100% préservée : useCreateDailyRates (RPC), direction,
+// getEffectiveAt (now/today/yesterday/custom + heure/minute), états.
 // ============================================================
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Check, Download, FileText, Loader2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DateField, TextField } from '@/components/form';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
 import { useCreateDailyRates } from '@/hooks/useDailyRates';
-import { RateFlyer } from '@/mobile/components/rates/RateFlyer';
-import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
-import { SURFACE, TEXT, SOFT_PILL, PrimaryPill, StatusPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, PrimaryPill, StatusPill } from '@/mobile/designKit';
 import { MethodLogo } from '../components/MethodLogo';
 
 interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
 }
-
-// Largeur naturelle du flyer (RateFlyer) — l'aperçu se met à l'échelle du
-// conteneur réel (plus de zoom magique 0.172).
-const FLYER_W = 2150;
-const FLYER_H = 2560;
 
 export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [direction, setDirection] = useState<'xaf_cny' | 'cny_xaf'>('xaf_cny');
@@ -46,9 +37,6 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [customDate, setCustomDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [customHour, setCustomHour] = useState(new Date().getHours());
   const [customMin, setCustomMin] = useState(0);
-  const [flyerDark, setFlyerDark] = useState(true);
-  const [exportingPNG, setExportingPNG] = useState(false);
-  const [exportingPDF, setExportingPDF] = useState(false);
 
   // Pré-remplit les champs quand le taux actif arrive APRÈS le montage
   // (chargement réseau) — sans jamais écraser une saisie en cours.
@@ -62,28 +50,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
     }));
   }, [currentRate]);
 
-  // Aperçu responsive du flyer : on mesure le conteneur, on déduit l'échelle.
-  const previewRef = useRef<HTMLDivElement>(null);
-  const [previewW, setPreviewW] = useState(0);
-  useLayoutEffect(() => {
-    const el = previewRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setPreviewW(el.clientWidth));
-    ro.observe(el);
-    setPreviewW(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-  const scale = previewW > 0 ? previewW / FLYER_W : 0;
-
   const createRates = useCreateDailyRates();
-
-  // Helper: build the rates object passed to the Edge Function
-  const flyerRates = () => ({
-    alipay: parseFloat(rates.alipay)   || currentRate?.rate_alipay   || 0,
-    wechat: parseFloat(rates.wechat)   || currentRate?.rate_wechat   || 0,
-    bank:   parseFloat(rates.virement) || currentRate?.rate_virement || 0,
-    cash:   parseFloat(rates.cash)     || currentRate?.rate_cash     || 0,
-  });
 
   const getEffectiveAt = (): string => {
     const now = new Date();
@@ -97,7 +64,6 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       now.setHours(0, 0, 0, 0);
       return now.toISOString();
     }
-    // custom
     const d = new Date(customDate);
     d.setHours(customHour, customMin, 0, 0);
     return d.toISOString();
@@ -309,81 +275,6 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           'Publier les taux du jour'
         )}
       </PrimaryPill>
-
-      {/* ── 5. FLYER DU JOUR — aperçu + partage ── */}
-      <div className={cn('overflow-hidden rounded-[20px]', SURFACE.card, SURFACE.shadow)}>
-        <div className="flex items-center justify-between px-4 pb-3 pt-4">
-          <div>
-            <div className={cn('text-[15px] font-extrabold', TEXT.strong)}>Flyer du jour</div>
-            <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>À partager sur WhatsApp avec vos clients</div>
-          </div>
-          {/* Toggle Sombre / Clair */}
-          <div className="flex gap-1.5">
-            {([['dark', 'Sombre'], ['light', 'Clair']] as const).map(([th, label]) => {
-              const active = (th === 'dark') === flyerDark;
-              return (
-                <button
-                  key={th}
-                  onClick={() => setFlyerDark(th === 'dark')}
-                  className={cn(
-                    'rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors',
-                    active ? 'bg-[#8B5CF6] text-white' : cn('bg-[#EDEAFA] dark:bg-[#2A2738]', TEXT.muted),
-                  )}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Aperçu responsive — mis à l'échelle du conteneur réel */}
-        <div ref={previewRef} className="px-4 pb-3">
-          {scale > 0 && (
-            <div className="overflow-hidden rounded-xl" style={{ height: Math.round(FLYER_H * scale) }}>
-              <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: FLYER_W, pointerEvents: 'none' }}>
-                <RateFlyer
-                  alipay={parseFloat(rates.alipay) || currentRate?.rate_alipay || 0}
-                  wechat={parseFloat(rates.wechat) || currentRate?.rate_wechat || 0}
-                  bank={parseFloat(rates.virement) || currentRate?.rate_virement || 0}
-                  cash={parseFloat(rates.cash) || currentRate?.rate_cash || 0}
-                  theme={flyerDark ? 'dark' : 'light'}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Exports — libellés explicites */}
-        <div className="flex gap-2.5 px-4 pb-4">
-          <button
-            onClick={async () => {
-              if (exportingPNG) return;
-              setExportingPNG(true);
-              try { await downloadFlyerPNG(flyerRates(), flyerDark); }
-              finally { setExportingPNG(false); }
-            }}
-            disabled={exportingPNG}
-            className="flex flex-[1.6] items-center justify-center gap-2 rounded-full bg-[#1C1B22] py-3 text-[13px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
-          >
-            {exportingPNG ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-[15px] w-[15px]" />}
-            Télécharger le flyer
-          </button>
-          <button
-            onClick={async () => {
-              if (exportingPDF) return;
-              setExportingPDF(true);
-              try { await downloadFlyerPDF(flyerRates(), flyerDark); }
-              finally { setExportingPDF(false); }
-            }}
-            disabled={exportingPDF}
-            className={cn('flex flex-1 items-center justify-center gap-2 py-3 text-[13px] font-bold transition active:scale-[0.98] disabled:opacity-60', SOFT_PILL)}
-          >
-            {exportingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-[15px] w-[15px]" />}
-            PDF
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
