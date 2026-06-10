@@ -1,6 +1,7 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-03.8 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
+// Version: 2026-06-07.1 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
 // top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), reçu PDF, processLock.
+// + playbook métier (profondeur/proactivité) + get_pending_summary enrichi (radar via RPC mola_operations_radar).
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
@@ -15,6 +16,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { maskForRole } from "../_shared/mask.ts";
+import { BONZINI_PLAYBOOK } from "./playbook.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -891,9 +893,25 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "get_pending_summary",
     permission: "canViewDeposits",
-    description: "Ce qui demande de l'attention MAINTENANT : dépôts à traiter (created, proof_submitted, admin_review) et paiements en cours (waiting_beneficiary_info, ready_for_payment, processing).",
-    input_schema: { type: "object", properties: {} },
-    execute: async (admin) => {
+    description:
+      "RADAR OPÉRATIONNEL — ce qui demande de l'attention MAINTENANT, en un appel : (1) dépôts en attente de validation depuis trop longtemps (argent du client qui attend d'être crédité), (2) paiements en souffrance (fournisseur qui attend / infos bénéficiaire manquantes), (3) gros soldes wallet dormants (argent immobile), (4) paiements à taux personnalisé récents (à vérifier côté marge). Chaque ligne porte le nom du client, le montant et l'ancienneté. Utilise-le pour « quoi de neuf ? », « fais le point », ou de toi-même pour être proactif. Seuils réglables.",
+    input_schema: { type: "object", properties: {
+      deposit_age_hours: { type: "number", description: "âge mini d'un dépôt en attente (défaut 48)" },
+      payment_age_hours: { type: "number", description: "âge mini d'un paiement en souffrance (défaut 24)" },
+      dormant_min_xaf: { type: "number", description: "solde wallet mini pour 'dormant' (défaut 2 000 000)" },
+      custom_rate_days: { type: "number", description: "fenêtre des paiements à taux perso (défaut 7 jours)" },
+    } },
+    execute: async (admin, a) => {
+      // Source de vérité partagée (Mola + digest cron) : la RPC mola_operations_radar.
+      const { data, error } = await admin.rpc("mola_operations_radar", {
+        p_deposit_age_hours: clamp(a?.deposit_age_hours, 48, 24 * 30),
+        p_payment_age_hours: clamp(a?.payment_age_hours, 24, 24 * 30),
+        p_dormant_min_xaf: clamp(a?.dormant_min_xaf, 2_000_000, 50_000_000),
+        p_custom_rate_days: clamp(a?.custom_rate_days, 7, 90),
+      });
+      if (!error && data) return data as Record<string, unknown>;
+      // Repli : si la RPC n'est pas encore déployée (migration non poussée), on rend au
+      // moins les comptages bruts pour ne jamais casser. (Comportement historique.)
       const deposits_pending: Record<string, number> = {};
       for (const s of ["created", "proof_submitted", "admin_review"]) {
         const { count } = await admin.from("deposits").select("id", { count: "exact", head: true }).eq("status", s);
@@ -904,7 +922,7 @@ const READ_TOOLS: ReadTool[] = [
         const { count } = await admin.from("payments").select("id", { count: "exact", head: true }).eq("status", s);
         payments_pending[s] = count ?? 0;
       }
-      return { deposits_pending, payments_pending };
+      return { deposits_pending, payments_pending, note: "Radar enrichi indisponible (RPC mola_operations_radar non déployée) — comptages bruts." };
     },
   },
   {
@@ -1474,6 +1492,29 @@ async function attachPaymentProofs(
     } catch (_) { /* preuve best-effort */ }
   }
   return attached;
+}
+
+/**
+ * Téléverse une pièce jointe IMAGE comme QR code d'un bénéficiaire (canal Alipay/WeChat) :
+ * copie assistant-attachments → payment-proofs et renvoie le chemin stocké à mettre dans
+ * beneficiaries.qr_code_url. Renvoie null si aucune image / échec.
+ */
+async function uploadBeneficiaryQr(
+  svc: AnyClient,
+  clientId: string,
+  attachments: Array<{ path: string; mime: string; name: string }>,
+): Promise<string | null> {
+  const img = (attachments ?? []).find((a) => String(a.mime).startsWith("image/"));
+  if (!img) return null;
+  try {
+    const { data: blob, error: dlErr } = await svc.storage.from(ATTACHMENT_BUCKET).download(img.path);
+    if (dlErr || !blob) return null;
+    const ext = (img.name.split(".").pop() || "jpg").toLowerCase();
+    const filePath = `beneficiary/${clientId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await svc.storage.from("payment-proofs").upload(filePath, blob, { contentType: img.mime, upsert: false });
+    if (upErr) return null;
+    return `payment-proofs/${filePath}`;
+  } catch (_) { return null; }
 }
 
 // payment_method (enum DB) → clé attendue par calculate_final_rate
@@ -2193,7 +2234,8 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "create_beneficiary",
     permission: "canProcessPayments",
-    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. Optionnels: identifier, identifier_type, phone, email, bank_name, bank_account, bank_extra, relation_type, notes.",
+    acceptsProof: true,
+    description: "Enregistrer un bénéficiaire RÉUTILISABLE pour un client (registre des bénéficiaires, comme l'écran Bénéficiaires). Différent de update_payment_beneficiary (qui ne touche qu'UN paiement). Fournir client_user_id, payment_method (alipay|wechat|bank_transfer|cash), alias et name. CANAL OBLIGATOIRE selon le mode (sinon la base refuse) : alipay/wechat → AU MOINS UN parmi { QR code (l'admin joint l'image au message), identifier (ID Alipay/WeChat), email, phone } ; bank_transfer → bank_name ET bank_account ; cash → phone. Si l'admin a JOINT un QR, c'est suffisant comme canal — n'exige pas d'identifiant en plus. Demande l'info manquante AVANT de proposer la carte. Optionnels: identifier_type, bank_extra, relation_type, notes.",
     input_schema: {
       type: "object",
       properties: {
@@ -2209,6 +2251,20 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!c.ok) return { ok: false, error: c.error };
       if (!["alipay", "wechat", "bank_transfer", "cash"].includes(a.payment_method)) return { ok: false, error: "payment_method invalide (alipay|wechat|bank_transfer|cash)." };
       if (!a.alias || !a.name) return { ok: false, error: "alias et name sont requis." };
+      // Complétude par mode (miroir de spec.ts / des CHECK base). On VALIDE ici → Mola DEMANDE
+      // l'info manquante au lieu d'échouer. Pour alipay/wechat, un QR JOINT (__hasAttachment)
+      // suffit comme canal — pas besoin d'identifiant en plus.
+      const hasQrAttached = a.__hasAttachment === true;
+      if (["alipay", "wechat"].includes(a.payment_method) && !a.identifier && !a.email && !a.phone && !hasQrAttached) {
+        const mode = a.payment_method === "alipay" ? "Alipay" : "WeChat";
+        return { ok: false, error: `Pour un bénéficiaire ${mode}, il faut AU MOINS UN canal de contact : un QR code (demande à l'admin de JOINDRE l'image du QR au message), OU l'identifiant ${mode}, OU un email, OU un téléphone. Demande l'un de ces éléments à l'admin.` };
+      }
+      if (a.payment_method === "bank_transfer" && (!a.bank_name || !a.bank_account)) {
+        return { ok: false, error: "Pour un virement bancaire, bank_name ET bank_account sont obligatoires. Demande-les à l'admin." };
+      }
+      if (a.payment_method === "cash" && !a.phone) {
+        return { ok: false, error: "Pour un bénéficiaire cash, le téléphone (phone) est obligatoire. Demande-le à l'admin." };
+      }
       const row = {
         client_id: c.uid, payment_method: a.payment_method, alias: String(a.alias).trim(), name: String(a.name).trim(),
         identifier: a.identifier || null, identifier_type: a.identifier_type || null, phone: a.phone || null, email: a.email || null,
@@ -2224,12 +2280,19 @@ const WRITE_TOOLS: WriteTool[] = [
       return { ok: true, args: { row }, summary: { title: "Enregistrer un bénéficiaire", subtitle: c.name, lines, confirmLabel: "Enregistrer le bénéficiaire" } };
     },
     execute: async (userClient, args, ctx) => {
-      const { error } = await userClient.from("beneficiaries").insert({ ...(args.row as Record<string, unknown>), created_by: ctx.adminUserId, created_by_role: "admin" });
+      const row = { ...(args.row as Record<string, unknown>) };
+      // QR joint au message → on l'enregistre comme qr_code_url (canal Alipay/WeChat).
+      const proofs = args.proofAttachments as Array<{ path: string; mime: string; name: string }> | undefined;
+      if (proofs?.length && !row.qr_code_url && ["alipay", "wechat"].includes(String(row.payment_method))) {
+        const qrPath = await uploadBeneficiaryQr(ctx.admin ?? userClient, String(row.client_id), proofs);
+        if (qrPath) row.qr_code_url = qrPath;
+      }
+      const { error } = await userClient.from("beneficiaries").insert({ ...row, created_by: ctx.adminUserId, created_by_role: "admin" });
       if (error) {
         if ((error as AnyClient)?.code === "23505") return { success: false, error: "Ce bénéficiaire est déjà enregistré pour ce client." };
         return { success: false, error: error.message };
       }
-      return { success: true };
+      return { success: true, qr_enregistre: !!row.qr_code_url };
     },
   },
   {
@@ -2417,6 +2480,8 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `- TAUX : en CNY (¥) pour 1 000 000 XAF, par mode ; ajustements en % par pays/palier ; un paiement utilise le taux du jour OU un taux personnalisé.`,
     `- TRÉSORERIE : on achète des USDT en XAF puis on les vend en CNY pour régler les fournisseurs chinois. Coût de revient en WAC ; le bénéfice = le spread achat/vente.`,
     `- WALLET : solde XAF du client (crédité par dépôt validé, débité par paiement) ; jamais modifié à la main sauf ajustement tracé.`,
+    ``,
+    BONZINI_PLAYBOOK,
     ``,
     `ACCÈS BASE DE DONNÉES — TON RÉFLEXE N°1. Tu as un accès LECTURE COMPLET à la base Bonzini via query_database (SQL SELECT PostgreSQL). Pour TOUTE question chiffrée ou factuelle sur les données, tu VAS LIRE LA BASE TOI-MÊME et tu réponds avec des chiffres EXACTS issus de la requête. Tu n'inventes RIEN, tu n'estimes RIEN, tu ne dis JAMAIS « je n'ai pas accès » / « je ne peux pas calculer » : tu écris la requête SQL. Une seule limite, volontaire et dans l'intérêt de l'argent : c'est de la LECTURE SEULE (aucune requête ne peut modifier la base). Les modifications passent par les actions à confirmation. À part ça : tu lis absolument tout ce que tu veux, librement.`,
     `TRANSPARENCE / CONFIANCE : quand l'admin doute d'un chiffre ou le demande, MONTRE-lui la requête SQL exacte que tu as exécutée et la fenêtre de dates utilisée — qu'il puisse vérifier lui-même la source. Un chiffre accompagné de sa requête, c'est ça la confiance. Ne te défausse jamais sur « mes outils sont limités » : si un chiffre te paraît douteux, recoupe-le par une 2e requête SQL.`,
@@ -2850,6 +2915,9 @@ serve(async (req) => {
                     const wInput = (tu.input ?? {}) as Record<string, unknown>;
                     // Gateway générique : on injecte les permissions du rôle pour la garde par capacité.
                     if (tu.name === "do_capability") wInput.__perms = perms;
+                    // Outils acceptant une preuve : on signale à prepare qu'une pièce jointe existe
+                    // (ex. create_beneficiary : un QR joint suffit comme canal Alipay/WeChat).
+                    if (writeTool.acceptsProof && acceptedAttachments.length) wInput.__hasAttachment = true;
                     const prep = await writeTool.prepare(admin, wInput);
                     if (!prep.ok) { result = { error: prep.error }; }
                     else {

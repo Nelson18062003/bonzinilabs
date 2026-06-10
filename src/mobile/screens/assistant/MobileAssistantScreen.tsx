@@ -325,7 +325,14 @@ export function MobileAssistantScreen() {
                   <span className="max-w-[56px] truncate">{p.file.name}</span>
                 </div>
               ) : (
-                <img src={p.url} alt={p.file.name} className={cn('h-16 w-16 rounded-2xl object-cover', SOFT)} />
+                <button
+                  type="button"
+                  onClick={() => setPreview({ url: p.url, name: p.file.name })}
+                  aria-label={`Prévisualiser ${p.file.name}`}
+                  className={cn('block overflow-hidden rounded-2xl transition active:scale-95', SOFT)}
+                >
+                  <img src={p.url} alt={p.file.name} className="h-16 w-16 object-cover" />
+                </button>
               )}
               <button
                 onClick={() => removePending(p.id)}

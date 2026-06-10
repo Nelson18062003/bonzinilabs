@@ -48,7 +48,21 @@ describe('validateBeneficiaryInput — completeness per mode', () => {
     expect(isBeneficiaryComplete(input)).toBe(true);
   });
 
-  it('rejects an Alipay beneficiary with neither identifier nor QR', () => {
+  it('accepts an Alipay beneficiary with email as the only channel', () => {
+    const input: BeneficiaryInput = {
+      payment_method: 'alipay', alias: 'Email fournisseur', name: '张伟', email: 'zhang@example.cn',
+    };
+    expect(isBeneficiaryComplete(input)).toBe(true);
+  });
+
+  it('accepts an Alipay beneficiary with phone as the only channel', () => {
+    const input: BeneficiaryInput = {
+      payment_method: 'alipay', alias: 'Tel fournisseur', name: '张伟', phone: '+8613800000000',
+    };
+    expect(isBeneficiaryComplete(input)).toBe(true);
+  });
+
+  it('rejects an Alipay beneficiary with no channel at all (no id/QR/email/phone)', () => {
     const input = { ...validAlipay, identifier: '', qr_code_url: '' };
     const errors = validateBeneficiaryInput(input);
     expect(errors.identifier).toBe('beneficiaries.errors.accountChannelRequired');
