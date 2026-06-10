@@ -52,6 +52,34 @@ try {
       console.log(`✓ rates-simulateur-detail-${theme}.png`);
     }
 
+    // Réglages — expand "Ajustements pays & tranches", shoot the whole section.
+    const reglagesBtn = page.getByRole('button', { name: /Ajustements pays/ });
+    if (await reglagesBtn.count()) {
+      await reglagesBtn.first().scrollIntoViewIfNeeded();
+      await reglagesBtn.first().click();
+      await page.waitForTimeout(450);
+      const reglagesSection = page.locator('section', {
+        has: page.getByRole('heading', { name: 'Réglages', exact: true }),
+      });
+      await reglagesSection.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(150);
+      await reglagesSection.screenshot({ path: `shots/rates-reglages-${theme}.png` });
+      console.log(`✓ rates-reglages-${theme}.png`);
+    }
+
+    // Graphique d'évolution — expand, shoot just the chart content.
+    const chartBtn = page.getByRole('button', { name: /Graphique d/ });
+    if (await chartBtn.count()) {
+      await chartBtn.first().scrollIntoViewIfNeeded();
+      await chartBtn.first().click();
+      await page.waitForTimeout(600);
+      const chartContent = chartBtn.first().locator('xpath=following-sibling::div[1]');
+      await chartContent.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(250);
+      await chartContent.screenshot({ path: `shots/rates-graphique-${theme}.png` });
+      console.log(`✓ rates-graphique-${theme}.png`);
+    }
+
     await ctx.close();
   }
 } finally {

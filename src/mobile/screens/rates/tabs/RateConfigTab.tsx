@@ -8,7 +8,7 @@
 // référence modifiés), métas pays/tranches, états load/erreur.
 // ============================================================
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Globe, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
 import { useRateAdjustments, useUpdateRateAdjustment } from '@/hooks/useDailyRates';
@@ -87,7 +87,7 @@ export function RateConfigTab() {
     }
   };
 
-  const renderAdjustmentRow = (adj: RateAdjustment, meta: { flag?: string; label: string; shortLabel?: string }) => (
+  const renderAdjustmentRow = (adj: RateAdjustment, meta: { label: string; shortLabel?: string }) => (
     <div
       key={adj.id}
       className={cn(
@@ -96,7 +96,6 @@ export function RateConfigTab() {
       )}
     >
       <div className="flex items-center gap-2">
-        {meta.flag && <span className="text-xl">{meta.flag}</span>}
         <div>
           <span className={cn('text-[14px] font-semibold', TEXT.strong)}>
             {meta.shortLabel || meta.label}
@@ -132,32 +131,33 @@ export function RateConfigTab() {
     <div className="space-y-4">
       {/* Ajustements par pays */}
       <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
-        <div className="mb-1 flex items-center gap-2">
-          <span className="text-lg">🌍</span>
-          <h3 className={cn('text-[16px] font-bold', TEXT.strong)}>Ajustements par pays</h3>
+        <div className="mb-3.5 flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2A2738]">
+            <Globe className={cn('h-[18px] w-[18px]', TEXT.strong)} />
+          </div>
+          <div>
+            <h3 className={cn('text-[15px] font-bold leading-tight', TEXT.strong)}>Ajustements par pays</h3>
+            <p className={cn('text-[11px]', TEXT.muted)}>Cameroun = référence (0%)</p>
+          </div>
         </div>
-        <p className={cn('mb-3.5 text-[12px]', TEXT.muted)}>
-          Cameroun = référence (0%).
-        </p>
         <div className="space-y-2">
           {countryAdjs.map((adj) =>
-            renderAdjustmentRow(adj, {
-              ...getCountryMeta(adj.key),
-              flag: getCountryMeta(adj.key).flag,
-            }),
+            renderAdjustmentRow(adj, { label: getCountryMeta(adj.key).label }),
           )}
         </div>
       </div>
 
       {/* Ajustements par tranche */}
       <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
-        <div className="mb-1 flex items-center gap-2">
-          <span className="text-lg">📊</span>
-          <h3 className={cn('text-[16px] font-bold', TEXT.strong)}>Ajustements par tranche</h3>
+        <div className="mb-3.5 flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2A2738]">
+            <Layers className={cn('h-[18px] w-[18px]', TEXT.strong)} />
+          </div>
+          <div>
+            <h3 className={cn('text-[15px] font-bold leading-tight', TEXT.strong)}>Ajustements par tranche</h3>
+            <p className={cn('text-[11px]', TEXT.muted)}>Pourcentage selon le montant</p>
+          </div>
         </div>
-        <p className={cn('mb-3.5 text-[12px]', TEXT.muted)}>
-          Pourcentage selon le montant.
-        </p>
         <div className="space-y-2">
           {tierAdjs.map((adj) => {
             const tierMeta = getTierMeta(adj.key);
