@@ -1,7 +1,8 @@
 // ============================================================
 // MODULE TAUX — RateHistoryTab (historique des taux)
-// Présentation migrée sur le design kit (Ofspace/Mola) : états
-// load/erreur/vide via le kit, liste de RateHistoryCard.
+// Présentation fidèle à la maquette validée : UNE carte, une ligne
+// compacte par jour (RateHistoryCard) séparée par un filet ténu.
+// États load/erreur/vide via le kit.
 // Logique 100% préservée : useDailyRatesHistory(20), passage du
 // taux précédent pour la variation.
 // ============================================================
@@ -40,12 +41,13 @@ export function RateHistoryTab() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn('rounded-[18px] px-4', SURFACE.card, SURFACE.shadow)}>
       {history.map((rate, i) => (
         <RateHistoryCard
           key={rate.id}
           rate={rate}
           previousRate={i < history.length - 1 ? history[i + 1] : undefined}
+          isLast={i === history.length - 1}
         />
       ))}
     </div>
