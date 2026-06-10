@@ -33,6 +33,7 @@ import {
 } from '@/mobile/screens/treasury';
 import { DirectionA, DirectionB, DirectionC } from './directions';
 import { DashDirA, DashDirB, DashDirC } from './dashDirections';
+import { PayDirA, PayDirB, PayDirC } from './clientPayDirections';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -94,6 +95,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'dash-a': { Comp: DashDirA, route: '/' },
   'dash-b': { Comp: DashDirB, route: '/' },
   'dash-c': { Comp: DashDirC, route: '/' },
+  // Refonte app CLIENT — directions module Paiements
+  'cpay-a': { Comp: PayDirA, route: '/' },
+  'cpay-b': { Comp: PayDirB, route: '/' },
+  'cpay-c': { Comp: PayDirC, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
