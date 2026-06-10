@@ -1,16 +1,15 @@
 // RateFlyerSheet — contenu du panneau « Flyer du jour » (aperçu + exports).
 // Ouvert depuis la pilule « Voir le flyer du jour » au bas du module Taux
 // (fidèle à la maquette validée). Aperçu responsive (échelle mesurée au
-// conteneur). Logique d'export 100% préservée (downloadFlyerPNG/PDF).
+// conteneur). L'export capture LE MÊME nœud DOM que l'aperçu (html-to-image)
+// → le fichier téléchargé est pixel-identique à ce qui est affiché.
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Download, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { RateFlyer } from './RateFlyer';
-import { downloadFlyerPNG, downloadFlyerPDF } from '@/lib/exportFlyer';
+import { downloadFlyerPNG, downloadFlyerPDF, FLYER_W, FLYER_H } from '@/lib/exportFlyer';
 import { TEXT, SOFT_PILL } from '@/mobile/designKit';
-
-const FLYER_W = 2150;
-const FLYER_H = 2560;
 
 interface FlyerRates {
   alipay: number;
@@ -25,6 +24,8 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
   const [exportingPDF, setExportingPDF] = useState(false);
 
   const previewRef = useRef<HTMLDivElement>(null);
+  // Nœud NON transformé du flyer (2150×2560) — c'est LUI qu'on exporte.
+  const flyerNodeRef = useRef<HTMLDivElement>(null);
   const [previewW, setPreviewW] = useState(0);
   useLayoutEffect(() => {
     const el = previewRef.current;
@@ -64,7 +65,9 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
         {scale > 0 && (
           <div className="overflow-hidden rounded-2xl" style={{ height: Math.round(FLYER_H * scale) }}>
             <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: FLYER_W, pointerEvents: 'none' }}>
-              <RateFlyer alipay={rates.alipay} wechat={rates.wechat} bank={rates.bank} cash={rates.cash} theme={flyerDark ? 'dark' : 'light'} />
+              <div ref={flyerNodeRef} style={{ width: FLYER_W, height: FLYER_H }}>
+                <RateFlyer alipay={rates.alipay} wechat={rates.wechat} bank={rates.bank} cash={rates.cash} theme={flyerDark ? 'dark' : 'light'} />
+              </div>
             </div>
           </div>
         )}
@@ -75,8 +78,11 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
         <button
           onClick={async () => {
             if (exportingPNG) return;
+            const node = flyerNodeRef.current;
+            if (!node) return;
             setExportingPNG(true);
-            try { await downloadFlyerPNG(rates, flyerDark); }
+            try { await downloadFlyerPNG(node); }
+            catch { toast.error("Échec de l'export du flyer — réessayez"); }
             finally { setExportingPNG(false); }
           }}
           disabled={exportingPNG}
@@ -88,8 +94,11 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
         <button
           onClick={async () => {
             if (exportingPDF) return;
+            const node = flyerNodeRef.current;
+            if (!node) return;
             setExportingPDF(true);
-            try { await downloadFlyerPDF(rates, flyerDark); }
+            try { await downloadFlyerPDF(node); }
+            catch { toast.error("Échec de l'export du flyer — réessayez"); }
             finally { setExportingPDF(false); }
           }}
           disabled={exportingPDF}
