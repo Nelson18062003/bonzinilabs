@@ -1,15 +1,15 @@
 // ============================================================
-// Hero card sitting at the top of the client payment-detail page.
-// Shows the method logo, the RMB / XAF amounts, the applied rate
-// and the creation date with a download-receipt button.
+// Hero card — détail paiement client. Refonte « Direction A » (designKit) :
+// carte blanche ombre douce, gros ¥ + XAF, taux en bloc lilas, date.
+// Bouton reçu = pastille neutre. Logique inchangée.
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { FileDown, Loader2, TrendingUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   formatCurrency,
-  formatCurrencyRMB,
   formatNumber,
   formatRelativeDate,
 } from '@/lib/formatters';
@@ -17,6 +17,7 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { PAYMENT_METHOD_LABELS } from '@/types/payment';
 import type { PaymentMethod } from '@/types/payment';
 import type { Payment } from '@/hooks/usePayments';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import { isStatusLocked, normalizeRateToInt } from './types';
 
 interface Props {
@@ -33,46 +34,48 @@ export function PaymentHeroCard({ payment, onDownloadReceipt, isGeneratingPDF }:
   const locked = isStatusLocked(payment.status);
 
   return (
-    <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+    <div className={cn('rounded-[24px] p-6', SURFACE.card, SURFACE.shadow)}>
       {/* Method logo + label + download button */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <PaymentMethodLogo method={payment.method} size={48} />
-          <span className="text-lg font-semibold">{methodLabel}</span>
+          <span className={cn('text-[17px] font-bold', TEXT.strong)}>{methodLabel}</span>
         </div>
         <button
           onClick={onDownloadReceipt}
           disabled={isGeneratingPDF}
-          className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform disabled:opacity-50"
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-50',
+            SURFACE.holder,
+          )}
           aria-label={t('detail.downloadReceipt')}
         >
-          {isGeneratingPDF ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <FileDown className="w-5 h-5" />
-          )}
+          {isGeneratingPDF ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5" />}
         </button>
       </div>
 
       {/* Primary amount: RMB */}
-      <p className="text-[32px] sm:text-[36px] font-bold tracking-tight leading-none">
-        {formatCurrencyRMB(payment.amount_rmb)}
-      </p>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[26px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+        <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>
+          {formatNumber(payment.amount_rmb, 2)}
+        </span>
+      </div>
 
       {/* Secondary amount: XAF */}
-      <p className="text-xl sm:text-2xl font-semibold text-muted-foreground mt-1">
+      <p className={cn('mt-1.5 text-[18px] font-bold tabular-nums', TEXT.muted)}>
         {formatCurrency(payment.amount_xaf)}
       </p>
 
       {/* Exchange rate */}
-      <div className="mt-4 bg-muted/50 rounded-xl p-3 border border-border/50">
+      <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-3.5 dark:bg-[#221F33]">
         <div className="flex items-start gap-2">
-          <TrendingUp className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-          <div className="text-sm">
-            <p className="font-medium">
+          <TrendingUp className={cn('mt-0.5 h-4 w-4 shrink-0', TEXT.muted)} />
+          <div className="text-[13px]">
+            <p className={cn('font-bold', TEXT.strong)}>
               {t('detail.rateApplied')} : 1M XAF = ¥{formatNumber(rateInt)}
             </p>
-            <p className="text-muted-foreground mt-0.5">
+            <p className={cn('mt-0.5', TEXT.muted)}>
               ¥{formatNumber(payment.amount_rmb, 2)} = {formatNumber(payment.amount_xaf)} XAF
             </p>
           </div>
@@ -80,7 +83,7 @@ export function PaymentHeroCard({ payment, onDownloadReceipt, isGeneratingPDF }:
       </div>
 
       {/* Date info */}
-      <p className="text-xs text-muted-foreground mt-3">
+      <p className={cn('mt-3 text-[11px]', TEXT.muted)}>
         {t('detail.createdAt')} {formatRelativeDate(payment.created_at)} ·{' '}
         {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: fr })}
         {locked && ` · ${t('detail.locked')}`}

@@ -1,15 +1,17 @@
 // ============================================================
-// PAGE — Client payment detail (orchestrator).
-// All sections live under src/components/payment-detail/*.
+// PAGE — Client payment detail (orchestrator). Refonte « Direction A » :
+// canvas designKit, en-tête unique avec StatusPill SÉMANTIQUE (unifie les
+// deux systèmes de badges liste/détail), drill-in sans bottom-nav.
+// Sections sous src/components/payment-detail/*.
+// Logique 100% PRÉSERVÉE : hooks, timelineSteps, reçu PDF, upload preuves.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, PrimaryPill, StatusPill, paymentStatusTone } from '@/mobile/designKit';
 import {
   usePaymentDetail,
   usePaymentTimeline,
@@ -24,7 +26,6 @@ import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { toast } from 'sonner';
-import { STATUS_BADGE_STYLES } from '@/components/payment-detail/types';
 import {
   buildReceiptData,
   captureQrDataUrl,
@@ -64,12 +65,12 @@ export default function PaymentDetailPage() {
   // ── Loading / not found ───────────────────────────────────
   if (paymentLoading) {
     return (
-      <MobileLayout>
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-48 w-full rounded-2xl" />
-          <Skeleton className="h-32 w-full rounded-2xl" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('min-h-[100dvh] space-y-4 p-4', SURFACE.canvas)}>
+          <div className={cn('h-8 w-48 animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-48 w-full animate-pulse rounded-[24px]', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-32 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-24 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
         </div>
       </MobileLayout>
     );
@@ -77,12 +78,12 @@ export default function PaymentDetailPage() {
 
   if (!payment) {
     return (
-      <MobileLayout>
-        <div className="p-4 text-center">
-          <p className="text-muted-foreground">{t('detail.notFound')}</p>
-          <Button onClick={() => navigate('/payments')} className="mt-4">
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center', SURFACE.canvas)}>
+          <p className={cn('text-[15px]', TEXT.muted)}>{t('detail.notFound')}</p>
+          <PrimaryPill onClick={() => navigate('/payments')} className="mt-5">
             {t('detail.backToPayments')}
-          </Button>
+          </PrimaryPill>
         </div>
       </MobileLayout>
     );
@@ -149,55 +150,48 @@ export default function PaymentDetailPage() {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <MobileLayout>
-      <PageHeader
-        title={payment.reference}
-        showBack
-        rightElement={
-          <span
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap',
-              STATUS_BADGE_STYLES[payment.status] ?? STATUS_BADGE_STYLES.created,
-            )}
-          >
-            {statusCfg.label}
-          </span>
-        }
-      />
-
-      <div className="px-4 py-4 space-y-6">
-        <PaymentHeroCard
-          payment={payment}
-          onDownloadReceipt={handleDownloadReceipt}
-          isGeneratingPDF={isGeneratingPDF}
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+        <PageHeader
+          title={payment.reference}
+          showBack
+          rightElement={<StatusPill tone={paymentStatusTone(payment.status)} label={statusCfg.label} />}
         />
 
-        <PaymentCashSection payment={payment} />
+        <div className="space-y-4 px-4 py-4">
+          <PaymentHeroCard
+            payment={payment}
+            onDownloadReceipt={handleDownloadReceipt}
+            isGeneratingPDF={isGeneratingPDF}
+          />
 
-        <PaymentBeneficiarySection
-          payment={payment}
-          onEdit={goToEditBeneficiary}
-          onViewQr={setSelectedQrUrl}
-        />
+          <PaymentCashSection payment={payment} />
 
-        <PaymentStatusMessages payment={payment} />
+          <PaymentBeneficiarySection
+            payment={payment}
+            onEdit={goToEditBeneficiary}
+            onViewQr={setSelectedQrUrl}
+          />
 
-        <PaymentDocumentsSection
-          payment={payment}
-          adminProofs={adminProofs}
-          clientProofs={clientProofs}
-          uploadKey={uploadKey}
-          instructionFiles={instructionFiles}
-          onInstructionFilesChange={setInstructionFiles}
-          onUploadInstructions={handleUploadInstructions}
-          isUploadingProofs={isUploadingProofs}
-        />
+          <PaymentStatusMessages payment={payment} />
 
-        <PaymentDetailsAccordion
-          payment={payment}
-          timelineSteps={timelineSteps}
-          timelineLoading={timelineLoading}
-        />
+          <PaymentDocumentsSection
+            payment={payment}
+            adminProofs={adminProofs}
+            clientProofs={clientProofs}
+            uploadKey={uploadKey}
+            instructionFiles={instructionFiles}
+            onInstructionFilesChange={setInstructionFiles}
+            onUploadInstructions={handleUploadInstructions}
+            isUploadingProofs={isUploadingProofs}
+          />
+
+          <PaymentDetailsAccordion
+            payment={payment}
+            timelineSteps={timelineSteps}
+            timelineLoading={timelineLoading}
+          />
+        </div>
       </div>
 
       <PaymentQrViewerDrawer
