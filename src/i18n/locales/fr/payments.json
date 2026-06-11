@@ -61,7 +61,7 @@
       },
       "bank_transfer": {
         "label": "Virement bancaire",
-        "desc": "Transfert vers compte bancaire"
+        "desc": "Règlement sur compte bancaire"
       },
       "cash": {
         "label": "Cash",
@@ -70,7 +70,7 @@
     },
     "chooseMethod": "Choisissez un mode de paiement",
     "enterAmount": "Entrez le montant",
-    "howToReceive": "Comment votre fournisseur reçoit-il l'argent ?",
+    "howToReceive": "Comment votre fournisseur est-il payé ?",
     "rateApplied": "Taux appliqué",
     "byXAF": "En XAF",
     "byRMB": "En RMB",
