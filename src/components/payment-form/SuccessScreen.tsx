@@ -1,7 +1,9 @@
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 import { formatXAF, formatRMB } from '@/lib/formatters';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { SURFACE, TEXT, PrimaryPill, SoftPill } from '@/mobile/designKit';
 
 type PaymentMethod = 'alipay' | 'wechat' | 'bank_transfer' | 'cash';
 
@@ -78,37 +80,33 @@ export function SuccessScreen({
 
   // Client variant
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6">
-      <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6 animate-scale-in">
-        <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
-          <Check className="w-8 h-8 text-green-500" strokeWidth={3} />
+    <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center px-6 py-12', SURFACE.canvas)}>
+      <div className="mb-6 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-[#DEEFE5] dark:bg-[#1E3A2C]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2E7D52]">
+          <Check className="h-8 w-8 text-white" strokeWidth={3} />
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold mb-2">{t('success.paymentCreatedClient')}</h2>
-      <p className="text-muted-foreground mb-4">{t('success.requestRecorded')}</p>
+      <h2 className={cn('text-center text-[24px] font-black', TEXT.strong)}>{t('success.paymentCreatedClient')}</h2>
+      <p className={cn('mt-1 text-center text-[14px]', TEXT.muted)}>{t('success.requestRecorded')}</p>
 
-      <p className="text-3xl font-bold text-primary mb-1">¥{formatRMB(amountRMB)}</p>
-      <p className="text-sm text-muted-foreground mb-8">{t('success.xafDebited', { amount: formatXAF(amountXAF) })}</p>
+      <div className="mt-5 flex items-baseline gap-1.5">
+        <span className="text-[24px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+        <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>{formatRMB(amountRMB)}</span>
+      </div>
+      <p className={cn('mb-8 mt-1.5 text-[13px] tabular-nums', TEXT.muted)}>
+        {t('success.xafDebited', { amount: formatXAF(amountXAF) })}
+      </p>
 
-      <div className="w-full space-y-3">
-        <button
-          onClick={onViewPayment}
-          className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold"
-        >
+      <div className="w-full max-w-sm space-y-2.5">
+        <PrimaryPill onClick={onViewPayment} className="w-full py-[15px] text-[15px]">
           {t('success.viewPayment')}
-        </button>
-        <button
-          onClick={onNewPayment}
-          className="w-full py-3 bg-secondary text-foreground font-medium rounded-xl"
-        >
+        </PrimaryPill>
+        <SoftPill onClick={onNewPayment} className="w-full py-[15px] text-[15px]">
           {t('success.myPayments')}
-        </button>
+        </SoftPill>
         {onGoBack && (
-          <button
-            onClick={onGoBack}
-            className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
-          >
+          <button onClick={onGoBack} className={cn('w-full py-3 text-[14px] font-semibold', TEXT.muted)}>
             {t('success.backToHome')}
           </button>
         )}

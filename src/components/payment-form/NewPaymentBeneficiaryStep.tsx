@@ -1,14 +1,10 @@
 // ============================================================
 // Step 3 — Beneficiary (payment wizard, client).
-//
-// Rebuilt for Lot 3 bis. Two tabs:
-//   • "existing" — pick a saved beneficiary (alias-first list).
-//   • "new"      — a self/other toggle + the shared <BeneficiaryForm/>.
-//
-// Reuses BeneficiaryForm (same hard validation / alias / CJK / QR as the
-// carnet) instead of duplicating per-mode inputs. The page owns all
-// state and the snapshot/payment payload; this component is presentational.
-// "Complete later" (skip) stays available for non-cash modes.
+// Refonte « Direction A » (designKit) : onglets existant/nouveau,
+// liste alias-first, bascule moi-même/autre (anneau violet), indice
+// de doublon (ambre = sens), carte cash+self, « compléter plus tard ».
+// Le <BeneficiaryForm/> partagé est CONSERVÉ tel quel.
+// Logique 100% PRÉSERVÉE : tous les props/handlers inchangés.
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { Check, User } from 'lucide-react';
@@ -20,6 +16,7 @@ import {
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
 import { modeColor } from '@/lib/beneficiaries/labels';
+import { SURFACE, TEXT, SOFT_PILL } from '@/mobile/designKit';
 import type { PaymentMethodType } from './types';
 
 type Profile = NonNullable<ReturnType<typeof useMyProfile>['data']>;
@@ -76,119 +73,121 @@ export function NewPaymentBeneficiaryStep({
 
   return (
     <div className="animate-fade-in space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">{t('form.beneficiary.title')}</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {t('form.beneficiary.selectOrCreate')}
-        </p>
+      <div className="px-1">
+        <h2 className={cn('text-[18px] font-black', TEXT.strong)}>{t('form.beneficiary.title')}</h2>
+        <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>{t('form.beneficiary.selectOrCreate')}</p>
       </div>
 
       {/* Existing / New tabs */}
-      <div className="flex gap-1 bg-muted rounded-lg p-1">
-        {(['existing', 'new'] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => onBeneficiaryTabChange(tab)}
-            className={cn(
-              'flex-1 h-9 rounded-md text-sm font-medium transition-colors',
-              beneficiaryTab === tab
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground',
-            )}
-          >
-            {t(`form.beneficiary.${tab === 'existing' ? 'existing' : 'new'}`)}
-          </button>
-        ))}
+      <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.canvas)}>
+        {(['existing', 'new'] as const).map((tab) => {
+          const active = beneficiaryTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onBeneficiaryTabChange(tab)}
+              className={cn(
+                'flex-1 rounded-full py-2 text-[13px] font-bold transition-colors',
+                active ? cn('bg-white shadow-sm dark:bg-[#211F2B]', TEXT.strong) : TEXT.muted,
+              )}
+            >
+              {t(`form.beneficiary.${tab === 'existing' ? 'existing' : 'new'}`)}
+            </button>
+          );
+        })}
       </div>
 
       {beneficiaryTab === 'existing' ? (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {!existingBeneficiaries || existingBeneficiaries.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <User className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">{t('form.beneficiary.noneRegistered')}</p>
+            <div className={cn('rounded-[22px] p-8 text-center', SURFACE.card, SURFACE.shadow)}>
+              <div className={cn('mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full', SURFACE.holder)}>
+                <User className="h-6 w-6" />
+              </div>
+              <p className={cn('text-[14px]', TEXT.muted)}>{t('form.beneficiary.noneRegistered')}</p>
               <button
                 type="button"
                 onClick={() => onBeneficiaryTabChange('new')}
-                className="mt-2 text-sm text-primary font-medium"
+                className="mt-2 text-[14px] font-bold text-[#5B4CC4] dark:text-[#B5AAF0]"
               >
                 {t('form.beneficiary.createNew')}
               </button>
             </div>
           ) : (
-            existingBeneficiaries.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() =>
-                  onSelectedBeneficiaryChange(selectedBeneficiary?.id === b.id ? null : b)
-                }
-                className={cn(
-                  'w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left',
-                  selectedBeneficiary?.id === b.id ? 'border-primary bg-primary/5' : 'border-border',
-                )}
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0"
-                  style={{ backgroundColor: modeColor(b.payment_method) }}
+            existingBeneficiaries.map((b) => {
+              const sel = selectedBeneficiary?.id === b.id;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => onSelectedBeneficiaryChange(sel ? null : b)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-2xl p-3.5 text-left transition active:scale-[0.99]',
+                    SURFACE.card,
+                    SURFACE.shadow,
+                    sel && 'ring-2 ring-[#8B5CF6]',
+                  )}
                 >
-                  {(b.alias || b.name)[0]?.toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  {/* alias-first: the recognisable label on top, real account below */}
-                  <p className="font-medium truncate">{b.alias || b.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {b.identifier || b.phone || b.bank_account || b.name || ''}
-                  </p>
-                </div>
-                {selectedBeneficiary?.id === b.id && (
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                    <Check className="w-4 h-4 text-primary-foreground" />
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                    style={{ backgroundColor: modeColor(b.payment_method) }}
+                  >
+                    {(b.alias || b.name)[0]?.toUpperCase()}
                   </div>
-                )}
-              </button>
-            ))
+                  <div className="min-w-0 flex-1">
+                    {/* alias-first: the recognisable label on top, real account below */}
+                    <p className={cn('truncate text-[15px] font-bold', TEXT.strong)}>{b.alias || b.name}</p>
+                    <p className={cn('truncate text-[12px]', TEXT.muted)}>
+                      {b.identifier || b.phone || b.bank_account || b.name || ''}
+                    </p>
+                  </div>
+                  {sel && (
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#8B5CF6]">
+                      <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                    </span>
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
       ) : (
         <div className="space-y-4">
           {/* Self / other toggle (all modes) */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => onUseSelfChange(true)}
               className={cn(
-                'flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left',
-                useSelf ? 'border-current' : 'border-border',
+                'flex items-center gap-2 rounded-2xl p-3.5 text-left transition',
+                SURFACE.card,
+                SURFACE.shadow,
+                useSelf && 'ring-2 ring-[#8B5CF6]',
               )}
-              style={useSelf ? { color: modeColor(selectedMethod) } : undefined}
             >
-              <User className="w-5 h-5" />
-              <span className="text-sm font-medium text-foreground">
-                {t('form.beneficiary.myself')}
-              </span>
+              <User className={cn('h-5 w-5', TEXT.muted)} />
+              <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{t('form.beneficiary.myself')}</span>
             </button>
             <button
               type="button"
               onClick={() => onUseSelfChange(false)}
               className={cn(
-                'flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left',
-                !useSelf ? 'border-current' : 'border-border',
+                'flex items-center gap-2 rounded-2xl p-3.5 text-left transition',
+                SURFACE.card,
+                SURFACE.shadow,
+                !useSelf && 'ring-2 ring-[#8B5CF6]',
               )}
-              style={!useSelf ? { color: modeColor(selectedMethod) } : undefined}
             >
-              <User className="w-5 h-5" />
-              <span className="text-sm font-medium text-foreground">
-                {t('form.beneficiary.anotherPerson')}
-              </span>
+              <User className={cn('h-5 w-5', TEXT.muted)} />
+              <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{t('form.beneficiary.anotherPerson')}</span>
             </button>
           </div>
 
           {/* Soft duplicate hint: offer to reuse the saved match. */}
           {!cashSelfCard && duplicateMatch && (
-            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
+            <div className="rounded-2xl bg-[#FDF1DD] p-3.5 dark:bg-[#3A2F1A]">
+              <p className="text-[13px] text-[#9A6B12] dark:text-[#E0B978]">
                 {tc('beneficiaries.duplicate.body', { alias: duplicateMatch.alias || duplicateMatch.name })}
               </p>
               <button
@@ -197,7 +196,7 @@ export function NewPaymentBeneficiaryStep({
                   onSelectedBeneficiaryChange(duplicateMatch);
                   onBeneficiaryTabChange('existing');
                 }}
-                className="mt-2 text-sm font-medium text-amber-900 dark:text-amber-100 underline"
+                className="mt-2 text-[13px] font-bold text-[#7A5410] underline dark:text-[#E8C98C]"
               >
                 {tc('beneficiaries.actions.useThis')}
               </button>
@@ -206,19 +205,18 @@ export function NewPaymentBeneficiaryStep({
 
           {cashSelfCard ? (
             // Cash + self: nothing to fill, just confirm it's the client.
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
+            <div className={cn('flex items-center gap-3 rounded-2xl p-4', SURFACE.card, SURFACE.shadow)}>
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-[16px] font-bold text-white"
                 style={{ backgroundColor: modeColor('cash') }}
               >
                 {(profile?.first_name?.[0] || 'M').toUpperCase()}
               </div>
               <div>
-                <p className="font-medium">
-                  {`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() ||
-                    t('form.beneficiary.myself')}
+                <p className={cn('text-[15px] font-bold', TEXT.strong)}>
+                  {`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || t('form.beneficiary.myself')}
                 </p>
-                <p className="text-xs text-muted-foreground">{profile?.phone || ''}</p>
+                <p className={cn('text-[12px]', TEXT.muted)}>{profile?.phone || ''}</p>
               </div>
             </div>
           ) : (
@@ -232,12 +230,12 @@ export function NewPaymentBeneficiaryStep({
                 onQrRemove={onQrFileRemove}
               />
               {/* Ponctuel: don't persist this beneficiary to the carnet. */}
-              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <label className={cn('flex cursor-pointer items-center gap-2 text-[13px]', TEXT.muted)}>
                 <input
                   type="checkbox"
                   checked={dontSave}
                   onChange={(e) => onDontSaveChange(e.target.checked)}
-                  className="w-4 h-4 rounded border-border"
+                  className="h-4 w-4 rounded border-border"
                 />
                 {t('form.beneficiary.dontSave')}
               </label>
@@ -248,11 +246,7 @@ export function NewPaymentBeneficiaryStep({
 
       {/* Complete later (not for cash) */}
       {!isCash && (
-        <button
-          type="button"
-          onClick={onSkip}
-          className="w-full py-3 text-muted-foreground font-medium hover:bg-secondary rounded-xl transition-colors"
-        >
+        <button type="button" onClick={onSkip} className={cn('w-full py-3.5 text-[14px] font-semibold', SOFT_PILL)}>
           {t('form.beneficiary.addLater')}
         </button>
       )}
