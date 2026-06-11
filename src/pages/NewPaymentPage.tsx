@@ -8,9 +8,9 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { SURFACE, PrimaryPill } from '@/mobile/designKit';
 import { StepProgressBar } from '@/components/payment-form/StepProgressBar';
 import { SuccessScreen } from '@/components/payment-form/SuccessScreen';
 import { NewPaymentMethodStep } from '@/components/payment-form/NewPaymentMethodStep';
@@ -408,22 +408,23 @@ const NewPaymentPage = () => {
     !!(selectedBeneficiary || isCashSelf || form.name);
 
   return (
-    <MobileLayout showNav={false}>
-      <PageHeader
-        title={t('newPayment')}
-        showBack
-        onBack={() => {
-          if (currentStepIndex > 0) setStep(STEPS[currentStepIndex - 1].key);
-          else navigate('/payments');
-        }}
-      />
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <PageHeader
+          title={t('newPayment')}
+          showBack
+          onBack={() => {
+            if (currentStepIndex > 0) setStep(STEPS[currentStepIndex - 1].key);
+            else navigate('/payments');
+          }}
+        />
 
-      <div className="px-4 py-2">
-        <StepProgressBar steps={STEPS} currentStepIndex={currentStepIndex} />
-      </div>
+        <div className="px-1 pt-1">
+          <StepProgressBar steps={STEPS} currentStepIndex={currentStepIndex} />
+        </div>
 
-      <div className="px-4 py-4 flex-1">
-        {step === 'method' && (
+        <div className="flex-1 px-4 py-4">
+          {step === 'method' && (
           <NewPaymentMethodStep
             selectedMethod={selectedMethod}
             onSelect={setSelectedMethod}
@@ -488,22 +489,16 @@ const NewPaymentPage = () => {
         )}
       </div>
 
-      <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <button
-          onClick={footerCTA.onClick}
-          disabled={footerCTA.disabled}
-          className={cn(
-            'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
-            footerCTA.disabled
-              ? 'bg-muted text-muted-foreground cursor-not-allowed'
-              : footerCTA.isSubmit
-                ? 'bg-primary text-primary-foreground'
-                : 'btn-primary-gradient',
-          )}
-        >
-          {createPayment.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
-          {footerCTA.label}
-        </button>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+          <PrimaryPill
+            onClick={footerCTA.onClick}
+            disabled={footerCTA.disabled}
+            loading={footerCTA.isSubmit && createPayment.isPending}
+            className="w-full py-[15px] text-[15px]"
+          >
+            {footerCTA.label}
+          </PrimaryPill>
+        </div>
       </div>
     </MobileLayout>
   );

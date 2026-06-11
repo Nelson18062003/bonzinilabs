@@ -4,8 +4,10 @@
 // `selectedMethod`; this component just renders the cards.
 // ============================================================
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 import { PaymentMethodCard } from './PaymentMethodCard';
 import { PAYMENT_METHOD_IDS, type PaymentMethodType } from './types';
+import { TEXT } from '@/mobile/designKit';
 
 interface Props {
   selectedMethod: PaymentMethodType | null;
@@ -16,8 +18,8 @@ export function NewPaymentMethodStep({ selectedMethod, onSelect }: Props) {
   const { t } = useTranslation('payments');
 
   return (
-    <div className="animate-fade-in space-y-4">
-      <p className="text-sm text-muted-foreground mb-4">{t('form.howToReceive')}</p>
+    <div className="animate-fade-in space-y-3">
+      <p className={cn('mb-1 px-1 text-[15px] font-semibold', TEXT.strong)}>{t('form.howToReceive')}</p>
       {PAYMENT_METHOD_IDS.map((id) => (
         <PaymentMethodCard
           key={id}
