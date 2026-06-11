@@ -1,6 +1,7 @@
 // ============================================================
-// Documents section: Bonzini-supplied proofs + client-attached
-// instruction files + upload area when the payment is not locked.
+// Documents section. Refonte « Direction A » (designKit) : carte blanche
+// ombre douce, séparateurs ténus. Gallery/Upload partagés conservés.
+// Logique 100% PRÉSERVÉE (admin/client proofs, upload si non verrouillé).
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
 import { PaymentProofUpload } from '@/components/payment/PaymentProofUpload';
 import type { Payment, PaymentProof } from '@/hooks/usePayments';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import { isStatusLocked, isStatusUploadable } from './types';
 
 interface Props {
@@ -20,6 +22,8 @@ interface Props {
   onUploadInstructions: () => void;
   isUploadingProofs: boolean;
 }
+
+const DIVIDER = 'border-t border-black/[0.06] dark:border-white/[0.08]';
 
 export function PaymentDocumentsSection({
   payment,
@@ -37,43 +41,29 @@ export function PaymentDocumentsSection({
   const isLocked = isStatusLocked(payment.status);
 
   return (
-    <div className="bg-card rounded-2xl p-5 border border-border">
-      <h3 className="text-base font-semibold mb-4">{t('detail.documents')}</h3>
+    <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+      <h3 className={cn('mb-4 text-[15px] font-bold', TEXT.strong)}>{t('detail.documents')}</h3>
 
       {adminProofs.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          <p className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
             {t('detail.bonziniProofs', { count: adminProofs.length })}
           </p>
-          <p className="text-xs text-muted-foreground mb-3">
-            {t('detail.bonziniProofsDescription')}
-          </p>
-          <PaymentProofGallery
-            proofs={adminProofs}
-            title=""
-            emptyMessage=""
-            showUploadedBy={false}
-          />
+          <p className={cn('mb-3 text-[12px]', TEXT.muted)}>{t('detail.bonziniProofsDescription')}</p>
+          <PaymentProofGallery proofs={adminProofs} title="" emptyMessage="" showUploadedBy={false} />
         </div>
       )}
 
       {clientProofs.length > 0 && (
-        <div className={cn(adminProofs.length > 0 && 'mt-4 pt-4 border-t border-border')}>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+        <div className={cn(adminProofs.length > 0 && cn('mt-4 pt-4', DIVIDER))}>
+          <p className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
             {t('detail.myInstructions', { count: clientProofs.length })}
           </p>
-          <p className="text-xs text-muted-foreground mb-3">
-            {t('detail.myInstructionsDescription')}
-          </p>
-          <PaymentProofGallery
-            proofs={clientProofs}
-            title=""
-            emptyMessage=""
-            showUploadedBy={false}
-          />
+          <p className={cn('mb-3 text-[12px]', TEXT.muted)}>{t('detail.myInstructionsDescription')}</p>
+          <PaymentProofGallery proofs={clientProofs} title="" emptyMessage="" showUploadedBy={false} />
           {isLocked && (
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Lock className="w-3.5 h-3.5" />
+            <div className={cn('mt-2 flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
+              <Lock className="h-3.5 w-3.5" />
               {t('detail.noMoreModifications')}
             </div>
           )}
@@ -81,11 +71,7 @@ export function PaymentDocumentsSection({
       )}
 
       {canUploadInstructions && (
-        <div
-          className={cn(
-            (adminProofs.length > 0 || clientProofs.length > 0) && 'mt-4 pt-4 border-t border-border',
-          )}
-        >
+        <div className={cn((adminProofs.length > 0 || clientProofs.length > 0) && cn('mt-4 pt-4', DIVIDER))}>
           <PaymentProofUpload
             key={uploadKey}
             onFilesSelect={onInstructionFilesChange}
@@ -97,7 +83,7 @@ export function PaymentDocumentsSection({
       )}
 
       {adminProofs.length === 0 && clientProofs.length === 0 && !canUploadInstructions && (
-        <p className="text-sm text-muted-foreground text-center py-3">{t('detail.noDocuments')}</p>
+        <p className={cn('py-3 text-center text-[14px]', TEXT.muted)}>{t('detail.noDocuments')}</p>
       )}
     </div>
   );
