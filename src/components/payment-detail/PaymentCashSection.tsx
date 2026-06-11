@@ -36,12 +36,12 @@ export function PaymentCashSection({ payment }: Props) {
 
       {/* Scanned notice */}
       {payment.status === 'cash_scanned' && (
-        <div className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border border-orange-200 dark:border-orange-800">
+        <div className="rounded-2xl bg-[#FDF1DD] p-5 dark:bg-[#3A2F1A]">
           <div className="flex items-start gap-3">
-            <ScanLine className="w-5 h-5 text-orange-500 mt-0.5" />
+            <ScanLine className="mt-0.5 h-5 w-5 text-[#9A6B12] dark:text-[#E0B978]" />
             <div>
-              <p className="font-medium text-orange-600">{t('detail.qrScannedAtOffice')}</p>
-              <p className="text-sm text-muted-foreground mt-1">{t('detail.processingAtOffice')}</p>
+              <p className="text-[15px] font-bold text-[#9A6B12] dark:text-[#E0B978]">{t('detail.qrScannedAtOffice')}</p>
+              <p className="mt-1 text-[13px] text-[#8A6320] dark:text-[#D0AC78]">{t('detail.processingAtOffice')}</p>
             </div>
           </div>
         </div>
@@ -49,12 +49,12 @@ export function PaymentCashSection({ payment }: Props) {
 
       {/* Completed with signature */}
       {payment.status === 'completed' && payment.cash_signature_url && (
-        <div className="bg-green-50 dark:bg-green-950/30 rounded-2xl p-5 border border-green-200 dark:border-green-800">
+        <div className="rounded-2xl bg-[#DEEFE5] p-5 dark:bg-[#1E3A2C]">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
+            <CheckCircle2 className="mt-0.5 h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
             <div className="flex-1">
-              <p className="font-medium text-green-600">{t('detail.cashPaymentCompleted')}</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-[15px] font-bold text-[#2E7D52] dark:text-[#7FCBA0]">{t('detail.cashPaymentCompleted')}</p>
+              <p className="mt-1 text-[13px] text-[#3E7D5E] dark:text-[#86C9A4]">
                 {t('detail.signatureRecordedOn')}{' '}
                 {payment.cash_signature_timestamp &&
                   format(new Date(payment.cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', {
@@ -62,13 +62,13 @@ export function PaymentCashSection({ payment }: Props) {
                   })}
               </p>
               {payment.cash_signed_by_name && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[13px] text-[#3E7D5E] dark:text-[#86C9A4]">
                   {t('detail.signedBy')}: {payment.cash_signed_by_name}
                 </p>
               )}
 
-              <div className="mt-3 p-3 bg-white rounded-xl border border-green-200 dark:border-green-800">
-                <p className="text-xs text-muted-foreground mb-2 font-medium">
+              <div className="mt-3 rounded-xl bg-white p-3">
+                <p className="mb-2 text-[11px] font-semibold text-[#8E8BA0]">
                   {t('detail.beneficiarySignature')}
                 </p>
                 <img

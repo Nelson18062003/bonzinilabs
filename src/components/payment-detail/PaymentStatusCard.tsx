@@ -1,9 +1,7 @@
 // ============================================================
-// Reusable status narrative card.
-// Drives the "what's happening / what's next" panel that sits
-// under the hero on the client payment detail page. Each variant
-// maps to a small palette and a default icon; callers can pass
-// title + description + optional inline children (e.g. signature).
+// Reusable status narrative card. Refonte « Direction A » (designKit) :
+// cartes tonales DOUCES (sans filet/bordure dure), une teinte par sens.
+// API inchangée (variants, props).
 // ============================================================
 import type { LucideIcon } from 'lucide-react';
 import { AlertCircle, CheckCircle2, Clock, Loader2, Lock, MessageCircle, ScanLine, XCircle } from 'lucide-react';
@@ -27,63 +25,26 @@ interface VariantStyle {
   defaultIcon: LucideIcon;
 }
 
+const LILAC = { container: 'bg-[#EAE7FA] dark:bg-[#272252]', icon: 'text-[#5B4CC4] dark:text-[#B5AAF0]', title: 'text-[#5B4CC4] dark:text-[#B5AAF0]', description: 'text-[#6E66A8] dark:text-[#9C93D6]' };
+const GREEN = { container: 'bg-[#DEEFE5] dark:bg-[#1E3A2C]', icon: 'text-[#2E7D52] dark:text-[#7FCBA0]', title: 'text-[#2E7D52] dark:text-[#7FCBA0]', description: 'text-[#3E7D5E] dark:text-[#86C9A4]' };
+const AMBER = { container: 'bg-[#FDF1DD] dark:bg-[#3A2F1A]', icon: 'text-[#9A6B12] dark:text-[#E0B978]', title: 'text-[#9A6B12] dark:text-[#E0B978]', description: 'text-[#8A6320] dark:text-[#D0AC78]' };
+const RED = { container: 'bg-[#FBE7E7] dark:bg-[#3A2526]', icon: 'text-[#C0504D] dark:text-[#E79A9A]', title: 'text-[#C0504D] dark:text-[#E79A9A]', description: 'text-[#B0524F] dark:text-[#DDA0A0]' };
+
 const VARIANT_STYLES: Record<StatusCardVariant, VariantStyle> = {
-  info: {
-    container: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800',
-    icon: 'text-primary',
-    title: 'text-primary',
-    description: 'text-muted-foreground',
-    defaultIcon: CheckCircle2,
-  },
-  success: {
-    container: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800',
-    icon: 'text-green-500',
-    title: 'text-green-600 dark:text-green-400',
-    description: 'text-muted-foreground',
-    defaultIcon: CheckCircle2,
-  },
-  progress: {
-    container: 'bg-bonzini-violet/10 dark:bg-bonzini-violet/15 border-bonzini-violet/30 dark:border-bonzini-violet/40',
-    icon: 'text-bonzini-violet',
-    title: 'text-bonzini-violet',
-    description: 'text-muted-foreground',
-    defaultIcon: Loader2,
-  },
-  pending: {
-    container: 'bg-bonzini-amber/10 dark:bg-bonzini-amber/15 border-bonzini-amber/30 dark:border-bonzini-amber/40',
-    icon: 'text-bonzini-amber',
-    title: 'text-bonzini-amber',
-    description: 'text-muted-foreground',
-    defaultIcon: Clock,
-  },
-  scanned: {
-    container: 'bg-bonzini-orange/10 dark:bg-bonzini-orange/15 border-bonzini-orange/30 dark:border-bonzini-orange/40',
-    icon: 'text-bonzini-orange',
-    title: 'text-bonzini-orange',
-    description: 'text-muted-foreground',
-    defaultIcon: ScanLine,
-  },
-  rejected: {
-    container: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800',
-    icon: 'text-red-500',
-    title: 'text-red-800 dark:text-red-400',
-    description: 'text-red-700 dark:text-red-300',
-    defaultIcon: XCircle,
-  },
+  info: { ...LILAC, defaultIcon: CheckCircle2 },
+  success: { ...GREEN, defaultIcon: CheckCircle2 },
+  progress: { ...LILAC, defaultIcon: Loader2 },
+  pending: { ...AMBER, defaultIcon: Clock },
+  scanned: { ...AMBER, defaultIcon: ScanLine },
+  rejected: { ...RED, defaultIcon: XCircle },
   cancelled: {
-    container: 'bg-muted/60 border-border',
-    icon: 'text-muted-foreground',
-    title: 'text-foreground',
-    description: 'text-muted-foreground',
+    container: 'bg-black/[0.04] dark:bg-white/[0.06]',
+    icon: 'text-[#8E8BA0]',
+    title: 'text-[#1B1A24] dark:text-[#F2F1F7]',
+    description: 'text-[#8E8BA0]',
     defaultIcon: Lock,
   },
-  message: {
-    container: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800',
-    icon: 'text-green-500',
-    title: 'text-green-800 dark:text-green-400',
-    description: 'text-green-700 dark:text-green-300',
-    defaultIcon: MessageCircle,
-  },
+  message: { ...LILAC, defaultIcon: MessageCircle },
 };
 
 interface Props {
@@ -113,26 +74,12 @@ export function PaymentStatusCard({
   const Icon = icon ?? styles.defaultIcon;
 
   return (
-    <div
-      className={cn(
-        'rounded-2xl p-5 border',
-        styles.container,
-        className,
-      )}
-    >
+    <div className={cn('rounded-2xl p-5', styles.container, className)}>
       <div className="flex items-start gap-3">
-        <Icon
-          className={cn(
-            'w-5 h-5 mt-0.5 flex-shrink-0',
-            styles.icon,
-            spinIcon && 'animate-spin',
-          )}
-        />
-        <div className="flex-1 min-w-0">
-          <p className={cn('font-medium', styles.title)}>{title}</p>
-          {description && (
-            <p className={cn('text-sm mt-1', styles.description)}>{description}</p>
-          )}
+        <Icon className={cn('mt-0.5 h-5 w-5 flex-shrink-0', styles.icon, spinIcon && 'animate-spin')} />
+        <div className="min-w-0 flex-1">
+          <p className={cn('text-[15px] font-bold', styles.title)}>{title}</p>
+          {description && <p className={cn('mt-1 text-[13px]', styles.description)}>{description}</p>}
           {children && <div className="mt-3">{children}</div>}
         </div>
       </div>

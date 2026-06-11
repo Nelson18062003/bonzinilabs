@@ -1,13 +1,15 @@
 // ============================================================
-// Read-only beneficiary section. Renders the appropriate display
-// for cash / alipay-wechat / bank, with a "Modifier" affordance
-// when the payment is still editable.
+// Read-only beneficiary section. Refonte « Direction A » (designKit) :
+// carte blanche ombre douce, « Verrouillé » en pastille neutre, lien
+// Modifier violet, état vide en ambre. CopyableField conservé.
+// Logique 100% PRÉSERVÉE (branches cash / alipay-wechat / bank, édition).
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Banknote, Edit2, Lock, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { CopyableField } from '@/mobile/components/payments/CopyableField';
-import { Button } from '@/components/ui/button';
 import type { Payment } from '@/hooks/usePayments';
+import { SURFACE, TEXT, PrimaryPill } from '@/mobile/designKit';
 import { isStatusEditable, isStatusLocked } from './types';
 
 interface Props {
@@ -32,23 +34,23 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
     payment.beneficiary_bank_account;
 
   return (
-    <div className="bg-card rounded-2xl p-5 border border-border">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold flex items-center gap-2">
-          <User className="w-4 h-4" />
+    <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className={cn('flex items-center gap-2 text-[15px] font-bold', TEXT.strong)}>
+          <User className={cn('h-4 w-4', TEXT.muted)} />
           {t('detail.beneficiary')}
         </h3>
         {isLocked ? (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-            <Lock className="w-3 h-3" />
+          <span className={cn('flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}>
+            <Lock className="h-3 w-3" />
             {t('detail.locked')}
           </span>
         ) : canEdit && hasBeneficiaryInfo && payment.method !== 'cash' ? (
           <button
             onClick={onEdit}
-            className="text-xs font-medium text-primary active:scale-95 transition-transform flex items-center gap-1"
+            className="flex items-center gap-1 text-[12px] font-bold text-[#5B4CC4] transition-transform active:scale-95 dark:text-[#B5AAF0]"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="h-3.5 w-3.5" />
             {t('detail.edit')}
           </button>
         ) : null}
@@ -56,17 +58,15 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
 
       {/* Cash branch */}
       {payment.method === 'cash' && (
-        <div className="text-center py-4">
-          <Banknote className="w-8 h-8 text-primary mx-auto mb-2" />
-          <p className="text-sm font-medium">{t('detail.cashPayment')}</p>
-          <p className="text-xs text-muted-foreground">{t('detail.cashQrWillBeGenerated')}</p>
+        <div className="py-4 text-center">
+          <div className={cn('mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full', SURFACE.holder)}>
+            <Banknote className="h-6 w-6" />
+          </div>
+          <p className={cn('text-[14px] font-bold', TEXT.strong)}>{t('detail.cashPayment')}</p>
+          <p className={cn('text-[12px]', TEXT.muted)}>{t('detail.cashQrWillBeGenerated')}</p>
           {payment.cash_qr_code && (
             <div className="mt-3">
-              <img
-                src={payment.cash_qr_code}
-                alt="QR Code Cash"
-                className="w-32 h-32 mx-auto rounded-lg border"
-              />
+              <img src={payment.cash_qr_code} alt="QR Code Cash" className="mx-auto h-32 w-32 rounded-lg" />
             </div>
           )}
         </div>
@@ -74,13 +74,15 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
 
       {/* Empty state for non-cash */}
       {payment.method !== 'cash' && !hasBeneficiaryInfo && (
-        <div className="text-center py-6">
-          <AlertCircle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
-          <p className="font-medium">{t('detail.missingInfo')}</p>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
-            {t('detail.addBeneficiaryPrompt')}
-          </p>
-          {canEdit && <Button onClick={onEdit}>{t('detail.addInfo')}</Button>}
+        <div className="rounded-2xl bg-[#FDF1DD] py-6 text-center dark:bg-[#3A2F1A]">
+          <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[#9A6B12] dark:text-[#E0B978]" />
+          <p className={cn('text-[15px] font-bold', TEXT.strong)}>{t('detail.missingInfo')}</p>
+          <p className={cn('mb-4 mt-1 text-[13px]', TEXT.muted)}>{t('detail.addBeneficiaryPrompt')}</p>
+          {canEdit && (
+            <div className="flex justify-center">
+              <PrimaryPill onClick={onEdit}>{t('detail.addInfo')}</PrimaryPill>
+            </div>
+          )}
         </div>
       )}
 
@@ -88,30 +90,23 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
       {payment.method !== 'cash' && hasBeneficiaryInfo && (
         <div>
           {payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method) && (
-            <div className="flex justify-center mb-4">
-              <button
-                onClick={() => onViewQr(payment.beneficiary_qr_code_url!)}
-                className="active:scale-[0.98] transition-transform"
-              >
+            <div className="mb-4 flex justify-center">
+              <button onClick={() => onViewQr(payment.beneficiary_qr_code_url!)} className="transition-transform active:scale-[0.98]">
                 <img
                   src={payment.beneficiary_qr_code_url}
                   alt={t('detail.form.qrBeneficiary')}
-                  className="w-[200px] h-[200px] rounded-xl border-2 border-border object-contain bg-white"
+                  className="h-[200px] w-[200px] rounded-xl bg-white object-contain"
                 />
-                <p className="text-xs text-primary mt-2 text-center">
+                <p className="mt-2 text-center text-[12px] font-semibold text-[#5B4CC4] dark:text-[#B5AAF0]">
                   {t('detail.tapToEnlarge')}
                 </p>
               </button>
             </div>
           )}
 
-          <div className="space-y-2.5 text-sm">
+          <div className="space-y-2.5">
             {payment.beneficiary_name && (
-              <CopyableField
-                label={t('detail.fields.name')}
-                value={payment.beneficiary_name}
-                copyLabel={t('detail.fields.beneficiaryName')}
-              />
+              <CopyableField label={t('detail.fields.name')} value={payment.beneficiary_name} copyLabel={t('detail.fields.beneficiaryName')} />
             )}
             {payment.beneficiary_identifier && (
               <CopyableField
@@ -121,44 +116,24 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
               />
             )}
             {payment.beneficiary_phone && (
-              <CopyableField
-                label={t('detail.fields.phone')}
-                value={payment.beneficiary_phone}
-                copyLabel={t('detail.fields.beneficiaryPhone')}
-              />
+              <CopyableField label={t('detail.fields.phone')} value={payment.beneficiary_phone} copyLabel={t('detail.fields.beneficiaryPhone')} />
             )}
             {payment.beneficiary_email && (
-              <CopyableField
-                label={t('detail.fields.email')}
-                value={payment.beneficiary_email}
-                copyLabel={t('detail.fields.beneficiaryEmail')}
-              />
+              <CopyableField label={t('detail.fields.email')} value={payment.beneficiary_email} copyLabel={t('detail.fields.beneficiaryEmail')} />
             )}
             {payment.beneficiary_bank_name && (
-              <CopyableField
-                label={t('detail.fields.bank')}
-                value={payment.beneficiary_bank_name}
-                copyLabel={t('detail.fields.bank')}
-              />
+              <CopyableField label={t('detail.fields.bank')} value={payment.beneficiary_bank_name} copyLabel={t('detail.fields.bank')} />
             )}
             {payment.beneficiary_bank_account && (
-              <CopyableField
-                label={t('detail.fields.accountNumber')}
-                value={payment.beneficiary_bank_account}
-                copyLabel={t('detail.fields.accountNumber')}
-              />
+              <CopyableField label={t('detail.fields.accountNumber')} value={payment.beneficiary_bank_account} copyLabel={t('detail.fields.accountNumber')} />
             )}
             {payment.beneficiary_bank_extra && (
-              <CopyableField
-                label="SWIFT / IBAN"
-                value={payment.beneficiary_bank_extra}
-                copyLabel="SWIFT / IBAN"
-              />
+              <CopyableField label="SWIFT / IBAN" value={payment.beneficiary_bank_extra} copyLabel="SWIFT / IBAN" />
             )}
             {payment.beneficiary_notes && (
-              <div className="pt-2 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-1">{t('detail.fields.notes')}</p>
-                <p className="text-sm">{payment.beneficiary_notes}</p>
+              <div className="border-t border-black/[0.06] pt-2 dark:border-white/[0.08]">
+                <p className={cn('mb-1 text-[11px]', TEXT.muted)}>{t('detail.fields.notes')}</p>
+                <p className={cn('text-[14px]', TEXT.strong)}>{payment.beneficiary_notes}</p>
               </div>
             )}
           </div>
