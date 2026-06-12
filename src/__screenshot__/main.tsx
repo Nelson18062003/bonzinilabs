@@ -41,6 +41,7 @@ import { PayDetailV5 } from './clientPayLayoutV5';
 import { PayListV6, PayDetailV6 } from './clientPayLayoutV6';
 import { PayListV7, PayDetailV7 } from './clientPayLayoutV7';
 import { PayListV8 } from './clientPayLayoutV8';
+import { WizMethod, WizAmount, WizBenefSaved, WizBenefNew, WizConfirm } from './clientPayWizard';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -119,6 +120,12 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cpay-list-v7': { Comp: PayListV7, route: '/' },
   'cpay-detail-v7': { Comp: PayDetailV7, route: '/' },
   'cpay-list-v8': { Comp: PayListV8, route: '/' },
+  // Refonte STRUCTURE — wizard « Nouveau paiement » (étape 4.1)
+  'cpay-wiz-method': { Comp: WizMethod, route: '/' },
+  'cpay-wiz-amount': { Comp: WizAmount, route: '/' },
+  'cpay-wiz-benef': { Comp: WizBenefSaved, route: '/' },
+  'cpay-wiz-benef-new': { Comp: WizBenefNew, route: '/' },
+  'cpay-wiz-confirm': { Comp: WizConfirm, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
