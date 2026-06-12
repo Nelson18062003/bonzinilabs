@@ -45,19 +45,19 @@
   },
   "form": {
     "steps": {
-      "method": "Mode",
+      "method": "Méthode",
       "amount": "Montant",
-      "beneficiary": "Bénéf.",
+      "beneficiary": "Bénéficiaire",
       "confirm": "Résumé"
     },
     "methods": {
       "alipay": {
         "label": "Alipay",
-        "desc": "Paiement via Alipay"
+        "desc": "Règlement sur compte Alipay"
       },
       "wechat": {
         "label": "WeChat Pay",
-        "desc": "Paiement via WeChat"
+        "desc": "Règlement sur compte WeChat"
       },
       "bank_transfer": {
         "label": "Virement bancaire",
@@ -71,14 +71,17 @@
     "chooseMethod": "Choisissez un mode de paiement",
     "enterAmount": "Entrez le montant",
     "howToReceive": "Comment votre fournisseur est-il payé ?",
+    "rateDependsOnMethod": "Le taux du jour dépend du mode choisi.",
     "rateApplied": "Taux appliqué",
     "byXAF": "En XAF",
     "byRMB": "En RMB",
     "youSend": "Vous payez",
-    "supplierReceives": "Fournisseur reçoit",
+    "supplierReceives": "Votre bénéficiaire reçoit",
     "amountDebited": "Montant débité",
     "rate": "Taux",
     "balance": "Solde",
+    "balanceAfterPayment": "Solde après paiement",
+    "minMaxCaption": "Minimum 10 000 XAF · Maximum 50 000 000 XAF",
     "all": "Tout",
     "addFunds": "Recharger mon compte",
     "insufficientBalance": "Solde insuffisant",
@@ -94,10 +97,10 @@
     "success": "Paiement créé avec succès",
     "error": "Erreur lors de la création du paiement",
     "beneficiary": {
-      "title": "À qui voulez-vous payer ?",
+      "title": "Qui voulez-vous payer ?",
       "whoPicks": "Qui retire les fonds ?",
       "mustPresentQr": "Le bénéficiaire devra présenter un QR Code à l'agent Bonzini.",
-      "selectOrCreate": "Choisissez un bénéficiaire enregistré ou créez-en un nouveau.",
+      "selectOrCreate": "Choisissez un bénéficiaire {{method}} enregistré ou créez-en un nouveau.",
       "existing": "Enregistré",
       "new": "Nouveau",
       "noneRegistered": "Aucun bénéficiaire enregistré pour le moment.",
@@ -127,7 +130,7 @@
       "accountNumber": "Numéro de compte",
       "swiftAgency": "SWIFT / IBAN / agence (optionnel)",
       "additionalInfo": "Informations complémentaires",
-      "addLater": "Compléter plus tard",
+      "addLater": "Compléter les coordonnées plus tard",
       "dontSave": "Ne pas enregistrer ce bénéficiaire",
       "saveFailedPaymentContinues": "Bénéficiaire non enregistré au carnet — le paiement continue"
     },
@@ -135,9 +138,9 @@
       "method": "Mode de paiement",
       "beneficiary": "Bénéficiaire",
       "beneficiaryLater": "À compléter après création",
-      "amountDebited": "Montant débité",
+      "amountDebited": "Débité maintenant",
       "newBalance": "Nouveau solde",
-      "debitNotice": "Votre solde sera débité à la confirmation."
+      "debitNotice": "Votre solde est débité à la confirmation. Bonzini règle ensuite votre fournisseur et vous envoie la preuve."
     }
   },
   "detail": {

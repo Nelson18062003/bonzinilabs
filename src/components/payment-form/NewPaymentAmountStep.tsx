@@ -1,17 +1,27 @@
 // ============================================================
-// Step 2 — Enter amount. Refonte « Direction A » (designKit) :
-// segment devise XAF/RMB · gros montant éditable + unité ambre ·
-// résultat de conversion en bloc lilas · presets · alerte solde.
-// Logique 100% PRÉSERVÉE : props/handlers inchangés (le switch de
-// devise vide l'input ; preset « Tous » = min(solde, 50M) / floor(rate)).
+// Step 2 — Enter amount (structure wizard validée).
+// Segment devise XAF/RMB en CARTE BLANCHE (lisible sur le canvas) ·
+// pastille solde · gros montant éditable + unité ambre · bloc lilas
+// « Votre bénéficiaire reçoit » avec le TAUX DU JOUR intégré
+// (« 1 000 000 XAF = 11 480 ¥ ») · solde après paiement · presets une
+// ligne · rappel des bornes. Logique 100 % PRÉSERVÉE : le switch de
+// devise vide l'input ; preset « Tout » = min(solde, 50M) / floor(rate).
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { formatXAF, formatRMB } from '@/lib/formatters';
+import { formatXAF, formatNumber, formatYuan } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { type Currency, QUICK_RMB, QUICK_XAF } from './types';
 import { SURFACE, TEXT } from '@/mobile/designKit';
+
+/** Groupe les milliers à l'affichage (l'état reste la chaîne brute). */
+function groupDigits(raw: string): string {
+  if (!raw) return '';
+  const [int, dec] = raw.split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return dec !== undefined ? `${grouped}.${dec}` : grouped;
+}
 
 interface Props {
   currency: Currency;
@@ -23,6 +33,7 @@ interface Props {
   amountRMB: number;
   walletBalanceXaf: number | undefined;
   walletLoading: boolean;
+  balanceAfter: number;
   hasEnoughBalance: boolean;
   isValidAmount: boolean;
   showRate: boolean;
@@ -38,6 +49,7 @@ export function NewPaymentAmountStep({
   amountRMB,
   walletBalanceXaf,
   walletLoading,
+  balanceAfter,
   hasEnoughBalance,
   isValidAmount,
   showRate,
@@ -48,7 +60,7 @@ export function NewPaymentAmountStep({
   return (
     <div className="animate-fade-in space-y-4">
       {/* Segment devise — vider l'input au changement */}
-      <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.canvas)}>
+      <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
         {(['XAF', 'RMB'] as Currency[]).map((c) => {
           const active = currency === c;
           return (
@@ -69,25 +81,25 @@ export function NewPaymentAmountStep({
         })}
       </div>
 
-      {/* Carte montant — gros chiffre éditable + résultat de conversion */}
+      {/* Carte montant — gros chiffre éditable + conversion + taux */}
       <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className={cn('text-[12px] font-medium', TEXT.muted)}>
             {currency === 'XAF' ? t('form.youSend') : t('form.supplierReceives')}
           </span>
           {!walletLoading && walletBalanceXaf !== undefined && (
-            <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>
-              {t('form.balance')}: {formatXAF(walletBalanceXaf)} XAF
+            <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums', SURFACE.holder)}>
+              {t('form.balance')} · {formatXAF(walletBalanceXaf)} XAF
             </span>
           )}
         </div>
-        <div className="mt-1.5 flex items-baseline gap-2">
+        <div className="mt-2 flex items-baseline gap-2">
           {/* Gros chiffre 40px (≫16px → aucun auto-zoom iOS) : input nu volontaire. */}
           {/* eslint-disable-next-line no-restricted-syntax */}
           <input
             type="text"
             inputMode="numeric"
-            value={inputAmount}
+            value={groupDigits(inputAmount)}
             onChange={(e) => onInputAmountChange(e.target.value.replace(/[^0-9.]/g, ''))}
             placeholder="0"
             className={cn(
@@ -99,7 +111,7 @@ export function NewPaymentAmountStep({
           <span className="shrink-0 text-[18px] font-extrabold text-[#E8932A]">{currency}</span>
         </div>
 
-        <div className="mt-3 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
           <div className={cn('text-[12px]', TEXT.muted)}>
             {currency === 'XAF' ? t('form.supplierReceives') : t('form.amountDebited')}
           </div>
@@ -107,7 +119,7 @@ export function NewPaymentAmountStep({
             {currency === 'XAF' ? (
               <>
                 <span className="text-[22px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
-                <span className={cn('text-[30px] font-black leading-none tabular-nums', TEXT.strong)}>{formatRMB(amountRMB)}</span>
+                <span className={cn('text-[30px] font-black leading-none tabular-nums', TEXT.strong)}>{formatYuan(amountRMB)}</span>
               </>
             ) : (
               <>
@@ -116,17 +128,24 @@ export function NewPaymentAmountStep({
               </>
             )}
           </div>
+          {showRate && (
+            <div className={cn('mt-3 border-t border-black/[0.05] pt-2.5 text-[12px] tabular-nums dark:border-white/[0.08]', TEXT.muted)}>
+              Taux du jour ·{' '}
+              <span className={cn('font-bold', TEXT.strong)}>
+                1 000 000 XAF = {formatNumber(Math.round(1_000_000 * rate))} ¥
+              </span>
+            </div>
+          )}
         </div>
+
+        {isValidAmount && hasEnoughBalance && (
+          <p className={cn('mt-3 text-[12px] tabular-nums', TEXT.muted)}>
+            {t('form.balanceAfterPayment')} : <span className="font-bold">{formatXAF(balanceAfter)} XAF</span>
+          </p>
+        )}
       </div>
 
-      {showRate && (
-        <p className={cn('px-1 text-center text-[12px]', TEXT.muted)}>
-          {t('form.rateApplied')} :{' '}
-          <span className="font-bold tabular-nums">1 000 000 XAF = ¥{formatRMB(1_000_000 * rate)}</span>
-        </p>
-      )}
-
-      {/* Presets rapides + « Tous » */}
+      {/* Presets rapides + « Tout » — une seule ligne */}
       <div className="grid grid-cols-5 gap-2">
         {(currency === 'XAF' ? QUICK_XAF : QUICK_RMB).map((preset) => {
           const active = inputAmount === preset.toString();
@@ -136,13 +155,13 @@ export function NewPaymentAmountStep({
               onClick={() => onInputAmountChange(preset.toString())}
               className={cn(
                 'rounded-xl py-2.5 text-[12px] font-bold transition-colors',
-                active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.canvas, TEXT.muted),
+                active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
               {currency === 'XAF'
                 ? preset >= 1_000_000
                   ? `${preset / 1_000_000}M`
-                  : formatXAF(preset)
+                  : `${preset / 1_000}K`
                 : `¥${preset.toLocaleString('fr-FR')}`}
             </button>
           );
@@ -168,7 +187,7 @@ export function NewPaymentAmountStep({
               onClick={() => allValueStr && onInputAmountChange(allValueStr)}
               className={cn(
                 'rounded-xl py-2.5 text-[12px] font-bold transition-colors',
-                isActive ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.canvas, TEXT.muted),
+                isActive ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
                 disabled && 'cursor-not-allowed opacity-40',
               )}
               aria-label={t('form.all')}
@@ -178,6 +197,8 @@ export function NewPaymentAmountStep({
           );
         })()}
       </div>
+
+      <p className={cn('px-1 text-center text-[11px]', TEXT.muted)}>{t('form.minMaxCaption')}</p>
 
       {!hasEnoughBalance && isValidAmount && (
         <div className="flex items-center gap-2 rounded-2xl bg-[#FBE7E7] p-3.5 text-[13px] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">

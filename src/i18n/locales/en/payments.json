@@ -53,11 +53,11 @@
     "methods": {
       "alipay": {
         "label": "Alipay",
-        "desc": "Pay via Alipay"
+        "desc": "Settled to an Alipay account"
       },
       "wechat": {
         "label": "WeChat Pay",
-        "desc": "Pay via WeChat"
+        "desc": "Settled to a WeChat account"
       },
       "bank_transfer": {
         "label": "Bank transfer",
@@ -75,7 +75,7 @@
     "byXAF": "In XAF",
     "byRMB": "In RMB",
     "youSend": "You pay",
-    "supplierReceives": "Supplier receives",
+    "supplierReceives": "Your beneficiary receives",
     "amountDebited": "Amount debited",
     "rate": "Rate",
     "balance": "Balance",
@@ -94,10 +94,10 @@
     "success": "Payment created successfully",
     "error": "Error creating payment",
     "beneficiary": {
-      "title": "Who would you like to pay?",
+      "title": "Who are you paying?",
       "whoPicks": "Who is picking up the cash?",
       "mustPresentQr": "The recipient will present a QR Code to the Bonzini agent.",
-      "selectOrCreate": "Pick a saved beneficiary or create a new one.",
+      "selectOrCreate": "Pick a saved {{method}} beneficiary or create a new one.",
       "existing": "Saved",
       "new": "New",
       "noneRegistered": "No saved beneficiaries yet.",
@@ -127,7 +127,7 @@
       "accountNumber": "Account number",
       "swiftAgency": "SWIFT / IBAN / branch (optional)",
       "additionalInfo": "Additional information",
-      "addLater": "Complete later",
+      "addLater": "Add the beneficiary details later",
       "dontSave": "Don't save this beneficiary",
       "saveFailedPaymentContinues": "Beneficiary not saved to your list — the payment continues"
     },
@@ -135,10 +135,13 @@
       "method": "Payment method",
       "beneficiary": "Beneficiary",
       "beneficiaryLater": "To be completed after creation",
-      "amountDebited": "Amount debited",
+      "amountDebited": "Debited now",
       "newBalance": "New balance",
-      "debitNotice": "Your balance will be debited upon confirmation."
-    }
+      "debitNotice": "Your balance is debited on confirmation. Bonzini then settles your supplier and sends you the proof."
+    },
+    "rateDependsOnMethod": "The day rate depends on the chosen method.",
+    "balanceAfterPayment": "Balance after payment",
+    "minMaxCaption": "Minimum 10,000 XAF · Maximum 50,000,000 XAF"
   },
   "detail": {
     "title": "Payment detail",

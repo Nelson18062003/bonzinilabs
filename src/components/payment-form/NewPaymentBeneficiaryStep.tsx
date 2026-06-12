@@ -7,7 +7,7 @@
 // Logique 100% PRÉSERVÉE : tous les props/handlers inchangés.
 // ============================================================
 import { useTranslation } from 'react-i18next';
-import { Check, User } from 'lucide-react';
+import { Check, ChevronRight, User, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Beneficiary } from '@/hooks/useBeneficiaries';
 import type { useMyProfile } from '@/hooks/useProfile';
@@ -16,7 +16,7 @@ import {
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
 import { modeColor } from '@/lib/beneficiaries/labels';
-import { SURFACE, TEXT, SOFT_PILL } from '@/mobile/designKit';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import type { PaymentMethodType } from './types';
 
 type Profile = NonNullable<ReturnType<typeof useMyProfile>['data']>;
@@ -75,11 +75,13 @@ export function NewPaymentBeneficiaryStep({
     <div className="animate-fade-in space-y-4">
       <div className="px-1">
         <h2 className={cn('text-[18px] font-black', TEXT.strong)}>{t('form.beneficiary.title')}</h2>
-        <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>{t('form.beneficiary.selectOrCreate')}</p>
+        <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>
+          {t('form.beneficiary.selectOrCreate', { method: t(`form.methods.${selectedMethod}.label`) })}
+        </p>
       </div>
 
-      {/* Existing / New tabs */}
-      <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.canvas)}>
+      {/* Existing / New tabs — carte blanche, actif violet (langage wizard validé) */}
+      <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
         {(['existing', 'new'] as const).map((tab) => {
           const active = beneficiaryTab === tab;
           return (
@@ -89,7 +91,7 @@ export function NewPaymentBeneficiaryStep({
               onClick={() => onBeneficiaryTabChange(tab)}
               className={cn(
                 'flex-1 rounded-full py-2 text-[13px] font-bold transition-colors',
-                active ? cn('bg-white shadow-sm dark:bg-[#211F2B]', TEXT.strong) : TEXT.muted,
+                active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
               )}
             >
               {t(`form.beneficiary.${tab === 'existing' ? 'existing' : 'new'}`)}
@@ -166,8 +168,8 @@ export function NewPaymentBeneficiaryStep({
                 useSelf && 'ring-2 ring-[#8B5CF6]',
               )}
             >
-              <User className={cn('h-5 w-5', TEXT.muted)} />
-              <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{t('form.beneficiary.myself')}</span>
+              <User className={cn('h-5 w-5', useSelf ? TEXT.strong : TEXT.muted)} />
+              <span className={cn('text-[14px] font-semibold', useSelf ? TEXT.strong : TEXT.muted)}>{t('form.beneficiary.myself')}</span>
             </button>
             <button
               type="button"
@@ -179,8 +181,8 @@ export function NewPaymentBeneficiaryStep({
                 !useSelf && 'ring-2 ring-[#8B5CF6]',
               )}
             >
-              <User className={cn('h-5 w-5', TEXT.muted)} />
-              <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{t('form.beneficiary.anotherPerson')}</span>
+              <Users className={cn('h-5 w-5', !useSelf ? TEXT.strong : TEXT.muted)} />
+              <span className={cn('text-[14px] font-semibold', !useSelf ? TEXT.strong : TEXT.muted)}>{t('form.beneficiary.anotherPerson')}</span>
             </button>
           </div>
 
@@ -244,10 +246,14 @@ export function NewPaymentBeneficiaryStep({
         </div>
       )}
 
-      {/* Complete later (not for cash) */}
+      {/* Complete later (not for cash) — lien discret, PAS un bouton concurrent du CTA */}
       {!isCash && (
-        <button type="button" onClick={onSkip} className={cn('w-full py-3.5 text-[14px] font-semibold', SOFT_PILL)}>
-          {t('form.beneficiary.addLater')}
+        <button
+          type="button"
+          onClick={onSkip}
+          className="flex w-full items-center justify-center gap-1 py-2 text-[13px] font-semibold text-[#5B4CC4] transition active:opacity-70 dark:text-[#B5AAF0]"
+        >
+          {t('form.beneficiary.addLater')} <ChevronRight className="h-4 w-4" />
         </button>
       )}
     </div>

@@ -9,7 +9,8 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = peaufiner le FORMULAIRE de création (wizard)** (voir §4.1).
+3. **Prochaine tâche = module DÉPÔTS** (voir §4.1 — même méthode : maquette d'abord,
+   validation client, puis implémentation).
 
 ## 1. Objectif & méthode
 Refonte **from scratch** de l'app mobile **client** (`src/pages/`, `src/components/`,
@@ -57,16 +58,27 @@ de l'admin.
   réduit aux cartes porteuses d'info (motif rejet, annulation, message Bonzini).
   SUPPRIMÉS (orphelins) : `PaymentDetailsAccordion`, `PaymentTimelineDisplay`,
   `STATUS_BADGE_STYLES`. Reçu PDF / upload preuves / QR drawer / cash QR intacts.
+- **WIZARD refondu (maquette VALIDÉE par le client → implémenté)** →
+  `src/pages/NewPaymentPage.tsx` + `payment-form/*`. Maquette de référence :
+  `src/__screenshot__/clientPayWizard.tsx` (clés `cpay-wiz-*`). Décisions validées :
+  en-tête drill-in (retour rond + titre) · **AUCUNE barre d'étapes sur l'écran Méthode**
+  (demande client), visible ensuite avec libellés pleins (Méthode/Montant/Bénéficiaire/Résumé)
+  · cartes méthode avec **taux du jour par mode** (ambre, `getBaseRate`, descriptions
+  « Règlement sur compte… ») · montant : segment XAF/RMB en carte blanche, **saisie groupée
+  en milliers** (état brut préservé), pastille solde, bloc lilas « Votre bénéficiaire
+  reçoit » + « Taux du jour · 1 000 000 XAF = 11 480 ¥ » (taux **entier** via
+  `Math.round(1e6*rate)`), « Solde après paiement », presets 100K/250K/500K/1M/Tout une
+  ligne, rappel bornes · bénéficiaire : onglets violet en carte, sous-titre avec méthode,
+  « Compléter les coordonnées plus tard » en **lien discret** (≠ CTA), icônes User/Users ·
+  résumé : hero langage fiche v7 (¥ `formatYuan`, taux lilas) + récap (bénéficiaire +
+  identifiant/compte/téléphone via `beneficiarySub`, « Débité maintenant », nouveau solde)
+  + note lilas de débit · CTA pied avec flèche. `formatYuan` ajouté aux formatters.
+  LOGIQUE 100 % intacte : `BeneficiaryForm` partagé (champs par méthode), switch devise
+  vide l'input, « Tout » = min(solde, 50M), bornes/zod, doublon soft, cash+self,
+  snapshot gelé, `SuccessScreen` inchangé.
 
 ## 4. À FAIRE — dans l'ordre
-### 4.1 FORMULAIRE de création (wizard) — aligner sur la structure/le langage v8 (PROCHAINE ÉTAPE)
-`src/pages/NewPaymentPage.tsx` (orchestrateur) + `src/components/payment-form/*`
-(`NewPaymentMethodStep`, `NewPaymentAmountStep`, `NewPaymentBeneficiaryStep`,
-`NewPaymentConfirmStep`, `StepProgressBar`, `SuccessScreen`, `PaymentMethodCard`,
-`paymentRateLogic.ts`, `paymentSchemas.ts`). Déjà en Direction A ; à peaufiner structure.
-**NE PAS** partir sur le « débit immédiat / création express » : le client l'a écarté.
-
-### 4.2 Ensuite, autres modules client (même méthode)
+### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
 Dépôts → Wallet/Accueil → Bénéficiaires → Historique → Profil/Notifications → Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas

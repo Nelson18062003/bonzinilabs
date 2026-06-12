@@ -35,8 +35,9 @@ function MethodLogo({ k, size = 44, radius }: { k: MKey; size?: number; radius?:
 
 const STEPS = ['Méthode', 'Montant', 'Bénéficiaire', 'Résumé'];
 
-/** Cadre commun du wizard : en-tête drill-in + progression + CTA en pied. */
-function Frame({ step, cta, children }: { step: number; cta: string; children: React.ReactNode }) {
+/** Cadre commun du wizard : en-tête drill-in + progression + CTA en pied.
+ *  `showSteps=false` sur l'écran Méthode (validé : pas d'étapes en entrée). */
+function Frame({ step, cta, showSteps = true, children }: { step: number; cta: string; showSteps?: boolean; children: React.ReactNode }) {
   return (
     <div className={cn('mx-auto flex min-h-screen max-w-[420px] flex-col', SURFACE.canvas)}>
       <div className="flex items-center gap-3 px-4 pb-1 pt-4">
@@ -46,16 +47,18 @@ function Frame({ step, cta, children }: { step: number; cta: string; children: R
         <span className={cn('text-[17px] font-black', TEXT.strong)}>Nouveau paiement</span>
       </div>
 
-      <div className="px-4 pb-1 pt-3">
-        <div className="flex gap-1.5">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
-              <div className={cn('h-1.5 w-full rounded-full', i <= step ? 'bg-[#8B5CF6]' : 'bg-black/[0.07] dark:bg-white/[0.09]')} />
-              <span className={cn('text-[10px] font-bold', i <= step ? 'text-[#5B4CC4] dark:text-[#B5AAF0]' : TEXT.muted)}>{label}</span>
-            </div>
-          ))}
+      {showSteps && (
+        <div className="px-4 pb-1 pt-3">
+          <div className="flex gap-1.5">
+            {STEPS.map((label, i) => (
+              <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className={cn('h-1.5 w-full rounded-full', i <= step ? 'bg-[#8B5CF6]' : 'bg-black/[0.07] dark:bg-white/[0.09]')} />
+                <span className={cn('text-[10px] font-bold', i <= step ? 'text-[#5B4CC4] dark:text-[#B5AAF0]' : TEXT.muted)}>{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 space-y-4 px-4 py-4">{children}</div>
 
@@ -77,7 +80,7 @@ export function WizMethod() {
     { k: 'cash', label: 'Cash', desc: 'Retrait au bureau Bonzini', rate: '11 530' },
   ];
   return (
-    <Frame step={0} cta="Continuer">
+    <Frame step={0} cta="Continuer" showSteps={false}>
       <div className="px-1">
         <h1 className={cn('text-[18px] font-black', TEXT.strong)}>Comment votre fournisseur est-il payé ?</h1>
         <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>Le taux du jour dépend du mode choisi.</p>

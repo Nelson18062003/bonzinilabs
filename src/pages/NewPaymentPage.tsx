@@ -1,6 +1,8 @@
 // ============================================================
-// PAGE — NewPaymentPage (4-step wizard)
-// Orchestrator only. Each step lives in
+// PAGE — NewPaymentPage (4-step wizard), structure validée :
+// en-tête drill-in (retour rond + titre) · progression masquée sur
+// l'écran Méthode · taux du jour par mode sur les cartes · CTA unique
+// en pied. Orchestrator only. Each step lives in
 //   src/components/payment-form/NewPayment*Step.tsx
 // Pure rate logic lives in
 //   src/components/payment-form/paymentRateLogic.ts
@@ -8,9 +10,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { SURFACE, PrimaryPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, PrimaryPill } from '@/mobile/designKit';
+import { getBaseRate } from '@/lib/rateCalculation';
 import { StepProgressBar } from '@/components/payment-form/StepProgressBar';
 import { SuccessScreen } from '@/components/payment-form/SuccessScreen';
 import { NewPaymentMethodStep } from '@/components/payment-form/NewPaymentMethodStep';
@@ -18,6 +21,7 @@ import { NewPaymentAmountStep } from '@/components/payment-form/NewPaymentAmount
 import { NewPaymentBeneficiaryStep } from '@/components/payment-form/NewPaymentBeneficiaryStep';
 import { NewPaymentConfirmStep } from '@/components/payment-form/NewPaymentConfirmStep';
 import {
+  PAYMENT_METHOD_IDS,
   STEP_KEYS,
   type Currency,
   type IdentificationType,
@@ -27,6 +31,7 @@ import {
 import {
   clientCountryToRateKey,
   computePaymentValues,
+  toRateKey,
 } from '@/components/payment-form/paymentRateLogic';
 import {
   makeAmountStepSchema,
@@ -144,6 +149,15 @@ const NewPaymentPage = () => {
       }),
     [inputAmount, currency, selectedMethod, wallet?.balance_xaf, clientRatesData, clientCountryKey],
   );
+
+  // Taux du jour par mode (¥ / 1M XAF) — affichés sur les cartes de l'étape 1.
+  const methodRates = useMemo(() => {
+    const active = clientRatesData?.activeRate;
+    if (!active) return undefined;
+    return Object.fromEntries(
+      PAYMENT_METHOD_IDS.map((m) => [m, getBaseRate(active, toRateKey(m))]),
+    ) as Partial<Record<PaymentMethodType, number>>;
+  }, [clientRatesData?.activeRate]);
 
   // ── QR file lifecycle ──────────────────────────────────────
   const handleQrFileSelect = (file: File) => {
@@ -407,27 +421,59 @@ const NewPaymentPage = () => {
     !skipBeneficiary &&
     !!(selectedBeneficiary || isCashSelf || form.name);
 
+  // Ligne secondaire du récap : identifiant / compte / téléphone du snapshot.
+  const confirmSub = (() => {
+    if (!confirmSnapshot) return undefined;
+    if (confirmSnapshot.identifier) {
+      return {
+        label: selectedMethod === 'wechat' ? 'Identifiant WeChat' : 'Identifiant Alipay',
+        value: String(confirmSnapshot.identifier),
+      };
+    }
+    if (confirmSnapshot.bank_account) {
+      return { label: t('detail.fields.accountNumber'), value: String(confirmSnapshot.bank_account) };
+    }
+    if (confirmSnapshot.phone) {
+      return { label: t('detail.fields.phone'), value: String(confirmSnapshot.phone) };
+    }
+    return undefined;
+  })();
+
   return (
     <MobileLayout showNav={false} showHeader={false}>
       <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <PageHeader
-          title={t('newPayment')}
-          showBack
-          onBack={() => {
-            if (currentStepIndex > 0) setStep(STEPS[currentStepIndex - 1].key);
-            else navigate('/payments');
-          }}
-        />
-
-        <div className="px-1 pt-1">
-          <StepProgressBar steps={STEPS} currentStepIndex={currentStepIndex} />
+        {/* En-tête drill-in : retour rond + titre (comme la fiche). */}
+        <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+          <button
+            onClick={() => {
+              if (currentStepIndex > 0) setStep(STEPS[currentStepIndex - 1].key);
+              else navigate('/payments');
+            }}
+            aria-label={t('detail.backToPayments')}
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95',
+              SURFACE.card,
+              SURFACE.shadow,
+            )}
+          >
+            <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+          </button>
+          <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</span>
         </div>
+
+        {/* Progression — masquée sur l'écran Méthode (validé). */}
+        {step !== 'method' && (
+          <div className="px-1 pt-1">
+            <StepProgressBar steps={STEPS} currentStepIndex={currentStepIndex} />
+          </div>
+        )}
 
         <div className="flex-1 px-4 py-4">
           {step === 'method' && (
           <NewPaymentMethodStep
             selectedMethod={selectedMethod}
             onSelect={setSelectedMethod}
+            methodRates={methodRates}
           />
         )}
 
@@ -442,6 +488,7 @@ const NewPaymentPage = () => {
             amountRMB={computed.amountRMB}
             walletBalanceXaf={wallet?.balance_xaf}
             walletLoading={walletLoading}
+            balanceAfter={computed.balanceAfter}
             hasEnoughBalance={computed.hasEnoughBalance}
             isValidAmount={computed.isValidAmount}
             showRate={computed.showRate}
@@ -484,6 +531,7 @@ const NewPaymentPage = () => {
             showRate={computed.showRate}
             balanceAfter={computed.balanceAfter}
             beneficiaryName={(confirmSnapshot?.name as string) || undefined}
+            beneficiarySub={confirmSub}
             hasBeneficiary={hasBeneficiary}
           />
         )}
@@ -496,7 +544,7 @@ const NewPaymentPage = () => {
             loading={footerCTA.isSubmit && createPayment.isPending}
             className="w-full py-[15px] text-[15px]"
           >
-            {footerCTA.label}
+            {footerCTA.label} <ArrowRight className="h-[17px] w-[17px]" />
           </PrimaryPill>
         </div>
       </div>
