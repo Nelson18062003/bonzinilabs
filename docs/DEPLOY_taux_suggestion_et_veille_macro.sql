@@ -1,18 +1,31 @@
 -- ============================================================================
--- BONZINI — TAUX INTELLIGENT, BRIEF MACRO & PRÉDICTION IA
--- 4 migrations regroupées. Colle-le dans Supabase → SQL Editor → Run.
+-- BONZINI — SUGGESTION DE TAUX (Binance P2P) + BRIEF MACRO TELEGRAM + IA
+-- 4 nouvelles tables. Colle dans Supabase → SQL Editor → Run.
 -- 100% IDEMPOTENT : sûr à lancer même si des parties sont déjà appliquées.
 --
--- Ce script crée :
---   1. rate_suggestions   — suggestions de taux Binance P2P (Edge: suggest-daily-rates)
---   2. macro_snapshots    — collecte macro pétrole/forex/crypto/news (Edge: fetch-macro)
---      briefs_log         — log des briefs Telegram envoyés (Edge: send-brief)
+-- ⚠️  CE QUE CE FICHIER NE CONTIENT PAS :
+--   - Les 2 graphes "Coût d'achat USDT" et "Prix de vente USDT" du dashboard
+--     Trésorerie. Ils ne demandent AUCUNE migration : ils lisent la table
+--     `rate_snapshots` qui existe déjà en prod depuis l'edge function
+--     `monitor-rates` (créée en mars 2026). Ils s'activent automatiquement
+--     dès que le front est déployé, rien à faire côté SQL.
+--   - Aucune migration de `main` (Treasury, Mola, Beneficiaries, etc.).
+--     Ce fichier suppose que ta prod Supabase est déjà à jour avec `main`.
+--
+-- CE QUE CE FICHIER CRÉE :
+--   1. rate_suggestions   — suggestions de taux Binance P2P
+--                           (Edge: suggest-daily-rates)
+--   2. macro_snapshots    — collecte macro pétrole/forex/crypto/news
+--                           (Edge: fetch-macro)
+--      briefs_log         — log des briefs Telegram envoyés
+--                           (Edge: send-brief)
 --   3. trump_posts        — posts Truth Social Trump (audit + dedupe)
---      + colonnes news_by_source, trump_posts_recent, expert_mentions sur macro_snapshots
+--      + colonnes news_by_source, trump_posts_recent, expert_mentions
+--        ajoutées à macro_snapshots
 --   4. rate_predictions   — prédictions IA Claude à 24h
 --
 -- Pré-requis : table daily_rates (existe), fonction public.is_admin(uuid)
--- (existe), schéma public, extension pgcrypto (gen_random_uuid).
+-- (existe), extension pgcrypto pour gen_random_uuid (active sur Supabase).
 -- ============================================================================
 
 -- ═══════════════════ [1/4] 20260513000000_rate_suggestions.sql ════════════════
