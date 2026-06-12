@@ -34,6 +34,7 @@ import {
 import { DirectionA, DirectionB, DirectionC } from './directions';
 import { DashDirA, DashDirB, DashDirC } from './dashDirections';
 import { PayDirA, PayDirB, PayDirC } from './clientPayDirections';
+import { PayListV2, PayDetailV2 } from './clientPayLayoutV2';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -99,6 +100,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cpay-a': { Comp: PayDirA, route: '/' },
   'cpay-b': { Comp: PayDirB, route: '/' },
   'cpay-c': { Comp: PayDirC, route: '/' },
+  // Refonte STRUCTURE (IA) — liste + détail repensés
+  'cpay-list-v2': { Comp: PayListV2, route: '/' },
+  'cpay-detail-v2': { Comp: PayDetailV2, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
