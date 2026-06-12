@@ -1337,6 +1337,225 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_suggestions: {
+        Row: {
+          applied: boolean
+          applied_at: string | null
+          applied_by: string | null
+          applied_rate_id: string | null
+          chn_orders: Json
+          chn_rate_avg: number
+          cmr_margin_xaf: number
+          cmr_orders: Json
+          cmr_rate_max: number
+          computed_at: string
+          id: string
+          method: string
+          suggested_rate: number
+        }
+        Insert: {
+          applied?: boolean
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_rate_id?: string | null
+          chn_orders: Json
+          chn_rate_avg: number
+          cmr_margin_xaf: number
+          cmr_orders: Json
+          cmr_rate_max: number
+          computed_at?: string
+          id?: string
+          method?: string
+          suggested_rate: number
+        }
+        Update: {
+          applied?: boolean
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_rate_id?: string | null
+          chn_orders?: Json
+          chn_rate_avg?: number
+          cmr_margin_xaf?: number
+          cmr_orders?: Json
+          cmr_rate_max?: number
+          computed_at?: string
+          id?: string
+          method?: string
+          suggested_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_suggestions_applied_rate_id_fkey"
+            columns: ["applied_rate_id"]
+            isOneToOne: false
+            referencedRelation: "daily_rates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      macro_snapshots: {
+        Row: {
+          id: number
+          captured_at: string
+          oil_brent: number | null
+          oil_wti: number | null
+          dxy: number | null
+          eur_usd: number | null
+          cny_usd: number | null
+          xaf_per_eur: number | null
+          btc_usd: number | null
+          eth_usd: number | null
+          news_headlines: Json | null
+          news_by_source: Json | null
+          trump_posts_recent: Json | null
+          expert_mentions: Json | null
+          errors: Json | null
+        }
+        Insert: {
+          id?: never
+          captured_at?: string
+          oil_brent?: number | null
+          oil_wti?: number | null
+          dxy?: number | null
+          eur_usd?: number | null
+          cny_usd?: number | null
+          xaf_per_eur?: number | null
+          btc_usd?: number | null
+          eth_usd?: number | null
+          news_headlines?: Json | null
+          news_by_source?: Json | null
+          trump_posts_recent?: Json | null
+          expert_mentions?: Json | null
+          errors?: Json | null
+        }
+        Update: {
+          id?: never
+          captured_at?: string
+          oil_brent?: number | null
+          oil_wti?: number | null
+          dxy?: number | null
+          eur_usd?: number | null
+          cny_usd?: number | null
+          xaf_per_eur?: number | null
+          btc_usd?: number | null
+          eth_usd?: number | null
+          news_headlines?: Json | null
+          news_by_source?: Json | null
+          trump_posts_recent?: Json | null
+          expert_mentions?: Json | null
+          errors?: Json | null
+        }
+        Relationships: []
+      }
+      briefs_log: {
+        Row: {
+          id: string
+          sent_at: string
+          brief_type: string
+          payload: Json
+          message_text: string
+          telegram_sent: boolean
+          telegram_error: string | null
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          brief_type: string
+          payload: Json
+          message_text: string
+          telegram_sent?: boolean
+          telegram_error?: string | null
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          brief_type?: string
+          payload?: Json
+          message_text?: string
+          telegram_sent?: boolean
+          telegram_error?: string | null
+        }
+        Relationships: []
+      }
+      trump_posts: {
+        Row: {
+          id: number
+          posted_at: string
+          fetched_at: string
+          content: string
+          external_id: string | null
+          is_iran_related: boolean
+          raw_link: string | null
+        }
+        Insert: {
+          id?: never
+          posted_at: string
+          fetched_at?: string
+          content: string
+          external_id?: string | null
+          is_iran_related?: boolean
+          raw_link?: string | null
+        }
+        Update: {
+          id?: never
+          posted_at?: string
+          fetched_at?: string
+          content?: string
+          external_id?: string | null
+          is_iran_related?: boolean
+          raw_link?: string | null
+        }
+        Relationships: []
+      }
+      rate_predictions: {
+        Row: {
+          id: string
+          created_at: string
+          based_on_rate_id: string | null
+          current_rate: number
+          predicted_rate: number
+          direction: string | null
+          confidence: number | null
+          key_drivers: Json | null
+          reasoning: string | null
+          scenarios: Json | null
+          action_recommended: string | null
+          actual_rate: number | null
+          error_abs: number | null
+          was_correct_direction: boolean | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          based_on_rate_id?: string | null
+          current_rate: number
+          predicted_rate: number
+          direction?: string | null
+          confidence?: number | null
+          key_drivers?: Json | null
+          reasoning?: string | null
+          scenarios?: Json | null
+          action_recommended?: string | null
+          actual_rate?: number | null
+          was_correct_direction?: boolean | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          based_on_rate_id?: string | null
+          current_rate?: number
+          predicted_rate?: number
+          direction?: string | null
+          confidence?: number | null
+          key_drivers?: Json | null
+          reasoning?: string | null
+          scenarios?: Json | null
+          action_recommended?: string | null
+          actual_rate?: number | null
+          was_correct_direction?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       treasury_account_balances: {
@@ -1742,6 +1961,10 @@ export type Database = {
           p_beneficiary_qr_code_url?: string
           p_payment_id: string
         }
+        Returns: Json
+      }
+      mark_suggestion_applied: {
+        Args: { p_suggestion_id: string; p_rate_id: string }
         Returns: Json
       }
       update_rate_adjustment: {

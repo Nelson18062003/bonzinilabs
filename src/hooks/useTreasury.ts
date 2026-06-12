@@ -630,3 +630,42 @@ export function useWacEvolution(fromIso: string, toIso: string) {
     staleTime: 30_000,
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Marché USDT — évolution des prix Binance P2P (table rate_snapshots,
+// alimentée par l'edge function monitor-rates toutes les ~15 min).
+//   xaf_ask           : coût d'acquisition USDT au Cameroun (VWAP des asks)
+//   cny_bid_adjusted  : prix de vente USDT en Chine (VWAP des bids - OTC spread)
+//
+// On retourne une série brute (un point par snapshot) — le composant graph
+// peut ensuite agréger par jour/heure selon la durée affichée.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface MarketRatePoint {
+  at: string;
+  cost_xaf: number;        // XAF par USDT (achat Cameroun)
+  price_cny: number;       // CNY par USDT (vente Chine)
+}
+
+export function useMarketRateEvolution(fromIso: string, toIso: string) {
+  return useQuery({
+    queryKey: ['treasury', 'market-rate-evolution', fromIso, toIso],
+    queryFn: async (): Promise<MarketRatePoint[]> => {
+      const { data, error } = await supabaseAdmin
+        .from('rate_snapshots')
+        .select('created_at, xaf_ask, cny_bid_adjusted')
+        .gte('created_at', fromIso)
+        .lte('created_at', toIso)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? [])
+        .filter((r) => r.created_at && r.xaf_ask != null && r.cny_bid_adjusted != null)
+        .map((r) => ({
+          at: r.created_at as string,
+          cost_xaf: Number(r.xaf_ask),
+          price_cny: Number(r.cny_bid_adjusted),
+        }));
+    },
+    staleTime: 30_000,
+  });
+}
