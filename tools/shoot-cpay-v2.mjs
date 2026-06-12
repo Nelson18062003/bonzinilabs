@@ -5,7 +5,7 @@ const PORT = process.env.PORT || '8080';
 const iPhone = devices['iPhone 14'];
 const browser = await chromium.launch();
 try {
-  for (const key of ['cpay-list-v2', 'cpay-detail-v2']) {
+  for (const key of ['cpay-list-v3', 'cpay-detail-v3']) {
     for (const theme of ['light', 'dark']) {
       const ctx = await browser.newContext({ ...iPhone, colorScheme: theme, locale: 'fr-FR' });
       const page = await ctx.newPage();
