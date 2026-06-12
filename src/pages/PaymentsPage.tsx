@@ -149,11 +149,14 @@ const PaymentsPage = () => {
         {/* Recherche */}
         <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
           <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+          {/* Pilule de recherche douce : input nu volontaire à 16px (≥16 → pas d'auto-zoom iOS). */}
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <input
+            type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un fournisseur, une référence…"
-            className={cn('min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#9B98AD]', TEXT.strong)}
+            className={cn('min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#9B98AD]', TEXT.strong)}
           />
         </label>
 
