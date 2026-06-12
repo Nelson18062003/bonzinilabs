@@ -4,4 +4,4 @@ export { MobileProofsScreen } from './MobileProofsScreen';
 export { MobileHistoryScreen } from './MobileHistoryScreen';
 export { MobileNotificationsScreen } from './MobileNotificationsScreen';
 export { MobileSettingsScreen } from './MobileSettingsScreen';
-export { MobileBriefsScreen } from './MobileBriefsScreen';
+export { MobileAdminProfile } from './MobileAdminProfile';

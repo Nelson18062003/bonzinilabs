@@ -5,8 +5,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Libre Baskerville — used by the Treasury balance-dashboard generator. */
+@font-face {
+  font-family: 'Libre Baskerville';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/treasury-dashboard/fonts/LibreBaskerville-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Libre Baskerville';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/treasury-dashboard/fonts/LibreBaskerville-Bold.ttf') format('truetype');
+}
+
 @layer base {
   :root {
+    /* Visible viewport geometry — set at runtime by useVisibleViewportSync so
+       the on-screen keyboard is followed on iOS + Android. These are the
+       fallbacks used before the JS runs (or without the VisualViewport API). */
+    --vvh: 100dvh;
+    --vvt: 0px;
+
     /* Bonzini Brand Colors */
     --bonzini-purple: 258 100% 60%;
     --bonzini-purple-light: 258 100% 70%;
@@ -152,13 +174,24 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Document lock for viewport-locked app-shells (chat). Added on <html> by
+     <ViewportShell> while it is mounted; only the shell's inner zone scrolls.
+     Prevents the iOS URL-bar dance / rubber-band from dragging the page behind
+     a fixed chat frame. */
+  html.viewport-locked,
+  html.viewport-locked body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   /* Samsung/iOS: prevent auto-zoom on input focus (requires font-size >= 16px).

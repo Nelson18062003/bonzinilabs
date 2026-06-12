@@ -143,7 +143,7 @@ export function SkeletonDetail() {
         <Skeleton className="h-14 w-full rounded-xl" />
 
         {/* Details card */}
-        <div className="card-glass overflow-hidden">
+        <div className="rounded-[26px] bg-white shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:bg-[#211F2B] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
           <div className="px-4 py-3 border-b border-border/30">
             <Skeleton className="h-4 w-16" />
           </div>
@@ -158,7 +158,7 @@ export function SkeletonDetail() {
         </div>
 
         {/* Timeline card */}
-        <div className="card-glass overflow-hidden">
+        <div className="rounded-[26px] bg-white shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:bg-[#211F2B] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
           <div className="px-4 py-3 border-b border-border/30">
             <Skeleton className="h-4 w-12" />
           </div>

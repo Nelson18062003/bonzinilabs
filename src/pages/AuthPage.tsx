@@ -9,6 +9,7 @@ import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { PhoneCountryInput, COUNTRIES } from '@/components/auth/PhoneCountryInput';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
@@ -38,14 +39,15 @@ const passwordSchema = z.string().min(6);
 const nameSchema = z.string().min(1);
 const phoneSchema = z.string().min(8);
 
-type AuthMode = 'login' | 'signup' | 'forgot-password' | 'reset-password';
+type AuthMode = 'login' | 'signup' | 'verify-otp' | 'forgot-password' | 'reset-password';
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation('auth');
-  const { signIn, signUp, resetPassword, updatePassword, isLoading: authLoading, user } = useAuth();
+  const { signIn, signUp, verifyEmailOtp, resendSignupOtp, signInWithGoogle, resetPassword, updatePassword, isLoading: authLoading, user } = useAuth();
 
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [mode, setMode] = useState<AuthMode>('login');
   const [loginStep, setLoginStep] = useState<0 | 1>(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
@@ -76,6 +78,12 @@ export default function AuthPage() {
   // Multi-step signup state
   const [signupStep, setSignupStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [signupSuccess, setSignupSuccess] = useState(false);
+
+  // OTP de vérification email (inscription)
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpResending, setOtpResending] = useState(false);
+  const [pendingSignup, setPendingSignup] = useState<SignUpData | null>(null);
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -111,7 +119,7 @@ export default function AuthPage() {
 
   // Redirect if already logged in — never redirect during signup flow
   useEffect(() => {
-    if (user && mode !== 'reset-password' && mode !== 'signup') {
+    if (user && mode !== 'reset-password' && mode !== 'signup' && mode !== 'verify-otp') {
       navigate('/wallet', { replace: true });
     }
   }, [user, mode, navigate]);
@@ -171,6 +179,17 @@ export default function AuthPage() {
     setIsSubmitting(false);
 
     if (error) {
+      // Email pas encore vérifié → on bascule sur l'écran du code (+ renvoi d'un code)
+      // au lieu d'une erreur de connexion.
+      if (/not confirmed|email.*confirm/i.test(error.message)) {
+        void resendSignupOtp(email);
+        setOtpCode('');
+        setOtpError('');
+        setDirection('forward');
+        setMode('verify-otp');
+        toast.success(t('verifyEmail.codeSent', { defaultValue: 'Vérifiez votre email — un code vous a été envoyé.' }));
+        return;
+      }
       if (error.message.includes('Invalid login credentials')) {
         setPasswordError(t('validation.incorrectCredentials'));
       } else {
@@ -182,6 +201,19 @@ export default function AuthPage() {
     toast.success(t('toast.welcome'));
     setIsFadingOut(true);
     setTimeout(() => navigate('/wallet'), 300);
+  };
+
+  // Social login Google : redirige vers Google ; le retour est géré par
+  // /auth/callback (session + routage onboarding/app).
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    track('client_google_signin_click');
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setGoogleLoading(false);
+      toast.error(t('validation.loginError', { defaultValue: 'Connexion impossible. Réessayez.' }));
+    }
+    // En cas de succès, le navigateur redirige : on laisse le spinner actif.
   };
 
   // Forgot password
@@ -329,7 +361,7 @@ export default function AuthPage() {
       utm: utm ?? undefined,
     };
 
-    const { error } = await signUp(signUpData);
+    const { error, needsVerification } = await signUp(signUpData);
     setIsSubmitting(false);
 
     if (error) {
@@ -347,8 +379,51 @@ export default function AuthPage() {
       utm_campaign: utm?.utm_campaign ?? 'none',
     });
     clearStoredUtm();
+    setPendingSignup(signUpData);
+
+    // Confirmation email activée → écran de saisie du code (OTP).
+    // Sinon (confirmation désactivée) → écran de succès historique.
+    if (needsVerification) {
+      setOtpCode('');
+      setOtpError('');
+      setDirection('forward');
+      setMode('verify-otp');
+      return;
+    }
 
     setSignupSuccess(true);
+  };
+
+  // Vérification du code OTP reçu par email à l'inscription.
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+    const code = otpCode.trim();
+    if (code.length < 6) {
+      setOtpError(t('verifyEmail.invalidCode', { defaultValue: 'Entrez le code reçu par email.' }));
+      return;
+    }
+    setIsSubmitting(true);
+    const { error } = await verifyEmailOtp(email, code, pendingSignup ?? undefined);
+    setIsSubmitting(false);
+    if (error) {
+      setOtpError(t('verifyEmail.wrongCode', { defaultValue: 'Code invalide ou expiré. Réessayez ou demandez un nouveau code.' }));
+      return;
+    }
+    toast.success(t('verifyEmail.success', { defaultValue: 'Compte vérifié ! Bienvenue 🎉' }));
+    setIsFadingOut(true);
+    setTimeout(() => navigate('/wallet'), 300);
+  };
+
+  const handleResendOtp = async () => {
+    setOtpResending(true);
+    const { error } = await resendSignupOtp(email);
+    setOtpResending(false);
+    if (error) {
+      toast.error(t('verifyEmail.resendError', { defaultValue: 'Impossible de renvoyer le code. Réessayez.' }));
+      return;
+    }
+    toast.success(t('verifyEmail.resent', { defaultValue: 'Nouveau code envoyé !' }));
   };
 
   if (authLoading) {
@@ -439,6 +514,23 @@ export default function AuthPage() {
                   >
                     {t('login.continue')}
                   </button>
+                </div>
+
+                {/* Social login Google */}
+                <div
+                  className="animate-slide-up"
+                  style={{ animationDelay: '320ms', animationFillMode: 'both' }}
+                >
+                  <div className="flex items-center gap-3 my-5">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-muted-foreground">{t('login.or', { defaultValue: 'ou' })}</span>
+                    <Separator className="flex-1" />
+                  </div>
+                  <GoogleButton
+                    onClick={handleGoogleSignIn}
+                    loading={googleLoading}
+                    label={t('login.continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
+                  />
                 </div>
               </form>
             ) : (
@@ -539,6 +631,78 @@ export default function AuthPage() {
   }
 
   // ─── FORGOT PASSWORD MODE ──────────────────────────
+  // ─── VERIFY OTP MODE (code email à l'inscription) ──────────────────────────
+  if (mode === 'verify-otp') {
+    return (
+      <LoginBackground>
+        <div className="flex-1 flex flex-col justify-center px-6 py-12">
+          <button
+            onClick={() => switchMode('signup')}
+            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <div className="flex justify-center mb-6 animate-logo-entrance" style={{ animationFillMode: 'both' }}>
+            <BonziniLogo size="lg" showText={false} />
+          </div>
+
+          <form onSubmit={handleVerifyOtp} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold mb-1">{t('verifyEmail.title', { defaultValue: 'Vérifiez votre email' })}</h1>
+              <p className="text-muted-foreground text-sm">
+                {t('verifyEmail.subtitle', { defaultValue: 'Saisissez le code reçu par email à' })}{' '}
+                <span className="font-medium text-foreground">{maskEmail(email)}</span>
+              </p>
+            </div>
+
+            <div className="mb-2">
+              <input
+                id="otp-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+                value={otpCode}
+                onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8)); setOtpError(''); }}
+                autoFocus
+                placeholder="••••••"
+                className="w-full h-16 text-center text-3xl font-bold tracking-[0.4em] rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none transition-colors"
+              />
+              {otpError && <p className="text-destructive text-sm mt-2 text-center">{otpError}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || otpCode.length < 6}
+              className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t('verifyEmail.verify', { defaultValue: 'Vérifier mon compte' })
+              )}
+            </button>
+
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              {t('verifyEmail.noCode', { defaultValue: "Vous n'avez pas reçu le code ?" })}{' '}
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={otpResending}
+                className="text-primary hover:underline font-medium disabled:opacity-50"
+              >
+                {otpResending
+                  ? t('verifyEmail.resending', { defaultValue: 'Envoi…' })
+                  : t('verifyEmail.resend', { defaultValue: 'Renvoyer le code' })}
+              </button>
+            </p>
+          </form>
+        </div>
+      </LoginBackground>
+    );
+  }
+
   if (mode === 'forgot-password') {
     return (
       <LoginBackground>
@@ -791,6 +955,19 @@ export default function AuthPage() {
                   >
                     {t('common:continue')}
                   </button>
+
+                  {/* Social login Google — raccourci d'inscription */}
+                  <div className="flex items-center gap-3 my-1">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-muted-foreground">{t('login.or', { defaultValue: 'ou' })}</span>
+                    <Separator className="flex-1" />
+                  </div>
+                  <GoogleButton
+                    onClick={handleGoogleSignIn}
+                    loading={googleLoading}
+                    disabled={isSubmitting}
+                    label={t('signup.continueWithGoogle', { defaultValue: 'S\'inscrire avec Google' })}
+                  />
                 </form>
               )}
 

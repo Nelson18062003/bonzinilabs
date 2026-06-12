@@ -335,6 +335,8 @@
   "manageAdminAccess": "Gérer les accès admin",
   "manageRates": "Gérer les taux XAF/RMB",
   "more": "Plus",
+  "beneficiaries": "Bénéficiaires",
+  "manageBeneficiaries": "Gérer le carnet du client",
   "movementHistory": "Historique mouvements",
   "nameAndRole": "Nom, prénom, rôle",
   "namePhoneEmailCompany": "Nom, téléphone, email, entreprise…",

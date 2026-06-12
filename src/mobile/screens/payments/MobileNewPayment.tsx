@@ -1,54 +1,80 @@
 // ============================================================
-// BONZINI ADMIN — NOUVEAU PAIEMENT (5 étapes)
-// Maquette de référence : maquette_admin_nouveau_paiement_v3.jsx
+// MODULE PAIEMENTS — MobileNewPayment (assistant 5 étapes)
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   canvas doux · header fixe + barre de progression violette ·
+//   contenu scrollable · footer CTA toujours visible · cartes à
+//   ombre douce · PaymentMethodLogo (vrais logos) · FormField/
+//   TextInput · Amount · écran succès en Holder.
+// Logique 100% préservée : étapes client→mode→montant→
+//   bénéficiaire→récap, carnet du client (onglets enregistré/
+//   nouveau), lock cash+client, toggle taux personnalisé,
+//   upload QR, validations, useAdminCreatePayment + snapshot.
 // ============================================================
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
+import { useCountUp } from '@/hooks/useCountUp';
+import {
+  useAdminClientBeneficiaries,
+  useAdminCreateBeneficiary,
+  type Beneficiary,
+} from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
 import type { PaymentMethodKey } from '@/types/rates';
+import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
+import { cn } from '@/lib/utils';
+import {
+  AlertTriangle,
+  Check,
+  ChevronLeft,
+  Search,
+  User,
+  X,
+} from 'lucide-react';
+import {
+  SURFACE,
+  TEXT,
+  Card,
+  Holder,
+  Amount,
+  PrimaryPill,
+  SoftPill,
+  FormField,
+  TextInput,
+} from '@/mobile/designKit';
+import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 
-// ── Design tokens ─────────────────────────────────────────────
-const V = '#A947FE';
-const G = '#F3A745';
-const O = '#FE560D';
-const GR = '#34d399';
-const AL = '#1677ff';
-const WC = '#07c160';
-
-const t = {
-  bg: '#f8f6fa',
-  card: '#ffffff',
-  text: '#1a1028',
-  sub: '#7a7290',
-  dim: '#c4bdd0',
-  border: '#ebe6f0',
-};
-
-const FONT = "'DM Sans', sans-serif";
+// Violet d'action = marque Paiements (cohérent liste/détail/FAB).
+const VIOLET = '#8B5CF6';
 const FALLBACK_RATE = 11530;
 
 // ── Helpers ────────────────────────────────────────────────────
 function fmt(n: number): string {
   return Math.abs(Math.round(n))
     .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 function getInitials(first: string, last: string): string {
   return ((first?.[0] ?? '') + (last?.[0] ?? '')).toUpperCase() || '?';
 }
 
+// PaymentMethodLogo n'accepte que 4 clés (virement → bank_transfer).
+function logoMethod(id: PaymentMethodKey): 'alipay' | 'wechat' | 'bank_transfer' | 'cash' {
+  return id === 'virement' ? 'bank_transfer' : id;
+}
+
 // ── Constantes ─────────────────────────────────────────────────
 const MODES = [
-  { id: 'alipay' as PaymentMethodKey,   name: 'Alipay',     icon: '支', color: AL },
-  { id: 'wechat' as PaymentMethodKey,   name: 'WeChat Pay', icon: '微', color: WC },
-  { id: 'virement' as PaymentMethodKey, name: 'Virement',   icon: 'B',  color: V  },
-  { id: 'cash' as PaymentMethodKey,     name: 'Cash',       icon: '¥',  color: O  },
+  { id: 'alipay' as PaymentMethodKey,   name: 'Alipay' },
+  { id: 'wechat' as PaymentMethodKey,   name: 'WeChat Pay' },
+  { id: 'virement' as PaymentMethodKey, name: 'Virement' },
+  { id: 'cash' as PaymentMethodKey,     name: 'Cash' },
 ] as const;
 
 type Mode = typeof MODES[number];
@@ -67,34 +93,51 @@ const BENEF0: Benef = {
   name: '', ident: '', phone: '', email: '', bank: '', account: '', isClient: false,
 };
 
-// ── Style partagé pour les inputs ─────────────────────────────
-const inp: React.CSSProperties = {
-  width: '100%',
-  padding: '14px 16px',
-  borderRadius: 12,
-  border: `1.5px solid ${t.border}`,
-  background: '#fff',
-  fontSize: 16,
-  fontWeight: 600,
-  color: t.text,
-  fontFamily: FONT,
-  outline: 'none',
-  boxSizing: 'border-box',
-};
-
 // ── Micro-composants ───────────────────────────────────────────
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <label style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 6, display: 'block' }}>
-      {children}
-    </label>
-  );
-}
 function Opt() {
-  return <span style={{ fontSize: 12, fontWeight: 500, color: t.dim }}> optionnel</span>;
+  return <span className={cn('text-[12px] font-medium', TEXT.muted)}> optionnel</span>;
 }
 function Req() {
-  return <span style={{ color: O }}> *</span>;
+  return <span className="text-[#C0504D] dark:text-[#E79A9A]"> *</span>;
+}
+
+// Case à cocher au langage kit (logique conservée par les parents).
+function CheckRow({
+  checked,
+  title,
+  desc,
+  onClick,
+}: {
+  checked: boolean;
+  title: React.ReactNode;
+  desc?: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-2xl p-3.5 text-left transition active:scale-[0.99]',
+        SURFACE.card,
+        SURFACE.shadow,
+      )}
+      style={checked ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
+    >
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition"
+        style={{
+          background: checked ? VIOLET : 'transparent',
+          boxShadow: checked ? 'none' : 'inset 0 0 0 2px rgba(0,0,0,0.18)',
+        }}
+      >
+        {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+      </span>
+      <div className="min-w-0">
+        <div className={cn('text-[13px] font-bold', TEXT.strong)}>{title}</div>
+        {desc != null && <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{desc}</div>}
+      </div>
+    </button>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -139,6 +182,23 @@ export function MobileNewPayment() {
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
   const qrRef = useRef<HTMLInputElement>(null);
+  // Carnet du client (Lot 4): onglet "enregistré" vs "nouveau", + sélection.
+  const [benefTab, setBenefTab] = useState<'existing' | 'new'>('existing');
+  const [selectedBenef, setSelectedBenef] = useState<Beneficiary | null>(null);
+  const [saveToCarnet, setSaveToCarnet] = useState(true);
+  const createBeneficiary = useAdminCreateBeneficiary();
+
+  // mode.id 'virement' → 'bank_transfer' (valeur canonique DB du carnet).
+  const dbMode: BeneficiaryMode | null = mode
+    ? mode.id === 'virement'
+      ? 'bank_transfer'
+      : (mode.id as BeneficiaryMode)
+    : null;
+  // Bénéficiaires enregistrés DE CE CLIENT, scopés (client_id + RLS admin).
+  const { data: clientBeneficiaries } = useAdminClientBeneficiaries(
+    client?.user_id,
+    dbMode ?? undefined,
+  );
 
   // Succès
   const [done, setDone] = useState<{ paymentId: string; cny: number; xaf: number } | null>(null);
@@ -150,6 +210,9 @@ export function MobileNewPayment() {
   const raw = parseInt(rawAmount) || 0;
   const xaf = inputCurrency === 'xaf' ? raw : Math.round(raw * 1_000_000 / rate);
   const cny = inputCurrency === 'xaf' ? Math.round(raw * rate / 1_000_000) : raw;
+  // Animation du montant converti (kit cohérent avec l'assistant dépôt).
+  const convertedTarget = inputCurrency === 'xaf' ? cny : xaf;
+  const animatedConverted = useCountUp(convertedTarget, { enabled: convertedTarget > 0 });
 
   // ── Filtrage ──────────────────────────────────────────────────
   const filtered = clients.filter((c) => {
@@ -164,6 +227,8 @@ export function MobileNewPayment() {
   const benef4Valid =
     skipBenef
       ? true
+      : benefTab === 'existing'
+      ? !!selectedBenef
       : mode?.id === 'cash' && benef.isClient
       ? true
       : benef.name.trim().length > 0 &&
@@ -184,6 +249,7 @@ export function MobileNewPayment() {
     setInputCurrency('xaf'); setRawAmount('');
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
     setBenef(BENEF0); setSkipBenef(false);
+    setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
     setQrFile(null); setQrPreview(null); setDone(null);
   }
 
@@ -203,31 +269,101 @@ export function MobileNewPayment() {
 
   // ── Soumission ────────────────────────────────────────────────
   async function handleConfirm() {
-    if (!client || !mode) return;
+    if (!client || !mode || !dbMode) return;
 
     // virement → bank_transfer pour la DB
-    const dbMethod = (mode.id === 'virement' ? 'bank_transfer' : mode.id) as
-      'alipay' | 'wechat' | 'bank_transfer' | 'cash';
+    const dbMethod = dbMode;
 
     const autoName =
       mode.id === 'cash' && benef.isClient
         ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
         : undefined;
 
-    const benefPayload = skipBenef
-      ? {}
-      : {
-          beneficiary_name: autoName ?? (benef.name || undefined),
+    // ── Build the beneficiary payload + frozen snapshot ──────────
+    let benefPayload: Record<string, unknown> = {};
+    let beneficiaryId: string | undefined;
+    let snapshot: Record<string, unknown> | undefined;
+
+    if (!skipBenef) {
+      if (benefTab === 'existing' && selectedBenef) {
+        // Pick from the client's carnet → snapshot copies the saved record.
+        beneficiaryId = selectedBenef.id;
+        snapshot = {
+          id: selectedBenef.id,
+          alias: selectedBenef.alias ?? selectedBenef.name,
+          name: selectedBenef.name,
+          payment_method: selectedBenef.payment_method,
+          identifier: selectedBenef.identifier,
+          identifier_type: selectedBenef.identifier_type,
+          phone: selectedBenef.phone,
+          email: selectedBenef.email,
+          bank_name: selectedBenef.bank_name,
+          bank_account: selectedBenef.bank_account,
+          bank_extra: selectedBenef.bank_extra,
+          relation_type: selectedBenef.relation_type,
+        };
+        benefPayload = {
+          beneficiary_name: selectedBenef.name || undefined,
+          beneficiary_phone: selectedBenef.phone || undefined,
+          beneficiary_email: selectedBenef.email || undefined,
+          beneficiary_bank_name: selectedBenef.bank_name || undefined,
+          beneficiary_bank_account: selectedBenef.bank_account || undefined,
+          beneficiary_bank_extra: selectedBenef.bank_extra || undefined,
+          beneficiary_identifier: selectedBenef.identifier || undefined,
+          beneficiary_identifier_type: selectedBenef.identifier_type || undefined,
+          // Snapshot the durable path, NOT the temporary signed URL the list
+          // hook injected for display (otherwise the QR breaks after ~1h).
+          beneficiary_qr_code_url: toStoredPath(selectedBenef.qr_code_url) || undefined,
+        };
+      } else {
+        // New beneficiary typed by the admin.
+        const isCashSelf = mode.id === 'cash' && benef.isClient;
+        const resolvedName = autoName ?? (benef.name || undefined);
+
+        // Save to the CLIENT's carnet (unless cash+self — that's the client).
+        if (saveToCarnet && !isCashSelf && benef.name.trim()) {
+          try {
+            const created = await createBeneficiary.mutateAsync({
+              client_id: client.user_id,
+              payment_method: dbMode,
+              alias: benef.name.trim(),
+              name: benef.name.trim(),
+              identifier: benef.ident || undefined,
+              identifier_type: benef.ident ? 'id' : undefined,
+              phone: benef.phone || undefined,
+              email: benef.email || undefined,
+              bank_name: benef.bank || undefined,
+              bank_account: benef.account || undefined,
+              qr_code_file: qrFile || undefined,
+            });
+            beneficiaryId = created.id;
+          } catch {
+            // Non-silent (hook toasts); the payment still proceeds.
+          }
+        }
+
+        snapshot = {
+          relation_type: isCashSelf ? 'self' : 'other',
+          name: resolvedName,
+          identifier: benef.ident || undefined,
+          identifier_type: benef.ident ? 'id' : undefined,
+          phone: benef.phone || undefined,
+          email: benef.email || undefined,
+          bank_name: benef.bank || undefined,
+          bank_account: benef.account || undefined,
+        };
+        benefPayload = {
+          beneficiary_name: resolvedName,
           beneficiary_phone: benef.phone || undefined,
           beneficiary_email: benef.email || undefined,
           beneficiary_bank_name: benef.bank || undefined,
           beneficiary_bank_account: benef.account || undefined,
           beneficiary_identifier: benef.ident || undefined,
-          beneficiary_identifier_type: benef.ident
-            ? ('id' as const)
-            : undefined,
+          beneficiary_identifier_type: benef.ident ? ('id' as const) : undefined,
           qr_code_files: qrFile ? [qrFile] : undefined,
         };
+      }
+    }
 
     try {
       const res = await createPayment.mutateAsync({
@@ -237,6 +373,8 @@ export function MobileNewPayment() {
         exchange_rate: rate,
         method: dbMethod,
         rate_is_custom: useCustomRate,
+        beneficiary_id: beneficiaryId,
+        beneficiary_details: snapshot,
         ...benefPayload,
       });
       setDone({ paymentId: res.payment_id ?? '', cny, xaf });
@@ -250,79 +388,41 @@ export function MobileNewPayment() {
   // ══════════════════════════════════════════════════════════════
   if (done) {
     const clientName = `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim();
-    const benefLabel =
-      !skipBenef && benef.name
-        ? benef.isClient ? clientName : benef.name
-        : !skipBenef && mode?.id === 'cash' && benef.isClient
-        ? clientName
-        : '';
+    const benefLabel = skipBenef
+      ? ''
+      : selectedBenef
+      ? selectedBenef.alias || selectedBenef.name
+      : benef.isClient
+      ? clientName
+      : benef.name || '';
 
     return (
-      <div
-        style={{
-          height: '100dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#fff',
-          fontFamily: FONT,
-          padding: '0 24px',
-        }}
-      >
-        <div
-          style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: `${GR}18`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, color: GR, marginBottom: 20,
-          }}
-        >
-          ✓
-        </div>
-
-        <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>Paiement créé</div>
+      <div className={cn('mx-auto flex h-[100dvh] max-w-[480px] flex-col items-center justify-center px-6 text-center', SURFACE.canvas)}>
+        <Holder icon={Check} tone="success" size="lg" className="mb-4" />
+        <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>Paiement créé</div>
 
         {/* ¥ en premier */}
-        <div
-          style={{
-            fontSize: 38, fontWeight: 900, color: t.text,
-            letterSpacing: '-1.5px', marginTop: 8,
-          }}
-        >
-          ¥{fmt(done.cny)}
+        <div className="mt-2">
+          <Amount value={`¥${fmt(done.cny)}`} size="xl" />
         </div>
-        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>
+        <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
           {fmt(done.xaf)} XAF via {mode?.name}
         </div>
-        <div style={{ fontSize: 13, color: t.dim, marginTop: 4 }}>
+        <div className={cn('mt-1 text-[12px]', TEXT.muted)}>
           pour {clientName}
           {benefLabel ? ` → ${benefLabel}` : ''}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 32, width: '100%', maxWidth: 360 }}>
-          <button
-            onClick={reset}
-            style={{
-              flex: 1, padding: 15, borderRadius: 12,
-              background: 'none', border: `1.5px solid ${t.border}`,
-              fontSize: 14, fontWeight: 700, color: t.sub,
-              cursor: 'pointer', fontFamily: FONT,
-            }}
-          >
+        <div className="mt-7 flex w-full max-w-[360px] gap-2.5">
+          <SoftPill onClick={reset} className="flex-1">
             Nouveau
-          </button>
-          <button
+          </SoftPill>
+          <PrimaryPill
             onClick={() => navigate(`/m/payments/${done.paymentId}`)}
-            style={{
-              flex: 1.4, padding: 15, borderRadius: 12,
-              background: V, border: 'none',
-              fontSize: 14, fontWeight: 800, color: '#fff',
-              cursor: 'pointer', fontFamily: FONT,
-            }}
+            className="flex-[1.4] bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white"
           >
             Voir la fiche
-          </button>
+          </PrimaryPill>
         </div>
       </div>
     );
@@ -332,74 +432,59 @@ export function MobileNewPayment() {
   // FORMULAIRE MULTI-ÉTAPES
   // ══════════════════════════════════════════════════════════════
   return (
-    <div
-      style={{
-        height: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        background: t.bg,
-        fontFamily: FONT,
-        color: t.text,
-      }}
-    >
-      {/* ────────────────── HEADER ────────────────── */}
-      <div
-        style={{
-          flexShrink: 0,
-          background: t.card,
-          borderBottom: `1px solid ${t.border}`,
-          padding: '12px 20px 10px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+    <div className={cn('mx-auto flex h-[100dvh] max-w-[480px] flex-col overflow-hidden', SURFACE.canvas)}>
+      {/* ── Header + barre de progression ─────────────────── */}
+      <div className={cn('shrink-0 px-5 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
+        <div className="flex h-14 items-center gap-2">
           <button
             onClick={() => (step > 1 ? setStep(step - 1) : navigate(-1))}
-            style={{
-              background: 'none', border: 'none', fontSize: 24,
-              color: t.sub, cursor: 'pointer', marginRight: 12,
-              padding: 0, fontWeight: 300, fontFamily: FONT, lineHeight: 1,
-            }}
+            aria-label="Retour"
+            className={cn('-ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
           >
-            ‹
+            <ChevronLeft className="h-6 w-6" />
           </button>
-          <span style={{ fontSize: 15, fontWeight: 800, color: t.text, flex: 1 }}>
-            Nouveau paiement
-          </span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: V }}>{step}/5</span>
+          <span className={cn('flex-1 text-[15px] font-bold', TEXT.strong)}>Nouveau paiement</span>
+          <span className="text-[12px] font-bold" style={{ color: VIOLET }}>{step}/5</span>
         </div>
-
-        {/* Progress bar 5 segments */}
-        <div style={{ display: 'flex', gap: 3 }}>
+        <div className="flex gap-1 pb-3">
           {[1, 2, 3, 4, 5].map((n) => (
             <div
               key={n}
-              style={{
-                flex: 1, height: 3, borderRadius: 2,
-                background: step >= n ? V : t.border,
-                transition: 'background 0.3s',
-              }}
+              className="h-[3px] flex-1 rounded-full transition-colors"
+              style={{ background: step >= n ? VIOLET : 'rgba(0,0,0,0.08)' }}
             />
           ))}
         </div>
       </div>
 
-      {/* ────────────────── CONTENT ────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 16px' }}>
+      {/* ── Contenu ───────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-5 pt-5" style={{ WebkitOverflowScrolling: 'touch' }}>
 
         {/* ══════ ÉTAPE 1 — QUEL CLIENT ? ══════ */}
         {step === 1 && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Quel client ?</div>
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quel client ?</div>
 
-            <input
-              style={{ ...inp, background: t.bg, marginBottom: 12 }}
-              placeholder="Rechercher un client..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="relative mb-3">
+              <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+              <TextInput
+                placeholder="Rechercher un client..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  aria-label="Effacer"
+                  className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="space-y-2.5">
               {filtered.map((c) => {
                 const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
                 const ini = getInitials(c.first_name ?? '', c.last_name ?? '');
@@ -410,49 +495,38 @@ export function MobileNewPayment() {
                   <button
                     key={c.user_id}
                     onClick={() => setClient(c)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '12px 14px', borderRadius: 12, width: '100%',
-                      background: sel ? `${V}08` : t.card,
-                      border: `1.5px solid ${sel ? V : t.border}`,
-                      cursor: 'pointer', textAlign: 'left',
-                    }}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={sel ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
                   >
                     <div
-                      style={{
-                        width: 38, height: 38, borderRadius: 10,
-                        background: `${V}12`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 800, color: V, flexShrink: 0,
-                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+                      style={{ background: `${VIOLET}14`, color: VIOLET }}
                     >
                       {ini}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 15, fontWeight: 700, color: t.text,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {name}
-                      </div>
-                      <div style={{ fontSize: 11, color: t.sub }}>{c.phone ?? '—'}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{name}</div>
+                      <div className={cn('truncate text-[11px]', TEXT.muted)}>{c.phone ?? '—'}</div>
                     </div>
                     {bal !== null ? (
-                      <span style={{ fontSize: 13, fontWeight: 800, color: bal > 0 ? t.text : t.dim, flexShrink: 0 }}>
+                      <span className={cn('shrink-0 text-[13px] font-extrabold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
                         {fmt(bal)} XAF
                       </span>
                     ) : (
-                      <span style={{ fontSize: 11, color: t.dim, flexShrink: 0 }}>—</span>
+                      <span className={cn('shrink-0 text-[11px]', TEXT.muted)}>—</span>
                     )}
                   </button>
                 );
               })}
 
               {filtered.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 40, color: t.dim, fontSize: 13 }}>
-                  Aucun client trouvé
+                <div className="flex flex-col items-center py-10">
+                  <Holder icon={User} size="lg" />
+                  <p className={cn('mt-3 text-[13px]', TEXT.muted)}>Aucun client trouvé</p>
                 </div>
               )}
             </div>
@@ -462,34 +536,24 @@ export function MobileNewPayment() {
         {/* ══════ ÉTAPE 2 — COMMENT PAYER ? ══════ */}
         {step === 2 && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Comment payer ?</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Comment payer ?</div>
+            <div className="space-y-2.5">
               {MODES.map((m) => {
                 const sel = mode?.id === m.id;
                 return (
                   <button
                     key={m.id}
                     onClick={() => setMode(m)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      padding: '16px', borderRadius: 14, width: '100%',
-                      background: sel ? `${m.color}08` : t.card,
-                      border: `1.5px solid ${sel ? m.color : t.border}`,
-                      cursor: 'pointer', textAlign: 'left',
-                    }}
+                    className={cn(
+                      'flex w-full items-center gap-3.5 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={sel ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
                   >
-                    <div
-                      style={{
-                        width: 44, height: 44, borderRadius: 12,
-                        background: `${m.color}12`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 20, fontWeight: 800, color: m.color, flexShrink: 0,
-                      }}
-                    >
-                      {m.icon}
-                    </div>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>{m.name}</span>
-                    {sel && <span style={{ marginLeft: 'auto', fontSize: 16, color: m.color }}>✓</span>}
+                    <PaymentMethodLogo method={logoMethod(m.id)} size={44} />
+                    <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>{m.name}</span>
+                    {sel && <Check className="h-5 w-5 shrink-0" style={{ color: VIOLET }} />}
                   </button>
                 );
               })}
@@ -500,56 +564,42 @@ export function MobileNewPayment() {
         {/* ══════ ÉTAPE 3 — COMBIEN ? ══════ */}
         {step === 3 && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 2 }}>Combien ?</div>
-            <div style={{ fontSize: 13, color: t.sub, marginBottom: 16 }}>
+            <div className={cn('mb-1 text-[22px] font-extrabold', TEXT.strong)}>Combien ?</div>
+            <div className={cn('mb-4 text-[13px]', TEXT.muted)}>
               Solde de {client?.first_name} :{' '}
-              <strong style={{ color: clientBalance > 0 ? t.text : O }}>
+              <strong className={cn('font-bold', clientBalance > 0 ? TEXT.strong : 'text-[#C0504D] dark:text-[#E79A9A]')}>
                 {fmt(clientBalance)} XAF
               </strong>
             </div>
 
             {/* Toggle XAF / ¥ */}
-            <div
-              style={{
-                display: 'flex', borderRadius: 10, overflow: 'hidden',
-                border: `1.5px solid ${t.border}`, marginBottom: 16,
-              }}
-            >
-              {(['xaf', 'cny'] as const).map((cur) => (
-                <button
-                  key={cur}
-                  onClick={() => { setInputCurrency(cur); setRawAmount(''); }}
-                  style={{
-                    flex: 1, padding: '11px 0', border: 'none', cursor: 'pointer',
-                    background: inputCurrency === cur ? V : t.card,
-                    color: inputCurrency === cur ? '#fff' : t.sub,
-                    fontSize: 14, fontWeight: 700,
-                    fontFamily: FONT, transition: 'all 0.2s',
-                  }}
-                >
-                  {cur === 'xaf' ? 'Je saisis en XAF' : 'Je saisis en ¥'}
-                </button>
-              ))}
+            <div className={cn('mb-4 inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
+              {(['xaf', 'cny'] as const).map((cur) => {
+                const active = inputCurrency === cur;
+                return (
+                  <button
+                    key={cur}
+                    onClick={() => { setInputCurrency(cur); setRawAmount(''); }}
+                    className={cn(
+                      'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                      active ? 'text-white' : TEXT.muted,
+                    )}
+                    style={active ? { background: VIOLET } : undefined}
+                  >
+                    {cur === 'xaf' ? 'Je saisis en XAF' : 'Je saisis en ¥'}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Bloc saisie + conversion */}
-            <div
-              style={{
-                padding: 20, borderRadius: 16,
-                background: t.card, border: `1.5px solid ${t.border}`,
-                marginBottom: 12,
-              }}
-            >
-              <div style={{ fontSize: 11, color: t.sub, fontWeight: 600, marginBottom: 8 }}>
+            <Card className="mb-3 p-5">
+              <div className={cn('mb-2 text-[11px] font-semibold', TEXT.muted)}>
                 {inputCurrency === 'xaf' ? 'Montant débité du client' : 'Montant reçu par le fournisseur'}
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <div className="flex items-baseline gap-1.5">
                 <input
-                  style={{
-                    border: 'none', background: 'none', outline: 'none',
-                    fontSize: 40, fontWeight: 900, color: t.text,
-                    fontFamily: FONT, width: '100%', letterSpacing: '-1px',
-                  }}
+                  className={cn('w-full border-none bg-transparent text-[40px] font-black tracking-tight outline-none', TEXT.strong)}
                   placeholder="0"
                   value={rawAmount}
                   onChange={(e) => setRawAmount(e.target.value.replace(/\D/g, ''))}
@@ -557,36 +607,30 @@ export function MobileNewPayment() {
                   inputMode="numeric"
                   autoFocus
                 />
-                <span style={{ fontSize: 18, fontWeight: 700, color: t.sub, flexShrink: 0 }}>
+                <span className={cn('shrink-0 text-[18px] font-bold', TEXT.muted)}>
                   {inputCurrency === 'xaf' ? 'XAF' : '¥'}
                 </span>
               </div>
 
-              <div style={{ height: 1, background: t.border, margin: '14px 0' }} />
+              <div className="my-3.5 h-px bg-black/[0.06] dark:bg-white/[0.08]" />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: t.sub }}>
+              <div className="flex items-center justify-between">
+                <span className={cn('text-[12px]', TEXT.muted)}>
                   {inputCurrency === 'xaf' ? 'Le fournisseur reçoit' : 'Le client paie'}
                 </span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: V }}>
-                  {inputCurrency === 'xaf' ? `¥${fmt(cny)}` : `${fmt(xaf)} XAF`}
+                <span className="text-[18px] font-extrabold tabular-nums" style={{ color: VIOLET }}>
+                  {inputCurrency === 'xaf' ? `¥${fmt(animatedConverted)}` : `${fmt(animatedConverted)} XAF`}
                 </span>
               </div>
-            </div>
+            </Card>
 
             {/* Alerte solde insuffisant */}
             {xaf > 0 && !hasEnoughBalance && (
-              <div
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '12px 14px', borderRadius: 12, marginBottom: 12,
-                  background: `${O}12`, border: `1.5px solid ${O}`,
-                }}
-              >
-                <span style={{ fontSize: 18 }}>⚠️</span>
+              <div className="mb-3 flex items-center gap-2.5 rounded-2xl bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: O }}>Solde insuffisant</div>
-                  <div style={{ fontSize: 11, color: t.sub }}>
+                  <div className="text-[13px] font-bold text-[#C0504D] dark:text-[#E79A9A]">Solde insuffisant</div>
+                  <div className={cn('text-[11px]', TEXT.muted)}>
                     Solde disponible : {fmt(clientBalance)} XAF
                   </div>
                 </div>
@@ -594,26 +638,27 @@ export function MobileNewPayment() {
             )}
 
             {/* Raccourcis */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            <div className="mb-3.5 flex gap-2">
               {(inputCurrency === 'xaf'
                 ? [['100K', 100_000], ['250K', 250_000], ['500K', 500_000], ['1M', 1_000_000]] as [string, number][]
                 : [['¥1K', 1_000], ['¥2.5K', 2_500], ['¥5K', 5_000], ['¥10K', 10_000]] as [string, number][]
-              ).map(([label, val]) => (
-                <button
-                  key={label}
-                  onClick={() => setRawAmount(String(val))}
-                  style={{
-                    flex: 1, padding: '9px 0', borderRadius: 8,
-                    background: raw === val ? `${V}10` : t.card,
-                    border: `1px solid ${raw === val ? V : t.border}`,
-                    fontSize: 12, fontWeight: 700,
-                    color: raw === val ? V : t.text,
-                    cursor: 'pointer', fontFamily: FONT,
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
+              ).map(([label, val]) => {
+                const active = raw === val;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => setRawAmount(String(val))}
+                    className={cn(
+                      'flex-1 rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={active ? { boxShadow: `0 0 0 2px ${VIOLET}`, color: VIOLET } : undefined}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
               {(() => {
                 // "Tout" — solde complet du client converti dans la devise saisie.
                 // Pas de plafond admin (les paiements opérés par admin peuvent
@@ -632,16 +677,12 @@ export function MobileNewPayment() {
                   <button
                     onClick={() => allStr && setRawAmount(allStr)}
                     disabled={disabled}
-                    style={{
-                      flex: 1, padding: '9px 0', borderRadius: 8,
-                      background: isActive ? `${V}10` : t.card,
-                      border: `1px solid ${isActive ? V : t.border}`,
-                      fontSize: 12, fontWeight: 700,
-                      color: isActive ? V : t.text,
-                      cursor: disabled ? 'not-allowed' : 'pointer',
-                      opacity: disabled ? 0.4 : 1,
-                      fontFamily: FONT,
-                    }}
+                    className={cn(
+                      'flex-1 rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95 disabled:opacity-40',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={isActive ? { boxShadow: `0 0 0 2px ${VIOLET}`, color: VIOLET } : undefined}
                   >
                     Tout
                   </button>
@@ -650,17 +691,12 @@ export function MobileNewPayment() {
             </div>
 
             {/* Bloc taux personnalisé */}
-            <div
-              style={{
-                padding: '12px 14px', borderRadius: 12,
-                background: t.card, border: `1.5px solid ${t.border}`,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Card className="p-3.5">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Taux personnalisé</div>
+                  <div className={cn('text-[13px] font-bold', TEXT.strong)}>Taux personnalisé</div>
                   {!useCustomRate && (
-                    <div style={{ fontSize: 11, color: t.dim, marginTop: 2 }}>
+                    <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
                       Taux du jour : 1M XAF = ¥{fmt(baseRate)}
                     </div>
                   )}
@@ -671,65 +707,40 @@ export function MobileNewPayment() {
                     setUseCustomRate(!useCustomRate);
                     if (!useCustomRate) setCustomRateStr(String(baseRate));
                   }}
-                  style={{
-                    width: 44, height: 26, borderRadius: 13,
-                    border: 'none', cursor: 'pointer',
-                    background: useCustomRate ? V : `${t.dim}80`,
-                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                  }}
+                  aria-label="Activer le taux personnalisé"
+                  className="relative h-[26px] w-11 shrink-0 rounded-full transition-colors"
+                  style={{ background: useCustomRate ? VIOLET : 'rgba(0,0,0,0.18)' }}
                 >
-                  <div
-                    style={{
-                      width: 22, height: 22, borderRadius: '50%', background: '#fff',
-                      position: 'absolute', top: 2,
-                      left: useCustomRate ? 20 : 2,
-                      transition: 'left 0.2s',
-                      boxShadow: '0 1px 4px rgba(0,0,0,.18)',
-                    }}
+                  <span
+                    className="absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,.18)] transition-all"
+                    style={{ left: useCustomRate ? 20 : 2 }}
                   />
                 </button>
               </div>
 
               {useCustomRate && (
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.border}`,
-                  }}
-                >
-                  <span style={{ fontSize: 12, color: t.sub, flexShrink: 0 }}>1M XAF =</span>
+                <div className="mt-2.5 flex items-center gap-2 border-t border-black/[0.06] pt-2.5 dark:border-white/[0.08]">
+                  <span className={cn('shrink-0 text-[12px]', TEXT.muted)}>1M XAF =</span>
                   <input
-                    style={{ ...inp, flex: 1, padding: '10px 12px', textAlign: 'center', fontWeight: 800 }}
+                    className={cn('h-11 flex-1 rounded-xl px-3 text-center text-[16px] font-extrabold outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
                     value={customRateStr}
                     onChange={(e) => setCustomRateStr(e.target.value.replace(/\D/g, ''))}
                     type="tel"
                     inputMode="numeric"
                   />
-                  <span style={{ fontSize: 12, color: t.sub, flexShrink: 0 }}>¥</span>
+                  <span className={cn('shrink-0 text-[12px]', TEXT.muted)}>¥</span>
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Alertes montant */}
             {xaf > 0 && xaf < 10_000 && (
-              <div
-                style={{
-                  marginTop: 10, padding: '10px 14px', borderRadius: 10,
-                  background: `${O}08`, border: `1px solid ${O}25`,
-                  fontSize: 12, fontWeight: 600, color: O, textAlign: 'center',
-                }}
-              >
+              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
                 Minimum : 10 000 XAF
               </div>
             )}
             {xaf > clientBalance && xaf > 0 && (
-              <div
-                style={{
-                  marginTop: 10, padding: '10px 14px', borderRadius: 10,
-                  background: `${O}08`, border: `1px solid ${O}25`,
-                  fontSize: 12, fontWeight: 600, color: O, textAlign: 'center',
-                }}
-              >
+              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
                 Solde insuffisant ({fmt(clientBalance)} XAF)
               </div>
             )}
@@ -738,50 +749,110 @@ export function MobileNewPayment() {
 
         {/* ══════ ÉTAPE 4 — QUI REÇOIT ? ══════ */}
         {step === 4 && (
-          <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 2 }}>Qui reçoit ?</div>
-            <div style={{ fontSize: 13, color: t.sub, marginBottom: 16 }}>
+          <div className="pb-4">
+            <div className={cn('mb-1 text-[22px] font-extrabold', TEXT.strong)}>Qui reçoit ?</div>
+            <div className={cn('mb-4 text-[13px]', TEXT.muted)}>
               ¥{fmt(cny)} via {mode?.name}
             </div>
 
             {/* Option "Remplir plus tard" */}
-            <button
-              onClick={() => {
-                setSkipBenef(!skipBenef);
-                if (!skipBenef) setBenef(BENEF0);
-              }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                padding: '12px 14px', borderRadius: 12, marginBottom: 16,
-                background: skipBenef ? `${G}10` : t.card,
-                border: `1.5px solid ${skipBenef ? G : t.border}`,
-                cursor: 'pointer', textAlign: 'left',
-              }}
-            >
-              <div
-                style={{
-                  width: 20, height: 20, borderRadius: 5,
-                  border: `2px solid ${skipBenef ? G : t.dim}`,
-                  background: skipBenef ? G : 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, color: '#fff', fontWeight: 800, flexShrink: 0,
+            <div className="mb-4">
+              <CheckRow
+                checked={skipBenef}
+                title="Remplir plus tard"
+                desc="Les infos du bénéficiaire seront ajoutées après"
+                onClick={() => {
+                  setSkipBenef(!skipBenef);
+                  if (!skipBenef) setBenef(BENEF0);
                 }}
-              >
-                {skipBenef ? '✓' : ''}
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Remplir plus tard</div>
-                <div style={{ fontSize: 11, color: t.sub }}>
-                  Les infos du bénéficiaire seront ajoutées après
-                </div>
-              </div>
-            </button>
+              />
+            </div>
 
             {!skipBenef && (
               <>
+                {/* Onglets : carnet du client (enregistré) vs nouveau */}
+                <div className={cn('mb-4 inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
+                  {(['existing', 'new'] as const).map((tab) => {
+                    const active = benefTab === tab;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setBenefTab(tab)}
+                        className={cn(
+                          'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                          active ? 'text-white' : TEXT.muted,
+                        )}
+                        style={active ? { background: VIOLET } : undefined}
+                      >
+                        {tab === 'existing' ? 'Enregistré' : 'Nouveau'}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* CARNET DU CLIENT — liste scopée (client_id + RLS admin) */}
+                {benefTab === 'existing' && (
+                  <div className="mb-2">
+                    {!clientBeneficiaries || clientBeneficiaries.length === 0 ? (
+                      <div className="flex flex-col items-center py-7 text-center">
+                        <Holder icon={User} size="lg" />
+                        <div className={cn('mt-3 text-[13px]', TEXT.muted)}>
+                          Aucun bénéficiaire {mode?.name} enregistré pour ce client
+                        </div>
+                        <button
+                          onClick={() => setBenefTab('new')}
+                          className="mt-2 text-[13px] font-bold"
+                          style={{ color: VIOLET }}
+                        >
+                          + Créer un bénéficiaire
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {clientBeneficiaries.map((b) => {
+                          const sel = selectedBenef?.id === b.id;
+                          return (
+                            <button
+                              key={b.id}
+                              onClick={() => setSelectedBenef(sel ? null : b)}
+                              className={cn(
+                                'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                                SURFACE.card,
+                                SURFACE.shadow,
+                              )}
+                              style={sel ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
+                            >
+                              <div
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[14px] font-extrabold"
+                                style={{ background: `${VIOLET}14`, color: VIOLET }}
+                              >
+                                {(b.alias || b.name)[0]?.toUpperCase()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                {/* alias-first : repère lisible en titre */}
+                                <div className={cn('truncate text-[15px] font-bold', TEXT.strong)}>
+                                  {b.alias || b.name}
+                                </div>
+                                <div className={cn('truncate text-[12px]', TEXT.muted)}>
+                                  {b.identifier || b.phone || b.bank_account || b.name || ''}
+                                </div>
+                              </div>
+                              {sel && <Check className="h-5 w-5 shrink-0" style={{ color: VIOLET }} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {!skipBenef && benefTab === 'new' && (
+              <div className="space-y-4">
                 {/* CASH : choix "le client lui-même" ou "quelqu'un d'autre" */}
                 {mode?.id === 'cash' && (
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+                  <div className="flex gap-2">
                     <button
                       onClick={() =>
                         setBenef({
@@ -791,27 +862,23 @@ export function MobileNewPayment() {
                           phone: '',
                         })
                       }
-                      style={{
-                        flex: 1, padding: 12, borderRadius: 10,
-                        background: benef.isClient ? `${V}10` : t.card,
-                        border: `1.5px solid ${benef.isClient ? V : t.border}`,
-                        fontSize: 13, fontWeight: 700,
-                        color: benef.isClient ? V : t.sub,
-                        cursor: 'pointer', fontFamily: FONT,
-                      }}
+                      className={cn(
+                        'flex-1 rounded-xl py-3 text-[13px] font-bold transition active:scale-95',
+                        SURFACE.card,
+                        SURFACE.shadow,
+                      )}
+                      style={benef.isClient ? { boxShadow: `0 0 0 2px ${VIOLET}`, color: VIOLET } : undefined}
                     >
                       Le client lui-même
                     </button>
                     <button
                       onClick={() => setBenef({ ...benef, isClient: false, name: '', phone: '' })}
-                      style={{
-                        flex: 1, padding: 12, borderRadius: 10,
-                        background: !benef.isClient ? `${V}10` : t.card,
-                        border: `1.5px solid ${!benef.isClient ? V : t.border}`,
-                        fontSize: 13, fontWeight: 700,
-                        color: !benef.isClient ? V : t.sub,
-                        cursor: 'pointer', fontFamily: FONT,
-                      }}
+                      className={cn(
+                        'flex-1 rounded-xl py-3 text-[13px] font-bold transition active:scale-95',
+                        SURFACE.card,
+                        SURFACE.shadow,
+                      )}
+                      style={!benef.isClient ? { boxShadow: `0 0 0 2px ${VIOLET}`, color: VIOLET } : undefined}
                     >
                       Quelqu'un d'autre
                     </button>
@@ -820,270 +887,220 @@ export function MobileNewPayment() {
 
                 {/* CASH : carte du client (quand "le client lui-même") */}
                 {mode?.id === 'cash' && benef.isClient && client && (
-                  <div
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: 14, borderRadius: 12, marginBottom: 16,
-                      background: `${V}06`, border: `1.5px solid ${V}20`,
-                    }}
-                  >
+                  <Card className="flex items-center gap-3">
                     <div
-                      style={{
-                        width: 38, height: 38, borderRadius: 10, background: `${V}14`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 800, color: V,
-                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+                      style={{ background: `${VIOLET}14`, color: VIOLET }}
                     >
                       {getInitials(client.first_name ?? '', client.last_name ?? '')}
                     </div>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>
+                    <div className="min-w-0">
+                      <div className={cn('text-[15px] font-bold', TEXT.strong)}>
                         {`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()}
                       </div>
-                      <div style={{ fontSize: 12, color: t.sub }}>{client.phone ?? '—'}</div>
+                      <div className={cn('text-[12px]', TEXT.muted)}>{client.phone ?? '—'}</div>
                     </div>
-                  </div>
+                  </Card>
                 )}
 
                 {/* Nom du bénéficiaire — tous modes sauf cash+isClient */}
                 {!(mode?.id === 'cash' && benef.isClient) && (
-                  <div style={{ marginBottom: 16 }}>
-                    <Label>Nom du bénéficiaire<Req /></Label>
-                    <input
-                      style={inp}
+                  <FormField label={<>Nom du bénéficiaire<Req /></>}>
+                    <TextInput
                       placeholder="Ex: Zhang Wei"
                       value={benef.name}
                       onChange={(e) => setBenef({ ...benef, name: e.target.value })}
                     />
-                  </div>
+                  </FormField>
                 )}
 
                 {/* CASH autre : téléphone */}
                 {mode?.id === 'cash' && !benef.isClient && (
-                  <div style={{ marginBottom: 16 }}>
-                    <Label>Téléphone<Opt /></Label>
-                    <input
-                      style={inp}
+                  <FormField label={<>Téléphone<Opt /></>}>
+                    <TextInput
                       placeholder="Ex: +86 138 0000 0000"
                       value={benef.phone}
                       onChange={(e) => setBenef({ ...benef, phone: e.target.value })}
                       type="tel"
                     />
-                  </div>
+                  </FormField>
                 )}
 
                 {/* ALIPAY / WECHAT */}
                 {(mode?.id === 'alipay' || mode?.id === 'wechat') && (
                   <>
                     {/* QR Code upload */}
-                    <div style={{ marginBottom: 14 }}>
-                      <Label>QR Code {mode.name}<Opt /></Label>
+                    <FormField label={<>QR Code {mode.name}<Opt /></>}>
                       <input
                         ref={qrRef}
                         type="file"
                         accept="image/*"
-                        style={{ display: 'none' }}
+                        className="hidden"
                         onChange={handleQrChange}
                       />
                       {qrPreview ? (
-                        <div
-                          style={{
-                            position: 'relative', borderRadius: 12,
-                            overflow: 'hidden', border: `1.5px solid ${V}35`,
-                          }}
-                        >
+                        <div className="relative overflow-hidden rounded-2xl ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
                           <img
                             src={qrPreview}
                             alt="QR code"
-                            style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }}
+                            className="block h-[180px] w-full object-cover"
                           />
                           <button
                             onClick={removeQr}
-                            style={{
-                              position: 'absolute', top: 8, right: 8,
-                              width: 28, height: 28, borderRadius: '50%',
-                              background: 'rgba(0,0,0,.55)', border: 'none',
-                              color: '#fff', fontSize: 18, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontFamily: FONT,
-                            }}
+                            aria-label="Retirer"
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white"
                           >
-                            ×
+                            <X className="h-4 w-4" />
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => qrRef.current?.click()}
-                          style={{
-                            width: '100%', padding: '22px 0', borderRadius: 12,
-                            border: `2px dashed ${t.border}`, background: t.card,
-                            cursor: 'pointer', textAlign: 'center',
-                          }}
+                          className={cn(
+                            'flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-dashed border-black/10 py-5 text-center dark:border-white/10',
+                            SURFACE.card,
+                          )}
                         >
-                          <div style={{ fontSize: 24, color: t.dim, marginBottom: 4 }}>+</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>
+                          <div className={cn('text-[24px] leading-none', TEXT.muted)}>+</div>
+                          <div className={cn('text-[13px] font-bold', TEXT.strong)}>
                             Ajouter une photo du QR code
                           </div>
-                          <div style={{ fontSize: 11, color: t.dim, marginTop: 2 }}>
+                          <div className={cn('text-[11px]', TEXT.muted)}>
                             Capture d'écran ou photo
                           </div>
                         </button>
                       )}
-                    </div>
+                    </FormField>
 
                     {/* Séparateur "et / ou" */}
-                    <div
-                      style={{
-                        display: 'flex', alignItems: 'center',
-                        gap: 10, marginBottom: 12,
-                      }}
-                    >
-                      <div style={{ flex: 1, height: 1, background: t.border }} />
-                      <span style={{ fontSize: 12, color: t.dim }}>et / ou</span>
-                      <div style={{ flex: 1, height: 1, background: t.border }} />
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.08]" />
+                      <span className={cn('text-[12px]', TEXT.muted)}>et / ou</span>
+                      <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.08]" />
                     </div>
 
                     {/* Identifiant */}
-                    <div style={{ marginBottom: 14 }}>
-                      <Label>Identifiant {mode.name}<Opt /></Label>
-                      <input
-                        style={inp}
+                    <FormField label={<>Identifiant {mode.name}<Opt /></>}>
+                      <TextInput
                         placeholder={`ID ${mode.name} du bénéficiaire`}
                         value={benef.ident}
                         onChange={(e) => setBenef({ ...benef, ident: e.target.value })}
                       />
-                    </div>
+                    </FormField>
 
                     {/* Téléphone */}
-                    <div style={{ marginBottom: 14 }}>
-                      <Label>Téléphone<Opt /></Label>
-                      <input
-                        style={inp}
+                    <FormField label={<>Téléphone<Opt /></>}>
+                      <TextInput
                         placeholder="Ex: +86 138 0000 0000"
                         value={benef.phone}
                         onChange={(e) => setBenef({ ...benef, phone: e.target.value })}
                         type="tel"
                       />
-                    </div>
+                    </FormField>
 
                     {/* Email */}
-                    <div style={{ marginBottom: 14 }}>
-                      <Label>Email<Opt /></Label>
-                      <input
-                        style={inp}
+                    <FormField label={<>Email<Opt /></>}>
+                      <TextInput
                         placeholder="Ex: zhangwei@mail.com"
                         value={benef.email}
                         onChange={(e) => setBenef({ ...benef, email: e.target.value })}
                         type="email"
                       />
-                    </div>
+                    </FormField>
                   </>
                 )}
 
                 {/* VIREMENT */}
                 {mode?.id === 'virement' && (
                   <>
-                    <div style={{ marginBottom: 16 }}>
-                      <Label>Banque<Req /></Label>
-                      <input
-                        style={inp}
+                    <FormField label={<>Banque<Req /></>}>
+                      <TextInput
                         placeholder="Ex: Bank of China"
                         value={benef.bank}
                         onChange={(e) => setBenef({ ...benef, bank: e.target.value })}
                       />
-                    </div>
-                    <div style={{ marginBottom: 16 }}>
-                      <Label>Numéro de compte<Req /></Label>
-                      <input
-                        style={inp}
+                    </FormField>
+                    <FormField label={<>Numéro de compte<Req /></>}>
+                      <TextInput
                         placeholder="Ex: 6214 8888 1234 5678"
                         value={benef.account}
                         onChange={(e) => setBenef({ ...benef, account: e.target.value })}
                         type="tel"
                       />
-                    </div>
+                    </FormField>
                   </>
                 )}
-              </>
+
+                {/* Enregistrer au carnet du client (sauf cash + client lui-même) */}
+                {!(mode?.id === 'cash' && benef.isClient) && (
+                  <CheckRow
+                    checked={saveToCarnet}
+                    title="Enregistrer dans le carnet du client"
+                    onClick={() => setSaveToCarnet(!saveToCarnet)}
+                  />
+                )}
+              </div>
             )}
           </div>
         )}
 
         {/* ══════ ÉTAPE 5 — TOUT EST BON ? ══════ */}
         {step === 5 && (
-          <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Tout est bon ?</div>
+          <div className="space-y-2.5 pb-4">
+            <div className={cn('text-[22px] font-extrabold', TEXT.strong)}>Tout est bon ?</div>
 
             {/* Montant principal : ¥ en premier */}
-            <div
-              style={{
-                padding: 20, borderRadius: 14, textAlign: 'center',
-                background: t.card, border: `1.5px solid ${t.border}`,
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ fontSize: 38, fontWeight: 900, color: t.text, letterSpacing: '-1.5px' }}>
-                ¥{fmt(cny)}
-              </div>
-              <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{fmt(xaf)} XAF</div>
-            </div>
+            <Card className="py-5 text-center">
+              <Amount value={`¥${fmt(cny)}`} size="xl" />
+              <div className={cn('mt-1 text-[15px]', TEXT.muted)}>{fmt(xaf)} XAF</div>
+            </Card>
 
             {/* Tableau récap */}
-            <div
-              style={{
-                padding: '14px 16px', borderRadius: 14,
-                background: t.card, border: `1.5px solid ${t.border}`,
-              }}
-            >
+            <Card>
               {([
                 { l: 'Client', v: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim() },
                 { l: 'Mode', v: mode?.name },
                 skipBenef
                   ? { l: 'Bénéficiaire', v: 'À remplir plus tard' }
+                  : selectedBenef
+                  ? { l: 'Bénéficiaire', v: selectedBenef.alias || selectedBenef.name }
                   : mode?.id === 'cash' && benef.isClient
                   ? { l: 'Bénéficiaire', v: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim() + ' (le client)' }
                   : benef.name
                   ? { l: 'Bénéficiaire', v: benef.name }
                   : null,
-                !skipBenef && benef.ident ? { l: `ID ${mode?.name}`, v: benef.ident } : null,
-                !skipBenef && benef.bank ? { l: 'Banque', v: benef.bank } : null,
-                !skipBenef && benef.account ? { l: 'Compte', v: benef.account } : null,
-                !skipBenef && benef.phone ? { l: 'Téléphone', v: benef.phone } : null,
-                !skipBenef && benef.email ? { l: 'Email', v: benef.email } : null,
+                // Détails : bénéficiaire enregistré sélectionné OU saisi manuellement
+                !skipBenef && (selectedBenef?.identifier || (!selectedBenef && benef.ident))
+                  ? { l: `ID ${mode?.name}`, v: selectedBenef?.identifier || benef.ident }
+                  : null,
+                !skipBenef && (selectedBenef?.bank_name || (!selectedBenef && benef.bank))
+                  ? { l: 'Banque', v: selectedBenef?.bank_name || benef.bank }
+                  : null,
+                !skipBenef && (selectedBenef?.bank_account || (!selectedBenef && benef.account))
+                  ? { l: 'Compte', v: selectedBenef?.bank_account || benef.account }
+                  : null,
+                !skipBenef && (selectedBenef?.phone || (!selectedBenef && benef.phone))
+                  ? { l: 'Téléphone', v: selectedBenef?.phone || benef.phone }
+                  : null,
+                !skipBenef && (selectedBenef?.email || (!selectedBenef && benef.email))
+                  ? { l: 'Email', v: selectedBenef?.email || benef.email }
+                  : null,
                 { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : ''}` },
               ] as ({ l: string; v: string | undefined } | null)[])
                 .filter((r): r is { l: string; v: string } => !!r && !!r.v)
-                .map((r, i, arr) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                      padding: '9px 0',
-                      borderBottom: i < arr.length - 1 ? `1px solid ${t.border}` : 'none',
-                    }}
-                  >
-                    <span style={{ fontSize: 13, color: t.sub, flexShrink: 0 }}>{r.l}</span>
-                    <span
-                      style={{
-                        fontSize: 13, fontWeight: 700, color: t.text,
-                        textAlign: 'right', maxWidth: '65%',
-                      }}
-                    >
+                .map((r, i) => (
+                  <div key={i} className="flex items-start justify-between gap-3 py-[9px]">
+                    <span className={cn('shrink-0 text-[13px]', TEXT.muted)}>{r.l}</span>
+                    <span className={cn('max-w-[65%] text-right text-[13px] font-semibold', TEXT.strong)}>
                       {r.v}
                     </span>
                   </div>
                 ))}
-            </div>
+            </Card>
 
             {/* Alerte solde insuffisant (récap) */}
             {xaf > clientBalance && (
-              <div
-                style={{
-                  marginTop: 8, padding: '10px 14px', borderRadius: 10,
-                  background: `${O}08`, border: `1px solid ${O}25`,
-                  fontSize: 12, fontWeight: 600, color: O, textAlign: 'center',
-                }}
-              >
+              <div className="rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
                 Solde insuffisant ({fmt(clientBalance)} XAF disponibles)
               </div>
             )}
@@ -1091,56 +1108,27 @@ export function MobileNewPayment() {
         )}
       </div>
 
-      {/* ────────────────── FOOTER — toujours visible ────────────────── */}
-      <div
-        style={{
-          flexShrink: 0,
-          padding: '10px 20px 18px',
-          background: t.card,
-          borderTop: `1px solid ${t.border}`,
-          display: 'flex',
-          gap: 10,
-        }}
-      >
+      {/* ── Footer — toujours visible ────────────────── */}
+      <div className={cn('flex shrink-0 gap-2.5 px-5 pb-[calc(1.125rem+env(safe-area-inset-bottom))] pt-3', SURFACE.card, SURFACE.shadow)}>
         {step > 1 && (
-          <button
-            onClick={() => setStep(step - 1)}
-            style={{
-              flex: 1, padding: '15px 0', borderRadius: 12,
-              background: 'none', border: `1.5px solid ${t.border}`,
-              fontSize: 14, fontWeight: 700, color: t.sub,
-              cursor: 'pointer', fontFamily: FONT,
-            }}
-          >
+          <SoftPill onClick={() => setStep(step - 1)} className="flex-1">
             Retour
-          </button>
+          </SoftPill>
         )}
-        <button
+        <PrimaryPill
           onClick={() => {
             if (step < 5) setStep(step + 1);
             else handleConfirm();
           }}
-          disabled={!canNext || createPayment.isPending}
-          style={{
-            flex: step === 1 ? 1 : 1.4,
-            padding: '15px 0',
-            borderRadius: 12,
-            background: canNext && !createPayment.isPending ? V : t.border,
-            border: 'none',
-            fontSize: 14,
-            fontWeight: 800,
-            color: canNext && !createPayment.isPending ? '#fff' : t.dim,
-            cursor: canNext && !createPayment.isPending ? 'pointer' : 'not-allowed',
-            fontFamily: FONT,
-            transition: 'background 0.2s',
-          }}
+          disabled={!canNext}
+          loading={createPayment.isPending}
+          className={cn(
+            step === 1 ? 'flex-1' : 'flex-[1.4]',
+            canNext && !createPayment.isPending && 'bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white',
+          )}
         >
-          {createPayment.isPending
-            ? 'Traitement...'
-            : step === 5
-            ? 'Confirmer le paiement'
-            : 'Suivant'}
-        </button>
+          {step === 5 ? 'Confirmer le paiement' : 'Suivant'}
+        </PrimaryPill>
       </div>
     </div>
   );

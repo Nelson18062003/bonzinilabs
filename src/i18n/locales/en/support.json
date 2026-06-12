@@ -1,0 +1,218 @@
+{
+  "nav": {
+    "support": "Support"
+  },
+  "page": {
+    "title": "Bonzini Team",
+    "subtitle": "We're here to help"
+  },
+  "empty": {
+    "title": "The Bonzini team is here for you",
+    "subtitle": "Ask us about a payment, an exchange rate, or anything else. We reply quickly.",
+    "quickRepliesTitle": "Quick start"
+  },
+  "input": {
+    "placeholder": "Write your message…",
+    "send": "Send",
+    "sendImage": "Send an image",
+    "sendVideo": "Send a video",
+    "sendFile": "Send a file",
+    "attachMenu": "Attach media",
+    "sending": "Sending…"
+  },
+  "responseTime": {
+    "label": "Average response today",
+    "minutes": "{{count}} min",
+    "seconds": "{{count}} sec",
+    "veryFast": "Almost instant"
+  },
+  "errors": {
+    "imageTooLarge": "Image too large (max 5 MB)",
+    "imageWrongFormat": "Format not supported (JPG, PNG or WebP only)",
+    "videoTooLarge": "Video too large (max 25 MB)",
+    "videoWrongFormat": "Video format not supported (MP4 only)",
+    "videoTooLong": "Video too long (max 30 seconds)",
+    "fileTooLarge": "File too large (max 10 MB)",
+    "fileWrongFormat": "Format not supported (PDF, DOC, DOCX, XLS, XLSX only)",
+    "messageEmpty": "Message cannot be empty",
+    "messageTooLong": "Message too long (max 2000 characters)",
+    "sendFailed": "Send failed, try again",
+    "loadFailed": "Unable to load conversation"
+  },
+  "voice": {
+    "startRecording": "Hold to record",
+    "slideToCancel": "← Slide to cancel",
+    "releaseToCancel": "Release to cancel",
+    "cancel": "Cancel",
+    "maxDurationReached": "Maximum 60 seconds",
+    "lockedHint": "Recording locked · tap to send",
+    "holdToRecord": "Hold the mic to record",
+    "permissionHelp": "Allow microphone access in settings",
+    "errors": {
+      "permissionDenied": "Microphone access denied. Enable it in browser settings.",
+      "noMicrophone": "No microphone detected on this device",
+      "microphoneBusy": "Microphone is being used by another app",
+      "unknownStart": "Unable to start recording"
+    }
+  },
+  "video": {
+    "error": "Video unavailable"
+  },
+  "file": {
+    "download": "Download"
+  },
+  "typing": {
+    "adminWriting": "Bonzini team is typing…",
+    "clientWriting": "Client is typing…"
+  },
+  "receipt": {
+    "sent": "Sent",
+    "seen": "Seen",
+    "seenAt": "Seen at {{time}}"
+  },
+  "contextMenu": {
+    "reply": "Reply",
+    "copy": "Copy",
+    "copied": "Text copied",
+    "copyFailed": "Unable to copy",
+    "react": "React"
+  },
+  "quoted": {
+    "image": "Photo",
+    "voice": "Voice message",
+    "video": "Video",
+    "file": "File"
+  },
+  "list": {
+    "newConversation": "New conversation",
+    "newConversationHint": "On a specific topic",
+    "newSubjectLabel": "Conversation subject",
+    "newSubjectPlaceholder": "e.g. Question about a payment…",
+    "cancel": "Cancel",
+    "create": "Create",
+    "empty": "No conversations yet",
+    "defaultSubject": "General discussion",
+    "closedBadge": "Conversation closed"
+  },
+  "detail": {
+    "back": "Back",
+    "bonziniTeam": "Bonzini Team",
+    "closedHint": "This conversation is closed. Send a message to reopen it."
+  },
+  "templates": {
+    "pickerTitle": "Saved replies",
+    "searchPlaceholder": "Search a template…",
+    "empty": "No templates yet",
+    "emptyHint": "Tap + to create your first template",
+    "noMatch": "No results",
+    "screenTitle": "Reply templates",
+    "create": "Create template",
+    "createTitle": "New template",
+    "editTitle": "Edit template",
+    "labelField": "Short label",
+    "labelPlaceholder": "e.g. Deposit validated",
+    "contentField": "Message content",
+    "contentPlaceholder": "Hi {{client_first_name}}, your deposit was validated on {{today}}.",
+    "save": "Save",
+    "created": "Template created",
+    "updated": "Template updated",
+    "confirmDelete": "Delete this template?",
+    "readOnlyHint": "Only a super_admin can create or modify templates.",
+    "varsAvailable": "Available variables (tap to insert)",
+    "varsInside": "Contains variables",
+    "varsHint": "Vars",
+    "unresolvedVars": "Some variables could not be resolved",
+    "preview": "Preview with sample data"
+  },
+  "quickReplies": {
+    "screenTitle": "Client quick replies",
+    "hint": "These suggestions appear to clients opening a new conversation.",
+    "create": "Create suggestion",
+    "createTitle": "New suggestion",
+    "editTitle": "Edit suggestion",
+    "labelField": "Button (short text seen by client)",
+    "labelPlaceholder": "e.g. My payment is late",
+    "contentField": "Pre-filled message in the input",
+    "contentPlaceholder": "Hello, my payment seems late, can you check?",
+    "activeLabel": "Active (visible to clients)",
+    "inactive": "Inactive",
+    "empty": "No suggestions yet",
+    "emptyHint": "Tap + to create the first suggestion",
+    "created": "Suggestion created",
+    "updated": "Suggestion updated",
+    "confirmDelete": "Delete this suggestion?",
+    "readOnlyHint": "Only a super_admin can create or modify suggestions."
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "image": {
+    "loading": "Loading…",
+    "error": "Image unavailable",
+    "tapToOpen": "Open full screen"
+  },
+  "admin": {
+    "listTitle": "Conversations",
+    "listEmpty": "No active conversations",
+    "filterAll": "All",
+    "filterMine": "Mine",
+    "filterUnassigned": "Unassigned",
+    "filterOpen": "Open",
+    "filterClosed": "Closed",
+    "filterAllStatus": "All",
+    "filterUnread": "Unread",
+    "searchPlaceholder": "Search client or keyword…",
+    "unreadBadge": "{{count}} unread",
+    "unreadBadgePlural": "{{count}} unread",
+    "openChat": "Open chat",
+    "noClientName": "Unnamed client",
+    "clientLink": "View client profile",
+    "lastActivity": "Last activity",
+    "assignedToLabel": "Taken by",
+    "noMatch": "No results for this search",
+    "statsLink": "Statistics",
+    "statsTitle": "Support statistics",
+    "statsPeriod7d": "7 days",
+    "statsPeriod14d": "14 days",
+    "statsPeriod30d": "30 days",
+    "statsOpenConvs": "Open convs",
+    "statsTotalMessages": "Messages",
+    "statsUnassigned": "Unassigned",
+    "statsAvgResponse": "Avg response",
+    "statsPerAdmin": "Per-admin performance",
+    "statsReplies": "replies",
+    "statsNoData": "No data yet for this period",
+    "statsLegendTitle": "Note",
+    "statsLegend": "Average response time is computed on client message → first admin reply pairs.",
+    "statsMedian": "Median:",
+    "chartDailyVolume": "Daily volume",
+    "chartDailyVolumeHint": "Messages per day, per side",
+    "chartResponseDistribution": "Response time distribution",
+    "chartResponseDistributionHint": "Admin replies bucketed by response time",
+    "chartTopAdmins": "Top admins by volume",
+    "chartTopAdminsHint": "5 most active admins over the period",
+    "bucketUnder1Min": "< 1 min",
+    "bucket1to5": "1-5 min",
+    "bucket5to15": "5-15 min",
+    "bucketOver15": "> 15 min",
+    "closedHint": "Conversation closed — will auto-reopen on the client's next message.",
+    "actions": {
+      "claim": "Take it",
+      "claimed": "Conversation claimed",
+      "assigned": "Assignment updated",
+      "assignTo": "Assign to an admin",
+      "assignedToMe": "Yours",
+      "unassign": "Nobody (unassign)",
+      "close": "Close conversation",
+      "closed": "Conversation closed",
+      "reopen": "Reopen conversation",
+      "reopened": "Conversation reopened"
+    }
+  },
+  "bubble": {
+    "you": "You",
+    "bonziniTeam": "Bonzini Team",
+    "sending": "Sending…"
+  }
+}

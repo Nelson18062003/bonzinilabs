@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -14,6 +14,7 @@ export interface AdminUser {
   firstName: string;
   lastName: string;
   role: AppRole;
+  avatarUrl?: string;
 }
 
 export interface RolePermission {
@@ -26,6 +27,9 @@ export interface RolePermission {
   canManageRates: boolean;
   canViewLogs: boolean;
   canManageUsers: boolean;
+  canViewTreasury: boolean;
+  canManageTreasury: boolean;
+  canAccessSupportChat: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -39,6 +43,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: true,
+    canViewTreasury: true,
+    canManageTreasury: true,
+    canAccessSupportChat: true,
   },
   ops: {
     canViewClients: true,
@@ -50,6 +57,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: true,
   },
   support: {
     canViewClients: true,
@@ -61,6 +71,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: true,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: true,
   },
   customer_success: {
     canViewClients: true,
@@ -72,6 +85,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: true,
   },
   cash_agent: {
     canViewClients: false,
@@ -83,6 +99,23 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+  },
+  treasurer: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: true,
+    canManageTreasury: true,
+    canAccessSupportChat: false,
   },
 };
 
@@ -92,6 +125,7 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   support: 'Support',
   customer_success: 'Chargé de clientèle',
   cash_agent: 'Agent Cash',
+  treasurer: 'Trésorier',
 };
 
 interface AdminAuthContextType {
@@ -105,11 +139,22 @@ interface AdminAuthContextType {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logAction: (actionType: string, targetType: string, description: string, targetId?: string, metadata?: Record<string, any>) => void;
   // Convenience properties
-  profile: { first_name: string; last_name: string } | null;
+  profile: { first_name: string; last_name: string; avatar_url?: string | null } | null;
+  refreshProfile: () => Promise<void>;
   canManageUsers: boolean;
 }
 
-const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+// Exported so the dev-only screenshot harness (src/__screenshot__) can provide a
+// fake value. Production code must keep using the `useAdminAuth` hook below.
+export const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+
+// Garde-fou : empêche une requête réseau de rester bloquée indéfiniment.
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Délai dépassé (${label}). Vérifie ta connexion internet.`)), ms)),
+  ]);
+}
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -119,12 +164,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Fetch user role and profile after login
   const fetchAdminData = async (user: User) => {
     try {
-      // Check if user has an admin role
-      const { data: roleData, error: roleError } = await supabaseAdmin
-        .from('user_roles')
-        .select('role, first_name, last_name, is_disabled')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Check if user has an admin role (avec timeout pour ne jamais rester bloqué)
+      const { data: roleData, error: roleError } = await withTimeout(
+        supabaseAdmin
+          .from('user_roles')
+          .select('role, first_name, last_name, avatar_url, is_disabled')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        10000,
+        'chargement du rôle',
+      );
 
       if (roleError) {
         console.error('Error fetching role:', roleError);
@@ -147,6 +196,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         firstName: roleData.first_name || 'Admin',
         lastName: roleData.last_name || '',
         role: roleData.role as AppRole,
+        avatarUrl: roleData.avatar_url || undefined,
       };
 
       return adminUser;
@@ -184,17 +234,32 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setCurrentUser(adminData && !('disabled' in adminData) ? adminData : null);
       }
       setIsLoading(false);
+    }).catch((err) => {
+      // Ne JAMAIS laisser le spinner tourner indéfiniment si getSession/fetch échoue.
+      console.error('Admin auth init error:', err);
+      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Filet de sécurité : au pire, on débloque l'écran après 8s (puis l'app
+    // redirigera vers /m/login si la session n'a pas pu être chargée).
+    const safety = setTimeout(() => setIsLoading(false), 8000);
+
+    return () => {
+      clearTimeout(safety);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password,
-      });
+      const { data, error } = await withTimeout(
+        supabaseAdmin.auth.signInWithPassword({
+          email: email.toLowerCase().trim(),
+          password,
+        }),
+        15000,
+        'connexion',
+      );
 
       if (error) {
         return { success: false, error: error.message };
@@ -221,7 +286,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'An error occurred' };
+      // Remonter la vraie cause au lieu d'un message générique muet.
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: `Erreur de connexion : ${msg}` };
     }
   };
 
@@ -264,9 +331,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   // Convenience properties
   const profile = currentUser
-    ? { first_name: currentUser.firstName, last_name: currentUser.lastName }
+    ? { first_name: currentUser.firstName, last_name: currentUser.lastName, avatar_url: currentUser.avatarUrl ?? null }
     : null;
   const canManageUsers = hasPermission('canManageUsers');
+
+  // Re-charge la fiche admin (ex. après édition du profil).
+  const refreshProfile = async () => {
+    if (!session?.user) return;
+    const result = await fetchAdminData(session.user);
+    if (result && !('disabled' in result)) setCurrentUser(result as AdminUser);
+  };
 
   return (
     <AdminAuthContext.Provider
@@ -281,6 +355,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         logAction,
         profile,
         canManageUsers,
+        refreshProfile,
       }}
     >
       {children}

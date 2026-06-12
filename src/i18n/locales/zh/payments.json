@@ -126,7 +126,9 @@
       "accountNumber": "账号",
       "swiftAgency": "SWIFT / IBAN / 网点（可选）",
       "additionalInfo": "补充信息",
-      "addLater": "稍后填写"
+      "addLater": "稍后填写",
+      "dontSave": "不保存此收款人",
+      "saveFailedPaymentContinues": "收款人未保存到列表 — 付款继续"
     },
     "confirm": {
       "method": "付款方式",

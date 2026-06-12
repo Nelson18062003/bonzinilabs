@@ -1,14 +1,18 @@
 // ============================================================
 // MODULE DEPOTS V2 — MobileNewDepositV2
-// UI selon maquette v3 : barre de progression step-by-step,
-// écran succès avant navigation vers la fiche.
-// Logique 100% identique à MobileNewDeposit.tsx
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   canvas doux · header fixe + barre de progression · contenu
+//   scrollable · footer CTA toujours visible · cartes à ombre douce ·
+//   FormField/TextInput · Amount · écran succès en Holder.
+// Logique 100% préservée : assistant client→montant→famille→
+//   submethod→banque→agence→récap→création, useCountUp, copie
+//   coordonnées, upload preuves, écran succès, validations.
 // ============================================================
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAllClients, useAdminCreateDeposit } from '@/hooks/useAdminDeposits';
 import { useCountUp } from '@/hooks/useCountUp';
-import { formatXAF, formatCurrency } from '@/lib/formatters';
+import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -37,6 +41,7 @@ import {
   ArrowRight,
   Building2,
   Check,
+  ChevronLeft,
   Clock,
   Copy,
   FileText,
@@ -50,20 +55,17 @@ import {
   X,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import {
+  SURFACE,
+  TEXT,
+  Card,
+  Holder,
+  Amount,
+  PrimaryPill,
+  SoftPill,
+} from '@/mobile/designKit';
 
-// ── Couleurs maquette ────────────────────────────────────────
-const GR = '#34d399';
-const V = '#A947FE';
-const t = {
-  bg: '#f5f3f7',
-  card: '#ffffff',
-  text: '#1a1028',
-  sub: '#7a7290',
-  dim: '#c4bdd0',
-  border: '#ebe6f0',
-};
-
-// ── Familles couleurs ────────────────────────────────────────
+// ── Familles couleurs (identité de marque conservée) ─────────
 const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean; name: string }> = {
   BANK: { letter: 'B', bg: '#1e3a5f', name: 'Banque' },
   AGENCY_BONZINI: { letter: 'A', bg: '#A947FE', name: 'Agence Bonzini' },
@@ -71,6 +73,9 @@ const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean
   MTN_MONEY: { letter: 'M', bg: '#ffcb05', dark: true, name: 'MTN MoMo' },
   WAVE: { letter: 'W', bg: '#1dc3e3', name: 'Wave' },
 };
+
+// Vert d'action = marque Dépôts (cohérent liste/détail).
+const GREEN = '#10B981';
 
 // ── Types ──────────────────────────────────────────────────
 type Step = 'client' | 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
@@ -98,7 +103,7 @@ function getStepNumber(step: Step, family: DepositMethodFamily | null): number {
   }
 }
 
-// ── Bouton copie ─────────────────────────────────────────────
+// ── Bouton copie (logique conservée, habillage kit) ──────────
 function CopyBtn({ text, fieldKey, copiedField, onCopy }: {
   text: string;
   fieldKey: string;
@@ -109,22 +114,14 @@ function CopyBtn({ text, fieldKey, copiedField, onCopy }: {
   return (
     <button
       onClick={() => onCopy(text, fieldKey)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 3,
-        padding: '3px 8px',
-        borderRadius: 5,
-        background: copied ? `${GR}15` : t.bg,
-        border: `1px solid ${copied ? GR : t.border}`,
-        fontSize: 10,
-        fontWeight: 700,
-        color: copied ? GR : t.sub,
-        cursor: 'pointer',
-        fontFamily: "'DM Sans', sans-serif",
-      }}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition active:scale-95',
+        copied
+          ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
+          : 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]',
+      )}
     >
-      {copied ? <Check style={{ width: 10, height: 10 }} /> : <Copy style={{ width: 10, height: 10 }} />}
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
       {copied ? 'Copié' : 'Copier'}
     </button>
   );
@@ -455,105 +452,38 @@ export function MobileNewDepositV2() {
   function fmt(n: number) {
     return Math.abs(n)
       .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
+
+  // Classe partagée pour une ligne label/valeur (sans filet, façon Row).
+  const infoLineCls = 'flex items-center justify-between gap-3 py-[7px]';
 
   // ── Écran succès V2 ──────────────────────────────────────
   if (isSuccess) {
     const familyName = selectedFamily ? FAMILIES_CONF[selectedFamily]?.name || selectedFamily : '';
     return (
-      <div
-        style={{
-          height: '100dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: t.bg,
-          maxWidth: 480,
-          margin: '0 auto',
-          fontFamily: "'DM Sans', sans-serif",
-          padding: '0 24px',
-          color: t.text,
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            background: `${GR}18`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            color: GR,
-            marginBottom: 16,
-          }}
-        >
-          ✓
+      <div className={cn('mx-auto flex h-[100dvh] max-w-[480px] flex-col items-center justify-center px-6 text-center', SURFACE.canvas)}>
+        <Holder icon={Check} tone="success" size="lg" className="mb-4" />
+        <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>Dépôt créé</div>
+        <div className="mt-1.5">
+          <Amount value={fmt(amountNum)} unit="XAF" size="lg" />
         </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>Dépôt créé</div>
-        <div
-          style={{
-            fontSize: 34,
-            fontWeight: 900,
-            color: t.text,
-            letterSpacing: '-1.5px',
-            marginTop: 6,
-          }}
-        >
-          {fmt(amountNum)} XAF
-        </div>
-        <div style={{ fontSize: 14, color: t.sub, marginTop: 4 }}>
+        <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
           pour {selectedClient?.first_name} {selectedClient?.last_name} via {familyName}
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: t.dim,
-            marginTop: 8,
-            textAlign: 'center',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className={cn('mt-2 max-w-xs text-[12px] leading-relaxed', TEXT.muted)}>
           Le client peut maintenant ajouter ses preuves de dépôt depuis son application.
         </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 28, width: '100%' }}>
-          <button
-            onClick={() => navigate('/m/deposits')}
-            style={{
-              flex: 1,
-              padding: 15,
-              borderRadius: 12,
-              background: 'none',
-              border: `1px solid ${t.border}`,
-              fontSize: 14,
-              fontWeight: 700,
-              color: t.sub,
-              cursor: 'pointer',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
+        <div className="mt-7 flex w-full gap-2.5">
+          <SoftPill onClick={() => navigate('/m/deposits')} className="flex-1">
             Retour
-          </button>
-          <button
+          </SoftPill>
+          <PrimaryPill
             onClick={() => createdDepositId && navigate(`/m/deposits/${createdDepositId}`)}
-            style={{
-              flex: 1,
-              padding: 15,
-              borderRadius: 12,
-              background: GR,
-              border: 'none',
-              fontSize: 14,
-              fontWeight: 800,
-              color: '#fff',
-              cursor: 'pointer',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
+            className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
           >
             Voir la fiche
-          </button>
+          </PrimaryPill>
         </div>
       </div>
     );
@@ -561,98 +491,49 @@ export function MobileNewDepositV2() {
 
   // ── Layout principal ─────────────────────────────────────
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100dvh',
-        background: t.bg,
-        fontFamily: "'DM Sans', sans-serif",
-        color: t.text,
-        maxWidth: 480,
-        margin: '0 auto',
-      }}
-    >
-      {/* ── Header + barre de progression ─────────────── */}
-      <div
-        style={{
-          flexShrink: 0,
-          background: t.card,
-          borderBottom: `1px solid ${t.border}`,
-          padding: '12px 20px 10px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+    <div className={cn('mx-auto flex h-[100dvh] max-w-[480px] flex-col overflow-hidden', SURFACE.canvas)}>
+      {/* ── Header + barre de progression ─────────────────── */}
+      <div className={cn('shrink-0 px-5 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
+        <div className="flex h-14 items-center gap-2">
           {step !== 'creating' && (
-            <span
+            <button
               onClick={handleHeaderBack}
-              style={{
-                fontSize: 20,
-                color: t.sub,
-                cursor: 'pointer',
-                marginRight: 12,
-                fontWeight: 300,
-              }}
+              aria-label="Retour"
+              className={cn('-ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
             >
-              ‹
-            </span>
+              <ChevronLeft className="h-6 w-6" />
+            </button>
           )}
-          <span style={{ fontSize: 15, fontWeight: 800, flex: 1 }}>Nouveau dépôt</span>
+          <span className={cn('flex-1 text-[15px] font-bold', TEXT.strong)}>Nouveau dépôt</span>
           {step !== 'creating' && (
-            <span style={{ fontSize: 12, fontWeight: 700, color: GR }}>
+            <span className="text-[12px] font-bold" style={{ color: GREEN }}>
               {currentStepNum}/{totalSteps}
             </span>
           )}
         </div>
         {step !== 'creating' && (
-          <div style={{ display: 'flex', gap: 3 }}>
+          <div className="flex gap-1 pb-3">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
                 key={i}
-                style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 2,
-                  background: currentStepNum >= i + 1 ? GR : t.border,
-                  transition: 'background 0.2s',
-                }}
+                className="h-[3px] flex-1 rounded-full transition-colors"
+                style={{ background: currentStepNum >= i + 1 ? GREEN : 'rgba(0,0,0,0.08)' }}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* ── Contenu ─────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 20px 0' }}>
+      {/* ── Contenu ───────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-5 pt-5" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Étape 1 — Client */}
         {step === 'client' && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Quel client ?</div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '0 14px',
-                height: 44,
-                borderRadius: 10,
-                background: t.card,
-                border: `1px solid ${t.border}`,
-                marginBottom: 12,
-              }}
-            >
-              <Search style={{ width: 14, height: 14, color: t.dim }} />
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quel client ?</div>
+            <div className="relative mb-3">
+              <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
               <input
-                style={{
-                  border: 'none',
-                  background: 'none',
-                  outline: 'none',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: t.text,
-                  width: '100%',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
+                className={cn('h-12 w-full rounded-2xl pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
                 placeholder="Nom ou téléphone..."
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
@@ -661,69 +542,54 @@ export function MobileNewDepositV2() {
               {clientSearch && (
                 <button
                   onClick={() => setClientSearch('')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.dim }}
+                  aria-label="Effacer"
+                  className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
                 >
-                  <X style={{ width: 14, height: 14 }} />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
             {clientsLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-                <Loader2 style={{ width: 24, height: 24, color: GR, animation: 'spin 1s linear infinite' }} />
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin" style={{ color: GREEN }} />
               </div>
             ) : filteredClients.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {filteredClients.map((client) => (
-                  <button
-                    key={client.user_id}
-                    onClick={() => { setSelectedClient(client); goTo('amount'); }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '12px 14px',
-                      borderRadius: 12,
-                      width: '100%',
-                      background: selectedClient?.user_id === client.user_id ? `${GR}05` : t.card,
-                      border: `1.5px solid ${selectedClient?.user_id === client.user_id ? GR : t.border}`,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        background: `${V}08`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 13,
-                        fontWeight: 800,
-                        color: V,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {client.first_name?.[0]}{client.last_name?.[0]}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>
-                        {client.first_name} {client.last_name}
-                      </div>
-                      {client.phone && (
-                        <div style={{ fontSize: 11, color: t.sub }}>{client.phone}</div>
+              <div className="space-y-2.5">
+                {filteredClients.map((client) => {
+                  const isSelected = selectedClient?.user_id === client.user_id;
+                  return (
+                    <button
+                      key={client.user_id}
+                      onClick={() => { setSelectedClient(client); goTo('amount'); }}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                        SURFACE.card,
+                        SURFACE.shadow,
+                        isSelected && 'ring-2',
                       )}
-                    </div>
-                    <ArrowRight style={{ width: 16, height: 16, color: t.dim, flexShrink: 0 }} />
-                  </button>
-                ))}
+                      style={isSelected ? { boxShadow: `0 0 0 2px ${GREEN}` } : undefined}
+                    >
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+                        style={{ background: `${FAMILIES_CONF.AGENCY_BONZINI.bg}14`, color: FAMILIES_CONF.AGENCY_BONZINI.bg }}
+                      >
+                        {client.first_name?.[0]}{client.last_name?.[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={cn('truncate text-[14px] font-bold', TEXT.strong)}>
+                          {client.first_name} {client.last_name}
+                        </div>
+                        {client.phone && <div className={cn('truncate text-[11px]', TEXT.muted)}>{client.phone}</div>}
+                      </div>
+                      <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
+                    </button>
+                  );
+                })}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0' }}>
-                <User style={{ width: 32, height: 32, color: t.dim, marginBottom: 8 }} />
-                <p style={{ fontSize: 13, color: t.sub }}>Aucun client trouvé</p>
+              <div className="flex flex-col items-center py-10">
+                <Holder icon={User} size="lg" />
+                <p className={cn('mt-3 text-[13px]', TEXT.muted)}>Aucun client trouvé</p>
               </div>
             )}
           </div>
@@ -732,82 +598,46 @@ export function MobileNewDepositV2() {
         {/* Étape 2 — Montant */}
         {step === 'amount' && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Combien ?</div>
-            <div
-              style={{
-                padding: '24px 20px',
-                borderRadius: 16,
-                background: t.card,
-                border: `1.5px solid ${t.border}`,
-                textAlign: 'center',
-                marginBottom: 14,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Combien ?</div>
+            <Card className="mb-3.5 py-6 text-center">
+              <div className="flex items-baseline justify-center gap-2">
                 <input
-                  style={{
-                    border: 'none',
-                    background: 'none',
-                    outline: 'none',
-                    fontSize: 44,
-                    fontWeight: 900,
-                    color: t.text,
-                    fontFamily: "'DM Sans', sans-serif",
-                    width: '65%',
-                    textAlign: 'right',
-                    letterSpacing: '-1.5px',
-                  }}
+                  className={cn('w-[65%] border-none bg-transparent text-right text-[44px] font-black tracking-tight outline-none', TEXT.strong)}
                   placeholder="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                   type="tel"
                   autoFocus
                 />
-                <span style={{ fontSize: 20, fontWeight: 700, color: t.sub }}>XAF</span>
+                <span className={cn('text-[20px] font-bold', TEXT.muted)}>XAF</span>
               </div>
               {amountNum > 0 && (
-                <div style={{ fontSize: 14, color: t.sub, marginTop: 6 }}>
-                  {fmt(animatedAmount)} XAF
-                </div>
+                <div className={cn('mt-1.5 text-[14px] tabular-nums', TEXT.muted)}>{fmt(animatedAmount)} XAF</div>
               )}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[100000, 500000, 1000000, 2000000].map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => setAmount(preset.toString())}
-                  style={{
-                    flex: 1,
-                    padding: '10px 0',
-                    borderRadius: 8,
-                    background: amountNum === preset ? `${GR}08` : t.card,
-                    border: `1px solid ${amountNum === preset ? GR : t.border}`,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: amountNum === preset ? GR : t.text,
-                    cursor: 'pointer',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {preset >= 1000000 ? `${preset / 1000000}M` : `${preset / 1000}K`}
-                </button>
-              ))}
+            </Card>
+            <div className="flex gap-2">
+              {[100000, 500000, 1000000, 2000000].map((preset) => {
+                const active = amountNum === preset;
+                return (
+                  <button
+                    key={preset}
+                    onClick={() => setAmount(preset.toString())}
+                    className={cn(
+                      'flex-1 rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={active ? { boxShadow: `0 0 0 2px ${GREEN}`, color: GREEN } : undefined}
+                  >
+                    {preset >= 1000000 ? `${preset / 1000000}M` : `${preset / 1000}K`}
+                  </button>
+                );
+              })}
             </div>
             {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: '10px 14px',
-                  borderLeft: `4px solid #F3A745`,
-                  background: `#F3A74510`,
-                  borderRadius: '0 10px 10px 0',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 8,
-                }}
-              >
-                <AlertTriangle style={{ width: 14, height: 14, color: '#F3A745', marginTop: 1, flexShrink: 0 }} />
-                <p style={{ fontSize: 11, color: '#b37d2a', margin: 0 }}>
+              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#F3A745] bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
+                <p className="text-[11px] text-[#9A6B12] dark:text-[#E7C083]">
                   Le montant dépasse la limite mobile money ({formatCurrency(MOBILE_MONEY_TRANSACTION_LIMIT)})
                 </p>
               </div>
@@ -818,58 +648,35 @@ export function MobileNewDepositV2() {
         {/* Étape 3 — Famille */}
         {step === 'family' && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Comment ?</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Comment ?</div>
+            <div className="space-y-2.5">
               {methodFamilies.map((family) => {
-                const IconComponent =
-                  (Icons as Record<string, React.ComponentType<{ style?: React.CSSProperties }>>)[family.icon] ||
-                  Icons.Banknote;
                 const isSelected = selectedFamily === family.family;
                 const conf = FAMILIES_CONF[family.family];
-                const color = conf?.bg || V;
+                const color = conf?.bg || FAMILIES_CONF.AGENCY_BONZINI.bg;
 
                 return (
                   <button
                     key={family.family}
                     onClick={() => handleFamilySelected(family.family)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 14,
-                      padding: 16,
-                      borderRadius: 14,
-                      width: '100%',
-                      background: isSelected ? `${color}06` : t.card,
-                      border: `1.5px solid ${isSelected ? color : t.border}`,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
+                    className={cn(
+                      'flex w-full items-center gap-3.5 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
                     <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        background: conf?.bg || V,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 18,
-                        color: conf?.dark ? '#1a1028' : '#fff',
-                        fontWeight: 800,
-                        flexShrink: 0,
-                      }}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[18px] font-extrabold"
+                      style={{ background: conf?.bg || color, color: conf?.dark ? '#1a1028' : '#fff' }}
                     >
                       {conf?.letter || family.family[0]}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>{family.label}</div>
-                      <div style={{ fontSize: 11, color: t.sub, marginTop: 2 }}>{family.description}</div>
+                    <div className="flex-1">
+                      <div className={cn('text-[15px] font-bold', TEXT.strong)}>{family.label}</div>
+                      <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{family.description}</div>
                     </div>
-                    {isSelected && (
-                      <span style={{ color: color, fontSize: 16, fontWeight: 700 }}>✓</span>
-                    )}
+                    {isSelected && <Check className="h-4 w-4 shrink-0" style={{ color }} />}
                   </button>
                 );
               })}
@@ -880,162 +687,119 @@ export function MobileNewDepositV2() {
         {/* Étape 4 — Sous-méthode */}
         {step === 'submethod' && selectedFamily && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Type d'opération</div>
-            {getSubMethodsForFamily(selectedFamily).map((subMethod) => {
-              const conf = FAMILIES_CONF[selectedFamily];
-              const color = conf?.bg || V;
-              const isSelected = selectedSubMethod === subMethod.subMethod;
-              return (
-                <button
-                  key={subMethod.subMethod}
-                  onClick={() => handleSubMethodSelected(subMethod.subMethod)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: 16,
-                    borderRadius: 12,
-                    width: '100%',
-                    marginBottom: 6,
-                    background: isSelected ? `${color}06` : t.card,
-                    border: `1.5px solid ${isSelected ? color : t.border}`,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{subMethod.label}</div>
-                    <div style={{ fontSize: 11, color: t.sub, marginTop: 2 }}>{subMethod.description}</div>
-                  </div>
-                  {isSelected ? (
-                    <span style={{ color: color, fontSize: 16 }}>✓</span>
-                  ) : (
-                    <ArrowRight style={{ width: 16, height: 16, color: t.dim }} />
-                  )}
-                </button>
-              );
-            })}
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Type d'opération</div>
+            <div className="space-y-2.5">
+              {getSubMethodsForFamily(selectedFamily).map((subMethod) => {
+                const conf = FAMILIES_CONF[selectedFamily];
+                const color = conf?.bg || FAMILIES_CONF.AGENCY_BONZINI.bg;
+                const isSelected = selectedSubMethod === subMethod.subMethod;
+                return (
+                  <button
+                    key={subMethod.subMethod}
+                    onClick={() => handleSubMethodSelected(subMethod.subMethod)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
+                  >
+                    <div className="flex-1">
+                      <div className={cn('text-[14px] font-bold', TEXT.strong)}>{subMethod.label}</div>
+                      <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{subMethod.description}</div>
+                    </div>
+                    {isSelected ? (
+                      <Check className="h-4 w-4 shrink-0" style={{ color }} />
+                    ) : (
+                      <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Étape banque */}
         {step === 'bank' && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Quelle banque ?</div>
-            {banks.map((bank) => {
-              const isSelected = selectedBank === bank.bank;
-              return (
-                <button
-                  key={bank.bank}
-                  onClick={() => handleBankSelected(bank.bank)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: 16,
-                    borderRadius: 12,
-                    width: '100%',
-                    marginBottom: 6,
-                    background: isSelected ? `${FAMILIES_CONF.BANK.bg}06` : t.card,
-                    border: `1.5px solid ${isSelected ? FAMILIES_CONF.BANK.bg : t.border}`,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 10,
-                      background: '#f0f0f8',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quelle banque ?</div>
+            <div className="space-y-2.5">
+              {banks.map((bank) => {
+                const isSelected = selectedBank === bank.bank;
+                const color = FAMILIES_CONF.BANK.bg;
+                return (
+                  <button
+                    key={bank.bank}
+                    onClick={() => handleBankSelected(bank.bank)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
-                    <Building2 style={{ width: 18, height: 18, color: FAMILIES_CONF.BANK.bg }} />
-                  </div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: t.text, flex: 1, textAlign: 'left' }}>
-                    {bank.label}
-                  </span>
-                  {isSelected ? (
-                    <span style={{ color: FAMILIES_CONF.BANK.bg, fontSize: 16 }}>✓</span>
-                  ) : (
-                    <ArrowRight style={{ width: 16, height: 16, color: t.dim }} />
-                  )}
-                </button>
-              );
-            })}
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: `${color}14` }}
+                    >
+                      <Building2 className="h-[18px] w-[18px]" style={{ color }} />
+                    </div>
+                    <span className={cn('flex-1 text-[14px] font-bold', TEXT.strong)}>{bank.label}</span>
+                    {isSelected ? (
+                      <Check className="h-4 w-4 shrink-0" style={{ color }} />
+                    ) : (
+                      <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Étape agence */}
         {step === 'agency' && (
           <div>
-            <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Quelle agence ?</div>
-            {agencies.map((agency) => {
-              const isSelected = selectedAgency === agency.agency;
-              return (
-                <button
-                  key={agency.agency}
-                  onClick={() => handleAgencySelected(agency.agency)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: 14,
-                    borderRadius: 12,
-                    width: '100%',
-                    marginBottom: 6,
-                    background: isSelected ? `${V}06` : t.card,
-                    border: `1.5px solid ${isSelected ? V : t.border}`,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 10,
-                      background: `${V}10`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
+            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quelle agence ?</div>
+            <div className="space-y-2.5">
+              {agencies.map((agency) => {
+                const isSelected = selectedAgency === agency.agency;
+                const color = FAMILIES_CONF.AGENCY_BONZINI.bg;
+                return (
+                  <button
+                    key={agency.agency}
+                    onClick={() => handleAgencySelected(agency.agency)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      SURFACE.card,
+                      SURFACE.shadow,
+                    )}
+                    style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
-                    <MapPin style={{ width: 18, height: 18, color: V }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{agency.label}</div>
-                    <div style={{ fontSize: 11, color: t.sub, marginTop: 2 }}>{agency.address}</div>
                     <div
-                      style={{
-                        fontSize: 10,
-                        color: t.dim,
-                        marginTop: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: `${color}14` }}
                     >
-                      <Clock style={{ width: 10, height: 10 }} />
-                      {agency.hours}
+                      <MapPin className="h-[18px] w-[18px]" style={{ color }} />
                     </div>
-                  </div>
-                  {isSelected ? (
-                    <span style={{ color: V, fontSize: 16 }}>✓</span>
-                  ) : (
-                    <ArrowRight style={{ width: 16, height: 16, color: t.dim }} />
-                  )}
-                </button>
-              );
-            })}
+                    <div className="min-w-0 flex-1">
+                      <div className={cn('text-[14px] font-bold', TEXT.strong)}>{agency.label}</div>
+                      <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{agency.address}</div>
+                      <div className={cn('mt-0.5 flex items-center gap-1 text-[10px]', TEXT.muted)}>
+                        <Clock className="h-2.5 w-2.5" />
+                        {agency.hours}
+                      </div>
+                    </div>
+                    {isSelected ? (
+                      <Check className="h-4 w-4 shrink-0" style={{ color }} />
+                    ) : (
+                      <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -1044,36 +808,16 @@ export function MobileNewDepositV2() {
           const info = getRecapInfo();
           if (!info) return null;
           return (
-            <div style={{ paddingBottom: 16 }}>
-              <div style={{ fontSize: 21, fontWeight: 800, marginBottom: 14 }}>Tout est bon ?</div>
+            <div className="space-y-2.5 pb-4">
+              <div className={cn('text-[22px] font-extrabold', TEXT.strong)}>Tout est bon ?</div>
 
               {/* Montant centré */}
-              <div
-                style={{
-                  padding: '20px',
-                  borderRadius: 14,
-                  textAlign: 'center',
-                  background: t.card,
-                  border: `1.5px solid ${t.border}`,
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1.5px', color: t.text }}>
-                  {fmt(amountNum)}{' '}
-                  <span style={{ fontSize: 16, fontWeight: 600, color: t.sub }}>XAF</span>
-                </div>
-              </div>
+              <Card className="py-5 text-center">
+                <Amount value={fmt(amountNum)} unit="XAF" size="xl" />
+              </Card>
 
               {/* Résumé */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: 14,
-                  background: t.card,
-                  border: `1.5px solid ${t.border}`,
-                  marginBottom: 8,
-                }}
-              >
+              <Card>
                 {[
                   { l: 'Client', v: `${selectedClient?.first_name} ${selectedClient?.last_name}` },
                   { l: 'Méthode', v: info.title },
@@ -1085,311 +829,132 @@ export function MobileNewDepositV2() {
                     : null,
                 ]
                   .filter(Boolean)
-                  .map((r, i, a) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '9px 0',
-                        borderBottom: i < a.length - 1 ? `1px solid ${t.border}` : 'none',
-                      }}
-                    >
-                      <span style={{ fontSize: 13, color: t.sub }}>{r!.l}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{r!.v}</span>
+                  .map((r, i) => (
+                    <div key={i} className={infoLineCls}>
+                      <span className={cn('text-[13px]', TEXT.muted)}>{r!.l}</span>
+                      <span className={cn('text-right text-[13px] font-semibold', TEXT.strong)}>{r!.v}</span>
                     </div>
                   ))}
-              </div>
+              </Card>
 
               {/* Coordonnées */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: 14,
-                  background: t.card,
-                  border: `1.5px solid ${t.border}`,
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 800, color: t.text, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Info style={{ width: 14, height: 14, color: GR }} />
+              <Card>
+                <div className={cn('mb-2 flex items-center gap-1.5 text-[12px] font-bold', TEXT.strong)}>
+                  <Info className="h-3.5 w-3.5" style={{ color: GREEN }} />
                   Coordonnées à communiquer
                 </div>
-                {info.fields.map((field, i, a) => (
-                  <div
-                    key={field.key}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '7px 0',
-                      borderBottom: i < a.length - 1 ? `1px solid ${t.border}` : 'none',
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: t.sub }}>{field.label}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: t.text,
-                          fontFamily: field.mono ? 'monospace' : "'DM Sans', sans-serif",
-                        }}
-                      >
+                {info.fields.map((field) => (
+                  <div key={field.key} className={infoLineCls}>
+                    <span className={cn('text-[11px]', TEXT.muted)}>{field.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn('text-[11px] font-bold', TEXT.strong, field.mono && 'font-mono')}>
                         {field.value}
                       </span>
-                      <CopyBtn
-                        text={field.value}
-                        fieldKey={field.key}
-                        copiedField={copiedField}
-                        onCopy={handleCopy}
-                      />
+                      <CopyBtn text={field.value} fieldKey={field.key} copiedField={copiedField} onCopy={handleCopy} />
                     </div>
                   </div>
                 ))}
 
                 {/* Code marchand */}
                 {info.merchantCode && (
-                  <div style={{ paddingTop: 8, borderTop: `1px solid ${t.border}`, marginTop: 4 }}>
-                    <span style={{ fontSize: 11, color: t.sub, display: 'block', marginBottom: 6 }}>Code Marchand</span>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 12px',
-                        borderRadius: 8,
-                        background: t.bg,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: t.text,
-                          fontFamily: 'monospace',
-                          wordBreak: 'break-all',
-                          flex: 1,
-                        }}
-                      >
+                  <div className="mt-1 border-t border-black/[0.06] pt-2 dark:border-white/[0.06]">
+                    <span className={cn('mb-1.5 block text-[11px]', TEXT.muted)}>Code Marchand</span>
+                    <div className={cn('flex items-center justify-between gap-2 rounded-xl p-2.5', SURFACE.canvas)}>
+                      <span className={cn('flex-1 break-all font-mono text-[11px] font-bold', TEXT.strong)}>
                         {info.merchantCode}
                       </span>
-                      <CopyBtn
-                        text={info.merchantCode}
-                        fieldKey="merchant"
-                        copiedField={copiedField}
-                        onCopy={handleCopy}
-                      />
+                      <CopyBtn text={info.merchantCode} fieldKey="merchant" copiedField={copiedField} onCopy={handleCopy} />
                     </div>
                   </div>
                 )}
 
                 {/* Montant */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '7px 0',
-                    borderTop: `1px solid ${t.border}`,
-                    marginTop: 4,
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: t.sub }}>Montant à envoyer</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: GR }}>
-                      {fmt(amountNum)} XAF
-                    </span>
-                    <CopyBtn
-                      text={`${fmt(amountNum)} XAF`}
-                      fieldKey="amount"
-                      copiedField={copiedField}
-                      onCopy={handleCopy}
-                    />
+                <div className={cn(infoLineCls, 'mt-1 border-t border-black/[0.06] dark:border-white/[0.06]')}>
+                  <span className={cn('text-[11px]', TEXT.muted)}>Montant à envoyer</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-extrabold" style={{ color: GREEN }}>{fmt(amountNum)} XAF</span>
+                    <CopyBtn text={`${fmt(amountNum)} XAF`} fieldKey="amount" copiedField={copiedField} onCopy={handleCopy} />
                   </div>
                 </div>
-              </div>
+              </Card>
 
               {/* Instructions */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: 14,
-                  background: t.card,
-                  border: `1.5px solid ${t.border}`,
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 800, color: t.text, marginBottom: 8 }}>Instructions</div>
-                <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Card>
+                <div className={cn('mb-2 text-[12px] font-bold', TEXT.strong)}>Instructions</div>
+                <ol className="m-0 flex list-none flex-col gap-2 p-0">
                   {info.instructions.map((instruction, index) => (
-                    <li key={index} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <li key={index} className="flex items-start gap-2.5">
                       <span
-                        style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          background: `${GR}15`,
-                          color: GR,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                        style={{ background: `${GREEN}1A`, color: GREEN }}
                       >
                         {index + 1}
                       </span>
-                      <span style={{ fontSize: 12, color: t.sub, paddingTop: 2 }}>{instruction}</span>
+                      <span className={cn('pt-0.5 text-[12px]', TEXT.muted)}>{instruction}</span>
                     </li>
                   ))}
                 </ol>
-              </div>
+              </Card>
 
               {/* Upload preuves optionnel */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: 14,
-                  background: t.card,
-                  border: `1.5px solid ${t.border}`,
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 800, color: t.text, marginBottom: 10 }}>
-                  Preuves (optionnel)
-                </div>
-                <label style={{ display: 'block', width: '100%', cursor: 'pointer' }}>
+              <Card>
+                <div className={cn('mb-2.5 text-[12px] font-bold', TEXT.strong)}>Preuves (optionnel)</div>
+                <label className="block w-full cursor-pointer">
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*,application/pdf"
                     multiple
                     onChange={handleFileSelect}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
-                  <div
-                    style={{
-                      border: `2px dashed ${t.border}`,
-                      borderRadius: 10,
-                      padding: '20px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <Upload style={{ width: 20, height: 20, color: t.dim }} />
-                    <p style={{ fontSize: 11, color: t.sub, margin: 0 }}>Photos ou PDFs</p>
+                  <div className="flex flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-black/10 p-5 dark:border-white/10">
+                    <Upload className={cn('h-5 w-5', TEXT.muted)} />
+                    <p className={cn('text-[11px]', TEXT.muted)}>Photos ou PDFs</p>
                   </div>
                 </label>
                 {proofFiles.length > 0 && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
                     {proofFiles.map((file, idx) => (
                       <div
                         key={idx}
-                        style={{
-                          position: 'relative',
-                          width: 60,
-                          height: 60,
-                          borderRadius: 8,
-                          overflow: 'hidden',
-                          background: t.bg,
-                          border: `1px solid ${t.border}`,
-                          flexShrink: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                        className={cn('relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-lg ring-1 ring-black/[0.06] dark:ring-white/[0.06]', SURFACE.canvas)}
                       >
                         {file.type.startsWith('image/') ? (
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt=""
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
+                          <img src={URL.createObjectURL(file)} alt="" className="h-full w-full object-cover" />
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                            <FileText style={{ width: 16, height: 16, color: t.sub }} />
-                            <span style={{ fontSize: 8, color: t.dim, textAlign: 'center', maxWidth: 50, overflow: 'hidden' }}>
-                              {file.name}
-                            </span>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <FileText className={cn('h-4 w-4', TEXT.muted)} />
+                            <span className={cn('max-w-[50px] overflow-hidden text-center text-[8px]', TEXT.muted)}>{file.name}</span>
                           </div>
                         )}
                         <button
                           onClick={() => removeFile(idx)}
-                          style={{
-                            position: 'absolute',
-                            top: 2,
-                            right: 2,
-                            width: 14,
-                            height: 14,
-                            borderRadius: '50%',
-                            background: 'rgba(0,0,0,0.6)',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
+                          aria-label="Retirer"
+                          className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-black/60"
                         >
-                          <X style={{ width: 8, height: 8, color: '#fff' }} />
+                          <X className="h-2 w-2 text-white" />
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
 
               {/* Commentaire admin optionnel */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: 14,
-                  background: t.card,
-                  border: `1.5px solid ${t.border}`,
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 800, color: t.text, marginBottom: 8 }}>
-                  Commentaire admin (optionnel)
-                </div>
+              <Card>
+                <div className={cn('mb-2 text-[12px] font-bold', TEXT.strong)}>Commentaire admin (optionnel)</div>
                 <textarea
                   placeholder="Note interne..."
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: 72,
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: `1px solid ${t.border}`,
-                    background: t.bg,
-                    resize: 'none',
-                    // iOS Safari auto-zooms any control with font-size < 16px on focus.
-                    fontSize: 16,
-                    fontFamily: "'DM Sans', sans-serif",
-                    color: t.text,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
+                  rows={3}
+                  className={cn('w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
                 />
-              </div>
+              </Card>
 
               {/* Note de confirmation */}
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  background: `${GR}06`,
-                  border: `1px solid ${GR}15`,
-                  fontSize: 12,
-                  color: t.sub,
-                  lineHeight: 1.5,
-                  marginBottom: 16,
-                }}
-              >
+              <div className="rounded-2xl bg-[#DEEFE5] px-3.5 py-3 text-[12px] leading-relaxed text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
                 Le dépôt sera créé pour le client.{' '}
                 {proofFiles.length > 0
                   ? 'Les preuves seront téléchargées et le statut avancé à "Preuve envoyée".'
@@ -1401,125 +966,48 @@ export function MobileNewDepositV2() {
 
         {/* Écran creating */}
         {step === 'creating' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                background: `${GR}12`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 20,
-              }}
-            >
-              <Loader2 style={{ width: 40, height: 40, color: GR, animation: 'spin 1s linear infinite' }} />
-            </div>
-            <p style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Création du dépôt...</p>
-            <p style={{ fontSize: 12, color: t.sub, marginTop: 4 }}>Un instant</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <Holder icon={Loader2} tone="success" size="lg" className="mb-5 [&_svg]:animate-spin" />
+            <p className={cn('text-[15px] font-bold', TEXT.strong)}>Création du dépôt...</p>
+            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>Un instant</p>
           </div>
         )}
       </div>
 
-      {/* ── Footer boutons ────────────────────────────── */}
+      {/* ── Footer boutons (toujours visibles) ────────────── */}
       {step !== 'creating' && (
-        <div
-          style={{
-            flexShrink: 0,
-            padding: '10px 20px 18px',
-            background: t.card,
-            borderTop: `1px solid ${t.border}`,
-            display: 'flex',
-            gap: 10,
-          }}
-        >
+        <div className={cn('flex shrink-0 gap-2.5 px-5 pb-[calc(1.125rem+env(safe-area-inset-bottom))] pt-3', SURFACE.card, SURFACE.shadow)}>
           {step !== 'client' && (
-            <button
-              onClick={handleHeaderBack}
-              style={{
-                flex: 1,
-                padding: 15,
-                borderRadius: 12,
-                background: 'none',
-                border: `1.5px solid ${t.border}`,
-                fontSize: 14,
-                fontWeight: 700,
-                color: t.sub,
-                cursor: 'pointer',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
+            <SoftPill onClick={handleHeaderBack} className="flex-1">
               Retour
-            </button>
+            </SoftPill>
           )}
           {step === 'recap' && (
-            <button
+            <PrimaryPill
               onClick={doCreateDeposit}
-              disabled={createDeposit.isPending}
-              style={{
-                flex: step !== 'client' ? 1.4 : 1,
-                padding: 15,
-                borderRadius: 12,
-                background: createDeposit.isPending ? `${GR}80` : GR,
-                border: 'none',
-                fontSize: 14,
-                fontWeight: 800,
-                color: '#fff',
-                cursor: createDeposit.isPending ? 'not-allowed' : 'pointer',
-                fontFamily: "'DM Sans', sans-serif",
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
+              loading={createDeposit.isPending}
+              className="flex-[1.4] bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
             >
-              {createDeposit.isPending ? (
-                <Loader2 style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} />
-              ) : (
-                <ShieldCheck style={{ width: 18, height: 18 }} />
-              )}
+              <ShieldCheck className="h-[18px] w-[18px]" />
               Confirmer le dépôt
-            </button>
+            </PrimaryPill>
           )}
           {step === 'client' && selectedClient && (
-            <button
+            <PrimaryPill
               onClick={() => goTo('amount')}
-              style={{
-                flex: 1,
-                padding: 15,
-                borderRadius: 12,
-                background: GR,
-                border: 'none',
-                fontSize: 14,
-                fontWeight: 800,
-                color: '#fff',
-                cursor: 'pointer',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
+              className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
             >
               Suivant
-            </button>
+            </PrimaryPill>
           )}
           {step === 'amount' && (
-            <button
+            <PrimaryPill
               onClick={() => amountNum >= 1000 && goTo('family')}
               disabled={amountNum < 1000}
-              style={{
-                flex: 1.4,
-                padding: 15,
-                borderRadius: 12,
-                background: amountNum >= 1000 ? GR : t.border,
-                border: 'none',
-                fontSize: 14,
-                fontWeight: 800,
-                color: amountNum >= 1000 ? '#fff' : t.dim,
-                cursor: amountNum >= 1000 ? 'pointer' : 'not-allowed',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
+              className={cn('flex-[1.4]', amountNum >= 1000 && 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white')}
             >
               Suivant
-            </button>
+            </PrimaryPill>
           )}
         </div>
       )}

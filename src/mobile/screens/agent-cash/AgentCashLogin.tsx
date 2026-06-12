@@ -1,16 +1,25 @@
+// ============================================================
+// AGENT-CASH — AgentCashLogin (2 étapes : email → mot de passe)
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   inputs en FormField + TextInput (icône leading) · boutons PrimaryPill.
+//   Le fond LoginBackground + BonziniLogo + ProgressDots + StepTransition
+//   sont conservés (la consigne autorise à garder le fond).
+// Logique 100% préservée : 2 étapes, EN/ZH (LanguageContext), validation
+// email (zod), login (useAdminAuth), fade-out + navigate('/a').
+// ============================================================
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { LoginBackground } from '@/components/auth/LoginBackground';
-import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
+import { FormField, TextInput, PrimaryPill, TEXT } from '@/mobile/designKit';
 
 const emailSchema = z.string().email();
 
@@ -125,34 +134,35 @@ export function AgentCashLogin() {
                 className="text-center mb-8 animate-slide-up"
                 style={{ animationDelay: '80ms', animationFillMode: 'both' }}
               >
-                <h1 className="text-2xl font-bold mb-1">{t('agent_login')}</h1>
-                <p className="text-muted-foreground text-sm">
-                  {t('email_address')}
-                </p>
+                <h1 className={cn('text-2xl font-bold mb-1', TEXT.strong)}>{t('agent_login')}</h1>
+                <p className={cn('text-sm', TEXT.muted)}>{t('email_address')}</p>
               </div>
 
               <div
                 className="mb-6 animate-slide-up"
                 style={{ animationDelay: '160ms', animationFillMode: 'both' }}
               >
-                <PremiumInput
-                  id="agent-email"
-                  type="email"
-                  label={t('email_address')}
-                  value={email}
-                  onChange={(val) => {
-                    setEmail(val);
-                    setEmailError('');
-                  }}
-                  icon={<Mail className="w-5 h-5" />}
-                  error={emailError}
-                  isValid={isEmailValid && email.length > 0}
-                  autoComplete="email"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleEmailSubmit(e);
-                  }}
-                />
+                <FormField label={t('email_address')} htmlFor="agent-email" error={emailError}>
+                  <div className="relative">
+                    <Mail className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
+                    <TextInput
+                      id="agent-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailError('');
+                      }}
+                      placeholder={t('email_address')}
+                      className="pl-12"
+                      autoComplete="email"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleEmailSubmit(e);
+                      }}
+                    />
+                  </div>
+                </FormField>
               </div>
 
               <ProgressDots totalSteps={2} currentStep={0} className="mb-6" />
@@ -161,83 +171,65 @@ export function AgentCashLogin() {
                 className="animate-slide-up"
                 style={{ animationDelay: '240ms', animationFillMode: 'both' }}
               >
-                <button
-                  type="submit"
-                  disabled={!email}
-                  className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <PrimaryPill type="submit" disabled={!email} className="w-full">
                   {language === 'en' ? 'Continue' : '继续'}
-                </button>
+                </PrimaryPill>
               </div>
             </form>
           ) : (
             <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto w-full">
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-1">
+                <h1 className={cn('text-2xl font-bold mb-1', TEXT.strong)}>
                   {language === 'en' ? 'Hello,' : '你好，'}
                 </h1>
-                <p className="text-muted-foreground text-sm">
-                  {maskEmail(email)}
-                </p>
+                <p className={cn('text-sm', TEXT.muted)}>{maskEmail(email)}</p>
               </div>
 
               <div className="mb-4">
-                <PremiumInput
-                  id="agent-password"
-                  type={showPassword ? 'text' : 'password'}
-                  label={t('password')}
-                  value={password}
-                  onChange={(val) => {
-                    setPassword(val);
-                    setError('');
-                  }}
-                  icon={<Lock className="w-5 h-5" />}
-                  rightElement={
+                <FormField label={t('password')} htmlFor="agent-password" error={error}>
+                  <div className="relative">
+                    <Lock className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
+                    <TextInput
+                      id="agent-password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError('');
+                      }}
+                      placeholder={t('password')}
+                      className="pl-12 pr-12"
+                      autoComplete="current-password"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handlePasswordSubmit(e);
+                      }}
+                    />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      className={cn('absolute right-4 top-1/2 z-10 -translate-y-1/2 transition-colors hover:text-foreground', TEXT.muted)}
                       tabIndex={-1}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
-                  }
-                  error={error}
-                  autoComplete="current-password"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handlePasswordSubmit(e);
-                  }}
-                />
+                  </div>
+                </FormField>
               </div>
 
               <ProgressDots totalSteps={2} currentStep={1} className="mb-6" />
 
-              <button
-                type="submit"
-                disabled={isLoading || !password}
-                className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {t('loading')}
-                  </>
-                ) : (
-                  t('sign_in')
-                )}
-              </button>
+              <PrimaryPill type="submit" disabled={!password} loading={isLoading} className="w-full">
+                {t('sign_in')}
+              </PrimaryPill>
             </form>
           )}
         </StepTransition>
       </div>
 
       {/* Footer */}
-      <div className="p-6 text-center text-sm text-muted-foreground">
+      <div className={cn('p-6 text-center text-sm', TEXT.muted)}>
         <p>Bonzini Labs &copy; {new Date().getFullYear()}</p>
       </div>
     </LoginBackground>

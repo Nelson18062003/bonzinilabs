@@ -52,7 +52,6 @@ const TABLE_INVALIDATIONS: Record<string, ReadonlyArray<readonly unknown[]>> = {
   clients:                 [clientKeys.all, dashboardKeys.all],
   beneficiaries:           [beneficiaryKeys.all],
   daily_rates:             [rateKeys.all],
-  exchange_rates:          [rateKeys.all],
   rate_adjustments:        [rateKeys.all],
   user_roles:              [adminKeys.all],
   admin_audit_logs:        [adminKeys.all],
@@ -71,7 +70,6 @@ const CLIENT_TABLES = [
   'ledger_entries',
   'beneficiaries',
   'daily_rates',
-  'exchange_rates',
 ] as const;
 
 // Tables the ADMIN/AGENT app cares about (everything).

@@ -1,0 +1,218 @@
+{
+  "nav": {
+    "support": "客服"
+  },
+  "page": {
+    "title": "Bonzini 团队",
+    "subtitle": "我们在这里为您服务"
+  },
+  "empty": {
+    "title": "Bonzini 团队随时为您服务",
+    "subtitle": "关于付款、汇率或其他任何问题，请告诉我们。我们会快速回复。",
+    "quickRepliesTitle": "快速开始"
+  },
+  "input": {
+    "placeholder": "输入您的消息…",
+    "send": "发送",
+    "sendImage": "发送图片",
+    "sendVideo": "发送视频",
+    "sendFile": "发送文件",
+    "attachMenu": "附加媒体",
+    "sending": "发送中…"
+  },
+  "responseTime": {
+    "label": "今日平均响应时间",
+    "minutes": "{{count}} 分钟",
+    "seconds": "{{count}} 秒",
+    "veryFast": "几乎即时"
+  },
+  "errors": {
+    "imageTooLarge": "图片太大（最大 5 MB）",
+    "imageWrongFormat": "不支持的格式（仅限 JPG、PNG 或 WebP）",
+    "videoTooLarge": "视频太大（最大 25 MB）",
+    "videoWrongFormat": "不支持的视频格式（仅限 MP4）",
+    "videoTooLong": "视频太长（最多 30 秒）",
+    "fileTooLarge": "文件太大（最大 10 MB）",
+    "fileWrongFormat": "不支持的格式（仅限 PDF、DOC、DOCX、XLS、XLSX）",
+    "messageEmpty": "消息不能为空",
+    "messageTooLong": "消息太长（最多 2000 个字符）",
+    "sendFailed": "发送失败，请重试",
+    "loadFailed": "无法加载对话"
+  },
+  "voice": {
+    "startRecording": "按住录音",
+    "slideToCancel": "← 滑动取消",
+    "releaseToCancel": "松开取消",
+    "cancel": "取消",
+    "maxDurationReached": "最长 60 秒",
+    "lockedHint": "录音已锁定 · 点击发送",
+    "holdToRecord": "按住麦克风录音",
+    "permissionHelp": "请在设置中允许使用麦克风",
+    "errors": {
+      "permissionDenied": "麦克风访问被拒绝。请在浏览器设置中启用。",
+      "noMicrophone": "此设备未检测到麦克风",
+      "microphoneBusy": "麦克风正被其他应用使用",
+      "unknownStart": "无法开始录音"
+    }
+  },
+  "video": {
+    "error": "视频不可用"
+  },
+  "file": {
+    "download": "下载"
+  },
+  "typing": {
+    "adminWriting": "Bonzini 团队正在输入…",
+    "clientWriting": "客户正在输入…"
+  },
+  "receipt": {
+    "sent": "已发送",
+    "seen": "已读",
+    "seenAt": "{{time}} 已读"
+  },
+  "contextMenu": {
+    "reply": "回复",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "无法复制",
+    "react": "回应"
+  },
+  "quoted": {
+    "image": "照片",
+    "voice": "语音消息",
+    "video": "视频",
+    "file": "文件"
+  },
+  "list": {
+    "newConversation": "新对话",
+    "newConversationHint": "针对特定主题",
+    "newSubjectLabel": "对话主题",
+    "newSubjectPlaceholder": "例如：关于付款的问题…",
+    "cancel": "取消",
+    "create": "创建",
+    "empty": "暂无对话",
+    "defaultSubject": "一般讨论",
+    "closedBadge": "对话已关闭"
+  },
+  "detail": {
+    "back": "返回",
+    "bonziniTeam": "Bonzini 团队",
+    "closedHint": "此对话已关闭。发送消息可重新打开。"
+  },
+  "templates": {
+    "pickerTitle": "预存回复",
+    "searchPlaceholder": "搜索模板…",
+    "empty": "暂无模板",
+    "emptyHint": "点击 + 创建第一个模板",
+    "noMatch": "无结果",
+    "screenTitle": "回复模板",
+    "create": "创建模板",
+    "createTitle": "新模板",
+    "editTitle": "编辑模板",
+    "labelField": "简短标签",
+    "labelPlaceholder": "例如：押金已验证",
+    "contentField": "消息内容",
+    "contentPlaceholder": "您好 {{client_first_name}}，您的存款已于 {{today}} 验证。",
+    "save": "保存",
+    "created": "模板已创建",
+    "updated": "模板已更新",
+    "confirmDelete": "删除此模板？",
+    "readOnlyHint": "只有 super_admin 可以创建或修改模板。",
+    "varsAvailable": "可用变量（点击插入）",
+    "varsInside": "包含变量",
+    "varsHint": "变量",
+    "unresolvedVars": "某些变量无法解析",
+    "preview": "示例预览"
+  },
+  "quickReplies": {
+    "screenTitle": "客户快捷回复",
+    "hint": "这些建议会显示给打开新对话的客户。",
+    "create": "创建建议",
+    "createTitle": "新建议",
+    "editTitle": "编辑建议",
+    "labelField": "按钮（客户看到的简短文本）",
+    "labelPlaceholder": "例如：我的付款延迟了",
+    "contentField": "输入框中预填的消息",
+    "contentPlaceholder": "您好，我的付款似乎延迟了，您能检查一下吗？",
+    "activeLabel": "启用（对客户可见）",
+    "inactive": "未启用",
+    "empty": "暂无建议",
+    "emptyHint": "点击 + 创建第一个建议",
+    "created": "建议已创建",
+    "updated": "建议已更新",
+    "confirmDelete": "删除此建议？",
+    "readOnlyHint": "只有 super_admin 可以创建或修改建议。"
+  },
+  "day": {
+    "today": "今天",
+    "yesterday": "昨天"
+  },
+  "image": {
+    "loading": "加载中…",
+    "error": "图片不可用",
+    "tapToOpen": "查看全屏"
+  },
+  "admin": {
+    "listTitle": "对话",
+    "listEmpty": "没有正在进行的对话",
+    "filterAll": "全部",
+    "filterMine": "我的",
+    "filterUnassigned": "未分配",
+    "filterOpen": "开放",
+    "filterClosed": "已关闭",
+    "filterAllStatus": "全部",
+    "filterUnread": "未读",
+    "searchPlaceholder": "搜索客户或关键词…",
+    "unreadBadge": "{{count}} 条未读",
+    "unreadBadgePlural": "{{count}} 条未读",
+    "openChat": "打开对话",
+    "noClientName": "未命名客户",
+    "clientLink": "查看客户资料",
+    "lastActivity": "最后活动",
+    "assignedToLabel": "由谁处理",
+    "noMatch": "此搜索无结果",
+    "statsLink": "统计",
+    "statsTitle": "客服统计",
+    "statsPeriod7d": "7 天",
+    "statsPeriod14d": "14 天",
+    "statsPeriod30d": "30 天",
+    "statsOpenConvs": "开放对话",
+    "statsTotalMessages": "消息",
+    "statsUnassigned": "未分配",
+    "statsAvgResponse": "平均响应",
+    "statsPerAdmin": "每个管理员的表现",
+    "statsReplies": "回复",
+    "statsNoData": "此期间暂无数据",
+    "statsLegendTitle": "注",
+    "statsLegend": "平均响应时间基于客户消息 → 首次管理员回复对计算。",
+    "statsMedian": "中位数：",
+    "chartDailyVolume": "每日量",
+    "chartDailyVolumeHint": "每日按方向的消息数",
+    "chartResponseDistribution": "响应时间分布",
+    "chartResponseDistributionHint": "按响应时间分组的管理员回复",
+    "chartTopAdmins": "按量排名的顶级管理员",
+    "chartTopAdminsHint": "期间内最活跃的 5 位管理员",
+    "bucketUnder1Min": "< 1 分钟",
+    "bucket1to5": "1-5 分钟",
+    "bucket5to15": "5-15 分钟",
+    "bucketOver15": "> 15 分钟",
+    "closedHint": "对话已关闭 — 客户下一条消息将自动重新打开。",
+    "actions": {
+      "claim": "我接手",
+      "claimed": "已接手对话",
+      "assigned": "分配已更新",
+      "assignTo": "分配给管理员",
+      "assignedToMe": "您",
+      "unassign": "无人（取消分配）",
+      "close": "关闭对话",
+      "closed": "对话已关闭",
+      "reopen": "重新打开对话",
+      "reopened": "对话已重新打开"
+    }
+  },
+  "bubble": {
+    "you": "您",
+    "bonziniTeam": "Bonzini 团队",
+    "sending": "发送中…"
+  }
+}

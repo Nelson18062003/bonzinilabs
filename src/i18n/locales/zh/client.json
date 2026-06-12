@@ -63,7 +63,60 @@
     "title": "收款人",
     "subtitle": "您在中国的收款人",
     "noBeneficiary": "暂无收款人",
-    "comingSoon": "收款人功能即将推出"
+    "comingSoon": "收款人功能即将推出",
+    "add": "添加收款人",
+    "edit": "编辑收款人",
+    "search": "搜索（备注名、账号…）",
+    "allModes": "全部",
+    "emptyHint": "保存您的收款人，无需每次付款时重新输入信息。",
+    "addedByTeam": "由Bonzini团队添加",
+    "saveToCarnet": "同时保存到我的收款人列表",
+    "actions": {
+      "save": "保存",
+      "cancel": "取消",
+      "archive": "删除",
+      "useThis": "使用",
+      "confirmArchiveTitle": "删除此收款人？",
+      "confirmArchiveBody": "将从您的列表中移除。已创建的付款不受影响。",
+      "confirmArchive": "删除"
+    },
+    "fields": {
+      "alias": "备注名（便于识别）",
+      "aliasPlaceholder": "例如：义乌鞋子供应商",
+      "name": "账户持有人姓名",
+      "namePlaceholder": "真实姓名（可用中文）",
+      "identifier": "账号",
+      "identifierType": "账号类型",
+      "phone": "电话",
+      "email": "邮箱（可选）",
+      "bankName": "银行名称",
+      "bankAccount": "银行账号",
+      "bankExtra": "补充信息（SWIFT / 联行号 / 支行）",
+      "qrCode": "二维码",
+      "relationType": "关系",
+      "notes": "备注（可选）"
+    },
+    "relations": {
+      "self": "本人",
+      "supplier": "供应商",
+      "other": "其他"
+    },
+    "snapshotNotice": "已创建的付款不受影响。",
+    "duplicate": {
+      "title": "收款人已存在",
+      "body": "您已有使用此账号的「{{alias}}」。要使用它吗？"
+    },
+    "errors": {
+      "aliasRequired": "请填写备注名",
+      "nameRequired": "请填写账户持有人姓名",
+      "phoneRequired": "请填写电话",
+      "bank_nameRequired": "请填写银行名称",
+      "bank_accountRequired": "请填写银行账号",
+      "accountChannelRequired": "请填写账号或二维码",
+      "emailInvalid": "邮箱无效",
+      "tooLong": "文本过长",
+      "invalid": "信息无效"
+    }
   },
   "notifications": {
     "title": "通知",

@@ -1,6 +1,8 @@
 export { useVisualViewport } from './useVisualViewport';
 export type { VisualViewportState } from './useVisualViewport';
 
+export { useVisibleViewportSync } from './useVisibleViewportSync';
+
 export { useKeyboardHeight, useKeyboardOpen } from './useKeyboardHeight';
 
 export { useScrollIntoViewOnFocus } from './useScrollIntoViewOnFocus';

@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import { RefreshCw, TrendingUp, Users, Wallet, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { RefreshCw, TrendingUp, Users, Wallet, CheckCircle2, Clock, AlertTriangle, ChevronDown, ArrowDownToLine, Percent, Layers } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart,
@@ -67,7 +67,6 @@ import {
   useDepositProcessingTime,
   useDashboardAlerts,
   useRateHistory,
-  useUsdtFlowHistory,
   useAdminProductivity,
   useDepositVolumeReport,
   usePaymentVolumeReport,
@@ -84,11 +83,11 @@ import {
   type DepositStatusTimelinePoint,
   type UtmSourceRow,
   type CountryDistributionRow,
-  type UsdtFlowPoint,
 } from '@/hooks/analytics/useAnalytics';
-import { Area, AreaChart, ReferenceLine } from 'recharts';
+import { Area, AreaChart } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, PRIMARY_PILL, TONE_HOLDER, TONE_PILL } from '@/mobile/designKit';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Colour tokens — match the Bonzini brand palette used across the app.
@@ -128,6 +127,40 @@ export function MobileAnalyticsDashboard() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// CollapsibleSection — groups the dashboard into named, foldable themes so the
+// screen reads as a few clear sections instead of one endless scroll.
+// ────────────────────────────────────────────────────────────────────────────
+
+function CollapsibleSection({
+  title,
+  icon: Icon,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-1 py-1 text-left"
+      >
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground">{title}</h2>
+        <ChevronDown className={cn('ml-auto h-4 w-4 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+      </button>
+      {open ? <div className="mt-3 flex flex-col gap-4">{children}</div> : null}
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Body — subscribes to the range + every KPI hook.
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -145,7 +178,6 @@ function DashboardBody() {
   const [statusTimelineG, setStatusTimelineG] = useReportGranularity(range.granularity);
   const [clientGrowthG, setClientGrowthG] = useReportGranularity(range.granularity);
   const [rateHistoryG, setRateHistoryG] = useReportGranularity(range.granularity);
-  const [usdtFlowG, setUsdtFlowG] = useReportGranularity(range.granularity);
 
   // coerceGranularity is the runtime guard: if the override is incompatible
   // with the global range (e.g. range = 1 day with granularity = year, which
@@ -175,10 +207,6 @@ function DashboardBody() {
     const candidate: DateRange = { ...range, granularity: rateHistoryG };
     return { ...candidate, granularity: coerceGranularity(candidate) };
   }, [range, rateHistoryG]);
-  const usdtFlowRange = React.useMemo<DateRange>(() => {
-    const candidate: DateRange = { ...range, granularity: usdtFlowG };
-    return { ...candidate, granularity: coerceGranularity(candidate) };
-  }, [range, usdtFlowG]);
 
   const flow = useFlowSeries(flowRange);
   const payments = usePaymentSummary(range);
@@ -191,7 +219,6 @@ function DashboardBody() {
   const processing = useDepositProcessingTime(range);
   const alerts = useDashboardAlerts();
   const rateHistory = useRateHistory(rateHistoryRange);
-  const usdtFlow = useUsdtFlowHistory(usdtFlowRange);
   const adminProductivity = useAdminProductivity(range);
   const depositVolumeReport = useDepositVolumeReport(depositVolumeRange);
   const paymentVolumeReport = usePaymentVolumeReport(paymentVolumeRange);
@@ -233,13 +260,13 @@ function DashboardBody() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={refreshing}>
-      <div className="flex flex-col gap-6 p-4 pb-24 bg-muted/30 min-h-screen">
+      <div className={cn('flex min-h-screen flex-col gap-6 p-4 pb-24', SURFACE.canvas)}>
 
         {/* TOOLBAR ─────────────────────────────────────────── */}
         <header className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">Analytics</h1>
-            <p className="text-xs text-muted-foreground">
+            <h1 className={cn('text-xl font-extrabold tracking-tight', TEXT.strong)}>Analytics</h1>
+            <p className={cn('text-xs', TEXT.muted)}>
               Aperçu de l'activité sur la période sélectionnée — fuseau Africa/Douala.
             </p>
           </div>
@@ -249,7 +276,7 @@ function DashboardBody() {
               type="button"
               onClick={handleRefresh}
               aria-label="Rafraîchir"
-              className="rounded-lg border border-border bg-background p-2 shadow-sm hover:bg-muted/50"
+              className={cn('rounded-xl p-2.5', SURFACE.card, SURFACE.shadow, TEXT.strong)}
             >
               <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
             </button>
@@ -267,7 +294,7 @@ function DashboardBody() {
             accent="amber"
             icon={<TrendingUp className="h-4 w-4" />}
             label="TPV — Volume paiements"
-            value={formatCurrencyFull(tpvCurrent, 'XAF')}
+            value={formatCurrency(tpvCurrent, 'XAF', { compact: true })}
             secondary={`${formatInteger(payments.data?.current.opCount)} opérations · ${formatCurrency(payments.data?.current.totalRMB ?? 0, 'CNY')}`}
             delta={range.compareToPrevious ? tpvDelta : undefined}
             loading={payments.isLoading}
@@ -277,7 +304,7 @@ function DashboardBody() {
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Dépôts validés"
-            value={formatCurrencyFull(depositsCurrent, 'XAF')}
+            value={formatCurrency(depositsCurrent, 'XAF', { compact: true })}
             secondary={`${formatInteger(deposits.data?.current.opCount)} dépôts`}
             delta={range.compareToPrevious ? depositsDelta : undefined}
             loading={deposits.isLoading}
@@ -286,7 +313,7 @@ function DashboardBody() {
           <KpiCard
             accent={netCurrent >= 0 ? 'emerald' : 'red'}
             label="Flux net"
-            value={formatCurrencyFull(netCurrent, 'XAF')}
+            value={formatCurrency(netCurrent, 'XAF', { compact: true })}
             secondary={netCurrent >= 0 ? "Plus d'entrées que de sorties" : 'Plus de sorties que d\'entrées'}
             delta={range.compareToPrevious ? netDelta : undefined}
             loading={payments.isLoading || deposits.isLoading}
@@ -296,20 +323,21 @@ function DashboardBody() {
             accent="neutral"
             icon={<Clock className="h-4 w-4" />}
             label="Ticket moyen paiement"
-            value={formatCurrencyFull(avgTicketCurrent, 'XAF')}
+            value={formatCurrency(avgTicketCurrent, 'XAF', { compact: true })}
             delta={range.compareToPrevious ? avgTicketDelta : undefined}
             loading={payments.isLoading}
             description="Montant moyen par paiement exécuté (total XAF / nombre d'opérations completed)."
           />
         </KpiRow>
 
+        <CollapsibleSection title="Capital & conversion" icon={Wallet} defaultOpen={false}>
         {/* SECTION 1b — Exposure & structural KPIs ──────────── */}
         <KpiRow columns={4}>
           <KpiCard
             accent="violet"
             icon={<Wallet className="h-4 w-4" />}
             label="Exposition wallets (snapshot)"
-            value={formatCurrencyFull(walletExposure.data?.totalXAF ?? 0, 'XAF')}
+            value={formatCurrency(walletExposure.data?.totalXAF ?? 0, 'XAF', { compact: true })}
             secondary={`${formatInteger(walletExposure.data?.clientsWithBalance ?? 0)} clients · indépendant du filtre période`}
             loading={walletExposure.isLoading}
             description="Somme totale XAF encore dans les wallets clients (non dépensée). Indique ton engagement financier envers les clients à l'instant T — indépendant de la période sélectionnée."
@@ -317,7 +345,7 @@ function DashboardBody() {
           <KpiCard
             accent="amber"
             label="Solde moyen par client (snapshot)"
-            value={formatCurrencyFull(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF')}
+            value={formatCurrency(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF', { compact: true })}
             loading={walletExposure.isLoading}
             description="Exposition totale / nombre de clients avec un solde strictement positif. Snapshot actuel — indépendant du filtre période."
           />
@@ -385,6 +413,9 @@ function DashboardBody() {
           />
         </KpiRow>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Flux & volumes" icon={TrendingUp} defaultOpen>
         {/* SECTION 3 — Flow chart ──────────────────────────── */}
         <ChartCard
           title="Flux financier"
@@ -586,6 +617,9 @@ function DashboardBody() {
           </ChartCard>
         </div>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Clients" icon={Users} defaultOpen={false}>
         {/* SECTION 4b — Clients: growth + registration source ── */}
         <div className="grid gap-4 md:grid-cols-2">
           <ChartCard
@@ -626,6 +660,9 @@ function DashboardBody() {
           error={countryDistribution.error as Error | null}
         />
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Opérations" icon={Clock} defaultOpen={false}>
         {/* SECTION 5 — Opérations (processing time + status) ── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard
@@ -664,6 +701,9 @@ function DashboardBody() {
           />
         </div>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Taux" icon={Percent} defaultOpen={false}>
         {/* SECTION 6 — Rate history ────────────────────────── */}
         <RateEvolutionReport
           data={rateHistory.data ?? []}
@@ -675,28 +715,9 @@ function DashboardBody() {
           range={range}
         />
 
-        {/* SECTION 6b — Coût d'acquisition USDT (Cameroun) ─── */}
-        <UsdtCostReport
-          data={usdtFlow.data ?? []}
-          isLoading={usdtFlow.isLoading}
-          error={usdtFlow.error as Error | null}
-          granularity={usdtFlowRange.granularity}
-          onGranularityChange={setUsdtFlowG}
-          globalGranularity={range.granularity}
-          range={range}
-        />
+        </CollapsibleSection>
 
-        {/* SECTION 6c — Prix de vente USDT (Chine) ─────────── */}
-        <UsdtPriceReport
-          data={usdtFlow.data ?? []}
-          isLoading={usdtFlow.isLoading}
-          error={usdtFlow.error as Error | null}
-          granularity={usdtFlowRange.granularity}
-          onGranularityChange={setUsdtFlowG}
-          globalGranularity={range.granularity}
-          range={range}
-        />
-
+        <CollapsibleSection title="Équipe & top clients" icon={Layers} defaultOpen={false}>
         {/* SECTION 7 — Admin productivity ───────────────────── */}
         <ChartCard
           title="Productivité des admins"
@@ -744,6 +765,7 @@ function DashboardBody() {
         >
           <TopClientsList items={topClients.data ?? []} />
         </ChartCard>
+        </CollapsibleSection>
 
       </div>
     </PullToRefresh>
@@ -863,33 +885,22 @@ function AlertsSection({
   alerts: DashboardAlert[];
   onNavigate: (path: string) => void;
 }) {
-  const severityStyle: Record<DashboardAlert['severity'], { box: string; icon: string; title: string }> = {
-    critical: {
-      box: 'bg-red-500/10 border-red-500/30',
-      icon: 'text-red-600',
-      title: 'text-red-700',
-    },
-    warning: {
-      box: 'bg-amber-500/10 border-amber-500/30',
-      icon: 'text-amber-600',
-      title: 'text-amber-700',
-    },
-    info: {
-      box: 'bg-blue-500/10 border-blue-500/30',
-      icon: 'text-blue-600',
-      title: 'text-blue-700',
-    },
+  // Severity → unified kit tone (colour carries meaning only).
+  const severityTone: Record<DashboardAlert['severity'], 'danger' | 'pending' | 'info'> = {
+    critical: 'danger',
+    warning: 'pending',
+    info: 'info',
   };
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
+      <h2 className={cn('flex items-center gap-2 text-sm font-bold', TEXT.strong)}>
+        <AlertTriangle className="h-4 w-4 text-[#9A6B12] dark:text-[#E7C083]" />
         Alertes opérationnelles
       </h2>
       <div className="space-y-2">
         {alerts.map((alert) => {
-          const s = severityStyle[alert.severity];
+          const tone = severityTone[alert.severity];
           const Clickable = !!alert.actionHref;
           return (
             <button
@@ -897,17 +908,19 @@ function AlertsSection({
               type="button"
               disabled={!Clickable}
               onClick={Clickable ? () => onNavigate(alert.actionHref!) : undefined}
-              className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left ${s.box} ${Clickable ? 'hover:opacity-90' : 'cursor-default'}`}
+              className={cn('flex w-full items-start gap-3 rounded-2xl p-3.5 text-left', SURFACE.card, SURFACE.shadow, Clickable ? 'transition active:scale-[0.99]' : 'cursor-default')}
             >
-              <AlertTriangle className={`mt-0.5 h-5 w-5 flex-shrink-0 ${s.icon}`} />
+              <span className={cn('mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full', TONE_HOLDER[tone])}>
+                <AlertTriangle className="h-4.5 w-4.5" />
+              </span>
               <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold ${s.title}`}>
-                  {alert.title}{' '}
-                  <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs tabular-nums">
+                <div className={cn('flex items-center gap-2 text-sm font-bold', TEXT.strong)}>
+                  {alert.title}
+                  <span className={cn('rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums', TONE_PILL[tone])}>
                     {alert.count}
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{alert.description}</p>
+                <p className={cn('mt-0.5 text-xs', TEXT.muted)}>{alert.description}</p>
               </div>
             </button>
           );
@@ -1041,29 +1054,29 @@ function CountryDistributionReport({
           {displayed.map((row) => (
             <div
               key={row.key}
-              className="flex items-center justify-between gap-3 rounded-md bg-muted/20 px-2.5 py-1.5 text-xs"
+              className={cn('flex items-center justify-between gap-3 rounded-xl px-2.5 py-1.5 text-xs', SURFACE.canvas)}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
                   style={{ background: row.color }}
                 />
-                <span className="font-medium truncate">{row.country}</span>
+                <span className={cn('font-medium truncate', TEXT.strong)}>{row.country}</span>
               </span>
-              <span className="flex-shrink-0 tabular-nums text-muted-foreground">
-                <span className="font-semibold text-foreground">{formatInteger(row.count)}</span>
+              <span className={cn('flex-shrink-0 tabular-nums', TEXT.muted)}>
+                <span className={cn('font-semibold', TEXT.strong)}>{formatInteger(row.count)}</span>
                 {' · '}
                 {(row.share * 100).toFixed(1)}%
               </span>
             </div>
           ))}
           {hasOther ? (
-            <p className="pt-1 text-[10px] text-muted-foreground">
+            <p className={cn('pt-1 text-[10px]', TEXT.muted)}>
               « Autres » regroupe les pays au-delà du top 5.
             </p>
           ) : null}
           {showQualityWarning ? (
-            <p className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700">
+            <p className={cn('rounded-lg px-2 py-1.5 text-[11px] font-medium', TONE_PILL.pending)}>
               ⚠ {(unknownShare * 100).toFixed(0)}% des clients n'ont pas de pays renseigné — pense à rendre le champ obligatoire à l'inscription.
             </p>
           ) : null}
@@ -1246,13 +1259,13 @@ function RateEvolutionReport({
             globalGranularity={globalGranularity}
             range={range}
           />
-          <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5 text-[11px]">
+          <div className={cn('inline-flex rounded-full p-0.5 text-[11px]', SURFACE.canvas)}>
             <button
               type="button"
               onClick={() => setMode('absolute')}
               className={cn(
-                'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'absolute' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                'rounded-full px-2.5 py-1 font-semibold transition-colors',
+                mode === 'absolute' ? PRIMARY_PILL : TEXT.muted,
               )}
             >
               Absolu
@@ -1261,8 +1274,8 @@ function RateEvolutionReport({
               type="button"
               onClick={() => setMode('variation')}
               className={cn(
-                'rounded px-2 py-1 font-medium transition-colors',
-                mode === 'variation' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                'rounded-full px-2.5 py-1 font-semibold transition-colors',
+                mode === 'variation' ? PRIMARY_PILL : TEXT.muted,
               )}
             >
               Variation %
@@ -1384,13 +1397,13 @@ function RateInsightTile({
   color: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/20 p-2.5">
+    <div className={cn('rounded-2xl p-2.5', SURFACE.canvas)}>
       <div className="flex items-center gap-1.5">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className={cn('text-[10px] uppercase tracking-wider', TEXT.muted)}>{label}</span>
       </div>
-      <div className="mt-1 text-base md:text-lg font-bold tabular-nums break-words">{value}</div>
-      <div className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{sub}</div>
+      <div className={cn('mt-1 text-base md:text-lg font-bold tabular-nums break-words', TEXT.strong)}>{value}</div>
+      <div className={cn('text-[10px] leading-snug line-clamp-2', TEXT.muted)}>{sub}</div>
     </div>
   );
 }
@@ -1742,37 +1755,37 @@ function RegistrationSourceBlock({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-muted/30 p-3">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Admin-créés</div>
-          <div className="mt-1 text-xl font-bold tabular-nums">{formatInteger(stats.adminCreated)}</div>
-          <div className="text-xs text-muted-foreground">{formatPercent(stats.adminCreatedPct)} du total</div>
+        <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
+          <div className={cn('text-[11px] uppercase tracking-wider', TEXT.muted)}>Admin-créés</div>
+          <div className={cn('mt-1 text-xl font-bold tabular-nums', TEXT.strong)}>{formatInteger(stats.adminCreated)}</div>
+          <div className={cn('text-xs', TEXT.muted)}>{formatPercent(stats.adminCreatedPct)} du total</div>
         </div>
-        <div className="rounded-lg bg-muted/30 p-3">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Self-registered</div>
-          <div className="mt-1 text-xl font-bold tabular-nums">{formatInteger(stats.selfRegistered)}</div>
-          <div className="text-xs text-muted-foreground">{formatPercent(1 - stats.adminCreatedPct)} du total</div>
+        <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
+          <div className={cn('text-[11px] uppercase tracking-wider', TEXT.muted)}>Self-registered</div>
+          <div className={cn('mt-1 text-xl font-bold tabular-nums', TEXT.strong)}>{formatInteger(stats.selfRegistered)}</div>
+          <div className={cn('text-xs', TEXT.muted)}>{formatPercent(1 - stats.adminCreatedPct)} du total</div>
         </div>
       </div>
 
       {utm.length > 0 ? (
         <div>
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className={cn('mb-2 text-[11px] font-semibold uppercase tracking-wider', TEXT.muted)}>
             Top sources UTM
           </div>
           <div className="space-y-1">
             {utm.map((row) => (
               <div
                 key={`${row.source}-${row.medium}-${row.campaign}`}
-                className="flex items-center justify-between gap-2 rounded-md bg-muted/20 px-2.5 py-1.5 text-xs"
+                className={cn('flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs', SURFACE.canvas)}
               >
                 <div className="min-w-0 flex-1 truncate">
-                  <span className="font-semibold">{row.source}</span>
-                  <span className="text-muted-foreground"> · {row.medium}</span>
+                  <span className={cn('font-semibold', TEXT.strong)}>{row.source}</span>
+                  <span className={TEXT.muted}> · {row.medium}</span>
                   {row.campaign !== '(none)' ? (
-                    <span className="text-muted-foreground"> · {row.campaign}</span>
+                    <span className={TEXT.muted}> · {row.campaign}</span>
                   ) : null}
                 </div>
-                <span className="flex-shrink-0 font-semibold tabular-nums">
+                <span className={cn('flex-shrink-0 font-semibold tabular-nums', TEXT.strong)}>
                   {formatInteger(row.count)}
                 </span>
               </div>
@@ -1780,342 +1793,8 @@ function RegistrationSourceBlock({
           </div>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Aucune source UTM sur la période.</p>
+        <p className={cn('text-xs', TEXT.muted)}>Aucune source UTM sur la période.</p>
       )}
-    </div>
-  );
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// UsdtCostReport & UsdtPriceReport — area charts with brand gradients
-// Both consume the same hook (useUsdtFlowHistory) but display different series.
-// ────────────────────────────────────────────────────────────────────────────
-
-const COLOR_USDT_COST = 'hsl(258 100% 60%)';   // violet — coût Cameroun
-const COLOR_USDT_PRICE = 'hsl(36 100% 55%)';   // amber — prix Chine
-
-type UsdtReportProps = {
-  data: UsdtFlowPoint[];
-  isLoading: boolean;
-  error: Error | null;
-  granularity: Granularity;
-  onGranularityChange: (g: Granularity) => void;
-  globalGranularity: Granularity;
-  range: DateRange;
-};
-
-function computeUsdtStats<K extends 'costXaf' | 'priceCny'>(
-  data: UsdtFlowPoint[],
-  key: K,
-): {
-  values: number[];
-  first: number | null;
-  last: number | null;
-  min: number | null;
-  max: number | null;
-  mean: number | null;
-  stdev: number | null;
-  delta: number | null;
-  deltaPct: number | null;
-} {
-  const values = data
-    .map((p) => p[key])
-    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-  if (values.length === 0) {
-    return { values: [], first: null, last: null, min: null, max: null, mean: null, stdev: null, delta: null, deltaPct: null };
-  }
-  const first = values[0];
-  const last = values[values.length - 1];
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const mean = values.reduce((s, x) => s + x, 0) / values.length;
-  const variance = values.reduce((s, x) => s + (x - mean) ** 2, 0) / values.length;
-  const stdev = Math.sqrt(variance);
-  const delta = last - first;
-  const deltaPct = first !== 0 ? delta / first : null;
-  return { values, first, last, min, max, mean, stdev, delta, deltaPct };
-}
-
-function UsdtCostReport(props: UsdtReportProps) {
-  return (
-    <UsdtFlowReport
-      {...props}
-      seriesKey="costXaf"
-      color={COLOR_USDT_COST}
-      title="Coût d'acquisition USDT (Cameroun)"
-      subtitle="XAF moyens dépensés par USDT acheté · Binance P2P XAF Mobile Money"
-      description="Moyenne pondérée des asks des vendeurs XAF sur Binance P2P (filtrés MTN/Orange, ≥50 trades, ≥90% finish rate). Source : table rate_snapshots, alimentée toutes les ~15 min par monitor-rates. C'est ce que tu paies pour acquérir 1 USDT au Cameroun."
-      yLabel="XAF par USDT"
-      decimals={2}
-      thresholdValue={600}
-      thresholdLabel="Seuil 600 XAF"
-      exportFilename="usdt_cost_xaf"
-    />
-  );
-}
-
-function UsdtPriceReport(props: UsdtReportProps) {
-  return (
-    <UsdtFlowReport
-      {...props}
-      seriesKey="priceCny"
-      color={COLOR_USDT_PRICE}
-      title="Prix de vente USDT (Chine)"
-      subtitle="CNY moyens reçus par USDT vendu · Binance P2P CNY Alipay/WeChat"
-      description="Moyenne pondérée des bids des acheteurs USDT en Chine (filtrés Alipay/WeChat, merchants ≥200 trades, ≥95% finish rate), ajustée du spread OTC. Source : table rate_snapshots. C'est ce que tu reçois en vendant 1 USDT en Chine."
-      yLabel="CNY par USDT"
-      decimals={4}
-      exportFilename="usdt_price_cny"
-    />
-  );
-}
-
-function UsdtFlowReport({
-  data,
-  isLoading,
-  error,
-  granularity,
-  onGranularityChange,
-  globalGranularity,
-  range,
-  seriesKey,
-  color,
-  title,
-  subtitle,
-  description,
-  yLabel,
-  decimals,
-  thresholdValue,
-  thresholdLabel,
-  exportFilename,
-}: UsdtReportProps & {
-  seriesKey: 'costXaf' | 'priceCny';
-  color: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  yLabel: string;
-  decimals: number;
-  thresholdValue?: number;
-  thresholdLabel?: string;
-  exportFilename: string;
-}) {
-  const stats = React.useMemo(() => computeUsdtStats(data, seriesKey), [data, seriesKey]);
-  const gradientId = `usdt-${seriesKey}-grad`;
-
-  // Tight Y axis domain so even small variations stay visible.
-  const yDomain = React.useMemo<[number | string, number | string]>(() => {
-    if (stats.values.length === 0) return ['auto', 'auto'];
-    const padding = Math.max((stats.max! - stats.min!) * 0.18, stats.max! * 0.0015);
-    return [
-      Math.max(0, stats.min! - padding),
-      stats.max! + padding,
-    ];
-  }, [stats]);
-
-  const formatVal = (v: number | null) =>
-    v == null
-      ? '—'
-      : v.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-
-  return (
-    <ChartCard
-      title={title}
-      subtitle={subtitle}
-      description={description}
-      loading={isLoading}
-      error={error}
-      empty={data.length === 0 || stats.values.length === 0}
-      toolbar={
-        <div className="flex flex-wrap items-center gap-2">
-          <GranularityPicker
-            value={granularity}
-            onChange={onGranularityChange}
-            globalGranularity={globalGranularity}
-            range={range}
-          />
-          <ExportButton
-            filename={exportFilename}
-            disabled={data.length === 0}
-            rows={() =>
-              data.map((p) => ({
-                bucket: p.bucket,
-                label: p.label,
-                value: p[seriesKey],
-                samples: p.count,
-              }))
-            }
-            columns={[
-              { key: 'bucket', label: 'Bucket' },
-              { key: 'label', label: 'Période' },
-              { key: 'value', label: yLabel },
-              { key: 'samples', label: 'Snapshots' },
-            ]}
-          />
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        {/* 3 KPI tiles : actuel, moyenne période, volatilité σ */}
-        <div className="grid grid-cols-3 gap-2">
-          <RateInsightTile
-            label="Dernière valeur"
-            value={`${formatVal(stats.last)}`}
-            sub={
-              stats.deltaPct != null
-                ? `${stats.delta! >= 0 ? '+' : ''}${formatVal(stats.delta!)} (${formatPercent(stats.deltaPct)}) vs début de période`
-                : 'Pas de variation calculable'
-            }
-            color={color}
-          />
-          <RateInsightTile
-            label="Moyenne période"
-            value={formatVal(stats.mean)}
-            sub={`Min ${formatVal(stats.min)} · Max ${formatVal(stats.max)}`}
-            color={color}
-          />
-          <RateInsightTile
-            label="Volatilité (σ)"
-            value={formatVal(stats.stdev)}
-            sub={`${stats.values.length} bucket${stats.values.length > 1 ? 's' : ''} agrégés sur la période`}
-            color={color}
-          />
-        </div>
-
-        {(() => {
-          const xa = timeXAxisProps({ granularity, dataLength: data.length });
-          const bottom = timeChartBottomMargin({ granularity, dataLength: data.length });
-          return (
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={data} margin={{ top: 12, right: 12, bottom, left: 8 }}>
-                <defs>
-                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="label" {...xa} />
-                <YAxis
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={false}
-                  tickLine={false}
-                  domain={yDomain}
-                  tickFormatter={(v: number) =>
-                    v.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-                  }
-                  tickCount={5}
-                  width={72}
-                  label={{
-                    value: yLabel,
-                    angle: -90,
-                    position: 'insideLeft',
-                    offset: 6,
-                    style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
-                  }}
-                />
-                <Tooltip
-                  content={
-                    <UsdtFlowTooltip
-                      color={color}
-                      seriesLabel={yLabel}
-                      seriesKey={seriesKey}
-                      decimals={decimals}
-                    />
-                  }
-                />
-                {stats.mean != null ? (
-                  <ReferenceLine
-                    y={stats.mean}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeDasharray="3 5"
-                    strokeOpacity={0.5}
-                    label={{
-                      value: `Moy. ${formatVal(stats.mean)}`,
-                      position: 'insideTopRight',
-                      fontSize: 10,
-                      fill: 'hsl(var(--muted-foreground))',
-                    }}
-                  />
-                ) : null}
-                {thresholdValue != null ? (
-                  <ReferenceLine
-                    y={thresholdValue}
-                    stroke="hsl(var(--destructive))"
-                    strokeDasharray="4 4"
-                    strokeOpacity={0.55}
-                    label={{
-                      value: thresholdLabel ?? '',
-                      position: 'insideBottomRight',
-                      fontSize: 10,
-                      fill: 'hsl(var(--destructive))',
-                    }}
-                  />
-                ) : null}
-                <Area
-                  type="monotone"
-                  dataKey={seriesKey}
-                  stroke={color}
-                  strokeWidth={2}
-                  fill={`url(#${gradientId})`}
-                  dot={data.length <= 30 ? { r: 2.5, strokeWidth: 0, fill: color } : false}
-                  activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
-                  connectNulls
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          );
-        })()}
-
-        <ChartAxisCaption
-          xLabel={`Période · ${granularitySubtitle(granularity)}`}
-          yLabel={yLabel}
-        />
-      </div>
-    </ChartCard>
-  );
-}
-
-function UsdtFlowTooltip({
-  active,
-  payload,
-  label,
-  color,
-  seriesLabel,
-  seriesKey,
-  decimals,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string; payload: UsdtFlowPoint }>;
-  label?: string;
-  color: string;
-  seriesLabel: string;
-  seriesKey: 'costXaf' | 'priceCny';
-  decimals: number;
-}) {
-  if (!active || !payload?.length) return null;
-  const entry = payload[0];
-  const point = entry?.payload;
-  const value = point?.[seriesKey];
-
-  return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs min-w-[180px]">
-      <p className="font-semibold mb-1.5">{label}</p>
-      <p className="flex items-center gap-2 tabular-nums">
-        <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: color }} />
-        <span className="text-muted-foreground">{seriesLabel}</span>
-        <span className="ml-auto font-bold">
-          {value != null
-            ? value.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-            : '—'}
-        </span>
-      </p>
-      {point?.count != null ? (
-        <p className="mt-1 pt-1 border-t border-border/50 flex items-center justify-between gap-2 text-muted-foreground">
-          <span>Snapshots agrégés</span>
-          <span className="tabular-nums">{point.count}</span>
-        </p>
-      ) : null}
     </div>
   );
 }

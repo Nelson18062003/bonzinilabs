@@ -83,7 +83,7 @@ export default {
         "3xl": "1.5rem",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ['"DM Sans"', "Inter", "system-ui", "sans-serif"],
         display: ['"Syne"', "sans-serif"],
         body: ['"DM Sans"', "sans-serif"],
       },

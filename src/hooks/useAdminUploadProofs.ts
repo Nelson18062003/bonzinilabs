@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSignedUrl } from '@/lib/signedUrls';
 import { compressImage } from '@/lib/imageCompression';
+import { uploadWithRetry } from '@/lib/storageUpload';
 import i18n from '@/i18n';
 
 export function useAdminUploadProofs() {
@@ -20,9 +21,9 @@ export function useAdminUploadProofs() {
         const fileExt = file.name.split('.').pop();
         const filePath = `admin/${depositId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from('deposit-proofs')
-          .upload(filePath, file);
+        const { error: uploadError } = await uploadWithRetry(() =>
+          supabaseAdmin.storage.from('deposit-proofs').upload(filePath, file),
+        );
 
         if (uploadError) throw uploadError;
 

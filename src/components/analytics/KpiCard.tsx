@@ -5,8 +5,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, TONE_HOLDER } from '@/mobile/designKit';
 import { TrendBadge } from './TrendBadge';
 
 export interface KpiCardProps {
@@ -37,13 +37,19 @@ export interface KpiCardProps {
   accent?: 'neutral' | 'violet' | 'amber' | 'orange' | 'emerald' | 'red';
 }
 
-const ACCENT_STYLES: Record<NonNullable<KpiCardProps['accent']>, { iconBg: string; iconText: string }> = {
-  neutral: { iconBg: 'bg-muted', iconText: 'text-muted-foreground' },
-  violet: { iconBg: 'bg-[hsl(258_100%_60%/0.1)]', iconText: 'text-[hsl(258_100%_60%)]' },
-  amber: { iconBg: 'bg-[hsl(36_100%_55%/0.1)]', iconText: 'text-[hsl(36_100%_55%)]' },
-  orange: { iconBg: 'bg-[hsl(16_100%_55%/0.1)]', iconText: 'text-[hsl(16_100%_55%)]' },
-  emerald: { iconBg: 'bg-emerald-500/10', iconText: 'text-emerald-600' },
-  red: { iconBg: 'bg-red-500/10', iconText: 'text-red-600' },
+/**
+ * Accent → kit tone holder. The design kit is intentionally restrained (colour
+ * carries meaning only), so the brand accents map onto the unified semantic
+ * tones: violet→info, amber/orange→pending, emerald→success, red→danger.
+ * The `accent` prop API is unchanged so callers don't have to.
+ */
+const ACCENT_HOLDER: Record<NonNullable<KpiCardProps['accent']>, string> = {
+  neutral: TONE_HOLDER.neutral,
+  violet: TONE_HOLDER.info,
+  amber: TONE_HOLDER.pending,
+  orange: TONE_HOLDER.pending,
+  emerald: TONE_HOLDER.success,
+  red: TONE_HOLDER.danger,
 };
 
 export function KpiCard({
@@ -58,15 +64,15 @@ export function KpiCard({
   className,
   accent = 'neutral',
 }: KpiCardProps) {
-  const accentStyle = ACCENT_STYLES[accent];
+  const holder = ACCENT_HOLDER[accent];
 
   return (
-    <Card className={cn('flex h-full flex-col p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
+    <div className={cn('flex h-full flex-col rounded-[22px] p-4', SURFACE.card, SURFACE.shadow, className)}>
       <div className="flex flex-1 items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col space-y-1">
           {/* min-h reserves 2 lines so values align vertically across cards */}
           <div className="flex min-h-[2.25rem] items-start gap-1.5 md:min-h-[2.5rem]">
-            <p className="text-xs md:text-sm text-muted-foreground leading-snug line-clamp-2 break-words">
+            <p className={cn('text-xs md:text-sm leading-snug line-clamp-2 break-words', TEXT.muted)}>
               {label}
             </p>
             {description ? (
@@ -96,7 +102,7 @@ export function KpiCard({
             <div className="h-7 w-28 animate-pulse rounded bg-muted" />
           ) : (
             <p
-              className="text-xl md:text-2xl font-semibold text-foreground tabular-nums leading-tight break-words"
+              className={cn('text-xl md:text-2xl font-extrabold tabular-nums leading-tight break-words', TEXT.strong)}
               title={typeof value === 'string' ? value : undefined}
             >
               {value}
@@ -106,7 +112,7 @@ export function KpiCard({
           <div className="flex items-center gap-2 flex-wrap">
             {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
             {secondary ? (
-              <p className="text-[11px] md:text-xs text-muted-foreground tabular-nums leading-snug">
+              <p className={cn('text-[11px] md:text-xs tabular-nums leading-snug', TEXT.muted)}>
                 {secondary}
               </p>
             ) : null}
@@ -116,15 +122,14 @@ export function KpiCard({
         {icon ? (
           <div
             className={cn(
-              'flex size-9 md:size-10 flex-shrink-0 items-center justify-center rounded-lg border border-border',
-              accentStyle.iconBg,
-              accentStyle.iconText,
+              'flex size-9 md:size-10 flex-shrink-0 items-center justify-center rounded-full',
+              holder,
             )}
           >
             {icon}
           </div>
         ) : null}
       </div>
-    </Card>
+    </div>
   );
 }

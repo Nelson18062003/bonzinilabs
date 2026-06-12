@@ -1,23 +1,19 @@
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatXAF, formatCurrencyRMB, convertXAFtoRMB } from '@/lib/formatters';
+import { formatXAF } from '@/lib/formatters';
 
 interface BalanceCardProps {
   balanceXAF: number;
-  /** XAF-to-RMB multiplier (e.g. 0.01176 for 85 XAF/RMB) */
-  rateXafToRmb?: number;
   /** Show loading state when balance is being refreshed */
   isRefreshing?: boolean;
   /** Error state - shows fallback UI */
   hasError?: boolean;
 }
 
-export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }: BalanceCardProps) => {
+export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardProps) => {
   const { t } = useTranslation('client');
   const [showBalance, setShowBalance] = useState(true);
-  const currentRate = rateXafToRmb ?? 11765 / 1_000_000;
-  const balanceRMB = convertXAFtoRMB(balanceXAF, currentRate);
 
   // Error fallback
   if (hasError) {
@@ -65,9 +61,6 @@ export const BalanceCard = ({ balanceXAF, rateXafToRmb, isRefreshing, hasError }
           <>
             <p className="balance-display text-primary-foreground">
               {formatXAF(balanceXAF)} <span className="text-2xl font-medium text-primary-foreground/70">XAF</span>
-            </p>
-            <p className="text-lg font-semibold text-primary-foreground/80 mt-1">
-              ≈ {formatCurrencyRMB(balanceRMB)}
             </p>
           </>
         ) : (

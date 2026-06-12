@@ -27,8 +27,12 @@ export type { SearchFieldProps } from './SearchField';
 export { NumberField } from './NumberField';
 export type { NumberFieldProps } from './NumberField';
 
-export { AmountField } from './AmountField';
+export { AmountField, parseAmount } from './AmountField';
 export type { AmountFieldProps } from './AmountField';
+
+export { PhoneInputWithCountry } from './PhoneInputWithCountry';
+
+export { OccurredAtField } from './OccurredAtField';
 
 export { PhoneField } from './PhoneField';
 export type { PhoneFieldProps } from './PhoneField';

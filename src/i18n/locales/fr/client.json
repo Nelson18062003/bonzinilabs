@@ -63,7 +63,60 @@
     "title": "B\u00e9n\u00e9ficiaires",
     "subtitle": "Vos destinataires en Chine",
     "noBeneficiary": "Aucun b\u00e9n\u00e9ficiaire",
-    "comingSoon": "La fonctionnalit\u00e9 b\u00e9n\u00e9ficiaires sera bient\u00f4t disponible"
+    "comingSoon": "La fonctionnalit\u00e9 b\u00e9n\u00e9ficiaires sera bient\u00f4t disponible",
+    "add": "Ajouter un b\u00e9n\u00e9ficiaire",
+    "edit": "Modifier le b\u00e9n\u00e9ficiaire",
+    "search": "Rechercher (surnom, compte\u2026)",
+    "allModes": "Tous",
+    "emptyHint": "Enregistrez vos destinataires pour ne plus ressaisir leurs informations \u00e0 chaque paiement.",
+    "addedByTeam": "Ajout\u00e9 par l'\u00e9quipe Bonzini",
+    "saveToCarnet": "Enregistrer aussi dans mon carnet",
+    "actions": {
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "archive": "Supprimer",
+      "useThis": "Utiliser",
+      "confirmArchiveTitle": "Supprimer ce b\u00e9n\u00e9ficiaire ?",
+      "confirmArchiveBody": "Il sera retir\u00e9 de votre liste. Vos paiements d\u00e9j\u00e0 cr\u00e9\u00e9s ne sont pas modifi\u00e9s.",
+      "confirmArchive": "Supprimer"
+    },
+    "fields": {
+      "alias": "Surnom (rep\u00e8re)",
+      "aliasPlaceholder": "Ex : Fournisseur chaussures Yiwu",
+      "name": "Nom du titulaire",
+      "namePlaceholder": "Nom r\u00e9el (peut \u00eatre en chinois)",
+      "identifier": "Identifiant",
+      "identifierType": "Type d'identifiant",
+      "phone": "T\u00e9l\u00e9phone",
+      "email": "Email (optionnel)",
+      "bankName": "Nom de la banque",
+      "bankAccount": "Num\u00e9ro de compte",
+      "bankExtra": "Infos compl\u00e9mentaires (SWIFT / CNAPS / agence)",
+      "qrCode": "QR Code",
+      "relationType": "Relation",
+      "notes": "Note (optionnel)"
+    },
+    "relations": {
+      "self": "Moi-m\u00eame",
+      "supplier": "Fournisseur",
+      "other": "Autre"
+    },
+    "snapshotNotice": "Les paiements d\u00e9j\u00e0 cr\u00e9\u00e9s ne sont pas modifi\u00e9s.",
+    "duplicate": {
+      "title": "B\u00e9n\u00e9ficiaire d\u00e9j\u00e0 enregistr\u00e9",
+      "body": "Vous avez d\u00e9j\u00e0 \u00ab {{alias}} \u00bb avec ce compte. L'utiliser ?"
+    },
+    "errors": {
+      "aliasRequired": "Le surnom est obligatoire",
+      "nameRequired": "Le nom du titulaire est obligatoire",
+      "phoneRequired": "Le t\u00e9l\u00e9phone est obligatoire",
+      "bank_nameRequired": "Le nom de la banque est obligatoire",
+      "bank_accountRequired": "Le num\u00e9ro de compte est obligatoire",
+      "accountChannelRequired": "Renseignez un identifiant ou un QR code",
+      "emailInvalid": "Email invalide",
+      "tooLong": "Texte trop long",
+      "invalid": "Informations invalides"
+    }
   },
   "notifications": {
     "title": "Notifications",

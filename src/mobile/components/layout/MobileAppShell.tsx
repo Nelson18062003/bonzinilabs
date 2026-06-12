@@ -26,7 +26,9 @@ export function MobileAppShell({
     )}>
       <main className={cn(
         "flex-1",
-        showTabBar && "pb-24" // Space for floating tab bar
+        // Tab-bar screens clear the floating nav; drill-in screens still need
+        // to clear the iOS home indicator / Android gesture bar (safe-area).
+        showTabBar ? "pb-24" : "pb-[env(safe-area-inset-bottom)]"
       )}>
         <AnimatedPage>{children}</AnimatedPage>
       </main>

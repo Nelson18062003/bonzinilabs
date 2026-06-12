@@ -24,6 +24,8 @@ import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
 
 // ── Lazy-loaded Client Pages ───────────────────────────────────
 const AuthPage = lazy(() => import("./pages/AuthPage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
 const DepositsPage = lazy(() => import("./pages/DepositsPage"));
@@ -38,6 +40,8 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const SupportListPage = lazy(() => import("./pages/SupportListPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
 // LandingPage is eagerly loaded (first route, no lazy delay)
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -56,6 +60,7 @@ const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
+const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
@@ -65,7 +70,30 @@ const MobileAdminsScreen = lazy(() => import("./mobile/screens/admins").then(m =
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
-const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
+const MobileAdminProfile = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileAdminProfile })));
+const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
+const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
+const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
+const MobileCannedResponsesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileCannedResponsesScreen })));
+const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileQuickRepliesScreen })));
+
+// ── AI Assistant (Directeur des Opérations) ────────────────────
+const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").then(m => ({ default: m.MobileAssistantScreen })));
+
+const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
+const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
+const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
+const MobileTreasuryNewSale = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewSale })));
+const MobileTreasuryCounterparties = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartiesScreen })));
+const MobileTreasuryCounterpartyEdit = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartyEdit })));
+const MobileTreasuryAccounts = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileAccountsScreen })));
+const MobileTreasuryInventory = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileInventoryScreen })));
+const MobileTreasuryOperations = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileOperationsHistory })));
+const MobileTreasuryPurchaseDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchaseDetail })));
+const MobileTreasurySaleDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSaleDetail })));
+const MobileTreasuryPurchasesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchasesList })));
+const MobileTreasurySalesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSalesList })));
+const MobileTreasuryBalanceDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileBalanceDashboard })));
 
 // ── Lazy-loaded Agent Cash Screens ──────────────────────────
 import { AgentCashRouteWrapper } from "./mobile/components/agent-cash/AgentCashRouteWrapper";
@@ -113,7 +141,9 @@ const App = () => (
               <Routes>
                 {/* Auth Routes */}
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/onboarding" element={<ProtectedRoute requireComplete={false}><OnboardingPage /></ProtectedRoute>} />
 
                 {/* Landing Page (public) */}
                 <Route path="/" element={<LandingPage />} />
@@ -132,6 +162,8 @@ const App = () => (
                 <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />
                 <Route path="/rates" element={<ProtectedRoute><ClientRatesPage /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/support" element={<ProtectedRoute><SupportListPage /></ProtectedRoute>} />
+                <Route path="/support/:conversationId" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
 
                 {/* Mobile Admin Routes */}
                 <Route path="/m/login" element={<MobileRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></MobileRouteWrapper>} />
@@ -148,6 +180,8 @@ const App = () => (
                 <Route path="/m/clients/new" element={<MobileRouteWrapper showTabBar={false}><MobileCreateClient /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<MobileRouteWrapper showTabBar={false}><MobileClientDetail /></MobileRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<MobileRouteWrapper><MobileClientLedger /></MobileRouteWrapper>} />
+                <Route path="/m/clients/:clientId/beneficiaries" element={<MobileRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></MobileRouteWrapper>} />
+                <Route path="/m/assistant" element={<MobileRouteWrapper showTabBar={false}><MobileAssistantScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more" element={<MobileRouteWrapper><MobileMoreScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/rates" element={<MobileRouteWrapper><MobileRatesScreen /></MobileRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<MobileRouteWrapper><MobileProofsScreen /></MobileRouteWrapper>} />
@@ -157,7 +191,30 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<MobileRouteWrapper><MobileCreateAdmin /></MobileRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<MobileRouteWrapper><MobileAdminDetail /></MobileRouteWrapper>} />
                 <Route path="/m/more/settings" element={<MobileRouteWrapper><MobileSettingsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/briefs" element={<MobileRouteWrapper><MobileBriefsScreen /></MobileRouteWrapper>} />
+                <Route path="/m/more/profile" element={<MobileRouteWrapper><MobileAdminProfile /></MobileRouteWrapper>} />
+
+                {/* Support Chat — visible only to roles with canAccessSupportChat */}
+                <Route path="/m/support" element={<MobileRouteWrapper><MobileSupportListScreen /></MobileRouteWrapper>} />
+                <Route path="/m/support/stats" element={<MobileRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></MobileRouteWrapper>} />
+                <Route path="/m/support/:conversationId" element={<MobileRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></MobileRouteWrapper>} />
+                <Route path="/m/more/canned-responses" element={<MobileRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></MobileRouteWrapper>} />
+                <Route path="/m/more/quick-replies" element={<MobileRouteWrapper showTabBar={false}><MobileQuickRepliesScreen /></MobileRouteWrapper>} />
+
+                {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
+                <Route path="/m/more/treasury" element={<MobileRouteWrapper><MobileTreasuryHome /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/dashboard" element={<MobileRouteWrapper><MobileTreasuryDashboard /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/purchase" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewPurchase /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/sale" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewSale /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties" element={<MobileRouteWrapper><MobileTreasuryCounterparties /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryCounterpartyEdit /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts" element={<MobileRouteWrapper><MobileTreasuryAccounts /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/inventory" element={<MobileRouteWrapper><MobileTreasuryInventory /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/operations" element={<MobileRouteWrapper><MobileTreasuryOperations /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases" element={<MobileRouteWrapper><MobileTreasuryPurchasesList /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryPurchaseDetail /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/sales" element={<MobileRouteWrapper><MobileTreasurySalesList /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/balance-dashboard" element={<MobileRouteWrapper><MobileTreasuryBalanceDashboard /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury/sales/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></MobileRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />

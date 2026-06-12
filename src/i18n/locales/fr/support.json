@@ -1,0 +1,218 @@
+{
+  "nav": {
+    "support": "Support"
+  },
+  "page": {
+    "title": "Équipe Bonzini",
+    "subtitle": "Nous sommes là pour vous aider"
+  },
+  "empty": {
+    "title": "L'équipe Bonzini est là pour vous aider",
+    "subtitle": "Posez vos questions sur un paiement, un taux ou autre. On vous répond rapidement.",
+    "quickRepliesTitle": "Démarrer rapidement"
+  },
+  "input": {
+    "placeholder": "Écrivez votre message…",
+    "send": "Envoyer",
+    "sendImage": "Envoyer une image",
+    "sendVideo": "Envoyer une vidéo",
+    "sendFile": "Envoyer un fichier",
+    "attachMenu": "Joindre un média",
+    "sending": "Envoi…"
+  },
+  "responseTime": {
+    "label": "Réponse moyenne aujourd'hui",
+    "minutes": "{{count}} min",
+    "seconds": "{{count}} sec",
+    "veryFast": "Quasi-immédiat"
+  },
+  "errors": {
+    "imageTooLarge": "Image trop volumineuse (max 5 Mo)",
+    "imageWrongFormat": "Format non supporté (JPG, PNG ou WebP uniquement)",
+    "videoTooLarge": "Vidéo trop volumineuse (max 25 Mo)",
+    "videoWrongFormat": "Format vidéo non supporté (MP4 uniquement)",
+    "videoTooLong": "Vidéo trop longue (max 30 secondes)",
+    "fileTooLarge": "Fichier trop volumineux (max 10 Mo)",
+    "fileWrongFormat": "Format non supporté (PDF, DOC, DOCX, XLS, XLSX uniquement)",
+    "messageEmpty": "Le message ne peut pas être vide",
+    "messageTooLong": "Message trop long (2000 caractères max)",
+    "sendFailed": "Échec d'envoi, réessayez",
+    "loadFailed": "Impossible de charger la conversation"
+  },
+  "voice": {
+    "startRecording": "Maintenez pour enregistrer",
+    "slideToCancel": "← Glissez pour annuler",
+    "releaseToCancel": "Relâchez pour annuler",
+    "cancel": "Annuler",
+    "maxDurationReached": "Maximum 60 secondes",
+    "lockedHint": "Enregistrement verrouillé · touchez pour envoyer",
+    "holdToRecord": "Maintenez le micro pour enregistrer",
+    "permissionHelp": "Autorisez le micro dans les réglages",
+    "errors": {
+      "permissionDenied": "Autorisation micro refusée. Activez-la dans les réglages du navigateur.",
+      "noMicrophone": "Aucun micro détecté sur cet appareil",
+      "microphoneBusy": "Micro occupé par une autre application",
+      "unknownStart": "Impossible de démarrer l'enregistrement"
+    }
+  },
+  "video": {
+    "error": "Vidéo indisponible"
+  },
+  "file": {
+    "download": "Télécharger"
+  },
+  "typing": {
+    "adminWriting": "L'équipe Bonzini écrit…",
+    "clientWriting": "Le client écrit…"
+  },
+  "receipt": {
+    "sent": "Envoyé",
+    "seen": "Vu",
+    "seenAt": "Vu à {{time}}"
+  },
+  "contextMenu": {
+    "reply": "Répondre",
+    "copy": "Copier",
+    "copied": "Texte copié",
+    "copyFailed": "Impossible de copier",
+    "react": "Réagir"
+  },
+  "quoted": {
+    "image": "Photo",
+    "voice": "Message vocal",
+    "video": "Vidéo",
+    "file": "Fichier"
+  },
+  "list": {
+    "newConversation": "Nouvelle conversation",
+    "newConversationHint": "Sur un sujet spécifique",
+    "newSubjectLabel": "Sujet de votre conversation",
+    "newSubjectPlaceholder": "Ex: Question sur un paiement…",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "empty": "Aucune conversation pour le moment",
+    "defaultSubject": "Discussion générale",
+    "closedBadge": "Conversation fermée"
+  },
+  "detail": {
+    "back": "Retour",
+    "bonziniTeam": "Équipe Bonzini",
+    "closedHint": "Cette conversation est fermée. Envoyez un message pour la rouvrir."
+  },
+  "templates": {
+    "pickerTitle": "Réponses pré-enregistrées",
+    "searchPlaceholder": "Rechercher un template…",
+    "empty": "Aucun template pour l'instant",
+    "emptyHint": "Touchez + pour créer votre premier template",
+    "noMatch": "Aucun résultat",
+    "screenTitle": "Templates de réponses",
+    "create": "Créer un template",
+    "createTitle": "Nouveau template",
+    "editTitle": "Modifier le template",
+    "labelField": "Libellé court",
+    "labelPlaceholder": "Ex: Dépôt validé",
+    "contentField": "Contenu du message",
+    "contentPlaceholder": "Bonjour {{client_first_name}}, votre dépôt a été validé le {{today}}.",
+    "save": "Enregistrer",
+    "created": "Template créé",
+    "updated": "Template mis à jour",
+    "confirmDelete": "Supprimer ce template ?",
+    "readOnlyHint": "Seul un super_admin peut créer ou modifier les templates.",
+    "varsAvailable": "Variables disponibles (touchez pour insérer)",
+    "varsInside": "Contient des variables",
+    "varsHint": "Variables",
+    "unresolvedVars": "Certaines variables n'ont pas pu être remplies",
+    "preview": "Aperçu avec exemples"
+  },
+  "quickReplies": {
+    "screenTitle": "Quick replies clients",
+    "hint": "Ces suggestions s'affichent aux clients qui ouvrent une nouvelle conversation.",
+    "create": "Créer une suggestion",
+    "createTitle": "Nouvelle suggestion",
+    "editTitle": "Modifier la suggestion",
+    "labelField": "Bouton (texte court vu par le client)",
+    "labelPlaceholder": "Ex: Mon paiement est en retard",
+    "contentField": "Message pré-rempli dans l'input",
+    "contentPlaceholder": "Bonjour, mon paiement semble en retard, pouvez-vous vérifier ?",
+    "activeLabel": "Active (visible aux clients)",
+    "inactive": "Inactive",
+    "empty": "Aucune suggestion pour l'instant",
+    "emptyHint": "Touchez + pour créer la première suggestion",
+    "created": "Suggestion créée",
+    "updated": "Suggestion mise à jour",
+    "confirmDelete": "Supprimer cette suggestion ?",
+    "readOnlyHint": "Seul un super_admin peut créer ou modifier les suggestions."
+  },
+  "day": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier"
+  },
+  "image": {
+    "loading": "Chargement…",
+    "error": "Image indisponible",
+    "tapToOpen": "Voir en plein écran"
+  },
+  "admin": {
+    "listTitle": "Conversations",
+    "listEmpty": "Aucune conversation en cours",
+    "filterAll": "Toutes",
+    "filterMine": "Mes convs",
+    "filterUnassigned": "Non assignées",
+    "filterOpen": "Ouvertes",
+    "filterClosed": "Fermées",
+    "filterAllStatus": "Toutes",
+    "filterUnread": "Non lus",
+    "searchPlaceholder": "Rechercher un client ou un mot…",
+    "unreadBadge": "{{count}} non lu",
+    "unreadBadgePlural": "{{count}} non lus",
+    "openChat": "Ouvrir le chat",
+    "noClientName": "Client sans nom",
+    "clientLink": "Voir la fiche client",
+    "lastActivity": "Dernière activité",
+    "assignedToLabel": "Pris par",
+    "noMatch": "Aucun résultat pour cette recherche",
+    "statsLink": "Statistiques",
+    "statsTitle": "Statistiques support",
+    "statsPeriod7d": "7 jours",
+    "statsPeriod14d": "14 jours",
+    "statsPeriod30d": "30 jours",
+    "statsOpenConvs": "Conv. ouvertes",
+    "statsTotalMessages": "Messages",
+    "statsUnassigned": "Non assignées",
+    "statsAvgResponse": "Réponse moy.",
+    "statsPerAdmin": "Performance par admin",
+    "statsReplies": "réponses",
+    "statsNoData": "Pas encore de données sur cette période",
+    "statsLegendTitle": "Note",
+    "statsLegend": "Le temps de réponse moyen est calculé sur les paires message client → première réponse admin.",
+    "statsMedian": "Médian :",
+    "chartDailyVolume": "Volume quotidien",
+    "chartDailyVolumeHint": "Nombre de messages par jour, par côté",
+    "chartResponseDistribution": "Distribution temps de réponse",
+    "chartResponseDistributionHint": "Répartition des réponses admin par tranche",
+    "chartTopAdmins": "Top admins par volume",
+    "chartTopAdminsHint": "5 admins les plus actifs sur la période",
+    "bucketUnder1Min": "< 1 min",
+    "bucket1to5": "1-5 min",
+    "bucket5to15": "5-15 min",
+    "bucketOver15": "> 15 min",
+    "closedHint": "Conversation fermée — sera rouverte automatiquement au prochain message du client.",
+    "actions": {
+      "claim": "Je prends",
+      "claimed": "Conversation prise en charge",
+      "assigned": "Assignation mise à jour",
+      "assignTo": "Assigner à un admin",
+      "assignedToMe": "À vous",
+      "unassign": "Personne (désassigner)",
+      "close": "Clore la conversation",
+      "closed": "Conversation fermée",
+      "reopen": "Rouvrir la conversation",
+      "reopened": "Conversation rouverte"
+    }
+  },
+  "bubble": {
+    "you": "Vous",
+    "bonziniTeam": "Équipe Bonzini",
+    "sending": "Envoi…"
+  }
+}

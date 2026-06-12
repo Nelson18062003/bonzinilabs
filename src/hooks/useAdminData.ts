@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import i18n from '@/i18n';
+import { getProofSignedUrl } from '@/hooks/useAdminDeposits';
 
 // Cache configuration for performance
 const STALE_TIME = 30 * 1000; // 30 seconds
@@ -278,9 +279,12 @@ export function useAdminClientDetail(userId: string) {
 // Fetch all deposit proofs
 export function useAdminProofs() {
   return useQuery({
+    // Signed URLs are valid 1h — keep the data fresh well under that window so
+    // a remount never serves an expired URL, but avoid re-signing 100 proofs
+    // on every navigation.
+    staleTime: 50 * 60_000,
+    gcTime: 60 * 60_000,
     queryKey: ['admin-proofs'],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
     queryFn: async () => {
       const { data: proofs, error } = await supabaseAdmin
         .from('deposit_proofs')
@@ -290,10 +294,10 @@ export function useAdminProofs() {
         `)
         .order('uploaded_at', { ascending: false })
         .limit(100);
-      
+
       if (error) throw error;
       if (!proofs) return [];
-      
+
       const userIds = [...new Set(proofs.map(p => p.deposits?.user_id).filter(Boolean))] as string[];
       const { data: clients } = await supabaseAdmin
         .from('clients')
@@ -302,65 +306,17 @@ export function useAdminProofs() {
 
       const clientMap = new Map(clients?.map(c => [c.user_id, c]) || []);
 
-      return proofs.map(proof => ({
-        ...proof,
-        clientName: proof.deposits && clientMap.get(proof.deposits.user_id)
-          ? `${clientMap.get(proof.deposits.user_id)!.first_name} ${clientMap.get(proof.deposits.user_id)!.last_name}`
-          : i18n.t('hooks.adminNotifications.unknownClient', { ns: 'common', defaultValue: 'Client inconnu' }),
-      }));
-    },
-  });
-}
-
-// Fetch exchange rates history
-export function useExchangeRates() {
-  return useQuery({
-    queryKey: ['exchange-rates'],
-    staleTime: 60 * 1000,
-    gcTime: CACHE_TIME,
-    queryFn: async () => {
-      const { data, error } = await supabaseAdmin
-        .from('exchange_rates')
-        .select('id, rate_xaf_to_rmb, effective_date, created_at')
-        .order('effective_date', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
-}
-
-// Add new exchange rate
-export function useAddExchangeRate() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (rateXafToRmb: number) => {
-      const { data: { user } } = await supabaseAdmin.auth.getUser();
-      
-      const { data, error } = await supabaseAdmin
-        .from('exchange_rates')
-        .insert({
-          rate_xaf_to_rmb: rateXafToRmb,
-          effective_date: new Date().toISOString().split('T')[0],
-          created_by: user?.id,
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exchange-rates'] });
-      queryClient.invalidateQueries({ queryKey: ['exchange-rate'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success(i18n.t('hooks.addExchangeRate.success', { ns: 'common', defaultValue: 'Taux de change mis à jour' }));
-    },
-    onError: (error) => {
-      toast.error(i18n.t('hooks.addExchangeRate.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour du taux' }));
-      console.error(error);
+      // Buckets are private: turn each stored path into a signed URL so the
+      // thumbnails/preview actually load (otherwise the raw path 404s).
+      return Promise.all(
+        proofs.map(async (proof) => ({
+          ...proof,
+          clientName: proof.deposits && clientMap.get(proof.deposits.user_id)
+            ? `${clientMap.get(proof.deposits.user_id)!.first_name} ${clientMap.get(proof.deposits.user_id)!.last_name}`
+            : i18n.t('hooks.adminNotifications.unknownClient', { ns: 'common', defaultValue: 'Client inconnu' }),
+          signedUrl: await getProofSignedUrl(proof.file_url),
+        })),
+      );
     },
   });
 }

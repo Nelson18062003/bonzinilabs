@@ -1,22 +1,24 @@
-import {
-  useScrollIntoViewOnFocus,
-  useVirtualKeyboardOverlay,
-} from '@/hooks/keyboard';
+import { useScrollIntoViewOnFocus, useVisibleViewportSync } from '@/hooks/keyboard';
 
 /**
- * Headless root-level manager that keeps focused inputs visible above
- * the on-screen keyboard. Mount once inside the App shell.
+ * Headless root-level manager for mobile keyboard behaviour. Mount once inside
+ * the App shell.
  *
- * What it does:
- *   - Chrome Android / Edge: enables `navigator.virtualKeyboard.overlaysContent`
- *     so dvh units behave and content isn't resized by the keyboard.
- *   - iOS Safari: subscribes to `focusin` globally and scrolls the active
- *     input into view when it's hidden behind the keyboard — handles the
- *     case where iOS' native scroll-into-view fails inside fixed containers
- *     like drawers and modals.
+ *   - `useVisibleViewportSync`: single source of truth for the visible viewport
+ *     geometry (CSS vars --vvh / --vvt). Consumed by <ViewportShell>.
+ *   - `useScrollIntoViewOnFocus`: on document-scroll screens (forms), keeps the
+ *     focused input visible above the keyboard. No-op inside a locked
+ *     <ViewportShell> (the document can't scroll there, so window.scrollBy is
+ *     a non-op).
+ *
+ * NOTE: we deliberately DO NOT enable VirtualKeyboard `overlaysContent` mode.
+ * Overlay mode stops `visualViewport.height` from shrinking on Android, which
+ * is exactly what broke keyboard-following chat layouts. In the default /
+ * resize mode, `visualViewport.height` tracks the visible area above the
+ * keyboard on both iOS and Android — see docs/audit-fondation-mobile-assistant.md.
  */
 export function KeyboardFocusManager() {
-  useVirtualKeyboardOverlay();
+  useVisibleViewportSync();
   useScrollIntoViewOnFocus();
   return null;
 }

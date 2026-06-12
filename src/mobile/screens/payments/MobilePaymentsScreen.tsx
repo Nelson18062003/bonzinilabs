@@ -1,52 +1,57 @@
 // ============================================================
-// MODULE PAIEMENTS — MobilePaymentsScreen (Premium Rebuild)
-// Admin payment queue: glass KPI cards, SLA indicators,
-// premium list rows, smart filters, infinite scroll
+// MODULE PAIEMENTS — MobilePaymentsScreen
+// Présentation migrée sur le design kit (Ofspace/Mola) :
+//   canvas doux · cartes à ombre douce · PaymentMethodLogo (vrais logos) ·
+//   Amount · StatusPill toné (paymentStatusTone) · SlaDot · chips kit.
+// Logique 100% préservée : stats, recherche debouncée, filtres
+// (méthode/période/tri), chips statut, infinite scroll, SLA,
+// export PDF batch (colonnes LEGACY/EXTENDED + signature QR).
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
   PAYMENT_STATUS_LABELS,
-  PAYMENT_STATUS_COLORS,
   PAYMENT_METHOD_LABELS,
-  PAYMENT_METHOD_ICONS,
   TO_PROCESS_STATUSES,
 } from '@/types/payment';
-import type { PaymentStatus, PaymentMethod } from '@/types/payment';
+import type { PaymentStatus } from '@/types/payment';
 import {
-  Plus, Search, Clock, PlayCircle, CheckCircle, TrendingUp,
-  Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
+  SURFACE,
+  TEXT,
+  PRIMARY_PILL,
+  SOFT_PILL,
+  type Tone,
+  paymentStatusTone,
+  StatusPill,
+  TextInput,
+  Holder,
+  Amount,
+  Card,
+} from '@/mobile/designKit';
+import {
+  Plus, Search, Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
   FileDown, Loader2,
 } from 'lucide-react';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
 import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { signStored } from '@/lib/signedUrls';
 import { toast } from 'sonner';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { MobileEmptyState } from '@/mobile/components/ui/MobileEmptyState';
 import { formatCurrencyRMB, formatRelativeDate } from '@/lib/formatters';
 import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 
-// ── Filter configuration ────────────────────────────────────
+// ── Configuration des filtres ───────────────────────────────
 
 type FilterKey = PaymentStatus | 'all' | 'to_process';
-
-const STATUS_FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'Tous' },
-  { key: 'to_process', label: 'À traiter' },
-  { key: 'processing', label: 'En cours' },
-  { key: 'completed', label: 'Terminés' },
-  { key: 'rejected', label: 'Rejetés' },
-];
 
 const METHOD_FILTERS: { key: string; label: string }[] = [
   { key: 'all', label: 'Toutes méthodes' },
@@ -60,25 +65,37 @@ const SORT_OPTIONS: { key: string; label: string; field: 'created_at' | 'amount_
   { key: 'amount_asc', label: 'Montant ↑', field: 'amount_rmb', ascending: true },
 ];
 
-// ── SLA dot component ───────────────────────────────────────
+// Map méthode DB → logo (PaymentMethodLogo n'accepte que 4 clés).
+function logoMethod(method: string): 'alipay' | 'wechat' | 'bank_transfer' | 'cash' {
+  if (method === 'alipay' || method === 'wechat' || method === 'cash') return method;
+  return 'bank_transfer';
+}
 
+// ── Point SLA (calqué sur deposits V2) ───────────────────────
 function SlaDot({ level }: { level: SlaLevel }) {
+  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
   return (
     <span
-      className={cn(
-        'sla-dot',
-        level === 'fresh' && 'sla-fresh',
-        level === 'aging' && 'sla-aging',
-        level === 'overdue' && 'sla-overdue animate',
-      )}
-      title={
-        level === 'fresh' ? '< 4h' : level === 'aging' ? '4-12h' : '> 12h'
-      }
+      className="inline-block shrink-0 rounded-full"
+      style={{
+        width: 6,
+        height: 6,
+        background: color,
+        animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined,
+      }}
+      title={level === 'fresh' ? '< 4h' : level === 'aging' ? '4-12h' : '> 12h'}
     />
   );
 }
 
-// ── Main component ──────────────────────────────────────────
+// KPI rapides → tone unifié (la couleur porte le statut).
+const KPI_TILES: { label: string; key: FilterKey; tone: Tone; figure: string; ring: string }[] = [
+  { label: 'À traiter', key: 'to_process', tone: 'pending', figure: 'text-[#9A6B12] dark:text-[#E7C083]', ring: 'ring-[#E7C083]' },
+  { label: 'En cours', key: 'processing', tone: 'info', figure: 'text-[#5B4CC4] dark:text-[#B5AAF0]', ring: 'ring-[#C9C2F0] dark:ring-[#4A4660]' },
+  { label: 'Terminés', key: 'completed', tone: 'success', figure: 'text-[#2E7D52] dark:text-[#7FCBA0]', ring: 'ring-[#7FCBA0]' },
+];
+
+// ── Composant principal ──────────────────────────────────────
 
 export function MobilePaymentsScreen() {
   const { t } = useTranslation('common');
@@ -170,6 +187,12 @@ export function MobilePaymentsScreen() {
     return { toProcess: 0, inProgress: 0, completed: 0, total: 0 };
   }, [stats]);
 
+  const kpiValue: Record<FilterKey, number> = {
+    to_process: counts.toProcess,
+    processing: counts.inProgress,
+    completed: counts.completed,
+  } as Record<FilterKey, number>;
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (methodFilter !== 'all') count++;
@@ -245,14 +268,8 @@ export function MobilePaymentsScreen() {
       // Generate signed URLs for QR codes
       const entries: BatchPaymentEntry[] = await Promise.all(
         payments.map(async (p) => {
-          let qrUrl = p.beneficiary_qr_code_url;
-          if (qrUrl && qrUrl.startsWith('payment-proofs/')) {
-            const storagePath = qrUrl.replace('payment-proofs/', '');
-            const { data: signedData } = await supabaseAdmin.storage
-              .from('payment-proofs')
-              .createSignedUrl(storagePath, 3600);
-            qrUrl = signedData?.signedUrl || null;
-          }
+          // Heals raw paths AND values stored as signed/public URLs.
+          const qrUrl = await signStored(supabaseAdmin.storage, p.beneficiary_qr_code_url);
           return {
             id: p.id,
             reference: p.reference,
@@ -286,177 +303,168 @@ export function MobilePaymentsScreen() {
     }
   }, [isExporting]);
 
+  const hasActiveFilters = activeFilterCount > 0;
+
   // ── Render ────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col min-h-full">
-      <MobileHeader
-        title={t('payments', { defaultValue: 'Paiements' })}
-        rightElement={
+    <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
+      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
+
+      {/* ── Header ─────────────────────────────────────────── */}
+      <header
+        className={cn(
+          'sticky top-0 z-40 flex shrink-0 items-center justify-between px-5 pt-[env(safe-area-inset-top)]',
+          SURFACE.canvas,
+        )}
+      >
+        <div className="flex h-14 w-full items-center justify-between">
+          <h1 className={cn('text-[20px] font-extrabold', TEXT.strong)}>
+            {t('payments', { defaultValue: 'Paiements' })}
+          </h1>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportBatch}
               disabled={isExporting}
-              className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-muted text-muted-foreground text-xs font-medium active:scale-95 transition-transform disabled:opacity-50"
-            >
-              {isExporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileDown className="w-4 h-4" />
+              aria-label="Exporter"
+              className={cn(
+                'flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-bold transition active:scale-95 disabled:opacity-50',
+                SOFT_PILL,
               )}
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
               Exporter
             </button>
             <button
               onClick={() => navigate('/m/payments/new')}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground active:scale-95 transition-transform"
+              aria-label="Nouveau paiement"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8B5CF6] text-white shadow-[0_6px_16px_-4px_rgba(139,92,246,0.55)] transition active:scale-95"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="h-5 w-5" strokeWidth={2.6} />
             </button>
           </div>
-        }
-      />
+        </div>
+      </header>
 
-      <PullToRefresh onRefresh={refetch} className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 overflow-y-auto">
-        {/* ── KPI Stats Row ───────────────────────────────────── */}
-        <div className="flex gap-3 overflow-x-auto pb-1 -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-hide">
-          {/* À traiter */}
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'to_process' ? 'all' : 'to_process')}
-            className={cn(
-              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-blue-500/20 bg-blue-500/5',
-              statusFilter === 'to_process' && 'active ring-blue-500',
-            )}
-          >
-            <div className="flex items-center gap-1.5 mb-2">
-              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-xs text-blue-600/70 dark:text-blue-400/70 font-medium">À traiter</span>
-            </div>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{counts.toProcess}</p>
-          </button>
-
-          {/* En cours */}
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'processing' ? 'all' : 'processing')}
-            className={cn(
-              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-purple-500/20 bg-purple-500/5',
-              statusFilter === 'processing' && 'active ring-purple-500',
-            )}
-          >
-            <div className="flex items-center gap-1.5 mb-2">
-              <PlayCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs text-purple-600/70 dark:text-purple-400/70 font-medium">En cours</span>
-            </div>
-            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{counts.inProgress}</p>
-          </button>
-
-          {/* Terminés */}
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'completed' ? 'all' : 'completed')}
-            className={cn(
-              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-green-500/20 bg-green-500/5',
-              statusFilter === 'completed' && 'active ring-green-500',
-            )}
-          >
-            <div className="flex items-center gap-1.5 mb-2">
-              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs text-green-600/70 dark:text-green-400/70 font-medium">Terminés</span>
-            </div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{counts.completed}</p>
-          </button>
-
-          {/* Aujourd'hui */}
-          {stats && stats.today_completed > 0 && (
-            <div className="deposit-stat-card min-w-[110px] sm:min-w-[140px] flex-shrink-0 border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5">
-              <div className="flex items-center gap-1.5 mb-2">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-xs text-primary/70 font-medium">Aujourd'hui</span>
-              </div>
-              <p className="text-2xl font-bold text-primary">{stats.today_completed}</p>
-              <p className="text-[10px] text-primary/60 mt-0.5">{formatCurrencyRMB(stats.today_amount_rmb)}</p>
-            </div>
-          )}
+      <PullToRefresh
+        onRefresh={refetch}
+        className="flex-1 space-y-3 overflow-y-auto px-5 pb-28 pt-1"
+      >
+        {/* ── KPIs compacts (tap = filtre statut) ───────────── */}
+        <div className="flex gap-2.5">
+          {KPI_TILES.map((k) => {
+            const active = statusFilter === k.key;
+            return (
+              <button
+                key={k.key}
+                onClick={() => setStatusFilter(active ? 'all' : k.key)}
+                className={cn(
+                  'flex-1 rounded-[18px] py-3 text-center transition active:scale-[0.98]',
+                  SURFACE.card,
+                  SURFACE.shadow,
+                  active && cn('ring-2', k.ring),
+                )}
+              >
+                <div className={cn('text-[22px] font-extrabold leading-none tabular-nums', k.figure)}>
+                  {kpiValue[k.key] ?? 0}
+                </div>
+                <div className={cn('mt-1.5 text-[9px] font-bold uppercase tracking-wider', TEXT.muted)}>
+                  {k.label}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Export batch button ──────────────────────────────── */}
+        {/* ── Bandeau « aujourd'hui » (si activité) ─────────── */}
+        {stats && stats.today_completed > 0 && (
+          <Card className="flex items-center justify-between py-3">
+            <div>
+              <div className={cn('text-[12px] font-medium', TEXT.muted)}>Réglés aujourd'hui</div>
+              <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{formatCurrencyRMB(stats.today_amount_rmb)}</div>
+            </div>
+            <Amount value={stats.today_completed} size="md" />
+          </Card>
+        )}
+
+        {/* ── Export batch (PDF) ───────────────────────────── */}
         <button
           onClick={handleExportBatch}
           disabled={isExporting}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium active:scale-[0.98] transition-transform disabled:opacity-50"
-        >
-          {isExporting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <FileDown className="w-4 h-4" />
+          className={cn(
+            'flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-[13px] font-semibold transition active:scale-[0.98] disabled:opacity-50',
+            SOFT_PILL,
           )}
+        >
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           Exporter paiements en cours (PDF)
         </button>
 
-        {/* ── Search + filter toggle ──────────────────────────── */}
-        <div className="flex gap-2">
+        {/* ── Recherche + bouton filtres ─────────────────────── */}
+        <div className="flex gap-2.5">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
+            <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+            <TextInput
               placeholder={t('searchNamePhoneRef', { defaultValue: 'Nom, téléphone ou référence...' })}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="pl-10 pr-10"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted-foreground/20 flex items-center justify-center"
+                aria-label="Effacer"
+                className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
               >
-                <X className="w-3 h-3 text-muted-foreground" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
+            aria-label="Filtres avancés"
             className={cn(
-              'h-10 px-3 rounded-xl flex items-center gap-1.5 text-sm font-medium transition-colors',
-              showFilters || activeFilterCount > 0
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground',
+              'relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition active:scale-95',
+              SURFACE.card,
+              SURFACE.shadow,
+              (showFilters || hasActiveFilters) && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
             )}
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            {activeFilterCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary-foreground/20 text-[10px] flex items-center justify-center font-bold">
+            <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? 'text-[#6B5BD2] dark:text-[#A99BF0]' : TEXT.muted)} />
+            {hasActiveFilters && (
+              <span className="absolute right-2 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#6B5BD2] px-1 text-[9px] font-extrabold text-white dark:bg-[#A99BF0] dark:text-[#1B1A24]">
                 {activeFilterCount}
               </span>
             )}
           </button>
         </div>
 
-        {/* ── Advanced filters panel ──────────────────────────── */}
+        {/* ── Panneau filtres avancés ────────────────────────── */}
         {showFilters && (
-          <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
+          <Card className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Filtres avancés</h3>
+              <h3 className={cn('text-[13px] font-bold', TEXT.strong)}>Filtres avancés</h3>
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearAdvancedFilters}
-                  className="text-xs text-primary font-medium"
+                  className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]"
                 >
                   Réinitialiser
                 </button>
               )}
             </div>
 
-            {/* Method filter */}
+            {/* Filtre méthode */}
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Méthode</label>
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</div>
+              <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
                 {METHOD_FILTERS.map((m) => (
                   <button
                     key={m.key}
                     onClick={() => setMethodFilter(m.key)}
                     className={cn(
-                      'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
-                      methodFilter === m.key
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground',
+                      'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
+                      methodFilter === m.key ? PRIMARY_PILL : SOFT_PILL,
                     )}
                   >
                     {m.label}
@@ -465,19 +473,17 @@ export function MobilePaymentsScreen() {
               </div>
             </div>
 
-            {/* Sort */}
+            {/* Tri */}
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tri</label>
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Tri</div>
+              <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.key}
                     onClick={() => setSortKey(opt.key)}
                     className={cn(
-                      'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
-                      sortKey === opt.key
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground',
+                      'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
+                      sortKey === opt.key ? PRIMARY_PILL : SOFT_PILL,
                     )}
                   >
                     {opt.label}
@@ -486,74 +492,62 @@ export function MobilePaymentsScreen() {
               </div>
             </div>
 
-            {/* Date range */}
+            {/* Période */}
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
-                <Calendar className="w-3 h-3 inline mr-1" />
+              <div className={cn('mb-2 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
+                <Calendar className="h-3 w-3" />
                 Période
-              </label>
-              <div className="flex gap-2 items-center">
-                <input
+              </div>
+              <div className="flex items-center gap-2">
+                <TextInput
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="flex-1 h-9 px-3 rounded-lg bg-muted border-0 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1"
                 />
-                <span className="text-xs text-muted-foreground">→</span>
-                <input
+                <span className={cn('text-[13px]', TEXT.muted)}>→</span>
+                <TextInput
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="flex-1 h-9 px-3 rounded-lg bg-muted border-0 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1"
                 />
                 {(dateFrom || dateTo) && (
-                  <button
-                    onClick={() => { setDateFrom(''); setDateTo(''); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-muted text-muted-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  <Holder icon={X} size="sm" onClick={() => { setDateFrom(''); setDateTo(''); }} />
                 )}
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
-        {/* ── Status filter chips ─────────────────────────────── */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-hide">
-          {STATUS_FILTERS.map((filter) => {
-            const count =
-              filter.key === 'to_process'
-                ? counts.toProcess
-                : filter.key === 'processing'
-                  ? counts.inProgress
-                  : filter.key === 'completed'
-                    ? counts.completed
-                    : filter.key === 'all'
-                      ? counts.total
-                      : null;
+        {/* ── Chips statut ───────────────────────────────────── */}
+        <div className="scrollbar-hide -mx-5 flex gap-2 overflow-x-auto px-5 pb-0.5">
+          {[
+            { k: 'all' as FilterKey, l: 'Tous', c: counts.total },
+            { k: 'to_process' as FilterKey, l: 'À traiter', c: counts.toProcess },
+            { k: 'processing' as FilterKey, l: 'En cours', c: counts.inProgress },
+            { k: 'completed' as FilterKey, l: 'Terminés', c: counts.completed },
+            { k: 'rejected' as FilterKey, l: 'Rejetés', c: null },
+          ].map((ch) => {
+            const active = statusFilter === ch.k;
             return (
               <button
-                key={filter.key}
-                onClick={() => setStatusFilter(filter.key)}
+                key={ch.k}
+                onClick={() => setStatusFilter(ch.k)}
                 className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5',
-                  statusFilter === filter.key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground',
+                  'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
+                  active ? PRIMARY_PILL : SOFT_PILL,
                 )}
               >
-                {filter.label}
-                {count !== null && count > 0 && (
+                {ch.l}
+                {ch.c != null && ch.c > 0 && (
                   <span
                     className={cn(
-                      'text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center',
-                      statusFilter === filter.key
-                        ? 'bg-primary-foreground/20'
-                        : 'bg-background',
+                      'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
+                      active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
                     )}
                   >
-                    {count}
+                    {ch.c}
                   </span>
                 )}
               </button>
@@ -561,7 +555,7 @@ export function MobilePaymentsScreen() {
           })}
         </div>
 
-        {/* ── Payments list ───────────────────────────────────── */}
+        {/* ── Liste paiements ────────────────────────────────── */}
         {isLoading ? (
           <SkeletonListScreen count={4} />
         ) : filteredPayments.length > 0 ? (
@@ -572,55 +566,51 @@ export function MobilePaymentsScreen() {
                 : 'Client inconnu';
               const proofCount = payment.proof_count || 0;
               const slaLevel = getPaymentSlaLevel(payment.created_at, payment.status);
+              const statusLabel = PAYMENT_STATUS_LABELS[payment.status as PaymentStatus] || payment.status;
+              const methodLabel = PAYMENT_METHOD_LABELS[payment.method] || payment.method;
 
               return (
                 <button
                   key={payment.id}
                   onClick={() => navigate(`/m/payments/${payment.id}`)}
-                  className="deposit-row"
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    SURFACE.card,
+                    SURFACE.shadow,
+                  )}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    {/* Left: Avatar + info */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      <PaymentMethodLogo method={payment.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={40} />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{clientName}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {payment.reference}
-                        </p>
-                        {proofCount > 0 && (
-                          <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mt-1">
-                            <Paperclip className="w-2.5 h-2.5" />
-                            {proofCount}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Amount + status + SLA + date */}
-                    <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
-                      <p className="font-bold text-sm tabular-nums">{formatCurrencyRMB(payment.amount_rmb)}</p>
-                      <span
-                        className={cn(
-                          'inline-block px-2 py-0.5 rounded-full text-[10px] font-medium',
-                          PAYMENT_STATUS_COLORS[payment.status as PaymentStatus] || 'bg-gray-100 text-gray-700',
-                        )}
-                      >
-                        {PAYMENT_STATUS_LABELS[payment.status as PaymentStatus] || payment.status}
+                  <PaymentMethodLogo method={logoMethod(payment.method)} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
+                        {clientName}
                       </span>
-                      <div className="flex items-center gap-1.5">
-                        {slaLevel && <SlaDot level={slaLevel} />}
-                        <span className="text-[10px] text-muted-foreground">
-                          {formatRelativeDate(payment.created_at)}
+                      {proofCount > 0 && (
+                        <span className={cn('inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
+                          <Paperclip className="h-3 w-3" />
+                          {proofCount}
                         </span>
-                      </div>
+                      )}
+                    </div>
+                    <div className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
+                      {payment.reference} · {methodLabel}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
+                    <div className="mt-1 flex items-center justify-end gap-1.5">
+                      {slaLevel && <SlaDot level={slaLevel} />}
+                      <StatusPill tone={paymentStatusTone(payment.status)} label={statusLabel} />
+                    </div>
+                    <div className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                      {formatRelativeDate(payment.created_at)}
                     </div>
                   </div>
                 </button>
               );
             })}
 
-            {/* Infinite scroll trigger - only when not searching */}
+            {/* Infinite scroll — uniquement si pas de recherche en cours */}
             {!debouncedSearch && (
               <InfiniteScrollTrigger
                 onLoadMore={handleLoadMore}
@@ -630,11 +620,17 @@ export function MobilePaymentsScreen() {
             )}
           </div>
         ) : (
-          <MobileEmptyState
-            icon={CreditCard}
-            title={t('noPaymentFound', { defaultValue: 'Aucun paiement trouvé' })}
-            description={statusFilter !== 'all' || activeFilterCount > 0 ? 'Essayez de modifier vos filtres' : 'Les paiements apparaîtront ici'}
-          />
+          <div className="flex flex-col items-center justify-center py-14 text-center">
+            <Holder icon={CreditCard} size="lg" />
+            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
+              {t('noPaymentFound', { defaultValue: 'Aucun paiement trouvé' })}
+            </p>
+            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+              {statusFilter !== 'all' || activeFilterCount > 0
+                ? 'Essayez de modifier vos filtres'
+                : 'Les paiements apparaîtront ici'}
+            </p>
+          </div>
         )}
       </PullToRefresh>
     </div>
