@@ -36,6 +36,7 @@ import { DashDirA, DashDirB, DashDirC } from './dashDirections';
 import { PayDirA, PayDirB, PayDirC } from './clientPayDirections';
 import { PayListV2, PayDetailV2 } from './clientPayLayoutV2';
 import { PayListV3, PayDetailV3 } from './clientPayLayoutV3';
+import { PayListV4, PayDetailV4 } from './clientPayLayoutV4';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -106,6 +107,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cpay-detail-v2': { Comp: PayDetailV2, route: '/' },
   'cpay-list-v3': { Comp: PayListV3, route: '/' },
   'cpay-detail-v3': { Comp: PayDetailV3, route: '/' },
+  'cpay-list-v4': { Comp: PayListV4, route: '/' },
+  'cpay-detail-v4': { Comp: PayDetailV4, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
