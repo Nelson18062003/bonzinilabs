@@ -1963,6 +1963,10 @@ export type Database = {
         }
         Returns: Json
       }
+      mark_suggestion_applied: {
+        Args: { p_suggestion_id: string; p_rate_id: string }
+        Returns: Json
+      }
       update_rate_adjustment: {
         Args: { p_adjustment_id: string; p_percentage: number }
         Returns: Json
