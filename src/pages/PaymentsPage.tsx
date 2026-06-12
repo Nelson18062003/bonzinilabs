@@ -23,6 +23,7 @@ import { SURFACE, TEXT, PrimaryPill } from '@/mobile/designKit';
 import {
   paymentLifecycle,
   matchesFilterTab,
+  lifecycleStatusLabel,
   LIFECYCLE_COLOR,
   type PaymentFilterTab,
   type LifecycleKind,
@@ -38,13 +39,6 @@ const TABS: { key: PaymentFilterTab; label: string }[] = [
   { key: 'progress', label: 'En cours' },
   { key: 'done', label: 'Terminés' },
 ];
-
-function statusLabel(status: string, kind: LifecycleKind): string {
-  if (kind === 'done') return 'Payé';
-  if (kind === 'failed') return status === 'rejected' ? 'Refusé' : 'Annulé';
-  if (kind === 'todo') return status === 'cash_pending' ? 'À présenter' : 'À compléter';
-  return 'En cours';
-}
 
 function statusHint(payment: Payment, kind: LifecycleKind): string {
   if (payment.status === 'waiting_beneficiary_info') return 'Coordonnées du bénéficiaire manquantes';
@@ -241,7 +235,7 @@ const PaymentsPage = () => {
                       )}
                     </div>
                     <span className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ color, background: `${color}1F` }}>
-                      {statusLabel(p.status, lc.kind)}
+                      {lifecycleStatusLabel(p.status)}
                     </span>
                   </div>
                   <div className="mt-3.5"><Progress step={lc.step} color={color} /></div>

@@ -46,6 +46,15 @@ export function paymentLifecycle(status: string): PaymentLifecycle {
   }
 }
 
+/** Libellé court de la pastille — UNIQUE pour la liste ET la fiche. */
+export function lifecycleStatusLabel(status: string): string {
+  const { kind } = paymentLifecycle(status);
+  if (kind === 'done') return 'Payé';
+  if (kind === 'failed') return status === 'rejected' ? 'Refusé' : 'Annulé';
+  if (kind === 'todo') return status === 'cash_pending' ? 'À présenter' : 'À compléter';
+  return 'En cours';
+}
+
 /** Le paiement entre-t-il dans l'onglet de filtre demandé ? */
 export function matchesFilterTab(status: string, tab: PaymentFilterTab): boolean {
   if (tab === 'all') return true;

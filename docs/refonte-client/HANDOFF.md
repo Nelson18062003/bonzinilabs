@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = implémenter la FICHE de paiement** (voir §4).
+3. **Prochaine tâche = peaufiner le FORMULAIRE de création (wizard)** (voir §4.1).
 
 ## 1. Objectif & méthode
 Refonte **from scratch** de l'app mobile **client** (`src/pages/`, `src/components/`,
@@ -42,43 +42,31 @@ de l'admin.
   recherche** (fournisseur/référence), **filtres** statut (Tous/À traiter/En cours/Terminés
   + compteur) **+ période** (Tout/Ce mois/Cette semaine), **cartes cycle de vie** (barre
   d'avancement colorée, à-traiter ROUGE en tête, référence affichée). `useMyPayments` intact.
+- **FICHE refondue structure v7** → `src/pages/PaymentDetailPage.tsx` + `payment-detail/*` :
+  en-tête drill-in (retour rond + référence) · **action en tête** (reçu `PRIMARY_PILL` si
+  `completed`, carte ROUGE « Compléter les coordonnées » si `waiting_beneficiary_info`,
+  sinon reçu en pilule douce dans Preuve & détails) · **hero** gros ¥ (58px) + « Vous avez
+  payé X XAF » (« recrédités » si rejeté/annulé — `cancel_payment` recrédite bien) + taux
+  lilas « 1 000 000 XAF = 11 350 ¥ » + pastille cycle de vie (`lifecycleStatusLabel`,
+  PARTAGÉE avec la liste — badges unifiés) · **Bénéficiaire** (intitulé hors carte +
+  Modifier/Verrouillé, QR vignette 88px « Agrandir », champs copiables nuancés par méthode,
+  cash = nom + téléphone) · **Suivi** = nouveau `PaymentTrackingSection` (4 jalons
+  `paymentLifecycle`, dates réelles via `buildPaymentTimelineSteps`, l'étape courante porte
+  l'action rouge si todo) · **Preuve & détails** (`PaymentDocumentsSection` : preuves
+  admin/client + upload + lignes Référence/Méthode/Créé le/Payé le). `PaymentStatusMessages`
+  réduit aux cartes porteuses d'info (motif rejet, annulation, message Bonzini).
+  SUPPRIMÉS (orphelins) : `PaymentDetailsAccordion`, `PaymentTimelineDisplay`,
+  `STATUS_BADGE_STYLES`. Reçu PDF / upload preuves / QR drawer / cash QR intacts.
 
 ## 4. À FAIRE — dans l'ordre
-### 4.1 FICHE de paiement (PROCHAINE ÉTAPE) — structure « v7 »
-Cible (maquette validée = `src/__screenshot__/clientPayLayoutV7.tsx`, harness
-`?screen=cpay-detail-v7` ; voir aussi `clientPayLayoutV6.tsx`) :
-1. **« Télécharger le reçu » TOUT EN HAUT** (sous la référence, avant le montant) — pour un
-   paiement terminé ; pour un paiement « à compléter », mettre à la place l'**action rouge**
-   en tête (« Compléter les coordonnées »).
-2. **Montant HÉROS** : gros **¥ RMB** (≈58px) en exergue, « Vous avez payé X XAF » dessous,
-   et **taux** en bloc lilas « **1 000 000 XAF = 11 350 ¥** ».
-3. **Bénéficiaire** (intitulé) **nuancé par méthode** : Alipay/WeChat = QR (cliquable) + nom
-   du fournisseur + nom du compte + identifiant (Alipay ID/email/téléphone) ; Banque = banque
-   + compte + titulaire + SWIFT ; Cash = nom + téléphone. (Champs déjà gérés par
-   `payment-detail/PaymentBeneficiarySection.tsx` + `CopyableField` — à réorganiser.)
-4. **Suivi** (timeline) : 4 étapes (créé · coordonnées du bénéficiaire · traitement Bonzini ·
-   bénéficiaire payé), construites depuis le statut via `paymentLifecycle()` (step/kind) ;
-   l'étape en cours porte l'action si « todo » (rouge). **Descendu** sous le bénéficiaire.
-5. **Preuve & détails** (regroupés en un bloc) : « Preuve de paiement » = image **cliquable**
-   (preuve ajoutée par Bonzini, `PaymentQrViewerDrawer`/gallery) + lignes Référence / Méthode /
-   Créé le / Payé le.
-- Rythme « **intitulé → bloc** » (comme le module Taux admin), montant = focal, moins de
-  boîtes flottantes. Drill-in `showNav={false} showHeader={false}`.
-- Fichiers réels : `src/pages/PaymentDetailPage.tsx` (orchestrateur) + `src/components/payment-detail/*`
-  (`PaymentHeroCard`, `PaymentBeneficiarySection`, `PaymentCashSection`, `PaymentStatusCard`,
-  `PaymentStatusMessages`, `PaymentDocumentsSection`, `PaymentDetailsAccordion`,
-  `PaymentQrViewerDrawer`, `types.ts` avec `isStatusEditable/Locked/Uploadable`,
-  `normalizeRateToInt`). **Préserver** reçu PDF (`handleDownloadReceipt`), upload preuves,
-  copie, QR, timeline (`buildPaymentTimelineSteps`).
-
-### 4.2 FORMULAIRE de création (wizard) — aligner sur la structure/le langage v8
+### 4.1 FORMULAIRE de création (wizard) — aligner sur la structure/le langage v8 (PROCHAINE ÉTAPE)
 `src/pages/NewPaymentPage.tsx` (orchestrateur) + `src/components/payment-form/*`
 (`NewPaymentMethodStep`, `NewPaymentAmountStep`, `NewPaymentBeneficiaryStep`,
 `NewPaymentConfirmStep`, `StepProgressBar`, `SuccessScreen`, `PaymentMethodCard`,
 `paymentRateLogic.ts`, `paymentSchemas.ts`). Déjà en Direction A ; à peaufiner structure.
 **NE PAS** partir sur le « débit immédiat / création express » : le client l'a écarté.
 
-### 4.3 Ensuite, autres modules client (même méthode)
+### 4.2 Ensuite, autres modules client (même méthode)
 Dépôts → Wallet/Accueil → Bénéficiaires → Historique → Profil/Notifications → Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas

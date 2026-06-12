@@ -1,17 +1,19 @@
 // ============================================================
-// PAGE — Client payment detail (orchestrator). Refonte « Direction A » :
-// canvas designKit, en-tête unique avec StatusPill SÉMANTIQUE (unifie les
-// deux systèmes de badges liste/détail), drill-in sans bottom-nav.
-// Sections sous src/components/payment-detail/*.
-// Logique 100% PRÉSERVÉE : hooks, timelineSteps, reçu PDF, upload preuves.
+// PAGE — Fiche paiement client (orchestrateur), STRUCTURE v7 validée :
+// en-tête drill-in (retour + référence) · action en tête (reçu si payé,
+// action ROUGE « Compléter les coordonnées » si à compléter) · montant
+// HÉROS (gros ¥ + taux lilas) · Bénéficiaire (QR + champs copiables) ·
+// Suivi (4 jalons cycle de vie) · Preuve & détails (preuves + méta).
+// Logique 100 % PRÉSERVÉE : hooks, reçu PDF, upload preuves, QR drawer,
+// timeline (buildPaymentTimelineSteps). Drill-in sans header/nav.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, PrimaryPill, StatusPill, paymentStatusTone } from '@/mobile/designKit';
+import { SURFACE, TEXT, PRIMARY_PILL, PrimaryPill } from '@/mobile/designKit';
 import {
   usePaymentDetail,
   usePaymentTimeline,
@@ -20,9 +22,8 @@ import {
 import { usePaymentProofMultiUpload } from '@/hooks/usePaymentProofUpload';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
-import { PAYMENT_STATUS_CONFIG } from '@/types/payment';
-import type { PaymentStatus } from '@/types/payment';
 import { buildPaymentTimelineSteps } from '@/lib/paymentTimeline';
+import { LIFECYCLE_COLOR } from '@/lib/paymentLifecycle';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { toast } from 'sonner';
@@ -33,9 +34,9 @@ import {
 import { PaymentHeroCard } from '@/components/payment-detail/PaymentHeroCard';
 import { PaymentCashSection } from '@/components/payment-detail/PaymentCashSection';
 import { PaymentBeneficiarySection } from '@/components/payment-detail/PaymentBeneficiarySection';
+import { PaymentTrackingSection } from '@/components/payment-detail/PaymentTrackingSection';
 import { PaymentDocumentsSection } from '@/components/payment-detail/PaymentDocumentsSection';
 import { PaymentStatusMessages } from '@/components/payment-detail/PaymentStatusMessages';
-import { PaymentDetailsAccordion } from '@/components/payment-detail/PaymentDetailsAccordion';
 import { PaymentQrViewerDrawer } from '@/components/payment-detail/PaymentQrViewerDrawer';
 
 export default function PaymentDetailPage() {
@@ -67,10 +68,11 @@ export default function PaymentDetailPage() {
     return (
       <MobileLayout showNav={false} showHeader={false}>
         <div className={cn('min-h-[100dvh] space-y-4 p-4', SURFACE.canvas)}>
-          <div className={cn('h-8 w-48 animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
-          <div className={cn('h-48 w-full animate-pulse rounded-[24px]', SURFACE.card, SURFACE.shadow)} />
-          <div className={cn('h-32 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
-          <div className={cn('h-24 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-10 w-44 animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-[52px] w-full animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-56 w-full animate-pulse rounded-[26px]', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-36 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-44 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
         </div>
       </MobileLayout>
     );
@@ -90,12 +92,6 @@ export default function PaymentDetailPage() {
   }
 
   // ── Derived ───────────────────────────────────────────────
-  const statusCfg =
-    PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus] ?? {
-      label: payment.status,
-      color: 'bg-gray-100 text-gray-700',
-    };
-
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
   const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'client');
 
@@ -152,18 +148,62 @@ export default function PaymentDetailPage() {
   return (
     <MobileLayout showNav={false} showHeader={false}>
       <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-        <PageHeader
-          title={payment.reference}
-          showBack
-          rightElement={<StatusPill tone={paymentStatusTone(payment.status)} label={statusCfg.label} />}
-        />
+        {/* En-tête drill-in : retour + référence (pas de numérotation). */}
+        <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label={t('detail.backToPayments')}
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95',
+              SURFACE.card,
+              SURFACE.shadow,
+            )}
+          >
+            <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+          </button>
+          <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>
+            {payment.reference}
+          </span>
+        </div>
 
-        <div className="space-y-4 px-4 py-4">
-          <PaymentHeroCard
-            payment={payment}
-            onDownloadReceipt={handleDownloadReceipt}
-            isGeneratingPDF={isGeneratingPDF}
-          />
+        <div className="space-y-5 px-4 pb-8 pt-3">
+          {/* Action en tête : reçu (payé) OU action rouge (à compléter). */}
+          {payment.status === 'completed' ? (
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={isGeneratingPDF}
+              className={cn(
+                'flex w-full items-center justify-center gap-2 py-[15px] text-[15px] font-bold transition active:scale-[0.99] disabled:opacity-60',
+                PRIMARY_PILL,
+              )}
+            >
+              {isGeneratingPDF ? (
+                <Loader2 className="h-[17px] w-[17px] animate-spin" />
+              ) : (
+                <Download className="h-[17px] w-[17px]" />
+              )}
+              {t('detail.downloadReceipt')}
+            </button>
+          ) : payment.status === 'waiting_beneficiary_info' ? (
+            <div className="rounded-[22px] bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
+              <p className="px-1 text-[13px] font-semibold" style={{ color: LIFECYCLE_COLOR.todo }}>
+                Coordonnées du bénéficiaire manquantes
+              </p>
+              <button
+                onClick={goToEditBeneficiary}
+                className={cn(
+                  'mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition active:scale-[0.99]',
+                  PRIMARY_PILL,
+                )}
+              >
+                Compléter les coordonnées <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          ) : null}
+
+          <PaymentHeroCard payment={payment} />
+
+          <PaymentStatusMessages payment={payment} />
 
           <PaymentCashSection payment={payment} />
 
@@ -173,7 +213,12 @@ export default function PaymentDetailPage() {
             onViewQr={setSelectedQrUrl}
           />
 
-          <PaymentStatusMessages payment={payment} />
+          <PaymentTrackingSection
+            payment={payment}
+            timelineSteps={timelineSteps}
+            timelineLoading={timelineLoading}
+            onCompleteBeneficiary={goToEditBeneficiary}
+          />
 
           <PaymentDocumentsSection
             payment={payment}
@@ -184,12 +229,8 @@ export default function PaymentDetailPage() {
             onInstructionFilesChange={setInstructionFiles}
             onUploadInstructions={handleUploadInstructions}
             isUploadingProofs={isUploadingProofs}
-          />
-
-          <PaymentDetailsAccordion
-            payment={payment}
-            timelineSteps={timelineSteps}
-            timelineLoading={timelineLoading}
+            onDownloadReceipt={handleDownloadReceipt}
+            isGeneratingPDF={isGeneratingPDF}
           />
         </div>
       </div>
