@@ -67,6 +67,7 @@ import {
   useDepositProcessingTime,
   useDashboardAlerts,
   useRateHistory,
+  useUsdtFlowHistory,
   useAdminProductivity,
   useDepositVolumeReport,
   usePaymentVolumeReport,
@@ -83,8 +84,9 @@ import {
   type DepositStatusTimelinePoint,
   type UtmSourceRow,
   type CountryDistributionRow,
+  type UsdtFlowPoint,
 } from '@/hooks/analytics/useAnalytics';
-import { Area, AreaChart } from 'recharts';
+import { Area, AreaChart, ReferenceLine } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -143,6 +145,7 @@ function DashboardBody() {
   const [statusTimelineG, setStatusTimelineG] = useReportGranularity(range.granularity);
   const [clientGrowthG, setClientGrowthG] = useReportGranularity(range.granularity);
   const [rateHistoryG, setRateHistoryG] = useReportGranularity(range.granularity);
+  const [usdtFlowG, setUsdtFlowG] = useReportGranularity(range.granularity);
 
   // coerceGranularity is the runtime guard: if the override is incompatible
   // with the global range (e.g. range = 1 day with granularity = year, which
@@ -172,6 +175,10 @@ function DashboardBody() {
     const candidate: DateRange = { ...range, granularity: rateHistoryG };
     return { ...candidate, granularity: coerceGranularity(candidate) };
   }, [range, rateHistoryG]);
+  const usdtFlowRange = React.useMemo<DateRange>(() => {
+    const candidate: DateRange = { ...range, granularity: usdtFlowG };
+    return { ...candidate, granularity: coerceGranularity(candidate) };
+  }, [range, usdtFlowG]);
 
   const flow = useFlowSeries(flowRange);
   const payments = usePaymentSummary(range);
@@ -184,6 +191,7 @@ function DashboardBody() {
   const processing = useDepositProcessingTime(range);
   const alerts = useDashboardAlerts();
   const rateHistory = useRateHistory(rateHistoryRange);
+  const usdtFlow = useUsdtFlowHistory(usdtFlowRange);
   const adminProductivity = useAdminProductivity(range);
   const depositVolumeReport = useDepositVolumeReport(depositVolumeRange);
   const paymentVolumeReport = usePaymentVolumeReport(paymentVolumeRange);
@@ -663,6 +671,28 @@ function DashboardBody() {
           error={rateHistory.error as Error | null}
           granularity={rateHistoryRange.granularity}
           onGranularityChange={setRateHistoryG}
+          globalGranularity={range.granularity}
+          range={range}
+        />
+
+        {/* SECTION 6b — Coût d'acquisition USDT (Cameroun) ─── */}
+        <UsdtCostReport
+          data={usdtFlow.data ?? []}
+          isLoading={usdtFlow.isLoading}
+          error={usdtFlow.error as Error | null}
+          granularity={usdtFlowRange.granularity}
+          onGranularityChange={setUsdtFlowG}
+          globalGranularity={range.granularity}
+          range={range}
+        />
+
+        {/* SECTION 6c — Prix de vente USDT (Chine) ─────────── */}
+        <UsdtPriceReport
+          data={usdtFlow.data ?? []}
+          isLoading={usdtFlow.isLoading}
+          error={usdtFlow.error as Error | null}
+          granularity={usdtFlowRange.granularity}
+          onGranularityChange={setUsdtFlowG}
           globalGranularity={range.granularity}
           range={range}
         />
@@ -1752,6 +1782,340 @@ function RegistrationSourceBlock({
       ) : (
         <p className="text-xs text-muted-foreground">Aucune source UTM sur la période.</p>
       )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// UsdtCostReport & UsdtPriceReport — area charts with brand gradients
+// Both consume the same hook (useUsdtFlowHistory) but display different series.
+// ────────────────────────────────────────────────────────────────────────────
+
+const COLOR_USDT_COST = 'hsl(258 100% 60%)';   // violet — coût Cameroun
+const COLOR_USDT_PRICE = 'hsl(36 100% 55%)';   // amber — prix Chine
+
+type UsdtReportProps = {
+  data: UsdtFlowPoint[];
+  isLoading: boolean;
+  error: Error | null;
+  granularity: Granularity;
+  onGranularityChange: (g: Granularity) => void;
+  globalGranularity: Granularity;
+  range: DateRange;
+};
+
+function computeUsdtStats<K extends 'costXaf' | 'priceCny'>(
+  data: UsdtFlowPoint[],
+  key: K,
+): {
+  values: number[];
+  first: number | null;
+  last: number | null;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+  stdev: number | null;
+  delta: number | null;
+  deltaPct: number | null;
+} {
+  const values = data
+    .map((p) => p[key])
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  if (values.length === 0) {
+    return { values: [], first: null, last: null, min: null, max: null, mean: null, stdev: null, delta: null, deltaPct: null };
+  }
+  const first = values[0];
+  const last = values[values.length - 1];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const mean = values.reduce((s, x) => s + x, 0) / values.length;
+  const variance = values.reduce((s, x) => s + (x - mean) ** 2, 0) / values.length;
+  const stdev = Math.sqrt(variance);
+  const delta = last - first;
+  const deltaPct = first !== 0 ? delta / first : null;
+  return { values, first, last, min, max, mean, stdev, delta, deltaPct };
+}
+
+function UsdtCostReport(props: UsdtReportProps) {
+  return (
+    <UsdtFlowReport
+      {...props}
+      seriesKey="costXaf"
+      color={COLOR_USDT_COST}
+      title="Coût d'acquisition USDT (Cameroun)"
+      subtitle="XAF moyens dépensés par USDT acheté · Binance P2P XAF Mobile Money"
+      description="Moyenne pondérée des asks des vendeurs XAF sur Binance P2P (filtrés MTN/Orange, ≥50 trades, ≥90% finish rate). Source : table rate_snapshots, alimentée toutes les ~15 min par monitor-rates. C'est ce que tu paies pour acquérir 1 USDT au Cameroun."
+      yLabel="XAF par USDT"
+      decimals={2}
+      thresholdValue={600}
+      thresholdLabel="Seuil 600 XAF"
+      exportFilename="usdt_cost_xaf"
+    />
+  );
+}
+
+function UsdtPriceReport(props: UsdtReportProps) {
+  return (
+    <UsdtFlowReport
+      {...props}
+      seriesKey="priceCny"
+      color={COLOR_USDT_PRICE}
+      title="Prix de vente USDT (Chine)"
+      subtitle="CNY moyens reçus par USDT vendu · Binance P2P CNY Alipay/WeChat"
+      description="Moyenne pondérée des bids des acheteurs USDT en Chine (filtrés Alipay/WeChat, merchants ≥200 trades, ≥95% finish rate), ajustée du spread OTC. Source : table rate_snapshots. C'est ce que tu reçois en vendant 1 USDT en Chine."
+      yLabel="CNY par USDT"
+      decimals={4}
+      exportFilename="usdt_price_cny"
+    />
+  );
+}
+
+function UsdtFlowReport({
+  data,
+  isLoading,
+  error,
+  granularity,
+  onGranularityChange,
+  globalGranularity,
+  range,
+  seriesKey,
+  color,
+  title,
+  subtitle,
+  description,
+  yLabel,
+  decimals,
+  thresholdValue,
+  thresholdLabel,
+  exportFilename,
+}: UsdtReportProps & {
+  seriesKey: 'costXaf' | 'priceCny';
+  color: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  yLabel: string;
+  decimals: number;
+  thresholdValue?: number;
+  thresholdLabel?: string;
+  exportFilename: string;
+}) {
+  const stats = React.useMemo(() => computeUsdtStats(data, seriesKey), [data, seriesKey]);
+  const gradientId = `usdt-${seriesKey}-grad`;
+
+  // Tight Y axis domain so even small variations stay visible.
+  const yDomain = React.useMemo<[number | string, number | string]>(() => {
+    if (stats.values.length === 0) return ['auto', 'auto'];
+    const padding = Math.max((stats.max! - stats.min!) * 0.18, stats.max! * 0.0015);
+    return [
+      Math.max(0, stats.min! - padding),
+      stats.max! + padding,
+    ];
+  }, [stats]);
+
+  const formatVal = (v: number | null) =>
+    v == null
+      ? '—'
+      : v.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+  return (
+    <ChartCard
+      title={title}
+      subtitle={subtitle}
+      description={description}
+      loading={isLoading}
+      error={error}
+      empty={data.length === 0 || stats.values.length === 0}
+      toolbar={
+        <div className="flex flex-wrap items-center gap-2">
+          <GranularityPicker
+            value={granularity}
+            onChange={onGranularityChange}
+            globalGranularity={globalGranularity}
+            range={range}
+          />
+          <ExportButton
+            filename={exportFilename}
+            disabled={data.length === 0}
+            rows={() =>
+              data.map((p) => ({
+                bucket: p.bucket,
+                label: p.label,
+                value: p[seriesKey],
+                samples: p.count,
+              }))
+            }
+            columns={[
+              { key: 'bucket', label: 'Bucket' },
+              { key: 'label', label: 'Période' },
+              { key: 'value', label: yLabel },
+              { key: 'samples', label: 'Snapshots' },
+            ]}
+          />
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {/* 3 KPI tiles : actuel, moyenne période, volatilité σ */}
+        <div className="grid grid-cols-3 gap-2">
+          <RateInsightTile
+            label="Dernière valeur"
+            value={`${formatVal(stats.last)}`}
+            sub={
+              stats.deltaPct != null
+                ? `${stats.delta! >= 0 ? '+' : ''}${formatVal(stats.delta!)} (${formatPercent(stats.deltaPct)}) vs début de période`
+                : 'Pas de variation calculable'
+            }
+            color={color}
+          />
+          <RateInsightTile
+            label="Moyenne période"
+            value={formatVal(stats.mean)}
+            sub={`Min ${formatVal(stats.min)} · Max ${formatVal(stats.max)}`}
+            color={color}
+          />
+          <RateInsightTile
+            label="Volatilité (σ)"
+            value={formatVal(stats.stdev)}
+            sub={`${stats.values.length} bucket${stats.values.length > 1 ? 's' : ''} agrégés sur la période`}
+            color={color}
+          />
+        </div>
+
+        {(() => {
+          const xa = timeXAxisProps({ granularity, dataLength: data.length });
+          const bottom = timeChartBottomMargin({ granularity, dataLength: data.length });
+          return (
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={data} margin={{ top: 12, right: 12, bottom, left: 8 }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" {...xa} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={yDomain}
+                  tickFormatter={(v: number) =>
+                    v.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+                  }
+                  tickCount={5}
+                  width={72}
+                  label={{
+                    value: yLabel,
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 6,
+                    style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                  }}
+                />
+                <Tooltip
+                  content={
+                    <UsdtFlowTooltip
+                      color={color}
+                      seriesLabel={yLabel}
+                      seriesKey={seriesKey}
+                      decimals={decimals}
+                    />
+                  }
+                />
+                {stats.mean != null ? (
+                  <ReferenceLine
+                    y={stats.mean}
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeDasharray="3 5"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: `Moy. ${formatVal(stats.mean)}`,
+                      position: 'insideTopRight',
+                      fontSize: 10,
+                      fill: 'hsl(var(--muted-foreground))',
+                    }}
+                  />
+                ) : null}
+                {thresholdValue != null ? (
+                  <ReferenceLine
+                    y={thresholdValue}
+                    stroke="hsl(var(--destructive))"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.55}
+                    label={{
+                      value: thresholdLabel ?? '',
+                      position: 'insideBottomRight',
+                      fontSize: 10,
+                      fill: 'hsl(var(--destructive))',
+                    }}
+                  />
+                ) : null}
+                <Area
+                  type="monotone"
+                  dataKey={seriesKey}
+                  stroke={color}
+                  strokeWidth={2}
+                  fill={`url(#${gradientId})`}
+                  dot={data.length <= 30 ? { r: 2.5, strokeWidth: 0, fill: color } : false}
+                  activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+                  connectNulls
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          );
+        })()}
+
+        <ChartAxisCaption
+          xLabel={`Période · ${granularitySubtitle(granularity)}`}
+          yLabel={yLabel}
+        />
+      </div>
+    </ChartCard>
+  );
+}
+
+function UsdtFlowTooltip({
+  active,
+  payload,
+  label,
+  color,
+  seriesLabel,
+  seriesKey,
+  decimals,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string; payload: UsdtFlowPoint }>;
+  label?: string;
+  color: string;
+  seriesLabel: string;
+  seriesKey: 'costXaf' | 'priceCny';
+  decimals: number;
+}) {
+  if (!active || !payload?.length) return null;
+  const entry = payload[0];
+  const point = entry?.payload;
+  const value = point?.[seriesKey];
+
+  return (
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-3 py-2 shadow-lg text-xs min-w-[180px]">
+      <p className="font-semibold mb-1.5">{label}</p>
+      <p className="flex items-center gap-2 tabular-nums">
+        <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: color }} />
+        <span className="text-muted-foreground">{seriesLabel}</span>
+        <span className="ml-auto font-bold">
+          {value != null
+            ? value.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+            : '—'}
+        </span>
+      </p>
+      {point?.count != null ? (
+        <p className="mt-1 pt-1 border-t border-border/50 flex items-center justify-between gap-2 text-muted-foreground">
+          <span>Snapshots agrégés</span>
+          <span className="tabular-nums">{point.count}</span>
+        </p>
+      ) : null}
     </div>
   );
 }
