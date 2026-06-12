@@ -632,39 +632,49 @@ export function useWacEvolution(fromIso: string, toIso: string) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Marché USDT — évolution des prix Binance P2P (table rate_snapshots,
-// alimentée par l'edge function monitor-rates toutes les ~15 min).
-//   xaf_ask           : coût d'acquisition USDT au Cameroun (VWAP des asks)
-//   cny_bid_adjusted  : prix de vente USDT en Chine (VWAP des bids - OTC spread)
+// Flux USDT effectif — une ligne par opération réellement saisie dans Trésorerie.
+// Source : tables usdt_purchases / usdt_sales (`implicit_rate` = taux effectif
+// de l'opération, calculé à la saisie : xaf_amount/usdt pour un achat,
+// cny_amount/usdt pour une vente). Les opérations annulées sont exclues.
 //
-// On retourne une série brute (un point par snapshot) — le composant graph
-// peut ensuite agréger par jour/heure selon la durée affichée.
+// Les graphes du dashboard (évolution + distribution) consomment cette série
+// telle quelle : un point = une opération réelle, pas un snapshot de marché.
 // ────────────────────────────────────────────────────────────────────────────
 
-export interface MarketRatePoint {
+export interface FlowPoint {
   at: string;
-  cost_xaf: number;        // XAF par USDT (achat Cameroun)
-  price_cny: number;       // CNY par USDT (vente Chine)
+  rate: number;   // implicit_rate : XAF/USDT (achat) ou CNY/USDT (vente)
+  usdt: number;   // volume USDT de l'opération (pour pondérer la distribution)
 }
 
-export function useMarketRateEvolution(fromIso: string, toIso: string) {
+export function useUsdtFlowEvolution(fromIso: string, toIso: string) {
   return useQuery({
-    queryKey: ['treasury', 'market-rate-evolution', fromIso, toIso],
-    queryFn: async (): Promise<MarketRatePoint[]> => {
-      const { data, error } = await supabaseAdmin
-        .from('rate_snapshots')
-        .select('created_at, xaf_ask, cny_bid_adjusted')
-        .gte('created_at', fromIso)
-        .lte('created_at', toIso)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return (data ?? [])
-        .filter((r) => r.created_at && r.xaf_ask != null && r.cny_bid_adjusted != null)
-        .map((r) => ({
-          at: r.created_at as string,
-          cost_xaf: Number(r.xaf_ask),
-          price_cny: Number(r.cny_bid_adjusted),
-        }));
+    queryKey: ['treasury', 'usdt-flow-evolution', fromIso, toIso],
+    queryFn: async (): Promise<{ purchases: FlowPoint[]; sales: FlowPoint[] }> => {
+      const [purchases, sales] = await Promise.all([
+        supabaseAdmin
+          .from('usdt_purchases')
+          .select('occurred_at, implicit_rate, usdt_amount, voided_at')
+          .gte('occurred_at', fromIso)
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: true }),
+        supabaseAdmin
+          .from('usdt_sales')
+          .select('occurred_at, implicit_rate, usdt_amount, voided_at')
+          .gte('occurred_at', fromIso)
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: true }),
+      ]);
+      if (purchases.error) throw purchases.error;
+      if (sales.error) throw sales.error;
+      return {
+        purchases: (purchases.data ?? [])
+          .filter((p) => !p.voided_at && p.implicit_rate != null)
+          .map((p) => ({ at: p.occurred_at, rate: Number(p.implicit_rate), usdt: Number(p.usdt_amount) })),
+        sales: (sales.data ?? [])
+          .filter((s) => !s.voided_at && s.implicit_rate != null)
+          .map((s) => ({ at: s.occurred_at, rate: Number(s.implicit_rate), usdt: Number(s.usdt_amount) })),
+      };
     },
     staleTime: 30_000,
   });
