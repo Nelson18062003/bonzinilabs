@@ -9,12 +9,13 @@ import {
   History,
   AlertTriangle,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { DateField } from '@/components/form';
 import { IconChip, INSET, Pill, SectionTitle, SOFT_CARD, TONE_DOT, TONE_TEXT } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
+  useMarketRateEvolution,
   useTopCounterparties,
   useTreasuryDashboard,
   useWacEvolution,
@@ -176,6 +177,7 @@ export function MobileTreasuryDashboard() {
   const { data: topSuppliers } = useTopCounterparties('usdt_supplier', fromIso, toIso, 5);
   const { data: topBuyers } = useTopCounterparties('cny_buyer', fromIso, toIso, 5);
   const { data: wacSeries } = useWacEvolution(fromIso, toIso);
+  const { data: marketSeries } = useMarketRateEvolution(fromIso, toIso);
 
   if (!hasPermission('canViewTreasury')) {
     return <Navigate to="/m/more" replace />;
@@ -321,6 +323,30 @@ export function MobileTreasuryDashboard() {
               </section>
             )}
 
+            {/* Évolution du marché — coût d'achat USDT (Cameroun) */}
+            {marketSeries && marketSeries.length > 1 && (
+              <MarketRateChart
+                series={marketSeries.map((p) => ({ at: p.at, value: p.cost_xaf }))}
+                title="Coût d'achat USDT (marché Cameroun)"
+                hint="VWAP des asks Binance P2P · table rate_snapshots"
+                tone="violet"
+                unit="XAF/USDT"
+                decimals={2}
+              />
+            )}
+
+            {/* Évolution du marché — prix de vente USDT (Chine) */}
+            {marketSeries && marketSeries.length > 1 && (
+              <MarketRateChart
+                series={marketSeries.map((p) => ({ at: p.at, value: p.price_cny }))}
+                title="Prix de vente USDT (marché Chine)"
+                hint="VWAP des bids Binance P2P − spread OTC · table rate_snapshots"
+                tone="amber"
+                unit="CNY/USDT"
+                decimals={4}
+              />
+            )}
+
             {/* Top counterparties */}
             <section>
               <SectionTitle>Top fournisseurs USDT</SectionTitle>
@@ -419,3 +445,110 @@ function TopList({
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// MarketRateChart — courbe d'évolution d'un prix marché (achat XAF ou vente CNY).
+// S'aligne sur le style du graphique 'Évolution WAC USDT' au-dessus, avec un
+// dégradé sous la ligne et un tooltip colorisé selon la 'tone' Treasury.
+// ────────────────────────────────────────────────────────────────────────────
+
+const TONE_STROKE: Record<'violet' | 'amber', string> = {
+  violet: 'hsl(258 100% 60%)',
+  amber: 'hsl(36 100% 55%)',
+};
+
+function MarketRateChart({
+  series,
+  title,
+  hint,
+  tone,
+  unit,
+  decimals,
+}: {
+  series: { at: string; value: number }[];
+  title: string;
+  hint?: string;
+  tone: 'violet' | 'amber';
+  unit: string;
+  decimals: number;
+}) {
+  const stroke = TONE_STROKE[tone];
+  const gradientId = `market-rate-${tone}`;
+  const data = series.map((p) => ({
+    ...p,
+    label: new Date(p.at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+  }));
+  const values = series.map((p) => p.value);
+  const first = values[0];
+  const last = values[values.length - 1];
+  const delta = last - first;
+  const deltaPct = first !== 0 ? (delta / first) * 100 : 0;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const padding = Math.max((max - min) * 0.15, max * 0.0015);
+  const yMin = Math.max(0, min - padding);
+  const yMax = max + padding;
+
+  return (
+    <section>
+      <SectionTitle>{title}</SectionTitle>
+      <div className="rounded-2xl border border-border bg-card p-3">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[18px] font-extrabold tabular-nums" style={{ color: stroke }}>{fmt(last, decimals)}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">{unit}</span>
+          </div>
+          <span
+            className={cn(
+              'text-[11px] font-bold tabular-nums',
+              delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+            )}
+          >
+            {delta >= 0 ? '+' : ''}{fmt(delta, decimals)} ({delta >= 0 ? '+' : ''}{fmt(deltaPct, 2)}%)
+          </span>
+        </div>
+        <ResponsiveContainer width="100%" height={180}>
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={stroke} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+            <YAxis
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              stroke="hsl(var(--border))"
+              domain={[yMin, yMax]}
+              tickFormatter={(v: number) => fmt(v, decimals)}
+              width={62}
+            />
+            <Tooltip
+              formatter={(v: number) => [`${fmt(v, decimals)} ${unit}`, '']}
+              labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
+              contentStyle={{
+                background: 'hsl(var(--popover))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: 12,
+                fontSize: 12,
+                color: 'hsl(var(--popover-foreground))',
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={stroke}
+              strokeWidth={2}
+              fill={`url(#${gradientId})`}
+              dot={data.length <= 30 ? { r: 2.5, fill: stroke, strokeWidth: 0 } : false}
+              activeDot={{ r: 4, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+        {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
+      </div>
+    </section>
+  );
+}
+
