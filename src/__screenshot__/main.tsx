@@ -42,6 +42,7 @@ import { PayListV6, PayDetailV6 } from './clientPayLayoutV6';
 import { PayListV7, PayDetailV7 } from './clientPayLayoutV7';
 import { PayListV8 } from './clientPayLayoutV8';
 import { WizMethod, WizAmount, WizBenefSaved, WizBenefNew, WizConfirm } from './clientPayWizard';
+import { DepList, DepWizAmount, DepWizMethod, DepWizRecap, DepDetailAwaiting, DepDetailValidated } from './clientDepositLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -126,6 +127,13 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cpay-wiz-benef': { Comp: WizBenefSaved, route: '/' },
   'cpay-wiz-benef-new': { Comp: WizBenefNew, route: '/' },
   'cpay-wiz-confirm': { Comp: WizConfirm, route: '/' },
+  // Refonte module CLIENT — Dépôts / Recharges
+  'cdep-list': { Comp: DepList, route: '/' },
+  'cdep-wiz-amount': { Comp: DepWizAmount, route: '/' },
+  'cdep-wiz-method': { Comp: DepWizMethod, route: '/' },
+  'cdep-wiz-recap': { Comp: DepWizRecap, route: '/' },
+  'cdep-detail-awaiting': { Comp: DepDetailAwaiting, route: '/' },
+  'cdep-detail-validated': { Comp: DepDetailValidated, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
