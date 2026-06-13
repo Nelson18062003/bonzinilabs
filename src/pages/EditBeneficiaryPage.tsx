@@ -8,10 +8,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { toStoredPath } from '@/lib/signedUrls';
@@ -46,6 +45,24 @@ export default function EditBeneficiaryPage() {
     if (paymentId) navigate(`/payments/${paymentId}`);
     else navigate('/payments');
   };
+
+  // En-tête drill-in unifié (même langage que la fiche / le wizard).
+  const Header = ({ title }: { title: string }) => (
+    <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+      <button
+        onClick={goBackToPayment}
+        aria-label={t('detail.backToPayments')}
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95',
+          SURFACE.card,
+          SURFACE.shadow,
+        )}
+      >
+        <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+      </button>
+      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</span>
+    </div>
+  );
 
   const handleSave = async (values: BeneficiaryFormValues, qrFile: File | null) => {
     if (!payment || !paymentId) return;
@@ -137,8 +154,8 @@ export default function EditBeneficiaryPage() {
     return (
       <MobileLayout showNav={false} showHeader={false}>
         <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-          <PageHeader title={t('detail.dialog.editTitle')} showBack onBack={goBackToPayment} />
-          <div className="space-y-3 p-4">
+          <Header title={t('detail.dialog.editTitle')} />
+          <div className="space-y-3 p-4 pt-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className={cn('h-12 w-full animate-pulse rounded-2xl', SURFACE.card, SURFACE.shadow)} />
             ))}
@@ -184,9 +201,9 @@ export default function EditBeneficiaryPage() {
   return (
     <MobileLayout showNav={false} showHeader={false}>
       <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-        <PageHeader title={headerTitle} showBack onBack={goBackToPayment} />
+        <Header title={headerTitle} />
 
-        <div className="px-4 py-4 pb-36">
+        <div className="px-4 py-4 pb-40">
           {leadIn[payment.method] && (
             <p className={cn('mb-4 text-[14px]', TEXT.muted)}>{leadIn[payment.method]}</p>
           )}

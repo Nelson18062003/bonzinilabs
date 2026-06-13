@@ -227,6 +227,7 @@ export function NewPaymentBeneficiaryStep({
                 values={formValues}
                 onChange={onFormChange}
                 lockMode
+                hideRelation
                 qrPreview={qrCodePreview}
                 onQrSelect={onQrFileSelect}
                 onQrRemove={onQrFileRemove}

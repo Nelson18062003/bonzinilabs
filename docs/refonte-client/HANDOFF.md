@@ -76,6 +76,19 @@ de l'admin.
   LOGIQUE 100 % intacte : `BeneficiaryForm` partagé (champs par méthode), switch devise
   vide l'input, « Tout » = min(solde, 50M), bornes/zod, doublon soft, cash+self,
   snapshot gelé, `SuccessScreen` inchangé.
+- **PASSE D'UNIFORMISATION (audit Playwright) — module paiements 100 % cohérent** :
+  · `BeneficiaryForm` (créer) re-stylé designKit : `inputCls` = mêmes classes que la lib
+    `form/` (parité avec l'écran d'édition + reste de l'app), chips méthode/identifiant/
+    relation en cartes designKit (anneau lilas), QR en boîte pointillée designKit, erreurs
+    en rouge sémantique `#C0504D`. Nouvelle prop **`hideRelation`** posée par le wizard →
+    supprime le **doublon « Moi-même »** (haut Moi-même/Autre + bas Relation). Touche aussi
+    le carnet client/admin (amélioration, logique inchangée).
+  · `EditBeneficiaryPage` : en-tête **drill-in** (rond retour + titre) au lieu du vieux
+    `PageHeader` à bordure ; `pb-40` sous la barre d'action fixe.
+  · **¥ uniformisé** via `formatYuan` (décimales seulement si non entier) : `SuccessScreen`
+    (était `formatRMB`), liste (`PaymentsPage`, était `formatCurrencyRMB`), `PaymentHeroCard`
+    (centralisé). Note : `groupDigits` (montant) garde un léger saut de curseur en édition
+    au milieu — défaut mineur connu, design validé conservé.
 
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)

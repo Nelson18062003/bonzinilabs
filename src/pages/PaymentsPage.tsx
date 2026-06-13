@@ -18,7 +18,7 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { useMyPayments, type Payment } from '@/hooks/usePayments';
 import { useClientRates } from '@/hooks/useDailyRates';
-import { formatCurrencyRMB, formatNumber } from '@/lib/formatters';
+import { formatYuan, formatNumber } from '@/lib/formatters';
 import { SURFACE, TEXT, PrimaryPill } from '@/mobile/designKit';
 import {
   paymentLifecycle,
@@ -230,7 +230,7 @@ const PaymentsPage = () => {
                         <div className="mt-0.5 truncate text-[12px] font-semibold" style={{ color }}>{statusHint(p, lc.kind)}</div>
                       ) : (
                         <div className={cn('mt-0.5 truncate text-[12px] tabular-nums', TEXT.muted)}>
-                          {formatCurrencyRMB(p.amount_rmb)} · −{formatNumber(p.amount_xaf)} XAF
+                          ¥ {formatYuan(p.amount_rmb)} · −{formatNumber(p.amount_xaf)} XAF
                         </div>
                       )}
                     </div>

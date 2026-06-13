@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { formatXAF, formatRMB } from '@/lib/formatters';
+import { formatXAF, formatYuan } from '@/lib/formatters';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { SURFACE, TEXT, PrimaryPill, SoftPill } from '@/mobile/designKit';
 
@@ -54,7 +54,7 @@ export function SuccessScreen({
           <span className="text-sm text-muted-foreground">{METHOD_LABELS[method]}</span>
         </div>
 
-        <p className="text-3xl font-bold text-primary mb-1">¥{formatRMB(amountRMB)}</p>
+        <p className="text-3xl font-bold text-primary mb-1">¥{formatYuan(amountRMB)}</p>
         <p className="text-sm text-muted-foreground mb-1">{formatXAF(amountXAF)} XAF</p>
         {clientName && (
           <p className="text-sm text-muted-foreground">{t('success.forClient', { name: clientName })}</p>
@@ -92,7 +92,7 @@ export function SuccessScreen({
 
       <div className="mt-5 flex items-baseline gap-1.5">
         <span className="text-[24px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
-        <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>{formatRMB(amountRMB)}</span>
+        <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>{formatYuan(amountRMB)}</span>
       </div>
       <p className={cn('mb-8 mt-1.5 text-[13px] tabular-nums', TEXT.muted)}>
         {t('success.xafDebited', { amount: formatXAF(amountXAF) })}

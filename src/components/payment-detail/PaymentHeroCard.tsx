@@ -6,7 +6,7 @@
 // Le reçu n'est plus ici : il vit tout en haut de la fiche.
 // ============================================================
 import { cn } from '@/lib/utils';
-import { formatNumber } from '@/lib/formatters';
+import { formatNumber, formatYuan } from '@/lib/formatters';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { PAYMENT_METHOD_LABELS } from '@/types/payment';
 import type { PaymentMethod } from '@/types/payment';
@@ -29,7 +29,7 @@ export function PaymentHeroCard({ payment }: Props) {
   const color = LIFECYCLE_COLOR[kind];
   const rateInt = normalizeRateToInt(payment.exchange_rate);
   // ¥ sans décimales quand le montant est entier — le focal reste lisible.
-  const rmb = formatNumber(payment.amount_rmb, Number.isInteger(payment.amount_rmb) ? 0 : 2);
+  const rmb = formatYuan(payment.amount_rmb);
 
   return (
     <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>

@@ -1,11 +1,16 @@
 // ============================================================
 // BeneficiaryForm — reusable, mode-aware create/edit form.
 //
-// Used by the client carnet (BeneficiariesPage) and the admin carnet
-// (client detail). Alias-first; mode-specific fields mirror
-// src/lib/beneficiaries/spec.ts; hard validation via the Zod schema, so
-// the submit button stays disabled until the beneficiary is complete for
-// its mode. Names/banks accept ANY script (CJK welcome).
+// Used by the client carnet (BeneficiariesPage), the wizard "Nouveau"
+// tab and the admin carnet (client detail). Alias-first; mode-specific
+// fields mirror src/lib/beneficiaries/spec.ts; hard validation via the
+// Zod schema, so the submit button stays disabled until the beneficiary
+// is complete for its mode. Names/banks accept ANY script (CJK welcome).
+//
+// Refonte « Direction A » : contrôles alignés sur le standard de l'app
+// (mêmes classes que la lib `form/` → parité avec l'écran d'édition),
+// sélecteurs en chips designKit (anneau lilas), erreurs en rouge sémantique.
+// Logique 100 % PRÉSERVÉE (validation, onChange, QR).
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +24,8 @@ import {
   type BeneficiaryInput,
   validateBeneficiaryInput,
 } from '@/lib/beneficiaries/spec';
-import { modeColor, modeIcon, modeLabel } from '@/lib/beneficiaries/labels';
+import { modeIcon, modeLabel } from '@/lib/beneficiaries/labels';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 
 export interface BeneficiaryFormValues {
   payment_method: BeneficiaryMode;
@@ -58,6 +64,8 @@ interface Props {
   onChange: (values: BeneficiaryFormValues) => void;
   /** When set, the mode picker is hidden (edit mode locks the mode). */
   lockMode?: boolean;
+  /** When set, the relation picker is hidden (wizard already asks moi-même/autre). */
+  hideRelation?: boolean;
   qrPreview?: string | null;
   onQrSelect?: (file: File) => void;
   onQrRemove?: () => void;
@@ -68,8 +76,18 @@ interface Props {
   storedQrUrl?: string | null;
 }
 
+// Contrôle de saisie — mêmes classes que la lib `form/` (parité visuelle app-wide).
 const inputCls =
-  'w-full h-12 px-4 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary';
+  'flex h-11 md:h-10 w-full rounded-md border border-input bg-background px-3 text-base md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+const labelCls = 'mb-1.5 block text-sm font-medium text-foreground';
+// Chip sélectionnable (méthode / type d'identifiant / relation) — langage wizard.
+const chip = (active: boolean) =>
+  cn(
+    'rounded-xl py-3 transition active:scale-[0.98]',
+    SURFACE.card,
+    SURFACE.shadow,
+    active && 'ring-2 ring-[#8B5CF6]',
+  );
 
 /** Preview of the already-saved QR; falls back to a generic icon if the
  *  signed URL fails to load. */
@@ -77,18 +95,19 @@ function StoredQr({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-muted">
-        <QrCode className="w-10 h-10 text-muted-foreground" />
+      <div className={cn('flex h-full w-full items-center justify-center', SURFACE.holder)}>
+        <QrCode className="h-10 w-10" />
       </div>
     );
   }
-  return <img src={src} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />;
+  return <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />;
 }
 
 export function BeneficiaryForm({
   values,
   onChange,
   lockMode,
+  hideRelation,
   qrPreview,
   onQrSelect,
   onQrRemove,
@@ -133,7 +152,9 @@ export function BeneficiaryForm({
 
   const fieldError = (field: keyof typeof errors) =>
     touched && errors[field] ? (
-      <p className="text-xs text-red-500 mt-1">{t(errors[field]!.replace('beneficiaries.', ''))}</p>
+      <p className="mt-1 text-xs font-medium text-[#C0504D] dark:text-[#E79A9A]">
+        {t(errors[field]!.replace('beneficiaries.', ''))}
+      </p>
     ) : null;
 
   const idTypeOptions: ReadonlyArray<{ key: IdentifierType; icon: typeof QrCode }> = [
@@ -152,14 +173,10 @@ export function BeneficiaryForm({
               key={m}
               type="button"
               onClick={() => set('payment_method', m)}
-              className={cn(
-                'flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-colors',
-                mode === m ? 'border-current' : 'border-border',
-              )}
-              style={mode === m ? { color: modeColor(m) } : undefined}
+              className={cn('flex flex-col items-center gap-1', chip(mode === m))}
             >
-              <span className="text-lg font-serif">{modeIcon(m)}</span>
-              <span className="text-[11px] font-medium text-foreground">{modeLabel(m)}</span>
+              <span className="font-serif text-lg">{modeIcon(m)}</span>
+              <span className={cn('text-[11px] font-medium', TEXT.strong)}>{modeLabel(m)}</span>
             </button>
           ))}
         </div>
@@ -167,9 +184,7 @@ export function BeneficiaryForm({
 
       {/* Alias — the hero field, required for every mode */}
       <div>
-        <label className="text-sm font-medium mb-1 block">
-          {t('beneficiaries.fields.alias')} *
-        </label>
+        <label className={labelCls}>{t('beneficiaries.fields.alias')} *</label>
         <input
           type="text"
           value={values.alias}
@@ -183,34 +198,39 @@ export function BeneficiaryForm({
       {/* QR (alipay/wechat) */}
       {isAlipayWechat && onQrSelect && (
         <div>
-          <label className="text-sm font-medium mb-1 block">{t('beneficiaries.fields.qrCode')}</label>
+          <label className={labelCls}>{t('beneficiaries.fields.qrCode')}</label>
           {qrPreview || storedQrUrl || hasStoredQr ? (
-            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-border">
+            <div className="relative h-32 w-32 overflow-hidden rounded-xl ring-1 ring-black/[0.07] dark:ring-white/[0.08]">
               {qrPreview ? (
-                <img src={qrPreview} alt="" className="w-full h-full object-cover" />
+                <img src={qrPreview} alt="" className="h-full w-full object-cover" />
               ) : storedQrUrl ? (
                 <StoredQr src={storedQrUrl} />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-muted">
-                  <QrCode className="w-10 h-10 text-muted-foreground" />
+                <div className={cn('flex h-full w-full items-center justify-center', SURFACE.holder)}>
+                  <QrCode className="h-10 w-10" />
                 </div>
               )}
               {onQrRemove && (
                 <button
                   type="button"
                   onClick={onQrRemove}
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center"
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
                 >
-                  <X className="w-4 h-4 text-white" />
+                  <X className="h-4 w-4 text-white" />
                 </button>
               )}
             </div>
           ) : (
-            <label className="block w-full h-24 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+            <label
+              className={cn(
+                'block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#C9C2F0] transition-colors hover:border-[#8B5CF6] dark:border-[#4A4660]',
+                SURFACE.card,
+              )}
+            >
               <input type="file" accept="image/*" onChange={handleQrInput} className="hidden" />
-              <div className="h-full flex flex-col items-center justify-center gap-2">
-                <Upload className="w-6 h-6 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{t('beneficiaries.fields.qrCode')}</p>
+              <div className="flex h-24 flex-col items-center justify-center gap-2">
+                <Upload className={cn('h-6 w-6', TEXT.muted)} />
+                <p className={cn('text-sm', TEXT.muted)}>{t('beneficiaries.fields.qrCode')}</p>
               </div>
             </label>
           )}
@@ -219,7 +239,7 @@ export function BeneficiaryForm({
 
       {/* Holder name (all modes) */}
       <div>
-        <label className="text-sm font-medium mb-1 block">{t('beneficiaries.fields.name')} *</label>
+        <label className={labelCls}>{t('beneficiaries.fields.name')} *</label>
         <input
           type="text"
           value={values.name}
@@ -234,30 +254,25 @@ export function BeneficiaryForm({
       {isAlipayWechat && (
         <>
           <div>
-            <label className="text-sm font-medium mb-2 block">
-              {t('beneficiaries.fields.identifierType')}
-            </label>
+            <label className={labelCls}>{t('beneficiaries.fields.identifierType')}</label>
             <div className="grid grid-cols-3 gap-2">
               {idTypeOptions.map(({ key, icon: Icon }) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => set('identifier_type', key)}
-                  className={cn(
-                    'flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-colors',
-                    values.identifier_type === key ? 'border-primary bg-primary/5' : 'border-border',
-                  )}
+                  className={cn('flex flex-col items-center gap-1', chip(values.identifier_type === key))}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-xs font-medium">{t(`beneficiaries.fields.${key === 'id' ? 'identifier' : key === 'phone' ? 'phone' : 'email'}`)}</span>
+                  <Icon className={cn('h-5 w-5', TEXT.strong)} />
+                  <span className={cn('text-xs font-medium', TEXT.strong)}>
+                    {t(`beneficiaries.fields.${key === 'id' ? 'identifier' : key === 'phone' ? 'phone' : 'email'}`)}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              {t('beneficiaries.fields.identifier')}
-            </label>
+            <label className={labelCls}>{t('beneficiaries.fields.identifier')}</label>
             <input
               type={values.identifier_type === 'email' ? 'email' : values.identifier_type === 'phone' ? 'tel' : 'text'}
               value={values.identifier}
@@ -273,9 +288,7 @@ export function BeneficiaryForm({
       {isBank && (
         <>
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              {t('beneficiaries.fields.bankName')} *
-            </label>
+            <label className={labelCls}>{t('beneficiaries.fields.bankName')} *</label>
             <input
               type="text"
               value={values.bank_name}
@@ -285,9 +298,7 @@ export function BeneficiaryForm({
             {fieldError('bank_name')}
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              {t('beneficiaries.fields.bankAccount')} *
-            </label>
+            <label className={labelCls}>{t('beneficiaries.fields.bankAccount')} *</label>
             <input
               type="text"
               inputMode="numeric"
@@ -298,9 +309,7 @@ export function BeneficiaryForm({
             {fieldError('bank_account')}
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              {t('beneficiaries.fields.bankExtra')}
-            </label>
+            <label className={labelCls}>{t('beneficiaries.fields.bankExtra')}</label>
             <input
               type="text"
               value={values.bank_extra}
@@ -314,7 +323,7 @@ export function BeneficiaryForm({
       {/* Cash: phone required */}
       {isCash && (
         <div>
-          <label className="text-sm font-medium mb-1 block">{t('beneficiaries.fields.phone')} *</label>
+          <label className={labelCls}>{t('beneficiaries.fields.phone')} *</label>
           <input
             type="tel"
             value={values.phone}
@@ -329,7 +338,7 @@ export function BeneficiaryForm({
       {/* Email (optional) for alipay/wechat/cash */}
       {!isBank && (
         <div>
-          <label className="text-sm font-medium mb-1 block">{t('beneficiaries.fields.email')}</label>
+          <label className={labelCls}>{t('beneficiaries.fields.email')}</label>
           <input
             type="email"
             value={values.email}
@@ -340,36 +349,33 @@ export function BeneficiaryForm({
         </div>
       )}
 
-      {/* Relationship */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">
-          {t('beneficiaries.fields.relationType')}
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          {(['self', 'supplier', 'other'] as RelationType[]).map((rel) => (
-            <button
-              key={rel}
-              type="button"
-              onClick={() => set('relation_type', rel)}
-              className={cn(
-                'py-2 rounded-xl border-2 text-sm font-medium transition-colors',
-                values.relation_type === rel ? 'border-primary bg-primary/5' : 'border-border',
-              )}
-            >
-              {t(`beneficiaries.relations.${rel}`)}
-            </button>
-          ))}
+      {/* Relationship (hidden in the wizard, which already asks moi-même/autre) */}
+      {!hideRelation && (
+        <div>
+          <label className={labelCls}>{t('beneficiaries.fields.relationType')}</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['self', 'supplier', 'other'] as RelationType[]).map((rel) => (
+              <button
+                key={rel}
+                type="button"
+                onClick={() => set('relation_type', rel)}
+                className={cn('text-sm font-medium', chip(values.relation_type === rel), TEXT.strong)}
+              >
+                {t(`beneficiaries.relations.${rel}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notes */}
       <div>
-        <label className="text-sm font-medium mb-1 block">{t('beneficiaries.fields.notes')}</label>
+        <label className={labelCls}>{t('beneficiaries.fields.notes')}</label>
         <textarea
           value={values.notes}
           onChange={(e) => set('notes', e.target.value)}
           rows={2}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          className={cn(inputCls, 'h-auto resize-none py-2.5')}
         />
       </div>
     </div>
