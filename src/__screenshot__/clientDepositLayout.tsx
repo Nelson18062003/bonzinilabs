@@ -1,5 +1,5 @@
 /**
- * DEV-ONLY maquettes — module CLIENT « Dépôts / Recharges » (refonte).
+ * DEV-ONLY maquettes — module CLIENT « Dépôts » (refonte).
  * Applique le langage validé (paiements v7/v8) à l'argent ENTRANT :
  *   · liste cycle de vie (rouge=à toi d'agir · lilas=Bonzini vérifie · vert=crédité)
  *   · wizard montant → méthode → récap (coordonnées Bonzini où verser)
@@ -7,26 +7,52 @@
  *   · fiche « crédité »
  * Montants en XAF uniquement (pas de ¥ ni de taux — on approvisionne le solde).
  * Harness: ?screen=cdep-list | -wiz-amount | -wiz-method | -wiz-recap
- *          | -detail-awaiting | -detail-validated
+ *          | -detail-awaiting  | -wiz-bank | -detail-validated
  */
 import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit/tokens';
 import {
   ArrowLeft, ArrowRight, ArrowDownToLine, Check, ChevronRight, Copy, Clock,
-  Building2, Store, Smartphone, Waves, ImagePlus, Info, ShieldCheck, AlertCircle,
+  Landmark, Store, ImagePlus, Info, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Fam = 'bank' | 'agency' | 'orange' | 'mtn' | 'wave';
+type Bank = 'ecobank' | 'uba' | 'cca' | 'afriland';
 const RED = '#C0504D', LILAC = '#8B5CF6', GREEN = '#2E7D52', AMBER = '#E8932A';
 
+/* Tuiles de marque premium. Mobile money = couleur officielle + wordmark
+ * (Orange/MTN/Wave sont des logos typographiques) ; banque/agence = icône
+ * premium sur fond de marque. */
 function FamLogo({ k, size = 48, radius }: { k: Fam; size?: number; radius?: number }) {
-  const s = { width: size, height: size, borderRadius: radius ?? Math.round(size * 0.27) };
-  const ic = { width: size * 0.5, height: size * 0.5 } as const;
-  if (k === 'orange') return <div style={{ ...s, background: '#FF7900' }} className="flex shrink-0 items-center justify-center"><Smartphone style={ic} className="text-white" /></div>;
-  if (k === 'mtn') return <div style={{ ...s, background: '#FFCC00' }} className="flex shrink-0 items-center justify-center"><Smartphone style={ic} className="text-[#1B1A24]" /></div>;
-  if (k === 'wave') return <div style={{ ...s, background: '#1DA1F2' }} className="flex shrink-0 items-center justify-center"><Waves style={ic} className="text-white" /></div>;
-  if (k === 'agency') return <div style={{ ...s, background: '#1C1B22' }} className="flex shrink-0 items-center justify-center"><Store style={ic} className="text-white" /></div>;
-  return <div style={{ ...s, background: '#7C66DC' }} className="flex shrink-0 items-center justify-center"><Building2 style={ic} className="text-white" /></div>;
+  const s = { width: size, height: size, borderRadius: radius ?? Math.round(size * 0.27) } as const;
+  const word = (text: string, bg: string, fg: string, ratio: number, lower = false) => (
+    <div style={{ ...s, background: bg }} className={cn('flex shrink-0 items-center justify-center', lower && 'lowercase')}>
+      <span className="font-black tracking-tight" style={{ color: fg, fontSize: Math.round(size * ratio), lineHeight: 1 }}>{text}</span>
+    </div>
+  );
+  if (k === 'orange') return word('orange', '#FF7900', '#FFFFFF', 0.2, true);
+  if (k === 'mtn') return word('MTN', '#FFCC00', '#00599F', 0.32);
+  if (k === 'wave') return word('wave', '#1CC8F5', '#FFFFFF', 0.3, true);
+  if (k === 'agency') return <div style={s} className="flex shrink-0 items-center justify-center bg-[#1C1B22]"><Store style={{ width: size * 0.5, height: size * 0.5 }} className="text-white" strokeWidth={1.9} /></div>;
+  return <div style={s} className="flex shrink-0 items-center justify-center bg-[#3B3E9E]"><Landmark style={{ width: size * 0.5, height: size * 0.5 }} className="text-white" strokeWidth={1.9} /></div>;
+}
+
+/* Monogramme bancaire — vraie couleur de marque (logos officiels non
+ * récupérables ici : CDN de marque bloqués). À remplacer par le SVG officiel
+ * si fourni. */
+const BANKS: Record<Bank, { mono: string; bg: string; label: string }> = {
+  ecobank: { mono: 'eco', bg: '#0067B1', label: 'Ecobank Cameroun' },
+  uba: { mono: 'UBA', bg: '#E2231A', label: 'UBA Cameroun' },
+  cca: { mono: 'CCA', bg: '#1B3C8F', label: 'CCA-BANK' },
+  afriland: { mono: 'AFB', bg: '#009639', label: 'Afriland First Bank' },
+};
+function BankLogo({ k, size = 48, radius }: { k: Bank; size?: number; radius?: number }) {
+  const b = BANKS[k];
+  return (
+    <div style={{ width: size, height: size, borderRadius: radius ?? Math.round(size * 0.27), background: b.bg }} className="flex shrink-0 items-center justify-center">
+      <span className="font-black tracking-tight text-white" style={{ fontSize: Math.round(size * (b.mono.length > 3 ? 0.22 : 0.3)), lineHeight: 1 }}>{b.mono}</span>
+    </div>
+  );
 }
 function Progress({ step, color }: { step: number; color: string }) {
   return <div className="flex items-center gap-1">{[0, 1, 2, 3].map((i) => <div key={i} className={cn('h-1.5 flex-1 rounded-full', i > step && 'bg-black/[0.08] dark:bg-white/[0.10]')} style={i <= step ? { background: color } : undefined} />)}</div>;
@@ -48,14 +74,14 @@ export function DepList() {
     <div className={cn('mx-auto min-h-screen max-w-[420px]', SURFACE.canvas)}>
       <div className="space-y-5 p-4 pt-6">
         <div className="px-1">
-          <h1 className={cn('text-[26px] font-black leading-tight', TEXT.strong)}>Recharges</h1>
+          <h1 className={cn('text-[26px] font-black leading-tight', TEXT.strong)}>Dépôts</h1>
           <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>Approvisionnez votre compte en XAF</p>
         </div>
 
         <button className={cn('flex w-full items-center gap-4 rounded-[24px] p-5 text-left', SURFACE.card, SURFACE.shadow)}>
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#1C1B22] dark:bg-[#F2F1F7]"><ArrowDownToLine className="h-[26px] w-[26px] text-white dark:text-[#1B1A24]" strokeWidth={2.2} /></div>
           <div className="min-w-0 flex-1">
-            <div className={cn('text-[17px] font-black', TEXT.strong)}>Recharger mon compte</div>
+            <div className={cn('text-[17px] font-black', TEXT.strong)}>Nouveau dépôt</div>
             <div className={cn('mt-0.5 text-[12px] tabular-nums', TEXT.muted)}>Solde · <span className={cn('font-bold', TEXT.strong)}>4 250 000 XAF</span></div>
           </div>
           <ArrowRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
@@ -92,7 +118,7 @@ export function DepList() {
         </section>
 
         <section>
-          <Caption>Mes recharges</Caption>
+          <Caption>Mes dépôts</Caption>
           <div className="space-y-3">
             {items.map((p) => (
               <div key={p.ref} className={cn('rounded-[22px] p-4', SURFACE.card, SURFACE.shadow)}>
@@ -125,7 +151,7 @@ function WizFrame({ phase, cta, showPhases = true, children }: { phase: number; 
     <div className={cn('mx-auto flex min-h-screen max-w-[420px] flex-col', SURFACE.canvas)}>
       <div className="flex items-center gap-3 px-4 pb-1 pt-4">
         <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', SURFACE.card, SURFACE.shadow)}><ArrowLeft className={cn('h-5 w-5', TEXT.strong)} /></div>
-        <span className={cn('text-[17px] font-black', TEXT.strong)}>Recharger mon compte</span>
+        <span className={cn('text-[17px] font-black', TEXT.strong)}>Nouveau dépôt</span>
       </div>
       {showPhases && (
         <div className="px-4 pb-1 pt-3">
@@ -150,7 +176,7 @@ export function DepWizAmount() {
     <WizFrame phase={0} cta="Continuer" showPhases={false}>
       <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
         <div className="flex items-center justify-between gap-2">
-          <span className={cn('text-[12px] font-medium', TEXT.muted)}>Montant à recharger</span>
+          <span className={cn('text-[12px] font-medium', TEXT.muted)}>Montant du dépôt</span>
           <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums', SURFACE.holder)}>Solde · 4 250 000 XAF</span>
         </div>
         <div className="mt-2 flex items-baseline gap-2">
@@ -158,7 +184,7 @@ export function DepWizAmount() {
           <span className="shrink-0 text-[18px] font-extrabold" style={{ color: AMBER }}>XAF</span>
         </div>
         <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
-          <div className={cn('text-[12px]', TEXT.muted)}>Nouveau solde après recharge</div>
+          <div className={cn('text-[12px]', TEXT.muted)}>Nouveau solde après dépôt</div>
           <div className={cn('mt-0.5 text-[24px] font-black tabular-nums', TEXT.strong)}>4 750 000 <span className="text-[14px]" style={{ color: AMBER }}>XAF</span></div>
         </div>
       </div>
@@ -204,6 +230,34 @@ export function DepWizMethod() {
   );
 }
 
+export function DepWizBank() {
+  const list: { k: Bank; sel?: boolean }[] = [
+    { k: 'ecobank', sel: true }, { k: 'uba' }, { k: 'cca' }, { k: 'afriland' },
+  ];
+  return (
+    <WizFrame phase={1} cta="Continuer">
+      <div className="px-1">
+        <h1 className={cn('text-[18px] font-black', TEXT.strong)}>Vers quelle banque ?</h1>
+        <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>Choisissez la banque Bonzini où vous allez verser.</p>
+      </div>
+      <div className="space-y-3">
+        {list.map((b) => (
+          <div key={b.k} className={cn('flex w-full items-center gap-4 rounded-[20px] p-4', SURFACE.card, SURFACE.shadow, b.sel && 'ring-2 ring-[#8B5CF6]')}>
+            <BankLogo k={b.k} size={48} />
+            <div className="min-w-0 flex-1">
+              <p className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>{BANKS[b.k].label}</p>
+              <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>Compte Bonzini disponible</p>
+            </div>
+            {b.sel
+              ? <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#8B5CF6]"><Check className="h-4 w-4 text-white" strokeWidth={3} /></span>
+              : <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />}
+          </div>
+        ))}
+      </div>
+    </WizFrame>
+  );
+}
+
 function CoordRow({ label, value, mono, last }: { label: string; value: string; mono?: boolean; last?: boolean }) {
   return (
     <div className={cn('flex items-center justify-between gap-3 py-3', !last && 'border-b border-black/[0.05] dark:border-white/[0.07]')}>
@@ -218,10 +272,10 @@ function CoordRow({ label, value, mono, last }: { label: string; value: string; 
 
 export function DepWizRecap() {
   return (
-    <WizFrame phase={2} cta="J'ai compris, créer la recharge">
+    <WizFrame phase={2} cta="J'ai compris, créer le dépôt">
       {/* Montant héros */}
       <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
-        <div className="flex items-center gap-2"><FamLogo k="bank" size={30} radius={9} /><span className={cn('text-[13px] font-bold', TEXT.strong)}>Virement bancaire · Ecobank</span></div>
+        <div className="flex items-center gap-2"><BankLogo k="ecobank" size={30} radius={9} /><span className={cn('text-[13px] font-bold', TEXT.strong)}>Virement bancaire · Ecobank</span></div>
         <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>Vous allez verser</div>
         <div className="mt-1 flex items-baseline gap-2">
           <span className={cn('text-[46px] font-black leading-none tracking-tight tabular-nums', TEXT.strong)}>500 000</span>
@@ -264,7 +318,7 @@ function DetailFrame({ ref_, children }: { ref_: string; children: React.ReactNo
 
 export function DepDetailAwaiting() {
   const TL = [
-    { label: 'Recharge déclarée', sub: '13 juin · 09:14', st: 'done' as const },
+    { label: 'Dépôt déclaré', sub: '13 juin · 09:14', st: 'done' as const },
     { label: 'Preuve de versement', sub: 'À ajouter', st: 'todo' as const },
     { label: 'Vérification Bonzini', sub: '', st: 'pending' as const },
     { label: 'Solde crédité', sub: '', st: 'pending' as const },
@@ -283,7 +337,7 @@ export function DepDetailAwaiting() {
       {/* Montant héros */}
       <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2"><FamLogo k="bank" size={30} radius={9} /><span className={cn('text-[13px] font-bold', TEXT.strong)}>Virement · Ecobank</span></div>
+          <div className="flex items-center gap-2"><BankLogo k="ecobank" size={30} radius={9} /><span className={cn('text-[13px] font-bold', TEXT.strong)}>Virement · Ecobank</span></div>
           <Pill label="Preuve en attente" color={RED} />
         </div>
         <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>Montant à verser</div>
@@ -321,7 +375,7 @@ export function DepDetailAwaiting() {
 
       {/* Suivi */}
       <section>
-        <Caption>Suivi de la recharge</Caption>
+        <Caption>Suivi du dépôt</Caption>
         <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
           {TL.map((s, i) => {
             const last = i === TL.length - 1;
@@ -344,13 +398,13 @@ export function DepDetailAwaiting() {
         </div>
       </section>
 
-      <button className={cn('w-full py-3 text-center text-[13px] font-semibold', TEXT.muted)}>Annuler cette recharge</button>
+      <button className={cn('w-full py-3 text-center text-[13px] font-semibold', TEXT.muted)}>Annuler ce dépôt</button>
     </DetailFrame>
   );
 }
 
 export function DepDetailValidated() {
-  const TL = ['Recharge déclarée', 'Preuve envoyée', 'Vérifiée par Bonzini', 'Solde crédité'];
+  const TL = ['Dépôt déclaré', 'Preuve envoyée', 'Vérifiée par Bonzini', 'Solde crédité'];
   return (
     <DetailFrame ref_="BZ-DP-2405">
       {/* Montant héros — crédité */}
@@ -370,7 +424,7 @@ export function DepDetailValidated() {
 
       {/* Suivi tout vert */}
       <section>
-        <Caption>Suivi de la recharge</Caption>
+        <Caption>Suivi du dépôt</Caption>
         <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
           {TL.map((label, i) => {
             const last = i === TL.length - 1;
