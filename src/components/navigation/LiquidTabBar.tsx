@@ -118,7 +118,17 @@ export function LiquidTabBar({ items, className }: LiquidTabBarProps) {
             )}
             aria-current={i === activeIndex ? 'page' : undefined}
           >
-            <item.icon className="liquid-tab-icon" />
+            {item.iconSrc ? (
+              <img
+                src={item.iconSrc}
+                alt=""
+                aria-hidden="true"
+                className="liquid-tab-icon !h-7 !w-7 object-contain"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
+            ) : (
+              <item.icon className="liquid-tab-icon" />
+            )}
             <span className="liquid-tab-label">{item.label}</span>
             {item.badgeCount != null && item.badgeCount > 0 && (
               <span className="liquid-badge liquid-badge-enter">

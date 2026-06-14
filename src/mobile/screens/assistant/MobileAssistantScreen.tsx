@@ -444,7 +444,19 @@ export function MobileAssistantScreen() {
       ) : (
         <div className="space-y-3">
           {messages.map((m) => (
-            <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'items-start')}>
+            <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'w-full items-start')}>
+              <div className={cn('flex w-full items-end gap-2', m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                {m.role !== 'user' && (
+                  <MolaMascot
+                    className="h-7 w-7 shrink-0 self-end"
+                    alt=""
+                    fallback={
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center self-end rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                        <Bot className="h-4 w-4" />
+                      </div>
+                    }
+                  />
+                )}
               <div
                 className={cn(
                   'max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] px-4 py-2.5 text-[15px] leading-relaxed',
@@ -478,6 +490,7 @@ export function MobileAssistantScreen() {
                 ) : null}
                 {m.text && <RichText text={m.text} />}
               </div>
+              </div>
               {m.images?.map((img, i) => (
                 <button
                   key={i}
@@ -505,7 +518,17 @@ export function MobileAssistantScreen() {
             </div>
           ))}
           {isLoading && (
-            <div className="flex justify-start">
+            <div className="flex items-end justify-start gap-2">
+              <MolaMascot
+                className="h-7 w-7 shrink-0"
+                alt=""
+                breathing
+                fallback={
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                    <Bot className="h-4 w-4" />
+                  </div>
+                }
+              />
               <div className={cn('flex items-center gap-2 rounded-[20px] rounded-bl-md px-4 py-3 text-[#6B6880] dark:text-[#9B98AD]', CARD, SOFT)}>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">Mola réfléchit…</span>

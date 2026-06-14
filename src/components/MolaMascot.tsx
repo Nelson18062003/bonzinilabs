@@ -21,16 +21,18 @@ interface MolaMascotProps {
   fallback?: React.ReactNode;
   /** Texte alternatif (accessibilité). */
   alt?: string;
+  /** Animation « respiration » (ex. pendant que Mola réfléchit). */
+  breathing?: boolean;
 }
 
-export function MolaMascot({ className, fallback = null, alt = 'Mola' }: MolaMascotProps) {
+export function MolaMascot({ className, fallback = null, alt = 'Mola', breathing = false }: MolaMascotProps) {
   const [failed, setFailed] = useState(false);
   if (failed) return <>{fallback}</>;
   return (
     <img
       src={MASCOT_SRC}
       alt={alt}
-      className={cn('object-contain', className)}
+      className={cn('object-contain', breathing && 'mola-breathe', className)}
       onError={() => setFailed(true)}
       draggable={false}
     />
