@@ -18,7 +18,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
           <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>
             {t('settings', { defaultValue: 'Paramètres' })}
           </h2>
-          <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Apparence, compte et informations</p>
+          <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>{t('settingsSubtitle', { defaultValue: 'Apparence, compte et informations' })}</p>
         </header>
       ) : (
         <MobileHeader title={t('settings', { defaultValue: 'Paramètres' })} showBack />

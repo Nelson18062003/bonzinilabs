@@ -101,7 +101,7 @@ export function DesktopSupportScreen() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <Holder icon={MessageCircle} size="lg" />
-        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>Vous n'avez pas accès au support chat.</p>
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>{t('admin.noChatAccess', { defaultValue: "Vous n'avez pas accès au support chat." })}</p>
       </div>
     );
   }

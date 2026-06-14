@@ -84,7 +84,7 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
       {desktop ? (
         <header className="mb-5">
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('history', { defaultValue: 'Historique' })}</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Grand livre du client</p>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('clientLedgerSubtitle', { defaultValue: 'Grand livre du client' })}</p>
         </header>
       ) : (
         <MobileHeader

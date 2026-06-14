@@ -87,7 +87,7 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
         <header className="mb-5 flex items-end justify-between gap-3">
           <div>
             <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('templates.screenTitle')}</h2>
-            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Réponses pré-enregistrées avec variables</p>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('templates.screenSubtitle', { defaultValue: 'Réponses pré-enregistrées avec variables' })}</p>
           </div>
           {isSuperAdmin && (
             <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
