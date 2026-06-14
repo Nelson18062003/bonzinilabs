@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { SlidersHorizontal, X, Plus, Loader2 } from 'lucide-react';
+import { SlidersHorizontal, X, Plus, Loader2, ArrowDownToLine } from 'lucide-react';
 import { DateField } from '@/components/form';
 import { OperationListItem } from '@/components/treasury/OperationListItem';
 import { Segmented } from '@/components/treasury/Segmented';
@@ -16,7 +16,7 @@ import { VoidOperationDialog } from '@/components/treasury/VoidOperationDialog';
 import { FieldLabel, INSET, Pill, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useTreasuryOperations, type OperationRow } from '@/hooks/useTreasury';
-import { PRIMARY_PILL } from '@/mobile/designKit';
+import { PRIMARY_PILL, Holder } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 
 type Preset = '7d' | '30d' | '90d' | 'all' | 'custom';
@@ -208,7 +208,10 @@ export function DesktopPurchasesList() {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : purchases.length === 0 ? (
-        <div className="py-10 text-center text-[13px] text-muted-foreground">Aucun achat avec ces critères.</div>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Holder icon={ArrowDownToLine} size="lg" />
+          <p className="mt-4 text-[14px] font-medium text-muted-foreground">Aucun achat avec ces critères.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {purchases.map((op) => (

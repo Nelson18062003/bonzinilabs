@@ -169,7 +169,7 @@ export function DesktopCreateClient() {
           </div>
           <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-3.5', SURFACE.canvas)}>
             <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>{tempPassword}</code>
-            <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
+            <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} ariaLabel="Copier le mot de passe" />
           </div>
           <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
             Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.

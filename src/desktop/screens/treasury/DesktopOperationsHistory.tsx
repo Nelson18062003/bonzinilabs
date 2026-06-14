@@ -4,10 +4,11 @@
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, History } from 'lucide-react';
 import { OperationListItem } from '@/components/treasury/OperationListItem';
 import { Segmented } from '@/components/treasury/Segmented';
 import { Pill } from '@/components/treasury/ui';
+import { Holder } from '@/mobile/designKit';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryOperations } from '@/hooks/useTreasury';
 
@@ -78,7 +79,10 @@ export function DesktopOperationsHistory() {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-10 text-center text-[13px] text-muted-foreground">Aucune opération sur cette période.</div>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Holder icon={History} size="lg" />
+          <p className="mt-4 text-[14px] font-medium text-muted-foreground">Aucune opération sur cette période.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {filtered.map((op) => (

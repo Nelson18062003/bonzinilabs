@@ -5,11 +5,11 @@
  */
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight, Users } from 'lucide-react';
 import { PhoneInputWithCountry, TextField } from '@/components/form';
 import { Segmented } from '@/components/treasury/Segmented';
 import { INSET, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
-import { PRIMARY_PILL } from '@/mobile/designKit';
+import { PRIMARY_PILL, Holder } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
@@ -134,8 +134,11 @@ export function DesktopCounterpartiesScreen() {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : (data ?? []).length === 0 ? (
-        <div className="py-10 text-center text-[13px] text-muted-foreground">
-          Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l'instant.
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Holder icon={Users} size="lg" />
+          <p className="mt-4 text-[14px] font-medium text-muted-foreground">
+            Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l'instant.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">

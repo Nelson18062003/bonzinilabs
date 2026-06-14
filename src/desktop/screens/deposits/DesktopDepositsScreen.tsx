@@ -349,8 +349,10 @@ export function DesktopDepositsScreen() {
                     <tr
                       key={deposit.id}
                       onClick={() => navigate(`/m/deposits/${deposit.id}`)}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
                       className={cn(
-                        'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                         depositId === deposit.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
                       )}
                     >

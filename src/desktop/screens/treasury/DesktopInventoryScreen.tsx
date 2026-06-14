@@ -9,6 +9,7 @@ import { ClipboardCheck, AlertTriangle } from 'lucide-react';
 import { TextField } from '@/components/form';
 import { MoneyField } from '@/components/treasury/MoneyField';
 import { INSET, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { Holder } from '@/mobile/designKit';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRecordInventorySnapshot, useTreasuryAccountBalances } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
@@ -62,8 +63,9 @@ export function DesktopInventoryScreen() {
       </header>
 
       {accounts.length === 0 ? (
-        <div className="py-10 text-center text-[13px] text-muted-foreground">
-          Aucun compte cash / Alipay / WeChat à inventorier.
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Holder icon={ClipboardCheck} size="lg" />
+          <p className="mt-4 text-[14px] font-medium text-muted-foreground">Aucun compte cash / Alipay / WeChat à inventorier.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">

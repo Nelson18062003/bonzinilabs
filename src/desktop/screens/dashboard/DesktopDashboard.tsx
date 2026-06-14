@@ -238,7 +238,9 @@ export function DesktopDashboard() {
                       <tr
                         key={deposit.id}
                         onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                        className="cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
+                        className="cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]"
                       >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2.5">
