@@ -1,1 +1,1 @@
-export { DesktopSupportListScreen } from './DesktopSupportListScreen';
+export { DesktopSupportScreen } from './DesktopSupportScreen';

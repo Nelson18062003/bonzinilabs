@@ -38,7 +38,13 @@ import { SURFACE, TEXT, StatusPill, Avatar, Holder } from '@/mobile/designKit';
 // Fond de la zone de messages (identique côté client — cohérence cross-app).
 const CHAT_BG = 'bg-[hsl(30_8%_96%)] dark:bg-[hsl(220_20%_11%)]';
 
-export function MobileSupportConversationScreen() {
+interface MobileSupportConversationScreenProps {
+  /** When true, render contained for the desktop side-by-side console (no
+   *  full-viewport ViewportShell, no document lock) and hide the back button. */
+  embedded?: boolean;
+}
+
+export function MobileSupportConversationScreen({ embedded = false }: MobileSupportConversationScreenProps = {}) {
   const { t } = useTranslation('support');
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
@@ -192,14 +198,16 @@ export function MobileSupportConversationScreen() {
       className={cn('relative flex items-center gap-2 px-2 py-2.5', SURFACE.card, 'border-b border-black/5 dark:border-white/5')}
       style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}
     >
-      <button
-        type="button"
-        onClick={() => navigate('/m/support')}
-        className={cn('-ml-1 flex h-9 w-9 items-center justify-center rounded-full active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
-        aria-label={t('detail.back')}
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
+      {!embedded && (
+        <button
+          type="button"
+          onClick={() => navigate('/m/support')}
+          className={cn('-ml-1 flex h-9 w-9 items-center justify-center rounded-full active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
+          aria-label={t('detail.back')}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      )}
       <Avatar name={clientName || (conversation?.client_first_name ?? 'C')} tone="info" size="sm" />
       <div className="min-w-0 flex-1">
         <h1 className={cn('truncate text-[15px] font-bold leading-tight tracking-tight', TEXT.strong)}>
@@ -336,27 +344,40 @@ export function MobileSupportConversationScreen() {
     </>
   );
 
+  const body =
+    isLoadingConv || isLoadingMsgs ? (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ) : (
+      <ChatThread
+        messages={messages ?? []}
+        selfSenderType="admin"
+        variant="admin-app"
+        onReply={setReplyTo}
+        conversationId={conversationId ?? null}
+        clientForReactions={supabaseAdmin}
+        selfReactorId={adminId}
+        selfReactorType="admin"
+        typingIndicatorSlot={otherIsTyping ? <TypingIndicator who="client" /> : null}
+      />
+    );
+
   return (
     <>
-      <ViewportShell header={header} footer={footer} scrollRef={scrollRef} scrollClassName={CHAT_BG}>
-        {isLoadingConv || isLoadingMsgs ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      {embedded ? (
+        <div className="flex h-full flex-col overflow-hidden bg-background">
+          <div className="shrink-0">{header}</div>
+          <div ref={scrollRef} className={cn('flex-1 overflow-y-auto overscroll-contain', CHAT_BG)}>
+            {body}
           </div>
-        ) : (
-          <ChatThread
-            messages={messages ?? []}
-            selfSenderType="admin"
-            variant="admin-app"
-            onReply={setReplyTo}
-            conversationId={conversationId ?? null}
-            clientForReactions={supabaseAdmin}
-            selfReactorId={adminId}
-            selfReactorType="admin"
-            typingIndicatorSlot={otherIsTyping ? <TypingIndicator who="client" /> : null}
-          />
-        )}
-      </ViewportShell>
+          <div className="shrink-0">{footer}</div>
+        </div>
+      ) : (
+        <ViewportShell header={header} footer={footer} scrollRef={scrollRef} scrollClassName={CHAT_BG}>
+          {body}
+        </ViewportShell>
+      )}
 
       {/* Modal assignation — rendue HORS du cadre (plein écran, z-40) pour
           n'être ni rognée par l'overflow du shell ni passée sous lui. */}

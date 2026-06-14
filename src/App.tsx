@@ -74,7 +74,7 @@ const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").the
 const MobileAdminsScreen = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminsScreen })));
 const DesktopAdminsScreen = lazy(() => import("./desktop/screens/admins").then(m => ({ default: m.DesktopAdminsScreen })));
 const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
-const DesktopSupportListScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportListScreen })));
+const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportScreen })));
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
@@ -213,9 +213,9 @@ const App = () => (
                 <Route path="/m/more/profile" element={<AdminRouteWrapper><MobileAdminProfile /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
-                <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportListScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />
+                <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />
                 <Route path="/m/support/stats" element={<AdminRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/support/:conversationId" element={<AdminRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></AdminRouteWrapper>} />
+                <Route path="/m/support/:conversationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopSupportScreen />}><MobileSupportConversationScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/canned-responses" element={<AdminRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/quick-replies" element={<AdminRouteWrapper showTabBar={false}><MobileQuickRepliesScreen /></AdminRouteWrapper>} />
 
