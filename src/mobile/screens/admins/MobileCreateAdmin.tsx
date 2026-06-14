@@ -51,7 +51,7 @@ const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefa
   },
 ];
 
-export function MobileCreateAdmin() {
+export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
@@ -122,10 +122,16 @@ export function MobileCreateAdmin() {
   // ── SUCCESS SCREEN ────────────────────────────────────────
   if (isSuccess) {
     return (
-      <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
-        <MobileHeader title={t('newAdmin', { defaultValue: 'Nouvel admin' })} />
+      <div className={desktop ? 'mx-auto max-w-xl' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+        {desktop ? (
+          <header className="mb-6">
+            <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h2>
+          </header>
+        ) : (
+          <MobileHeader title={t('newAdmin', { defaultValue: 'Nouvel admin' })} />
+        )}
 
-        <div className="flex-1 overflow-y-auto px-4 py-8">
+        <div className={desktop ? '' : 'flex-1 overflow-y-auto px-4 py-8'}>
           {/* Success icon */}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
@@ -176,7 +182,7 @@ export function MobileCreateAdmin() {
 
   // ── 3-STEP FORM ───────────────────────────────────────────
   return (
-    <div className={cn('flex h-[100dvh] flex-col overflow-hidden', SURFACE.canvas)}>
+    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh]', SURFACE.canvas)}>
       {/* HEADER — fixed, does not scroll */}
       <div className={cn('shrink-0 px-4 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
         <div className="flex h-14 items-center">

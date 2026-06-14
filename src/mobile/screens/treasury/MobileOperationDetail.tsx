@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   kind: 'purchase' | 'sale';
+  /** Render in the desktop frame (heading instead of the mobile sticky header). */
+  desktop?: boolean;
 }
 
 function fmt(n: number, decimals = 2): string {
@@ -25,7 +27,7 @@ function Row({ label, value, mono }: { label: string; value: React.ReactNode; mo
   );
 }
 
-export function MobileOperationDetail({ kind }: Props) {
+export function MobileOperationDetail({ kind, desktop = false }: Props) {
   const { operationId } = useParams<{ operationId: string }>();
   const navigate = useNavigate();
   const { hasPermission, currentUser } = useAdminAuth();
@@ -47,8 +49,8 @@ export function MobileOperationDetail({ kind }: Props) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-full bg-background">
-        <MobileHeader title="Opération" showBack />
+      <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Opération</h2> : <MobileHeader title="Opération" showBack />}
         <div className="flex justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -58,8 +60,8 @@ export function MobileOperationDetail({ kind }: Props) {
 
   if (!op) {
     return (
-      <div className="flex flex-col min-h-full bg-background">
-        <MobileHeader title="Opération" showBack />
+      <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Opération</h2> : <MobileHeader title="Opération" showBack />}
         <div className="py-8 text-center text-muted-foreground">Opération introuvable.</div>
       </div>
     );
@@ -84,10 +86,17 @@ export function MobileOperationDetail({ kind }: Props) {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-background">
-      <MobileHeader title={isPurchase ? 'Achat USDT' : 'Vente USDT'} showBack backTo="/m/more/treasury/operations" />
+    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">{isPurchase ? 'Achat USDT' : 'Vente USDT'}</h2>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Détail de l'opération de trésorerie</p>
+        </header>
+      ) : (
+        <MobileHeader title={isPurchase ? 'Achat USDT' : 'Vente USDT'} showBack backTo="/m/more/treasury/operations" />
+      )}
 
-      <div className="px-5 py-5 space-y-4">
+      <div className={desktop ? 'space-y-4' : 'px-5 py-5 space-y-4'}>
         {voided && (
           <div className="flex items-start gap-2.5 rounded-2xl bg-muted p-4">
             <IconChip icon={Ban} tone="neutral" size="sm" />
@@ -220,10 +229,10 @@ export function MobileOperationDetail({ kind }: Props) {
   );
 }
 
-export function MobilePurchaseDetail() {
-  return <MobileOperationDetail kind="purchase" />;
+export function MobilePurchaseDetail({ desktop = false }: { desktop?: boolean } = {}) {
+  return <MobileOperationDetail kind="purchase" desktop={desktop} />;
 }
 
-export function MobileSaleDetail() {
-  return <MobileOperationDetail kind="sale" />;
+export function MobileSaleDetail({ desktop = false }: { desktop?: boolean } = {}) {
+  return <MobileOperationDetail kind="sale" desktop={desktop} />;
 }

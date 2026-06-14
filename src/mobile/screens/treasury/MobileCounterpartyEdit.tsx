@@ -12,7 +12,7 @@ import {
 } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 
-export function MobileCounterpartyEdit() {
+export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean } = {}) {
   const { counterpartyId } = useParams<{ counterpartyId: string }>();
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
@@ -51,8 +51,8 @@ export function MobileCounterpartyEdit() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-full bg-background">
-        <MobileHeader title="Contrepartie" showBack />
+      <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Contrepartie</h2> : <MobileHeader title="Contrepartie" showBack />}
         <div className="flex justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -62,8 +62,8 @@ export function MobileCounterpartyEdit() {
 
   if (!cp) {
     return (
-      <div className="flex flex-col min-h-full bg-background">
-        <MobileHeader title="Contrepartie" showBack />
+      <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Contrepartie</h2> : <MobileHeader title="Contrepartie" showBack />}
         <div className="py-8 text-center text-muted-foreground">Introuvable.</div>
       </div>
     );
@@ -99,10 +99,17 @@ export function MobileCounterpartyEdit() {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-background">
-      <MobileHeader title={cp.display_name} showBack backTo="/m/more/treasury/counterparties" />
+    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">{cp.display_name}</h2>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Modifier la contrepartie</p>
+        </header>
+      ) : (
+        <MobileHeader title={cp.display_name} showBack backTo="/m/more/treasury/counterparties" />
+      )}
 
-      <div className="px-5 py-5 space-y-4">
+      <div className={desktop ? 'space-y-4' : 'px-5 py-5 space-y-4'}>
         {/* Header */}
         <div className={cn(SOFT_CARD, 'flex items-center justify-between p-4')}>
           <div>

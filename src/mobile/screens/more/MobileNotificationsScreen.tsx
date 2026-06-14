@@ -33,7 +33,7 @@ function formatRelativeDate(dateStr: string) {
   return format(date, "dd MMM 'à' HH:mm", { locale: fr });
 }
 
-export function MobileNotificationsScreen() {
+export function MobileNotificationsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const { data: notifications, isLoading, refetch } = useAdminNotifications();
   const navigate = useNavigate();
@@ -54,10 +54,17 @@ export function MobileNotificationsScreen() {
   const groupKeys = grouped ? Object.keys(grouped) : [];
 
   return (
-    <div className="flex min-h-full flex-col">
-      <MobileHeader title="Notifications" backTo="/m/more" showBack />
+    <div className={desktop ? 'mx-auto max-w-3xl' : 'flex min-h-full flex-col'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Notifications</h2>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Éléments en attente d'action</p>
+        </header>
+      ) : (
+        <MobileHeader title="Notifications" backTo="/m/more" showBack />
+      )}
 
-      <PullToRefresh onRefresh={refetch} className={cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}>
+      <PullToRefresh onRefresh={refetch} className={desktop ? 'space-y-6' : cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}>
         {isLoading ? (
           <SkeletonListScreen count={6} />
         ) : groupKeys.length > 0 ? (

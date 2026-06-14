@@ -4,7 +4,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, Minus, Loader2, AlertCircle, Newspaper } from 'lucide-react';
 
-export function MobileBriefsScreen() {
+export function MobileBriefsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { data: macro, isLoading: loadingMacro } = useLatestMacroSnapshot();
   const { data: briefs, isLoading: loadingBriefs } = useRecentBriefs(3);
   const { data: trumpPosts, isLoading: loadingTrump } = useRecentTrumpPosts(5);
@@ -16,10 +16,17 @@ export function MobileBriefsScreen() {
       : n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   return (
-    <div className="flex flex-col min-h-full">
-      <MobileHeader title="Veille macro" backTo="/m/more" />
+    <div className={desktop ? '' : 'flex flex-col min-h-full'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Veille macro</h2>
+          <p className="mt-1 text-[14px] text-muted-foreground">Macro, news, posts Trump et prédictions IA</p>
+        </header>
+      ) : (
+        <MobileHeader title="Veille macro" backTo="/m/more" />
+      )}
 
-      <div className="flex-1 px-4 py-4 space-y-4">
+      <div className={desktop ? 'grid grid-cols-1 items-start gap-4 lg:grid-cols-2' : 'flex-1 px-4 py-4 space-y-4'}>
         {/* Prédiction IA */}
         {prediction && (
           <div className="rounded-2xl border-2 border-purple-600/20 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 p-4">

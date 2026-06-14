@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bonzini Admin — Tableau de bord (desktop)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="app.css" />
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <rect width="7" height="9" x="3" y="3" rx="1" />
+  <rect width="7" height="5" x="14" y="3" rx="1" />
+  <rect width="7" height="9" x="14" y="12" rx="1" />
+  <rect width="7" height="5" x="3" y="16" rx="1" /></symbol><symbol id="i-bot" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M12 8V4H8" />
+  <rect width="16" height="12" x="4" y="8" rx="2" />
+  <path d="M2 14h2" />
+  <path d="M20 14h2" />
+  <path d="M15 13v2" />
+  <path d="M9 13v2" /></symbol><symbol id="i-arrow-down-to-line" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M12 17V3" />
+  <path d="m6 11 6 6 6-6" />
+  <path d="M19 21H5" /></symbol><symbol id="i-arrow-up-from-line" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="m18 9-6-6-6 6" />
+  <path d="M12 3v14" />
+  <path d="M5 21h14" /></symbol><symbol id="i-users" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+  <circle cx="9" cy="7" r="4" /></symbol><symbol id="i-landmark" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M10 18v-7" />
+  <path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z" />
+  <path d="M14 18v-7" />
+  <path d="M18 18v-7" />
+  <path d="M3 22h18" />
+  <path d="M6 18v-7" /></symbol><symbol id="i-percent" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <line x1="19" x2="5" y1="5" y2="19" />
+  <circle cx="6.5" cy="6.5" r="2.5" />
+  <circle cx="17.5" cy="17.5" r="2.5" /></symbol><symbol id="i-life-buoy" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <circle cx="12" cy="12" r="10" />
+  <path d="m4.93 4.93 4.24 4.24" />
+  <path d="m14.83 9.17 4.24-4.24" />
+  <path d="m14.83 14.83 4.24 4.24" />
+  <path d="m9.17 14.83-4.24 4.24" />
+  <circle cx="12" cy="12" r="4" /></symbol><symbol id="i-shield" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></symbol><symbol id="i-scroll-text" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M15 12h-5" />
+  <path d="M15 8h-5" />
+  <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+  <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-log-out" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="m16 17 5-5-5-5" />
+  <path d="M21 12H9" />
+  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-bell" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+  <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M16 7h6v6" />
+  <path d="m22 7-8.5 8.5-5-5L2 17" /></symbol><symbol id="i-arrow-up-right" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" /></symbol><symbol id="i-send" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+  <path d="m21.854 2.147-10.94 10.939" /></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="m9 18 6-6-6-6" /></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="m15 18-6-6 6-6" /></symbol><symbol id="i-arrow-right" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" /></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
+  <path d="M20 2v4" />
+  <path d="M22 4h-4" />
+  <circle cx="4" cy="20" r="2" /></symbol><symbol id="i-corner-down-left" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+  <path d="m9 10-5 5 5 5" /></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+  <path d="m15 5 4 4" /></symbol><symbol id="i-user-plus" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <circle cx="9" cy="7" r="4" />
+  <line x1="19" x2="19" y1="8" y2="14" />
+  <line x1="22" x2="16" y1="11" y2="11" /></symbol><symbol id="i-bar-chart-3" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="M18 17V9" />
+  <path d="M13 17V5" />
+  <path d="M8 17v-3" /></symbol><symbol id="i-banknote" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <rect width="20" height="12" x="2" y="6" rx="2" />
+  <circle cx="12" cy="12" r="2" />
+  <path d="M6 12h.01M18 12h.01" /></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+  <path d="M12 18h.01" /></symbol><symbol id="i-message-circle" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /></symbol><symbol id="i-building-2" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M10 12h4" />
+  <path d="M10 8h4" />
+  <path d="M14 21v-3a2 2 0 0 0-4 0v3" />
+  <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" />
+  <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M5 12h14" />
+  <path d="M12 5v14" /></symbol><symbol id="i-sliders-horizontal" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M10 5H3" />
+  <path d="M12 19H3" />
+  <path d="M14 3v4" />
+  <path d="M16 17v4" />
+  <path d="M21 12h-9" />
+  <path d="M21 19h-5" />
+  <path d="M21 5h-7" />
+  <path d="M8 10v4" />
+  <path d="M8 12H3" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" /></symbol><symbol id="i-more-horizontal" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <circle cx="12" cy="12" r="1" />
+  <circle cx="19" cy="12" r="1" />
+  <circle cx="5" cy="12" r="1" /></symbol><symbol id="i-check" viewBox="0 0 24 24"><!-- @license lucide-static v1.18.0 - ISC -->
+
+  <path d="M20 6 9 17l-5-5" /></symbol></svg>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">B</div>
+      <div><div class="brand-name">Bonzini</div><div class="brand-sub">Console admin</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-label">Principal</div>
+        <a class="nav-item active"><svg class="ic"><use href="#i-layout-dashboard"/></svg><span>Tableau de bord</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-bot"/></svg><span>Assistant Mola</span></a>
+        <a class="nav-item" href="deposits.html"><svg class="ic"><use href="#i-arrow-down-to-line"/></svg><span>Dépôts</span><span class="nav-badge">7</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-arrow-up-from-line"/></svg><span>Paiements</span><span class="nav-badge">3</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-users"/></svg><span>Clients</span></a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Opérations</div>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-landmark"/></svg><span>Trésorerie</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-percent"/></svg><span>Taux de change</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-life-buoy"/></svg><span>Support</span><span class="nav-badge">2</span></a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Système</div>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-shield"/></svg><span>Administrateurs</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-scroll-text"/></svg><span>Journaux</span></a>
+        <a class="nav-item" href="#"><svg class="ic"><use href="#i-settings"/></svg><span>Paramètres</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-card">
+        <div class="user-avatar">NE</div>
+        <div style="flex:1;min-width:0"><div class="user-name">Nelson E.</div><div class="user-role">Administrateur</div></div>
+        <svg class="ic" style="color:var(--sub)"><use href="#i-log-out"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Tableau de bord</div>
+        <div class="topbar-sub">Vue opérationnelle · mise à jour il y a quelques secondes</div>
+      </div>
+      <div class="topbar-actions">
+        <label class="search"><svg class="ic-sm ic"><use href="#i-search"/></svg><input placeholder="Rechercher un client, une référence…" /></label>
+        <div class="rate-chip"><span class="rate-dot"></span>1 ¥ = 92,5 XAF</div>
+        <button class="icon-btn"><svg class="ic"><use href="#i-bell"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- page header -->
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Bonjour, Nelson 👋</h1>
+          <p class="page-sub">Voici l'activité de la plateforme — vendredi 13 juin 2026.</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-soft"><svg class="ic-sm ic"><use href="#i-arrow-down-to-line"/></svg> Nouveau dépôt</button>
+          <button class="btn btn-dark"><svg class="ic-sm ic"><use href="#i-send"/></svg> Nouveau paiement</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <section class="kpi-grid">
+        <div class="card kpi">
+          <div class="kpi-top">
+            <span class="holder info"><svg class="ic-lg ic"><use href="#i-wallet"/></svg></span>
+            <span class="tag info">Temps réel</span>
+          </div>
+          <p class="kpi-label">Solde plateforme</p>
+          <p class="kpi-value hero">128,4 M <span class="kpi-unit">XAF</span></p>
+          <p class="kpi-hint">Total détenu par tous les wallets clients à l'instant T.</p>
+        </div>
+
+        <div class="card kpi">
+          <div class="kpi-top">
+            <span class="holder info"><svg class="ic-lg ic"><use href="#i-trending-up"/></svg></span>
+            <span class="tag success"><svg class="ic-sm ic" style="width:12px;height:12px"><use href="#i-arrow-up-right"/></svg> +12%</span>
+          </div>
+          <p class="kpi-label">Volume 7 jours</p>
+          <p class="kpi-value">342 M <span class="kpi-unit">XAF</span></p>
+          <div class="bars">
+            <span class="bar" style="height:40%"></span><span class="bar" style="height:62%"></span>
+            <span class="bar" style="height:48%"></span><span class="bar" style="height:78%"></span>
+            <span class="bar" style="height:55%"></span><span class="bar" style="height:88%"></span>
+            <span class="bar lead" style="height:100%"></span>
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="kpi-top">
+            <span class="holder success"><svg class="ic-lg ic"><use href="#i-arrow-down-to-line"/></svg></span>
+            <span class="tag success">+18 op.</span>
+          </div>
+          <p class="kpi-label">Dépôts aujourd'hui</p>
+          <p class="kpi-value">18,2 M <span class="kpi-unit">XAF</span></p>
+          <p class="kpi-hint">Dernier il y a 4 min</p>
+        </div>
+
+        <div class="card kpi">
+          <div class="kpi-top">
+            <span class="holder pending"><svg class="ic-lg ic"><use href="#i-arrow-up-from-line"/></svg></span>
+            <span class="tag pending">+9 op.</span>
+          </div>
+          <p class="kpi-label">Paiements aujourd'hui</p>
+          <p class="kpi-value">24,7 M <span class="kpi-unit">XAF</span></p>
+          <p class="kpi-hint">vers fournisseurs 🇨🇳</p>
+        </div>
+      </section>
+
+      <!-- main grid -->
+      <section class="grid-main">
+        <div class="col-8">
+          <!-- à traiter -->
+          <div>
+            <div class="section-head">
+              <h3 class="section-title">À traiter</h3>
+              <span style="font-size:12px;font-weight:600;color:var(--sub)">10 éléments en attente</span>
+            </div>
+            <div class="todo-grid">
+              <button class="card todo-card">
+                <span class="todo-num pending">7</span>
+                <div style="flex:1"><div class="todo-title">Dépôts à valider</div><div class="todo-sub">≈ 14,5 M XAF en attente</div></div>
+                <svg class="ic ic-lg" style="color:var(--sub)"><use href="#i-chevron-right"/></svg>
+              </button>
+              <button class="card todo-card">
+                <span class="todo-num info">3</span>
+                <div style="flex:1"><div class="todo-title">Paiements en cours</div><div class="todo-sub">≈ 9,1 M XAF à exécuter</div></div>
+                <svg class="ic ic-lg" style="color:var(--sub)"><use href="#i-chevron-right"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- recent activity -->
+          <div class="card">
+            <div class="section-head" style="padding:16px 20px 0">
+              <h3 class="section-title">Activité récente</h3>
+              <a class="link" href="deposits.html">Tout voir <svg class="ic-sm ic" style="width:14px;height:14px"><use href="#i-arrow-right"/></svg></a>
+            </div>
+            <table class="tbl" style="margin-top:12px">
+              <thead><tr>
+                <th class="pad-l">Client</th><th>Type</th><th class="t-right">Montant</th>
+                <th>Méthode</th><th>Quand</th><th class="pad-r t-right">Statut</th>
+              </tr></thead>
+              <tbody id="activity"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- right rail -->
+        <div class="col-4">
+          <div class="card" style="padding:20px">
+            <div class="section-head"><h3 class="section-title">Taux du jour</h3><span class="pill success">Actif</span></div>
+            <div id="rates"></div>
+            <button class="btn btn-soft" style="width:100%;justify-content:center;margin-top:12px"><svg class="ic-sm ic"><use href="#i-pencil"/></svg> Ajuster les taux</button>
+          </div>
+
+          <div class="card dark mola">
+            <div class="mola-head">
+              <span class="mola-icon"><svg class="ic ic-lg"><use href="#i-sparkles"/></svg></span>
+              <div><div class="mola-name">Mola</div><div class="mola-role">Directeur des opérations IA</div></div>
+            </div>
+            <p class="mola-ex">« Valide le dépôt BZ-DP-2291 » · « Volume payé vers la Chine cette semaine ? »</p>
+            <div class="mola-input"><input placeholder="Demander à Mola…" /><svg class="ic-sm ic" style="color:rgba(255,255,255,.6)"><use href="#i-corner-down-left"/></svg></div>
+          </div>
+
+          <div class="card" style="padding:20px">
+            <h3 class="section-title" style="margin-bottom:12px">Actions rapides</h3>
+            <div class="qa-grid">
+              <button class="qa-btn"><span class="qa-icon holder success"><svg class="ic ic-lg"><use href="#i-user-plus"/></svg></span><span class="qa-label">Nouveau client</span></button>
+              <button class="qa-btn"><span class="qa-icon holder info"><svg class="ic ic-lg"><use href="#i-bar-chart-3"/></svg></span><span class="qa-label">Analytics</span></button>
+              <button class="qa-btn"><span class="qa-icon holder pending"><svg class="ic ic-lg"><use href="#i-landmark"/></svg></span><span class="qa-label">Trésorerie</span></button>
+              <button class="qa-btn"><span class="qa-icon holder"><svg class="ic ic-lg"><use href="#i-life-buoy"/></svg></span><span class="qa-label">Support</span></button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+  const tone = { 'Validé':'success','En cours':'info','À traiter':'pending','Payé':'success' };
+  const rows = [
+    ['Aïcha Diallo','Dépôt','2 500 000','Alipay','il y a 4 min','Validé'],
+    ['Kwame Mensah','Paiement','1 200 000','Virement','il y a 12 min','En cours'],
+    ['Fatou Ndiaye','Dépôt','850 000','Cash','il y a 25 min','À traiter'],
+    ['Ibrahim Touré','Dépôt','3 400 000','WeChat','il y a 1 h','Validé'],
+    ['Mariam Koné','Paiement','5 000 000','Alipay','il y a 2 h','Payé'],
+  ];
+  const ini = n => n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('activity').innerHTML = rows.map(r=>`
+    <tr>
+      <td class="pad-l"><span class="cell-name"><span class="avatar">${ini(r[0])}</span>${r[0]}</span></td>
+      <td style="color:var(--sub)">${r[1]}</td>
+      <td class="t-right amount">${r[2]} <span class="u">XAF</span></td>
+      <td style="color:var(--sub)">${r[3]}</td>
+      <td style="color:var(--sub)">${r[4]}</td>
+      <td class="pad-r t-right"><span class="pill ${tone[r[5]]}">${r[5]}</span></td>
+    </tr>`).join('');
+
+  const rates = [['Cash','92,0','banknote'],['Alipay','92,5','smartphone'],['WeChat','92,5','message-circle'],['Virement','93,0','building-2']];
+  document.getElementById('rates').innerHTML = rates.map(r=>`
+    <div class="rate-row">
+      <span class="rate-icon"><svg class="ic ic-lg"><use href="#i-${r[2]}"/></svg></span>
+      <span class="rate-name">${r[0]}</span>
+      <span class="rate-val num">${r[1]}</span><span class="rate-unit">XAF/¥</span>
+    </div>`).join('');
+</script>
+</body>
+</html>

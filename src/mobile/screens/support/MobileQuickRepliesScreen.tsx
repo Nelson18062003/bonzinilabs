@@ -48,7 +48,7 @@ const textareaClass = cn(
   'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
 );
 
-export function MobileQuickRepliesScreen() {
+export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { currentUser, hasPermission } = useAdminAuth();
@@ -84,26 +84,40 @@ export function MobileQuickRepliesScreen() {
   }
 
   return (
-    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader
-        title={t('quickReplies.screenTitle')}
-        showBack
-        onBack={() => navigate('/m/more')}
-        rightElement={
-          isSuperAdmin ? (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
-              aria-label={t('quickReplies.create')}
-            >
-              <Plus className="h-4 w-4" />
+    <div className={desktop ? '' : cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      {desktop ? (
+        <header className="mb-5 flex items-end justify-between gap-3">
+          <div>
+            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('quickReplies.screenTitle')}</h2>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Suggestions affichées aux nouveaux clients</p>
+          </div>
+          {isSuperAdmin && (
+            <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
+              <Plus className="h-4 w-4" /> {t('quickReplies.create')}
             </button>
-          ) : undefined
-        }
-      />
+          )}
+        </header>
+      ) : (
+        <MobileHeader
+          title={t('quickReplies.screenTitle')}
+          showBack
+          onBack={() => navigate('/m/more')}
+          rightElement={
+            isSuperAdmin ? (
+              <button
+                type="button"
+                onClick={() => setCreating(true)}
+                className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
+                aria-label={t('quickReplies.create')}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            ) : undefined
+          }
+        />
+      )}
 
-      <div className="space-y-3 px-4 py-4">
+      <div className={desktop ? 'mx-auto max-w-3xl space-y-3' : 'space-y-3 px-4 py-4'}>
         <div className="rounded-2xl bg-[#EAE7FA] px-3.5 py-3 text-[12px] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
           {t('quickReplies.hint')}
         </div>

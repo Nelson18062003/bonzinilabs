@@ -1,0 +1,1 @@
+export { DesktopPaymentsScreen } from './DesktopPaymentsScreen';

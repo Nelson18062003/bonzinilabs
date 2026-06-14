@@ -154,6 +154,7 @@
   },
   "admin": {
     "listTitle": "Conversations",
+    "consoleEmptyHint": "Select a conversation on the left to read and reply.",
     "listEmpty": "No active conversations",
     "filterAll": "All",
     "filterMine": "Mine",

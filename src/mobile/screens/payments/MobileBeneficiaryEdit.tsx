@@ -22,7 +22,7 @@ import {
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryEditForm';
 
-export function MobileBeneficiaryEdit() {
+export function MobileBeneficiaryEdit({ desktop = false }: { desktop?: boolean } = {}) {
   const { paymentId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation('payments');
@@ -105,12 +105,18 @@ export function MobileBeneficiaryEdit() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <MobileHeader
-        title="Modifier bénéficiaire"
-        showBack
-        backTo={`/m/payments/${paymentId}`}
-      />
+    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-screen bg-background'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">Modifier bénéficiaire</h2>
+        </header>
+      ) : (
+        <MobileHeader
+          title="Modifier bénéficiaire"
+          showBack
+          backTo={`/m/payments/${paymentId}`}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6">
         <BeneficiaryEditForm

@@ -86,7 +86,7 @@ export function MobileAccountsScreen() {
   );
 }
 
-function AccountRow({
+export function AccountRow({
   account,
   currency,
   canManage,

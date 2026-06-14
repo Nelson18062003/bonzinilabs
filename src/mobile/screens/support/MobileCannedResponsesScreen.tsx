@@ -46,7 +46,7 @@ const textareaClass = cn(
   'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
 );
 
-export function MobileCannedResponsesScreen() {
+export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { currentUser, hasPermission } = useAdminAuth();
@@ -82,26 +82,40 @@ export function MobileCannedResponsesScreen() {
   }
 
   return (
-    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader
-        title={t('templates.screenTitle')}
-        showBack
-        onBack={() => navigate('/m/more')}
-        rightElement={
-          isSuperAdmin ? (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
-              aria-label={t('templates.create')}
-            >
-              <Plus className="h-4 w-4" />
+    <div className={desktop ? '' : cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      {desktop ? (
+        <header className="mb-5 flex items-end justify-between gap-3">
+          <div>
+            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('templates.screenTitle')}</h2>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Réponses pré-enregistrées avec variables</p>
+          </div>
+          {isSuperAdmin && (
+            <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
+              <Plus className="h-4 w-4" /> {t('templates.create')}
             </button>
-          ) : undefined
-        }
-      />
+          )}
+        </header>
+      ) : (
+        <MobileHeader
+          title={t('templates.screenTitle')}
+          showBack
+          onBack={() => navigate('/m/more')}
+          rightElement={
+            isSuperAdmin ? (
+              <button
+                type="button"
+                onClick={() => setCreating(true)}
+                className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
+                aria-label={t('templates.create')}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            ) : undefined
+          }
+        />
+      )}
 
-      <div className="space-y-3 px-4 py-4">
+      <div className={desktop ? 'mx-auto max-w-3xl space-y-3' : 'space-y-3 px-4 py-4'}>
         {!isSuperAdmin && (
           <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
             {t('templates.readOnlyHint')}

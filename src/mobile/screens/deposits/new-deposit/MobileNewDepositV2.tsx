@@ -128,7 +128,7 @@ function CopyBtn({ text, fieldKey, copiedField, onCopy }: {
 }
 
 // ── Composant principal ──────────────────────────────────────
-export function MobileNewDepositV2() {
+export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedClientId = searchParams.get('clientId');
@@ -462,7 +462,7 @@ export function MobileNewDepositV2() {
   if (isSuccess) {
     const familyName = selectedFamily ? FAMILIES_CONF[selectedFamily]?.name || selectedFamily : '';
     return (
-      <div className={cn('mx-auto flex h-[100dvh] max-w-[480px] flex-col items-center justify-center px-6 text-center', SURFACE.canvas)}>
+      <div className={cn('mx-auto flex flex-col items-center justify-center px-6 text-center', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
         <Holder icon={Check} tone="success" size="lg" className="mb-4" />
         <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>Dépôt créé</div>
         <div className="mt-1.5">
@@ -491,7 +491,7 @@ export function MobileNewDepositV2() {
 
   // ── Layout principal ─────────────────────────────────────
   return (
-    <div className={cn('mx-auto flex h-[100dvh] max-w-[480px] flex-col overflow-hidden', SURFACE.canvas)}>
+    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
       {/* ── Header + barre de progression ─────────────────── */}
       <div className={cn('shrink-0 px-5 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
         <div className="flex h-14 items-center gap-2">

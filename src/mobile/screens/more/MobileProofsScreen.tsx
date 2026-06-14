@@ -43,7 +43,7 @@ function ProofThumb({ url, alt, fallback }: { url: string | null | undefined; al
   );
 }
 
-export function MobileProofsScreen() {
+export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const { data: proofs, isLoading, refetch } = useAdminProofs();
   const [search, setSearch] = useState('');
@@ -79,18 +79,25 @@ export function MobileProofsScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <MobileHeader title={t('proofs', { defaultValue: 'Justificatifs' })} backTo="/m/more" showBack />
+    <div className={desktop ? '' : 'flex min-h-screen flex-col'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('proofs', { defaultValue: 'Justificatifs' })}</h2>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Preuves de dépôts envoyées par les clients</p>
+        </header>
+      ) : (
+        <MobileHeader title={t('proofs', { defaultValue: 'Justificatifs' })} backTo="/m/more" showBack />
+      )}
 
-      <PullToRefresh onRefresh={refetch} className={cn('flex-1 overflow-y-auto', SURFACE.canvas)}>
+      <PullToRefresh onRefresh={refetch} className={desktop ? '' : cn('flex-1 overflow-y-auto', SURFACE.canvas)}>
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 px-4 py-5">
+        <div className={cn('grid grid-cols-2 gap-3', desktop ? 'max-w-md py-1' : 'px-4 py-5')}>
           <StatCard icon={FileText} label="Total" value={proofs?.length || 0} />
           <StatCard icon={ArrowDownToLine} label="Dépôts" value={proofs?.length || 0} tone="success" />
         </div>
 
         {/* Search */}
-        <div className="px-4 pb-4">
+        <div className={desktop ? 'max-w-sm py-4' : 'px-4 pb-4'}>
           <div className="relative">
             <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
             <TextInput
@@ -105,12 +112,12 @@ export function MobileProofsScreen() {
 
         {/* Proofs Grid */}
         {isLoading ? (
-          <div className="px-4 pb-6">
+          <div className={desktop ? 'pb-6' : 'px-4 pb-6'}>
             <SkeletonListScreen count={4} />
           </div>
         ) : (
-          <div className="px-4 pb-6">
-            <div className="grid grid-cols-2 gap-3">
+          <div className={desktop ? 'pb-6' : 'px-4 pb-6'}>
+            <div className={cn('grid gap-3', desktop ? 'grid-cols-3 xl:grid-cols-5' : 'grid-cols-2')}>
               {filteredProofs.map((proof) => (
                 <button
                   key={proof.id}
