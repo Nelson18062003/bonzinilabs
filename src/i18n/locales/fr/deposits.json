@@ -250,7 +250,8 @@
     "deleteProofDesc": "Veuillez indiquer le motif de suppression. Cette action est irréversible.",
     "specifyReason": "Précisez le motif...",
     "cancel": "Annuler",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "reference": "Référence"
   },
   "new": {
     "amountToDeposit": "Montant à déposer",

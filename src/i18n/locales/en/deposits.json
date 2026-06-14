@@ -250,7 +250,8 @@
     "deleteProofDesc": "Please specify the reason for deletion. This action is irreversible.",
     "specifyReason": "Specify the reason...",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "reference": "Reference"
   },
   "new": {
     "amountToDeposit": "Amount to deposit",

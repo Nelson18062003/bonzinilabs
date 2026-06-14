@@ -9,8 +9,8 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module DÉPÔTS** (voir §4.1 — même méthode : maquette d'abord,
-   validation client, puis implémentation).
+3. **Prochaine tâche = module WALLET / Accueil** (voir §4.1 — même méthode :
+   maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
 Refonte **from scratch** de l'app mobile **client** (`src/pages/`, `src/components/`,
@@ -90,9 +90,24 @@ de l'admin.
     (centralisé). Note : `groupDigits` (montant) garde un léger saut de curseur en édition
     au milieu — défaut mineur connu, design validé conservé.
 
+- **MODULE DÉPÔTS — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  · `src/lib/depositLifecycle.ts` (cycle de vie 3 tons, jumeau de paymentLifecycle).
+  · `src/mobile/components/deposits/DepositLogos.tsx` — **vrais logos de marque** (assets
+    `src/assets/deposit-logos/`) : Orange (SVG Wikimedia), Wave (pingouin wave.com),
+    Ecobank/UBA (Wikimedia), Afriland (emblème). MTN composé (jaune + « MTN » bleu). CCA
+    monogramme (logo non libre). `DepositMethodLogo` / `DepositFamilyLogo` / `DepositBankLogo`.
+  · `DepositsPage` (liste) · `NewDepositPage` (wizard : montant→famille→sous-méthode→
+    banque/agence→récap, header drill-in, phases libellées, coordonnées Bonzini) ·
+    `DepositDetailPage` (action reçu/preuve+countdown, hero XAF, coordonnées, preuve
+    strip+upload, suivi, annuler, détails). `DepositInstructions` + `DepositTimelineDisplay`
+    re-stylés designKit. `ProofUpload`/`CountdownTimer` réutilisés. Logique 100% préservée
+    (bornes **50 000 / 50 000 000** XAF — min dépôt = 50k !, getRecapInfo, create_deposit,
+    upload/suppression preuves, annulation, reçu PDF, confirmed_amount_xaf). i18n maquette
+    `src/__screenshot__/clientDepositLayout.tsx` (clés `cdep-*`).
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Dépôts → Wallet/Accueil → Bénéficiaires → Historique → Profil/Notifications → Taux client →
+Wallet/Accueil → Bénéficiaires → Historique → Profil/Notifications → Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
 casser les écrans en route).

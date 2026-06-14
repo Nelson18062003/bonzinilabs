@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
-import { DepositFamilyLogo, DepositBankLogo } from '@/mobile/components/deposits/DepositLogos';
+import { DepositFamilyLogo, DepositBankLogo, DepositMethodLogo } from '@/mobile/components/deposits/DepositLogos';
 import { formatNumber } from '@/lib/formatters';
 import { useCreateDeposit } from '@/hooks/useDeposits';
 import { useMyWallet } from '@/hooks/useWallet';
@@ -475,7 +475,7 @@ const NewDepositPage = () => {
           {/* Montant héros */}
           <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
             <div className="flex items-center gap-2">
-              <DepositFamilyLogo family={selectedFamily!} size={30} radius={9} />
+              <DepositMethodLogo method={getDepositMethod()} bankName={selectedBank} size={30} radius={9} />
               <span className={cn('text-[13px] font-bold', TEXT.strong)}>{info.title}</span>
             </div>
             <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>Vous allez verser</div>
