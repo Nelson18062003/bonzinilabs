@@ -1253,3 +1253,16 @@
     animation: none !important;
   }
 }
+
+/* Mascotte Mola — animation « respiration » (ex. pendant que Mola réfléchit). */
+@keyframes molaBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.07); }
+}
+.mola-breathe {
+  animation: molaBreathe 1.6s ease-in-out infinite;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mola-breathe { animation: none; }
+}

@@ -1,7 +1,9 @@
 // Edge Function: admin-assistant
-// Version: 2026-06-07.1 — 77 outils (50 lecture + 27 écriture) + découverte de capacités (do_capability),
-// top clients par volume, crédit/débit wallet, preuves auto, affichage d'images (preuves/QR), reçu PDF, processLock.
-// + playbook métier (profondeur/proactivité) + get_pending_summary enrichi (radar via RPC mola_operations_radar).
+// Version: 2026-06-11.1 — CERVEAU UNIFIÉ : un seul modèle frontière (Opus 4.8 par défaut,
+// Fable 5 activable par secret) pilote TOUTE la boucle, avec réflexion adaptative (adaptive
+// thinking) et catalogue de capacités injecté dans le prompt (Mola connaît tout ce qu'il sait
+// faire dès le 1er token — plus de découverte « si j'y pense »). + garde-fou d'unité sur les
+// taux personnalisés (XAF/¥ vs ¥/1M XAF). 77 outils (50 lecture + 27 écriture) + do_capability.
 // "Directeur des Opérations" IA — LECTURE (réponses) + ÉCRITURE (avec CONFIRMATION humaine).
 //
 // - Vérifie que l'appelant est un admin actif (via son JWT).
@@ -25,13 +27,27 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-// VITESSE : Haiku par défaut pour le chemin rapide (lecture, Q&A, décision d'outil) —
-// nettement plus rapide (time-to-first-token) et largement suffisant pour lire la base
-// et appeler les bons outils. On bascule sur Sonnet (MODEL_SMART) dès qu'une ÉCRITURE
-// est proposée → la qualité de raisonnement reste sur les actions sensibles.
-// Surchargables par secret ASSISTANT_MODEL_* (remettre Sonnet en FAST si besoin de finesse).
-const MODEL_FAST = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5-20251001";
-const MODEL_SMART = Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
+// UN SEUL CERVEAU. L'ancien duo Haiku (lecture/choix d'outil) → Sonnet (écritures) faisait
+// décider les ARGUMENTS des actions financières par le plus petit modèle (la bascule arrivait
+// APRÈS le choix de l'outil), cassait le cache de prompt à chaque bascule (cache par modèle),
+// et produisait les symptômes connus : mauvais taux, « je ne peux pas », boucles, lenteur à
+// l'arrivée. Désormais un seul modèle frontière pilote toute la boucle, avec réflexion
+// adaptative — moins d'itérations, des montants/taux fiables, un cache stable.
+//   - Défaut : claude-opus-4-8 (le meilleur rapport intelligence/latence pour un assistant interactif).
+//   - Pour essayer Claude Fable 5 : secret ASSISTANT_MODEL=claude-fable-5 (géré : thinking
+//     toujours actif, stop_reason "refusal", ~30 % de tokens en plus, $10/$50 par MTok vs $5/$25).
+//   - ASSISTANT_MODEL_FAST ne sert plus qu'aux résumés de conversation (compaction).
+const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-opus-4-8";
+const MODEL_SUMMARY = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5-20251001";
+// Réflexion adaptative : supportée par Sonnet 4.6 / Opus 4.6+ / Fable 5 (où elle est de toute
+// façon toujours active). Haiku ne la supporte pas → on n'envoie pas le paramètre dans ce cas.
+const MODEL_THINKING = MODEL.includes("haiku") ? {} : { thinking: { type: "adaptive" } };
+// Profondeur de raisonnement (optionnel) : secret ASSISTANT_EFFORT ∈ low|medium|high|max.
+// Vide = défaut API (high). "medium" est un bon réglage si la latence devient un sujet.
+const ASSISTANT_EFFORT = (Deno.env.get("ASSISTANT_EFFORT") ?? "").trim();
+const MODEL_EFFORT = ASSISTANT_EFFORT ? { output_config: { effort: ASSISTANT_EFFORT } } : {};
+// La réflexion adaptative consomme des tokens de sortie → plafond largement relevé (on streame).
+const MAX_TOKENS = 16000;
 const MAX_TOOL_ITERATIONS = 14;
 const MIN_PAYMENT_XAF = 10_000;
 
@@ -41,11 +57,15 @@ const MIN_PAYMENT_XAF = 10_000;
 // si la facturation réelle diffère. Surchargeables sans risque.
 interface TokenUsage { input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; }
 const PRICING_USD_PER_MTOK: Record<string, { in: number; out: number; cacheRead: number; cacheWrite: number }> = {
+  "claude-fable-5":    { in: 10, out: 50, cacheRead: 1.00, cacheWrite: 12.50 },
+  "claude-opus-4-8":   { in: 5, out: 25, cacheRead: 0.50, cacheWrite: 6.25 },
   "claude-sonnet-4-6": { in: 3, out: 15, cacheRead: 0.30, cacheWrite: 3.75 },
   "claude-haiku-4-5":  { in: 1, out: 5, cacheRead: 0.10, cacheWrite: 1.25 },
 };
 function estimateCostUsd(model: string, u: TokenUsage): number {
-  const p = PRICING_USD_PER_MTOK[model] ?? PRICING_USD_PER_MTOK["claude-sonnet-4-6"];
+  // Match par préfixe : couvre les IDs datés (ex. claude-haiku-4-5-20251001).
+  const key = Object.keys(PRICING_USD_PER_MTOK).find((k) => model.startsWith(k));
+  const p = (key && PRICING_USD_PER_MTOK[key]) || PRICING_USD_PER_MTOK["claude-opus-4-8"];
   const cost = (u.input_tokens * p.in + u.output_tokens * p.out + u.cache_read_input_tokens * p.cacheRead + u.cache_creation_input_tokens * p.cacheWrite) / 1_000_000;
   return Math.round(cost * 1e6) / 1e6; // 6 décimales
 }
@@ -1822,17 +1842,42 @@ const WRITE_TOOLS: WriteTool[] = [
       if (Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
       // Taux : personnalisé si l'admin le fournit (parité avec l'écran admin MobileNewPayment),
       // sinon taux du jour calculé côté base (jamais inventé par l'IA).
+      // Le taux du jour est calculé DANS TOUS LES CAS : il sert de référence pour vérifier
+      // l'UNITÉ d'un taux personnalisé (¥ pour 1 000 000 XAF, ex. 11 530 — alors que les
+      // admins dictent souvent « taux 86 » = 86 XAF pour 1 ¥). Sans ce garde-fou, un taux
+      // donné dans la mauvaise unité fausse le montant RMB d'un facteur ~130.
+      const { data: rate, error: rErr } = await admin.rpc("calculate_final_rate", { p_payment_method: rateMethod, p_country_key: countryKey, p_amount_xaf: amt });
+      const dayRate = (!rErr && rate?.success) ? Number(rate.final_rate) : null;
       let amountRmb: number;
       let exchangeRate: number;
       let rateIsCustom = false;
+      let rateNote: string | null = null;
       const customRate = a.exchange_rate != null ? Number(a.exchange_rate) : null;
-      if (customRate != null && Number.isFinite(customRate) && customRate > 0) {
-        // exchange_rate = CNY (¥) pour 1 000 000 XAF (même unité que rate.final_rate)
-        exchangeRate = customRate;
-        amountRmb = Math.round((amt * customRate) / 1_000_000);
+      if (customRate != null) {
+        if (!Number.isFinite(customRate) || customRate <= 0) return { ok: false, error: "Taux personnalisé invalide." };
         rateIsCustom = true;
+        exchangeRate = customRate;
+        if (dayRate && dayRate > 0) {
+          const dev = (x: number) => Math.abs(x - dayRate) / dayRate;
+          const inverted = 1_000_000 / customRate;
+          if (dev(customRate) <= 0.2) {
+            // Unité correcte, proche du taux du jour → rien à signaler.
+          } else if (dev(inverted) <= 0.2) {
+            // L'admin a dicté des XAF/¥ → on convertit dans l'unité plateforme, affiché sur la carte.
+            exchangeRate = Math.round(inverted * 100) / 100;
+            rateNote = `converti depuis ${customRate} XAF/¥`;
+          } else if (dev(customRate) <= 0.5) {
+            // Plausible mais éloigné du taux du jour → on accepte, l'écart est affiché (marge !).
+            rateNote = `⚠️ s'écarte de ${Math.round(dev(customRate) * 100)} % du taux du jour (¥ ${dayRate})`;
+          } else {
+            return { ok: false, error: `Taux personnalisé incohérent (${customRate}). L'unité attendue est des ¥ CNY pour 1 000 000 XAF (taux du jour : ¥ ${dayRate}). Si l'admin a donné « taux ${customRate} » en XAF pour 1 ¥, l'équivalent serait ¥ ${Math.round(inverted)} / 1M XAF — confirme l'unité avec lui avant de re-proposer.` };
+          }
+        } else if (customRate < 2000) {
+          // Pas de taux du jour pour vérifier → on refuse les valeurs qui ressemblent à des XAF/¥.
+          return { ok: false, error: `Taux du jour indisponible pour vérifier l'unité. exchange_rate doit être en ¥ CNY pour 1 000 000 XAF (ex. 11 600). Si l'admin a dit « taux ${customRate} » (XAF/¥), l'équivalent est ¥ ${Math.round(1_000_000 / customRate)} / 1M XAF — confirme avec lui.` };
+        }
+        amountRmb = Math.round((amt * exchangeRate) / 1_000_000);
       } else {
-        const { data: rate, error: rErr } = await admin.rpc("calculate_final_rate", { p_payment_method: rateMethod, p_country_key: countryKey, p_amount_xaf: amt });
         if (rErr) return { ok: false, error: `Calcul du taux: ${rErr.message}` };
         if (!rate?.success) return { ok: false, error: rate?.error || "Taux indisponible." };
         amountRmb = Number(rate.amount_cny);
@@ -1847,7 +1892,7 @@ const WRITE_TOOLS: WriteTool[] = [
       const lines: Line[] = [
         { label: "Client", value: c.name },
         { label: "Mode", value: PAYMENT_METHOD_LABEL[a.method] || a.method },
-        { label: "Taux", value: rateIsCustom ? `¥ ${exchangeRate} / 1M XAF (personnalisé)` : `¥ ${exchangeRate} / 1M XAF (taux du jour)` },
+        { label: "Taux", value: rateIsCustom ? `¥ ${exchangeRate} / 1M XAF (personnalisé${rateNote ? ` — ${rateNote}` : ""})` : `¥ ${exchangeRate} / 1M XAF (taux du jour)` },
         { label: "Montant fournisseur", value: `≈ ¥ ${amountRmb.toLocaleString("fr-FR")}` },
         { label: "Solde après", value: fmtXAF(Number(wallet.balance_xaf) - amt) },
       ];
@@ -2493,23 +2538,30 @@ function buildSystemPrompt(role: string, firstName: string): string {
     `DISTINCTION À MAÎTRISER : deposits/payments = le CYCLE OPÉRATIONNEL (compté par created_at) ; ledger_entries = l'ARGENT effectivement entré/sorti des wallets (compté à la date du mouvement). « Combien de dépôts/paiements » → deposits/payments. « Combien d'argent est entré/sorti d'un wallet » → ledger_entries. En cas de doute, précise quelle source tu utilises. Pour un raccourci EXACT et déjà calculé (volumes + ventilation par statut), get_operations_stats fait l'agrégation côté serveur ; sinon écris ton propre SQL.`,
     ``,
     `LECTURE : tu peux consulter et répondre à toute question (clients, dépôts, paiements, taux, statistiques, dashboard global, trésorerie complète, audit) via tes outils de lecture.`,
-    `CAPACITÉS À NE PAS SOUS-ESTIMER : tu PEUX classer les clients par volume de transactions sur une période (outil top_clients_by_volume), filtrer dépôts/paiements par dates (from_date/to_date, ou year+month comme "avril 2026", ou period), faire le rapport trésorerie sur une période, etc. Ne réponds JAMAIS "mes outils ne permettent pas" ou "contacte l'équipe technique" sans avoir d'abord ESSAYÉ l'outil approprié. Pour un mois précis, utilise year+month. Pour une plage, utilise from_date+to_date (YYYY-MM-DD). Si une demande couvre 2 mois (ex. avril ET mai), fais 2 appels ou utilise from_date/to_date couvrant les deux.`,
-    `STATISTIQUES / VOLUMES / TOTAUX (RÈGLE ABSOLUE) : pour TOUTE question chiffrée d'ensemble — « quel volume de dépôts/paiements », « combien de dépôts en mai », « bilan du mois », totaux, ventilation par statut — utilise get_operations_stats (year+month, ou from_date+to_date, ou period). Il agrège EXACTEMENT côté serveur (aucun plafond, aucune approximation) et renvoie les bornes de dates exactes. N'ADDITIONNE JAMAIS toi-même les lignes de list_deposits/list_payments : elles sont tronquées et te donneraient un total FAUX. Si un résultat d'outil contient "truncated": true, NE calcule pas de total à partir de ses lignes — repasse par get_operations_stats (ou query_database avec un GROUP BY). Présente les nombres exacts tels quels ; ne « corrige » pas un chiffre à la louche.`,
-    `LISTE DES CLIENTS DÉPOSANTS : pour "tous les clients ayant effectué des dépôts sur une période" (ex. les 4 derniers mois), utilise list_depositing_clients (months=4, ou from_date/to_date, ou year+month). Il renvoie la liste COMPLÈTE et dédupliquée des clients AVEC LEURS NOMS (+ nb de dépôts, total, dernier dépôt), sans troncature. N'utilise PAS list_deposits pour ça (ses lignes brutes sont tronquées et il ne donne pas les noms).`,
-    `OUTIL UNIVERSEL query_database : si AUCUN outil dédié ne répond exactement à une question de DONNÉES, écris toi-même une requête SQL SELECT (PostgreSQL) via query_database. Tu peux interroger LIBREMENT toutes les tables (jointures, agrégations, filtres par date avec created_at/occurred_at, regroupements…). C'est en lecture seule garanti côté base : aucune requête ne peut modifier les données, donc n'hésite pas à l'utiliser largement. Ne dis JAMAIS "la requête est restreinte/bloquée" : si une requête échoue, lis le message d'erreur et corrige ta requête (ex. nom de colonne), puis réessaie.`,
-    `INTROSPECTION & HONNÊTETÉ : avant d'affirmer qu'une action est IMPOSSIBLE, appelle what_can_i_do. Trois réponses honnêtes : (1) je le fais (j'ai l'outil) ; (2) la plateforme le permet via un écran mais je n'ai pas encore l'outil — je le dis franchement et je le signale ; (3) ce n'est pas supporté. Ne confabule JAMAIS une fausse règle métier (ex. « le taux est fixé ») pour masquer l'absence d'un outil.`,
-    `DÉCOUVERTE DE CAPACITÉS : si aucun de tes outils dédiés ne correspond à une action demandée, appelle d'abord find_capability (ex. « annuler dépôt », « confirmer cash ») — la plateforme expose peut-être déjà cette action, prête à l'emploi. Puis exécute-la via do_capability (son name + les paramètres ; donne une référence BZ-…, l'identifiant est résolu, et une carte de confirmation s'affiche). Ne dis « je ne peux pas » qu'APRÈS avoir cherché une capacité.`,
-    `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé du début de la conversation, souvenirs pertinents) peut t'être fourni en tête — appuie-toi dessus, ne le redis pas inutilement. Quand l'admin dit « retiens que… » ou exprime une préférence durable, utilise l'outil remember (key courte + value). Ne mémorise pas de données sensibles (soldes, numéros de compte) : celles-ci se lisent en direct via tes outils.`,
-    `Détail trésorerie : pour les achats USDT par fournisseur (ex. "3 derniers achats chez Lizette"), utilise list_usdt_purchases avec supplier="Lizette". Pour les ventes, list_usdt_sales avec buyer=... . Ces outils joignent déjà le nom du fournisseur/acheteur.`,
-    `AFFICHER UNE IMAGE (preuves, QR codes) — TU EN ES CAPABLE, ne dis JAMAIS « je ne peux pas afficher l'image ». Pour montrer dans le chat la preuve d'un paiement (QR Alipay/WeChat, reçu) : show_payment_proof (reference BZ-PY-… ou payment_id). Pour la preuve d'un dépôt : show_deposit_proof (BZ-DP-… ou deposit_id). Pour le QR d'un bénéficiaire : show_beneficiary_qr (beneficiary_id via list_beneficiaries — il replie tout seul sur le QR du dernier paiement si le bénéficiaire n'en a pas). Ces outils renvoient l'image directement à l'écran. Quand on te demande « montre/affiche le QR / la preuve / la capture », APPELLE l'outil au lieu de renvoyer l'admin vers l'interface.`,
-    `REÇU D'UN PAIEMENT : quand on demande « le reçu », « le récépissé », « génère/envoie le reçu » d'un paiement, utilise generate_payment_receipt (reference BZ-PY-… ou payment_id). Il AFFICHE l'image du reçu dans le chat ET renvoie un lien PDF téléchargeable. Ne dis jamais que tu ne peux pas générer un reçu, et ne renvoie pas vers l'écran.`,
+    `STATISTIQUES / VOLUMES / TOTAUX : pour toute question chiffrée d'ensemble (« quel volume », « combien de dépôts en mai », « bilan du mois »), utilise get_operations_stats (year+month, from_date+to_date, ou period) — agrégation exacte côté serveur, avec les bornes de dates renvoyées. Pour « tous les clients déposants d'une période » : list_depositing_clients (complet, dédupliqué, avec noms). Les lignes de list_deposits/list_payments peuvent être TRONQUÉES ("truncated": true) : ne calcule jamais un total à partir d'une liste tronquée — repasse par get_operations_stats ou un SQL avec GROUP BY.`,
+    `OUTIL UNIVERSEL query_database : si aucun outil dédié ne répond exactement à une question de DONNÉES, écris ta requête SQL SELECT (PostgreSQL). Jointures, agrégations, filtres libres — lecture seule garantie côté base. Si une requête échoue, lis l'erreur, corrige, réessaie.`,
+    `Détail trésorerie : achats USDT par fournisseur → list_usdt_purchases (supplier="…") ; ventes → list_usdt_sales (buyer="…") — les noms sont déjà joints.`,
+    `IMAGES & DOCUMENTS dans le chat : show_payment_proof (preuve/QR d'un paiement), show_deposit_proof (preuve d'un dépôt), show_beneficiary_qr (QR d'un bénéficiaire enregistré), generate_payment_receipt (reçu officiel : image dans le chat + PDF téléchargeable), generate_rate_flyer (flyer du taux). Ces outils affichent directement à l'écran — utilise-les au lieu de renvoyer l'admin vers un écran.`,
     ``,
-    `ÉCRITURE (créer client, créer/valider/rejeter dépôt, créer/annuler paiement, compléter le bénéficiaire d'un paiement, enregistrer/modifier/archiver un bénéficiaire RÉUTILISABLE, modifier client, définir le taux du jour, modifier un ajustement de taux par pays, créditer/débiter un wallet, et TRÉSORERIE : enregistrer un achat USDT, une vente USDT, créer un fournisseur/acheteur, ajuster un compte, etc.) :`,
-    `- Quand tu appelles un outil d'écriture, il N'EST PAS exécuté immédiatement : une CARTE DE CONFIRMATION est présentée à l'admin, qui valide d'un tap. C'est normal et voulu.`,
-    `- Avant TOUTE action qui vise un client existant (dépôt, paiement, modification, suppression), tu DOIS d'abord appeler search_clients pour récupérer son user_id RÉEL (un UUID de la forme xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). N'invente JAMAIS un identifiant comme "user_cmr_jonas_002" — ça échoue. Si le client n'existe pas encore, propose d'abord de le créer.`,
-    `- N'invente jamais un montant ou un user_id : récupère-les. Par défaut, le taux RMB est calculé automatiquement par l'outil au taux du jour — ne calcule pas le taux toi-même. EXCEPTION : si l'admin demande explicitement un taux personnalisé (ex. « au taux 78 »), passe-le dans le paramètre exchange_rate de create_payment ; la plateforme autorise les paiements à taux personnalisé, exactement comme l'écran de paiement admin. Ne dis donc JAMAIS que « le taux est fixé » : c'est faux.`,
-    `- Si une demande est ambiguë (ex. plusieurs clients du même nom), demande une précision.`,
-    `- Après avoir proposé une action, indique brièvement à l'admin de confirmer via la carte. Ne ré-appelle pas le même outil en boucle.`,
+    `COMMENT TU TRAVAILLES (agentique — une demande complète = UNE passe) :`,
+    `- Enchaîne toi-même toutes les étapes sans demander la permission entre chacune : retrouver le client → vérifier ce qui doit l'être → préparer la ou les cartes de confirmation. L'admin ne doit pas faire ton travail de coordination.`,
+    `- Demande multiple (« dépôt de 5M pour A, et paiement de 3M pour B ») → propose TOUTES les cartes dans le même tour, chacune correcte et indépendante.`,
+    `- Petits choix évidents (libellé, période par défaut, méthode implicite) : tranche et dis-le en une demi-phrase. Pose une question UNIQUEMENT quand l'ambiguïté touche à l'argent : plusieurs clients homonymes, montant/taux/bénéficiaire incertain, unité de taux douteuse.`,
+    `- Si un outil échoue : lis le message d'erreur, corrige (autre paramètre, autre outil, capacité du catalogue), réessaie — silencieusement, sans raconter chaque tentative. Tu ne renvoies l'admin vers un écran qu'en dernier recours, après avoir réellement essayé.`,
+    `- Ne déclare une chose FAITE que si un résultat d'outil le confirme. Si une étape a échoué ou reste en attente, dis-le tel quel.`,
+    `- TES CAPACITÉS = tes outils dédiés + le catalogue de capacités auto-découvertes (en fin de prompt) + query_database. Avant d'affirmer « je ne peux pas », vérifie le catalogue puis find_capability. Trois réponses honnêtes : (1) je le fais ; (2) la plateforme le permet via un écran mais pas encore via moi — je le dis et je le signale ; (3) non supporté. N'invente jamais une fausse règle métier pour masquer une limite.`,
+    ``,
+    `FLUX MÉTIER DU QUOTIDIEN (exécute-les en une passe) :`,
+    `- DÉPÔT déclaré (argent déjà reçu) : search_clients → create_and_validate_deposit (montant, method). Les captures jointes deviennent automatiquement les preuves. Argent pas encore reçu : create_deposit (en attente), puis validate_deposit quand il arrive.`,
+    `- PAIEMENT fournisseur : search_clients → create_payment (client_user_id, amount_xaf, method). Le bénéficiaire peut être fourni DANS create_payment (beneficiary_name, phone, banque, compte…) ou complété ensuite via update_payment_beneficiary (par BZ-PY-…). Bénéficiaires RÉUTILISABLES d'un client : list_beneficiaries pour retrouver, create_beneficiary / update_beneficiary / archive_beneficiary pour gérer. Si l'admin nomme un bénéficiaire connu, retrouve-le d'abord (list_beneficiaries) et utilise ses infos.`,
+    `- TAUX D'UN PAIEMENT — UNITÉ À MAÎTRISER ABSOLUMENT : le paramètre exchange_rate est en ¥ CNY pour 1 000 000 XAF (ordre de grandeur : 10 000 à 13 000, ex. 11 530). Or les admins dictent souvent le taux « en XAF pour 1 ¥ » (ex. « taux 86 » = 86 XAF par yuan, soit 1 000 000 ÷ 86 ≈ 11 628 ¥/1M). Règle : un « taux » donné < 1 000 est presque sûrement en XAF/¥ → convertis (1 000 000 ÷ taux), passe le résultat dans exchange_rate et DIS la conversion. L'outil vérifie de toute façon la cohérence avec le taux du jour et refuse un taux aberrant. Sans taux donné par l'admin : ne passe PAS exchange_rate — le taux du jour s'applique automatiquement. Ne calcule jamais un montant RMB toi-même : c'est l'outil qui calcule.`,
+    ``,
+    `ÉCRITURE (dépôts, paiements, bénéficiaires, clients, taux, wallet, trésorerie) :`,
+    `- Un outil d'écriture N'EXÉCUTE RIEN immédiatement : il prépare une CARTE DE CONFIRMATION que l'admin valide d'un tap. C'est voulu — propose la carte sans hésiter, l'humain reste le dernier verrou.`,
+    `- Toute action sur un client existant exige son user_id RÉEL (UUID) obtenu via search_clients. N'invente jamais un identifiant, un montant ou un taux : récupère-les. Client introuvable → propose de le créer.`,
+    `- Après proposition, une phrase pour dire de confirmer via la carte. Ne ré-appelle pas le même outil en boucle pour la même action.`,
+    ``,
+    `MÉMOIRE : un bloc « MÉMOIRE » (profil de l'admin, résumé de conversation, souvenirs) peut t'être fourni — appuie-toi dessus sans le réciter. « Retiens que… » ou préférence durable → outil remember (key courte + value). Jamais de données sensibles en mémoire (soldes, numéros de compte) : elles se lisent en direct.`,
     ``,
     `PIÈCES JOINTES — RÈGLE ABSOLUE : NE LIS PAS, N'ANALYSE PAS les captures. Tu n'as pas à savoir ce qu'il y a dessus. L'admin te donne lui-même les infos (client, montant, mode de paiement) dans son message. Les captures servent UNIQUEMENT de preuves à attacher. Ne commente jamais le contenu d'une image, ne dis jamais "la capture n'est pas bonne", ne demande jamais à quoi elle correspond. Il peut y en avoir plusieurs : toutes sont attachées automatiquement.`,
     `Exemple : "Dépôt de 5M pour Jonas Boco par Orange Money, voici les preuves" → tu retrouves Jonas via search_clients, puis tu proposes create_and_validate_deposit avec montant=5000000 et method=om_transfer. Les captures jointes deviennent automatiquement les preuves. Tu ne regardes pas les images.`,
@@ -2578,16 +2630,29 @@ async function streamAnthropic(apiKey: string, body: Record<string, unknown>, on
       let ev: AnyClient;
       try { ev = JSON.parse(payload); } catch { continue; }
       if (ev.type === "content_block_start") {
-        blocks[ev.index] = ev.content_block?.type === "tool_use"
-          ? { type: "tool_use", id: ev.content_block.id, name: ev.content_block.name, input: {} }
-          : { type: "text", text: "" };
-        if (ev.content_block?.type === "tool_use") jsonBuf[ev.index] = "";
+        const cb = ev.content_block ?? {};
+        if (cb.type === "tool_use") {
+          blocks[ev.index] = { type: "tool_use", id: cb.id, name: cb.name, input: {} };
+          jsonBuf[ev.index] = "";
+        } else if (cb.type === "thinking") {
+          // Réflexion adaptative : on capture le bloc (texte + signature) pour le REJOUER
+          // tel quel dans la boucle d'outils — exigé par l'API. Jamais montré à l'admin.
+          blocks[ev.index] = { type: "thinking", thinking: cb.thinking ?? "", signature: cb.signature ?? "" };
+        } else if (cb.type === "redacted_thinking") {
+          blocks[ev.index] = { type: "redacted_thinking", data: cb.data ?? "" };
+        } else {
+          blocks[ev.index] = { type: "text", text: cb.text ?? "" };
+        }
       } else if (ev.type === "content_block_delta") {
         if (ev.delta?.type === "text_delta") {
           blocks[ev.index].text += ev.delta.text;
           onText(ev.delta.text);
         } else if (ev.delta?.type === "input_json_delta") {
           jsonBuf[ev.index] = (jsonBuf[ev.index] ?? "") + (ev.delta.partial_json ?? "");
+        } else if (ev.delta?.type === "thinking_delta") {
+          blocks[ev.index].thinking = (blocks[ev.index]?.thinking ?? "") + (ev.delta.thinking ?? "");
+        } else if (ev.delta?.type === "signature_delta") {
+          blocks[ev.index].signature = ev.delta.signature ?? blocks[ev.index]?.signature ?? "";
         }
       } else if (ev.type === "content_block_stop") {
         const b = blocks[ev.index];
@@ -2621,6 +2686,36 @@ async function embedText(text: string): Promise<number[] | null> {
     const out = await session.run(String(text ?? "").slice(0, 2000), { mean_pool: true, normalize: true });
     return Array.isArray(out) ? (out as number[]) : null;
   } catch (_) { return null; }
+}
+
+// ─── CATALOGUE DE CAPACITÉS (AI-native) ──────────────────────────────────────
+// Le cœur du « Mola connaît tout » : au lieu d'attendre que le modèle PENSE à appeler
+// find_capability, on scanne les étiquettes @mola à chaque requête et on injecte le
+// catalogue complet dans le prompt système. Une RPC étiquetée = Mola la voit dès le
+// 1er token, avec ses paramètres réels. Déterministe (tri par nom côté SQL) → le bloc
+// reste stable et profite du cache de prompt. Best-effort : vide si erreur.
+async function buildCapabilityCatalog(admin: AnyClient): Promise<string> {
+  try {
+    const { data } = await admin.rpc("mola_discover_capabilities", { p_search: null });
+    const caps = Array.isArray(data) ? data : [];
+    if (caps.length === 0) return "";
+    const lines: string[] = [];
+    for (const c of caps.slice(0, 80)) {
+      const m = (c.meta ?? {}) as Record<string, AnyClient>;
+      if (m.tool) continue; // doublon d'un outil dédié → l'outil suffit, on ne liste pas deux fois
+      const resolve = m.resolve && typeof m.resolve === "object"
+        ? ` ; références acceptées : ${Object.entries(m.resolve as Record<string, string>).map(([k, v]) => `${k}=${v}`).join(", ")} (BZ-… ou nom — résolues automatiquement)`
+        : "";
+      const via = m.kind === "read" ? "lecture (find_capability/query_database)" : "do_capability";
+      lines.push(`- ${c.name} — ${m.label ?? c.name} [${m.kind ?? "write"}${m.danger ? ", sensible" : ""}, permission ${m.permission ?? "—"}] → ${via}. Paramètres : ${c.args || "aucun"}${resolve}`);
+    }
+    if (lines.length === 0) return "";
+    return [
+      `CAPACITÉS AUTO-DÉCOUVERTES (catalogue live des étiquettes @mola — en PLUS de tes outils) :`,
+      `Ces opérations existent sur la plateforme et te sont accessibles sans outil dédié. Pour une ÉCRITURE : appelle do_capability(capability=<name>, params={…}) — une carte de confirmation s'affiche, la permission est re-vérifiée côté serveur. Tu n'as PAS besoin de find_capability pour celles listées ici (il reste utile pour re-vérifier ou chercher autre chose).`,
+      ...lines,
+    ].join("\n");
+  } catch (_) { return ""; }
 }
 
 // Bloc de contexte mémoire : profil (toujours) + résumé roulant + souvenirs récupérés (best-effort).
@@ -2662,7 +2757,7 @@ async function maybeCompact(admin: AnyClient, apiKey: string, adminUserId: strin
     const { data: old } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(Math.max(0, n - 20));
     const text = (old ?? []).map((m: AnyClient) => `${m.role}: ${typeof m.content?.text === "string" ? m.content.text : ""}`).filter(Boolean).join("\n").slice(0, 12000);
     if (!text) return;
-    const resp = await callAnthropic(apiKey, { model: MODEL_FAST, max_tokens: 400, system: "Résume en 4-6 puces les faits DURABLES de cette conversation (clients, montants, décisions). Concis, factuel, en français.", messages: [{ role: "user", content: text }] });
+    const resp = await callAnthropic(apiKey, { model: MODEL_SUMMARY, max_tokens: 400, system: "Résume en 4-6 puces les faits DURABLES de cette conversation (clients, montants, décisions). Concis, factuel, en français.", messages: [{ role: "user", content: text }] });
     // deno-lint-ignore no-explicit-any
     const summary = (resp?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
     if (!summary) return;
@@ -2782,9 +2877,10 @@ serve(async (req) => {
     }
 
     // VITESSE : on lance la construction du contexte mémoire (lectures DB + embedding, ~150-250ms)
-    // EN PARALLÈLE du reste de la préparation (historique, outils, prompt). On l'attend juste avant
-    // l'appel modèle → son temps est recouvert au lieu de s'ajouter.
+    // ET le catalogue de capacités EN PARALLÈLE du reste de la préparation (historique, outils,
+    // prompt). On les attend juste avant l'appel modèle → leur temps est recouvert au lieu de s'ajouter.
     const memoryPromise = buildMemoryContext(admin, user.id, String(conversationId), message);
+    const catalogPromise = buildCapabilityCatalog(admin);
 
     // Les N derniers messages (les plus RÉCENTS), remis dans l'ordre chronologique pour le modèle.
     const { data: histRaw } = await admin.from("assistant_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(40);
@@ -2835,17 +2931,19 @@ serve(async (req) => {
     // Cache du bloc d'outils (gros préfixe stable) → tours suivants plus rapides/moins chers.
     if (toolDefs.length) toolDefs[toolDefs.length - 1].cache_control = { type: "ephemeral" };
 
-    const system = buildSystemPrompt(role, firstName);
-    // Mémoire (Lot 3) : contexte rappelé (profil + résumé roulant + souvenirs), best-effort.
-    // Lancée plus haut en parallèle (memoryPromise) → ici on ne fait qu'attendre le résultat déjà en cours.
-    const memoryContext = await memoryPromise;
+    // Catalogue de capacités + mémoire : lancés plus haut en parallèle, on ne fait qu'attendre.
+    // Le catalogue est STABLE (tri déterministe) → il vit DANS le bloc système caché (préfixe).
+    // La mémoire est VOLATILE (par admin/conversation) → bloc séparé, APRÈS le point de cache.
+    const [capabilityCatalog, memoryContext] = await Promise.all([catalogPromise, memoryPromise]);
+    const system = buildSystemPrompt(role, firstName) + (capabilityCatalog ? `\n\n${capabilityCatalog}` : "");
     // deno-lint-ignore no-explicit-any
     const systemBlocks: any[] = [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
     if (memoryContext) systemBlocks.push({ type: "text", text: memoryContext });
 
     // ──────────── RÉPONSE EN STREAMING (SSE) ────────────
-    // MODEL_FAST par défaut (Haiku — rapide) ; bascule sur MODEL_SMART (Sonnet) dès qu'une
-    // action d'écriture est proposée (les deux surchargeables par secret ASSISTANT_MODEL_*).
+    // UN seul modèle frontière (MODEL) pour toute la boucle, avec réflexion adaptative :
+    // c'est lui qui comprend la demande, choisit les outils ET construit les arguments
+    // des actions financières. Le cache de prompt reste valide d'une itération à l'autre.
     const convId = conversationId;
     const stream = new ReadableStream({
       async start(controller) {
@@ -2854,7 +2952,6 @@ serve(async (req) => {
         const usedTools: string[] = [];
         // deno-lint-ignore no-explicit-any
         const proposals: any[] = [];
-        let model = MODEL_FAST;
         const totalUsage: TokenUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
 
         send({ type: "start", conversationId: convId });
@@ -2863,7 +2960,7 @@ serve(async (req) => {
           for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
             const resp = await streamAnthropic(
               apiKey,
-              { model, max_tokens: 2000, system: systemBlocks, tools: toolDefs, messages },
+              { model: MODEL, max_tokens: MAX_TOKENS, ...MODEL_THINKING, ...MODEL_EFFORT, system: systemBlocks, tools: toolDefs, messages },
               (delta) => send({ type: "delta", text: delta }),
             );
             const content = resp.content ?? [];
@@ -2875,9 +2972,9 @@ serve(async (req) => {
             const toolUses = content.filter((b: any) => b.type === "tool_use");
 
             if (resp.stop_reason === "tool_use" && toolUses.length > 0) {
+              // Le contenu complet (y compris les blocs thinking) est rejoué tel quel — exigé
+              // par l'API avec la réflexion adaptative.
               messages.push({ role: "assistant", content });
-              // Si une action d'ÉCRITURE est demandée, on passe au modèle "smart" pour la suite.
-              if (toolUses.some((tu: AnyClient) => allowedWrite.find((t) => t.name === tu.name))) model = MODEL_SMART;
               // deno-lint-ignore no-explicit-any
               const results: any[] = [];
               for (const tu of toolUses) {
@@ -2950,8 +3047,18 @@ serve(async (req) => {
             // deno-lint-ignore no-explicit-any
             const turnText = content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
             finalText += (finalText && turnText ? "\n" : "") + turnText;
-            // Réponse tronquée par la limite de tokens → on POURSUIT la génération (QW-2b).
-            if (resp.stop_reason === "max_tokens") { messages.push({ role: "assistant", content }); continue; }
+            // Classifieurs de sécurité (Fable 5) : la requête est déclinée proprement, on ne replonge pas.
+            if (resp.stop_reason === "refusal") {
+              if (!turnText) { const msg = "Je ne peux pas traiter cette demande. Reformule-la ou passe par l'écran concerné."; finalText += (finalText ? "\n" : "") + msg; send({ type: "delta", text: msg }); }
+              break;
+            }
+            // Réponse tronquée par la limite de tokens → on demande la SUITE via un tour user.
+            // (Un message assistant en fin de conversation = préremplissage → 400 sur les modèles 4.6+.)
+            if (resp.stop_reason === "max_tokens") {
+              messages.push({ role: "assistant", content });
+              messages.push({ role: "user", content: "[Ta réponse a été coupée par la limite de longueur. Continue exactement où tu t'étais arrêté, sans rien répéter.]" });
+              continue;
+            }
             break;
           }
 
@@ -2970,7 +3077,7 @@ serve(async (req) => {
             admin_user_id: user.id, action_type: "assistant_query", target_type: "assistant", target_id: convId,
             details: {
               message: message.slice(0, 200), tools: usedTools, attachments: acceptedAttachments.length, proposals: proposals.length,
-              model, usage: totalUsage, est_cost_usd: estimateCostUsd(model, totalUsage),
+              model: MODEL, usage: totalUsage, est_cost_usd: estimateCostUsd(MODEL, totalUsage),
             },
           }).then(() => {}, () => {});
 

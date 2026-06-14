@@ -5,6 +5,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ViewportShell } from '@/components/layout/ViewportShell';
 import { useAdminAssistant, type AssistantProposal } from '@/hooks/useAdminAssistant';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { MolaMascot } from '@/components/MolaMascot';
 import { validateUploadFile, cn } from '@/lib/utils';
 
 const SUGGESTIONS = [
@@ -294,6 +295,16 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
         title="Mola"
         subtitle="Directeur des Opérations"
         showBack={!desktop}
+        leading={
+          <MolaMascot
+            className="h-9 w-9"
+            fallback={
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                <Bot className="h-5 w-5" />
+              </div>
+            }
+          />
+        }
         className="border-transparent bg-transparent backdrop-blur-none"
       />
       {/* Bouton explicite « nouvelle conversation » — visible uniquement quand
@@ -402,9 +413,14 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
     <>
       {isEmpty ? (
         <div className="flex flex-col items-center pt-10 text-center">
-          <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
-            <Bot className="h-8 w-8" />
-          </div>
+          <MolaMascot
+            className="h-24 w-24 drop-shadow-[0_10px_22px_rgba(251,87,19,0.28)]"
+            fallback={
+              <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
+                <Bot className="h-8 w-8" />
+              </div>
+            }
+          />
           <h2 className="mt-4 text-lg font-bold text-[#1B1A24] dark:text-[#F2F1F7]">
             Bonjour {profile?.first_name || ''} 👋
           </h2>
@@ -428,7 +444,19 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
       ) : (
         <div className="space-y-3">
           {messages.map((m) => (
-            <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'items-start')}>
+            <div key={m.id} className={cn('flex flex-col gap-2', m.role === 'user' ? 'items-end' : 'w-full items-start')}>
+              <div className={cn('flex w-full items-end gap-2', m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                {m.role !== 'user' && (
+                  <MolaMascot
+                    className="h-7 w-7 shrink-0 self-end"
+                    alt=""
+                    fallback={
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center self-end rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                        <Bot className="h-4 w-4" />
+                      </div>
+                    }
+                  />
+                )}
               <div
                 className={cn(
                   'max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] px-4 py-2.5 text-[15px] leading-relaxed',
@@ -462,6 +490,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                 ) : null}
                 {m.text && <RichText text={m.text} />}
               </div>
+              </div>
               {m.images?.map((img, i) => (
                 <button
                   key={i}
@@ -489,7 +518,17 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
             </div>
           ))}
           {isLoading && (
-            <div className="flex justify-start">
+            <div className="flex items-end justify-start gap-2">
+              <MolaMascot
+                className="h-7 w-7 shrink-0"
+                alt=""
+                breathing
+                fallback={
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                    <Bot className="h-4 w-4" />
+                  </div>
+                }
+              />
               <div className={cn('flex items-center gap-2 rounded-[20px] rounded-bl-md px-4 py-3 text-[#6B6880] dark:text-[#9B98AD]', CARD, SOFT)}>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">Mola réfléchit…</span>
