@@ -11,6 +11,7 @@ import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
 import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
+import { MolaMascot } from '@/components/MolaMascot';
 import { DESKTOP_NAV, type DesktopNavItem } from './desktopNav';
 
 function initials(first?: string, last?: string) {
@@ -79,7 +80,11 @@ export function DesktopSidebar() {
                       )
                     }
                   >
-                    <Icon className="h-[18px] w-[18px]" />
+                    {item.mascot ? (
+                      <MolaMascot className="h-[18px] w-[18px]" fallback={<Icon className="h-[18px] w-[18px]" />} />
+                    ) : (
+                      <Icon className="h-[18px] w-[18px]" />
+                    )}
                     <span className="flex-1 truncate">{item.label}</span>
                     {badge > 0 && (
                       <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FE560D] px-1.5 text-[11px] font-bold text-white">
