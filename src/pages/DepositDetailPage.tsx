@@ -1,18 +1,29 @@
 // ============================================================
-// MODULE DEPOTS — DepositDetailPage (Revolut-inspired redesign)
-// Premium fintech UI with hero zone, animated amount, structured details
+// PAGE — DepositDetailPage (orchestrateur), refonte « Direction A ».
+// En-tête drill-in (retour + référence) · action en tête (reçu si crédité,
+// carte ROUGE « Ajouter la preuve » + countdown si preuve attendue) · hero
+// montant XAF · messages de statut · coordonnées Bonzini · preuve (strip +
+// upload) · suivi (jalons cycle de vie) · annuler · détails. Reçu PDF,
+// upload/suppression preuves, countdown, timeline 100% PRÉSERVÉS.
 // ============================================================
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  ArrowLeft, ArrowRight, XCircle, Ban, FileText, Eye, Download,
+  FileDown, Loader2, Trash2, ChevronDown,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { TextArea } from '@/components/form';
+import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
+import { DepositMethodLogo } from '@/mobile/components/deposits/DepositLogos';
 import { ProofUpload } from '@/components/deposit/ProofUpload';
 import { DepositTimelineDisplay } from '@/components/deposit/DepositTimelineDisplay';
 import { CountdownTimer } from '@/components/deposit/CountdownTimer';
 import { DepositInstructions } from '@/components/deposit/DepositInstructions';
-import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import {
   useDepositDetail,
   useDepositProofs,
@@ -21,129 +32,38 @@ import {
   useDeleteDepositProof,
   useCancelDeposit,
 } from '@/hooks/useDeposits';
-import { formatXAF } from '@/lib/formatters';
-import { useTranslation } from 'react-i18next';
+import { formatNumber } from '@/lib/formatters';
 import { buildDepositTimelineSteps, safeFormatDate } from '@/lib/depositTimeline';
-import { useCountUp } from '@/hooks/useCountUp';
-import {
-  Copy,
-  Check,
-  ArrowLeft,
-  Building2,
-  XCircle,
-  AlertCircle,
-  Ban,
-  Smartphone,
-  Store,
-  Waves,
-  FileText,
-  Eye,
-  Download,
-  FileDown,
-  Loader2,
-  Trash2,
-  ChevronDown,
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { depositLifecycle, depositStatusLabel, LIFECYCLE_COLOR } from '@/lib/depositLifecycle';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { DepositReceiptPDF } from '@/lib/pdf/templates/DepositReceiptPDF';
 import type { DepositReceiptData } from '@/lib/pdf/templates/DepositReceiptPDF';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PROOF_DELETE_REASONS } from '@/types/deposit';
-import { cn } from '@/lib/utils';
-
-// ── Helpers ──────────────────────────────────────────────────
 
 function ProofImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <div className={cn('flex flex-col items-center justify-center bg-muted/50', className)}>
-        <FileText className="w-6 h-6 text-muted-foreground" />
+      <div className={cn('flex flex-col items-center justify-center', SURFACE.holder, className)}>
+        <FileText className="h-6 w-6" />
       </div>
     );
   }
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
 
-function DetailRow({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="revolut-detail-row">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={cn('text-sm font-medium text-foreground text-right', valueClassName)}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function getHeroIconStyle(status: string) {
-  switch (status) {
-    case 'validated':
-    case 'wallet_credited':
-      return 'bg-success/10 text-success animate-success-glow';
-    case 'rejected':
-      return 'bg-destructive/10 text-destructive';
-    case 'cancelled':
-      return 'bg-muted text-muted-foreground';
-    case 'pending_correction':
-      return 'bg-amber-500/10 text-amber-600';
-    default:
-      return 'bg-primary/10 text-primary animate-glow-pulse';
-  }
-}
-
-function getStatusTextColor(status: string) {
-  switch (status) {
-    case 'validated':
-    case 'wallet_credited':
-      return 'text-success';
-    case 'rejected':
-      return 'text-destructive';
-    case 'cancelled':
-      return 'text-muted-foreground';
-    case 'pending_correction':
-      return 'text-amber-600';
-    case 'admin_review':
-      return 'text-primary';
-    default:
-      return '';
-  }
-}
-
-// ── Main Component ──────────────────────────────────────────
-
 const DepositDetailPage = () => {
   const { depositId } = useParams<{ depositId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation('deposits');
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [uploadedProofs, setUploadedProofs] = useState<File[]>([]);
   const [viewingProof, setViewingProof] = useState<{ url: string; name: string } | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
@@ -152,6 +72,8 @@ const DepositDetailPage = () => {
   const [customDeleteReason, setCustomDeleteReason] = useState('');
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const uploadRef = useRef<HTMLDivElement | null>(null);
 
   const { data: deposit, isLoading: loadingDeposit } = useDepositDetail(depositId);
   const { data: proofs, isLoading: loadingProofs } = useDepositProofs(depositId);
@@ -161,9 +83,6 @@ const DepositDetailPage = () => {
   const uploadProofs = useUploadMultipleProofs();
   const deleteProof = useDeleteDepositProof();
   const cancelDeposit = useCancelDeposit();
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-
-  const animatedAmount = useCountUp(deposit?.amount_xaf ?? 0, { duration: 800 });
 
   useEffect(() => {
     const state = location.state as { fromProofUpload?: boolean } | null;
@@ -171,7 +90,7 @@ const DepositDetailPage = () => {
       toast.success(t('detail.proofUploadedSuccess'));
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, t]);
 
   const timelineSteps = useMemo(() => {
     if (!deposit) return [];
@@ -180,100 +99,69 @@ const DepositDetailPage = () => {
 
   const isLoading = loadingDeposit || loadingProofs || loadingTimeline;
 
+  // ── En-tête drill-in réutilisable ──
+  const Header = ({ title }: { title: string }) => (
+    <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+      <button
+        onClick={() => navigate('/deposits')}
+        aria-label={t('detail.backToDeposits')}
+        className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.card, SURFACE.shadow)}
+      >
+        <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+      </button>
+      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</span>
+    </div>
+  );
+
   if (isLoading) {
     return (
-      <MobileLayout showNav={false}>
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl px-4 py-3 safe-area-top">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('min-h-[100dvh] space-y-4 p-4', SURFACE.canvas)}>
+          <div className={cn('h-10 w-44 animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-52 w-full animate-pulse rounded-[26px]', SURFACE.card, SURFACE.shadow)} />
+          <div className={cn('h-40 w-full animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
         </div>
-        <SkeletonDetail />
       </MobileLayout>
     );
   }
 
   if (!deposit) {
     return (
-      <MobileLayout showNav={false}>
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl px-4 py-3 safe-area-top">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-4 text-center pt-20">
-          <p className="text-muted-foreground">{t('detail.notFound')}</p>
-          <Button onClick={() => navigate('/deposits')} className="mt-4">
-            {t('detail.backToDeposits')}
-          </Button>
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+          <Header title="" />
+          <div className="flex flex-col items-center justify-center px-6 pt-24 text-center">
+            <p className={cn('text-[15px]', TEXT.muted)}>{t('detail.notFound')}</p>
+            <button onClick={() => navigate('/deposits')} className={cn('mt-5 px-6 py-[13px] text-[14px] font-bold', PRIMARY_PILL)}>
+              {t('detail.backToDeposits')}
+            </button>
+          </div>
         </div>
       </MobileLayout>
     );
   }
 
-  const getMethodIcon = () => {
-    switch (deposit.method) {
-      case 'bank_transfer':
-      case 'bank_cash':
-        return Building2;
-      case 'agency_cash':
-        return Store;
-      case 'wave':
-        return Waves;
-      default:
-        return Smartphone;
-    }
-  };
-
-  const mapStatusToType = (status: string): 'pending' | 'processing' | 'success' | 'error' | 'info' => {
-    switch (status) {
-      case 'validated': return 'success';
-      case 'rejected': return 'error';
-      case 'pending_correction': return 'info';
-      case 'cancelled': return 'error';
-      case 'admin_review': return 'processing';
-      case 'proof_submitted': return 'info';
-      default: return 'pending';
-    }
-  };
-
-  const IconComponent = getMethodIcon();
+  const lc = depositLifecycle(deposit.status);
+  const lcColor = LIFECYCLE_COLOR[lc.kind];
   const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof';
   const canDeleteProofs = !['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
   const canCancel = ['created', 'awaiting_proof', 'proof_submitted'].includes(deposit.status);
   const isTerminal = ['validated', 'wallet_credited', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
+  const isValidated = deposit.status === 'validated' || deposit.status === 'wallet_credited';
+  const showCountdown = deposit.status === 'created' || deposit.status === 'awaiting_proof';
+  const creditedAmount = deposit.confirmed_amount_xaf ?? deposit.amount_xaf;
+  const amountDiffers = deposit.confirmed_amount_xaf != null && deposit.confirmed_amount_xaf !== deposit.amount_xaf;
 
-  const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      toast.success(t('detail.copied'));
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch {
-      toast.error(t('detail.copyError'));
-    }
-  };
-
-  const handleProofsUpload = (files: File[]) => {
-    setUploadedProofs(files);
-  };
+  const handleProofsUpload = (files: File[]) => setUploadedProofs(files);
 
   const handleConfirmProofs = async () => {
     if (!uploadedProofs.length || !depositId) return;
     await uploadProofs.mutateAsync({ depositId, files: uploadedProofs });
     setUploadedProofs([]);
-    setUploadKey(k => k + 1);
+    setUploadKey((k) => k + 1);
   };
 
-  const isImageFile = (fileType: string | null) => {
-    return fileType?.startsWith('image/');
-  };
+  const isImageFile = (fileType: string | null) => fileType?.startsWith('image/');
 
   const handleDownloadProof = (url: string, fileName: string) => {
     const link = document.createElement('a');
@@ -289,7 +177,6 @@ const DepositDetailPage = () => {
     if (!deposit || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const clientName = profile
         ? `${profile.first_name} ${profile.last_name}`
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -329,354 +216,232 @@ const DepositDetailPage = () => {
     }
   };
 
+  const methodLabel = t(`method.${deposit.method}`, deposit.method);
+
   return (
-    <MobileLayout showNav={false}>
-      {/* ── Sticky back button ── */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl px-4 py-3 safe-area-top">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      </div>
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+        <Header title={deposit.reference} />
 
-      {/* ── HERO ZONE ── */}
-      <div className="flex flex-col items-center pt-2 pb-6 px-4">
-        {/* Method icon with status-dependent glow */}
-        <div
-          className={cn(
-            'w-16 h-16 rounded-2xl flex items-center justify-center mb-4 animate-scale-in',
-            getHeroIconStyle(deposit.status),
-          )}
-        >
-          <IconComponent className="w-8 h-8" />
-        </div>
-
-        {/* Method label */}
-        <p className="text-sm font-medium text-muted-foreground mb-2 animate-fade-in">
-          {t(`method.${deposit.method}`, deposit.method)}
-        </p>
-
-        {/* Status badge */}
-        <div
-          className="mb-4 animate-slide-up"
-          style={{ animationDelay: '50ms', animationFillMode: 'both' }}
-        >
-          <StatusBadge
-            status={mapStatusToType(deposit.status)}
-            label={t(`status.${deposit.status}`, deposit.status)}
-          />
-        </div>
-
-        {/* Animated amount */}
-        <p className="text-4xl sm:text-5xl font-bold text-foreground tabular-nums tracking-tight">
-          {formatXAF(animatedAmount)}
-        </p>
-        <p className="text-lg text-muted-foreground font-medium mt-1">XAF</p>
-
-        {/* Date */}
-        <p className="text-sm text-muted-foreground mt-3 animate-fade-in">
-          {safeFormatDate(deposit.created_at)}
-        </p>
-      </div>
-
-      {/* ── CONTENT SECTIONS ── */}
-      <div className="space-y-4 px-4 pb-8">
-
-        {/* Transaction ID strip */}
-        <div
-          className="flex items-center justify-between p-3.5 bg-muted/30 rounded-xl animate-slide-up"
-          style={{ animationDelay: '150ms', animationFillMode: 'both' }}
-        >
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground mb-0.5">Transaction ID</p>
-            <p className="text-sm font-semibold text-foreground font-mono truncate">
-              {deposit.reference}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+        <div className="space-y-5 px-4 pb-8 pt-3">
+          {/* Action en tête : reçu (crédité) OU action rouge (preuve attendue / à corriger) */}
+          {isValidated ? (
             <button
-              onClick={() => copyToClipboard(deposit.reference, 'reference')}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-            >
-              {copiedField === 'reference' ? (
-                <Check className="w-4 h-4 text-success" />
-              ) : (
-                <Copy className="w-4 h-4 text-muted-foreground" />
-              )}
-            </button>
-            {isTerminal && (
-              <button
-                onClick={handleDownloadReceipt}
-                disabled={isGeneratingPDF}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
-                title={t('detail.downloadReceipt')}
-              >
-                {isGeneratingPDF ? (
-                  <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-                ) : (
-                  <FileDown className="w-4 h-4 text-muted-foreground" />
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── Alert banners (conditional) ── */}
-
-        {/* Countdown timer — only for initial states, not pending_correction */}
-        {(deposit.status === 'created' || deposit.status === 'awaiting_proof') && (
-          <div
-            className="animate-slide-up"
-            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
-          >
-            <CountdownTimer createdAt={deposit.created_at} variant="banner" />
-          </div>
-        )}
-
-        {/* Rejection notice */}
-        {deposit.status === 'rejected' && deposit.rejection_reason && (
-          <div
-            className="revolut-alert-error animate-slide-up"
-            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
-          >
-            <div className="flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-sm text-destructive">{t('detail.depositRejected')}</p>
-                <p className="text-sm text-muted-foreground mt-1">{deposit.rejection_reason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Cancelled notice */}
-        {deposit.status === 'cancelled' && (
-          <div
-            className="revolut-alert-muted animate-slide-up"
-            style={{ animationDelay: '180ms', animationFillMode: 'both' }}
-          >
-            <div className="flex items-start gap-3">
-              <Ban className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-sm text-gray-600 dark:text-gray-400">
-                  {t('detail.depositCancelled')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">{t('detail.depositCancelledDesc')}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Details card ── */}
-        <div
-          className="revolut-detail-section animate-slide-up"
-          style={{ animationDelay: '220ms', animationFillMode: 'both' }}
-        >
-          <div className="revolut-detail-header">
-            <h3 className="text-sm font-semibold text-foreground">{t('detail.details')}</h3>
-          </div>
-          <div className="divide-y divide-border/30">
-            <DetailRow label={t('detail.method')} value={t(`method.${deposit.method}`, deposit.method)} />
-            {deposit.bank_name && (
-              <DetailRow label={t('detail.bank')} value={deposit.bank_name} />
-            )}
-            {deposit.agency_name && (
-              <DetailRow label={t('detail.agency')} value={deposit.agency_name} />
-            )}
-            <DetailRow label={t('detail.amount')} value={`${formatXAF(deposit.amount_xaf)} XAF`} />
-            <DetailRow
-              label={t('detail.status')}
-              value={t(`status.${deposit.status}`, deposit.status)}
-              valueClassName={getStatusTextColor(deposit.status)}
-            />
-            <DetailRow label={t('detail.date')} value={safeFormatDate(deposit.created_at) || '-'} />
-          </div>
-        </div>
-
-        {/* ── Instructions section ── */}
-        {!isTerminal && (
-          <div
-            className="revolut-detail-section animate-slide-up"
-            style={{ animationDelay: '260ms', animationFillMode: 'both' }}
-          >
-            <div className="p-4">
-              <DepositInstructions deposit={deposit} />
-            </div>
-          </div>
-        )}
-        {isTerminal && (
-          <div
-            className="animate-slide-up"
-            style={{ animationDelay: '260ms', animationFillMode: 'both' }}
-          >
-            <button
-              onClick={() => setInstructionsOpen(!instructionsOpen)}
-              className="w-full flex items-center justify-between py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>{t('detail.viewInstructions')}</span>
-              <ChevronDown
-                className={cn(
-                  'w-4 h-4 transition-transform duration-200',
-                  instructionsOpen && 'rotate-180',
-                )}
-              />
-            </button>
-            {instructionsOpen && (
-              <div className="revolut-detail-section animate-slide-up">
-                <div className="p-4">
-                  <DepositInstructions deposit={deposit} showTitle={false} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Proofs section (horizontal strip) ── */}
-        {proofs && proofs.length > 0 && (
-          <div
-            className="animate-slide-up"
-            style={{ animationDelay: '300ms', animationFillMode: 'both' }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground">{t('detail.proofs')}</h3>
-              <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                {proofs.length}
-              </span>
-            </div>
-            <div className="proof-strip">
-              {proofs.map((proof) => (
-                <div
-                  key={proof.id}
-                  className="relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-border/50 bg-muted/20 proof-thumb cursor-pointer"
-                  onClick={() => {
-                    if (isImageFile(proof.file_type) && proof.signedUrl) {
-                      setViewingProof({ url: proof.signedUrl, name: proof.file_name });
-                    } else if (proof.signedUrl) {
-                      handleDownloadProof(proof.signedUrl, proof.file_name);
-                    }
-                  }}
-                >
-                  {isImageFile(proof.file_type) && proof.signedUrl ? (
-                    <ProofImage
-                      src={proof.signedUrl}
-                      alt={proof.file_name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-primary" />
-                    </div>
-                  )}
-
-                  {/* View overlay */}
-                  <div className="absolute inset-0 bg-black/0 active:bg-black/20 transition-colors flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-white opacity-0 active:opacity-100 transition-opacity" />
-                  </div>
-
-                  {/* Delete button */}
-                  {canDeleteProofs && (
-                    <button
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingProofId(proof.id);
-                        setDeleteReason('');
-                        setCustomDeleteReason('');
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3 text-white" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Proof Upload ── */}
-        {canUploadProof && (
-          <div
-            className="revolut-detail-section p-4 animate-slide-up"
-            style={{ animationDelay: '340ms', animationFillMode: 'both' }}
-          >
-            <ProofUpload
-              key={uploadKey}
-              onFilesSelect={handleProofsUpload}
-              selectedFiles={uploadedProofs}
-              onConfirm={handleConfirmProofs}
-              isSubmitting={uploadProofs.isPending}
-            />
-          </div>
-        )}
-
-        {/* ── Timeline ── */}
-        <div
-          className="revolut-detail-section animate-slide-up"
-          style={{ animationDelay: '380ms', animationFillMode: 'both' }}
-        >
-          <div className="revolut-detail-header">
-            <h3 className="text-sm font-semibold text-foreground">{t('detail.timeline')}</h3>
-          </div>
-          <div className="p-4">
-            <DepositTimelineDisplay steps={timelineSteps} variant="compact" />
-          </div>
-        </div>
-
-        {/* ── Download Receipt ── */}
-        {isTerminal && (
-          <div
-            className="animate-slide-up"
-            style={{ animationDelay: '400ms', animationFillMode: 'both' }}
-          >
-            <Button
-              variant="outline"
-              className="w-full h-12 rounded-xl flex items-center justify-center gap-2 font-medium"
               onClick={handleDownloadReceipt}
               disabled={isGeneratingPDF}
+              className={cn('flex w-full items-center justify-center gap-2 py-[15px] text-[15px] font-bold transition active:scale-[0.99] disabled:opacity-60', PRIMARY_PILL)}
             >
-              {isGeneratingPDF ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileDown className="w-4 h-4" />
-              )}
+              {isGeneratingPDF ? <Loader2 className="h-[17px] w-[17px] animate-spin" /> : <FileDown className="h-[17px] w-[17px]" />}
               {t('detail.downloadReceipt')}
-            </Button>
-          </div>
-        )}
+            </button>
+          ) : showCountdown ? (
+            <div className="rounded-[22px] bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
+              <div className="flex items-center justify-between gap-2">
+                <p className="px-1 text-[13px] font-semibold" style={{ color: LIFECYCLE_COLOR.todo }}>
+                  Ajoutez votre preuve de versement
+                </p>
+                <CountdownTimer createdAt={deposit.created_at} compact />
+              </div>
+              {canUploadProof && (
+                <button
+                  onClick={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  className={cn('mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition active:scale-[0.99]', PRIMARY_PILL)}
+                >
+                  Ajouter la preuve <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ) : deposit.status === 'pending_correction' ? (
+            <div className="rounded-[22px] bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
+              <p className="px-1 text-[13px] font-bold" style={{ color: LIFECYCLE_COLOR.todo }}>{t('status.pending_correction')}</p>
+              {deposit.admin_comment && (
+                <p className={cn('mt-1 px-1 text-[13px]', TEXT.muted)}>{deposit.admin_comment}</p>
+              )}
+            </div>
+          ) : null}
 
-        {/* ── Actions ── */}
-        {canCancel && (
-          <div
-            className="animate-slide-up"
-            style={{ animationDelay: '420ms', animationFillMode: 'both' }}
-          >
+          {/* Hero — montant */}
+          <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DepositMethodLogo method={deposit.method} bankName={deposit.bank_name} size={30} radius={9} />
+                <span className={cn('text-[13px] font-bold', TEXT.strong)}>{methodLabel}</span>
+              </div>
+              <span className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ color: lcColor, background: `${lcColor}1F` }}>
+                {depositStatusLabel(deposit.status)}
+              </span>
+            </div>
+
+            <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>
+              {isValidated ? 'Montant crédité sur votre solde' : lc.kind === 'failed' ? 'Montant du dépôt' : 'Montant à verser'}
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              {isValidated && <span className="text-[34px] font-black" style={{ color: LIFECYCLE_COLOR.done }}>+</span>}
+              <span className={cn('text-[52px] font-black leading-none tracking-tight tabular-nums', TEXT.strong)}>
+                {formatNumber(creditedAmount)}
+              </span>
+              <span className="text-[18px] font-extrabold text-[#E8932A]">XAF</span>
+            </div>
+            {isValidated && (
+              <div className={cn('mt-2.5 text-[15px] font-bold tabular-nums', TEXT.muted)}>
+                Crédité le {safeFormatDate(deposit.validated_at || deposit.updated_at)}
+              </div>
+            )}
+            {amountDiffers && (
+              <div className={cn('mt-2 text-[12px] tabular-nums', TEXT.muted)}>
+                Montant demandé : {formatNumber(deposit.amount_xaf)} XAF
+              </div>
+            )}
+          </div>
+
+          {/* Messages de statut */}
+          {deposit.status === 'rejected' && deposit.rejection_reason && (
+            <div className="rounded-[22px] bg-[#FBE7E7] p-5 dark:bg-[#3A2526]">
+              <div className="flex items-start gap-3">
+                <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
+                <div>
+                  <p className="text-[15px] font-bold text-[#C0504D] dark:text-[#E79A9A]">{t('detail.depositRejected')}</p>
+                  <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{deposit.rejection_reason}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {(deposit.status === 'cancelled' || deposit.status === 'cancelled_by_admin') && (
+            <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+              <div className="flex items-start gap-3">
+                <Ban className="mt-0.5 h-5 w-5 shrink-0 text-[#8E8BA0]" />
+                <div>
+                  <p className={cn('text-[15px] font-bold', TEXT.strong)}>{t('detail.depositCancelled')}</p>
+                  <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('detail.depositCancelledDesc')}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Coordonnées Bonzini — où verser (repli si terminal) */}
+          {!isTerminal ? (
+            <DepositInstructions deposit={deposit} />
+          ) : (
+            <div>
+              <button
+                onClick={() => setInstructionsOpen((o) => !o)}
+                className={cn('flex w-full items-center justify-between rounded-[22px] px-5 py-4 text-[14px] font-bold', SURFACE.card, SURFACE.shadow, TEXT.strong)}
+              >
+                <span>{t('detail.viewInstructions')}</span>
+                <ChevronDown className={cn('h-4 w-4 transition-transform', instructionsOpen && 'rotate-180', TEXT.muted)} />
+              </button>
+              {instructionsOpen && (
+                <div className="mt-4">
+                  <DepositInstructions deposit={deposit} showTitle={false} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Preuve de versement — strip + upload */}
+          {(proofs && proofs.length > 0) || canUploadProof ? (
+            <section ref={uploadRef}>
+              <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('detail.proofs')}</h2>
+              <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+                {proofs && proofs.length > 0 && (
+                  <div className={cn('flex gap-3 overflow-x-auto pb-1', canUploadProof && 'mb-4')}>
+                    {proofs.map((proof) => (
+                      <div
+                        key={proof.id}
+                        className="relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08]"
+                        onClick={() => {
+                          if (isImageFile(proof.file_type) && proof.signedUrl) setViewingProof({ url: proof.signedUrl, name: proof.file_name });
+                          else if (proof.signedUrl) handleDownloadProof(proof.signedUrl, proof.file_name);
+                        }}
+                      >
+                        {isImageFile(proof.file_type) && proof.signedUrl ? (
+                          <ProofImage src={proof.signedUrl} alt={proof.file_name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className={cn('flex h-full w-full items-center justify-center', SURFACE.holder)}>
+                            <FileText className="h-8 w-8" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors active:bg-black/20">
+                          <Eye className="h-5 w-5 text-white opacity-0 transition-opacity active:opacity-100" />
+                        </div>
+                        {canDeleteProofs && (
+                          <button
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingProofId(proof.id);
+                              setDeleteReason('');
+                              setCustomDeleteReason('');
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {canUploadProof && (
+                  <ProofUpload
+                    key={uploadKey}
+                    onFilesSelect={handleProofsUpload}
+                    selectedFiles={uploadedProofs}
+                    onConfirm={handleConfirmProofs}
+                    isSubmitting={uploadProofs.isPending}
+                  />
+                )}
+              </div>
+            </section>
+          ) : null}
+
+          {/* Suivi */}
+          <section>
+            <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('detail.timeline')}</h2>
+            <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+              <DepositTimelineDisplay steps={timelineSteps} />
+            </div>
+          </section>
+
+          {/* Détails */}
+          <section>
+            <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('detail.details')}</h2>
+            <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+              <DetailRow label={t('detail.reference')} value={deposit.reference} mono />
+              <DetailRow label={t('detail.method')} value={methodLabel} />
+              {deposit.bank_name && <DetailRow label={t('detail.bank')} value={deposit.bank_name} />}
+              {deposit.agency_name && <DetailRow label={t('detail.agency')} value={deposit.agency_name} />}
+              <DetailRow label={t('detail.date')} value={safeFormatDate(deposit.created_at) || '-'} />
+              {isValidated && deposit.validated_at && (
+                <DetailRow label="Crédité le" value={safeFormatDate(deposit.validated_at) || '-'} last />
+              )}
+            </div>
+          </section>
+
+          {/* Reçu (terminal non crédité) */}
+          {isTerminal && !isValidated && (
             <button
-              className="w-full py-3 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-xl transition-colors"
+              onClick={handleDownloadReceipt}
+              disabled={isGeneratingPDF}
+              className={cn('flex w-full items-center justify-center gap-2 py-3 text-[13px] font-bold transition active:scale-[0.99] disabled:opacity-50', SOFT_PILL)}
+            >
+              {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {t('detail.downloadReceipt')}
+            </button>
+          )}
+
+          {/* Annuler */}
+          {canCancel && (
+            <button
               onClick={() => setCancelDialogOpen(true)}
+              className="w-full py-3 text-center text-[13px] font-semibold text-[#C0504D] transition active:opacity-70 dark:text-[#E79A9A]"
             >
               {t('detail.cancelDeposit')}
             </button>
-          </div>
-        )}
-
-        {/* Back link */}
-        <div
-          className="text-center py-4 animate-slide-up"
-          style={{ animationDelay: '460ms', animationFillMode: 'both' }}
-        >
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
-            onClick={() => navigate('/deposits')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t('detail.backToDeposits')}
-          </button>
+          )}
         </div>
       </div>
 
-      {/* ── Proof Viewer Dialog ── */}
+      {/* Proof Viewer */}
       <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
           <DialogHeader className="p-4 pb-0">
@@ -687,17 +452,9 @@ const DepositDetailPage = () => {
           <div className="p-4 pt-2">
             {viewingProof && (
               <>
-                <ProofImage
-                  src={viewingProof.url}
-                  alt={viewingProof.name}
-                  className="w-full max-h-[70vh] object-contain rounded-lg"
-                />
-                <Button
-                  className="w-full mt-4"
-                  variant="outline"
-                  onClick={() => handleDownloadProof(viewingProof.url, viewingProof.name)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
+                <ProofImage src={viewingProof.url} alt={viewingProof.name} className="max-h-[70vh] w-full rounded-lg object-contain" />
+                <Button className="mt-4 w-full" variant="outline" onClick={() => handleDownloadProof(viewingProof.url, viewingProof.name)}>
+                  <Download className="mr-2 h-4 w-4" />
                   {t('detail.download')}
                 </Button>
               </>
@@ -706,16 +463,16 @@ const DepositDetailPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ── Cancel Deposit Dialog ── */}
+      {/* Cancel Deposit */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Ban className="w-5 h-5 text-destructive" />
+              <Ban className="h-5 w-5 text-destructive" />
               {t('detail.cancelDialogTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('detail.cancelDialogDesc', { amount: `${formatXAF(deposit.amount_xaf)} XAF` })}
+              {t('detail.cancelDialogDesc', { amount: `${formatNumber(deposit.amount_xaf)} XAF` })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -725,34 +482,25 @@ const DepositDetailPage = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (!depositId) return;
-                cancelDeposit.mutate(
-                  { depositId },
-                  { onSettled: () => setCancelDialogOpen(false) },
-                );
+                cancelDeposit.mutate({ depositId }, { onSettled: () => setCancelDialogOpen(false) });
               }}
             >
-              {cancelDeposit.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Ban className="w-4 h-4 mr-2" />
-              )}
+              {cancelDeposit.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
               {t('detail.cancelDialogConfirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Delete Proof Dialog ── */}
+      {/* Delete Proof */}
       <AlertDialog open={!!deletingProofId} onOpenChange={(open) => { if (!open) setDeletingProofId(null); }}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-destructive" />
+              <Trash2 className="h-5 w-5 text-destructive" />
               {t('detail.deleteProofTitle')}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('detail.deleteProofDesc')}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t('detail.deleteProofDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-2 py-2">
@@ -763,10 +511,8 @@ const DepositDetailPage = () => {
                   key={reason}
                   type="button"
                   className={cn(
-                    'w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors',
-                    deleteReason === reason
-                      ? 'border-primary bg-primary/10 text-primary font-medium'
-                      : 'border-border hover:bg-muted/50 text-foreground',
+                    'w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                    deleteReason === reason ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-border text-foreground hover:bg-muted/50',
                   )}
                   onClick={() => setDeleteReason(reason)}
                 >
@@ -794,17 +540,10 @@ const DepositDetailPage = () => {
               onClick={() => {
                 if (!deletingProofId || !depositId) return;
                 const reason = deleteReason === 'Autre' ? customDeleteReason.trim() : deleteReason;
-                deleteProof.mutate(
-                  { proofId: deletingProofId, depositId, reason },
-                  { onSettled: () => setDeletingProofId(null) },
-                );
+                deleteProof.mutate({ proofId: deletingProofId, depositId, reason }, { onSettled: () => setDeletingProofId(null) });
               }}
             >
-              {deleteProof.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4 mr-2" />
-              )}
+              {deleteProof.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               {t('detail.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -813,5 +552,14 @@ const DepositDetailPage = () => {
     </MobileLayout>
   );
 };
+
+function DetailRow({ label, value, mono, last }: { label: string; value: string; mono?: boolean; last?: boolean }) {
+  return (
+    <div className={cn('flex items-center justify-between gap-3 py-2', !last && 'border-b border-black/[0.05] dark:border-white/[0.07]')}>
+      <span className="text-[13px] text-[#8E8BA0]">{label}</span>
+      <span className={cn('truncate text-[13px] font-bold', mono && 'font-mono', 'text-[#1B1A24] dark:text-[#F2F1F7]')}>{value}</span>
+    </div>
+  );
+}
 
 export default DepositDetailPage;

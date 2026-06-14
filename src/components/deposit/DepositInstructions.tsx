@@ -1,16 +1,16 @@
 // ============================================================
-// MODULE DEPOTS — DepositInstructions
-// Method-specific instructions with copy-to-clipboard
+// MODULE DEPOTS — DepositInstructions (refonte « Direction A »).
+// Coordonnées Bonzini « où verser » + code marchand + étapes à suivre +
+// note. Copie au toucher. Logique getInstructionInfo 100% PRÉSERVÉE.
 // ============================================================
 import { useState } from 'react';
-import { Copy, Check, Info, MapPin, Clock } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { formatXAF } from '@/lib/formatters';
+import { formatNumber } from '@/lib/formatters';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import {
   getBankInfo,
   getAgencyInfo,
@@ -84,7 +84,7 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
         { label: t('instructions.fields.holder'), value: orangeMoneyAccount.accountName },
         { label: t('instructions.fields.reference'), value: reference, mono: true },
       ],
-      instructions: t('instructions.steps.omTransfer', { phone: orangeMoneyAccount.phone, amount: formatXAF(amount_xaf), returnObjects: true }) as string[],
+      instructions: t('instructions.steps.omTransfer', { phone: orangeMoneyAccount.phone, amount: formatNumber(amount_xaf), returnObjects: true }) as string[],
     };
   }
 
@@ -113,7 +113,7 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
         { label: t('instructions.fields.holder'), value: mtnMoneyAccount.accountName },
         { label: t('instructions.fields.reference'), value: reference, mono: true },
       ],
-      instructions: t('instructions.steps.mtnTransfer', { phone: mtnMoneyAccount.phone, amount: formatXAF(amount_xaf), returnObjects: true }) as string[],
+      instructions: t('instructions.steps.mtnTransfer', { phone: mtnMoneyAccount.phone, amount: formatNumber(amount_xaf), returnObjects: true }) as string[],
     };
   }
 
@@ -158,7 +158,7 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
         { label: t('instructions.fields.holder'), value: waveAccount.accountName },
         { label: t('instructions.fields.reference'), value: reference, mono: true },
       ],
-      instructions: t('instructions.steps.wave', { phone: waveAccount.phone, amount: formatXAF(amount_xaf), returnObjects: true }) as string[],
+      instructions: t('instructions.steps.wave', { phone: waveAccount.phone, amount: formatNumber(amount_xaf), returnObjects: true }) as string[],
     };
   }
 
@@ -184,125 +184,94 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
   };
 
   const copyAllInfo = () => {
-    const parts = info.fields.map(f => `${f.label}: ${f.value}`);
-    parts.push(`${t('instructions.fields.amount')}: ${formatXAF(deposit.amount_xaf)} XAF`);
+    const parts = info.fields.map((f) => `${f.label}: ${f.value}`);
+    parts.push(`${t('instructions.fields.amount')}: ${formatNumber(deposit.amount_xaf)} XAF`);
     if (info.merchantCode) parts.push(`Code: ${info.merchantCode}`);
     copyToClipboard(parts.join('\n'), 'all');
   };
 
-  const CopyBtn = ({ text, field }: { text: string; field: string }) => (
+  // Ligne « libellé → valeur » copiable d'un toucher.
+  const Row = ({ field, last }: { field: InstructionField; last?: boolean }) => (
     <button
-      onClick={() => copyToClipboard(text, field)}
-      className="p-1.5 rounded-md hover:bg-muted transition-colors"
+      type="button"
+      onClick={() => copyToClipboard(field.value, field.label)}
+      className={cn('flex w-full items-center justify-between gap-3 py-3 text-left transition active:opacity-60', !last && 'border-b border-black/[0.05] dark:border-white/[0.07]')}
     >
-      {copiedField === field ? (
-        <Check className="w-4 h-4 text-success" />
+      <div className="min-w-0">
+        <div className={cn('text-[11px]', TEXT.muted)}>{field.label}</div>
+        <div className={cn('mt-0.5 break-all text-[14px] font-bold', field.mono && 'font-mono', TEXT.strong)}>{field.value}</div>
+      </div>
+      {copiedField === field.label ? (
+        <Check className="h-4 w-4 shrink-0 text-[#2E7D52] dark:text-[#7FCBA0]" />
       ) : (
-        <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+        <Copy className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
       )}
     </button>
   );
 
-  // ── Compact mode (for detail screens) ──
+  // Compact : juste les lignes (contexte serré).
   if (compact) {
     return (
-      <div className="text-sm">
-        {info.fields.map((field) => (
-          <div key={field.label} className="py-2 border-b border-border/50 last:border-b-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] text-muted-foreground mb-0.5">{field.label}</p>
-                <p className={cn(
-                  'text-sm font-medium text-foreground break-all',
-                  field.mono && 'font-mono text-xs tracking-wide',
-                )}>
-                  {field.value}
-                </p>
-              </div>
-              <CopyBtn text={field.value} field={field.label} />
-            </div>
-          </div>
+      <div className="-my-3">
+        {info.fields.map((f, i) => (
+          <Row key={f.label} field={f} last={i === info.fields.length - 1} />
         ))}
       </div>
     );
   }
 
-  // ── Full mode ──
   return (
     <div className="space-y-4">
-      {showTitle && (
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground flex items-center gap-2">
-            <Info className="w-5 h-5 text-primary" />
-            {t('instructions.title')}
-          </h3>
-          <Button variant="ghost" size="sm" onClick={copyAllInfo} className="text-xs">
-            {copiedField === 'all' ? (
-              <>
-                <Check className="w-4 h-4 mr-1 text-success" />
-                {t('instructions.copied')}
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4 mr-1" />
-                {t('instructions.copyAll')}
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {/* Account info card */}
-      <Card className="p-4 bg-muted/30">
-        {info.fields.map((field) => (
-          <div key={field.label} className="py-3 border-b border-border/50 last:border-b-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
-                <p className={cn(
-                  'text-sm font-medium text-foreground break-all',
-                  field.mono && 'font-mono tracking-wide',
-                )}>
-                  {field.value}
-                </p>
-              </div>
-              <CopyBtn text={field.value} field={field.label} />
-            </div>
-          </div>
-        ))}
-
-        {info.merchantCode && (
-          <div className="py-3 border-b border-border/50">
-            <span className="text-sm text-muted-foreground block mb-2">{t('instructions.merchantCode')}</span>
-            <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
-              <span className="font-bold text-foreground font-mono text-sm break-all">
-                {info.merchantCode}
-              </span>
-              <CopyBtn text={info.merchantCode} field="merchant" />
-            </div>
+      {/* Coordonnées */}
+      <section>
+        {showTitle && (
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
+              {t('instructions.title')}
+            </h2>
+            <button onClick={copyAllInfo} className="text-[12px] font-bold text-[#5B4CC4] active:opacity-70 dark:text-[#B5AAF0]">
+              {copiedField === 'all' ? t('instructions.copied') : t('instructions.copyAll')}
+            </button>
           </div>
         )}
-      </Card>
-
-      {/* Step-by-step instructions */}
-      <Card className="p-4">
-        <p className="text-sm font-semibold text-foreground mb-4">{t('instructions.stepsToFollow')}</p>
-        <ol className="space-y-3">
-          {info.instructions.map((instruction, index) => (
-            <li key={index} className="flex gap-3">
-              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                {index + 1}
-              </span>
-              <span className="text-sm text-muted-foreground pt-0.5">{instruction}</span>
-            </li>
+        <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+          {info.fields.map((f, i) => (
+            <Row key={f.label} field={f} last={!info.merchantCode && i === info.fields.length - 1} />
           ))}
-        </ol>
-      </Card>
+          {info.merchantCode && (
+            <div className="pt-3">
+              <div className={cn('mb-2 text-[11px]', TEXT.muted)}>{t('instructions.merchantCode')}</div>
+              <button
+                onClick={() => copyToClipboard(info.merchantCode!, 'merchant')}
+                className={cn('flex w-full items-center justify-between gap-3 rounded-2xl p-3.5 text-left', SURFACE.holder)}
+              >
+                <span className={cn('break-all font-mono text-[14px] font-bold', TEXT.strong)}>{info.merchantCode}</span>
+                {copiedField === 'merchant' ? <Check className="h-4 w-4 shrink-0 text-[#2E7D52] dark:text-[#7FCBA0]" /> : <Copy className={cn('h-4 w-4 shrink-0', TEXT.muted)} />}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Étapes à suivre */}
+      <section>
+        <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('instructions.stepsToFollow')}</h2>
+        <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+          <ol className="space-y-3">
+            {info.instructions.map((instruction, index) => (
+              <li key={index} className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[12px] font-bold text-[#5B4CC4] dark:bg-[#221F33] dark:text-[#B5AAF0]">{index + 1}</span>
+                <span className={cn('pt-0.5 text-[13px]', TEXT.muted)}>{instruction}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
       {info.note && (
-        <Card className="p-4 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20">
-          <p className="text-sm text-amber-700 dark:text-amber-400">{info.note}</p>
-        </Card>
+        <div className="flex items-start gap-2.5 rounded-2xl bg-[#FDF1DD] p-3.5 dark:bg-[#3A2F1A]">
+          <span className="text-[12.5px] text-[#9A6B12] dark:text-[#E0B978]">{info.note}</span>
+        </div>
       )}
     </div>
   );
