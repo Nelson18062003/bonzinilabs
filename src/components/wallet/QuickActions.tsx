@@ -1,30 +1,32 @@
-import { ArrowDownToLine, Send, History, QrCode } from 'lucide-react';
+import { ArrowDownToLine, Send, Users, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 
 export const QuickActions = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('client');
 
   const actions = [
-    { icon: ArrowDownToLine, label: t('quickActions.deposit'), to: '/deposits/new', color: 'bg-success/10 text-success' },
-    { icon: Send, label: t('quickActions.pay'), to: '/payments/new', color: 'bg-primary/10 text-primary' },
-    { icon: QrCode, label: t('quickActions.beneficiaries'), to: '/beneficiaries', color: 'bg-warning/10 text-warning' },
-    { icon: History, label: t('quickActions.activity'), to: '/history', color: 'bg-accent text-accent-foreground' },
+    { icon: ArrowDownToLine, label: t('quickActions.deposit'), to: '/deposits/new' },
+    { icon: Send, label: t('quickActions.pay'), to: '/payments/new' },
+    { icon: Users, label: t('quickActions.beneficiaries'), to: '/beneficiaries' },
+    { icon: History, label: t('quickActions.activity'), to: '/history' },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-2 animate-slide-up" style={{ animationDelay: '100ms' }}>
+    <div className="grid grid-cols-4 gap-2.5">
       {actions.map((action) => (
         <button
           key={action.label}
           onClick={() => navigate(action.to)}
-          className="flex flex-col items-center gap-1.5 p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-md transition-all active:scale-95"
+          className={cn('flex flex-col items-center gap-2 rounded-[20px] p-3 transition active:scale-95', SURFACE.card, SURFACE.shadow)}
         >
-          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl ${action.color} flex items-center justify-center`}>
-            <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className={cn('flex h-11 w-11 items-center justify-center rounded-full', SURFACE.holder)}>
+            <action.icon className="h-5 w-5" strokeWidth={2} />
           </div>
-          <span className="text-xs font-medium text-foreground">{action.label}</span>
+          <span className={cn('text-[11px] font-semibold', TEXT.strong)}>{action.label}</span>
         </button>
       ))}
     </div>

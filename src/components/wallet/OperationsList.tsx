@@ -1,71 +1,65 @@
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { WalletOperation } from '@/hooks/useWallet';
-import { formatXAF } from '@/lib/formatters';
+import { formatNumber } from '@/lib/formatters';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 
 interface OperationsListProps {
   operations: WalletOperation[];
 }
 
+const GREEN = '#2E7D52';
+
 export const OperationsList = ({ operations }: OperationsListProps) => {
   const { t } = useTranslation('client');
-  const getOperationType = (op: WalletOperation): 'CREDIT' | 'DEBIT' => {
-    return op.operation_type === 'deposit' ? 'CREDIT' : 'DEBIT';
-  };
+  const navigate = useNavigate();
+  const getOperationType = (op: WalletOperation): 'CREDIT' | 'DEBIT' =>
+    op.operation_type === 'deposit' ? 'CREDIT' : 'DEBIT';
 
   return (
-    <div className="space-y-2 animate-slide-up" style={{ animationDelay: '200ms' }}>
-      <div className="flex items-center justify-between px-1 mb-3">
-        <h3 className="text-sm font-semibold text-foreground">{t('wallet.recentOperations')}</h3>
-        <button className="text-xs font-medium text-primary hover:underline">
+    <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+      <div className="mb-2 flex items-center justify-between px-1">
+        <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('wallet.recentOperations')}</h2>
+        <button onClick={() => navigate('/history')} className="text-[12px] font-bold text-[#5B4CC4] active:opacity-70 dark:text-[#B5AAF0]">
           {t('wallet.viewAll')}
         </button>
       </div>
-      
-      <div className="space-y-2">
-        {operations.slice(0, 5).map((op, index) => {
-          const type = getOperationType(op);
+
+      <div className="space-y-2.5">
+        {operations.slice(0, 5).map((op) => {
+          const credit = getOperationType(op) === 'CREDIT';
           const date = parseISO(op.created_at);
-          
           return (
-            <div
-              key={op.id}
-              className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/30 hover:border-border transition-colors"
-              style={{ animationDelay: `${(index + 3) * 50}ms` }}
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                type === 'CREDIT' 
-                  ? 'bg-success/10 text-success' 
-                  : 'bg-destructive/10 text-destructive'
-              }`}>
-                {type === 'CREDIT' ? (
-                  <ArrowDownLeft className="w-5 h-5" />
+            <div key={op.id} className={cn('flex items-center gap-3 rounded-[18px] p-3.5', SURFACE.card, SURFACE.shadow)}>
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                style={{ background: credit ? `${GREEN}1F` : 'rgba(0,0,0,0.05)' }}
+              >
+                {credit ? (
+                  <ArrowDownLeft className="h-5 w-5" style={{ color: GREEN }} />
                 ) : (
-                  <ArrowUpRight className="w-5 h-5" />
+                  <ArrowUpRight className={cn('h-5 w-5', TEXT.muted)} />
                 )}
               </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{op.description || t('wallet.operation')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {format(date, 'dd MMM, HH:mm', { locale: fr })}
-                </p>
+              <div className="min-w-0 flex-1">
+                <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{op.description || t('wallet.operation')}</p>
+                <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{format(date, 'd MMM · HH:mm', { locale: fr })}</p>
               </div>
-              
-              <div className="text-right">
-                <p className={`font-semibold ${
-                  type === 'CREDIT' ? 'text-success' : 'text-foreground'
-                }`}>
-                  {type === 'CREDIT' ? '+' : '-'} {formatXAF(op.amount_xaf)}
-                </p>
-                <p className="text-xs text-muted-foreground">XAF</p>
+              <div
+                className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', !credit && TEXT.strong)}
+                style={credit ? { color: GREEN } : undefined}
+              >
+                {credit ? '+' : '−'} {formatNumber(op.amount_xaf)}
+                <div className={cn('text-[10px] font-semibold', TEXT.muted)}>XAF</div>
               </div>
             </div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };

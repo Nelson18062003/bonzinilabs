@@ -1,5 +1,7 @@
+import { cn } from '@/lib/utils';
 import { useGreeting } from '@/hooks/useGreeting';
 import { useTranslation } from 'react-i18next';
+import { TEXT } from '@/mobile/designKit';
 
 interface WelcomeGreetingProps {
   firstName?: string | null;
@@ -11,15 +13,8 @@ interface WelcomeGreetingProps {
 }
 
 /**
- * Personalized welcome greeting component
- *
- * Features:
- * - Time-based greeting (Bonjour/Bon après-midi/Bonsoir)
- * - Personalized with user's name
- * - Graceful fallbacks for missing/invalid names
- * - Optional trust/context subtitle
- * - Responsive and accessible
- * - Smooth fade-in animation
+ * Personalized welcome greeting (refonte « Direction A »).
+ * Time-based greeting + name (useGreeting), 👋, optional subtitle.
  */
 export const WelcomeGreeting = ({
   firstName,
@@ -33,15 +28,9 @@ export const WelcomeGreeting = ({
   const displaySubtitle = subtitle || (showTrustMessage ? t('welcomeGreeting.trustMessage') : null);
 
   return (
-    <div className="animate-fade-in">
-      <h1 className="text-xl font-semibold text-foreground leading-tight">
-        {greeting}
-      </h1>
-      {displaySubtitle && (
-        <p className="text-sm text-muted-foreground mt-1">
-          {displaySubtitle}
-        </p>
-      )}
+    <div className="animate-fade-in px-1">
+      <h1 className={cn('text-[24px] font-black leading-tight', TEXT.strong)}>{greeting} 👋</h1>
+      {displaySubtitle && <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>{displaySubtitle}</p>}
     </div>
   );
 };

@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module WALLET / Accueil** (voir §4.1 — même méthode :
+3. **Prochaine tâche = module BÉNÉFICIAIRES** (voir §4.1 — même méthode :
    maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
@@ -105,9 +105,19 @@ de l'admin.
     upload/suppression preuves, annulation, reçu PDF, confirmed_amount_xaf). i18n maquette
     `src/__screenshot__/clientDepositLayout.tsx` (clés `cdep-*`).
 
+- **MODULE WALLET / ACCUEIL — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/WalletPage.tsx` + `src/components/wallet/*` (`BalanceCard`, `QuickActions`,
+  `OperationsList`, `WelcomeGreeting`). Carte SOLDE premium **charbon sans dégradé**
+  (`card-primary`/gradient supprimé) + œil masquer · actions rapides (Déposer/Payer/
+  Bénéficiaires/Historique) · **taux du jour designKit inline** (4 méthodes, `PaymentMethodLogo`,
+  `useClientRates` — le `RateCard` partagé admin n'est PLUS importé ici mais reste intact) ·
+  activité récente (crédit vert/débit, `useMyWalletOperations`, « Voir tout » → /history).
+  Maquette : `src/__screenshot__/clientWalletLayout.tsx` (clés `cwallet-*`). i18n `wallet.*`
+  complété (fr+en). Logique préservée (solde, masquage, opérations, taux).
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Wallet/Accueil → Bénéficiaires → Historique → Profil/Notifications → Taux client →
+Bénéficiaires → Historique → Profil/Notifications → Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
 casser les écrans en route).

@@ -7,7 +7,12 @@
     "retryLater": "Please try again in a moment",
     "recentOperations": "Recent operations",
     "viewAll": "View all",
-    "operation": "Operation"
+    "operation": "Operation",
+    "homeSubtitle": "Here is your Bonzini account",
+    "dailyRate": "Today's rate",
+    "viewRates": "View rates",
+    "ratePer": "For 1,000,000 XAF",
+    "noOperations": "No operations yet."
   },
   "quickActions": {
     "deposit": "Deposit",
