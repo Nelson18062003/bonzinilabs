@@ -1,11 +1,24 @@
+// ============================================================
+// PAGE — NewDepositPage (wizard de dépôt), refonte « Direction A ».
+// En-tête drill-in (retour rond + titre) · phases libellées (Montant ·
+// Méthode · Confirmation, masquées sur l'écran Montant) · vrais logos de
+// marque · récap = coordonnées Bonzini (où verser) + étapes + confirmation.
+// Sélections en tap-to-advance. Logique 100% PRÉSERVÉE : étapes, sous-
+// méthodes, banque/agence, getRecapInfo, doCreateDeposit (RPC), bornes
+// 50 000 / 50 000 000 XAF.
+// ============================================================
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeft, ArrowRight, Check, Copy, Loader2, Info, Clock, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { StepTransition } from '@/components/auth/StepTransition';
-import { useCountUp } from '@/hooks/useCountUp';
-import { formatXAF } from '@/lib/formatters';
-import { useAuth } from '@/contexts/AuthContext';
+import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
+import { DepositFamilyLogo, DepositBankLogo } from '@/mobile/components/deposits/DepositLogos';
+import { formatNumber } from '@/lib/formatters';
 import { useCreateDeposit } from '@/hooks/useDeposits';
+import { useMyWallet } from '@/hooks/useWallet';
 import { SUB_METHOD_TO_DB_METHOD, type DepositMethod } from '@/types/deposit';
 import {
   methodFamilies,
@@ -22,56 +35,29 @@ import {
   getBankInfo,
   getAgencyInfo,
 } from '@/data/depositMethodsData';
-import {
+import type {
   DepositMethodFamily,
   DepositSubMethod,
   BankOption,
-  AgencyOption
+  AgencyOption,
 } from '@/types/deposit';
-import {
-  Check,
-  ArrowRight,
-  ArrowLeft,
-  Copy,
-  Info,
-  MapPin,
-  Clock,
-  Building2,
-  Loader2,
-  ShieldCheck,
-} from 'lucide-react';
-import * as Icons from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
 
-type Step =
-  | 'amount'
-  | 'family'
-  | 'submethod'
-  | 'bank'
-  | 'agency'
-  | 'recap'
-  | 'creating';
+type Step = 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
 
-const PHASE_1_STEPS: Step[] = ['amount', 'family', 'submethod', 'bank', 'agency'];
+const MIN_DEPOSIT_XAF = 50_000;
+const MAX_DEPOSIT_XAF = 50_000_000;
 
-function getPhaseIndex(step: Step): number {
-  if (PHASE_1_STEPS.includes(step)) return 0;
-  if (step === 'recap') return 1;
-  return 2; // creating
-}
+const PHASES = ['Montant', 'Méthode', 'Confirmation'];
+const phaseOf = (s: Step): number => (s === 'amount' ? 0 : s === 'recap' ? 2 : 1);
 
 const NewDepositPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('deposits');
-  const { user } = useAuth();
   const createDeposit = useCreateDeposit();
+  const { data: wallet } = useMyWallet();
 
   // Flow state
   const [step, setStep] = useState<Step>('amount');
-  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [amount, setAmount] = useState('');
   const [selectedFamily, setSelectedFamily] = useState<DepositMethodFamily | null>(null);
   const [selectedSubMethod, setSelectedSubMethod] = useState<DepositSubMethod | null>(null);
@@ -79,16 +65,8 @@ const NewDepositPage = () => {
   const [selectedAgency, setSelectedAgency] = useState<AgencyOption | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Count-up animation for amount preview
-  const MAX_DEPOSIT_XAF = 50_000_000; // 50 000 000 XAF max par dépôt
   const parsedAmount = Math.min(parseInt(amount) || 0, MAX_DEPOSIT_XAF);
-  const animatedAmount = useCountUp(parsedAmount, { enabled: parsedAmount > 0 });
-
-  // Navigate between steps
-  const goTo = (nextStep: Step, dir: 'forward' | 'back' = 'forward') => {
-    setDirection(dir);
-    setStep(nextStep);
-  };
+  const newBalance = (wallet?.balance_xaf ?? 0) + parsedAmount;
 
   const handleCopy = async (text: string, field: string) => {
     try {
@@ -111,7 +89,7 @@ const NewDepositPage = () => {
 
   // Create deposit — only called from recap after explicit user confirmation
   const doCreateDeposit = async () => {
-    goTo('creating');
+    setStep('creating');
     try {
       const deposit = await createDeposit.mutateAsync({
         amount_xaf: parseInt(amount),
@@ -128,22 +106,19 @@ const NewDepositPage = () => {
       navigate(`/deposits/${deposit.id}`, { state: { fromCreation: true } });
     } catch {
       // Error handled by mutation's onError — go back to recap
-      goTo('recap', 'back');
+      setStep('recap');
     }
   };
 
   // Determine next step based on method family selection
   const handleFamilySelected = (family: DepositMethodFamily) => {
     setSelectedFamily(family);
-    setDirection('forward');
-
     if (familyRequiresSubMethod(family)) {
       setStep('submethod');
     } else if (family === 'AGENCY_BONZINI') {
       setSelectedSubMethod('AGENCY_CASH');
       setStep('agency');
     } else if (family === 'WAVE') {
-      // Wave has no sub-selection — go directly to recap
       setSelectedSubMethod('WAVE_TRANSFER');
       setStep('recap');
     }
@@ -151,36 +126,47 @@ const NewDepositPage = () => {
 
   const handleSubMethodSelected = (subMethod: DepositSubMethod) => {
     setSelectedSubMethod(subMethod);
-    setDirection('forward');
-
     if (subMethodRequiresBankSelection(subMethod)) {
       setStep('bank');
     } else {
-      // All sub-methods (transfers AND withdrawals) go to recap
       setStep('recap');
     }
   };
 
   const handleBankSelected = (bank: BankOption) => {
     setSelectedBank(bank);
-    goTo('recap');
+    setStep('recap');
   };
 
   const handleAgencySelected = (agency: AgencyOption) => {
     setSelectedAgency(agency);
-    goTo('recap');
+    setStep('recap');
   };
 
-  // Back navigation from recap depends on the path taken
-  const handleRecapBack = () => {
-    if (selectedFamily === 'WAVE') {
-      goTo('family', 'back');
-    } else if (selectedFamily === 'AGENCY_BONZINI') {
-      goTo('agency', 'back');
-    } else if (selectedBank) {
-      goTo('bank', 'back');
-    } else {
-      goTo('submethod', 'back');
+  // Back navigation depends on the path taken
+  const goBack = () => {
+    switch (step) {
+      case 'amount':
+        navigate('/deposits');
+        break;
+      case 'family':
+        setStep('amount');
+        break;
+      case 'submethod':
+        setStep('family');
+        break;
+      case 'bank':
+        setStep('submethod');
+        break;
+      case 'agency':
+        setStep('family');
+        break;
+      case 'recap':
+        if (selectedFamily === 'WAVE') setStep('family');
+        else if (selectedFamily === 'AGENCY_BONZINI') setStep('agency');
+        else if (selectedBank) setStep('bank');
+        else setStep('submethod');
+        break;
     }
   };
 
@@ -201,18 +187,8 @@ const NewDepositPage = () => {
         ],
         merchantCode: undefined as string | undefined,
         instructions: selectedSubMethod === 'BANK_TRANSFER'
-          ? [
-              t('new.recap.bankTransferInstr1'),
-              t('new.recap.bankTransferInstr2'),
-              t('new.recap.bankTransferInstr3'),
-              t('new.recap.bankTransferInstr4'),
-            ]
-          : [
-              t('new.recap.bankCashInstr1', { bank: bankInfo?.label }),
-              t('new.recap.bankCashInstr2'),
-              t('new.recap.bankCashInstr3'),
-              t('new.recap.bankCashInstr4'),
-            ],
+          ? [t('new.recap.bankTransferInstr1'), t('new.recap.bankTransferInstr2'), t('new.recap.bankTransferInstr3'), t('new.recap.bankTransferInstr4')]
+          : [t('new.recap.bankCashInstr1', { bank: bankInfo?.label }), t('new.recap.bankCashInstr2'), t('new.recap.bankCashInstr3'), t('new.recap.bankCashInstr4')],
       };
     }
 
@@ -228,7 +204,7 @@ const NewDepositPage = () => {
           instructions: [
             t('new.recap.omTransferInstr1'),
             t('new.recap.omTransferInstr2', { phone: orangeMoneyAccount.phone }),
-            t('new.recap.omTransferInstr3', { amount: `${formatXAF(parseInt(amount))} XAF` }),
+            t('new.recap.omTransferInstr3', { amount: `${formatNumber(parseInt(amount))} XAF` }),
             t('new.recap.omTransferInstr4'),
             t('new.recap.omTransferInstr5'),
           ],
@@ -237,15 +213,9 @@ const NewDepositPage = () => {
         const merchantCodeWithAmount = omMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
           title: t('new.recap.omWithdrawalTitle'),
-          fields: [
-            { label: t('new.recap.accountHolder'), value: omMerchantInfo.accountName, key: 'name' },
-          ],
+          fields: [{ label: t('new.recap.accountHolder'), value: omMerchantInfo.accountName, key: 'name' }],
           merchantCode: merchantCodeWithAmount,
-          instructions: [
-            t('new.recap.omWithdrawalInstr1'),
-            t('new.recap.omWithdrawalInstr2'),
-            t('new.recap.omWithdrawalInstr3'),
-          ],
+          instructions: [t('new.recap.omWithdrawalInstr1'), t('new.recap.omWithdrawalInstr2'), t('new.recap.omWithdrawalInstr3')],
         };
       }
     }
@@ -263,7 +233,7 @@ const NewDepositPage = () => {
             t('new.recap.mtnTransferInstr1'),
             t('new.recap.mtnTransferInstr2'),
             t('new.recap.mtnTransferInstr3', { phone: mtnMoneyAccount.phone }),
-            t('new.recap.mtnTransferInstr4', { amount: `${formatXAF(parseInt(amount))} XAF` }),
+            t('new.recap.mtnTransferInstr4', { amount: `${formatNumber(parseInt(amount))} XAF` }),
             t('new.recap.mtnTransferInstr5'),
           ],
         };
@@ -271,15 +241,9 @@ const NewDepositPage = () => {
         const merchantCodeWithAmount = mtnMerchantInfo.merchantCode.replace('MONTANT', amount);
         return {
           title: t('new.recap.mtnWithdrawalTitle'),
-          fields: [
-            { label: t('new.recap.accountHolder'), value: mtnMerchantInfo.accountName, key: 'name' },
-          ],
+          fields: [{ label: t('new.recap.accountHolder'), value: mtnMerchantInfo.accountName, key: 'name' }],
           merchantCode: merchantCodeWithAmount,
-          instructions: [
-            t('new.recap.mtnWithdrawalInstr1'),
-            t('new.recap.mtnWithdrawalInstr2'),
-            t('new.recap.mtnWithdrawalInstr3'),
-          ],
+          instructions: [t('new.recap.mtnWithdrawalInstr1'), t('new.recap.mtnWithdrawalInstr2'), t('new.recap.mtnWithdrawalInstr3')],
         };
       }
     }
@@ -316,7 +280,7 @@ const NewDepositPage = () => {
           t('new.recap.waveInstr1'),
           t('new.recap.waveInstr2'),
           t('new.recap.waveInstr3', { phone: waveAccount.phone }),
-          t('new.recap.waveInstr4', { amount: `${formatXAF(parseInt(amount))} XAF` }),
+          t('new.recap.waveInstr4', { amount: `${formatNumber(parseInt(amount))} XAF` }),
           t('new.recap.waveInstr5'),
         ],
       };
@@ -325,421 +289,329 @@ const NewDepositPage = () => {
     return null;
   };
 
-  // ============================================
-  // RENDER FUNCTIONS
-  // ============================================
-
-  const renderPhaseProgress = () => {
-    const currentPhase = getPhaseIndex(step);
-
-    return (
-      <div className="flex gap-1.5 mb-6">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className={cn(
-              'h-1 flex-1 rounded-full transition-all duration-300',
-              i <= currentPhase ? 'bg-primary' : 'bg-muted'
-            )}
-          />
-        ))}
+  // ── Selection row (tap-to-advance) ──────────────────────────
+  const SelectRow = ({
+    logo,
+    title,
+    subtitle,
+    extra,
+    onClick,
+  }: {
+    logo: React.ReactNode;
+    title: string;
+    subtitle?: string;
+    extra?: React.ReactNode;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      className={cn('flex w-full items-center gap-4 rounded-[20px] p-4 text-left transition active:scale-[0.98]', SURFACE.card, SURFACE.shadow)}
+    >
+      {logo}
+      <div className="min-w-0 flex-1">
+        <p className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>{title}</p>
+        {subtitle && <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{subtitle}</p>}
+        {extra}
       </div>
-    );
-  };
-
-  const renderAmountInput = () => (
-    <StepTransition stepKey="amount" direction={direction}>
-      <div className="space-y-6">
-        <div className="card-elevated p-6">
-          <p className="text-sm text-muted-foreground text-center mb-4">
-            {t('new.amountToDeposit')}
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="0"
-              className="amount-input text-foreground"
-              autoFocus
-            />
-            <span className="text-2xl font-medium text-muted-foreground">XAF</span>
-          </div>
-          {parsedAmount > 0 && (
-            <p
-              className="text-center text-sm text-muted-foreground mt-2"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
-              {formatXAF(animatedAmount)} XAF
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          {[100000, 500000, 1000000].map((preset) => (
-            <button
-              key={preset}
-              onClick={() => setAmount(preset.toString())}
-              className={cn(
-                'py-3 rounded-xl font-medium transition-all text-sm active:scale-[0.97]',
-                parsedAmount === preset
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-foreground hover:bg-secondary/80'
-              )}
-            >
-              {formatXAF(preset)}
-            </button>
-          ))}
-        </div>
-
-        <p className="text-xs text-muted-foreground text-center">
-          {t('new.minimumAmount')}
-        </p>
-
-        <button
-          onClick={() => parsedAmount >= 50000 && goTo('family')}
-          disabled={parsedAmount < 50000}
-          className={cn(
-            'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
-            parsedAmount >= 50000
-              ? 'btn-primary-gradient'
-              : 'bg-muted text-muted-foreground cursor-not-allowed'
-          )}
-        >
-          {t('new.continue')}
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-    </StepTransition>
+      <ArrowRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+    </button>
   );
 
-  const renderFamilySelection = () => (
-    <StepTransition stepKey="family" direction={direction}>
-      <div className="space-y-3">
-        <button
-          onClick={() => goTo('amount', 'back')}
-          className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t('new.back')}
-        </button>
+  // ── Recap coordinate row ────────────────────────────────────
+  const CoordRow = ({ label, value, mono, last, fieldKey }: { label: string; value: string; mono?: boolean; last?: boolean; fieldKey: string }) => (
+    <button
+      onClick={() => handleCopy(value, fieldKey)}
+      className={cn('flex w-full items-center justify-between gap-3 py-3 text-left transition active:opacity-60', !last && 'border-b border-black/[0.05] dark:border-white/[0.07]')}
+    >
+      <div className="min-w-0">
+        <div className={cn('text-[11px]', TEXT.muted)}>{label}</div>
+        <div className={cn('mt-0.5 truncate text-[14px] font-bold', mono && 'font-mono', TEXT.strong)}>{value}</div>
+      </div>
+      {copiedField === fieldKey ? (
+        <Check className="h-4 w-4 shrink-0 text-[#2E7D52] dark:text-[#7FCBA0]" />
+      ) : (
+        <Copy className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
+      )}
+    </button>
+  );
 
-        <p className="text-sm text-muted-foreground mb-4">
-          {t('new.howToDeposit')}
-        </p>
-        {methodFamilies.map((family) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const IconComponent = (Icons as any)[family.icon] || Icons.Banknote;
-          const isSelected = selectedFamily === family.family;
+  // ── Step bodies ─────────────────────────────────────────────
+  const renderBody = () => {
+    if (step === 'amount') {
+      return (
+        <div className="animate-fade-in space-y-4">
+          <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+            <div className="flex items-center justify-between gap-2">
+              <span className={cn('text-[12px] font-medium', TEXT.muted)}>{t('new.amountToDeposit')}</span>
+              {wallet ? (
+                <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums', SURFACE.holder)}>
+                  Solde · {formatNumber(wallet.balance_xaf)} XAF
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <input
+                type="text"
+                inputMode="numeric"
+                value={amount ? formatNumber(parseInt(amount)) : ''}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="0"
+                autoFocus
+                className={cn('min-w-0 flex-1 bg-transparent text-[40px] font-black leading-none tabular-nums outline-none placeholder:text-[#C7C2D6] dark:placeholder:text-[#4A4658]', TEXT.strong)}
+              />
+              <span className="shrink-0 text-[18px] font-extrabold text-[#E8932A]">XAF</span>
+            </div>
+            {parsedAmount > 0 && (
+              <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+                <div className={cn('text-[12px]', TEXT.muted)}>Nouveau solde après dépôt</div>
+                <div className={cn('mt-0.5 text-[24px] font-black tabular-nums', TEXT.strong)}>
+                  {formatNumber(newBalance)} <span className="text-[14px]" style={{ color: '#E8932A' }}>XAF</span>
+                </div>
+              </div>
+            )}
+          </div>
 
-          return (
-            <button
+          <div className="grid grid-cols-4 gap-2">
+            {[100_000, 250_000, 500_000, 1_000_000].map((preset) => {
+              const active = parsedAmount === preset;
+              return (
+                <button
+                  key={preset}
+                  onClick={() => setAmount(preset.toString())}
+                  className={cn(
+                    'rounded-xl py-2.5 text-[12px] font-bold transition-colors',
+                    active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
+                  )}
+                >
+                  {preset >= 1_000_000 ? `${preset / 1_000_000}M` : `${preset / 1_000}K`}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className={cn('px-1 text-center text-[11px]', TEXT.muted)}>{t('new.minimumAmount')}</p>
+        </div>
+      );
+    }
+
+    if (step === 'family') {
+      return (
+        <div className="animate-fade-in space-y-3">
+          <p className={cn('px-1 text-[15px] font-semibold', TEXT.strong)}>{t('new.howToDeposit')}</p>
+          {methodFamilies.map((family) => (
+            <SelectRow
               key={family.family}
+              logo={<DepositFamilyLogo family={family.family} size={48} />}
+              title={family.label}
+              subtitle={family.description}
               onClick={() => handleFamilySelected(family.family)}
-              className={cn(
-                'method-card w-full text-left',
-                isSelected && 'method-card-selected'
-              )}
-            >
-              <div className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center',
-                isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'
-              )}>
-                <IconComponent className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{family.label}</p>
-                <p className="text-xs text-muted-foreground">{family.description}</p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          );
-        })}
-      </div>
-    </StepTransition>
-  );
-
-  const renderSubMethodSelection = () => {
-    if (!selectedFamily) return null;
-    const subMethodsList = getSubMethodsForFamily(selectedFamily);
-
-    return (
-      <StepTransition stepKey="submethod" direction={direction}>
-        <div className="space-y-3">
-          <button
-            onClick={() => goTo('family', 'back')}
-            className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t('new.back')}
-          </button>
-
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('new.operationType')}
-          </p>
-
-          {subMethodsList.map((subMethod) => (
-            <button
-              key={subMethod.subMethod}
-              onClick={() => handleSubMethodSelected(subMethod.subMethod)}
-              className="method-card w-full text-left"
-            >
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{subMethod.label}</p>
-                <p className="text-xs text-muted-foreground">{subMethod.description}</p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground" />
-            </button>
+            />
           ))}
         </div>
-      </StepTransition>
-    );
-  };
+      );
+    }
 
-  const renderBankSelection = () => (
-    <StepTransition stepKey="bank" direction={direction}>
-      <div className="space-y-3">
-        <button
-          onClick={() => goTo('submethod', 'back')}
-          className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t('new.back')}
-        </button>
-
-        <p className="text-sm text-muted-foreground mb-4">
-          {t('new.chooseBank')}
-        </p>
-
-        {banks.map((bank) => (
-          <button
-            key={bank.bank}
-            onClick={() => handleBankSelected(bank.bank)}
-            className="method-card w-full text-left"
-          >
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-foreground" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">{bank.label}</p>
-            </div>
-            <ArrowRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        ))}
-      </div>
-    </StepTransition>
-  );
-
-  const renderAgencySelection = () => (
-    <StepTransition stepKey="agency" direction={direction}>
-      <div className="space-y-3">
-        <button
-          onClick={() => goTo('family', 'back')}
-          className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t('new.back')}
-        </button>
-
-        <p className="text-sm text-muted-foreground mb-4">
-          {t('new.chooseAgency')}
-        </p>
-
-        {agencies.map((agency) => (
-          <button
-            key={agency.agency}
-            onClick={() => handleAgencySelected(agency.agency)}
-            className="method-card w-full text-left"
-          >
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-foreground" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">{agency.label}</p>
-              <p className="text-xs text-muted-foreground">{agency.address}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                <Clock className="w-3 h-3" />
-                {agency.hours}
-              </p>
-            </div>
-            <ArrowRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        ))}
-      </div>
-    </StepTransition>
-  );
-
-  const renderRecap = () => {
-    const info = getRecapInfo();
-    if (!info) return null;
-
-    return (
-      <StepTransition stepKey="recap" direction={direction}>
-        <div className="space-y-4">
-          <button
-            onClick={handleRecapBack}
-            className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t('new.back')}
-          </button>
-
-          {/* Summary card */}
-          <div className="card-elevated p-4 bg-primary/5 border-primary/20">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">{t('new.amountToDeposit')}</span>
-              <span
-                className="font-bold text-lg text-foreground"
-                style={{ fontVariantNumeric: 'tabular-nums' }}
-              >
-                {formatXAF(parseInt(amount))} XAF
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">{t('detail.method')}</span>
-              <span className="text-sm font-medium text-foreground">{info.title}</span>
-            </div>
-          </div>
-
-          {/* Coordinates */}
-          <div className="card-elevated p-4 space-y-1">
-            <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-              <Info className="w-4 h-4 text-primary" />
-              {t('new.recap.depositCoordinates')}
-            </p>
-
-            {info.fields.map((field) => (
-              <div key={field.key} className="flex items-center justify-between py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">{field.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    'font-medium text-foreground text-sm text-right',
-                    field.mono && 'font-mono'
-                  )}>
-                    {field.value}
-                  </span>
-                  <button onClick={() => handleCopy(field.value, field.key)}>
-                    {copiedField === field.key
-                      ? <Check className="w-4 h-4 text-success" />
-                      : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    }
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {/* Merchant code for withdrawals */}
-            {info.merchantCode && (
-              <div className="py-3 border-b border-border/50">
-                <span className="text-sm text-muted-foreground block mb-2">{t('new.recap.merchantCode')}</span>
-                <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
-                  <span className="font-bold text-foreground font-mono text-sm break-all">{info.merchantCode}</span>
-                  <button onClick={() => handleCopy(info.merchantCode!, 'merchant')} className="flex-shrink-0 ml-2">
-                    {copiedField === 'merchant'
-                      ? <Check className="w-4 h-4 text-success" />
-                      : <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    }
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Amount row */}
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">{t('new.recap.amountToSend')}</span>
-              <span className="font-bold text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {formatXAF(parseInt(amount))} XAF
-              </span>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="card-elevated p-4">
-            <p className="text-sm font-semibold text-foreground mb-4">{t('new.recap.instructions')}</p>
-            <ol className="space-y-3">
-              {info.instructions.map((instruction, index) => (
-                <li key={index} className="flex gap-3">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm text-muted-foreground pt-0.5">{instruction}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Confirmation notice */}
-          <div className="rounded-xl border-l-4 border-primary bg-primary/5 px-4 py-3">
-            <p className="text-xs text-primary leading-relaxed">
-              {t('new.recap.confirmNotice')}
-            </p>
-          </div>
-
-          {/* CTA */}
-          <button
-            onClick={doCreateDeposit}
-            disabled={createDeposit.isPending}
-            className={cn(
-              'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
-              createDeposit.isPending
-                ? 'bg-primary/60 text-primary-foreground'
-                : 'btn-primary-gradient'
-            )}
-          >
-            {createDeposit.isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <ShieldCheck className="w-5 h-5" />
-            )}
-            {t('new.recap.confirmButton')}
-          </button>
+    if (step === 'submethod' && selectedFamily) {
+      return (
+        <div className="animate-fade-in space-y-3">
+          <p className={cn('px-1 text-[15px] font-semibold', TEXT.strong)}>{t('new.operationType')}</p>
+          {getSubMethodsForFamily(selectedFamily).map((sm) => (
+            <SelectRow
+              key={sm.subMethod}
+              logo={<DepositFamilyLogo family={selectedFamily} size={48} />}
+              title={sm.label}
+              subtitle={sm.description}
+              onClick={() => handleSubMethodSelected(sm.subMethod)}
+            />
+          ))}
         </div>
-      </StepTransition>
-    );
+      );
+    }
+
+    if (step === 'bank') {
+      return (
+        <div className="animate-fade-in space-y-3">
+          <p className={cn('px-1 text-[15px] font-semibold', TEXT.strong)}>{t('new.chooseBank')}</p>
+          {banks.map((bank) => (
+            <SelectRow
+              key={bank.bank}
+              logo={<DepositBankLogo bank={bank.bank} size={48} />}
+              title={bank.label}
+              onClick={() => handleBankSelected(bank.bank)}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (step === 'agency') {
+      return (
+        <div className="animate-fade-in space-y-3">
+          <p className={cn('px-1 text-[15px] font-semibold', TEXT.strong)}>{t('new.chooseAgency')}</p>
+          {agencies.map((agency) => (
+            <SelectRow
+              key={agency.agency}
+              logo={<DepositFamilyLogo family="AGENCY_BONZINI" size={48} />}
+              title={agency.label}
+              subtitle={agency.address}
+              extra={
+                <p className={cn('mt-1 flex items-center gap-1 text-[12px]', TEXT.muted)}>
+                  <Clock className="h-3 w-3" /> {agency.hours}
+                </p>
+              }
+              onClick={() => handleAgencySelected(agency.agency)}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (step === 'recap') {
+      const info = getRecapInfo();
+      if (!info) return null;
+      return (
+        <div className="animate-fade-in space-y-4">
+          {/* Montant héros */}
+          <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
+            <div className="flex items-center gap-2">
+              <DepositFamilyLogo family={selectedFamily!} size={30} radius={9} />
+              <span className={cn('text-[13px] font-bold', TEXT.strong)}>{info.title}</span>
+            </div>
+            <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>Vous allez verser</div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className={cn('text-[46px] font-black leading-none tracking-tight tabular-nums', TEXT.strong)}>{formatNumber(parseInt(amount))}</span>
+              <span className="text-[18px] font-extrabold text-[#E8932A]">XAF</span>
+            </div>
+          </div>
+
+          {/* Coordonnées Bonzini */}
+          <section>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('new.recap.depositCoordinates')}</h2>
+            </div>
+            <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+              {info.fields.map((f, i) => (
+                <CoordRow key={f.key} label={f.label} value={f.value} mono={f.mono} fieldKey={f.key} last={!info.merchantCode && i === info.fields.length - 1} />
+              ))}
+              {info.merchantCode && (
+                <div className="pt-3">
+                  <div className={cn('mb-2 text-[11px]', TEXT.muted)}>{t('new.recap.merchantCode')}</div>
+                  <button
+                    onClick={() => handleCopy(info.merchantCode!, 'merchant')}
+                    className={cn('flex w-full items-center justify-between gap-3 rounded-2xl p-3.5 text-left', SURFACE.holder)}
+                  >
+                    <span className={cn('break-all font-mono text-[14px] font-bold', TEXT.strong)}>{info.merchantCode}</span>
+                    {copiedField === 'merchant' ? <Check className="h-4 w-4 shrink-0 text-[#2E7D52] dark:text-[#7FCBA0]" /> : <Copy className={cn('h-4 w-4 shrink-0', TEXT.muted)} />}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Étapes à suivre */}
+          <section>
+            <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('new.recap.instructions')}</h2>
+            <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+              <ol className="space-y-3">
+                {info.instructions.map((instruction, index) => (
+                  <li key={index} className="flex gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[12px] font-bold text-[#5B4CC4] dark:bg-[#221F33] dark:text-[#B5AAF0]">{index + 1}</span>
+                    <span className={cn('pt-0.5 text-[13px]', TEXT.muted)}>{instruction}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          <div className="flex items-start gap-2.5 rounded-2xl bg-[#EAE7FA] p-3.5 dark:bg-[#272252]">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#5B4CC4] dark:text-[#B5AAF0]" />
+            <p className="text-[12.5px] text-[#5B4CC4] dark:text-[#B5AAF0]">{t('new.recap.confirmNotice')}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 'creating') {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className={cn('flex h-20 w-20 items-center justify-center rounded-full', SURFACE.holder)}>
+            <Loader2 className="h-9 w-9 animate-spin" />
+          </div>
+          <p className={cn('mt-6 text-[16px] font-bold', TEXT.strong)}>{t('new.creating')}</p>
+          <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('new.pleaseWait')}</p>
+        </div>
+      );
+    }
+
+    return null;
   };
 
-  const renderCreating = () => (
-    <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-deposit-pulse">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-      </div>
-      <p className="font-semibold text-foreground mt-6">{t('new.creating')}</p>
-      <p className="text-sm text-muted-foreground mt-2">{t('new.pleaseWait')}</p>
-    </div>
-  );
-
-  const getStepTitle = () => {
-    const titles: Record<Step, string> = {
-      amount: t('new.steps.amount'),
-      family: t('new.steps.family'),
-      submethod: t('new.steps.submethod'),
-      bank: t('new.steps.bank'),
-      agency: t('new.steps.agency'),
-      recap: t('new.steps.recap'),
-      creating: t('new.steps.creating'),
-    };
-    return titles[step];
-  };
+  const amountValid = parsedAmount >= MIN_DEPOSIT_XAF;
 
   return (
-    <MobileLayout showNav={false}>
-      <PageHeader
-        title={getStepTitle()}
-        showBack={step !== 'creating'}
-      />
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        {/* En-tête drill-in */}
+        {step !== 'creating' && (
+          <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+            <button
+              onClick={goBack}
+              aria-label={t('new.back')}
+              className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.card, SURFACE.shadow)}
+            >
+              <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+            </button>
+            <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('newDeposit')}</span>
+          </div>
+        )}
 
-      <div className="px-4 py-6">
-        {/* Phase progress bar */}
-        {step !== 'creating' && renderPhaseProgress()}
+        {/* Phases — masquées sur Montant et Création */}
+        {step !== 'amount' && step !== 'creating' && (
+          <div className="px-4 pb-1 pt-3">
+            <div className="flex gap-1.5">
+              {PHASES.map((label, i) => {
+                const done = i <= phaseOf(step);
+                return (
+                  <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
+                    <div className={cn('h-1.5 w-full rounded-full', done ? 'bg-[#8B5CF6]' : 'bg-black/[0.07] dark:bg-white/[0.09]')} />
+                    <span className={cn('text-[10px] font-bold', done ? 'text-[#5B4CC4] dark:text-[#B5AAF0]' : TEXT.muted)}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-        {step === 'amount' && renderAmountInput()}
-        {step === 'family' && renderFamilySelection()}
-        {step === 'submethod' && renderSubMethodSelection()}
-        {step === 'bank' && renderBankSelection()}
-        {step === 'agency' && renderAgencySelection()}
-        {step === 'recap' && renderRecap()}
-        {step === 'creating' && renderCreating()}
+        <div className="flex-1 px-4 py-4">{renderBody()}</div>
+
+        {/* Pied — CTA seulement sur Montant et Récap */}
+        {step === 'amount' && (
+          <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+            <button
+              onClick={() => amountValid && setStep('family')}
+              disabled={!amountValid}
+              className={cn(
+                'flex w-full items-center justify-center gap-2 py-[15px] text-[15px] font-bold transition active:scale-[0.99]',
+                amountValid ? PRIMARY_PILL : 'rounded-full bg-muted text-muted-foreground',
+              )}
+            >
+              {t('new.continue')} <ArrowRight className="h-[17px] w-[17px]" />
+            </button>
+          </div>
+        )}
+        {step === 'recap' && (
+          <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+            <button
+              onClick={doCreateDeposit}
+              disabled={createDeposit.isPending}
+              className={cn('flex w-full items-center justify-center gap-2 py-[15px] text-[15px] font-bold transition active:scale-[0.99] disabled:opacity-60', PRIMARY_PILL)}
+            >
+              {createDeposit.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-[18px] w-[18px]" />}
+              {t('new.recap.confirmButton')}
+            </button>
+          </div>
+        )}
       </div>
     </MobileLayout>
   );
