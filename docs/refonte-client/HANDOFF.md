@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module PROFIL / Notifications** (voir §4.1 — même méthode :
+3. **Prochaine tâche = module TAUX client** (voir §4.1 — même méthode :
    maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
@@ -131,9 +131,19 @@ de l'admin.
   `history.operationLabels.*`, `generateClientStatement`. Maquette `clientHistoryLayout.tsx`
   (clé `chist-list`).
 
+- **MODULE PROFIL + NOTIFICATIONS — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/ProfilePage.tsx` (carte identité premium sans dégradé + nom entreprise ·
+  sections Compte/Préférences avec `LanguageSwitcher`/`ThemeToggle` réels · déconnexion) ·
+  `src/pages/NotificationsPage.tsx` (drill-in + tout-marquer-lu, liste designKit par type,
+  non-lu = point lilas). NB : `useMyNotifications` est un **stub** (renvoie [] ) → l'écran
+  affiche l'état vide tant que le backend notif n'est pas branché (normal, pas un bug). Le
+  badge KYC de la maquette n'est PAS rendu (champ absent de `useMyProfile` → remplacé par le
+  nom d'entreprise). Maquette `clientProfileLayout.tsx` (`cprofile`, `cnotifs`). i18n
+  `profile.section*` (fr+en).
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Profil/Notifications → Taux client →
+Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
 casser les écrans en route).

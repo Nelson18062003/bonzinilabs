@@ -62,7 +62,9 @@
     "appearanceDesc": "Thème de l'application",
     "logout": "Se déconnecter",
     "version": "Bonzini v1.0.0 • Fait avec 💜 au Cameroun",
-    "comingSoon": "Fonctionnalité bientôt disponible"
+    "comingSoon": "Fonctionnalité bientôt disponible",
+    "sectionAccount": "Compte",
+    "sectionPreferences": "Préférences"
   },
   "beneficiaries": {
     "title": "Bénéficiaires",

@@ -62,7 +62,9 @@
     "appearanceDesc": "App theme",
     "logout": "Log out",
     "version": "Bonzini v1.0.0 • Made with 💜 in Cameroon",
-    "comingSoon": "Feature coming soon"
+    "comingSoon": "Feature coming soon",
+    "sectionAccount": "Account",
+    "sectionPreferences": "Preferences"
   },
   "beneficiaries": {
     "title": "Beneficiaries",
