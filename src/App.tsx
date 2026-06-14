@@ -69,6 +69,7 @@ const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m 
 const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const DesktopMoreScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopMoreScreen })));
+const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopHistoryScreen })));
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
@@ -205,7 +206,7 @@ const App = () => (
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper><MobileProofsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/history" element={<AdminRouteWrapper><MobileHistoryScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper><MobileNotificationsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper><MobileCreateAdmin /></AdminRouteWrapper>} />
