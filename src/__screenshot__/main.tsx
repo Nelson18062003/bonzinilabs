@@ -44,6 +44,7 @@ import { PayListV8 } from './clientPayLayoutV8';
 import { WizMethod, WizAmount, WizBenefSaved, WizBenefNew, WizConfirm } from './clientPayWizard';
 import { DepList, DepWizAmount, DepWizMethod, DepWizBank, DepWizRecap, DepDetailAwaiting, DepDetailValidated } from './clientDepositLayout';
 import { WalletHomeShown, WalletHomeHidden } from './clientWalletLayout';
+import { BenefList, BenefEditor } from './clientBeneficiariesLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -139,6 +140,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // Refonte module CLIENT — Wallet / Accueil
   'cwallet-home': { Comp: WalletHomeShown, route: '/' },
   'cwallet-home-hidden': { Comp: WalletHomeHidden, route: '/' },
+  // Refonte module CLIENT — Bénéficiaires (carnet)
+  'cbenef-list': { Comp: BenefList, route: '/' },
+  'cbenef-editor': { Comp: BenefEditor, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
