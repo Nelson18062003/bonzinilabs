@@ -7,7 +7,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: 'desktop-qa.spec.ts',
+  testMatch: /desktop-qa.*\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: 0,
