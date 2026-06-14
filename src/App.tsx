@@ -188,10 +188,10 @@ const App = () => (
                 <Route path="/m/login" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></AdminRouteWrapper>} />
                 <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewDeposit /></AdminRouteWrapper>} />
+                <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileNewDeposit desktop />}><MobileNewDeposit /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopDepositsScreen />}><MobileDepositDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewPayment /></AdminRouteWrapper>} />
+                <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileNewPayment desktop />}><MobileNewPayment /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
