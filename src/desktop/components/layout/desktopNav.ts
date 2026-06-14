@@ -34,6 +34,8 @@ export interface DesktopNavItem {
   perm?: keyof RolePermission;
   /** Actionable-count badge to show (from useAdminActionableCounts). */
   badge?: 'deposits' | 'payments';
+  /** Render the Mola mascot image as the icon (falls back to `icon`). */
+  mascot?: boolean;
 }
 
 export interface DesktopNavGroup {
@@ -46,7 +48,7 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
     label: 'Principal',
     items: [
       { to: '/m', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-      { to: '/m/assistant', label: 'Assistant Mola', icon: Bot },
+      { to: '/m/assistant', label: 'Mola', icon: Bot, mascot: true },
       { to: '/m/deposits', label: 'Dépôts', icon: ArrowDownToLine, perm: 'canViewDeposits', badge: 'deposits' },
       { to: '/m/payments', label: 'Paiements', icon: ArrowUpFromLine, perm: 'canViewPayments', badge: 'payments' },
       { to: '/m/clients', label: 'Clients', icon: Users, perm: 'canViewClients' },
