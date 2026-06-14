@@ -147,5 +147,8 @@
     "payments": "Payments",
     "history": "History",
     "profile": "Profile"
+  },
+  "rates": {
+    "title": "Exchange rate"
   }
 }

@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module TAUX client** (voir §4.1 — même méthode :
+3. **Prochaine tâche = module SUPPORT** (voir §4.1 — même méthode :
    maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
@@ -151,9 +151,18 @@ de l'admin.
   assumés par type (hero 24-26px · carte cycle de vie 22px · ligne simple 18px). NB : shell
   (top bar + bottom nav) encore ancien — refonte EN DERNIER.
 
+- **MODULE TAUX (Taux de change) — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/rates/ClientRatesPage.tsx` (drill-in + canvas) + `components/*` :
+  `RateHeroCard` (hero sans dégradé ambre, XAF→¥ + variation), `CountrySelector` (chips
+  designKit), `PaymentMethodSelector` (tuiles **vrais logos** `PaymentMethodLogo` + taux),
+  `RateConverter` (XAF↔¥ bidirectionnel + montants rapides), `RateIndicator` (palier
+  Meilleur/Standard/Petit), `RateTrendChart` (recharts lilas, 7J/30J/3M/1A), `RateInfoBanner`.
+  Calculs 100% PRÉSERVÉS (`useClientRates`, `calculateFinalRate`, `getBaseRate`, tiers).
+  Maquette `clientRatesLayout.tsx` (clé `crates`). i18n `client.rates.title` (fr+en).
+  NB : `RateCard` partagé admin/dashboard NON touché (composant distinct).
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
 casser les écrans en route).

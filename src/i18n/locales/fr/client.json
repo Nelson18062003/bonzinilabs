@@ -147,5 +147,8 @@
     "payments": "Paiements",
     "history": "Historique",
     "profile": "Profil"
+  },
+  "rates": {
+    "title": "Taux de change"
   }
 }
