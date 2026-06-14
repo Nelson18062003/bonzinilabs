@@ -55,10 +55,12 @@ const DesktopDepositsScreen = lazy(() => import("./desktop/screens/deposits").th
 const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositDetailV2 })));
 const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileNewDepositV2 })));
 const MobilePaymentsScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentsScreen })));
+const DesktopPaymentsScreen = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopPaymentsScreen })));
 const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentDetail })));
 const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileNewPayment })));
 const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
+const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopClientsScreen })));
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
@@ -174,12 +176,12 @@ const App = () => (
                 <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewDeposit /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false}><MobileDepositDetail /></AdminRouteWrapper>} />
-                <Route path="/m/payments" element={<AdminRouteWrapper><MobilePaymentsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewPayment /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper><MobilePaymentDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/clients" element={<AdminRouteWrapper><MobileClientsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false}><MobileCreateClient /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper><MobileClientLedger /></AdminRouteWrapper>} />
