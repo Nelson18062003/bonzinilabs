@@ -4,25 +4,23 @@
  * the title is derived from the route, the rest is shared app state.
  */
 import { useLocation } from 'react-router-dom';
-import { Search, Bell } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
-import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 import { formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { activeNavTitle } from './desktopNav';
+import { DesktopNotificationsMenu } from './DesktopNotificationsMenu';
 
 export function DesktopTopbar() {
   const { pathname } = useLocation();
   const { data: rate } = useActiveDailyRate();
-  const { data: counts } = useAdminActionableCounts();
 
   const title = activeNavTitle(pathname);
   const today = format(new Date(), 'EEEE d MMMM yyyy', { locale: fr });
   const subtitle = today.charAt(0).toUpperCase() + today.slice(1);
-  const hasAlerts = (counts?.deposits ?? 0) + (counts?.payments ?? 0) > 0;
 
   return (
     <header
@@ -62,16 +60,7 @@ export function DesktopTopbar() {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          aria-label="Notifications"
-          className={cn('relative flex h-10 w-10 items-center justify-center rounded-full', SURFACE.card, SURFACE.shadow, TEXT.strong)}
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          {hasAlerts && (
-            <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#FE560D] ring-2 ring-white dark:ring-[#211F2B]" />
-          )}
-        </button>
+        <DesktopNotificationsMenu />
       </div>
     </header>
   );
