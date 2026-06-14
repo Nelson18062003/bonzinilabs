@@ -20,6 +20,7 @@ import {
   UserPlus,
   Wallet,
 } from 'lucide-react';
+import { MolaMascot } from '@/components/MolaMascot';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
@@ -288,7 +289,7 @@ export function DesktopDashboard() {
           >
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
-                <Sparkles className="h-[18px] w-[18px]" />
+                <MolaMascot className="h-7 w-7" fallback={<Sparkles className="h-[18px] w-[18px]" />} />
               </span>
               <div className="leading-tight">
                 <p className="text-[14px] font-bold">Mola</p>

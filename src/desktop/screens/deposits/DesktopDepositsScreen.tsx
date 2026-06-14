@@ -14,7 +14,7 @@ import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePagin
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS_SHORT } from '@/types/deposit';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { formatRelativeDate } from '@/lib/formatters';
+import { formatRelativeDate, formatXAF } from '@/lib/formatters';
 import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
 import {
   FAMILIES_CONF,
@@ -71,10 +71,6 @@ function SlaDot({ level }: { level: SlaLevel }) {
       style={{ width: 6, height: 6, background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
     />
   );
-}
-
-function fmtAmount(n: number) {
-  return Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
@@ -375,7 +371,7 @@ export function DesktopDepositsScreen() {
                         </div>
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <Amount value={fmtAmount(deposit.amount_xaf)} size="md" />
+                        <Amount value={formatXAF(deposit.amount_xaf)} size="md" />
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center gap-2">

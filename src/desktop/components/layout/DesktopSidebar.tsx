@@ -9,15 +9,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
 import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
-import { SURFACE, TEXT } from '@/mobile/designKit';
+import { SURFACE, TEXT, Avatar } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MolaMascot } from '@/components/MolaMascot';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { DESKTOP_NAV, type DesktopNavItem } from './desktopNav';
-
-function initials(first?: string, last?: string) {
-  return `${first?.[0] ?? ''}${last?.[0] ?? ''}`.toUpperCase() || 'A';
-}
 
 export function DesktopSidebar() {
   const navigate = useNavigate();
@@ -107,9 +103,7 @@ export function DesktopSidebar() {
             className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left transition hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]"
             aria-label="Mon profil"
           >
-            <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold', SURFACE.holder)}>
-              {initials(currentUser?.firstName, currentUser?.lastName)}
-            </div>
+            <Avatar name={`${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`} size="sm" className="shrink-0" />
             <div className="min-w-0 flex-1 leading-tight">
               <p className={cn('truncate text-[13px] font-bold', TEXT.strong)}>
                 {currentUser?.firstName} {currentUser?.lastName}
