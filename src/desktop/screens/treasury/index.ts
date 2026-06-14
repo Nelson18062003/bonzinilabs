@@ -5,3 +5,5 @@ export { DesktopOperationsHistory } from './DesktopOperationsHistory';
 export { DesktopCounterpartiesScreen } from './DesktopCounterpartiesScreen';
 export { DesktopAccountsScreen } from './DesktopAccountsScreen';
 export { DesktopInventoryScreen } from './DesktopInventoryScreen';
+export { DesktopTreasuryDashboard } from './DesktopTreasuryDashboard';
+export { DesktopBalanceDashboard } from './DesktopBalanceDashboard';
