@@ -216,9 +216,7 @@ export function DesktopSupportScreen() {
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
             <Holder icon={MessageCircle} size="lg" />
             <p className={cn('mt-4 text-[15px] font-bold', TEXT.strong)}>{t('admin.listTitle')}</p>
-            <p className={cn('mt-1 max-w-xs text-[13px]', TEXT.muted)}>
-              Sélectionnez une conversation à gauche pour lire et répondre.
-            </p>
+            <p className={cn('mt-1 max-w-xs text-[13px]', TEXT.muted)}>{t('admin.consoleEmptyHint')}</p>
           </div>
         )}
       </div>
