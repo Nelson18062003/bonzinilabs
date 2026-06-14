@@ -9,14 +9,16 @@ import {
   History,
   AlertTriangle,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, Area, AreaChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { DateField } from '@/components/form';
 import { IconChip, INSET, Pill, SectionTitle, SOFT_CARD, TONE_DOT, TONE_TEXT } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
+  type FlowPoint,
   useTopCounterparties,
   useTreasuryDashboard,
+  useUsdtFlowEvolution,
   useWacEvolution,
 } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
@@ -176,6 +178,7 @@ export function MobileTreasuryDashboard() {
   const { data: topSuppliers } = useTopCounterparties('usdt_supplier', fromIso, toIso, 5);
   const { data: topBuyers } = useTopCounterparties('cny_buyer', fromIso, toIso, 5);
   const { data: wacSeries } = useWacEvolution(fromIso, toIso);
+  const { data: flowSeries } = useUsdtFlowEvolution(fromIso, toIso);
 
   if (!hasPermission('canViewTreasury')) {
     return <Navigate to="/m/more" replace />;
@@ -321,6 +324,54 @@ export function MobileTreasuryDashboard() {
               </section>
             )}
 
+            {/* Achat USDT — évolution dans le temps (XAF/USDT effectif par opération) */}
+            {flowSeries && flowSeries.purchases.length >= 2 && (
+              <FlowEvolutionChart
+                series={flowSeries.purchases}
+                title="Évolution du coût d'achat USDT"
+                hint="Un point = un achat saisi · taux effectif XAF/USDT"
+                tone="violet"
+                unit="XAF/USDT"
+                decimals={2}
+              />
+            )}
+
+            {/* Achat USDT — distribution (histogramme) */}
+            {flowSeries && flowSeries.purchases.length >= 3 && (
+              <FlowDistributionChart
+                series={flowSeries.purchases}
+                title="Distribution du coût d'achat USDT"
+                hint="Concentration des achats par tranche de taux"
+                tone="violet"
+                unit="XAF/USDT"
+                decimals={2}
+              />
+            )}
+
+            {/* Vente USDT — évolution dans le temps (CNY/USDT effectif par opération) */}
+            {flowSeries && flowSeries.sales.length >= 2 && (
+              <FlowEvolutionChart
+                series={flowSeries.sales}
+                title="Évolution du prix de vente USDT"
+                hint="Un point = une vente saisie · taux effectif CNY/USDT"
+                tone="amber"
+                unit="CNY/USDT"
+                decimals={4}
+              />
+            )}
+
+            {/* Vente USDT — distribution (histogramme) */}
+            {flowSeries && flowSeries.sales.length >= 3 && (
+              <FlowDistributionChart
+                series={flowSeries.sales}
+                title="Distribution du prix de vente USDT"
+                hint="Concentration des ventes par tranche de taux"
+                tone="amber"
+                unit="CNY/USDT"
+                decimals={4}
+              />
+            )}
+
             {/* Top counterparties */}
             <section>
               <SectionTitle>Top fournisseurs USDT</SectionTitle>
@@ -419,3 +470,224 @@ function TopList({
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Graphes USDT flux réel — basés sur usdt_purchases / usdt_sales, donc sur
+// les opérations effectivement saisies dans Trésorerie. Chaque point = une
+// vraie transaction (taux effectif `implicit_rate`, volume USDT pour pondérer).
+// ────────────────────────────────────────────────────────────────────────────
+
+const TONE_STROKE: Record<'violet' | 'amber', string> = {
+  violet: 'hsl(258 100% 60%)',
+  amber: 'hsl(36 100% 55%)',
+};
+
+const POPOVER_TOOLTIP_STYLE = {
+  background: 'hsl(var(--popover))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: 12,
+  fontSize: 12,
+  color: 'hsl(var(--popover-foreground))',
+} as const;
+
+// Évolution dans le temps : un point = une opération saisie. Le taux est
+// l'`implicit_rate` (XAF/USDT pour un achat, CNY/USDT pour une vente). Le
+// composant calcule la moyenne pondérée par volume USDT comme référence
+// affichée en grand (plus représentative qu'un last brut quand les ventes
+// sont rapprochées).
+function FlowEvolutionChart({
+  series,
+  title,
+  hint,
+  tone,
+  unit,
+  decimals,
+}: {
+  series: FlowPoint[];
+  title: string;
+  hint?: string;
+  tone: 'violet' | 'amber';
+  unit: string;
+  decimals: number;
+}) {
+  const stroke = TONE_STROKE[tone];
+  const gradientId = `flow-evo-${tone}`;
+  const data = series.map((p) => ({
+    ...p,
+    label: new Date(p.at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+    timeLabel: new Date(p.at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+  }));
+  const totalUsdt = series.reduce((acc, p) => acc + p.usdt, 0);
+  const weightedRate = totalUsdt > 0
+    ? series.reduce((acc, p) => acc + p.rate * p.usdt, 0) / totalUsdt
+    : 0;
+  const values = series.map((p) => p.rate);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const padding = Math.max((max - min) * 0.15, max * 0.0015);
+  const yMin = Math.max(0, min - padding);
+  const yMax = max + padding;
+
+  return (
+    <section>
+      <SectionTitle>{title}</SectionTitle>
+      <div className="rounded-2xl border border-border bg-card p-3">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[18px] font-extrabold tabular-nums" style={{ color: stroke }}>{fmt(weightedRate, decimals)}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">{unit} moy. pondéré</span>
+          </div>
+          <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+            {series.length} op · {fmt(totalUsdt, 2)} USDT
+          </span>
+        </div>
+        <ResponsiveContainer width="100%" height={180}>
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={stroke} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+            <YAxis
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              stroke="hsl(var(--border))"
+              domain={[yMin, yMax]}
+              tickFormatter={(v: number) => fmt(v, decimals)}
+              width={62}
+            />
+            <Tooltip
+              labelFormatter={(_, payload) => payload?.[0]?.payload?.timeLabel ?? ''}
+              formatter={(v: number, _name, item) => {
+                const p = item.payload as FlowPoint;
+                return [`${fmt(v, decimals)} ${unit} · ${fmt(p.usdt, 2)} USDT`, ''];
+              }}
+              labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
+              contentStyle={POPOVER_TOOLTIP_STYLE}
+            />
+            <Area
+              type="monotone"
+              dataKey="rate"
+              stroke={stroke}
+              strokeWidth={2}
+              fill={`url(#${gradientId})`}
+              dot={data.length <= 60 ? { r: 2.5, fill: stroke, strokeWidth: 0 } : false}
+              activeDot={{ r: 4, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+        {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
+      </div>
+    </section>
+  );
+}
+
+// Bucketing : ~10 tranches uniformes entre min et max. Si toutes les opérations
+// ont le même taux, on émet un unique bin. La valeur de la barre est le nombre
+// d'opérations dans le bucket; le volume USDT cumulé est affiché en tooltip.
+function buildBuckets(series: FlowPoint[], decimals: number) {
+  const values = series.map((p) => p.rate);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (max === min) {
+    const totalUsdt = series.reduce((a, p) => a + p.usdt, 0);
+    return [{ binStart: min, binEnd: min, count: series.length, usdt: totalUsdt, label: fmt(min, decimals) }];
+  }
+  const target = 10;
+  const bucketSize = (max - min) / target;
+  const buckets = Array.from({ length: target }, (_, i) => ({
+    binStart: min + i * bucketSize,
+    binEnd: min + (i + 1) * bucketSize,
+    count: 0,
+    usdt: 0,
+    label: '',
+  }));
+  for (const p of series) {
+    let idx = Math.floor((p.rate - min) / bucketSize);
+    if (idx >= target) idx = target - 1;
+    buckets[idx].count += 1;
+    buckets[idx].usdt += p.usdt;
+  }
+  for (const b of buckets) {
+    b.label = fmt((b.binStart + b.binEnd) / 2, decimals);
+  }
+  return buckets;
+}
+
+// Distribution (histogramme) : combien d'opérations à chaque tranche de taux.
+// Tooltip = tranche complète + nb d'opérations + volume USDT cumulé.
+function FlowDistributionChart({
+  series,
+  title,
+  hint,
+  tone,
+  unit,
+  decimals,
+}: {
+  series: FlowPoint[];
+  title: string;
+  hint?: string;
+  tone: 'violet' | 'amber';
+  unit: string;
+  decimals: number;
+}) {
+  const fill = TONE_STROKE[tone];
+  const buckets = useMemo(() => buildBuckets(series, decimals), [series, decimals]);
+  const totalUsdt = series.reduce((acc, p) => acc + p.usdt, 0);
+  // Taux médian pondéré par volume USDT (pour l'en-tête).
+  const sorted = [...series].sort((a, b) => a.rate - b.rate);
+  let cum = 0;
+  let median = sorted[0]?.rate ?? 0;
+  for (const p of sorted) {
+    cum += p.usdt;
+    if (cum >= totalUsdt / 2) { median = p.rate; break; }
+  }
+
+  return (
+    <section>
+      <SectionTitle>{title}</SectionTitle>
+      <div className="rounded-2xl border border-border bg-card p-3">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[18px] font-extrabold tabular-nums" style={{ color: fill }}>{fmt(median, decimals)}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">{unit} médiane pondérée</span>
+          </div>
+          <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+            {series.length} op · {fmt(totalUsdt, 2)} USDT
+          </span>
+        </div>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={buckets}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+            <YAxis
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              stroke="hsl(var(--border))"
+              allowDecimals={false}
+              width={32}
+            />
+            <Tooltip
+              cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
+              labelFormatter={(_, payload) => {
+                const b = payload?.[0]?.payload as { binStart: number; binEnd: number } | undefined;
+                if (!b) return '';
+                return `${fmt(b.binStart, decimals)} – ${fmt(b.binEnd, decimals)} ${unit}`;
+              }}
+              formatter={(_v, _name, item) => {
+                const b = item.payload as { count: number; usdt: number };
+                return [`${b.count} op · ${fmt(b.usdt, 2)} USDT`, ''];
+              }}
+              labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
+              contentStyle={POPOVER_TOOLTIP_STYLE}
+            />
+            <Bar dataKey="count" fill={fill} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+        {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
+      </div>
+    </section>
+  );
+}
+
