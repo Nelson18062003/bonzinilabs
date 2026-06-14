@@ -19,6 +19,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { MobileRouteWrapper } from "./mobile/components/MobileRouteWrapper";
+import { AdminRouteWrapper } from "./desktop/components/AdminRouteWrapper";
 import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealtimeInvalidation";
 import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
 
@@ -48,6 +49,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
 const MobileLoginScreen = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.MobileLoginScreen })));
 const MobileDashboard = lazy(() => import("./mobile/screens/dashboard").then(m => ({ default: m.MobileDashboard })));
+const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
 const MobileDepositsScreen = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositsScreenV2 })));
 const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositDetailV2 })));
@@ -168,7 +170,7 @@ const App = () => (
 
                 {/* Mobile Admin Routes */}
                 <Route path="/m/login" element={<MobileRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></MobileRouteWrapper>} />
-                <Route path="/m" element={<MobileRouteWrapper><MobileDashboard /></MobileRouteWrapper>} />
+                <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/deposits" element={<MobileRouteWrapper><MobileDepositsScreen /></MobileRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewDeposit /></MobileRouteWrapper>} />
                 <Route path="/m/deposits/:depositId" element={<MobileRouteWrapper showTabBar={false}><MobileDepositDetail /></MobileRouteWrapper>} />
