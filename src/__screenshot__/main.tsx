@@ -43,6 +43,7 @@ import { PayListV7, PayDetailV7 } from './clientPayLayoutV7';
 import { PayListV8 } from './clientPayLayoutV8';
 import { WizMethod, WizAmount, WizBenefSaved, WizBenefNew, WizConfirm } from './clientPayWizard';
 import { DepList, DepWizAmount, DepWizMethod, DepWizBank, DepWizRecap, DepDetailAwaiting, DepDetailValidated } from './clientDepositLayout';
+import { WalletHomeShown, WalletHomeHidden } from './clientWalletLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -135,6 +136,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cdep-wiz-recap': { Comp: DepWizRecap, route: '/' },
   'cdep-detail-awaiting': { Comp: DepDetailAwaiting, route: '/' },
   'cdep-detail-validated': { Comp: DepDetailValidated, route: '/' },
+  // Refonte module CLIENT — Wallet / Accueil
+  'cwallet-home': { Comp: WalletHomeShown, route: '/' },
+  'cwallet-home-hidden': { Comp: WalletHomeHidden, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
