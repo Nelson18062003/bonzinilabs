@@ -184,7 +184,7 @@ function ConfirmationCard({
   );
 }
 
-export function MobileAssistantScreen() {
+export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { profile } = useAdminAuth();
   const { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset, loadHistory } = useAdminAssistant();
   const [input, setInput] = useState('');
@@ -293,7 +293,7 @@ export function MobileAssistantScreen() {
       <MobileHeader
         title="Mola"
         subtitle="Directeur des Opérations"
-        showBack
+        showBack={!desktop}
         className="border-transparent bg-transparent backdrop-blur-none"
       />
       {/* Bouton explicite « nouvelle conversation » — visible uniquement quand
@@ -398,8 +398,8 @@ export function MobileAssistantScreen() {
     </div>
   );
 
-  return (
-    <ViewportShell header={header} footer={composer} scrollRef={scrollRef} scrollClassName="px-4 py-3" className={CANVAS}>
+  const body = (
+    <>
       {isEmpty ? (
         <div className="flex flex-col items-center pt-10 text-center">
           <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
@@ -500,6 +500,22 @@ export function MobileAssistantScreen() {
       )}
 
       {preview && <ImagePreview image={preview} onClose={() => setPreview(null)} />}
+    </>
+  );
+
+  if (desktop) {
+    return (
+      <div className={cn('mx-auto flex h-[calc(100vh-120px)] min-h-[560px] max-w-3xl flex-col overflow-hidden rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]', CANVAS)}>
+        <div className="shrink-0">{header}</div>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">{body}</div>
+        <div className="shrink-0">{composer}</div>
+      </div>
+    );
+  }
+
+  return (
+    <ViewportShell header={header} footer={composer} scrollRef={scrollRef} scrollClassName="px-4 py-3" className={CANVAS}>
+      {body}
     </ViewportShell>
   );
 }

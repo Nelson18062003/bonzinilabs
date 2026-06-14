@@ -62,7 +62,7 @@ const AMOUNT_TONE: Record<Tone, string> = {
   neutral: 'text-[#8E8BA0] dark:text-[#9B98AD]',
 };
 
-export function MobileClientLedger() {
+export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const { clientId } = useParams();
   const [filter, setFilter] = useState<LedgerEntryType | 'all'>('all');
@@ -80,14 +80,21 @@ export function MobileClientLedger() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <MobileHeader
-        title={t('history', { defaultValue: 'Historique' })}
-        showBack
-        backTo={`/m/clients/${clientId}`}
-      />
+    <div className={desktop ? '' : 'flex min-h-screen flex-col'}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('history', { defaultValue: 'Historique' })}</h2>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Grand livre du client</p>
+        </header>
+      ) : (
+        <MobileHeader
+          title={t('history', { defaultValue: 'Historique' })}
+          showBack
+          backTo={`/m/clients/${clientId}`}
+        />
+      )}
 
-      <PullToRefresh onRefresh={handleRefresh} className={cn('flex-1 space-y-4 px-4 py-5', SURFACE.canvas)}>
+      <PullToRefresh onRefresh={handleRefresh} className={desktop ? 'space-y-4' : cn('flex-1 space-y-4 px-4 py-5', SURFACE.canvas)}>
         {/* Client Info */}
         {client && (
           <Card>
