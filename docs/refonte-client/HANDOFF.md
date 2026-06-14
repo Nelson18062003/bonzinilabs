@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module BÉNÉFICIAIRES** (voir §4.1 — même méthode :
+3. **Prochaine tâche = module HISTORIQUE** (voir §4.1 — même méthode :
    maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
@@ -115,9 +115,18 @@ de l'admin.
   Maquette : `src/__screenshot__/clientWalletLayout.tsx` (clés `cwallet-*`). i18n `wallet.*`
   complété (fr+en). Logique préservée (solde, masquage, opérations, taux).
 
+- **MODULE BÉNÉFICIAIRES (carnet) — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/BeneficiariesPage.tsx`. Liste alias-first (`PaymentMethodLogo` réel + alias +
+  tag relation + identifiant), recherche, filtres par mode (chips lilas), modifier/archiver
+  (archive = soft, snapshot préservé), état vide · éditeur plein écran (drill-in +
+  `BeneficiaryForm` déjà refondu + pied Annuler/Enregistrer). Logique 100% préservée
+  (create/update/archive, isBeneficiaryFormValid, QR). Maquette `clientBeneficiariesLayout.tsx`
+  (clés `cbenef-*`). NB : `EditBeneficiaryPage` (édition bénéf D'UN PAIEMENT) déjà refondu
+  lors du module paiements — distinct de ce carnet.
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Bénéficiaires → Historique → Profil/Notifications → Taux client →
+Historique → Profil/Notifications → Taux client →
 Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
 casser les écrans en route).
