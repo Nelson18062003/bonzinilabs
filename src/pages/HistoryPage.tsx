@@ -1,24 +1,21 @@
+// ============================================================
+// APP CLIENT — HistoryPage (activité du compte) · refonte « Direction A ».
+// Opérations groupées par jour (crédit vert / débit neutre), filtres
+// Tous/Crédits/Débits, bouton Relevé (PDF). Logique 100% PRÉSERVÉE :
+// isDebitOperation (tous types), filtre, groupement, libellés, relevé.
+// ============================================================
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { useMyWallet, useMyWalletOperations, WalletOperation } from '@/hooks/useWallet';
-import { useMyProfile } from '@/hooks/useProfile';
-import { formatXAF } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  RefreshCw,
-  Filter,
-  FileDown,
-  Loader2,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
+import { ArrowDownLeft, ArrowUpRight, Filter, FileDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { MobileLayout } from '@/components/layout/MobileLayout';
+import { useMyWalletOperations, WalletOperation } from '@/hooks/useWallet';
+import { useMyProfile } from '@/hooks/useProfile';
+import { formatNumber } from '@/lib/formatters';
+import { SURFACE, TEXT, SOFT_PILL } from '@/mobile/designKit';
 import {
   generateClientStatement,
   buildMovementFromWalletOp,
@@ -28,26 +25,26 @@ import {
 
 type FilterType = 'all' | 'credits' | 'debits';
 
+const GREEN = '#2E7D52';
+
 const HistoryPage = () => {
   const { t } = useTranslation('client');
   const [filter, setFilter] = useState<FilterType>('all');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { data: wallet } = useMyWallet();
   const { data: operations, isLoading } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
 
-  // Helper to determine if an operation is a debit
+  // ── Crédit / débit (tous types) — LOGIQUE PRÉSERVÉE ───────────
   const isDebitOperation = (op: WalletOperation): boolean => {
-    const t = op.operation_type.toUpperCase();
-    if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'ADMIN_CREDIT' || t === 'PAYMENT_CANCELLED_REFUNDED') return false;
-    if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT' || t === 'DEPOSIT_REFUSED') return true;
+    const ty = op.operation_type.toUpperCase();
+    if (ty === 'DEPOSIT' || ty === 'DEPOSIT_VALIDATED' || ty === 'ADMIN_CREDIT' || ty === 'PAYMENT_CANCELLED_REFUNDED') return false;
+    if (ty === 'PAYMENT' || ty === 'PAYMENT_EXECUTED' || ty === 'PAYMENT_RESERVED' || ty === 'ADMIN_DEBIT' || ty === 'DEPOSIT_REFUSED') return true;
     if (op.balance_after < op.balance_before) return true;
     if (op.balance_after > op.balance_before) return false;
     return op.amount_xaf < 0;
   };
 
-  // Filter operations
-  const filteredOperations = (operations || []).filter(op => {
+  const filteredOperations = (operations || []).filter((op) => {
     if (filter === 'all') return true;
     const isDebit = isDebitOperation(op);
     if (filter === 'credits') return !isDebit;
@@ -55,25 +52,12 @@ const HistoryPage = () => {
     return true;
   });
 
-  // Group by date
   const groupedOperations = filteredOperations.reduce((groups, op) => {
     const date = format(new Date(op.created_at), 'yyyy-MM-dd');
     if (!groups[date]) groups[date] = [];
     groups[date].push(op);
     return groups;
   }, {} as Record<string, WalletOperation[]>);
-
-  const getOperationIcon = (op: WalletOperation) => {
-    const isDebit = isDebitOperation(op);
-    const t = op.operation_type.toUpperCase();
-    if (t === 'DEPOSIT' || t === 'DEPOSIT_VALIDATED' || t === 'PAYMENT_CANCELLED_REFUNDED' || t === 'ADMIN_CREDIT') {
-      return <ArrowDownLeft className="w-5 h-5 text-success" />;
-    }
-    if (t === 'PAYMENT' || t === 'PAYMENT_EXECUTED' || t === 'PAYMENT_RESERVED' || t === 'ADMIN_DEBIT') {
-      return <ArrowUpRight className="w-5 h-5 text-destructive" />;
-    }
-    return <RefreshCw className={`w-5 h-5 ${isDebit ? 'text-destructive' : 'text-success'}`} />;
-  };
 
   const getOperationLabel = (op: WalletOperation): string => {
     const opType = op.operation_type.toUpperCase();
@@ -101,9 +85,9 @@ const HistoryPage = () => {
     setIsGenerating(true);
     try {
       const sorted = [...operations]
-        .filter(op => shouldIncludeWalletOp(op))
+        .filter((op) => shouldIncludeWalletOp(op))
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      const movements = sorted.map(op => buildMovementFromWalletOp(op));
+      const movements = sorted.map((op) => buildMovementFromWalletOp(op));
       const clientName = profile ? `${profile.first_name} ${profile.last_name}` : 'Client';
 
       await generateClientStatement({
@@ -114,8 +98,7 @@ const HistoryPage = () => {
         periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
         periodTo: fmtDateLong(new Date().toISOString()),
         generatedAt: new Date().toLocaleString('fr-FR', {
-          day: 'numeric', month: 'long', year: 'numeric',
-          hour: '2-digit', minute: '2-digit',
+          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
         }),
       });
     } catch (err) {
@@ -126,110 +109,95 @@ const HistoryPage = () => {
     }
   };
 
+  const FILTERS: { value: FilterType; label: string }[] = [
+    { value: 'all', label: t('history.filterAll') },
+    { value: 'credits', label: t('history.filterCredits') },
+    { value: 'debits', label: t('history.filterDebits') },
+  ];
+
   return (
     <MobileLayout>
-      <PageHeader
-        title={t('history.title')}
-        subtitle={t('history.subtitle')}
-        rightElement={
-          <Button
-            variant="outline"
-            size="sm"
+      <div className={cn('min-h-[100dvh] space-y-4 px-4 pb-6 pt-6', SURFACE.canvas)}>
+        {/* En-tête */}
+        <div className="flex items-start justify-between gap-3 px-1">
+          <div>
+            <h1 className={cn('text-[26px] font-black leading-tight', TEXT.strong)}>{t('history.title')}</h1>
+            <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>{t('history.subtitle')}</p>
+          </div>
+          <button
             onClick={handleDownloadStatement}
             disabled={isGenerating || isLoading}
-            className="gap-2"
+            className={cn('flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold transition active:scale-95 disabled:opacity-50', SOFT_PILL)}
           >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="h-4 w-4" />
-            )}
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
             {t('history.statement')}
-          </Button>
-        }
-      />
-
-      {/* Filters */}
-      <div className="pl-4 pr-0 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
-        {[
-          { value: 'all',     label: t('history.filterAll')    },
-          { value: 'credits', label: t('history.filterCredits') },
-          { value: 'debits',  label: t('history.filterDebits')  },
-        ].map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value as FilterType)}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
-              filter === f.value
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {f.label}
           </button>
-        ))}
-      </div>
+        </div>
 
-      <div className="px-4 py-2 space-y-6">
+        {/* Filtres */}
+        <div className="flex items-center gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                'rounded-full px-4 py-2 text-[12.5px] font-bold transition-colors',
+                filter === f.value ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Liste groupée */}
         {isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
+          <div className="space-y-2.5 pt-1">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={cn('h-16 animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
+            ))}
           </div>
         ) : Object.entries(groupedOperations).length > 0 ? (
           Object.entries(groupedOperations).map(([date, ops]) => (
-            <div key={date} className="animate-slide-up">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+            <section key={date} className="animate-slide-up">
+              <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
                 {format(new Date(date), 'EEEE d MMMM', { locale: fr })}
-              </h3>
-
-              <div className="space-y-2">
+              </h2>
+              <div className="space-y-2.5">
                 {ops.map((op) => {
                   const isDebit = isDebitOperation(op);
                   return (
-                    <div
-                      key={op.id}
-                      className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/30"
-                    >
-                      <div className={cn(
-                        'w-10 h-10 rounded-xl flex items-center justify-center',
-                        isDebit ? 'bg-destructive/10' : 'bg-success/10'
-                      )}>
-                        {getOperationIcon(op)}
+                    <div key={op.id} className={cn('flex items-center gap-3 rounded-[18px] p-3.5', SURFACE.card, SURFACE.shadow)}>
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                        style={{ background: isDebit ? 'rgba(0,0,0,0.05)' : `${GREEN}1F` }}
+                      >
+                        {isDebit ? (
+                          <ArrowUpRight className={cn('h-5 w-5', TEXT.muted)} />
+                        ) : (
+                          <ArrowDownLeft className="h-5 w-5" style={{ color: GREEN }} />
+                        )}
                       </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
-                          {getOperationLabel(op)}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {op.description || 'N/A'}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{getOperationLabel(op)}</p>
+                        {op.description && <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>{op.description}</p>}
                       </div>
-
-                      <div className="text-right">
-                        <p className={cn(
-                          'font-semibold',
-                          isDebit ? 'text-destructive' : 'text-success'
-                        )}>
-                          {isDebit ? '-' : '+'}{formatXAF(Math.abs(op.amount_xaf))}
-                        </p>
-                        <p className="text-xs text-muted-foreground">XAF</p>
+                      <div className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', isDebit && TEXT.strong)} style={isDebit ? undefined : { color: GREEN }}>
+                        {isDebit ? '−' : '+'} {formatNumber(Math.abs(op.amount_xaf))}
+                        <div className={cn('text-[10px] font-semibold', TEXT.muted)}>XAF</div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
           ))
         ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Filter className="w-8 h-8 text-muted-foreground" />
+          <div className={cn('mt-2 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
+            <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
+              <Filter className="h-7 w-7" />
             </div>
-            <p className="text-muted-foreground">{t('history.noOperations')}</p>
+            <p className={cn('text-[14px]', TEXT.muted)}>{t('history.noOperations')}</p>
           </div>
         )}
       </div>
