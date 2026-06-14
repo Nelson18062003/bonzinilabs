@@ -4,7 +4,6 @@
  * the title is derived from the route, the rest is shared app state.
  */
 import { useLocation } from 'react-router-dom';
-import { Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
@@ -12,6 +11,7 @@ import { SURFACE, TEXT } from '@/mobile/designKit';
 import { formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { activeNavTitle } from './desktopNav';
+import { DesktopGlobalSearch } from './DesktopGlobalSearch';
 import { DesktopNotificationsMenu } from './DesktopNotificationsMenu';
 
 export function DesktopTopbar() {
@@ -36,22 +36,7 @@ export function DesktopTopbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2.5">
-        <div className="relative hidden lg:block">
-          <Search className={cn('pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-          {/* Desktop-only chrome (≥1024px): the iOS auto-zoom concern behind the
-              form-field rule cannot occur here, and the pill styling is intentional. */}
-          {/* eslint-disable-next-line no-restricted-syntax */}
-          <input
-            type="search"
-            placeholder="Rechercher un client, une référence…"
-            className={cn(
-              'h-10 w-72 rounded-full pl-9 pr-4 text-[13px] outline-none placeholder:text-[#9B98AD]',
-              SURFACE.card,
-              SURFACE.shadow,
-              TEXT.strong,
-            )}
-          />
-        </div>
+        <DesktopGlobalSearch />
 
         {rate?.rate_alipay ? (
           <div className={cn('hidden items-center gap-2 rounded-full px-3.5 py-2 xl:flex', SURFACE.card, SURFACE.shadow)}>
