@@ -295,6 +295,16 @@ export function MobileAssistantScreen() {
         title="Mola"
         subtitle="Directeur des Opérations"
         showBack
+        leading={
+          <MolaMascot
+            className="h-9 w-9"
+            fallback={
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                <Bot className="h-5 w-5" />
+              </div>
+            }
+          />
+        }
         className="border-transparent bg-transparent backdrop-blur-none"
       />
       {/* Bouton explicite « nouvelle conversation » — visible uniquement quand
