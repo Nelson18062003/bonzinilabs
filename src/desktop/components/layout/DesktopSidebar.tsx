@@ -12,6 +12,7 @@ import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MolaMascot } from '@/components/MolaMascot';
+import { BonziniLogo } from '@/components/BonziniLogo';
 import { DESKTOP_NAV, type DesktopNavItem } from './desktopNav';
 
 function initials(first?: string, last?: string) {
@@ -41,9 +42,7 @@ export function DesktopSidebar() {
     >
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-5 pb-2 pt-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(258_100%_60%)] to-[hsl(16_100%_55%)] text-[17px] font-black text-white">
-          B
-        </div>
+        <BonziniLogo size="sm" showText={false} className="shrink-0" />
         <div className="leading-tight">
           <p className={cn('text-[15px] font-black', TEXT.strong)}>Bonzini</p>
           <p className={cn('text-[11px] font-medium', TEXT.muted)}>Console admin</p>
