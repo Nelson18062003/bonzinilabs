@@ -10,7 +10,6 @@ import { PhoneInputWithCountry, TextField } from '@/components/form';
 import { Segmented } from '@/components/treasury/Segmented';
 import { INSET, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
 import { PRIMARY_PILL, Holder } from '@/mobile/designKit';
-import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
 import { formatPhone } from '@/data/countryCodes';
