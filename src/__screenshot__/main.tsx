@@ -45,6 +45,7 @@ import { WizMethod, WizAmount, WizBenefSaved, WizBenefNew, WizConfirm } from './
 import { DepList, DepWizAmount, DepWizMethod, DepWizBank, DepWizRecap, DepDetailAwaiting, DepDetailValidated } from './clientDepositLayout';
 import { WalletHomeShown, WalletHomeHidden } from './clientWalletLayout';
 import { BenefList, BenefEditor } from './clientBeneficiariesLayout';
+import { HistoryScreen } from './clientHistoryLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -143,6 +144,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // Refonte module CLIENT — Bénéficiaires (carnet)
   'cbenef-list': { Comp: BenefList, route: '/' },
   'cbenef-editor': { Comp: BenefEditor, route: '/' },
+  // Refonte module CLIENT — Historique
+  'chist-list': { Comp: HistoryScreen, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
