@@ -71,6 +71,9 @@ const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => 
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
 const MobileAdminsScreen = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminsScreen })));
+const DesktopAdminsScreen = lazy(() => import("./desktop/screens/admins").then(m => ({ default: m.DesktopAdminsScreen })));
+const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
+const DesktopSupportListScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportListScreen })));
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
@@ -195,19 +198,19 @@ const App = () => (
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
                 <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper><MobileMoreScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/rates" element={<AdminRouteWrapper><MobileRatesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper><MobileProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper><MobileNotificationsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/admins" element={<AdminRouteWrapper><MobileAdminsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper><MobileCreateAdmin /></AdminRouteWrapper>} />
-                <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper><MobileAdminDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper><MobileSettingsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper><MobileBriefsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/profile" element={<AdminRouteWrapper><MobileAdminProfile /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
-                <Route path="/m/support" element={<AdminRouteWrapper><MobileSupportListScreen /></AdminRouteWrapper>} />
+                <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportListScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />
                 <Route path="/m/support/stats" element={<AdminRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/support/:conversationId" element={<AdminRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/canned-responses" element={<AdminRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></AdminRouteWrapper>} />
