@@ -205,14 +205,14 @@ const App = () => (
                 <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/proofs" element={<AdminRouteWrapper><MobileProofsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/notifications" element={<AdminRouteWrapper><MobileNotificationsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper><MobileCreateAdmin /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/briefs" element={<AdminRouteWrapper><MobileBriefsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
