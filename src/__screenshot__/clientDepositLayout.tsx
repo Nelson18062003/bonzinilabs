@@ -15,42 +15,59 @@ import {
   Landmark, Store, ImagePlus, Info, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+// Vrais logos officiels (Orange/Wave/Ecobank/UBA/Afriland) récupérés via
+// Wikimedia + site Wave. MTN composé (jaune + « MTN » bleu = couleurs exactes,
+// le SVG libre étant monochrome). CCA : monogramme (aucune source libre).
+import orangeLogo from '@/assets/deposit-logos/orange.svg';
+import waveLogo from '@/assets/deposit-logos/wave.png';
+import ecobankLogo from '@/assets/deposit-logos/ecobank.png';
+import ubaLogo from '@/assets/deposit-logos/uba.svg';
+import afrilandLogo from '@/assets/deposit-logos/afriland-mark.png';
 
 type Fam = 'bank' | 'agency' | 'orange' | 'mtn' | 'wave';
 type Bank = 'ecobank' | 'uba' | 'cca' | 'afriland';
 const RED = '#C0504D', LILAC = '#8B5CF6', GREEN = '#2E7D52', AMBER = '#E8932A';
 
-/* Tuiles de marque premium. Mobile money = couleur officielle + wordmark
- * (Orange/MTN/Wave sont des logos typographiques) ; banque/agence = icône
- * premium sur fond de marque. */
+const tile = (size: number, radius?: number) =>
+  ({ width: size, height: size, borderRadius: radius ?? Math.round(size * 0.27) }) as const;
+
+/* Logos des moyens de paiement. Mobile money = vrai logo de marque (Orange
+ * carré officiel, pingouin Wave) ; MTN = pastille jaune + « MTN » bleu (logo
+ * typographique officiel) ; banque/agence = icône premium sur fond de marque. */
 function FamLogo({ k, size = 48, radius }: { k: Fam; size?: number; radius?: number }) {
-  const s = { width: size, height: size, borderRadius: radius ?? Math.round(size * 0.27) } as const;
-  const word = (text: string, bg: string, fg: string, ratio: number, lower = false) => (
-    <div style={{ ...s, background: bg }} className={cn('flex shrink-0 items-center justify-center', lower && 'lowercase')}>
-      <span className="font-black tracking-tight" style={{ color: fg, fontSize: Math.round(size * ratio), lineHeight: 1 }}>{text}</span>
+  const s = tile(size, radius);
+  if (k === 'orange') return <img src={orangeLogo} alt="Orange Money" style={s} className="shrink-0 object-cover" />;
+  if (k === 'wave') return <img src={waveLogo} alt="Wave" style={s} className="shrink-0 object-cover" />;
+  if (k === 'mtn') return (
+    <div style={{ ...s, background: '#FFCC00' }} className="flex shrink-0 items-center justify-center">
+      <span className="font-black tracking-tighter text-[#004F9F]" style={{ fontSize: Math.round(size * 0.34), lineHeight: 1 }}>MTN</span>
     </div>
   );
-  if (k === 'orange') return word('orange', '#FF7900', '#FFFFFF', 0.2, true);
-  if (k === 'mtn') return word('MTN', '#FFCC00', '#00599F', 0.32);
-  if (k === 'wave') return word('wave', '#1CC8F5', '#FFFFFF', 0.3, true);
   if (k === 'agency') return <div style={s} className="flex shrink-0 items-center justify-center bg-[#1C1B22]"><Store style={{ width: size * 0.5, height: size * 0.5 }} className="text-white" strokeWidth={1.9} /></div>;
   return <div style={s} className="flex shrink-0 items-center justify-center bg-[#3B3E9E]"><Landmark style={{ width: size * 0.5, height: size * 0.5 }} className="text-white" strokeWidth={1.9} /></div>;
 }
 
-/* Monogramme bancaire — vraie couleur de marque (logos officiels non
- * récupérables ici : CDN de marque bloqués). À remplacer par le SVG officiel
- * si fourni. */
-const BANKS: Record<Bank, { mono: string; bg: string; label: string }> = {
-  ecobank: { mono: 'eco', bg: '#0067B1', label: 'Ecobank Cameroun' },
-  uba: { mono: 'UBA', bg: '#E2231A', label: 'UBA Cameroun' },
-  cca: { mono: 'CCA', bg: '#1B3C8F', label: 'CCA-BANK' },
-  afriland: { mono: 'AFB', bg: '#009639', label: 'Afriland First Bank' },
+/* Logos de banque — vrai logo sur tuile blanche (rendu premium standard).
+ * `wide` = wordmark horizontal · sinon emblème carré. CCA : monogramme
+ * (couleur de marque ; logo officiel non disponible librement). */
+const BANKS: Record<Bank, { label: string; src?: string; wide?: boolean; mono?: string; bg?: string }> = {
+  ecobank: { label: 'Ecobank Cameroun', src: ecobankLogo, wide: true },
+  uba: { label: 'UBA Cameroun', src: ubaLogo, wide: true },
+  afriland: { label: 'Afriland First Bank', src: afrilandLogo },
+  cca: { label: 'CCA-BANK', mono: 'CCA', bg: '#1B3C8F' },
 };
 function BankLogo({ k, size = 48, radius }: { k: Bank; size?: number; radius?: number }) {
   const b = BANKS[k];
+  if (!b.src) return (
+    <div style={{ ...tile(size, radius), background: b.bg }} className="flex shrink-0 items-center justify-center">
+      <span className="font-black tracking-tight text-white" style={{ fontSize: Math.round(size * 0.3), lineHeight: 1 }}>{b.mono}</span>
+    </div>
+  );
+  const w = b.wide ? size * 0.82 : size * 0.6;
+  const h = b.wide ? size * 0.52 : size * 0.6;
   return (
-    <div style={{ width: size, height: size, borderRadius: radius ?? Math.round(size * 0.27), background: b.bg }} className="flex shrink-0 items-center justify-center">
-      <span className="font-black tracking-tight text-white" style={{ fontSize: Math.round(size * (b.mono.length > 3 ? 0.22 : 0.3)), lineHeight: 1 }}>{b.mono}</span>
+    <div style={tile(size, radius)} className="flex shrink-0 items-center justify-center overflow-hidden bg-white ring-1 ring-black/[0.06]">
+      <img src={b.src} alt={b.label} className="object-contain" style={{ width: w, height: h }} />
     </div>
   );
 }
