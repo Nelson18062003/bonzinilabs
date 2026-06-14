@@ -350,5 +350,6 @@
     "criticalBannerWarning": "Warning: deadline almost up!",
     "warningBannerMessage": "Remember to send your proof quickly",
     "normalBannerMessage": "Make the deposit and send the proof"
-  }
+  },
+  "searchPlaceholder": "Search (reference, method…)"
 }

@@ -29,7 +29,7 @@ export const WelcomeGreeting = ({
 
   return (
     <div className="animate-fade-in px-1">
-      <h1 className={cn('text-[24px] font-black leading-tight', TEXT.strong)}>{greeting} 👋</h1>
+      <h1 className={cn('text-[26px] font-black leading-tight', TEXT.strong)}>{greeting} 👋</h1>
       {displaySubtitle && <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>{displaySubtitle}</p>}
     </div>
   );

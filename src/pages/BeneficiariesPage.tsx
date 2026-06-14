@@ -133,7 +133,7 @@ const BeneficiariesPage = () => {
   // ── List view ────────────────────────────────────────────────
   return (
     <MobileLayout>
-      <div className={cn('min-h-[100dvh] space-y-4 px-4 pb-6 pt-6', SURFACE.canvas)}>
+      <div className={cn('min-h-[100dvh] space-y-5 px-4 pb-6 pt-6', SURFACE.canvas)}>
         {/* En-tête */}
         <div className="flex items-start justify-between gap-3 px-1">
           <div>

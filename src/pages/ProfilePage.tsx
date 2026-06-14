@@ -77,7 +77,7 @@ const ProfilePage = () => {
 
   return (
     <MobileLayout>
-      <div className={cn('min-h-[100dvh] space-y-6 px-4 pb-6 pt-6', SURFACE.canvas)}>
+      <div className={cn('min-h-[100dvh] space-y-5 px-4 pb-6 pt-6', SURFACE.canvas)}>
         <h1 className={cn('px-1 text-[26px] font-black leading-tight', TEXT.strong)}>{t('profile.title')}</h1>
 
         {/* Carte identité — premium, sans dégradé */}

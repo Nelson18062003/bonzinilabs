@@ -114,7 +114,7 @@ const PaymentsPage = () => {
 
   return (
     <MobileLayout>
-      <div className={cn('min-h-[100dvh] space-y-4 px-4 pb-6 pt-5', SURFACE.canvas)}>
+      <div className={cn('min-h-[100dvh] space-y-5 px-4 pb-6 pt-6', SURFACE.canvas)}>
         {/* En-tête */}
         <div className="px-1">
           <h1 className={cn('text-[26px] font-black leading-tight', TEXT.strong)}>{t('title')}</h1>

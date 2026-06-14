@@ -141,6 +141,16 @@ de l'admin.
   nom d'entreprise). Maquette `clientProfileLayout.tsx` (`cprofile`, `cnotifs`). i18n
   `profile.section*` (fr+en).
 
+- **PASSE DE COHÉRENCE TRANSVERSALE (audit détails)** : unifié les 6 écrans à onglets
+  (Paiements, Dépôts, Bénéficiaires, Historique, Wallet, Profil) → conteneur
+  `min-h-[100dvh] space-y-5 px-4 pb-6 pt-6` partout · titres de page `text-[26px]` (greeting
+  Wallet aligné) · chips de filtre `px-3.5 py-2` + conteneur `-mx-4 … overflow-x-auto`
+  partout · **recherche ajoutée à Dépôts** (réf/méthode/banque/agence) **et Historique**
+  (description) pour parité avec Paiements/Bénéficiaires. i18n `deposits.searchPlaceholder`,
+  `client.history.search`, `client.wallet.*`, `client.profile.section*` (fr+en). Rayons
+  assumés par type (hero 24-26px · carte cycle de vie 22px · ligne simple 18px). NB : shell
+  (top bar + bottom nav) encore ancien — refonte EN DERNIER.
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
 Taux client →

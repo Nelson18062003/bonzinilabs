@@ -41,7 +41,8 @@
       "adjustmentDebit": "Ajustement Débit",
       "adjustmentCredit": "Ajustement Crédit",
       "operation": "Opération"
-    }
+    },
+    "search": "Rechercher une opération…"
   },
   "profile": {
     "title": "Profil",

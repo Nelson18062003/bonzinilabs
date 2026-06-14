@@ -41,7 +41,8 @@
       "adjustmentDebit": "Debit adjustment",
       "adjustmentCredit": "Credit adjustment",
       "operation": "Operation"
-    }
+    },
+    "search": "Search an operation…"
   },
   "profile": {
     "title": "Profile",

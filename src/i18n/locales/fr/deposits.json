@@ -350,5 +350,6 @@
     "criticalBannerWarning": "Attention: delai presque ecoule !",
     "warningBannerMessage": "Pensez a envoyer votre preuve rapidement",
     "normalBannerMessage": "Effectuez le depot et envoyez la preuve"
-  }
+  },
+  "searchPlaceholder": "Rechercher (référence, méthode…)"
 }

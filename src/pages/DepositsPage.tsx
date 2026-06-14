@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownToLine, ChevronRight, ArrowRight } from 'lucide-react';
+import { ArrowDownToLine, ChevronRight, ArrowRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
@@ -68,27 +68,35 @@ const DepositsPage = () => {
   const { data: wallet } = useMyWallet();
 
   const [tab, setTab] = useState<DepositFilterTab>('all');
+  const [search, setSearch] = useState('');
 
   const todoCount = useMemo(
     () => (deposits ?? []).filter((d) => depositLifecycle(d.status).kind === 'todo').length,
     [deposits],
   );
 
-  // Filtre + tri (à-traiter en tête, puis récent).
+  // Filtre + recherche + tri (à-traiter en tête, puis récent).
   const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return (deposits ?? [])
       .filter((d) => matchesDepositFilterTab(d.status, tab))
+      .filter((d) => {
+        if (!q) return true;
+        return [d.reference, t(`method.${d.method}`, d.method), d.bank_name, d.agency_name]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(q));
+      })
       .sort((a, b) => {
         const at = depositLifecycle(a.status).kind === 'todo' ? 0 : 1;
         const bt = depositLifecycle(b.status).kind === 'todo' ? 0 : 1;
         if (at !== bt) return at - bt;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-  }, [deposits, tab]);
+  }, [deposits, tab, search, t]);
 
   return (
     <MobileLayout>
-      <div className={cn('min-h-[100dvh] space-y-4 px-4 pb-6 pt-5', SURFACE.canvas)}>
+      <div className={cn('min-h-[100dvh] space-y-5 px-4 pb-6 pt-6', SURFACE.canvas)}>
         {/* En-tête */}
         <div className="px-1">
           <h1 className={cn('text-[26px] font-black leading-tight', TEXT.strong)}>{t('title')}</h1>
@@ -113,6 +121,20 @@ const DepositsPage = () => {
           </div>
           <ArrowRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
         </button>
+
+        {/* Recherche */}
+        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
+          <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+          {/* input nu volontaire 16px (anti auto-zoom iOS) */}
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('searchPlaceholder', { defaultValue: 'Rechercher (référence, méthode…)' })}
+            className={cn('min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#9B98AD]', TEXT.strong)}
+          />
+        </label>
 
         {/* Filtres statut */}
         <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

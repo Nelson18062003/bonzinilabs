@@ -39,7 +39,7 @@ const WalletPage = () => {
 
   return (
     <MobileLayout>
-      <div className={cn('min-h-[100dvh] space-y-6 px-4 pb-6 pt-5', SURFACE.canvas)}>
+      <div className={cn('min-h-[100dvh] space-y-5 px-4 pb-6 pt-6', SURFACE.canvas)}>
         {/* Salutation */}
         <WelcomeGreeting
           firstName={profile?.first_name}

@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownLeft, ArrowUpRight, Filter, FileDown, Loader2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Filter, FileDown, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
@@ -30,6 +30,7 @@ const GREEN = '#2E7D52';
 const HistoryPage = () => {
   const { t } = useTranslation('client');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [search, setSearch] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { data: operations, isLoading } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
@@ -44,13 +45,16 @@ const HistoryPage = () => {
     return op.amount_xaf < 0;
   };
 
-  const filteredOperations = (operations || []).filter((op) => {
-    if (filter === 'all') return true;
-    const isDebit = isDebitOperation(op);
-    if (filter === 'credits') return !isDebit;
-    if (filter === 'debits') return isDebit;
-    return true;
-  });
+  const q = search.trim().toLowerCase();
+  const filteredOperations = (operations || [])
+    .filter((op) => !q || (op.description || '').toLowerCase().includes(q))
+    .filter((op) => {
+      if (filter === 'all') return true;
+      const isDebit = isDebitOperation(op);
+      if (filter === 'credits') return !isDebit;
+      if (filter === 'debits') return isDebit;
+      return true;
+    });
 
   const groupedOperations = filteredOperations.reduce((groups, op) => {
     const date = format(new Date(op.created_at), 'yyyy-MM-dd');
@@ -117,7 +121,7 @@ const HistoryPage = () => {
 
   return (
     <MobileLayout>
-      <div className={cn('min-h-[100dvh] space-y-4 px-4 pb-6 pt-6', SURFACE.canvas)}>
+      <div className={cn('min-h-[100dvh] space-y-5 px-4 pb-6 pt-6', SURFACE.canvas)}>
         {/* En-tête */}
         <div className="flex items-start justify-between gap-3 px-1">
           <div>
@@ -134,14 +138,28 @@ const HistoryPage = () => {
           </button>
         </div>
 
+        {/* Recherche */}
+        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
+          <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+          {/* input nu volontaire 16px (anti auto-zoom iOS) */}
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('history.search', { defaultValue: 'Rechercher une opération…' })}
+            className={cn('min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#9B98AD]', TEXT.strong)}
+          />
+        </label>
+
         {/* Filtres */}
-        <div className="flex items-center gap-2">
+        <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {FILTERS.map((f) => (
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'rounded-full px-4 py-2 text-[12.5px] font-bold transition-colors',
+                'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
                 filter === f.value ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
