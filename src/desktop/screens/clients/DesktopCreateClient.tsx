@@ -203,15 +203,15 @@ export function DesktopCreateClient() {
 
       <Card className="p-6">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={<>Prénom {required}</>} htmlFor="cc-prenom">
+          <FormField label={<>{t('firstName')} {required}</>} htmlFor="cc-prenom">
             <TextInput id="cc-prenom" placeholder="Ex: Fabrice" value={form.prenom} onChange={(e) => set('prenom', e.target.value)} autoComplete="given-name" />
           </FormField>
-          <FormField label={<>Nom {required}</>} htmlFor="cc-nom">
+          <FormField label={<>{t('lastName')} {required}</>} htmlFor="cc-nom">
             <TextInput id="cc-nom" placeholder="Ex: Bienvenue" value={form.nom} onChange={(e) => set('nom', e.target.value)} autoComplete="family-name" />
           </FormField>
 
           <div className="sm:col-span-2">
-            <FormField label={<>Entreprise {optional}</>} htmlFor="cc-entreprise">
+            <FormField label={<>{t('company')} {optional}</>} htmlFor="cc-entreprise">
               <TextInput id="cc-entreprise" placeholder="Ex: Jako Cargo SARL" value={form.entreprise} onChange={(e) => set('entreprise', e.target.value)} autoComplete="organization" />
             </FormField>
           </div>
@@ -232,12 +232,12 @@ export function DesktopCreateClient() {
           </div>
 
           <div className="sm:col-span-2">
-            <FormField label={<>Email {optional}</>} htmlFor="cc-email">
+            <FormField label={<>{t('email')} {optional}</>} htmlFor="cc-email">
               <TextInput id="cc-email" placeholder="fabrice@jakocargo.com" value={form.email} onChange={(e) => set('email', e.target.value)} type="email" autoComplete="email" />
             </FormField>
           </div>
 
-          <FormField label={<>Pays {required}</>} htmlFor="cc-pays">
+          <FormField label={<>{t('country')} {required}</>} htmlFor="cc-pays">
             <select
               id="cc-pays"
               className={cn(selectClass, 'cursor-pointer appearance-none pr-9')}
@@ -259,7 +259,7 @@ export function DesktopCreateClient() {
             </select>
           </FormField>
 
-          <FormField label={<>Ville {optional}</>} htmlFor="cc-ville">
+          <FormField label={<>{t('city')} {optional}</>} htmlFor="cc-ville">
             <TextInput id="cc-ville" placeholder="Ex: Douala" value={form.ville} onChange={(e) => set('ville', e.target.value)} />
           </FormField>
         </div>
