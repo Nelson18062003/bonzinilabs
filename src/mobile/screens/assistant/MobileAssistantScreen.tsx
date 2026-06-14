@@ -5,6 +5,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ViewportShell } from '@/components/layout/ViewportShell';
 import { useAdminAssistant, type AssistantProposal } from '@/hooks/useAdminAssistant';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { MolaMascot } from '@/components/MolaMascot';
 import { validateUploadFile, cn } from '@/lib/utils';
 
 const SUGGESTIONS = [
@@ -402,9 +403,14 @@ export function MobileAssistantScreen() {
     <ViewportShell header={header} footer={composer} scrollRef={scrollRef} scrollClassName="px-4 py-3" className={CANVAS}>
       {isEmpty ? (
         <div className="flex flex-col items-center pt-10 text-center">
-          <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
-            <Bot className="h-8 w-8" />
-          </div>
+          <MolaMascot
+            className="h-24 w-24 drop-shadow-[0_10px_22px_rgba(251,87,19,0.28)]"
+            fallback={
+              <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
+                <Bot className="h-8 w-8" />
+              </div>
+            }
+          />
           <h2 className="mt-4 text-lg font-bold text-[#1B1A24] dark:text-[#F2F1F7]">
             Bonjour {profile?.first_name || ''} 👋
           </h2>
