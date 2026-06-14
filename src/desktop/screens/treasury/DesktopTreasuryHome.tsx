@@ -96,7 +96,7 @@ export function DesktopTreasuryHome() {
   const stockNegative = (stockUsdt ?? 0) < 0;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>

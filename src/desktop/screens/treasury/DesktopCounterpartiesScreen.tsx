@@ -9,6 +9,8 @@ import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight } from 'luci
 import { PhoneInputWithCountry, TextField } from '@/components/form';
 import { Segmented } from '@/components/treasury/Segmented';
 import { INSET, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { PRIMARY_PILL } from '@/mobile/designKit';
+import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
 import { formatPhone } from '@/data/countryCodes';
@@ -63,7 +65,7 @@ export function DesktopCounterpartiesScreen() {
   const isSupplier = tab === 'usdt_supplier';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -73,7 +75,7 @@ export function DesktopCounterpartiesScreen() {
         {canManage && !showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#1C1B22] px-4 py-2.5 text-[13px] font-bold text-white transition hover:brightness-110 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
           >
             <Plus className="h-4 w-4" /> Nouvelle contrepartie
           </button>

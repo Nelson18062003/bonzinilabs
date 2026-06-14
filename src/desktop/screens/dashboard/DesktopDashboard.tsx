@@ -224,10 +224,10 @@ export function DesktopDashboard() {
               <table className="mt-3 w-full text-left">
                 <thead>
                   <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                    <th className="px-5 py-2.5 font-bold">Client</th>
-                    <th className="px-2 py-2.5 text-right font-bold">Montant</th>
-                    <th className="px-2 py-2.5 font-bold">Quand</th>
-                    <th className="px-5 py-2.5 text-right font-bold">Statut</th>
+                    <th scope="col" className="px-5 py-2.5 font-bold">Client</th>
+                    <th scope="col" className="px-2 py-2.5 text-right font-bold">Montant</th>
+                    <th scope="col" className="px-2 py-2.5 font-bold">Quand</th>
+                    <th scope="col" className="px-5 py-2.5 text-right font-bold">Statut</th>
                   </tr>
                 </thead>
                 <tbody>

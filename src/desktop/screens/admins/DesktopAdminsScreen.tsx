@@ -136,10 +136,10 @@ export function DesktopAdminsScreen() {
             <table className="w-full text-left">
               <thead>
                 <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th className="px-5 py-3 font-bold">Administrateur</th>
-                  <th className="px-2 py-3 font-bold">Email</th>
-                  <th className="px-2 py-3 font-bold">Rôle</th>
-                  <th className="px-5 py-3 text-right font-bold">Dernière connexion</th>
+                  <th scope="col" className="px-5 py-3 font-bold">Administrateur</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Email</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Rôle</th>
+                  <th scope="col" className="px-5 py-3 text-right font-bold">Dernière connexion</th>
                 </tr>
               </thead>
               <tbody>

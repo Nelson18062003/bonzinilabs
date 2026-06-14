@@ -41,7 +41,7 @@ export function DesktopOperationsHistory() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <header>
         <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Historique des opérations</h2>
         <p className="mt-1 text-[14px] text-muted-foreground">{filtered.length} opération{filtered.length > 1 ? 's' : ''} sur la période</p>

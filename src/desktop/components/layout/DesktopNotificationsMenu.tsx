@@ -7,7 +7,7 @@
  * item navigates to its target and closes the menu; "Voir tout" opens the full
  * screen.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock, Loader2 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -38,6 +38,14 @@ export function DesktopNotificationsMenu() {
 
   const count = notifications?.length ?? 0;
   const hasAlerts = count > 0;
+
+  // Close on Escape, mirroring the global-search dropdown.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   return (
     <div className="relative">

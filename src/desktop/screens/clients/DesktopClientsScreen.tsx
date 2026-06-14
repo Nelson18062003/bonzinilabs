@@ -123,11 +123,11 @@ export function DesktopClientsScreen() {
           <table className="w-full text-left">
             <thead>
               <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                <th className="px-5 py-3 font-bold">Client</th>
-                <th className="px-2 py-3 font-bold">Téléphone</th>
-                <th className="px-2 py-3 text-right font-bold">Solde XAF</th>
-                <th className="px-2 py-3 text-right font-bold">Dépôts</th>
-                <th className="px-5 py-3 text-right font-bold">Paiements</th>
+                <th scope="col" className="px-5 py-3 font-bold">Client</th>
+                <th scope="col" className="px-2 py-3 font-bold">Téléphone</th>
+                <th scope="col" className="px-2 py-3 text-right font-bold">Solde XAF</th>
+                <th scope="col" className="px-2 py-3 text-right font-bold">Dépôts</th>
+                <th scope="col" className="px-5 py-3 text-right font-bold">Paiements</th>
               </tr>
             </thead>
             <tbody>

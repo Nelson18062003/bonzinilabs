@@ -302,12 +302,12 @@ export function DesktopPaymentsScreen() {
             <table className="w-full text-left">
               <thead>
                 <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th className="px-5 py-3 font-bold">Référence</th>
-                  <th className="px-2 py-3 font-bold">Client</th>
-                  <th className="px-2 py-3 text-right font-bold">Montant</th>
-                  <th className="px-2 py-3 font-bold">Méthode</th>
-                  <th className="px-2 py-3 font-bold">Créé le</th>
-                  <th className="px-5 py-3 text-right font-bold">Statut</th>
+                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
+                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
+                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
                 </tr>
               </thead>
               <tbody>

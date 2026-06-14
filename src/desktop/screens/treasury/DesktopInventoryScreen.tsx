@@ -53,7 +53,7 @@ export function DesktopInventoryScreen() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <header>
         <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Inventaire des comptes</h2>
         <p className="mt-1 max-w-2xl text-[13px] leading-snug text-muted-foreground">

@@ -116,7 +116,7 @@ export function DesktopSalesList() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
