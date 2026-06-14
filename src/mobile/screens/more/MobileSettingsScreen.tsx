@@ -6,16 +6,25 @@ import { Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
 
-export function MobileSettingsScreen() {
+export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const { profile } = useAdminAuth();
   const role = profile?.role;
 
   return (
-    <div className="flex min-h-full flex-col">
-      <MobileHeader title={t('settings', { defaultValue: 'Paramètres' })} showBack />
+    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
+      {desktop ? (
+        <header className="mb-6">
+          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>
+            {t('settings', { defaultValue: 'Paramètres' })}
+          </h2>
+          <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Apparence, compte et informations</p>
+        </header>
+      ) : (
+        <MobileHeader title={t('settings', { defaultValue: 'Paramètres' })} showBack />
+      )}
 
-      <div className={cn('flex-1 space-y-5 px-4 py-5', SURFACE.canvas)}>
+      <div className={cn(desktop ? 'space-y-5' : 'flex-1 space-y-5 px-4 py-5', !desktop && SURFACE.canvas)}>
         {/* Apparence */}
         <div>
           <SectionTitle>{t('appearance', { defaultValue: 'Apparence' })}</SectionTitle>

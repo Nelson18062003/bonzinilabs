@@ -97,17 +97,24 @@ export function DesktopSidebar() {
       {/* User card */}
       <div className="border-t border-black/[0.06] p-3 dark:border-white/[0.06]">
         <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-          <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold', SURFACE.holder)}>
-            {initials(currentUser?.firstName, currentUser?.lastName)}
-          </div>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className={cn('truncate text-[13px] font-bold', TEXT.strong)}>
-              {currentUser?.firstName} {currentUser?.lastName}
-            </p>
-            <p className={cn('truncate text-[11px]', TEXT.muted)}>
-              {currentUser ? ADMIN_ROLE_LABELS[currentUser.role] : ''}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/m/more/profile')}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left transition hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]"
+            aria-label="Mon profil"
+          >
+            <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold', SURFACE.holder)}>
+              {initials(currentUser?.firstName, currentUser?.lastName)}
+            </div>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className={cn('truncate text-[13px] font-bold', TEXT.strong)}>
+                {currentUser?.firstName} {currentUser?.lastName}
+              </p>
+              <p className={cn('truncate text-[11px]', TEXT.muted)}>
+                {currentUser ? ADMIN_ROLE_LABELS[currentUser.role] : ''}
+              </p>
+            </div>
+          </button>
           <button
             type="button"
             onClick={handleLogout}

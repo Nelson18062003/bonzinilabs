@@ -13,7 +13,7 @@ import { SURFACE, TEXT, FormField, TextInput, PrimaryPill } from '@/mobile/desig
  * - Photo → bucket Storage 'avatars' (dossier = user_id) → URL publique.
  * - Enregistrement via la RPC update_my_admin_profile (SECURITY DEFINER).
  */
-export function MobileAdminProfile() {
+export function MobileAdminProfile({ desktop = false }: { desktop?: boolean } = {}) {
   const navigate = useNavigate();
   const { currentUser, profile, refreshProfile } = useAdminAuth();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -81,10 +81,17 @@ export function MobileAdminProfile() {
   };
 
   return (
-    <div className="flex min-h-full flex-col">
-      <MobileHeader title="Mon profil" showBack />
+    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
+      {desktop ? (
+        <header className="mb-6">
+          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>Mon profil</h2>
+          <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Photo, nom et informations de connexion</p>
+        </header>
+      ) : (
+        <MobileHeader title="Mon profil" showBack />
+      )}
 
-      <div className={cn('flex-1 space-y-6 px-4 py-6', SURFACE.canvas)}>
+      <div className={cn(desktop ? 'space-y-6' : 'flex-1 space-y-6 px-4 py-6', !desktop && SURFACE.canvas)}>
         {/* Avatar */}
         <div className="flex flex-col items-center">
           <button

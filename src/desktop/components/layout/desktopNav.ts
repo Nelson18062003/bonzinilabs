@@ -20,6 +20,7 @@ import {
   Shield,
   ScrollText,
   Settings,
+  LayoutGrid,
 } from 'lucide-react';
 import type { RolePermission } from '@/contexts/AdminAuthContext';
 
@@ -65,6 +66,7 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
       { to: '/m/more/admins', label: 'Administrateurs', icon: Shield, perm: 'canManageUsers' },
       { to: '/m/more/history', label: 'Journaux', icon: ScrollText, perm: 'canViewLogs' },
       { to: '/m/more/settings', label: 'Paramètres', icon: Settings },
+      { to: '/m/more', label: 'Tous les outils', icon: LayoutGrid, end: true },
     ],
   },
 ];
