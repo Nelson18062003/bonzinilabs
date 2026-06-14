@@ -62,6 +62,7 @@ const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m =
 const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
 const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopClientsScreen })));
+const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopCreateClient })));
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
@@ -195,7 +196,7 @@ const App = () => (
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false}><MobileCreateClient /></AdminRouteWrapper>} />
+                <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCreateClient />}><MobileCreateClient /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
@@ -222,8 +223,8 @@ const App = () => (
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryHome />}><MobileTreasuryHome /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryDashboard />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasuryNewPurchase desktop />}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasuryNewSale desktop />}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopCounterpartiesScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopAccountsScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
