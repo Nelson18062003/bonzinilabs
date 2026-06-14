@@ -47,6 +47,7 @@ import { WalletHomeShown, WalletHomeHidden } from './clientWalletLayout';
 import { BenefList, BenefEditor } from './clientBeneficiariesLayout';
 import { HistoryScreen } from './clientHistoryLayout';
 import { ProfileScreen, NotificationsScreen } from './clientProfileLayout';
+import { RatesScreen } from './clientRatesLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -150,6 +151,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // Refonte module CLIENT — Profil / Notifications
   'cprofile': { Comp: ProfileScreen, route: '/' },
   'cnotifs': { Comp: NotificationsScreen, route: '/' },
+  // Refonte module CLIENT — Taux de change
+  'crates': { Comp: RatesScreen, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
