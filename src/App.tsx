@@ -18,7 +18,6 @@ import { queryClient } from "@/lib/queryClient";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { MobileRouteWrapper } from "./mobile/components/MobileRouteWrapper";
 import { AdminRouteWrapper } from "./desktop/components/AdminRouteWrapper";
 import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealtimeInvalidation";
 import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
@@ -52,6 +51,7 @@ const MobileDashboard = lazy(() => import("./mobile/screens/dashboard").then(m =
 const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
 const MobileDepositsScreen = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositsScreenV2 })));
+const DesktopDepositsScreen = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopDepositsScreen })));
 const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositDetailV2 })));
 const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileNewDepositV2 })));
 const MobilePaymentsScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentsScreen })));
@@ -169,56 +169,56 @@ const App = () => (
                 <Route path="/support/:conversationId" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
 
                 {/* Mobile Admin Routes */}
-                <Route path="/m/login" element={<MobileRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></MobileRouteWrapper>} />
+                <Route path="/m/login" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></AdminRouteWrapper>} />
                 <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/deposits" element={<MobileRouteWrapper><MobileDepositsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/deposits/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewDeposit /></MobileRouteWrapper>} />
-                <Route path="/m/deposits/:depositId" element={<MobileRouteWrapper showTabBar={false}><MobileDepositDetail /></MobileRouteWrapper>} />
-                <Route path="/m/payments" element={<MobileRouteWrapper><MobilePaymentsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/payments/new" element={<MobileRouteWrapper showTabBar={false}><MobileNewPayment /></MobileRouteWrapper>} />
-                <Route path="/m/payments/:paymentId" element={<MobileRouteWrapper><MobilePaymentDetail /></MobileRouteWrapper>} />
-                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<MobileRouteWrapper><MobileBeneficiaryEdit /></MobileRouteWrapper>} />
-                <Route path="/m/dashboard" element={<MobileRouteWrapper><MobileAnalyticsDashboard /></MobileRouteWrapper>} />
-                <Route path="/m/clients" element={<MobileRouteWrapper><MobileClientsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/clients/new" element={<MobileRouteWrapper showTabBar={false}><MobileCreateClient /></MobileRouteWrapper>} />
-                <Route path="/m/clients/:clientId" element={<MobileRouteWrapper showTabBar={false}><MobileClientDetail /></MobileRouteWrapper>} />
-                <Route path="/m/clients/:clientId/ledger" element={<MobileRouteWrapper><MobileClientLedger /></MobileRouteWrapper>} />
-                <Route path="/m/clients/:clientId/beneficiaries" element={<MobileRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></MobileRouteWrapper>} />
-                <Route path="/m/assistant" element={<MobileRouteWrapper showTabBar={false}><MobileAssistantScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more" element={<MobileRouteWrapper><MobileMoreScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/rates" element={<MobileRouteWrapper><MobileRatesScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/proofs" element={<MobileRouteWrapper><MobileProofsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/history" element={<MobileRouteWrapper><MobileHistoryScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/notifications" element={<MobileRouteWrapper><MobileNotificationsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/admins" element={<MobileRouteWrapper><MobileAdminsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/admins/new" element={<MobileRouteWrapper><MobileCreateAdmin /></MobileRouteWrapper>} />
-                <Route path="/m/more/admins/:adminId" element={<MobileRouteWrapper><MobileAdminDetail /></MobileRouteWrapper>} />
-                <Route path="/m/more/settings" element={<MobileRouteWrapper><MobileSettingsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/briefs" element={<MobileRouteWrapper><MobileBriefsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/profile" element={<MobileRouteWrapper><MobileAdminProfile /></MobileRouteWrapper>} />
+                <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewDeposit /></AdminRouteWrapper>} />
+                <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false}><MobileDepositDetail /></AdminRouteWrapper>} />
+                <Route path="/m/payments" element={<AdminRouteWrapper><MobilePaymentsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewPayment /></AdminRouteWrapper>} />
+                <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper><MobilePaymentDetail /></AdminRouteWrapper>} />
+                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
+                <Route path="/m/dashboard" element={<AdminRouteWrapper><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/clients" element={<AdminRouteWrapper><MobileClientsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false}><MobileCreateClient /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false}><MobileClientDetail /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper><MobileClientLedger /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
+                <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false}><MobileAssistantScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more" element={<AdminRouteWrapper><MobileMoreScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates" element={<AdminRouteWrapper><MobileRatesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/proofs" element={<AdminRouteWrapper><MobileProofsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/history" element={<AdminRouteWrapper><MobileHistoryScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/notifications" element={<AdminRouteWrapper><MobileNotificationsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins" element={<AdminRouteWrapper><MobileAdminsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins/new" element={<AdminRouteWrapper><MobileCreateAdmin /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper><MobileAdminDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/settings" element={<AdminRouteWrapper><MobileSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/briefs" element={<AdminRouteWrapper><MobileBriefsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile" element={<AdminRouteWrapper><MobileAdminProfile /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
-                <Route path="/m/support" element={<MobileRouteWrapper><MobileSupportListScreen /></MobileRouteWrapper>} />
-                <Route path="/m/support/stats" element={<MobileRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></MobileRouteWrapper>} />
-                <Route path="/m/support/:conversationId" element={<MobileRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/canned-responses" element={<MobileRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></MobileRouteWrapper>} />
-                <Route path="/m/more/quick-replies" element={<MobileRouteWrapper showTabBar={false}><MobileQuickRepliesScreen /></MobileRouteWrapper>} />
+                <Route path="/m/support" element={<AdminRouteWrapper><MobileSupportListScreen /></AdminRouteWrapper>} />
+                <Route path="/m/support/stats" element={<AdminRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/support/:conversationId" element={<AdminRouteWrapper showTabBar={false}><MobileSupportConversationScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/canned-responses" element={<AdminRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/quick-replies" element={<AdminRouteWrapper showTabBar={false}><MobileQuickRepliesScreen /></AdminRouteWrapper>} />
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
-                <Route path="/m/more/treasury" element={<MobileRouteWrapper><MobileTreasuryHome /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/dashboard" element={<MobileRouteWrapper><MobileTreasuryDashboard /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/purchase" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewPurchase /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/sale" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryNewSale /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties" element={<MobileRouteWrapper><MobileTreasuryCounterparties /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryCounterpartyEdit /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/accounts" element={<MobileRouteWrapper><MobileTreasuryAccounts /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/inventory" element={<MobileRouteWrapper><MobileTreasuryInventory /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/operations" element={<MobileRouteWrapper><MobileTreasuryOperations /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/purchases" element={<MobileRouteWrapper><MobileTreasuryPurchasesList /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/purchases/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasuryPurchaseDetail /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/sales" element={<MobileRouteWrapper><MobileTreasurySalesList /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/balance-dashboard" element={<MobileRouteWrapper><MobileTreasuryBalanceDashboard /></MobileRouteWrapper>} />
-                <Route path="/m/more/treasury/sales/:operationId" element={<MobileRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></MobileRouteWrapper>} />
+                <Route path="/m/more/treasury" element={<AdminRouteWrapper><MobileTreasuryHome /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper><MobileTreasuryDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper><MobileTreasuryAccounts /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper><MobileTreasuryInventory /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper><MobileTreasuryOperations /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper><MobileTreasurySalesList /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
