@@ -6,12 +6,14 @@
  * with a row → detail. Search + status filter chips in a toolbar.
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Search, Plus, User, X } from 'lucide-react';
 import { useClients } from '@/hooks/useClientManagement';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatCurrency, formatXAF } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { MobileClientDetail } from '@/mobile/screens/clients';
+import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
 import {
   SURFACE,
   TEXT,
@@ -44,6 +46,7 @@ const STATUS_LABEL: Record<ClientStatus, string> = {
 
 export function DesktopClientsScreen() {
   const navigate = useNavigate();
+  const { clientId } = useParams<{ clientId: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery);
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
@@ -58,6 +61,7 @@ export function DesktopClientsScreen() {
   );
 
   return (
+    <MasterDetailLayout detail={clientId ? <MobileClientDetail /> : null}>
     <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -133,7 +137,10 @@ export function DesktopClientsScreen() {
                   <tr
                     key={client.id}
                     onClick={() => navigate(`/m/clients/${client.id}`)}
-                    className="cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]"
+                    className={cn(
+                      'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                      clientId === client.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
+                    )}
                   >
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
@@ -177,5 +184,6 @@ export function DesktopClientsScreen() {
         )}
       </Card>
     </div>
+    </MasterDetailLayout>
   );
 }

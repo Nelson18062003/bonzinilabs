@@ -7,7 +7,7 @@
  * strip, a toolbar and inline filters instead of a stacked card list.
  */
 import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, Paperclip, FileText } from 'lucide-react';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
@@ -26,6 +26,8 @@ import {
   type PeriodPreset,
 } from '@/lib/depositsList';
 import { cn } from '@/lib/utils';
+import { MobileDepositDetailV2 } from '@/mobile/screens/deposits';
+import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
 import {
   SURFACE,
   TEXT,
@@ -110,6 +112,7 @@ const PERIOD_CHIPS: { k: PeriodPreset; l: string }[] = [
 
 export function DesktopDepositsScreen() {
   const navigate = useNavigate();
+  const { depositId } = useParams<{ depositId: string }>();
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [familyFilter, setFamilyFilter] = useState('all');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
@@ -183,6 +186,7 @@ export function DesktopDepositsScreen() {
   };
 
   return (
+    <MasterDetailLayout detail={depositId ? <MobileDepositDetailV2 /> : null}>
     <div className="space-y-6">
       <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
@@ -349,7 +353,10 @@ export function DesktopDepositsScreen() {
                     <tr
                       key={deposit.id}
                       onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                      className="cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]"
+                      className={cn(
+                        'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                        depositId === deposit.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
+                      )}
                     >
                       <td className="px-5 py-3">
                         <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
@@ -411,5 +418,6 @@ export function DesktopDepositsScreen() {
         )}
       </Card>
     </div>
+    </MasterDetailLayout>
   );
 }

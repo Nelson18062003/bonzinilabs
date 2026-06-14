@@ -6,7 +6,7 @@
  * as a wide table with a clickable stat strip and a toolbar.
  */
 import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, Paperclip, CreditCard, FileDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
@@ -20,6 +20,8 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { formatCurrencyRMB, formatRelativeDate } from '@/lib/formatters';
 import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
 import { cn } from '@/lib/utils';
+import { MobilePaymentDetail } from '@/mobile/screens/payments';
+import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
 import {
   SURFACE,
   TEXT,
@@ -63,6 +65,7 @@ const STAT_TILES: { key: FilterKey; label: string; tone: Tone }[] = [
 
 export function DesktopPaymentsScreen() {
   const navigate = useNavigate();
+  const { paymentId } = useParams<{ paymentId: string }>();
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [sortKey, setSortKey] = useState('newest');
@@ -145,6 +148,7 @@ export function DesktopPaymentsScreen() {
   }, [isExporting]);
 
   return (
+    <MasterDetailLayout detail={paymentId ? <MobilePaymentDetail /> : null}>
     <div className="space-y-6">
       <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
@@ -319,7 +323,10 @@ export function DesktopPaymentsScreen() {
                     <tr
                       key={payment.id}
                       onClick={() => navigate(`/m/payments/${payment.id}`)}
-                      className="cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]"
+                      className={cn(
+                        'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                        paymentId === payment.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
+                      )}
                     >
                       <td className="px-5 py-3">
                         <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
@@ -377,5 +384,6 @@ export function DesktopPaymentsScreen() {
         )}
       </Card>
     </div>
+    </MasterDetailLayout>
   );
 }

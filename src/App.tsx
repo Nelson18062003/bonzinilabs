@@ -175,15 +175,15 @@ const App = () => (
                 <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewDeposit /></AdminRouteWrapper>} />
-                <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false}><MobileDepositDetail /></AdminRouteWrapper>} />
+                <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopDepositsScreen />}><MobileDepositDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false}><MobileNewPayment /></AdminRouteWrapper>} />
-                <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper><MobilePaymentDetail /></AdminRouteWrapper>} />
+                <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false}><MobileCreateClient /></AdminRouteWrapper>} />
-                <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false}><MobileClientDetail /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
                 <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false}><MobileAssistantScreen /></AdminRouteWrapper>} />
