@@ -209,7 +209,7 @@ const App = () => (
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/admins/new" element={<AdminRouteWrapper><MobileCreateAdmin /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins/new" element={<AdminRouteWrapper desktop={<MobileCreateAdmin desktop />}><MobileCreateAdmin /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
@@ -219,8 +219,8 @@ const App = () => (
                 <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />
                 <Route path="/m/support/stats" element={<AdminRouteWrapper showTabBar={false}><MobileSupportStatsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/support/:conversationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopSupportScreen />}><MobileSupportConversationScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/canned-responses" element={<AdminRouteWrapper showTabBar={false}><MobileCannedResponsesScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/quick-replies" element={<AdminRouteWrapper showTabBar={false}><MobileQuickRepliesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/canned-responses" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCannedResponsesScreen desktop />}><MobileCannedResponsesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/quick-replies" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileQuickRepliesScreen desktop />}><MobileQuickRepliesScreen /></AdminRouteWrapper>} />
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryHome />}><MobileTreasuryHome /></AdminRouteWrapper>} />
@@ -228,15 +228,15 @@ const App = () => (
                 <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasuryNewPurchase desktop />}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasuryNewSale desktop />}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopCounterpartiesScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasuryCounterpartyEdit desktop />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopAccountsScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper desktop={<DesktopInventoryScreen />}><MobileTreasuryInventory /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper desktop={<DesktopOperationsHistory />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper desktop={<DesktopPurchasesList />}><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasuryPurchaseDetail desktop />}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper desktop={<DesktopSalesList />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper desktop={<DesktopBalanceDashboard />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasurySaleDetail desktop />}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
