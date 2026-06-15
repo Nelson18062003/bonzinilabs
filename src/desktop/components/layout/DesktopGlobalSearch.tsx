@@ -64,7 +64,7 @@ export function DesktopGlobalSearch() {
         }}
         placeholder="Rechercher un client, une référence…"
         className={cn(
-          'h-10 w-72 rounded-full pl-9 pr-9 text-[13px] outline-none placeholder:text-[#9B98AD]',
+          'h-10 w-72 rounded-full pl-9 pr-9 text-[13px] outline-none placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
           SURFACE.card,
           SURFACE.shadow,
           TEXT.strong,

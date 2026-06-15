@@ -29,10 +29,10 @@ export const TEXT = {
 
 /** Dark "pill" — the ONE primary action of a screen. */
 export const PRIMARY_PILL =
-  'rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]';
+  'rounded-full bg-[#1C1B22] text-white outline-none focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:bg-[#F2F1F7] dark:text-[#1B1A24] dark:focus-visible:ring-[#4A4660]';
 /** Soft secondary pill. */
 export const SOFT_PILL =
-  'rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]';
+  'rounded-full bg-[#EDEAFA] text-[#2C2740] outline-none focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:bg-[#2F2C3D] dark:text-[#E7E5F0] dark:focus-visible:ring-[#4A4660]';
 
 /** Semantic tones — color ONLY where it carries meaning. */
 export type Tone = 'success' | 'pending' | 'danger' | 'info' | 'neutral';
