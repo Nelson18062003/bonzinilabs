@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module SUPPORT** (voir §4.1 — même méthode :
+3. **Prochaine tâche = module AUTH / Onboarding** (voir §4.1 — même méthode :
    maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
@@ -161,9 +161,18 @@ de l'admin.
   Maquette `clientRatesLayout.tsx` (clé `crates`). i18n `client.rates.title` (fr+en).
   NB : `RateCard` partagé admin/dashboard NON touché (composant distinct).
 
+- **MODULE SUPPORT — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/SupportListPage.tsx` (liste conversations Direction A : carte/formulaire
+  Nouvelle conversation, non-lu lilas + compteur, fermé estompé, badge temps de réponse) +
+  en-tête de `src/pages/SupportPage.tsx` aligné designKit (retour rond, avatar charbon « B »).
+  **Le CHAT lui-même (ChatThread/MessageBubble/MessageInput/VoiceRecorder…) est un design
+  PARTAGÉ admin↔client volontairement unifié → NON touché** (le modifier casserait l'admin).
+  Logique préservée (useMyChatConversations, useCreateChatConversation, ViewportShell).
+  Maquette `clientSupportLayout.tsx` (clé `csupport-list`). i18n `support.list.sectionTitle`.
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Support → Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
+Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
 `LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
 casser les écrans en route).
 
