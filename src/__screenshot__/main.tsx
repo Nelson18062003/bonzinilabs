@@ -48,6 +48,7 @@ import { BenefList, BenefEditor } from './clientBeneficiariesLayout';
 import { HistoryScreen } from './clientHistoryLayout';
 import { ProfileScreen, NotificationsScreen } from './clientProfileLayout';
 import { RatesScreen } from './clientRatesLayout';
+import { SupportList } from './clientSupportLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -153,6 +154,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cnotifs': { Comp: NotificationsScreen, route: '/' },
   // Refonte module CLIENT — Taux de change
   'crates': { Comp: RatesScreen, route: '/' },
+  // Refonte module CLIENT — Support (liste)
+  'csupport-list': { Comp: SupportList, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
