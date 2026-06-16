@@ -43,12 +43,66 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Mots-clés (types de manomètres) à rechercher ; défaut = liste intégrée.",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Construit et affiche une requête live signée SANS l'envoyer (aucune clé requise).",
+    )
     return parser
+
+
+def _mask(value: object, show: int = 4) -> str:
+    """Masque une valeur sensible pour l'affichage (garde début/fin)."""
+    text = str(value)
+    if len(text) <= show * 2:
+        return (text[:1] + "***") if text else ""
+    return f"{text[:show]}…{text[-show:]}"
+
+
+def print_dry_run(settings: Settings, keyword: str = "digital pressure gauge") -> None:
+    from dhgate_sourcing.dhgate_client import DhgateClient
+
+    info = DhgateClient(settings).dry_run_search(keyword, page=1)
+    placeholder = info["using_placeholder"]
+    mask_keys = set() if placeholder else {"app_key", "session"}
+
+    print("=== DRY-RUN — requête live DHgate (NON envoyée) ===\n")
+    if placeholder:
+        print("⚠️  Aucune clé réelle détectée → valeurs DEMO_* utilisées pour la démo.")
+        print("    La signature est calculée correctement, mais avec un secret factice.\n")
+    else:
+        print("🔒 Clés réelles détectées → app_key / session masqués à l'affichage.\n")
+
+    print(f"HTTP         : {info['http_method']} {info['url']}")
+    print("Content-Type : application/x-www-form-urlencoded; charset=utf-8")
+    if info["sign_method"] == "hmac":
+        print("Signature    : HMAC-MD5( clé=secret , msg=concat ) → MAJUSCULES\n")
+    else:
+        print("Signature    : MD5( secret + concat + secret ) → MAJUSCULES\n")
+
+    print("Paramètres :")
+    for key, value in info["params"].items():
+        shown = _mask(value) if key in mask_keys else value
+        print(f"   {key:11} = {shown}")
+
+    if placeholder:
+        print("\nChaîne signée (concat des paires triées, hors 'sign') :")
+        print(f"   {info['canonical_string']}")
+        print("\nCorps POST (url-encodé, tel qu'il partirait) :")
+        print(f"   {info['body']}")
+    else:
+        print("\n(Chaîne signée et corps masqués car des clés réelles sont présentes.)")
+
+    print("\n✅ Aucune requête envoyée. (Réseau DHgate déjà confirmé joignable.)")
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     settings = Settings.from_env(dotenv_path=args.env)
+
+    if args.dry_run:
+        print_dry_run(settings, keyword=(args.keywords or ["digital pressure gauge"])[0])
+        return 0
 
     if args.mode == "live" and not settings.has_credentials:
         print(

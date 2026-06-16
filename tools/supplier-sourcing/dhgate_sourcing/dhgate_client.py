@@ -44,22 +44,58 @@ class DhgateClient:
 
     # --- signature ---------------------------------------------------------
 
-    def _sign(self, params: Dict[str, Any]) -> str:
-        """Signature TOP : tri des clés, concaténation `clévaleur`, puis MD5/HMAC."""
+    @staticmethod
+    def _canonical_string(params: Dict[str, Any]) -> str:
+        """Concaténation `clévaleur` des paramètres triés (hors `sign`, hors vides)."""
         items = sorted(
             (k, str(v))
             for k, v in params.items()
             if v is not None and v != "" and k != "sign"
         )
-        concat = "".join(f"{k}{v}" for k, v in items)
-        secret = self.settings.secret_key
+        return "".join(f"{k}{v}" for k, v in items)
+
+    def _sign(self, params: Dict[str, Any], secret: Optional[str] = None) -> str:
+        """Signature TOP : tri des clés, concaténation `clévaleur`, puis MD5/HMAC."""
+        secret = self.settings.secret_key if secret is None else secret
+        concat = self._canonical_string(params)
         if self.settings.sign_method == "hmac":
             digest = hmac.new(secret.encode(), concat.encode(), hashlib.md5).hexdigest()
         else:
             digest = hashlib.md5(f"{secret}{concat}{secret}".encode()).hexdigest()
         return digest.upper()
 
-    # --- appel générique ---------------------------------------------------
+    # --- construction & appel ---------------------------------------------
+
+    def build_request(
+        self,
+        method: str,
+        business_params: Dict[str, Any],
+        *,
+        app_key: Optional[str] = None,
+        secret: Optional[str] = None,
+        access_token: Optional[str] = None,
+    ) -> Tuple[str, Dict[str, Any], str]:
+        """Construit les paramètres système + la signature, SANS envoyer.
+
+        Renvoie (url_passerelle, params_signés, corps_url_encodé). Partagé par
+        `call()` (envoi réel) et le mode dry-run (inspection sans envoi)."""
+        app_key = self.settings.app_key if app_key is None else app_key
+        secret = self.settings.secret_key if secret is None else secret
+        access_token = self.settings.access_token if access_token is None else access_token
+        params: Dict[str, Any] = {
+            "method": method,
+            "app_key": app_key,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "format": "json",
+            "v": self.settings.api_version,
+            "sign_method": self.settings.sign_method,
+        }
+        if access_token:
+            params["session"] = access_token
+        params.update({k: v for k, v in business_params.items() if v is not None})
+        params["sign"] = self._sign(params, secret=secret)
+        body = urllib.parse.urlencode(params)
+        return self.settings.gateway_url, params, body
 
     def call(self, method: str, business_params: Dict[str, Any]) -> Dict[str, Any]:
         if not self.settings.has_credentials:
@@ -67,30 +103,17 @@ class DhgateClient:
                 "Identifiants manquants : définis DHGATE_APP_KEY et DHGATE_SECRET_KEY "
                 "(voir .env.example)."
             )
-        params: Dict[str, Any] = {
-            "method": method,
-            "app_key": self.settings.app_key,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "format": "json",
-            "v": self.settings.api_version,
-            "sign_method": self.settings.sign_method,
-        }
-        if self.settings.access_token:
-            params["session"] = self.settings.access_token
-        params.update({k: v for k, v in business_params.items() if v is not None})
-        params["sign"] = self._sign(params)
-
-        data = urllib.parse.urlencode(params).encode("utf-8")
+        url, _params, body = self.build_request(method, business_params)
         request = urllib.request.Request(
-            self.settings.gateway_url,
-            data=data,
+            url,
+            data=body.encode("utf-8"),
             headers={"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
         )
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except urllib.error.URLError as exc:  # réseau / TLS / DNS
-            raise DhgateApiError(f"Échec réseau vers {self.settings.gateway_url}: {exc}") from exc
+            raise DhgateApiError(f"Échec réseau vers {url}: {exc}") from exc
         except json.JSONDecodeError as exc:
             raise DhgateApiError(f"Réponse non-JSON de l'API: {exc}") from exc
 
@@ -174,6 +197,40 @@ class DhgateClient:
         products = [p for p in products if p.product_id]  # ignore les items sans id
         has_more = len(items) >= page_size
         return products, has_more
+
+    def dry_run_search(self, keyword: str, page: int = 1, page_size: int = 40) -> Dict[str, Any]:
+        """Construit (SANS envoyer) la requête de recherche live, pour inspection.
+
+        Si les vraies clés manquent, utilise des identifiants `DEMO_*` afin de
+        montrer une signature réelle et correcte sans jamais toucher au réseau.
+        """
+        using_placeholder = not self.settings.has_credentials
+        app_key = self.settings.app_key or "DEMO_APP_KEY_xxxxxxxxxxxx"
+        secret = self.settings.secret_key or "DEMO_SECRET_xxxxxxxxxxxxxxxx"
+        access_token = self.settings.access_token or ""
+        business = {
+            "keyword": keyword,
+            "q": keyword,
+            "pageNo": page,
+            "pageNum": page,
+            "pageSize": page_size,
+        }
+        url, params, body = self.build_request(
+            self.settings.search_method,
+            business,
+            app_key=app_key,
+            secret=secret,
+            access_token=access_token,
+        )
+        return {
+            "url": url,
+            "http_method": "POST",
+            "sign_method": self.settings.sign_method,
+            "params": params,
+            "canonical_string": self._canonical_string(params),
+            "body": body,
+            "using_placeholder": using_placeholder,
+        }
 
     # --- OAuth (token) -----------------------------------------------------
 

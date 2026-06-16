@@ -87,7 +87,18 @@ beaucoup de cas il fonctionnera tel quel ; sinon, ajuste ces deux fonctions.
 --out-dir PATH               dossier des exports (défaut exports/)
 --keywords ...               types de manomètres à rechercher (défaut = liste intégrée)
 --env PATH                   chemin du fichier .env
+--dry-run                    construit et AFFICHE une requête live signée, sans l'envoyer
 ```
+
+### Aperçu de la requête live (sans clés)
+Pour vérifier la « tuyauterie » live (URL, paramètres, signature) avant même
+d'avoir des identifiants :
+```bash
+python3 main.py --dry-run
+python3 main.py --dry-run --keywords "stainless steel pressure gauge"
+```
+Affiche la requête `POST` complète, signée, **sans rien envoyer**. Si de vraies
+clés sont présentes dans `.env`, `app_key` et `session` sont masqués à l'affichage.
 
 Exemple ciblé :
 ```bash
