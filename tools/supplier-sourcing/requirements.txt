@@ -1,0 +1,5 @@
+# Le cœur de l'outil fonctionne avec la bibliothèque standard Python uniquement
+# (urllib, sqlite3, csv) — aucune installation requise pour CSV + base + API.
+#
+# Seul l'export Excel (.xlsx) nécessite openpyxl. Optionnel :
+openpyxl>=3.1.0

@@ -1,0 +1,7 @@
+# Secrets & artefacts — ne jamais committer
+.env
+data/
+exports/
+__pycache__/
+*.pyc
+.pytest_cache/
