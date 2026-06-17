@@ -1,13 +1,13 @@
 /**
  * DEV-ONLY maquette — module CLIENT « Auth / Onboarding » (refonte).
  * Éradique le vieux look (dégradé + halos de LoginBackground) → canvas calme,
- * CTA en pill charbon, dots lilas. Inputs : on garde le style premium
- * (floating label) ; ici représenté simplement.
- * Harness: ?screen=cauth-login | cauth-onboarding
+ * CTA en pill charbon, dots lilas. Bascule connexion/inscription EN HAUT
+ * (barre du haut, à droite) au lieu d'être enterrée en bas.
+ * Harness: ?screen=cauth-login | cauth-signup | cauth-onboarding
  */
 import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit/tokens';
 import { BonziniLogo } from '@/components/BonziniLogo';
-import { Mail, Building, Briefcase, Globe, ChevronDown } from 'lucide-react';
+import { Mail, User, Building, Briefcase, Globe, ChevronDown, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function Field({ label, icon: Icon, value, placeholder }: { label: string; icon?: typeof Mail; value?: string; placeholder?: string }) {
@@ -22,10 +22,10 @@ function Field({ label, icon: Icon, value, placeholder }: { label: string; icon?
   );
 }
 
-function Dots({ step }: { step: number }) {
+function Dots({ total, step }: { total: number; step: number }) {
   return (
     <div className="flex items-center justify-center gap-2">
-      {[0, 1].map((i) => (
+      {Array.from({ length: total }).map((_, i) => (
         <div key={i} className={cn('h-2 rounded-full transition-all', i === step ? 'w-8 bg-[#8B5CF6]' : 'w-2 bg-black/15 dark:bg-white/20')} />
       ))}
     </div>
@@ -41,11 +41,36 @@ function GoogleBtn() {
   );
 }
 
-/* ===================== LOGIN (email) ===================== */
+/* Barre du haut : langue (gauche) + bascule connexion/inscription (droite). */
+function TopBar({ action }: { action: string }) {
+  return (
+    <div className="flex items-center justify-between px-5 pt-5">
+      <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-bold', SURFACE.holder)}>
+        <Globe className="h-3.5 w-3.5" /> FR
+      </span>
+      <button className={cn('flex items-center gap-1 rounded-full px-3.5 py-2 text-[13px] font-bold', SURFACE.card, SURFACE.shadow, TEXT.strong)}>
+        {action} <ArrowRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function Divider() {
+  return (
+    <div className="my-5 flex items-center gap-3">
+      <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+      <span className={cn('text-[12px]', TEXT.muted)}>ou</span>
+      <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+    </div>
+  );
+}
+
+/* ===================== CONNEXION ===================== */
 export function AuthLogin() {
   return (
     <div className={cn('mx-auto flex min-h-screen max-w-[420px] flex-col', SURFACE.canvas)}>
-      <div className="flex flex-1 flex-col justify-center px-6 py-12">
+      <TopBar action="Créer un compte" />
+      <div className="flex flex-1 flex-col justify-center px-6 pb-12">
         <div className="mb-8 flex justify-center"><BonziniLogo size="xl" showText textPosition="bottom" /></div>
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-7 text-center">
@@ -53,25 +78,38 @@ export function AuthLogin() {
             <p className={cn('mt-1 text-[13px]', TEXT.muted)}>Accédez à votre compte Bonzini</p>
           </div>
           <div className="mb-6"><Field label="Adresse e-mail" icon={Mail} placeholder="vous@exemple.com" /></div>
-          <div className="mb-6"><Dots step={0} /></div>
+          <div className="mb-6"><Dots total={2} step={0} /></div>
           <button className={cn('flex h-12 w-full items-center justify-center text-[15px] font-bold', PRIMARY_PILL)}>Continuer</button>
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-            <span className={cn('text-[12px]', TEXT.muted)}>ou</span>
-            <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-          </div>
+          <Divider />
           <GoogleBtn />
+          <p className={cn('mt-5 text-center text-[11px]', TEXT.muted)}>En continuant, vous acceptez nos conditions.</p>
         </div>
       </div>
-      <div className="px-6 pb-8 pt-2">
-        <div className="mx-auto max-w-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-            <span className={cn('text-[12px]', TEXT.muted)}>ou</span>
-            <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+    </div>
+  );
+}
+
+/* ===================== INSCRIPTION ===================== */
+export function AuthSignup() {
+  return (
+    <div className={cn('mx-auto flex min-h-screen max-w-[420px] flex-col', SURFACE.canvas)}>
+      <TopBar action="Se connecter" />
+      <div className="flex flex-1 flex-col justify-center px-6 pb-12">
+        <div className="mb-7 flex justify-center"><BonziniLogo size="lg" showText textPosition="bottom" /></div>
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-6 text-center">
+            <h1 className={cn('text-[24px] font-black', TEXT.strong)}>Créer un compte</h1>
+            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>Rejoignez Bonzini en 2 minutes</p>
           </div>
-          <button className={cn('flex h-12 w-full items-center justify-center text-[14px] font-bold', SURFACE.card, SURFACE.shadow, TEXT.strong, 'rounded-full')}>Créer un compte</button>
-          <p className={cn('mt-3 text-center text-[11px]', TEXT.muted)}>En continuant, vous acceptez nos conditions.</p>
+          <div className="space-y-4">
+            <Field label="Prénom" icon={User} placeholder="Papa" />
+            <Field label="Nom" icon={User} placeholder="Nguemo" />
+            <Field label="Adresse e-mail" icon={Mail} placeholder="vous@exemple.com" />
+          </div>
+          <div className="my-6"><Dots total={5} step={0} /></div>
+          <button className={cn('flex h-12 w-full items-center justify-center gap-2 text-[15px] font-bold', PRIMARY_PILL)}>Continuer <ArrowRight className="h-[17px] w-[17px]" /></button>
+          <Divider />
+          <GoogleBtn />
         </div>
       </div>
     </div>
