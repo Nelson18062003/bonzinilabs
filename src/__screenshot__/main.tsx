@@ -49,6 +49,7 @@ import { HistoryScreen } from './clientHistoryLayout';
 import { ProfileScreen, NotificationsScreen } from './clientProfileLayout';
 import { RatesScreen } from './clientRatesLayout';
 import { SupportList } from './clientSupportLayout';
+import { AuthLogin, AuthOnboarding } from './clientAuthLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -156,6 +157,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'crates': { Comp: RatesScreen, route: '/' },
   // Refonte module CLIENT — Support (liste)
   'csupport-list': { Comp: SupportList, route: '/' },
+  // Refonte module CLIENT — Auth / Onboarding
+  'cauth-login': { Comp: AuthLogin, route: '/' },
+  'cauth-onboarding': { Comp: AuthOnboarding, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
