@@ -30,7 +30,7 @@ function Collapsible({ title, children, defaultOpen = false }: { title: string; 
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={cn('flex w-full items-center justify-between rounded-2xl px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
+        className={cn('flex w-full items-center justify-between rounded-2xl px-4 py-3.5 outline-none transition hover:brightness-[0.98] focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:hover:brightness-110 dark:focus-visible:ring-[#4A4660]', SURFACE.card, SURFACE.shadow)}
       >
         <span className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</span>
         <ChevronDown className={cn('h-5 w-5 transition-transform', TEXT.muted, !open && '-rotate-90')} />

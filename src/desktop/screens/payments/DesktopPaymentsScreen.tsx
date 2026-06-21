@@ -302,12 +302,12 @@ export function DesktopPaymentsScreen() {
             <table className="w-full text-left">
               <thead>
                 <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th className="px-5 py-3 font-bold">Référence</th>
-                  <th className="px-2 py-3 font-bold">Client</th>
-                  <th className="px-2 py-3 text-right font-bold">Montant ¥</th>
-                  <th className="px-2 py-3 font-bold">Méthode</th>
-                  <th className="px-2 py-3 font-bold">Créé le</th>
-                  <th className="px-5 py-3 text-right font-bold">Statut</th>
+                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
+                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
+                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
                 </tr>
               </thead>
               <tbody>
@@ -323,8 +323,10 @@ export function DesktopPaymentsScreen() {
                     <tr
                       key={payment.id}
                       onClick={() => navigate(`/m/payments/${payment.id}`)}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/payments/${payment.id}`); } }}
                       className={cn(
-                        'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                         paymentId === payment.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
                       )}
                     >

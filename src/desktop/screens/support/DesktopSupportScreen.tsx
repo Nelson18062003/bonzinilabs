@@ -101,7 +101,7 @@ export function DesktopSupportScreen() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <Holder icon={MessageCircle} size="lg" />
-        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>Vous n'avez pas accès au support chat.</p>
+        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>{t('admin.noChatAccess', { defaultValue: "Vous n'avez pas accès au support chat." })}</p>
       </div>
     );
   }
@@ -169,6 +169,8 @@ export function DesktopSupportScreen() {
                 const unread = c.unread_count_admin;
                 const time = c.last_message_at ? formatDistanceToNow(new Date(c.last_message_at), { addSuffix: false, locale }) : '';
                 const subject = c.subject;
+                const assignedAdmin = admins?.find((a) => a.id === c.assigned_admin_id);
+                const assignedName = assignedAdmin ? `${assignedAdmin.first_name ?? ''} ${assignedAdmin.last_name ?? ''}`.trim() : null;
                 const selected = c.id === conversationId;
                 return (
                   <button
@@ -197,6 +199,11 @@ export function DesktopSupportScreen() {
                         />
                       ) : (
                         <p className={cn('mt-0.5 truncate text-[11.5px]', unread > 0 ? TEXT.strong : TEXT.muted)}>{c.last_message_preview || '—'}</p>
+                      )}
+                      {assignedName && (
+                        <p className="mt-0.5 truncate text-[10px] text-[#9A6B12] dark:text-[#E7C083]">
+                          {t('admin.assignedToLabel')} {assignedName}
+                        </p>
                       )}
                     </div>
                     {unread > 0 && <span className="shrink-0 rounded-full bg-[#FE560D] px-2 py-0.5 text-[10.5px] font-bold text-white">{unread}</span>}

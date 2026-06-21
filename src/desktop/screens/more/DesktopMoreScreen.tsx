@@ -31,6 +31,7 @@ import { useAdminNotificationCount } from '@/hooks/useAdminNotifications';
 import { useAdminConversations } from '@/hooks/useAdminChat';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SectionTitle } from '@/mobile/designKit';
+import { MolaMascot } from '@/components/MolaMascot';
 
 interface Tool {
   icon: React.ElementType;
@@ -39,6 +40,7 @@ interface Tool {
   to: string;
   perm?: keyof RolePermission;
   badge?: number;
+  mascot?: boolean;
 }
 
 function ToolCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
@@ -49,7 +51,7 @@ function ToolCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
       className={cn('group flex items-center gap-3.5 rounded-[20px] p-4 text-left transition hover:-translate-y-0.5', SURFACE.card, SURFACE.shadow)}
     >
       <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}>
-        <Icon className="h-5 w-5" />
+        {tool.mascot ? <MolaMascot className="h-7 w-7" fallback={<Icon className="h-5 w-5" />} /> : <Icon className="h-5 w-5" />}
       </span>
       <span className="min-w-0 flex-1">
         <span className={cn('flex items-center gap-2 text-[15px] font-bold', TEXT.strong)}>
@@ -81,7 +83,7 @@ export function DesktopMoreScreen() {
     {
       title: 'Outils',
       items: [
-        { icon: Bot, label: 'Mola', desc: 'Pose une question sur la plateforme', to: '/m/assistant' },
+        { icon: Bot, label: 'Mola', desc: 'Pose une question sur la plateforme', to: '/m/assistant', mascot: true },
         { icon: BarChart3, label: 'Dashboard', desc: 'Rapports et indicateurs clés', to: '/m/dashboard' },
         { icon: TrendingUp, label: 'Taux de change', desc: 'Gérer les taux XAF/RMB', to: '/m/more/rates', perm: 'canManageRates' },
         { icon: Coins, label: 'Trésorerie', desc: 'Achats/ventes USDT, soldes, inventaire', to: '/m/more/treasury', perm: 'canViewTreasury' },

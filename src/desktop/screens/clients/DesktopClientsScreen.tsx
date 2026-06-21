@@ -123,11 +123,11 @@ export function DesktopClientsScreen() {
           <table className="w-full text-left">
             <thead>
               <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                <th className="px-5 py-3 font-bold">Client</th>
-                <th className="px-2 py-3 font-bold">Téléphone</th>
-                <th className="px-2 py-3 text-right font-bold">Solde XAF</th>
-                <th className="px-2 py-3 text-right font-bold">Dépôts</th>
-                <th className="px-5 py-3 text-right font-bold">Paiements</th>
+                <th scope="col" className="px-5 py-3 font-bold">Client</th>
+                <th scope="col" className="px-2 py-3 font-bold">Téléphone</th>
+                <th scope="col" className="px-2 py-3 text-right font-bold">Solde XAF</th>
+                <th scope="col" className="px-2 py-3 text-right font-bold">Dépôts</th>
+                <th scope="col" className="px-5 py-3 text-right font-bold">Paiements</th>
               </tr>
             </thead>
             <tbody>
@@ -137,8 +137,10 @@ export function DesktopClientsScreen() {
                   <tr
                     key={client.id}
                     onClick={() => navigate(`/m/clients/${client.id}`)}
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/clients/${client.id}`); } }}
                     className={cn(
-                      'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                      'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                       clientId === client.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
                     )}
                   >

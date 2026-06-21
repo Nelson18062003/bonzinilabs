@@ -136,10 +136,10 @@ export function DesktopAdminsScreen() {
             <table className="w-full text-left">
               <thead>
                 <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th className="px-5 py-3 font-bold">Administrateur</th>
-                  <th className="px-2 py-3 font-bold">Email</th>
-                  <th className="px-2 py-3 font-bold">Rôle</th>
-                  <th className="px-5 py-3 text-right font-bold">Dernière connexion</th>
+                  <th scope="col" className="px-5 py-3 font-bold">Administrateur</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Email</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Rôle</th>
+                  <th scope="col" className="px-5 py-3 text-right font-bold">Dernière connexion</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,8 +149,10 @@ export function DesktopAdminsScreen() {
                     <tr
                       key={admin.id}
                       onClick={() => navigate(`/m/more/admins/${admin.id}`)}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/more/admins/${admin.id}`); } }}
                       className={cn(
-                        'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                         adminId === admin.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
                       )}
                     >

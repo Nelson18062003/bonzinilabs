@@ -83,7 +83,7 @@ export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = 
       {desktop ? (
         <header className="mb-5">
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('proofs', { defaultValue: 'Justificatifs' })}</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Preuves de dépôts envoyées par les clients</p>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('proofsSubtitle', { defaultValue: 'Preuves de dépôts envoyées par les clients' })}</p>
         </header>
       ) : (
         <MobileHeader title={t('proofs', { defaultValue: 'Justificatifs' })} backTo="/m/more" showBack />

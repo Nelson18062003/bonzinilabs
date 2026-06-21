@@ -9,14 +9,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
 import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
-import { SURFACE, TEXT } from '@/mobile/designKit';
+import { SURFACE, TEXT, Avatar } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MolaMascot } from '@/components/MolaMascot';
+import { BonziniLogo } from '@/components/BonziniLogo';
 import { DESKTOP_NAV, type DesktopNavItem } from './desktopNav';
-
-function initials(first?: string, last?: string) {
-  return `${first?.[0] ?? ''}${last?.[0] ?? ''}`.toUpperCase() || 'A';
-}
 
 export function DesktopSidebar() {
   const navigate = useNavigate();
@@ -41,9 +38,7 @@ export function DesktopSidebar() {
     >
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-5 pb-2 pt-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(258_100%_60%)] to-[hsl(16_100%_55%)] text-[17px] font-black text-white">
-          B
-        </div>
+        <BonziniLogo size="sm" showText={false} className="shrink-0" />
         <div className="leading-tight">
           <p className={cn('text-[15px] font-black', TEXT.strong)}>Bonzini</p>
           <p className={cn('text-[11px] font-medium', TEXT.muted)}>Console admin</p>
@@ -70,7 +65,7 @@ export function DesktopSidebar() {
                     end={item.end}
                     className={({ isActive }) =>
                       cn(
-                        'mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition',
+                        'mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]',
                         isActive
                           ? cn(
                               'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]',
@@ -108,9 +103,7 @@ export function DesktopSidebar() {
             className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left transition hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]"
             aria-label="Mon profil"
           >
-            <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold', SURFACE.holder)}>
-              {initials(currentUser?.firstName, currentUser?.lastName)}
-            </div>
+            <Avatar name={`${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`} size="sm" className="shrink-0" />
             <div className="min-w-0 flex-1 leading-tight">
               <p className={cn('truncate text-[13px] font-bold', TEXT.strong)}>
                 {currentUser?.firstName} {currentUser?.lastName}

@@ -20,6 +20,7 @@ import {
   UserPlus,
   Wallet,
 } from 'lucide-react';
+import { MolaMascot } from '@/components/MolaMascot';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
@@ -223,10 +224,10 @@ export function DesktopDashboard() {
               <table className="mt-3 w-full text-left">
                 <thead>
                   <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                    <th className="px-5 py-2.5 font-bold">Client</th>
-                    <th className="px-2 py-2.5 text-right font-bold">Montant</th>
-                    <th className="px-2 py-2.5 font-bold">Quand</th>
-                    <th className="px-5 py-2.5 text-right font-bold">Statut</th>
+                    <th scope="col" className="px-5 py-2.5 font-bold">Client</th>
+                    <th scope="col" className="px-2 py-2.5 text-right font-bold">Montant</th>
+                    <th scope="col" className="px-2 py-2.5 font-bold">Quand</th>
+                    <th scope="col" className="px-5 py-2.5 text-right font-bold">Statut</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -237,7 +238,9 @@ export function DesktopDashboard() {
                       <tr
                         key={deposit.id}
                         onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                        className="cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
+                        className="cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]"
                       >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2.5">
@@ -288,7 +291,7 @@ export function DesktopDashboard() {
           >
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
-                <Sparkles className="h-[18px] w-[18px]" />
+                <MolaMascot className="h-7 w-7" fallback={<Sparkles className="h-[18px] w-[18px]" />} />
               </span>
               <div className="leading-tight">
                 <p className="text-[14px] font-bold">Mola</p>

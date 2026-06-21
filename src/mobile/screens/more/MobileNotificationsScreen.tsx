@@ -58,7 +58,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
       {desktop ? (
         <header className="mb-5">
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Notifications</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Éléments en attente d'action</p>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('actionablePending', { defaultValue: "Éléments en attente d'action" })}</p>
         </header>
       ) : (
         <MobileHeader title="Notifications" backTo="/m/more" showBack />

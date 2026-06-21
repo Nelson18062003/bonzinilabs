@@ -5,10 +5,11 @@
  */
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight, Users } from 'lucide-react';
 import { PhoneInputWithCountry, TextField } from '@/components/form';
 import { Segmented } from '@/components/treasury/Segmented';
 import { INSET, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
+import { PRIMARY_PILL, Holder } from '@/mobile/designKit';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
 import { formatPhone } from '@/data/countryCodes';
@@ -63,7 +64,7 @@ export function DesktopCounterpartiesScreen() {
   const isSupplier = tab === 'usdt_supplier';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -73,7 +74,7 @@ export function DesktopCounterpartiesScreen() {
         {canManage && !showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#1C1B22] px-4 py-2.5 text-[13px] font-bold text-white transition hover:brightness-110 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
           >
             <Plus className="h-4 w-4" /> Nouvelle contrepartie
           </button>
@@ -132,8 +133,11 @@ export function DesktopCounterpartiesScreen() {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : (data ?? []).length === 0 ? (
-        <div className="py-10 text-center text-[13px] text-muted-foreground">
-          Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l'instant.
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Holder icon={Users} size="lg" />
+          <p className="mt-4 text-[14px] font-medium text-muted-foreground">
+            Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l'instant.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">

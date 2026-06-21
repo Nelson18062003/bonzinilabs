@@ -14,7 +14,7 @@ import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePagin
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS_SHORT } from '@/types/deposit';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { formatRelativeDate } from '@/lib/formatters';
+import { formatRelativeDate, formatXAF } from '@/lib/formatters';
 import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
 import {
   FAMILIES_CONF,
@@ -71,10 +71,6 @@ function SlaDot({ level }: { level: SlaLevel }) {
       style={{ width: 6, height: 6, background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
     />
   );
-}
-
-function fmtAmount(n: number) {
-  return Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
@@ -331,12 +327,12 @@ export function DesktopDepositsScreen() {
             <table className="w-full text-left">
               <thead>
                 <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th className="px-5 py-3 font-bold">Référence</th>
-                  <th className="px-2 py-3 font-bold">Client</th>
-                  <th className="px-2 py-3 text-right font-bold">Montant XAF</th>
-                  <th className="px-2 py-3 font-bold">Méthode</th>
-                  <th className="px-2 py-3 font-bold">Créé le</th>
-                  <th className="px-5 py-3 text-right font-bold">Statut</th>
+                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
+                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant XAF</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
+                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
+                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
                 </tr>
               </thead>
               <tbody>
@@ -353,8 +349,10 @@ export function DesktopDepositsScreen() {
                     <tr
                       key={deposit.id}
                       onClick={() => navigate(`/m/deposits/${deposit.id}`)}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
                       className={cn(
-                        'cursor-pointer border-t border-black/[0.05] transition hover:bg-[#EDEAFA]/40 dark:border-white/[0.05] dark:hover:bg-white/[0.04]',
+                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                         depositId === deposit.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
                       )}
                     >
@@ -375,7 +373,7 @@ export function DesktopDepositsScreen() {
                         </div>
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <Amount value={fmtAmount(deposit.amount_xaf)} size="md" />
+                        <Amount value={formatXAF(deposit.amount_xaf)} size="md" />
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center gap-2">
