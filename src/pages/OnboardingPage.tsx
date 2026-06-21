@@ -9,9 +9,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { PremiumInput } from '@/components/auth/PremiumInput';
 import { PhoneCountryInput, COUNTRIES, type Country } from '@/components/auth/PhoneCountryInput';
-import { Button } from '@/components/ui/button';
-import { Loader2, Building, Briefcase, Globe } from 'lucide-react';
+import { Loader2, Building, Briefcase, Globe, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
 
 const phoneSchema = z.string().min(8);
 
@@ -95,64 +95,71 @@ export default function OnboardingPage() {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className={cn('flex min-h-screen items-center justify-center', SURFACE.canvas)}>
+        <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+    <div className={cn('flex min-h-screen flex-col items-center justify-center p-6', SURFACE.canvas)}>
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <BonziniLogo size="md" />
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-1">
+        <h1 className={cn('mb-1 text-center text-[24px] font-black', TEXT.strong)}>
           {firstName ? `Bonjour ${firstName} 👋` : 'Bienvenue 👋'}
         </h1>
-        <p className="text-sm text-muted-foreground text-center mb-8">
+        <p className={cn('mb-8 text-center text-[13px]', TEXT.muted)}>
           Plus qu'une étape pour régler vos fournisseurs.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Pays (bloquant) */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2">
-              <Globe className="h-4 w-4 text-muted-foreground" />
-              Pays <span className="text-destructive">*</span>
+            <label className={cn('mb-2 flex items-center gap-2 text-[13px] font-semibold', TEXT.strong)}>
+              <Globe className="h-4 w-4" />
+              Pays <span className="text-[#C0504D]">*</span>
             </label>
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className={cn(
-                'w-full h-12 rounded-xl border bg-background px-3 text-sm',
-                countryError ? 'border-destructive' : 'border-border',
-              )}
-            >
-              <option value="">Sélectionnez votre pays</option>
-              {COUNTRIES.map((c) => (
-                <option key={`${c.name}-${c.dialCode}`} value={c.name}>
-                  {c.flag} {c.name}
-                </option>
-              ))}
-            </select>
-            {countryError && <p className="text-xs text-destructive mt-1">{countryError}</p>}
+            <div className="relative">
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className={cn(
+                  'h-12 w-full appearance-none rounded-2xl px-4 pr-10 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+                  SURFACE.card,
+                  SURFACE.shadow,
+                  country ? TEXT.strong : 'text-[#9B98AD]',
+                  countryError && 'ring-2 ring-[#C0504D]/40',
+                )}
+              >
+                <option value="">Sélectionnez votre pays</option>
+                {COUNTRIES.map((c) => (
+                  <option key={`${c.name}-${c.dialCode}`} value={c.name}>
+                    {c.flag} {c.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className={cn('pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+            </div>
+            {countryError && <p className="mt-1 text-xs text-[#C0504D]">{countryError}</p>}
           </div>
 
           {/* Téléphone (bloquant) */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
-              Téléphone <span className="text-destructive">*</span>
+            <label className={cn('mb-2 block text-[13px] font-semibold', TEXT.strong)}>
+              Téléphone <span className="text-[#C0504D]">*</span>
             </label>
             <PhoneCountryInput
               value={phone}
               onChange={setPhone}
+              hideLabel
               onCountryChange={(c: Country) => {
                 if (!country) setCountry(c.name);
               }}
             />
-            {phoneError && <p className="text-xs text-destructive mt-1">{phoneError}</p>}
+            {phoneError && <p className="mt-1 text-xs text-[#C0504D]">{phoneError}</p>}
           </div>
 
           {/* Optionnels */}
@@ -169,22 +176,26 @@ export default function OnboardingPage() {
             icon={<Briefcase className="h-4 w-4" />}
           />
 
-          <Button type="submit" className="w-full h-12" disabled={submitting}>
+          <button
+            type="submit"
+            disabled={submitting}
+            className={cn('flex h-12 w-full items-center justify-center gap-2 text-[15px] font-bold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50', PRIMARY_PILL)}
+          >
             {submitting ? (
-              <span className="inline-flex items-center gap-2">
+              <>
                 <Loader2 className="h-4 w-4 animate-spin" /> Enregistrement…
-              </span>
+              </>
             ) : (
               'Continuer'
             )}
-          </Button>
+          </button>
         </form>
 
         {/* Sortie : ne jamais rester bloqué sur l'onboarding. */}
         <button
           type="button"
           onClick={async () => { await signOut(); navigate('/auth', { replace: true }); }}
-          className="w-full mt-5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className={cn('mt-5 w-full text-[13px] font-semibold transition-colors', TEXT.muted, 'hover:text-[#5B4CC4] dark:hover:text-[#B5AAF0]')}
         >
           Se déconnecter
         </button>

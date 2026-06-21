@@ -25,13 +25,65 @@ import {
   Calendar,
   Briefcase,
   ArrowLeft,
+  ArrowRight,
   CheckCircle,
   Globe,
 } from 'lucide-react';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
+
+// ── Refonte « Direction A » — chrome partagé des écrans d'auth ──────────────
+// Canvas calme (via LoginBackground), pill charbon unique, dots lilas, bascule
+// connexion/inscription remontée tout en haut (barre du haut).
+const CTA_PILL = cn(
+  'flex h-12 w-full items-center justify-center gap-2 text-[15px] font-bold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+  PRIMARY_PILL,
+);
+const BACK_BTN_CLS = cn(
+  'flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95',
+  SURFACE.card,
+  SURFACE.shadow,
+  TEXT.strong,
+);
+
+/** Barre du haut : créneau gauche (langue ou retour) + bascule à droite. */
+function AuthTopBar({ left, right }: { left?: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between px-4 pt-5">
+      <div className="flex min-h-[40px] items-center">{left}</div>
+      <div className="flex min-h-[40px] items-center">{right}</div>
+    </div>
+  );
+}
+
+/** Pastille de bascule connexion/inscription (en haut à droite). */
+function SwitchPill({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-1 rounded-full px-3.5 py-2 text-[13px] font-bold transition active:scale-95',
+        SURFACE.card,
+        SURFACE.shadow,
+        TEXT.strong,
+      )}
+    >
+      {label} <ArrowRight className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+/** Bouton retour rond (créneau gauche de la barre du haut). */
+function BackButton({ onClick, label }: { onClick: () => void; label?: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} className={BACK_BTN_CLS}>
+      <ArrowLeft className="h-5 w-5" />
+    </button>
+  );
+}
 
 // Schemas use basic validation — translated messages are applied at usage sites
 const emailSchema = z.string().email();
@@ -428,8 +480,8 @@ export default function AuthPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className={cn('flex min-h-screen items-center justify-center', SURFACE.canvas)}>
+        <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6]" />
       </div>
     );
   }
@@ -438,24 +490,24 @@ export default function AuthPage() {
   if (mode === 'login') {
     return (
       <LoginBackground className={cn(isFadingOut && 'animate-fade-out')}>
-        <div className="absolute top-6 right-4 z-20">
-          <LanguageSwitcher />
-        </div>
-        <div className="flex-1 flex flex-col justify-center px-6 py-12">
-          {/* Back button (step 1 only) */}
-          {loginStep === 1 && (
-            <button
-              onClick={() => {
-                setDirection('back');
-                setLoginStep(0);
-                setPasswordError('');
-              }}
-              className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-          )}
-
+        <AuthTopBar
+          left={
+            loginStep === 1 ? (
+              <BackButton
+                label={t('login.title')}
+                onClick={() => {
+                  setDirection('back');
+                  setLoginStep(0);
+                  setPasswordError('');
+                }}
+              />
+            ) : (
+              <LanguageSwitcher />
+            )
+          }
+          right={<SwitchPill label={t('login.switchToSignup')} onClick={() => switchMode('signup')} />}
+        />
+        <div className="flex flex-1 flex-col justify-center px-6 pb-12">
           {/* Logo */}
           <div
             className="flex justify-center mb-6 animate-logo-entrance"
@@ -471,8 +523,8 @@ export default function AuthPage() {
                   className="text-center mb-8 animate-slide-up"
                   style={{ animationDelay: '80ms', animationFillMode: 'both' }}
                 >
-                  <h1 className="text-2xl font-bold mb-1">{t('login.title')}</h1>
-                  <p className="text-muted-foreground text-sm">
+                  <h1 className={cn('mb-1 text-[24px] font-black', TEXT.strong)}>{t('login.title')}</h1>
+                  <p className={cn('text-[13px]', TEXT.muted)}>
                     {t('login.subtitle')}
                   </p>
                 </div>
@@ -510,7 +562,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={!email}
-                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={CTA_PILL}
                   >
                     {t('login.continue')}
                   </button>
@@ -523,7 +575,7 @@ export default function AuthPage() {
                 >
                   <div className="flex items-center gap-3 my-5">
                     <Separator className="flex-1" />
-                    <span className="text-xs text-muted-foreground">{t('login.or', { defaultValue: 'ou' })}</span>
+                    <span className={cn('text-[12px]', TEXT.muted)}>{t('login.or', { defaultValue: 'ou' })}</span>
                     <Separator className="flex-1" />
                   </div>
                   <GoogleButton
@@ -531,13 +583,14 @@ export default function AuthPage() {
                     loading={googleLoading}
                     label={t('login.continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
                   />
+                  <p className={cn('mt-5 text-center text-[11px]', TEXT.muted)}>{t('login.socialProof')}</p>
                 </div>
               </form>
             ) : (
               <form onSubmit={handleLogin} className="max-w-sm mx-auto w-full">
                 <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold mb-1">{t('login.greeting')}</h1>
-                  <p className="text-muted-foreground text-sm">{maskEmail(email)}</p>
+                  <h1 className={cn('mb-1 text-[24px] font-black', TEXT.strong)}>{t('login.greeting')}</h1>
+                  <p className={cn('text-[13px]', TEXT.muted)}>{maskEmail(email)}</p>
                 </div>
 
                 <div className="mb-4">
@@ -578,7 +631,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => switchMode('forgot-password')}
-                    className="text-sm text-primary hover:underline"
+                    className="text-[13px] font-semibold text-[#5B4CC4] hover:underline dark:text-[#B5AAF0]"
                   >
                     {t('login.forgotPassword')}
                   </button>
@@ -589,7 +642,7 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !password}
-                  className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={CTA_PILL}
                 >
                   {isSubmitting ? (
                     <>
@@ -604,55 +657,26 @@ export default function AuthPage() {
             )}
           </StepTransition>
         </div>
-
-        {/* Footer — shadcn/ui Separator + Button(outline) */}
-        <div className="px-6 pt-2 pb-8 flex-shrink-0">
-          <div className="max-w-sm mx-auto">
-            <div className="relative flex items-center gap-3 mb-4">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">{t('common:or')}</span>
-              <Separator className="flex-1" />
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => switchMode('signup')}
-              className="w-full h-12 rounded-xl text-sm font-semibold"
-            >
-              {t('login.createAccount')}
-            </Button>
-            <p className="text-center text-xs text-muted-foreground mt-3">
-              {t('login.socialProof')}
-            </p>
-          </div>
-        </div>
       </LoginBackground>
     );
   }
 
-  // ─── FORGOT PASSWORD MODE ──────────────────────────
   // ─── VERIFY OTP MODE (code email à l'inscription) ──────────────────────────
   if (mode === 'verify-otp') {
     return (
       <LoginBackground>
-        <div className="flex-1 flex flex-col justify-center px-6 py-12">
-          <button
-            onClick={() => switchMode('signup')}
-            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-
+        <AuthTopBar left={<BackButton label={t('login.title')} onClick={() => switchMode('signup')} />} />
+        <div className="flex flex-1 flex-col justify-center px-6 pb-12">
           <div className="flex justify-center mb-6 animate-logo-entrance" style={{ animationFillMode: 'both' }}>
             <BonziniLogo size="lg" showText={false} />
           </div>
 
           <form onSubmit={handleVerifyOtp} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-1">{t('verifyEmail.title', { defaultValue: 'Vérifiez votre email' })}</h1>
-              <p className="text-muted-foreground text-sm">
+              <h1 className={cn('mb-1 text-[24px] font-black', TEXT.strong)}>{t('verifyEmail.title', { defaultValue: 'Vérifiez votre email' })}</h1>
+              <p className={cn('text-[13px]', TEXT.muted)}>
                 {t('verifyEmail.subtitle', { defaultValue: 'Saisissez le code reçu par email à' })}{' '}
-                <span className="font-medium text-foreground">{maskEmail(email)}</span>
+                <span className={cn('font-semibold', TEXT.strong)}>{maskEmail(email)}</span>
               </p>
             </div>
 
@@ -667,7 +691,7 @@ export default function AuthPage() {
                 onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8)); setOtpError(''); }}
                 autoFocus
                 placeholder="••••••"
-                className="w-full h-16 text-center text-3xl font-bold tracking-[0.4em] rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none transition-colors"
+                className={cn('h-16 w-full rounded-2xl text-center text-3xl font-bold tracking-[0.4em] placeholder:text-[#C7C4D6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:placeholder:text-white/20 dark:focus:ring-[#4A4660]', SURFACE.card, SURFACE.shadow, TEXT.strong)}
               />
               {otpError && <p className="text-destructive text-sm mt-2 text-center">{otpError}</p>}
             </div>
@@ -675,7 +699,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={isSubmitting || otpCode.length < 6}
-              className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              className={cn(CTA_PILL, 'mt-4')}
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -684,13 +708,13 @@ export default function AuthPage() {
               )}
             </button>
 
-            <p className="text-center text-sm text-muted-foreground mt-6">
+            <p className={cn('mt-6 text-center text-[13px]', TEXT.muted)}>
               {t('verifyEmail.noCode', { defaultValue: "Vous n'avez pas reçu le code ?" })}{' '}
               <button
                 type="button"
                 onClick={handleResendOtp}
                 disabled={otpResending}
-                className="text-primary hover:underline font-medium disabled:opacity-50"
+                className="font-semibold text-[#5B4CC4] hover:underline disabled:opacity-50 dark:text-[#B5AAF0]"
               >
                 {otpResending
                   ? t('verifyEmail.resending', { defaultValue: 'Envoi…' })
@@ -706,14 +730,8 @@ export default function AuthPage() {
   if (mode === 'forgot-password') {
     return (
       <LoginBackground>
-        <div className="flex-1 flex flex-col justify-center px-6 py-12">
-          <button
-            onClick={() => switchMode('login')}
-            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-
+        <AuthTopBar left={<BackButton label={t('login.title')} onClick={() => switchMode('login')} />} />
+        <div className="flex flex-1 flex-col justify-center px-6 pb-12">
           <div
             className="flex justify-center mb-6 animate-logo-entrance"
             style={{ animationFillMode: 'both' }}
@@ -723,8 +741,8 @@ export default function AuthPage() {
 
           <form onSubmit={handleForgotPassword} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-1">{t('forgotPassword.title')}</h1>
-              <p className="text-muted-foreground text-sm">
+              <h1 className={cn('mb-1 text-[24px] font-black', TEXT.strong)}>{t('forgotPassword.title')}</h1>
+              <p className={cn('text-[13px]', TEXT.muted)}>
                 {t('forgotPassword.subtitle')}
               </p>
             </div>
@@ -750,7 +768,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={isSubmitting || !email}
-              className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={CTA_PILL}
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -758,20 +776,18 @@ export default function AuthPage() {
                 t('forgotPassword.sendLink')
               )}
             </button>
-          </form>
-        </div>
 
-        <div className="p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            {t('forgotPassword.remember')}{' '}
-            <button
-              type="button"
-              onClick={() => switchMode('login')}
-              className="text-primary hover:underline font-medium"
-            >
-              {t('forgotPassword.signIn')}
-            </button>
-          </p>
+            <p className={cn('mt-6 text-center text-[13px]', TEXT.muted)}>
+              {t('forgotPassword.remember')}{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className="font-semibold text-[#5B4CC4] hover:underline dark:text-[#B5AAF0]"
+              >
+                {t('forgotPassword.signIn')}
+              </button>
+            </p>
+          </form>
         </div>
       </LoginBackground>
     );
@@ -791,8 +807,8 @@ export default function AuthPage() {
 
           <form onSubmit={handleResetPassword} className="max-w-sm mx-auto w-full animate-slide-up" style={{ animationFillMode: 'both' }}>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-1">{t('resetPassword.title')}</h1>
-              <p className="text-muted-foreground text-sm">
+              <h1 className={cn('mb-1 text-[24px] font-black', TEXT.strong)}>{t('resetPassword.title')}</h1>
+              <p className={cn('text-[13px]', TEXT.muted)}>
                 {t('resetPassword.subtitle')}
               </p>
             </div>
@@ -837,7 +853,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={isSubmitting || !password || !confirmPassword}
-              className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={CTA_PILL}
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -859,16 +875,16 @@ export default function AuthPage() {
         <LoginBackground>
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
             <div className="text-center animate-slide-up" style={{ animationFillMode: 'both' }}>
-              <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-12 h-12 text-emerald-500" />
+              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#DEEFE5] dark:bg-[#1E3A2C]">
+                <CheckCircle className="h-12 w-12 text-[#2E7D52] dark:text-[#7FCBA0]" />
               </div>
-              <h1 className="text-2xl font-bold mb-3">{t('signup.success.title')}</h1>
-              <p className="text-muted-foreground text-sm mb-8 max-w-xs mx-auto">
+              <h1 className={cn('mb-3 text-[24px] font-black', TEXT.strong)}>{t('signup.success.title')}</h1>
+              <p className={cn('mx-auto mb-8 max-w-xs text-[13px]', TEXT.muted)}>
                 {t('signup.success.subtitle')}
               </p>
               <button
                 onClick={() => switchMode('login')}
-                className="btn-primary-gradient h-12 px-8 rounded-xl flex items-center justify-center gap-2 mx-auto"
+                className={cn('mx-auto flex h-12 items-center justify-center gap-2 px-8 text-[15px] font-bold transition active:scale-[0.99]', PRIMARY_PILL)}
               >
                 {t('signup.success.signIn')}
               </button>
@@ -890,24 +906,25 @@ export default function AuthPage() {
 
     return (
       <LoginBackground>
-        <div className="flex-1 flex flex-col px-4 py-6 sm:px-6">
-          {/* Back / close button */}
-          <button
-            onClick={() => {
-              if (signupStep === 0) {
-                switchMode('login');
-              } else {
-                setDirection('back');
-                setSignupStep(s => (s - 1) as 0 | 1 | 2 | 3 | 4);
-              }
-            }}
-            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-
+        <AuthTopBar
+          left={
+            signupStep === 0 ? (
+              <LanguageSwitcher />
+            ) : (
+              <BackButton
+                label={t('login.title')}
+                onClick={() => {
+                  setDirection('back');
+                  setSignupStep(s => (s - 1) as 0 | 1 | 2 | 3 | 4);
+                }}
+              />
+            )
+          }
+          right={<SwitchPill label={t('signup.switchToLogin')} onClick={() => switchMode('login')} />}
+        />
+        <div className="flex flex-1 flex-col px-4 pb-6 sm:px-6">
           {/* Logo */}
-          <div className="flex justify-center mb-5 animate-logo-entrance" style={{ animationFillMode: 'both' }}>
+          <div className="flex justify-center mb-5 mt-2 animate-logo-entrance" style={{ animationFillMode: 'both' }}>
             <BonziniLogo size="md" showText={false} />
           </div>
 
@@ -917,8 +934,8 @@ export default function AuthPage() {
           {/* Step header */}
           <div className="text-center mb-6 animate-slide-up" style={{ animationFillMode: 'both' }}>
             <p className="text-4xl mb-2">{currentStepConfig.emoji}</p>
-            <h1 className="text-xl font-bold mb-1">{currentStepConfig.title}</h1>
-            <p className="text-muted-foreground text-sm">{currentStepConfig.subtitle}</p>
+            <h1 className={cn('mb-1 text-[20px] font-black', TEXT.strong)}>{currentStepConfig.title}</h1>
+            <p className={cn('text-[13px]', TEXT.muted)}>{currentStepConfig.subtitle}</p>
           </div>
 
           {/* Step content */}
@@ -951,7 +968,7 @@ export default function AuthPage() {
                   />
                   <button
                     type="submit"
-                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                    className={cn(CTA_PILL, 'mt-2')}
                   >
                     {t('common:continue')}
                   </button>
@@ -959,7 +976,7 @@ export default function AuthPage() {
                   {/* Social login Google — raccourci d'inscription */}
                   <div className="flex items-center gap-3 my-1">
                     <Separator className="flex-1" />
-                    <span className="text-xs text-muted-foreground">{t('login.or', { defaultValue: 'ou' })}</span>
+                    <span className={cn('text-[12px]', TEXT.muted)}>{t('login.or', { defaultValue: 'ou' })}</span>
                     <Separator className="flex-1" />
                   </div>
                   <GoogleButton
@@ -986,7 +1003,7 @@ export default function AuthPage() {
                       disabled={isSubmitting}
                       autoFocus
                       className={cn(
-                        'w-full rounded-xl border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none',
+                        'w-full appearance-none rounded-xl border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
                         countryError ? 'border-destructive ring-2 ring-destructive/20' : 'border-border',
                       )}
                     >
@@ -1022,7 +1039,7 @@ export default function AuthPage() {
                         value={dobDay}
                         onChange={e => setDobDay(e.target.value)}
                         disabled={isSubmitting}
-                        className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
+                        className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]"
                       >
                         <option value="">{t('signup.day')}</option>
                         {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
@@ -1033,7 +1050,7 @@ export default function AuthPage() {
                         value={dobMonth}
                         onChange={e => setDobMonth(e.target.value)}
                         disabled={isSubmitting}
-                        className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
+                        className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]"
                       >
                         <option value="">{t('signup.month')}</option>
                         {(t('signup.months', { returnObjects: true }) as string[]).map((m, i) => (
@@ -1044,7 +1061,7 @@ export default function AuthPage() {
                         value={dobYear}
                         onChange={e => setDobYear(e.target.value)}
                         disabled={isSubmitting}
-                        className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none"
+                        className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]"
                       >
                         <option value="">{t('signup.year')}</option>
                         {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 16 - i).map(y => (
@@ -1056,7 +1073,7 @@ export default function AuthPage() {
 
                   <button
                     type="submit"
-                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                    className={cn(CTA_PILL, 'mt-2')}
                   >
                     {t('common:continue')}
                   </button>
@@ -1085,14 +1102,14 @@ export default function AuthPage() {
                   />
                   <button
                     type="submit"
-                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                    className={cn(CTA_PILL, 'mt-2')}
                   >
                     {t('common:continue')}
                   </button>
                   <button
                     type="button"
                     onClick={advanceSignupStep}
-                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+                    className={cn('w-full py-2 text-[13px] font-semibold transition-colors', TEXT.muted, 'hover:text-[#5B4CC4] dark:hover:text-[#B5AAF0]')}
                   >
                     {t('signup.skipStep')}
                   </button>
@@ -1121,14 +1138,14 @@ export default function AuthPage() {
                   />
                   <button
                     type="submit"
-                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2"
+                    className={cn(CTA_PILL, 'mt-2')}
                   >
                     {t('common:continue')}
                   </button>
                   <button
                     type="button"
                     onClick={advanceSignupStep}
-                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+                    className={cn('w-full py-2 text-[13px] font-semibold transition-colors', TEXT.muted, 'hover:text-[#5B4CC4] dark:hover:text-[#B5AAF0]')}
                   >
                     {t('signup.skipStep')}
                   </button>
@@ -1186,7 +1203,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full btn-primary-gradient h-12 rounded-xl flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={cn(CTA_PILL, 'mt-2')}
                   >
                     {isSubmitting ? (
                       <>
@@ -1202,20 +1219,6 @@ export default function AuthPage() {
 
             </div>
           </StepTransition>
-        </div>
-
-        {/* Footer signup — "Déjà client ?" avec Button link shadcn/ui */}
-        <div className="px-6 pb-6 pt-2 text-center flex-shrink-0">
-          <p className="text-sm text-muted-foreground">
-            {t('signup.alreadyClient')}{' '}
-            <Button
-              variant="link"
-              onClick={() => switchMode('login')}
-              className="text-primary font-semibold p-0 h-auto"
-            >
-              {t('signup.signIn')}
-            </Button>
-          </p>
         </div>
       </LoginBackground>
     );

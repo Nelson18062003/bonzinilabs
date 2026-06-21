@@ -9,7 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = module AUTH / Onboarding** (voir §4.1 — même méthode :
+3. **Prochaine tâche = SHELL & nav** (DERNIER module — voir §4.1 — même méthode :
    maquette d'abord, validation client, puis implémentation).
 
 ## 1. Objectif & méthode
@@ -170,11 +170,25 @@ de l'admin.
   Logique préservée (useMyChatConversations, useCreateChatConversation, ViewportShell).
   Maquette `clientSupportLayout.tsx` (clé `csupport-list`). i18n `support.list.sectionTitle`.
 
+- **MODULE AUTH / ONBOARDING — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/AuthPage.tsx` (connexion 2 étapes · inscription 5 étapes · OTP email · mot de
+  passe oublié/réinitialisation) + `src/pages/OnboardingPage.tsx`. **Bascule
+  connexion/inscription remontée TOUT EN HAUT** (barre du haut : langue à gauche —
+  « Créer un compte »/« Se connecter » à droite avec flèche) → pied de page supprimé.
+  Canvas calme via `LoginBackground` (dégradé + halos animés supprimés), CTA pill charbon
+  partagée (`CTA_PILL`), `ProgressDots` lilas, boutons retour ronds designKit, liens lilas,
+  sélecteurs pays/date + `PhoneCountryInput` en focus lilas. `PhoneCountryInput` gagne
+  `hideLabel` (onboarding fournit son propre libellé fort → plus de doublon « Téléphone »).
+  Logique 100% PRÉSERVÉE (signIn/signUp/verifyEmailOtp/Google/reset, RPC
+  `complete_client_onboarding`, gardes de redirection). Maquette `clientAuthLayout.tsx`
+  (clés `cauth-login|cauth-signup|cauth-onboarding`). i18n `login.switchToSignup` +
+  `signup.switchToLogin` (fr+en). Vrais écrans Playwright clair+sombre, 0 erreur.
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-Auth/Onboarding → **SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/
-`LiquidTabBar`) **EN DERNIER** (remplacer la « liquid glass » par une nav sobre — ne pas
-casser les écrans en route).
+**SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/`LiquidTabBar`) — **DERNIER
+module restant** (remplacer la « liquid glass » par une nav sobre — ne pas casser les
+écrans en route).
 
 ## 5. PIÈGES à NE PAS CASSER (détail exhaustif : `docs/refonte-client/01-analyse-paiements.md`)
 cash + « me payer moi-même » (pré-rempli, aucun champ) · switch devise XAF↔RMB **vide

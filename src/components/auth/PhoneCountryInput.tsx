@@ -89,6 +89,8 @@ interface PhoneCountryInputProps {
   error?: string;
   disabled?: boolean;
   autoFocus?: boolean;
+  /** Masque le libellé interne (ex. l'onboarding fournit le sien). */
+  hideLabel?: boolean;
 }
 
 export function PhoneCountryInput({
@@ -99,6 +101,7 @@ export function PhoneCountryInput({
   error,
   disabled,
   autoFocus,
+  hideLabel,
 }: PhoneCountryInputProps) {
   const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
   const [localNumber, setLocalNumber] = useState('');
@@ -184,17 +187,19 @@ export function PhoneCountryInput({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      {/* Label */}
-      <label className="block text-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
-        <Phone className="w-4 h-4" />
-        Téléphone *
-      </label>
+      {/* Label (masquable : l'onboarding fournit son propre libellé) */}
+      {!hideLabel && (
+        <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Phone className="w-4 h-4" />
+          Téléphone *
+        </label>
+      )}
 
       {/* Input container */}
       <div
         className={cn(
           'flex items-center rounded-xl border bg-card transition-all',
-          isFocused ? 'border-primary ring-2 ring-primary/20' : 'border-border',
+          isFocused ? 'border-[#8B5CF6] ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]' : 'border-border',
           hasError ? 'border-destructive ring-2 ring-destructive/20' : '',
           disabled ? 'opacity-50 cursor-not-allowed' : '',
         )}
@@ -259,7 +264,7 @@ export function PhoneCountryInput({
                   onClick={() => handleCountrySelect(country)}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-muted/40 transition-colors',
-                    selectedCountry.name === country.name && 'bg-primary/10 text-primary font-medium',
+                    selectedCountry.name === country.name && 'bg-[#EEE9FB] font-medium text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]',
                   )}
                 >
                   <span className="text-base">{country.flag}</span>
