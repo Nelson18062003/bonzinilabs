@@ -9,8 +9,7 @@
 2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
    (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
    refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
-3. **Prochaine tâche = SHELL & nav** (DERNIER module — voir §4.1 — même méthode :
-   maquette d'abord, validation client, puis implémentation).
+3. ✅ **Refonte client TERMINÉE** — tous les modules sont refondus + implémentés (voir §4.1).
 
 ## 1. Objectif & méthode
 Refonte **from scratch** de l'app mobile **client** (`src/pages/`, `src/components/`,
@@ -184,11 +183,26 @@ de l'admin.
   (clés `cauth-login|cauth-signup|cauth-onboarding`). i18n `login.switchToSignup` +
   `signup.switchToLogin` (fr+en). Vrais écrans Playwright clair+sombre, 0 erreur.
 
+- **MODULE SHELL & NAVIGATION — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  Nouveau **`src/components/navigation/ClientTabBar.tsx`** (barre du bas SOBRE : carte
+  blanche flottante + ombre douce, onglet actif = pastille lilas `#8B5CF6` — langage
+  « sélection » de l'app —, libellé actif fort/inactifs estompés, badges rouges `#C0504D`,
+  détection via `matchPath`) branché dans `src/components/layout/BottomNav.tsx` à la place
+  de `LiquidTabBar`. `ClientHeader` sobre (canvas, plus de bordure/flou, cloche en holder
+  carte + compteur). `MobileLayout` sur `SURFACE.canvas`. `ClientSidebar` (desktop) : actif
+  en lilas doux. **La `LiquidTabBar` est PARTAGÉE avec l'admin (`MobileTabBar`,
+  `AgentCashTabBar`) → volontairement NON touchée** (le client a son propre `ClientTabBar`).
+  Logique 100% PRÉSERVÉE (items + hooks badges `useUnreadNotificationCount` /
+  `useMyChatConversations`, routes, `matchPath`). Maquette `clientShellLayout.tsx` (clés
+  `cshell-home|cshell-payments`). Vrais écrans Playwright clair+sombre, 0 erreur.
+
 ## 4. À FAIRE — dans l'ordre
-### 4.1 Modules client restants (même méthode : MAQUETTE → validation client → implémentation)
-**SHELL & nav** (`MobileLayout`/`ClientHeader`/`BottomNav`/`LiquidTabBar`) — **DERNIER
-module restant** (remplacer la « liquid glass » par une nav sobre — ne pas casser les
-écrans en route).
+### 4.1 Modules client restants
+✅ **TERMINÉ — tous les modules client sont refondus + implémentés** (Paiements · Dépôts ·
+Wallet · Bénéficiaires · Historique · Profil/Notifications · Taux · Support · Auth/Onboarding
+· Shell & nav). La refonte « Direction A » de l'app CLIENT est complète.
+NB volontairement NON touchés (partagés avec l'admin) : le moteur de chat
+(ChatThread/MessageBubble/MessageInput), `RateCard`, et `LiquidTabBar`.
 
 ## 5. PIÈGES à NE PAS CASSER (détail exhaustif : `docs/refonte-client/01-analyse-paiements.md`)
 cash + « me payer moi-même » (pré-rempli, aucun champ) · switch devise XAF↔RMB **vide

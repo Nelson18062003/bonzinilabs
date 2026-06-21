@@ -42,13 +42,13 @@ export function ClientSidebar() {
             key={item.to}
             to={item.to}
             end={item.to === '/wallet'}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-            activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            activeClassName="bg-[#EDEAFA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]"
           >
             <item.icon className="w-5 h-5 flex-shrink-0" />
             <span className="flex-1">{item.label}</span>
             {item.to === '/notifications' && unreadCount && unreadCount > 0 && (
-              <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#C0504D] px-1.5 text-[10px] font-bold text-white">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

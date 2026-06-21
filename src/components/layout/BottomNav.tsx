@@ -1,4 +1,4 @@
-import { LiquidTabBar } from '@/components/navigation/LiquidTabBar';
+import { ClientTabBar } from '@/components/navigation/ClientTabBar';
 import { Wallet, ArrowDownToLine, Send, History, User, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
@@ -29,5 +29,5 @@ export const BottomNav = ({ className }: BottomNavProps) => {
     { to: '/profile', icon: User, label: t('nav.profile') },
   ];
 
-  return <LiquidTabBar items={navItems} className={cn('lg:hidden', className)} />;
+  return <ClientTabBar items={navItems} className={cn('lg:hidden', className)} />;
 };
