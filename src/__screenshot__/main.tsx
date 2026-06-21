@@ -50,6 +50,7 @@ import { ProfileScreen, NotificationsScreen } from './clientProfileLayout';
 import { RatesScreen } from './clientRatesLayout';
 import { SupportList } from './clientSupportLayout';
 import { AuthLogin, AuthSignup, AuthOnboarding } from './clientAuthLayout';
+import { ShellHome, ShellPayments } from './clientShellLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -161,6 +162,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cauth-login': { Comp: AuthLogin, route: '/' },
   'cauth-signup': { Comp: AuthSignup, route: '/' },
   'cauth-onboarding': { Comp: AuthOnboarding, route: '/' },
+  // Refonte module CLIENT — Shell & navigation (DERNIER module)
+  'cshell-home': { Comp: ShellHome, route: '/' },
+  'cshell-payments': { Comp: ShellPayments, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
