@@ -196,7 +196,7 @@ de l'admin.
   `useMyChatConversations`, routes, `matchPath`). Maquette `clientShellLayout.tsx` (clés
   `cshell-home|cshell-payments`). Vrais écrans Playwright clair+sombre, 0 erreur.
 
-- **PASSE DE COHÉRENCE TRANSVERSALE (audit approfondi 4 agents + 2 vagues)** :
+- **PASSE DE COHÉRENCE TRANSVERSALE (audit approfondi 4 agents + plusieurs vagues)** :
   - *Vague 1 (visuel)* : fuite violet `--primary` de `.premium-input` (CSS) → lilas ;
     rouge danger unifié sur `#C0504D` (remplace `destructive` + le `#D14343` du `PrimaryPill`) ;
     unité devise (XAF **et** ¥) en ambre `#E8932A` sur les montants focaux. Composants restés
@@ -206,7 +206,17 @@ de l'admin.
   - *Vague 2 (i18n + pages orphelines)* : i18n fr/en/zh de OnboardingPage (`auth.onboarding.*`),
     écran Taux (`client.rates.*`), fiche/liste Paiements (`payments.*`), messages OAuth
     (`auth.callback.*`). Refonte Direction A de `ResetPasswordPage` + `AuthCallbackPage`
-    (étaient en shadcn Card/Alert/Button). type-check + build + lint OK.
+    (étaient en shadcn Card/Alert/Button).
+  - *Vagues 3-4 (détails + flux cash)* : `SuccessScreen` variante admin morte supprimée ;
+    cases à cocher natives → accent lilas ; `ClientSidebar` desktop i18n + survol `#C0504D` ;
+    `CashQRCode` refonte designKit theme-aware + i18n (`payments.cashQr.*`), `CashReceiptDownloadButton`
+    i18n (`payments.cashReceipt.*`) — sûrs car le pont agent-cash appelle `i18n.changeLanguage`
+    (langue globale) ; `BeneficiaryEditForm` placeholders i18n + vert `#2E7D52` ; `NotFound` +
+    `ProtectedRoute` (spinner) → canvas/lilas ; `CashBeneficiaryForm` (mort) supprimé.
+  - **Hors périmètre client (justifié, NON touché)** : `SignatureCanvas` (agent/office),
+    `VoiceRecorder` + moteur de chat (partagé), primitives `ui/*` (checkbox/switch — non rendues
+    côté client), `LiquidTabBar`/`RateCard` (admin). Balayage final : 0 texte FR codé en dur,
+    0 fuite `primary`/dégradé/`destructive` dans les écrans client. type-check + build + lint OK.
 
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants
