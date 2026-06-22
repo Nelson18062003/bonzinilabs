@@ -146,7 +146,9 @@
     "deposits": "Deposits",
     "payments": "Payments",
     "history": "History",
-    "profile": "Profile"
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "theme": "Theme"
   },
   "rates": {
     "title": "Exchange rate",

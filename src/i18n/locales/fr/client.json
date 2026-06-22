@@ -146,7 +146,9 @@
     "deposits": "Dépôts",
     "payments": "Paiements",
     "history": "Historique",
-    "profile": "Profil"
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "theme": "Thème"
   },
   "rates": {
     "title": "Taux de change",

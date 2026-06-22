@@ -138,7 +138,9 @@
     "deposits": "充值",
     "payments": "付款",
     "history": "历史",
-    "profile": "个人"
+    "profile": "个人",
+    "notifications": "通知",
+    "theme": "主题"
   },
   "rates": {
     "title": "汇率",

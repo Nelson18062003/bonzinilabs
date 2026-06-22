@@ -226,7 +226,7 @@ export default function EditBeneficiaryPage() {
                       type="checkbox"
                       checked={alsoSave}
                       onChange={(e) => setAlsoSave(e.target.checked)}
-                      className="h-4 w-4 rounded border-border"
+                      className="h-4 w-4 rounded border-black/20 accent-[#8B5CF6] dark:border-white/25"
                     />
                     {tc('beneficiaries.saveToCarnet', { defaultValue: 'Enregistrer aussi dans mon carnet' })}
                   </label>

@@ -346,10 +346,8 @@ const NewPaymentPage = () => {
     return (
       <MobileLayout showNav={false}>
         <SuccessScreen
-          variant="client"
           amountXAF={computed.amountXAF}
           amountRMB={computed.amountRMB}
-          method={selectedMethod || 'cash'}
           onViewPayment={() =>
             navigate(createdPaymentId ? `/payments/${createdPaymentId}` : '/payments')
           }

@@ -132,7 +132,7 @@ export function NewPaymentBeneficiaryStep({
                   )}
                 >
                   <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
                     style={{ backgroundColor: modeColor(b.payment_method) }}
                   >
                     {(b.alias || b.name)[0]?.toUpperCase()}
@@ -238,7 +238,7 @@ export function NewPaymentBeneficiaryStep({
                   type="checkbox"
                   checked={dontSave}
                   onChange={(e) => onDontSaveChange(e.target.checked)}
-                  className="h-4 w-4 rounded border-border"
+                  className="h-4 w-4 rounded border-black/20 accent-[#8B5CF6] dark:border-white/25"
                 />
                 {t('form.beneficiary.dontSave')}
               </label>

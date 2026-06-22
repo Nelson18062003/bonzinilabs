@@ -107,7 +107,7 @@ export function CashQRCode({
             className="shrink-0"
           >
             {copied ? (
-              <Check className="w-4 h-4 text-green-500" />
+              <Check className="w-4 h-4 text-[#2E7D52]" />
             ) : (
               <Copy className="w-4 h-4" />
             )}
