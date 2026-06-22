@@ -196,11 +196,24 @@ de l'admin.
   `useMyChatConversations`, routes, `matchPath`). Maquette `clientShellLayout.tsx` (clés
   `cshell-home|cshell-payments`). Vrais écrans Playwright clair+sombre, 0 erreur.
 
+- **PASSE DE COHÉRENCE TRANSVERSALE (audit approfondi 4 agents + 2 vagues)** :
+  - *Vague 1 (visuel)* : fuite violet `--primary` de `.premium-input` (CSS) → lilas ;
+    rouge danger unifié sur `#C0504D` (remplace `destructive` + le `#D14343` du `PrimaryPill`) ;
+    unité devise (XAF **et** ¥) en ambre `#E8932A` sur les montants focaux. Composants restés
+    en ancien look migrés : `ProofUpload` (dégradé→pill), `CountdownTimer` (palette→tokens),
+    `PhoneCountryInput`, `BeneficiaryForm`, `ThemeToggle`, `ResponseTimeBadge`, `OperationsList`
+    (variantes dark). `PrimaryCTA` (mort) supprimé. `#221F33`→`#2F2C3D`, rayons `[20px]`→`[22px]`.
+  - *Vague 2 (i18n + pages orphelines)* : i18n fr/en/zh de OnboardingPage (`auth.onboarding.*`),
+    écran Taux (`client.rates.*`), fiche/liste Paiements (`payments.*`), messages OAuth
+    (`auth.callback.*`). Refonte Direction A de `ResetPasswordPage` + `AuthCallbackPage`
+    (étaient en shadcn Card/Alert/Button). type-check + build + lint OK.
+
 ## 4. À FAIRE — dans l'ordre
 ### 4.1 Modules client restants
 ✅ **TERMINÉ — tous les modules client sont refondus + implémentés** (Paiements · Dépôts ·
 Wallet · Bénéficiaires · Historique · Profil/Notifications · Taux · Support · Auth/Onboarding
-· Shell & nav). La refonte « Direction A » de l'app CLIENT est complète.
+· Shell & nav) + passe de cohérence transversale (2 vagues). La refonte « Direction A » de
+l'app CLIENT est complète.
 NB volontairement NON touchés (partagés avec l'admin) : le moteur de chat
 (ChatThread/MessageBubble/MessageInput), `RateCard`, et `LiquidTabBar`.
 
