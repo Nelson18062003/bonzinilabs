@@ -1,4 +1,20 @@
 {
+  "cashQr": {
+    "title": "Payment QR code",
+    "beneficiary": "Beneficiary",
+    "paymentId": "Payment ID",
+    "idCopied": "ID copied!",
+    "copyFailed": "Couldn't copy",
+    "download": "Download QR code",
+    "instruction": "Show this QR code at the Bonzini Guangzhou office to collect your cash"
+  },
+  "cashReceipt": {
+    "downloaded": "PDF receipt downloaded",
+    "error": "Error generating the PDF",
+    "availableAfterPayment": "Available after payment",
+    "client": "Client",
+    "downloadLabel": "Download PDF receipt"
+  },
   "title": "My Payments",
   "subtitle": "Transfers to China",
   "newPayment": "New payment",
@@ -292,6 +308,8 @@
       "accountNumberRequired": "Account number (required)",
       "bankAccountNumber": "Bank account number",
       "accountHolderName": "Account holder name",
+      "bankNameExample": "E.g. Bank of China, ICBC…",
+      "swiftPlaceholder": "SWIFT / IBAN / branch",
       "commentOptional": "Comment (optional)",
       "additionalInstructions": "Additional instructions",
       "noInfoRequired": "No information required.",

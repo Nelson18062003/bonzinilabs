@@ -1,4 +1,20 @@
 {
+  "cashQr": {
+    "title": "QR Code de paiement",
+    "beneficiary": "Bénéficiaire",
+    "paymentId": "ID du paiement",
+    "idCopied": "ID copié !",
+    "copyFailed": "Impossible de copier",
+    "download": "Télécharger le QR Code",
+    "instruction": "Présentez ce QR Code au bureau Bonzini Guangzhou pour récupérer votre argent"
+  },
+  "cashReceipt": {
+    "downloaded": "Reçu PDF téléchargé",
+    "error": "Erreur lors de la génération du PDF",
+    "availableAfterPayment": "Disponible après paiement",
+    "client": "Client",
+    "downloadLabel": "Télécharger le reçu PDF"
+  },
   "title": "Mes Paiements",
   "subtitle": "Réglez vos fournisseurs en Chine",
   "newPayment": "Nouveau paiement",
@@ -292,6 +308,8 @@
       "accountNumberRequired": "Numéro de compte (obligatoire)",
       "bankAccountNumber": "Numéro de compte bancaire",
       "accountHolderName": "Nom du titulaire du compte",
+      "bankNameExample": "Ex : Bank of China, ICBC…",
+      "swiftPlaceholder": "SWIFT / IBAN / agence",
       "commentOptional": "Commentaire (optionnel)",
       "additionalInstructions": "Instructions supplémentaires",
       "noInfoRequired": "Aucune information à fournir.",

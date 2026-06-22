@@ -1,4 +1,20 @@
 {
+  "cashQr": {
+    "title": "付款二维码",
+    "beneficiary": "收款人",
+    "paymentId": "付款 ID",
+    "idCopied": "ID 已复制！",
+    "copyFailed": "无法复制",
+    "download": "下载二维码",
+    "instruction": "在 Bonzini 广州办公室出示此二维码以领取现金"
+  },
+  "cashReceipt": {
+    "downloaded": "PDF 收据已下载",
+    "error": "生成 PDF 时出错",
+    "availableAfterPayment": "付款后可用",
+    "client": "客户",
+    "downloadLabel": "下载 PDF 收据"
+  },
   "title": "我的付款",
   "subtitle": "转账到中国",
   "newPayment": "新付款",
@@ -288,6 +304,8 @@
       "accountNumberRequired": "账号（必填）",
       "bankAccountNumber": "银行账号",
       "accountHolderName": "账户持有人姓名",
+      "bankNameExample": "例如：中国银行、工商银行…",
+      "swiftPlaceholder": "SWIFT / IBAN / 分行",
       "commentOptional": "备注（可选）",
       "additionalInstructions": "补充说明",
       "noInfoRequired": "无需提供任何信息。",
