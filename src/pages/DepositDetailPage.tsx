@@ -468,7 +468,7 @@ const DepositDetailPage = () => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Ban className="h-5 w-5 text-destructive" />
+              <Ban className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
               {t('detail.cancelDialogTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -479,7 +479,7 @@ const DepositDetailPage = () => {
             <AlertDialogCancel>{t('detail.cancelDialogKeep')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={cancelDeposit.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-[#C0504D] text-white hover:bg-[#C0504D]/90"
               onClick={() => {
                 if (!depositId) return;
                 cancelDeposit.mutate({ depositId }, { onSettled: () => setCancelDialogOpen(false) });
@@ -497,7 +497,7 @@ const DepositDetailPage = () => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-destructive" />
+              <Trash2 className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
               {t('detail.deleteProofTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>{t('detail.deleteProofDesc')}</AlertDialogDescription>
@@ -511,8 +511,8 @@ const DepositDetailPage = () => {
                   key={reason}
                   type="button"
                   className={cn(
-                    'w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors',
-                    deleteReason === reason ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-border text-foreground hover:bg-muted/50',
+                    'w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors',
+                    deleteReason === reason ? 'border-[#8B5CF6] bg-[#EDEAFA] font-semibold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]' : 'border-black/10 text-[#1B1A24] hover:bg-black/[0.03] dark:border-white/10 dark:text-[#F2F1F7] dark:hover:bg-white/[0.04]',
                   )}
                   onClick={() => setDeleteReason(reason)}
                 >
@@ -536,7 +536,7 @@ const DepositDetailPage = () => {
             <AlertDialogCancel>{t('detail.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={!deleteReason || (deleteReason === 'Autre' && !customDeleteReason.trim()) || deleteProof.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-[#C0504D] text-white hover:bg-[#C0504D]/90"
               onClick={() => {
                 if (!deletingProofId || !depositId) return;
                 const reason = deleteReason === 'Autre' ? customDeleteReason.trim() : deleteReason;

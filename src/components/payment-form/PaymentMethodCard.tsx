@@ -25,7 +25,7 @@ export function PaymentMethodCard({ method, label, description, rate, isSelected
       onClick={onSelect}
       aria-pressed={isSelected}
       className={cn(
-        'flex w-full items-center gap-4 rounded-[20px] p-4 text-left transition active:scale-[0.98]',
+        'flex w-full items-center gap-4 rounded-[22px] p-4 text-left transition active:scale-[0.98]',
         SURFACE.card,
         SURFACE.shadow,
         isSelected && 'ring-2 ring-[#8B5CF6]',

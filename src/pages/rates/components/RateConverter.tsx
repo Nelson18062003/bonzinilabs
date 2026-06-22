@@ -91,7 +91,7 @@ export function RateConverter({
             placeholder={isXaf ? '1 000 000' : '11 800'}
             className={cn('min-w-0 flex-1 bg-transparent text-[28px] font-black tabular-nums outline-none placeholder:text-[#C7C2D6] dark:placeholder:text-[#4A4658]', TEXT.strong)}
           />
-          <span className={cn('shrink-0 text-[15px] font-extrabold', TEXT.muted)}>{isXaf ? 'XAF' : '¥'}</span>
+          <span className="shrink-0 text-[15px] font-extrabold text-[#E8932A]">{isXaf ? 'XAF' : '¥'}</span>
         </div>
         {isUnderMinimum && (
           <p className="mt-1 text-[12px] font-medium text-[#C0504D] dark:text-[#E79A9A]">
@@ -103,7 +103,7 @@ export function RateConverter({
         <div className="my-3 flex justify-center">
           <button
             onClick={() => setDirection((d) => (d === 'xaf' ? 'cny' : 'xaf'))}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EDEAFA] transition active:scale-90 dark:bg-[#221F33]"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EDEAFA] transition active:scale-90 dark:bg-[#2F2C3D]"
           >
             <ArrowUpDown className="h-[18px] w-[18px] text-[#5B4CC4] dark:text-[#B5AAF0]" />
           </button>
@@ -113,7 +113,7 @@ export function RateConverter({
         <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Vous recevez</div>
         <div className="mt-1 flex items-baseline justify-between gap-2">
           <span className="min-w-0 flex-1 truncate text-[28px] font-black tabular-nums text-[#5B4CC4] dark:text-[#B5AAF0]">{formatNumber(animatedResult)}</span>
-          <span className={cn('shrink-0 text-[15px] font-extrabold', TEXT.muted)}>{isXaf ? '¥' : 'XAF'}</span>
+          <span className="shrink-0 text-[15px] font-extrabold text-[#E8932A]">{isXaf ? '¥' : 'XAF'}</span>
         </div>
 
         {/* Montants rapides */}

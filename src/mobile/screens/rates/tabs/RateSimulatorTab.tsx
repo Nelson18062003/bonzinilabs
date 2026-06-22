@@ -240,7 +240,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
 
         {/* Résultat — bloc lilas « Votre fournisseur reçoit ¥ » (maquette) */}
         {result ? (
-          <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+          <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
             <div className={cn('text-[12px] font-medium', TEXT.muted)}>Votre fournisseur reçoit</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-[28px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
@@ -256,7 +256,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
             </div>
           </div>
         ) : (
-          <div className="mt-4 rounded-2xl bg-[#EDEAFA]/60 p-5 text-center dark:bg-[#221F33]/60">
+          <div className="mt-4 rounded-2xl bg-[#EDEAFA]/60 p-5 text-center dark:bg-[#2F2C3D]/60">
             <div className={cn('text-[13px]', TEXT.muted)}>{emptyMessage}</div>
           </div>
         )}

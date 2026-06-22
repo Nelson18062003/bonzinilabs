@@ -656,12 +656,12 @@
   .premium-input {
     @apply w-full px-4 pt-6 pb-2 bg-secondary/30 border border-border/50 rounded-xl text-foreground
            placeholder-transparent
-           focus:outline-none focus:border-primary/50 focus:bg-secondary/20
+           focus:outline-none focus:border-[#8B5CF6] focus:bg-secondary/20
            transition-all duration-300;
   }
 
   .premium-input:focus {
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
   }
 
   .premium-input-label {
@@ -671,21 +671,30 @@
     font-size: 0.875rem;
   }
 
-  .premium-input:focus ~ .premium-input-label,
-  .premium-input:not(:placeholder-shown) ~ .premium-input-label {
+  .premium-input:focus ~ .premium-input-label {
     top: 0.5rem;
     transform: translateY(0);
     font-size: 0.7rem;
-    font-weight: 500;
-    color: hsl(var(--primary));
+    font-weight: 600;
+    color: #5B4CC4;
   }
 
+  .premium-input:not(:placeholder-shown) ~ .premium-input-label,
   .premium-input:-webkit-autofill ~ .premium-input-label {
     top: 0.5rem;
     transform: translateY(0);
     font-size: 0.7rem;
     font-weight: 500;
-    color: hsl(var(--primary));
+    color: #8E8BA0;
+  }
+
+  .dark .premium-input:focus ~ .premium-input-label {
+    color: #B5AAF0;
+  }
+
+  .dark .premium-input:not(:placeholder-shown) ~ .premium-input-label,
+  .dark .premium-input:-webkit-autofill ~ .premium-input-label {
+    color: #9B98AD;
   }
 
   .premium-input-icon {
@@ -693,7 +702,7 @@
   }
 
   .premium-input:focus ~ .premium-input-icon {
-    @apply text-primary;
+    @apply text-[#8B5CF6];
   }
 
   .premium-input-has-left-icon {
@@ -709,11 +718,11 @@
   }
 
   .premium-input-error {
-    @apply border-destructive/50;
+    border-color: rgba(192, 80, 77, 0.55);
   }
 
   .premium-input-error:focus {
-    box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.1);
+    box-shadow: 0 0 0 3px rgba(192, 80, 77, 0.14);
   }
 
   /* Step transition containers */

@@ -111,14 +111,14 @@ export function NewPaymentAmountStep({
           <span className="shrink-0 text-[18px] font-extrabold text-[#E8932A]">{currency}</span>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
           <div className={cn('text-[12px]', TEXT.muted)}>
             {currency === 'XAF' ? t('form.supplierReceives') : t('form.amountDebited')}
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
             {currency === 'XAF' ? (
               <>
-                <span className="text-[22px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+                <span className="text-[22px] font-black text-[#E8932A]">¥</span>
                 <span className={cn('text-[30px] font-black leading-none tabular-nums', TEXT.strong)}>{formatYuan(amountRMB)}</span>
               </>
             ) : (

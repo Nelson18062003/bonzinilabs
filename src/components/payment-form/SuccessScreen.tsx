@@ -91,7 +91,7 @@ export function SuccessScreen({
       <p className={cn('mt-1 text-center text-[14px]', TEXT.muted)}>{t('success.requestRecorded')}</p>
 
       <div className="mt-5 flex items-baseline gap-1.5">
-        <span className="text-[24px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+        <span className="text-[24px] font-black text-[#E8932A]">¥</span>
         <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>{formatYuan(amountRMB)}</span>
       </div>
       <p className={cn('mb-8 mt-1.5 text-[13px] tabular-nums', TEXT.muted)}>

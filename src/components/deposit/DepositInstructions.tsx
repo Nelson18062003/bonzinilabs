@@ -260,7 +260,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <ol className="space-y-3">
             {info.instructions.map((instruction, index) => (
               <li key={index} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[12px] font-bold text-[#5B4CC4] dark:bg-[#221F33] dark:text-[#B5AAF0]">{index + 1}</span>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[12px] font-bold text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]">{index + 1}</span>
                 <span className={cn('pt-0.5 text-[13px]', TEXT.muted)}>{instruction}</span>
               </li>
             ))}

@@ -76,10 +76,14 @@ interface Props {
   storedQrUrl?: string | null;
 }
 
-// Contrôle de saisie — mêmes classes que la lib `form/` (parité visuelle app-wide).
-const inputCls =
-  'flex h-11 md:h-10 w-full rounded-md border border-input bg-background px-3 text-base md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
-const labelCls = 'mb-1.5 block text-sm font-medium text-foreground';
+// Contrôle de saisie — designKit (carte blanche + ombre douce, focus lilas).
+const inputCls = cn(
+  'flex h-12 w-full rounded-2xl px-4 text-base outline-none transition placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+  SURFACE.card,
+  SURFACE.shadow,
+  TEXT.strong,
+);
+const labelCls = cn('mb-1.5 block text-[13px] font-semibold', TEXT.strong);
 // Chip sélectionnable (méthode / type d'identifiant / relation) — langage wizard.
 const chip = (active: boolean) =>
   cn(
@@ -152,7 +156,7 @@ export function BeneficiaryForm({
 
   const fieldError = (field: keyof typeof errors) =>
     touched && errors[field] ? (
-      <p className="mt-1 text-xs font-medium text-[#C0504D] dark:text-[#E79A9A]">
+      <p className="mt-1 text-xs font-bold text-[#C0504D] dark:text-[#E79A9A]">
         {t(errors[field]!.replace('beneficiaries.', ''))}
       </p>
     ) : null;
@@ -176,7 +180,7 @@ export function BeneficiaryForm({
               className={cn('flex flex-col items-center gap-1', chip(mode === m))}
             >
               <span className="font-serif text-lg">{modeIcon(m)}</span>
-              <span className={cn('text-[11px] font-medium', TEXT.strong)}>{modeLabel(m)}</span>
+              <span className={cn('text-[11px] font-bold', TEXT.strong)}>{modeLabel(m)}</span>
             </button>
           ))}
         </div>
@@ -264,7 +268,7 @@ export function BeneficiaryForm({
                   className={cn('flex flex-col items-center gap-1', chip(values.identifier_type === key))}
                 >
                   <Icon className={cn('h-5 w-5', TEXT.strong)} />
-                  <span className={cn('text-xs font-medium', TEXT.strong)}>
+                  <span className={cn('text-xs font-bold', TEXT.strong)}>
                     {t(`beneficiaries.fields.${key === 'id' ? 'identifier' : key === 'phone' ? 'phone' : 'email'}`)}
                   </span>
                 </button>
@@ -359,7 +363,7 @@ export function BeneficiaryForm({
                 key={rel}
                 type="button"
                 onClick={() => set('relation_type', rel)}
-                className={cn('text-sm font-medium', chip(values.relation_type === rel), TEXT.strong)}
+                className={cn('text-sm font-bold', chip(values.relation_type === rel), TEXT.strong)}
               >
                 {t(`beneficiaries.relations.${rel}`)}
               </button>

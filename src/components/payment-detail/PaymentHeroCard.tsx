@@ -50,7 +50,7 @@ export function PaymentHeroCard({ payment }: Props) {
         {kind === 'failed' ? 'Montant du règlement' : 'Votre bénéficiaire reçoit'}
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-[34px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+        <span className="text-[34px] font-black text-[#E8932A]">¥</span>
         <span
           className={cn(
             'font-black leading-none tracking-tight tabular-nums',
@@ -68,7 +68,7 @@ export function PaymentHeroCard({ payment }: Props) {
       </div>
 
       {rateInt > 0 && (
-        <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
           <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>
             Taux du jour appliqué
           </div>

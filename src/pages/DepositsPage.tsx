@@ -162,7 +162,7 @@ const DepositsPage = () => {
         {isLoading ? (
           <div className="space-y-3 pt-1">
             {[1, 2, 3].map((i) => (
-              <div key={i} className={cn('h-[104px] animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+              <div key={i} className={cn('h-[112px] animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
         ) : !deposits || deposits.length === 0 ? (

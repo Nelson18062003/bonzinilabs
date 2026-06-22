@@ -200,7 +200,7 @@ export function DepWizAmount() {
           <span className={cn('min-w-0 flex-1 text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>500 000</span>
           <span className="shrink-0 text-[18px] font-extrabold" style={{ color: AMBER }}>XAF</span>
         </div>
-        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
           <div className={cn('text-[12px]', TEXT.muted)}>Nouveau solde après dépôt</div>
           <div className={cn('mt-0.5 text-[24px] font-black tabular-nums', TEXT.strong)}>4 750 000 <span className="text-[14px]" style={{ color: AMBER }}>XAF</span></div>
         </div>

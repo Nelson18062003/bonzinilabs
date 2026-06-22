@@ -693,7 +693,7 @@ export default function AuthPage() {
                 placeholder="••••••"
                 className={cn('h-16 w-full rounded-2xl text-center text-3xl font-bold tracking-[0.4em] placeholder:text-[#C7C4D6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:placeholder:text-white/20 dark:focus:ring-[#4A4660]', SURFACE.card, SURFACE.shadow, TEXT.strong)}
               />
-              {otpError && <p className="text-destructive text-sm mt-2 text-center">{otpError}</p>}
+              {otpError && <p className="mt-2 text-center text-sm text-[#C0504D] dark:text-[#E79A9A]">{otpError}</p>}
             </div>
 
             <button
@@ -993,7 +993,7 @@ export default function AuthPage() {
                 <form onSubmit={handleSignupStepNext} className="space-y-4">
                   {/* Country selector */}
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1.5">
+                    <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">
                       <Globe className="w-4 h-4" />
                       {t('signup.country')}
                     </label>
@@ -1003,8 +1003,9 @@ export default function AuthPage() {
                       disabled={isSubmitting}
                       autoFocus
                       className={cn(
-                        'w-full appearance-none rounded-xl border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
-                        countryError ? 'border-destructive ring-2 ring-destructive/20' : 'border-border',
+                        'w-full appearance-none rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+                        SURFACE.card, SURFACE.shadow, TEXT.strong,
+                        countryError && 'ring-2 ring-[#C0504D]/40',
                       )}
                     >
                       <option value="">{t('signup.selectCountry')}</option>
@@ -1015,7 +1016,7 @@ export default function AuthPage() {
                       ))}
                     </select>
                     {countryError && (
-                      <p className="text-xs text-destructive mt-1">{countryError}</p>
+                      <p className="mt-1 text-xs text-[#C0504D] dark:text-[#E79A9A]">{countryError}</p>
                     )}
                   </div>
 
@@ -1030,7 +1031,7 @@ export default function AuthPage() {
 
                   {/* Date de naissance — 3 sélecteurs */}
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                    <label className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">
                       <Calendar className="w-4 h-4" />
                       {t('signup.dateOfBirth')}
                     </label>
@@ -1039,7 +1040,7 @@ export default function AuthPage() {
                         value={dobDay}
                         onChange={e => setDobDay(e.target.value)}
                         disabled={isSubmitting}
-                        className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]"
+                        className="w-full appearance-none rounded-2xl bg-white px-3 py-3 text-sm text-[#1B1A24] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:bg-[#211F2B] dark:text-[#F2F1F7] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] dark:focus:ring-[#4A4660]"
                       >
                         <option value="">{t('signup.day')}</option>
                         {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
@@ -1050,7 +1051,7 @@ export default function AuthPage() {
                         value={dobMonth}
                         onChange={e => setDobMonth(e.target.value)}
                         disabled={isSubmitting}
-                        className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]"
+                        className="w-full appearance-none rounded-2xl bg-white px-3 py-3 text-sm text-[#1B1A24] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:bg-[#211F2B] dark:text-[#F2F1F7] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] dark:focus:ring-[#4A4660]"
                       >
                         <option value="">{t('signup.month')}</option>
                         {(t('signup.months', { returnObjects: true }) as string[]).map((m, i) => (
@@ -1061,7 +1062,7 @@ export default function AuthPage() {
                         value={dobYear}
                         onChange={e => setDobYear(e.target.value)}
                         disabled={isSubmitting}
-                        className="w-full appearance-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-[#8B5CF6] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]"
+                        className="w-full appearance-none rounded-2xl bg-white px-3 py-3 text-sm text-[#1B1A24] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:bg-[#211F2B] dark:text-[#F2F1F7] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] dark:focus:ring-[#4A4660]"
                       >
                         <option value="">{t('signup.year')}</option>
                         {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 16 - i).map(y => (

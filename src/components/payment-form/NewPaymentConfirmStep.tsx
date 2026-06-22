@@ -51,7 +51,7 @@ export function NewPaymentConfirmStep({
         </div>
         <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>{t('form.supplierReceives')}</div>
         <div className="mt-1 flex items-baseline gap-2">
-          <span className="text-[30px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+          <span className="text-[30px] font-black text-[#E8932A]">¥</span>
           <span className={cn('text-[46px] font-black leading-none tracking-tight tabular-nums', TEXT.strong)}>
             {formatYuan(amountRMB)}
           </span>
@@ -60,7 +60,7 @@ export function NewPaymentConfirmStep({
           {t('form.youSend')} {formatXAF(amountXAF)} XAF
         </div>
         {showRate && (
-          <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#221F33]">
+          <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
             <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>
               Taux du jour appliqué
             </div>

@@ -71,7 +71,7 @@ export function RateHeroCard({
       <div className="mt-1.5 flex items-baseline gap-2">
         <span className={cn('text-[13px] font-semibold', TEXT.muted)}>=</span>
         <span className={cn('text-[30px] font-black leading-none tabular-nums', TEXT.strong)}>{formatNumber(animatedRate)}</span>
-        <span className="text-[16px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
+        <span className="text-[16px] font-black text-[#E8932A]">¥</span>
       </div>
       <div className={cn('mt-2 text-[12px] tabular-nums', TEXT.muted)}>
         1 ¥ = {formatNumber(reverseRate)} XAF · {formatRelativeDate(activeRate.effective_at)}

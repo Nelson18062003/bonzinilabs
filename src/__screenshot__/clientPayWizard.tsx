@@ -129,7 +129,7 @@ export function WizAmount() {
           <span className="shrink-0 text-[18px] font-extrabold" style={{ color: AMBER }}>XAF</span>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
           <div className={cn('text-[12px]', TEXT.muted)}>Votre bénéficiaire reçoit</div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
             <span className="text-[22px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
@@ -284,7 +284,7 @@ export function WizConfirm() {
           <span className={cn('text-[46px] font-black leading-none tabular-nums', TEXT.strong)}>28 700</span>
         </div>
         <div className={cn('mt-2.5 text-[15px] font-bold tabular-nums', TEXT.muted)}>Vous payez 2 500 000 XAF</div>
-        <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
           <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>Taux du jour appliqué</div>
           <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>1 000 000 XAF = 11 480 ¥</div>
         </div>

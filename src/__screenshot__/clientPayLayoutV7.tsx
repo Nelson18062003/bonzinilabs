@@ -132,7 +132,7 @@ export function PayDetailV7() {
           <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>Votre bénéficiaire reçoit</div>
           <div className="mt-1 flex items-baseline gap-2"><span className="text-[34px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span><span className={cn('text-[58px] font-black leading-none tabular-nums', TEXT.strong)}>9 648</span></div>
           <div className={cn('mt-2.5 text-[15px] font-bold tabular-nums', TEXT.muted)}>Vous avez payé 850 000 XAF</div>
-          <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#221F33]">
+          <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
             <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>Taux du jour appliqué</div>
             <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>1 000 000 XAF = 11 350 ¥</div>
           </div>

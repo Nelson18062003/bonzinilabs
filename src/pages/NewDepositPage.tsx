@@ -363,7 +363,7 @@ const NewDepositPage = () => {
               <span className="shrink-0 text-[18px] font-extrabold text-[#E8932A]">XAF</span>
             </div>
             {parsedAmount > 0 && (
-              <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+              <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
                 <div className={cn('text-[12px]', TEXT.muted)}>Nouveau solde après dépôt</div>
                 <div className={cn('mt-0.5 text-[24px] font-black tabular-nums', TEXT.strong)}>
                   {formatNumber(newBalance)} <span className="text-[14px]" style={{ color: '#E8932A' }}>XAF</span>
@@ -516,7 +516,7 @@ const NewDepositPage = () => {
               <ol className="space-y-3">
                 {info.instructions.map((instruction, index) => (
                   <li key={index} className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[12px] font-bold text-[#5B4CC4] dark:bg-[#221F33] dark:text-[#B5AAF0]">{index + 1}</span>
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[12px] font-bold text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]">{index + 1}</span>
                     <span className={cn('pt-0.5 text-[13px]', TEXT.muted)}>{instruction}</span>
                   </li>
                 ))}

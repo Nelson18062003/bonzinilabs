@@ -61,7 +61,7 @@ export function PayDetailV5() {
             <span className={cn('text-[58px] font-black leading-none tabular-nums', TEXT.strong)}>9 648</span>
           </div>
           <div className={cn('mt-2.5 text-[15px] font-bold tabular-nums', TEXT.muted)}>Vous avez payé 850 000 XAF</div>
-          <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#221F33]">
+          <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
             <span className={cn('text-[12px] font-bold uppercase tracking-wide', TEXT.muted)}>Taux du jour</span>
             <span className={cn('text-[16px] font-black tabular-nums', TEXT.strong)}>11 350 ¥ <span className="text-[11px] font-bold text-[#8E8BA0]">/ 1 000 000 XAF</span></span>
           </div>

@@ -145,7 +145,7 @@ export function PremiumInput({
         {/* Validation checkmark */}
         {showValidCheck && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 animate-scale-in">
-            <Check className="w-5 h-5 text-green-500" />
+            <Check className="w-5 h-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
           </div>
         )}
       </div>

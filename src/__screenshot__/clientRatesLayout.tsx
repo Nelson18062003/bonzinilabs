@@ -106,7 +106,7 @@ export function RatesScreen() {
               <span className={cn('text-[15px] font-extrabold', TEXT.muted)}>XAF</span>
             </div>
             <div className="my-3 flex justify-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#221F33]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2F2C3D]">
                 <ArrowUpDown className="h-[18px] w-[18px] text-[#5B4CC4] dark:text-[#B5AAF0]" />
               </div>
             </div>

@@ -12,8 +12,6 @@ interface OperationsListProps {
   operations: WalletOperation[];
 }
 
-const GREEN = '#2E7D52';
-
 export const OperationsList = ({ operations }: OperationsListProps) => {
   const { t } = useTranslation('client');
   const navigate = useNavigate();
@@ -35,12 +33,9 @@ export const OperationsList = ({ operations }: OperationsListProps) => {
           const date = parseISO(op.created_at);
           return (
             <div key={op.id} className={cn('flex items-center gap-3 rounded-[18px] p-3.5', SURFACE.card, SURFACE.shadow)}>
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                style={{ background: credit ? `${GREEN}1F` : 'rgba(0,0,0,0.05)' }}
-              >
+              <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', credit ? 'bg-[#DEEFE5] dark:bg-[#1E3A2C]' : SURFACE.holder)}>
                 {credit ? (
-                  <ArrowDownLeft className="h-5 w-5" style={{ color: GREEN }} />
+                  <ArrowDownLeft className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
                 ) : (
                   <ArrowUpRight className={cn('h-5 w-5', TEXT.muted)} />
                 )}
@@ -49,10 +44,7 @@ export const OperationsList = ({ operations }: OperationsListProps) => {
                 <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{op.description || t('wallet.operation')}</p>
                 <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{format(date, 'd MMM · HH:mm', { locale: fr })}</p>
               </div>
-              <div
-                className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', !credit && TEXT.strong)}
-                style={credit ? { color: GREEN } : undefined}
-              >
+              <div className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', credit ? 'text-[#2E7D52] dark:text-[#7FCBA0]' : TEXT.strong)}>
                 {credit ? '+' : '−'} {formatNumber(op.amount_xaf)}
                 <div className={cn('text-[10px] font-semibold', TEXT.muted)}>XAF</div>
               </div>

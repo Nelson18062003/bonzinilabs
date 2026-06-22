@@ -147,18 +147,18 @@ export const ProofUpload = (props: Props) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <Upload className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-foreground">{t('proof.title')}</h3>
+        <Upload className="w-5 h-5 text-[#8B5CF6]" />
+        <h3 className="font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">{t('proof.title')}</h3>
       </div>
 
       {/* Drop zone */}
       {!atLimit && (
         <div
           className={cn(
-            'border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer',
+            'cursor-pointer rounded-2xl border-2 border-dashed p-4 text-center transition-all',
             dragActive
-              ? 'border-primary bg-primary/5'
-              : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30',
+              ? 'border-[#8B5CF6] bg-[#EDEAFA]/60 dark:bg-[#272252]/60'
+              : 'border-black/15 hover:border-[#8B5CF6] hover:bg-[#EDEAFA]/40 dark:border-white/15 dark:hover:bg-[#272252]/40',
             hasFiles && 'py-3',
           )}
           onDragEnter={handleDrag}
@@ -169,10 +169,10 @@ export const ProofUpload = (props: Props) => {
         >
           {!hasFiles ? (
             <>
-              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                <Upload className="w-7 h-7 text-primary" />
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2F2C3D]">
+                <Upload className="w-7 h-7 text-[#8B5CF6]" />
               </div>
-              <p className="text-sm font-medium text-foreground mb-1">
+              <p className="mb-1 text-sm font-medium text-[#1B1A24] dark:text-[#F2F1F7]">
                 {t('proof.dragFiles')}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -180,7 +180,7 @@ export const ProofUpload = (props: Props) => {
               </p>
             </>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-primary">
+            <div className="flex items-center justify-center gap-2 text-[#8B5CF6]">
               <Upload className="w-4 h-4" />
               <p className="text-sm font-medium">{t('proof.addMore')}</p>
             </div>
@@ -251,7 +251,7 @@ export const ProofUpload = (props: Props) => {
                 e.stopPropagation();
                 handleRemoveAll();
               }}
-              className="text-destructive hover:text-destructive"
+              className="text-[#C0504D] hover:text-[#C0504D] dark:text-[#E79A9A]"
             >
               <X className="w-4 h-4 mr-1" />
               {t('proof.removeAll')}
@@ -262,7 +262,7 @@ export const ProofUpload = (props: Props) => {
             {filesWithPreview.map((fileItem) => (
               <div
                 key={fileItem.id}
-                className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted/30"
+                className="group relative aspect-square overflow-hidden rounded-2xl bg-[#F4F3FA] ring-1 ring-black/[0.06] dark:bg-[#2A2836] dark:ring-white/[0.06]"
               >
                 {fileItem.previewUrl ? (
                   <>
@@ -287,7 +287,7 @@ export const ProofUpload = (props: Props) => {
                   </>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                    <FileCheck className="w-8 h-8 text-primary mb-1" />
+                    <FileCheck className="w-8 h-8 text-[#8B5CF6] mb-1" />
                     <p className="text-[10px] text-muted-foreground text-center truncate w-full">
                       {fileItem.file.name}
                     </p>
@@ -298,7 +298,7 @@ export const ProofUpload = (props: Props) => {
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute top-1 right-1 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute right-1 top-1 h-6 w-6 bg-[#C0504D] opacity-0 transition-opacity hover:bg-[#C0504D]/90 group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemoveFile(fileItem.id);
@@ -317,7 +317,7 @@ export const ProofUpload = (props: Props) => {
 
           {/* Confirm button */}
           <Button
-            className="w-full btn-primary-gradient"
+            className="h-12 w-full rounded-full bg-[#1C1B22] text-white hover:bg-[#1C1B22]/90 dark:bg-[#F2F1F7] dark:text-[#1B1A24] dark:hover:bg-[#F2F1F7]/90"
             onClick={() => setShowConfirmDialog(true)}
             disabled={props.isSubmitting}
           >
@@ -347,7 +347,7 @@ export const ProofUpload = (props: Props) => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-primary" />
+              <AlertCircle className="w-5 h-5 text-[#8B5CF6]" />
               {t('proof.confirmTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -361,7 +361,7 @@ export const ProofUpload = (props: Props) => {
             {filesWithPreview.slice(0, 4).map((fileItem) => (
               <div
                 key={fileItem.id}
-                className="aspect-square rounded-lg overflow-hidden border border-border bg-muted/30"
+                className="aspect-square overflow-hidden rounded-2xl bg-[#F4F3FA] ring-1 ring-black/[0.06] dark:bg-[#2A2836] dark:ring-white/[0.06]"
               >
                 {fileItem.previewUrl ? (
                   <img
@@ -371,7 +371,7 @@ export const ProofUpload = (props: Props) => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <FileCheck className="w-6 h-6 text-primary" />
+                    <FileCheck className="w-6 h-6 text-[#8B5CF6]" />
                   </div>
                 )}
               </div>
@@ -392,7 +392,7 @@ export const ProofUpload = (props: Props) => {
                 setShowConfirmDialog(false);
                 props.onConfirm();
               }}
-              className="btn-primary-gradient"
+              className="rounded-full bg-[#1C1B22] text-white hover:bg-[#1C1B22]/90 dark:bg-[#F2F1F7] dark:text-[#1B1A24] dark:hover:bg-[#F2F1F7]/90"
             >
               <FileCheck className="w-4 h-4 mr-2" />
               {t('common:confirm')}

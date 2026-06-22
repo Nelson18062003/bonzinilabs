@@ -190,7 +190,7 @@ export function PrimaryPill({
         dead
           ? 'bg-muted text-muted-foreground'
           : danger
-            ? 'bg-[#D14343] text-white'
+            ? 'bg-[#C0504D] text-white'
             : PRIMARY_PILL,
         className,
       )}

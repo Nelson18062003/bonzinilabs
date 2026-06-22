@@ -112,7 +112,7 @@ export function PayDirA() {
               <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>2 500 000</span>
               <span className="text-[18px] font-extrabold text-[#E8932A]">XAF</span>
             </div>
-            <div className="mt-3 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+            <div className="mt-3 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
               <div className={cn('text-[12px]', TEXT.muted)}>Votre fournisseur reçoit</div>
               <div className="mt-0.5 flex items-baseline gap-1.5">
                 <span className="text-[22px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
