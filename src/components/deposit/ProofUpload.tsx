@@ -296,9 +296,9 @@ export const ProofUpload = (props: Props) => {
 
                 {/* Remove button */}
                 <Button
-                  variant="destructive"
+                  variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1 h-6 w-6 bg-[#C0504D] opacity-0 transition-opacity hover:bg-[#C0504D]/90 group-hover:opacity-100"
+                  className="absolute right-1 top-1 h-6 w-6 bg-[#C0504D] text-white opacity-0 transition-opacity hover:bg-[#C0504D]/90 group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemoveFile(fileItem.id);

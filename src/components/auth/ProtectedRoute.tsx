@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfile';
 import { isProfileComplete } from '@/lib/authGate';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { SURFACE } from '@/mobile/designKit';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -22,8 +24,8 @@ export function ProtectedRoute({ children, requireComplete = true }: ProtectedRo
 
   if (isLoading || (requireComplete && profileLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className={cn('flex min-h-screen items-center justify-center', SURFACE.canvas)}>
+        <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6]" />
       </div>
     );
   }
