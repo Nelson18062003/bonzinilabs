@@ -67,13 +67,13 @@ export function PaymentDocumentsSection({
 
   return (
     <section>
-      <SectionTitle>Preuve & détails</SectionTitle>
+      <SectionTitle>{t('detail.documents.title')}</SectionTitle>
       <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
         {adminProofs.length > 0 && (
           <div>
-            <p className={cn('text-[14px] font-bold', TEXT.strong)}>Preuve de paiement</p>
+            <p className={cn('text-[14px] font-bold', TEXT.strong)}>{t('detail.documents.paymentProof')}</p>
             <p className={cn('mb-3 mt-0.5 text-[12px]', TEXT.muted)}>
-              Ajoutée par Bonzini · toucher pour agrandir
+              {t('detail.documents.addedByBonzini')}
             </p>
             <PaymentProofGallery proofs={adminProofs} title="" emptyMessage="" showUploadedBy={false} />
           </div>
@@ -117,7 +117,7 @@ export function PaymentDocumentsSection({
           />
           {payment.processed_at && (
             <MetaRow
-              label={payment.status === 'completed' ? 'Payé le' : 'Traité le'}
+              label={payment.status === 'completed' ? t('detail.documents.paidOn') : t('detail.documents.processedOn')}
               value={format(new Date(payment.processed_at), 'd MMM yyyy, HH:mm', { locale: fr })}
             />
           )}

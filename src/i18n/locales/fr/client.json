@@ -149,6 +149,43 @@
     "profile": "Profil"
   },
   "rates": {
-    "title": "Taux de change"
+    "title": "Taux de change",
+    "hero": {
+      "todayLabel": "Taux du jour · XAF → ¥"
+    },
+    "paymentMethod": {
+      "title": "Mode de paiement"
+    },
+    "country": {
+      "title": "Pays"
+    },
+    "converter": {
+      "title": "Convertisseur",
+      "perXaf": "Par XAF",
+      "perCny": "Par ¥",
+      "youSend": "Vous envoyez",
+      "youReceive": "Vous recevez",
+      "rateAtPayment": "Taux appliqué au moment du paiement",
+      "minAmount": "Montant minimum : {{amount}} XAF"
+    },
+    "indicator": {
+      "bestRate": "Meilleur taux",
+      "standardRate": "Taux standard",
+      "smallAmount": "Petit montant",
+      "appliedRate": "Taux appliqué à votre montant",
+      "rateLine": "1 000 000 XAF = {{rate}} ¥"
+    },
+    "banner": {
+      "title": "Suivez les taux en temps réel",
+      "subtitle": "Mis à jour chaque matin pour vous offrir le meilleur cours."
+    },
+    "trend": {
+      "perAmount": "pour 1 000 000 XAF",
+      "title": "Tendance",
+      "noData": "Aucune donnée pour cette période",
+      "min": "Min",
+      "avg": "Moy",
+      "max": "Max"
+    }
   }
 }

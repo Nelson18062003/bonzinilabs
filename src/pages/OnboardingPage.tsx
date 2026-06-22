@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +26,7 @@ const phoneSchema = z.string().min(8);
  */
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const { user, signOut, isLoading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const queryClient = useQueryClient();
@@ -61,9 +63,9 @@ export default function OnboardingPage() {
     setPhoneError('');
     setCountryError('');
 
-    if (!country) { setCountryError('Veuillez sélectionner votre pays.'); return; }
+    if (!country) { setCountryError(t('onboarding.errorCountry')); return; }
     if (!phoneSchema.safeParse(phone).success) {
-      setPhoneError('Veuillez saisir un numéro valide.');
+      setPhoneError(t('onboarding.errorPhone'));
       return;
     }
     if (!user) return;
@@ -80,7 +82,7 @@ export default function OnboardingPage() {
     setSubmitting(false);
 
     if (error || (data && (data as { success?: boolean }).success === false)) {
-      toast.error("Échec de l'enregistrement. Veuillez réessayer.");
+      toast.error(t('onboarding.errorSave'));
       return;
     }
 
@@ -89,7 +91,7 @@ export default function OnboardingPage() {
     void supabase.rpc('enqueue_welcome_email');
 
     await queryClient.invalidateQueries({ queryKey: ['my-profile', user.id] });
-    toast.success('Profil complété 🎉');
+    toast.success(t('onboarding.success'));
     navigate('/wallet', { replace: true });
   };
 
@@ -109,10 +111,10 @@ export default function OnboardingPage() {
         </div>
 
         <h1 className={cn('mb-1 text-center text-[24px] font-black', TEXT.strong)}>
-          {firstName ? `Bonjour ${firstName} 👋` : 'Bienvenue 👋'}
+          {firstName ? t('onboarding.greeting', { name: firstName }) : t('onboarding.welcome')}
         </h1>
         <p className={cn('mb-8 text-center text-[13px]', TEXT.muted)}>
-          Plus qu'une étape pour régler vos fournisseurs.
+          {t('onboarding.subtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -120,7 +122,7 @@ export default function OnboardingPage() {
           <div>
             <label className={cn('mb-2 flex items-center gap-2 text-[13px] font-semibold', TEXT.strong)}>
               <Globe className="h-4 w-4" />
-              Pays <span className="text-[#C0504D]">*</span>
+              {t('onboarding.countryLabel')} <span className="text-[#C0504D]">*</span>
             </label>
             <div className="relative">
               <select
@@ -134,7 +136,7 @@ export default function OnboardingPage() {
                   countryError && 'ring-2 ring-[#C0504D]/40',
                 )}
               >
-                <option value="">Sélectionnez votre pays</option>
+                <option value="">{t('onboarding.selectCountry')}</option>
                 {COUNTRIES.map((c) => (
                   <option key={`${c.name}-${c.dialCode}`} value={c.name}>
                     {c.flag} {c.name}
@@ -149,7 +151,7 @@ export default function OnboardingPage() {
           {/* Téléphone (bloquant) */}
           <div>
             <label className={cn('mb-2 block text-[13px] font-semibold', TEXT.strong)}>
-              Téléphone <span className="text-[#C0504D]">*</span>
+              {t('onboarding.phoneLabel')} <span className="text-[#C0504D]">*</span>
             </label>
             <PhoneCountryInput
               value={phone}
@@ -164,13 +166,13 @@ export default function OnboardingPage() {
 
           {/* Optionnels */}
           <PremiumInput
-            label="Société (optionnel)"
+            label={t('onboarding.companyLabel')}
             value={companyName}
             onChange={setCompanyName}
             icon={<Building className="h-4 w-4" />}
           />
           <PremiumInput
-            label="Secteur d'activité (optionnel)"
+            label={t('onboarding.sectorLabel')}
             value={activitySector}
             onChange={setActivitySector}
             icon={<Briefcase className="h-4 w-4" />}
@@ -183,10 +185,10 @@ export default function OnboardingPage() {
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Enregistrement…
+                <Loader2 className="h-4 w-4 animate-spin" /> {t('onboarding.saving')}
               </>
             ) : (
-              'Continuer'
+              t('onboarding.continue')
             )}
           </button>
         </form>
@@ -197,7 +199,7 @@ export default function OnboardingPage() {
           onClick={async () => { await signOut(); navigate('/auth', { replace: true }); }}
           className={cn('mt-5 w-full text-[13px] font-semibold transition-colors', TEXT.muted, 'hover:text-[#5B4CC4] dark:hover:text-[#B5AAF0]')}
         >
-          Se déconnecter
+          {t('onboarding.logout')}
         </button>
       </div>
     </div>

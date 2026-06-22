@@ -149,6 +149,43 @@
     "profile": "Profile"
   },
   "rates": {
-    "title": "Exchange rate"
+    "title": "Exchange rate",
+    "hero": {
+      "todayLabel": "Today's rate · XAF → ¥"
+    },
+    "paymentMethod": {
+      "title": "Payment method"
+    },
+    "country": {
+      "title": "Country"
+    },
+    "converter": {
+      "title": "Converter",
+      "perXaf": "Per XAF",
+      "perCny": "Per ¥",
+      "youSend": "You send",
+      "youReceive": "You receive",
+      "rateAtPayment": "Rate applied at the time of payment",
+      "minAmount": "Minimum amount: {{amount}} XAF"
+    },
+    "indicator": {
+      "bestRate": "Best rate",
+      "standardRate": "Standard rate",
+      "smallAmount": "Small amount",
+      "appliedRate": "Rate applied to your amount",
+      "rateLine": "1,000,000 XAF = {{rate}} ¥"
+    },
+    "banner": {
+      "title": "Track rates in real time",
+      "subtitle": "Updated every morning to offer you the best rate."
+    },
+    "trend": {
+      "perAmount": "for 1,000,000 XAF",
+      "title": "Trend",
+      "noData": "No data for this period",
+      "min": "Min",
+      "avg": "Avg",
+      "max": "Max"
+    }
   }
 }

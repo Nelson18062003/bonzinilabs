@@ -9,6 +9,7 @@
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { format, isAfter, startOfMonth, subWeeks } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Send, Search, ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
@@ -30,23 +31,25 @@ import {
 } from '@/lib/paymentLifecycle';
 
 type Period = 'all' | 'month' | 'week';
-const PERIOD_LABEL: Record<Period, string> = { all: 'Tout', month: 'Ce mois', week: 'Cette semaine' };
 const PERIOD_ORDER: Period[] = ['all', 'month', 'week'];
 
-const TABS: { key: PaymentFilterTab; label: string }[] = [
-  { key: 'all', label: 'Tous' },
-  { key: 'todo', label: 'À traiter' },
-  { key: 'progress', label: 'En cours' },
-  { key: 'done', label: 'Terminés' },
+const TABS: { key: PaymentFilterTab; labelKey: string }[] = [
+  { key: 'all', labelKey: 'list.tabs.all' },
+  { key: 'todo', labelKey: 'list.tabs.todo' },
+  { key: 'progress', labelKey: 'list.tabs.progress' },
+  { key: 'done', labelKey: 'list.tabs.done' },
 ];
 
-function statusHint(payment: Payment, kind: LifecycleKind): string {
-  if (payment.status === 'waiting_beneficiary_info') return 'Coordonnées du bénéficiaire manquantes';
-  if (payment.status === 'cash_pending') return 'QR à présenter au bureau';
-  if (kind === 'progress') return 'Bonzini règle votre fournisseur';
-  if (kind === 'done') return `Payé le ${format(new Date(payment.updated_at ?? payment.created_at), 'd MMM', { locale: fr })}`;
-  if (payment.status === 'rejected') return 'Paiement refusé';
-  if (payment.status === 'cancelled_by_admin') return 'Paiement annulé';
+function statusHint(payment: Payment, kind: LifecycleKind, t: TFunction): string {
+  if (payment.status === 'waiting_beneficiary_info') return t('list.statusHint.missingBeneficiary');
+  if (payment.status === 'cash_pending') return t('list.statusHint.cashPending');
+  if (kind === 'progress') return t('list.statusHint.progress');
+  if (kind === 'done')
+    return t('list.statusHint.paidOn', {
+      date: format(new Date(payment.updated_at ?? payment.created_at), 'd MMM', { locale: fr }),
+    });
+  if (payment.status === 'rejected') return t('list.statusHint.rejected');
+  if (payment.status === 'cancelled_by_admin') return t('list.statusHint.cancelled');
   return '';
 }
 
@@ -133,7 +136,7 @@ const PaymentsPage = () => {
             <div className={cn('text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</div>
             {dayRate ? (
               <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>
-                Taux du jour · <span className="font-bold text-[#E8932A]">{formatNumber(dayRate)}</span> ¥ / 1 000 000 XAF
+                {t('list.dayRate')} · <span className="font-bold text-[#E8932A]">{formatNumber(dayRate)}</span> ¥ / 1 000 000 XAF
               </div>
             ) : null}
           </div>
@@ -149,7 +152,7 @@ const PaymentsPage = () => {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un fournisseur, une référence…"
+            placeholder={t('list.searchPlaceholder')}
             className={cn('min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#9B98AD]', TEXT.strong)}
           />
         </label>
@@ -167,7 +170,7 @@ const PaymentsPage = () => {
                   active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
                 )}
               >
-                {tb.label}
+                {t(tb.labelKey)}
                 {tb.key === 'todo' && todoCount > 0 ? (
                   <span className="rounded-full bg-[#C0504D] px-1.5 text-[10px] text-white">{todoCount}</span>
                 ) : null}
@@ -179,7 +182,7 @@ const PaymentsPage = () => {
             onClick={cyclePeriod}
             className={cn('flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold', SURFACE.card, SURFACE.shadow, TEXT.muted)}
           >
-            {PERIOD_LABEL[period]} <ChevronDown className="h-3.5 w-3.5" />
+            {t(`list.periods.${period}`)} <ChevronDown className="h-3.5 w-3.5" />
           </button>
         </div>
 
@@ -204,7 +207,7 @@ const PaymentsPage = () => {
           </div>
         ) : visible.length === 0 ? (
           <div className={cn('mt-2 rounded-[22px] p-8 text-center', SURFACE.card, SURFACE.shadow)}>
-            <p className={cn('text-[14px]', TEXT.muted)}>Aucun paiement pour ce filtre.</p>
+            <p className={cn('text-[14px]', TEXT.muted)}>{t('list.noPaymentsForFilter')}</p>
           </div>
         ) : (
           <div className="space-y-3 pt-1">
@@ -212,7 +215,7 @@ const PaymentsPage = () => {
               const lc = paymentLifecycle(p.status);
               const color = LIFECYCLE_COLOR[lc.kind];
               const todo = lc.kind === 'todo';
-              const name = p.beneficiary_name || 'Bénéficiaire à compléter';
+              const name = p.beneficiary_name || t('list.beneficiaryToComplete');
               return (
                 <button
                   key={p.id}
@@ -227,7 +230,7 @@ const PaymentsPage = () => {
                     <div className="min-w-0 flex-1">
                       <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{name}</div>
                       {todo ? (
-                        <div className="mt-0.5 truncate text-[12px] font-semibold" style={{ color }}>{statusHint(p, lc.kind)}</div>
+                        <div className="mt-0.5 truncate text-[12px] font-semibold" style={{ color }}>{statusHint(p, lc.kind, t)}</div>
                       ) : (
                         <div className={cn('mt-0.5 truncate text-[12px] tabular-nums', TEXT.muted)}>
                           ¥ {formatYuan(p.amount_rmb)} · −{formatNumber(p.amount_xaf)} XAF
@@ -241,7 +244,7 @@ const PaymentsPage = () => {
                   <div className="mt-3.5"><Progress step={lc.step} color={color} /></div>
                   <div className="mt-2 flex items-center justify-between">
                     <span className={cn('truncate text-[12px]', todo ? 'font-semibold' : TEXT.muted)} style={todo ? { color } : undefined}>
-                      {p.reference} · {todo ? 'à compléter' : format(new Date(p.created_at), 'd MMM yyyy', { locale: fr })}
+                      {p.reference} · {todo ? t('list.toComplete') : format(new Date(p.created_at), 'd MMM yyyy', { locale: fr })}
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0" style={{ color: todo ? color : undefined }} />
                   </div>

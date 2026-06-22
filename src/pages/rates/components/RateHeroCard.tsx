@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
 import { formatNumber, formatRelativeDate } from '@/lib/formatters';
@@ -25,6 +26,7 @@ export function RateHeroCard({
   selectedCountry,
   previousRate,
 }: RateHeroCardProps) {
+  const { t } = useTranslation('client');
   const countryAdj = adjustments.find((a) => a.type === 'country' && a.key === selectedCountry);
   const tierAdjs = adjustments.filter((a) => a.type === 'tier');
 
@@ -55,7 +57,7 @@ export function RateHeroCard({
   return (
     <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
       <div className="flex items-center justify-between">
-        <span className={cn('text-[12px] font-bold uppercase tracking-wide', TEXT.muted)}>Taux du jour · XAF → ¥</span>
+        <span className={cn('text-[12px] font-bold uppercase tracking-wide', TEXT.muted)}>{t('rates.hero.todayLabel')}</span>
         {variation && (
           <span className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold" style={{ color: tone, background: `${tone}1F` }}>
             <TrendIcon className="h-3 w-3" />

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpDown } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
 import { formatNumber } from '@/lib/formatters';
@@ -27,6 +28,7 @@ export function RateConverter({
   amount,
   onAmountChange,
 }: RateConverterProps) {
+  const { t } = useTranslation('client');
   const [direction, setDirection] = useState<'xaf' | 'cny'>('xaf');
 
   const countryAdj = adjustments.find((a) => a.type === 'country' && a.key === selectedCountry);
@@ -60,13 +62,13 @@ export function RateConverter({
 
   return (
     <section>
-      <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>Convertisseur</h2>
+      <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('rates.converter.title')}</h2>
       <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
         {/* Sens */}
         <div className={cn('mb-4 flex rounded-full p-1', SURFACE.canvas)}>
           {[
-            { key: 'xaf' as const, label: 'Par XAF' },
-            { key: 'cny' as const, label: 'Par ¥' },
+            { key: 'xaf' as const, label: t('rates.converter.perXaf') },
+            { key: 'cny' as const, label: t('rates.converter.perCny') },
           ].map((d) => (
             <button
               key={d.key}
@@ -79,7 +81,7 @@ export function RateConverter({
         </div>
 
         {/* Vous envoyez */}
-        <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Vous envoyez</div>
+        <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('rates.converter.youSend')}</div>
         <div className="mt-1 flex items-baseline justify-between gap-2">
           {/* gros chiffre 28px (≥16 → pas d'auto-zoom iOS) : input nu volontaire */}
           {/* eslint-disable-next-line no-restricted-syntax */}
@@ -95,7 +97,7 @@ export function RateConverter({
         </div>
         {isUnderMinimum && (
           <p className="mt-1 text-[12px] font-medium text-[#C0504D] dark:text-[#E79A9A]">
-            Montant minimum : {formatNumber(MIN_AMOUNT_XAF)} XAF
+            {t('rates.converter.minAmount', { amount: formatNumber(MIN_AMOUNT_XAF) })}
           </p>
         )}
 
@@ -110,7 +112,7 @@ export function RateConverter({
         </div>
 
         {/* Vous recevez */}
-        <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Vous recevez</div>
+        <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('rates.converter.youReceive')}</div>
         <div className="mt-1 flex items-baseline justify-between gap-2">
           <span className="min-w-0 flex-1 truncate text-[28px] font-black tabular-nums text-[#5B4CC4] dark:text-[#B5AAF0]">{formatNumber(animatedResult)}</span>
           <span className="shrink-0 text-[15px] font-extrabold text-[#E8932A]">{isXaf ? '¥' : 'XAF'}</span>
@@ -134,7 +136,7 @@ export function RateConverter({
           })}
         </div>
 
-        <p className={cn('mt-3 text-center text-[11px]', TEXT.muted)}>Taux appliqué au moment du paiement</p>
+        <p className={cn('mt-3 text-center text-[11px]', TEXT.muted)}>{t('rates.converter.rateAtPayment')}</p>
       </div>
     </section>
   );

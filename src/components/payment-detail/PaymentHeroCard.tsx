@@ -5,6 +5,7 @@
 // en bloc lilas au format verrouillé « 1 000 000 XAF = 11 350 ¥ ».
 // Le reçu n'est plus ici : il vit tout en haut de la fiche.
 // ============================================================
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatNumber, formatYuan } from '@/lib/formatters';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function PaymentHeroCard({ payment }: Props) {
+  const { t } = useTranslation('payments');
   const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] ?? payment.method;
   const { kind } = paymentLifecycle(payment.status);
   const color = LIFECYCLE_COLOR[kind];
@@ -47,7 +49,7 @@ export function PaymentHeroCard({ payment }: Props) {
       </div>
 
       <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>
-        {kind === 'failed' ? 'Montant du règlement' : 'Votre bénéficiaire reçoit'}
+        {kind === 'failed' ? t('detail.hero.settlementAmount') : t('detail.hero.supplierReceives')}
       </div>
       <div className="mt-1 flex items-baseline gap-2">
         <span className="text-[34px] font-black text-[#E8932A]">¥</span>
@@ -63,14 +65,14 @@ export function PaymentHeroCard({ payment }: Props) {
       </div>
       <div className={cn('mt-2.5 text-[15px] font-bold tabular-nums', TEXT.muted)}>
         {kind === 'failed'
-          ? `${formatNumber(payment.amount_xaf)} XAF recrédités sur votre solde`
-          : `Vous avez payé ${formatNumber(payment.amount_xaf)} XAF`}
+          ? t('detail.hero.amountRecredited', { amount: formatNumber(payment.amount_xaf) })
+          : t('detail.hero.youPaid', { amount: formatNumber(payment.amount_xaf) })}
       </div>
 
       {rateInt > 0 && (
         <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
           <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>
-            Taux du jour appliqué
+            {t('detail.hero.rateApplied')}
           </div>
           <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>
             1 000 000 XAF = {formatNumber(rateInt)} ¥

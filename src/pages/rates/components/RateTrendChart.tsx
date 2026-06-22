@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/lib/formatters';
@@ -16,17 +17,19 @@ const PERIODS: { key: ChartPeriod; label: string }[] = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltipContent({ active, payload, label }: any) {
+  const { t } = useTranslation('client');
   if (!active || !payload?.[0]) return null;
   return (
     <div className="rounded-xl bg-[#1C1B22] px-3.5 py-2.5 shadow-lg">
       <p className="mb-1 text-[11px] text-white/50">{label}</p>
       <p className="text-base font-extrabold text-[#B5AAF0]">{formatNumber(payload[0].value)} ¥</p>
-      <p className="text-[10px] text-white/40">pour 1 000 000 XAF</p>
+      <p className="text-[10px] text-white/40">{t('rates.trend.perAmount')}</p>
     </div>
   );
 }
 
 export function RateTrendChart() {
+  const { t } = useTranslation('client');
   const [period, setPeriod] = useState<ChartPeriod>('30d');
   const { data: chartRates } = useClientRatesChart(period);
 
@@ -51,7 +54,7 @@ export function RateTrendChart() {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between px-1">
-        <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>Tendance</h2>
+        <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('rates.trend.title')}</h2>
         <div className="flex gap-1.5">
           {PERIODS.map((p) => (
             <button
@@ -83,15 +86,15 @@ export function RateTrendChart() {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className={cn('flex h-[180px] items-center justify-center text-[14px]', TEXT.muted)}>Aucune donnée pour cette période</div>
+          <div className={cn('flex h-[180px] items-center justify-center text-[14px]', TEXT.muted)}>{t('rates.trend.noData')}</div>
         )}
 
         {stats && (
           <div className="mt-1 flex justify-around pt-2.5">
             {[
-              { label: 'Min', value: stats.min, color: RED },
-              { label: 'Moy', value: stats.avg, color: undefined },
-              { label: 'Max', value: stats.max, color: GREEN },
+              { label: t('rates.trend.min'), value: stats.min, color: RED },
+              { label: t('rates.trend.avg'), value: stats.avg, color: undefined },
+              { label: t('rates.trend.max'), value: stats.max, color: GREEN },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <span className={cn('text-[12px]', TEXT.muted)}>{s.label} : </span>

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/lib/formatters';
 import { PAYMENT_METHODS } from '@/types/rates';
@@ -30,6 +31,7 @@ export function PaymentMethodSelector({
   selectedCountry,
   onMethodChange,
 }: PaymentMethodSelectorProps) {
+  const { t } = useTranslation('client');
   const countryAdj = adjustments.find((a) => a.type === 'country' && a.key === selectedCountry);
   const tierAdjs = adjustments.filter((a) => a.type === 'tier');
 
@@ -43,7 +45,7 @@ export function PaymentMethodSelector({
 
   return (
     <section>
-      <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>Mode de paiement</h2>
+      <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('rates.paymentMethod.title')}</h2>
       <div className="grid grid-cols-4 gap-2">
         {methodRates.map((pm) => {
           const active = selectedMethod === pm.key;
@@ -60,7 +62,7 @@ export function PaymentMethodSelector({
             >
               <PaymentMethodLogo method={LOGO[pm.key]} size={34} />
               <span className={cn('text-[10px] font-bold', TEXT.strong)}>{pm.label}</span>
-              <span className={cn('text-[11px] font-black tabular-nums', active ? TEXT.strong : TEXT.muted)}>{formatNumber(pm.rate)}</span>
+              <span className={cn('text-[11px] font-black tabular-nums', active ? TEXT.strong : TEXT.muted)}>{formatNumber(pm.rate)} <span className="text-[#E8932A]">¥</span></span>
             </button>
           );
         })}

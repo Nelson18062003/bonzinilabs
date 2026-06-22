@@ -6,6 +6,7 @@
 // réels (sortie de buildPaymentTimelineSteps). L'étape courante
 // porte l'action quand le client doit agir (« todo » rouge).
 // ============================================================
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, ArrowRight, Check, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Payment } from '@/hooks/usePayments';
@@ -73,6 +74,7 @@ export function PaymentTrackingSection({
   timelineLoading,
   onCompleteBeneficiary,
 }: Props) {
+  const { t } = useTranslation('payments');
   const lc = paymentLifecycle(payment.status);
   const isCash = payment.method === 'cash';
   const failed = lc.kind === 'failed';
@@ -92,16 +94,16 @@ export function PaymentTrackingSection({
     stamps[3] ?? payment.processed_at ?? (isCash ? payment.cash_paid_at ?? undefined : undefined);
 
   const labels = [
-    'Paiement créé',
-    isCash ? 'QR présenté au bureau' : 'Coordonnées du bénéficiaire',
-    'Traitement par Bonzini',
+    t('detail.tracking.created'),
+    isCash ? t('detail.tracking.qrPresentedAtOffice') : t('detail.tracking.beneficiaryDetails'),
+    t('detail.tracking.processingByBonzini'),
     failed
       ? payment.status === 'rejected'
-        ? 'Paiement refusé'
-        : 'Paiement annulé'
+        ? t('detail.tracking.paymentRejected')
+        : t('detail.tracking.paymentCancelled')
       : isCash
-        ? 'Cash remis au bénéficiaire'
-        : 'Bénéficiaire payé',
+        ? t('detail.tracking.cashHandedToBeneficiary')
+        : t('detail.tracking.beneficiaryPaid'),
   ];
 
   const stateOf = (i: number): StepState => {
@@ -121,17 +123,23 @@ export function PaymentTrackingSection({
     if (state === 'done' || state === 'failed') {
       const date = safeFormatDate(stamps[i], DATE_FMT);
       if (date) return date;
-      return i === 1 ? (isCash ? 'QR scanné' : 'Complétées') : undefined;
+      return i === 1
+        ? isCash
+          ? t('detail.tracking.sub.qrScanned')
+          : t('detail.tracking.sub.completed')
+        : undefined;
     }
     if (state === 'current-todo') {
-      return isCash ? 'Présentez ce QR au bureau Bonzini' : 'Coordonnées manquantes';
+      return isCash
+        ? t('detail.tracking.sub.presentQrAtOffice')
+        : t('detail.tracking.sub.missingDetails');
     }
     if (state === 'current-progress') {
       return i === 2
         ? isCash
-          ? 'En cours au bureau Bonzini'
-          : 'Bonzini règle votre fournisseur'
-        : 'En cours…';
+          ? t('detail.tracking.sub.processingAtOffice')
+          : t('detail.tracking.sub.bonziniSettling')
+        : t('detail.tracking.sub.inProgress');
     }
     return undefined;
   };
@@ -140,7 +148,7 @@ export function PaymentTrackingSection({
 
   return (
     <section>
-      <SectionTitle>Suivi du paiement</SectionTitle>
+      <SectionTitle>{t('detail.tracking.title')}</SectionTitle>
       <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
         {timelineLoading ? (
           <div className="space-y-3">
@@ -196,7 +204,7 @@ export function PaymentTrackingSection({
                       className="mt-2 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold text-white transition active:scale-95"
                       style={{ background: LIFECYCLE_COLOR.todo }}
                     >
-                      Compléter les coordonnées <ArrowRight className="h-3.5 w-3.5" />
+                      {t('detail.tracking.completeBeneficiary')} <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>

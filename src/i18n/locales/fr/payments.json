@@ -3,6 +3,32 @@
   "subtitle": "Réglez vos fournisseurs en Chine",
   "newPayment": "Nouveau paiement",
   "noPayments": "Aucun paiement pour le moment",
+  "list": {
+    "dayRate": "Taux du jour",
+    "searchPlaceholder": "Rechercher un fournisseur, une référence…",
+    "noPaymentsForFilter": "Aucun paiement pour ce filtre.",
+    "beneficiaryToComplete": "Bénéficiaire à compléter",
+    "toComplete": "à compléter",
+    "periods": {
+      "all": "Tout",
+      "month": "Ce mois",
+      "week": "Cette semaine"
+    },
+    "tabs": {
+      "all": "Tous",
+      "todo": "À traiter",
+      "progress": "En cours",
+      "done": "Terminés"
+    },
+    "statusHint": {
+      "missingBeneficiary": "Coordonnées du bénéficiaire manquantes",
+      "cashPending": "QR à présenter au bureau",
+      "progress": "Bonzini règle votre fournisseur",
+      "paidOn": "Payé le {{date}}",
+      "rejected": "Paiement refusé",
+      "cancelled": "Paiement annulé"
+    }
+  },
   "status": {
     "created": "Créé",
     "waiting_beneficiary_info": "En attente",
@@ -170,7 +196,12 @@
     "qrCodeBeneficiary": "QR Code du bénéficiaire",
     "tapToEnlarge": "Appuyer pour agrandir",
     "beneficiary": "Bénéficiaire",
+    "beneficiaryWithMethod": "Bénéficiaire · {{method}}",
     "missingInfo": "Informations manquantes",
+    "missingBeneficiaryInfo": "Coordonnées du bénéficiaire manquantes",
+    "completeBeneficiary": "Compléter les coordonnées",
+    "enlarge": "Agrandir",
+    "cashPickupPresentQr": "Retrait au bureau Bonzini — présentez le QR ci-dessus.",
     "addBeneficiaryPrompt": "Ajoutez les coordonnées du bénéficiaire pour que Bonzini puisse régler votre paiement.",
     "documents": "Documents",
     "noDocuments": "Aucun document pour le moment.",
@@ -192,6 +223,41 @@
     "signatureRecordedOn": "Signature enregistrée le",
     "signedBy": "Signé par",
     "beneficiarySignature": "Signature du bénéficiaire",
+    "hero": {
+      "settlementAmount": "Montant du règlement",
+      "supplierReceives": "Votre bénéficiaire reçoit",
+      "rateApplied": "Taux du jour appliqué",
+      "amountRecredited": "{{amount}} XAF recrédités sur votre solde",
+      "youPaid": "Vous avez payé {{amount}} XAF"
+    },
+    "tracking": {
+      "title": "Suivi du paiement",
+      "created": "Paiement créé",
+      "beneficiaryDetails": "Coordonnées du bénéficiaire",
+      "qrPresentedAtOffice": "QR présenté au bureau",
+      "processingByBonzini": "Traitement par Bonzini",
+      "beneficiaryPaid": "Bénéficiaire payé",
+      "cashHandedToBeneficiary": "Cash remis au bénéficiaire",
+      "paymentRejected": "Paiement refusé",
+      "paymentCancelled": "Paiement annulé",
+      "completeBeneficiary": "Compléter les coordonnées",
+      "sub": {
+        "qrScanned": "QR scanné",
+        "completed": "Complétées",
+        "presentQrAtOffice": "Présentez ce QR au bureau Bonzini",
+        "missingDetails": "Coordonnées manquantes",
+        "processingAtOffice": "En cours au bureau Bonzini",
+        "bonziniSettling": "Bonzini règle votre fournisseur",
+        "inProgress": "En cours…"
+      }
+    },
+    "documents": {
+      "title": "Preuve & détails",
+      "paymentProof": "Preuve de paiement",
+      "addedByBonzini": "Ajoutée par Bonzini · toucher pour agrandir",
+      "paidOn": "Payé le",
+      "processedOn": "Traité le"
+    },
     "fields": {
       "name": "Nom",
       "phone": "Téléphone",
@@ -201,7 +267,12 @@
       "notes": "Notes",
       "beneficiaryName": "Nom du bénéficiaire",
       "beneficiaryPhone": "Téléphone du bénéficiaire",
-      "beneficiaryEmail": "Email du bénéficiaire"
+      "beneficiaryEmail": "Email du bénéficiaire",
+      "supplierName": "Nom du fournisseur",
+      "accountHolder": "Titulaire du compte",
+      "swiftIban": "SWIFT / IBAN",
+      "wechatId": "Identifiant WeChat",
+      "alipayId": "Identifiant Alipay"
     },
     "form": {
       "provideAtLeastOne": "Fournissez au moins un canal de paiement.",

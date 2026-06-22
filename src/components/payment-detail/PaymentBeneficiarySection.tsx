@@ -9,6 +9,7 @@
 // ============================================================
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { AlertCircle, Check, Copy, Edit2, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -56,7 +57,7 @@ function FieldRow({ label, value }: { label: string; value: string }) {
 }
 
 /** Champs ordonnés selon la méthode (tous les champs renseignés restent visibles). */
-function buildFields(payment: Payment): { label: string; value: string }[] {
+function buildFields(payment: Payment, t: TFunction): { label: string; value: string }[] {
   const candidates: { label: string; value: string | null }[] = [];
 
   if (payment.method === 'cash') {
@@ -66,32 +67,32 @@ function buildFields(payment: Payment): { label: string; value: string }[] {
         .filter(Boolean)
         .join(' ');
     candidates.push(
-      { label: 'Nom du bénéficiaire', value: cashName || null },
-      { label: 'Téléphone', value: payment.cash_beneficiary_phone || payment.beneficiary_phone },
-      { label: 'Email', value: payment.beneficiary_email },
+      { label: t('detail.fields.beneficiaryName'), value: cashName || null },
+      { label: t('detail.fields.phone'), value: payment.cash_beneficiary_phone || payment.beneficiary_phone },
+      { label: t('detail.fields.email'), value: payment.beneficiary_email },
     );
   } else if (payment.method === 'bank_transfer') {
     candidates.push(
-      { label: 'Banque', value: payment.beneficiary_bank_name },
-      { label: 'Numéro de compte', value: payment.beneficiary_bank_account },
-      { label: 'Titulaire du compte', value: payment.beneficiary_name },
-      { label: 'SWIFT / IBAN', value: payment.beneficiary_bank_extra },
-      { label: 'Téléphone', value: payment.beneficiary_phone },
-      { label: 'Email', value: payment.beneficiary_email },
+      { label: t('detail.fields.bank'), value: payment.beneficiary_bank_name },
+      { label: t('detail.fields.accountNumber'), value: payment.beneficiary_bank_account },
+      { label: t('detail.fields.accountHolder'), value: payment.beneficiary_name },
+      { label: t('detail.fields.swiftIban'), value: payment.beneficiary_bank_extra },
+      { label: t('detail.fields.phone'), value: payment.beneficiary_phone },
+      { label: t('detail.fields.email'), value: payment.beneficiary_email },
     );
   } else {
     candidates.push(
-      { label: 'Nom du fournisseur', value: payment.beneficiary_name },
+      { label: t('detail.fields.supplierName'), value: payment.beneficiary_name },
       {
-        label: payment.method === 'wechat' ? 'Identifiant WeChat' : 'Identifiant Alipay',
+        label: payment.method === 'wechat' ? t('detail.fields.wechatId') : t('detail.fields.alipayId'),
         value: payment.beneficiary_identifier,
       },
-      { label: 'Téléphone', value: payment.beneficiary_phone },
-      { label: 'Email', value: payment.beneficiary_email },
+      { label: t('detail.fields.phone'), value: payment.beneficiary_phone },
+      { label: t('detail.fields.email'), value: payment.beneficiary_email },
       // Défensif : champs bancaires affichés s'ils existent malgré la méthode.
-      { label: 'Banque', value: payment.beneficiary_bank_name },
-      { label: 'Numéro de compte', value: payment.beneficiary_bank_account },
-      { label: 'SWIFT / IBAN', value: payment.beneficiary_bank_extra },
+      { label: t('detail.fields.bank'), value: payment.beneficiary_bank_name },
+      { label: t('detail.fields.accountNumber'), value: payment.beneficiary_bank_account },
+      { label: t('detail.fields.swiftIban'), value: payment.beneficiary_bank_extra },
     );
   }
 
@@ -105,7 +106,7 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
   const isLocked = isStatusLocked(payment.status);
   const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] ?? payment.method;
 
-  const fields = buildFields(payment);
+  const fields = buildFields(payment, t);
   const showQr =
     !!payment.beneficiary_qr_code_url && ['alipay', 'wechat'].includes(payment.method);
 
@@ -116,7 +117,7 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
     <section>
       <div className="mb-3 flex items-center justify-between px-1">
         <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
-          Bénéficiaire · {methodLabel}
+          {t('detail.beneficiaryWithMethod', { method: methodLabel })}
         </h2>
         {isLocked ? (
           <span className={cn('flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold', SURFACE.holder)}>
@@ -139,7 +140,7 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
         <div className="rounded-[22px] bg-[#FBE7E7] p-6 text-center dark:bg-[#3A2526]">
           <AlertCircle className="mx-auto mb-3 h-9 w-9 text-[#C0504D] dark:text-[#E79A9A]" />
           <p className={cn('text-[15px] font-bold', TEXT.strong)}>
-            Coordonnées du bénéficiaire manquantes
+            {t('detail.missingBeneficiaryInfo')}
           </p>
           <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('detail.addBeneficiaryPrompt')}</p>
           {canEdit && (
@@ -162,7 +163,7 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
                   className="h-[88px] w-[88px] rounded-2xl bg-white object-contain ring-1 ring-black/[0.07]"
                 />
                 <span className="text-[10px] font-semibold text-[#5B4CC4] dark:text-[#B5AAF0]">
-                  Agrandir
+                  {t('detail.enlarge')}
                 </span>
               </button>
               <div className="-my-3 min-w-0 flex-1 divide-y divide-black/[0.05] dark:divide-white/[0.07]">
@@ -178,7 +179,7 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
               ))}
               {fields.length === 0 && payment.method === 'cash' && (
                 <p className={cn('py-3 text-[13px]', TEXT.muted)}>
-                  Retrait au bureau Bonzini — présentez le QR ci-dessus.
+                  {t('detail.cashPickupPresentQr')}
                 </p>
               )}
             </div>

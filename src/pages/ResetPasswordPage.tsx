@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { Button } from "@/components/ui/button";
-import { PasswordField } from "@/components/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { LoginBackground } from "@/components/auth/LoginBackground";
+import { PremiumInput } from "@/components/auth/PremiumInput";
+import { BonziniLogo } from "@/components/BonziniLogo";
+import { Loader2, AlertCircle, ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { SURFACE, TEXT, PRIMARY_PILL } from "@/mobile/designKit";
 
 const passwordSchema = z.string().min(6);
 
@@ -35,6 +36,16 @@ function setCanonical(href: string) {
   link.setAttribute("href", href);
 }
 
+// Bandeau d'erreur designKit (danger #C0504D).
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-2xl bg-[#FBE7E7] p-3.5 text-[13px] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>{message}</span>
+    </div>
+  );
+}
+
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
@@ -43,6 +54,7 @@ export default function ResetPasswordPage() {
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +83,7 @@ export default function ResetPasswordPage() {
     setError(null);
 
     if (!hasSession) {
-      setError(t('resetPassword.linkExpired', { defaultValue: 'Lien de réinitialisation invalide ou expiré.' }));
+      setError(t('resetPassword.linkExpired'));
       return;
     }
 
@@ -101,91 +113,97 @@ export default function ResetPasswordPage() {
 
   if (hasSession === null) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className={cn('flex min-h-screen items-center justify-center', SURFACE.canvas)}>
+        <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>{t('resetPassword.title')}</CardTitle>
-            <CardDescription>
-              {hasSession
-                ? t('resetPassword.subtitle')
-                : t('resetPassword.linkExpired', { defaultValue: 'Votre lien de réinitialisation n\'est plus valide.' })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!hasSession ? (
-              <div className="space-y-4">
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    {t('resetPassword.linkExpired', { defaultValue: 'Lien invalide ou expiré. Veuillez refaire « Mot de passe oublié ».' })}
-                  </AlertDescription>
-                </Alert>
-                <Button className="w-full" onClick={() => navigate("/auth", { replace: true })}>
-                  {t('forgotPassword.signIn')}
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+    <LoginBackground>
+      <div className="flex flex-1 flex-col justify-center px-6 pb-12 pt-6">
+        <div className="mb-6 flex justify-center">
+          <BonziniLogo size="lg" showText={false} />
+        </div>
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-8 text-center">
+            <h1 className={cn('mb-1 text-[24px] font-black', TEXT.strong)}>{t('resetPassword.title')}</h1>
+            <p className={cn('text-[13px]', TEXT.muted)}>
+              {hasSession ? t('resetPassword.subtitle') : t('resetPassword.linkExpired')}
+            </p>
+          </div>
+
+          {!hasSession ? (
+            <div className="space-y-4">
+              <ErrorBox message={t('resetPassword.linkExpired')} />
+              <button
+                onClick={() => navigate("/auth", { replace: true })}
+                className={cn('flex h-12 w-full items-center justify-center text-[15px] font-bold transition active:scale-[0.99]', PRIMARY_PILL)}
+              >
+                {t('forgotPassword.signIn')}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && <ErrorBox message={error} />}
+
+              <PremiumInput
+                id="reset-password"
+                type={showPassword ? 'text' : 'password'}
+                label={t('resetPassword.newPassword')}
+                value={password}
+                onChange={(v) => { setPassword(v); setError(null); }}
+                icon={<Lock className="w-5 h-5" />}
+                rightElement={
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-muted-foreground transition-colors hover:text-foreground" tabIndex={-1}>
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                }
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                autoFocus
+              />
+
+              <PremiumInput
+                id="reset-confirm"
+                type={showPassword ? 'text' : 'password'}
+                label={t('resetPassword.confirmPassword')}
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                icon={<Lock className="w-5 h-5" />}
+                isValid={confirmPassword.length >= 6 && confirmPassword === password}
+                autoComplete="new-password"
+                disabled={isSubmitting}
+              />
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={cn('flex h-12 w-full items-center justify-center gap-2 text-[15px] font-bold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50', PRIMARY_PILL)}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    {t('resetPassword.reset')}…
+                  </>
+                ) : (
+                  t('resetPassword.reset')
                 )}
+              </button>
 
-                <PasswordField
-                  label={t('resetPassword.newPassword')}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                  disabled={isSubmitting}
-                  showIcon={false}
-                />
-
-                <PasswordField
-                  label={t('resetPassword.confirmPassword')}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                  disabled={isSubmitting}
-                  showIcon={false}
-                />
-
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t('resetPassword.reset')}...
-                    </span>
-                  ) : (
-                    t('resetPassword.reset')
-                  )}
-                </Button>
-
-                <button
-                  type="button"
-                  onClick={() => navigate("/auth", { replace: true })}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full justify-center"
-                  disabled={isSubmitting}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  {t('common:back')}
-                </button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+              <button
+                type="button"
+                onClick={() => navigate("/auth", { replace: true })}
+                disabled={isSubmitting}
+                className={cn('flex w-full items-center justify-center gap-2 text-[13px] font-semibold transition-colors', TEXT.muted, 'hover:text-[#5B4CC4] dark:hover:text-[#B5AAF0]')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t('common:back')}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
-    </div>
+    </LoginBackground>
   );
 }

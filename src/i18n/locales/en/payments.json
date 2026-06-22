@@ -3,6 +3,32 @@
   "subtitle": "Transfers to China",
   "newPayment": "New payment",
   "noPayments": "No payments yet",
+  "list": {
+    "dayRate": "Today's rate",
+    "searchPlaceholder": "Search a supplier, a reference…",
+    "noPaymentsForFilter": "No payment for this filter.",
+    "beneficiaryToComplete": "Beneficiary to complete",
+    "toComplete": "to complete",
+    "periods": {
+      "all": "All",
+      "month": "This month",
+      "week": "This week"
+    },
+    "tabs": {
+      "all": "All",
+      "todo": "To process",
+      "progress": "In progress",
+      "done": "Completed"
+    },
+    "statusHint": {
+      "missingBeneficiary": "Beneficiary details missing",
+      "cashPending": "QR to present at the office",
+      "progress": "Bonzini is settling your supplier",
+      "paidOn": "Paid on {{date}}",
+      "rejected": "Payment rejected",
+      "cancelled": "Payment cancelled"
+    }
+  },
   "status": {
     "created": "Created",
     "waiting_beneficiary_info": "Pending",
@@ -170,7 +196,12 @@
     "qrCodeBeneficiary": "Beneficiary QR Code",
     "tapToEnlarge": "Tap to enlarge",
     "beneficiary": "Beneficiary",
+    "beneficiaryWithMethod": "Beneficiary · {{method}}",
     "missingInfo": "Missing information",
+    "missingBeneficiaryInfo": "Beneficiary details missing",
+    "completeBeneficiary": "Complete the details",
+    "enlarge": "Enlarge",
+    "cashPickupPresentQr": "Pickup at the Bonzini office — present the QR above.",
     "addBeneficiaryPrompt": "Add the beneficiary details so Bonzini can settle your payment.",
     "documents": "Documents",
     "noDocuments": "No documents yet.",
@@ -192,6 +223,41 @@
     "signatureRecordedOn": "Signature recorded on",
     "signedBy": "Signed by",
     "beneficiarySignature": "Beneficiary signature",
+    "hero": {
+      "settlementAmount": "Settlement amount",
+      "supplierReceives": "Your beneficiary receives",
+      "rateApplied": "Today's rate applied",
+      "amountRecredited": "{{amount}} XAF credited back to your balance",
+      "youPaid": "You paid {{amount}} XAF"
+    },
+    "tracking": {
+      "title": "Payment tracking",
+      "created": "Payment created",
+      "beneficiaryDetails": "Beneficiary details",
+      "qrPresentedAtOffice": "QR presented at office",
+      "processingByBonzini": "Processing by Bonzini",
+      "beneficiaryPaid": "Beneficiary paid",
+      "cashHandedToBeneficiary": "Cash handed to beneficiary",
+      "paymentRejected": "Payment rejected",
+      "paymentCancelled": "Payment cancelled",
+      "completeBeneficiary": "Complete the details",
+      "sub": {
+        "qrScanned": "QR scanned",
+        "completed": "Completed",
+        "presentQrAtOffice": "Present this QR at the Bonzini office",
+        "missingDetails": "Details missing",
+        "processingAtOffice": "In progress at the Bonzini office",
+        "bonziniSettling": "Bonzini is settling your supplier",
+        "inProgress": "In progress…"
+      }
+    },
+    "documents": {
+      "title": "Proof & details",
+      "paymentProof": "Payment proof",
+      "addedByBonzini": "Added by Bonzini · tap to enlarge",
+      "paidOn": "Paid on",
+      "processedOn": "Processed on"
+    },
     "fields": {
       "name": "Name",
       "phone": "Phone",
@@ -201,7 +267,12 @@
       "notes": "Notes",
       "beneficiaryName": "Beneficiary name",
       "beneficiaryPhone": "Beneficiary phone",
-      "beneficiaryEmail": "Beneficiary email"
+      "beneficiaryEmail": "Beneficiary email",
+      "supplierName": "Supplier name",
+      "accountHolder": "Account holder",
+      "swiftIban": "SWIFT / IBAN",
+      "wechatId": "WeChat ID",
+      "alipayId": "Alipay ID"
     },
     "form": {
       "provideAtLeastOne": "Provide at least one payment channel.",

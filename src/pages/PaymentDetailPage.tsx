@@ -187,7 +187,7 @@ export default function PaymentDetailPage() {
           ) : payment.status === 'waiting_beneficiary_info' ? (
             <div className="rounded-[22px] bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
               <p className="px-1 text-[13px] font-semibold" style={{ color: LIFECYCLE_COLOR.todo }}>
-                Coordonnées du bénéficiaire manquantes
+                {t('detail.missingBeneficiaryInfo')}
               </p>
               <button
                 onClick={goToEditBeneficiary}
@@ -196,7 +196,7 @@ export default function PaymentDetailPage() {
                   PRIMARY_PILL,
                 )}
               >
-                Compléter les coordonnées <ArrowRight className="h-4 w-4" />
+                {t('detail.completeBeneficiary')} <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           ) : null}

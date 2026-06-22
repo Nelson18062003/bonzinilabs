@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { COUNTRIES } from '@/types/rates';
 import type { DailyRate, RateAdjustment, PaymentMethodKey } from '@/types/rates';
@@ -12,9 +13,10 @@ interface CountrySelectorProps {
 }
 
 export function CountrySelector({ selectedCountry, onCountryChange }: CountrySelectorProps) {
+  const { t } = useTranslation('client');
   return (
     <section>
-      <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>Pays</h2>
+      <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('rates.country.title')}</h2>
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {COUNTRIES.map((c) => {
           const active = selectedCountry === c.key;
