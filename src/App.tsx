@@ -60,6 +60,8 @@ const DesktopPaymentsScreen = lazy(() => import("./desktop/screens/payments").th
 const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentDetail })));
 const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileNewPayment })));
 const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
+const BulkPaymentCreate = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentCreate })));
+const BulkPaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentDetail })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
 const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopClientsScreen })));
 const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopCreateClient })));
@@ -194,6 +196,8 @@ const App = () => (
                 <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopDepositsScreen />}><MobileDepositDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileNewPayment desktop />}><MobileNewPayment /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batch/new" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentCreate desktop />}><BulkPaymentCreate /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batch/:batchId" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentDetail desktop />}><BulkPaymentDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper desktop={<MobileBeneficiaryEdit desktop />}><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />

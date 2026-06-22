@@ -94,6 +94,8 @@ const ROUTES: [string, string][] = [
   ['quick-replies', '/m/more/quick-replies'],
   ['deposit-new', '/m/deposits/new'],
   ['payment-new', '/m/payments/new'],
+  ['bulk-payment-new', '/m/payments/batch/new'],
+  ['bulk-payment-detail', '/m/payments/batch/00000000-0000-0000-0000-000000000009'],
   ['client-new', '/m/clients/new'],
   ['deposit-detail', '/m/deposits/00000000-0000-0000-0000-000000000009'],
   ['payment-detail', '/m/payments/00000000-0000-0000-0000-000000000009'],
