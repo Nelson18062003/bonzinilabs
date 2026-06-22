@@ -67,7 +67,7 @@ export function PaymentCashSection({ payment }: Props) {
                 </p>
               )}
 
-              <div className="mt-3 rounded-xl bg-white p-3">
+              <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-black/[0.06]">
                 <p className="mb-2 text-[11px] font-semibold text-[#8E8BA0]">
                   {t('detail.beneficiarySignature')}
                 </p>

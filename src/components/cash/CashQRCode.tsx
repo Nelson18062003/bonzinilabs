@@ -74,7 +74,7 @@ export function CashQRCode({
         <p className="font-semibold text-lg">{paymentReference}</p>
       </div>
       
-      <div className="p-4 bg-white rounded-xl border-2 border-primary/20">
+      <div className="p-4 bg-white rounded-xl border border-black/10">
         <QRCodeSVG
           id={`qr-${paymentId}`}
           value={qrData}
@@ -85,7 +85,7 @@ export function CashQRCode({
       </div>
 
       <div className="text-center">
-        <p className="text-2xl font-bold text-primary">
+        <p className="text-2xl font-bold text-[#1B1A24]">
           {formatCurrencyRMB(amountRMB)}
         </p>
         <p className="text-sm text-muted-foreground mt-1">

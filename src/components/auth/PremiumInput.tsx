@@ -152,7 +152,7 @@ export function PremiumInput({
 
       {/* Error message */}
       {error && (
-        <p className="text-destructive text-xs mt-1.5 ml-1 animate-fade-in">
+        <p className="text-[#C0504D] dark:text-[#E79A9A] text-xs mt-1.5 ml-1 animate-fade-in">
           {error}
         </p>
       )}
