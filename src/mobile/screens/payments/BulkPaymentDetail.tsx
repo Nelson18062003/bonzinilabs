@@ -5,8 +5,10 @@
 // liste des lignes. Chaque ligne EST un vrai paiement → un clic ouvre
 // le détail paiement existant (/m/payments/:id) où l'on complète le
 // bénéficiaire, ajoute les preuves, valide ou refuse (par ligne).
+// i18n : namespace `payments` (réutilise method.* / statusLabels.*).
 // ============================================================
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { usePaymentBatch } from '@/hooks/usePaymentBatches';
 import { useAllClients } from '@/hooks/useAdminDeposits';
@@ -29,7 +31,7 @@ import {
 } from '@/mobile/designKit';
 import type { PaymentMethodKey } from '@/types/rates';
 
-const STATUS_LABEL: Record<string, string> = {
+const STATUS_FR: Record<string, string> = {
   created: 'Créé',
   waiting_beneficiary_info: 'Infos requises',
   ready_for_payment: 'À traiter',
@@ -57,6 +59,7 @@ function MethodGlyph({ method }: { method: string }) {
 
 export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {}) {
   const navigate = useNavigate();
+  const { t } = useTranslation('payments');
   const { batchId } = useParams<{ batchId: string }>();
   const { data, isLoading } = usePaymentBatch(batchId);
   const { data: clients = [] } = useAllClients();
@@ -68,18 +71,33 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
   const client = batch ? clients.find((c) => c.user_id === batch.user_id) : undefined;
   const completed = lines.filter((l) => l.status === 'completed').length;
 
+  const methodLabel = (m: string) => t(`method.${m}`, { defaultValue: PAYMENT_METHOD[uiMethod(m)]?.label ?? m });
+  const statusLabel = (s: string) => t(`statusLabels.${s}`, { defaultValue: STATUS_FR[s] ?? s });
+
   return (
     <div className={cn('min-h-full', SURFACE.canvas)}>
       <div className={cn('mx-auto w-full max-w-3xl px-4 pb-16', desktop ? 'pt-8' : 'pt-6')}>
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
-          <Holder icon={ChevronLeft} size="sm" onClick={() => navigate('/m/payments')} ariaLabel="Retour" />
+          <Holder
+            icon={ChevronLeft}
+            size="sm"
+            onClick={() => navigate('/m/payments')}
+            ariaLabel={t('bulk.back', { defaultValue: 'Retour' })}
+          />
           <div className="min-w-0">
             <h1 className={cn('truncate text-[22px] font-extrabold tracking-tight', TEXT.strong)}>
-              {batch?.reference ?? 'Paiement groupé'}
+              {batch?.reference ?? t('bulk.title', { defaultValue: 'Paiement groupé' })}
             </h1>
             <p className={cn('text-[13px]', TEXT.muted)}>
-              {batch ? `${batch.line_count} bénéficiaire(s) · ${completed}/${lines.length} terminé(s)` : '—'}
+              {batch
+                ? t('bulk.detailSubtitle', {
+                    count: batch.line_count,
+                    done: completed,
+                    total: lines.length,
+                    defaultValue: `${batch.line_count} bénéficiaire(s) · ${completed}/${lines.length} terminé(s)`,
+                  })
+                : '—'}
             </p>
           </div>
         </div>
@@ -87,7 +105,9 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
         {!batch ? (
           <Card className="flex flex-col items-center py-12 text-center">
             <Holder icon={Users} size="lg" tone="danger" />
-            <p className={cn('mt-3 text-[14px] font-medium', TEXT.muted)}>Lot introuvable.</p>
+            <p className={cn('mt-3 text-[14px] font-medium', TEXT.muted)}>
+              {t('bulk.notFound', { defaultValue: 'Lot introuvable.' })}
+            </p>
           </Card>
         ) : (
           <>
@@ -103,12 +123,12 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
                 </div>
                 <Amount value={formatCurrencyRMB(batch.total_amount_rmb)} size="md" />
               </div>
-              <Row label="Total débité" value={formatXAF(batch.total_amount_xaf)} />
-              {batch.note && <Row label="Note" value={batch.note} />}
+              <Row label={t('bulk.totalDebited', { defaultValue: 'Total débité' })} value={formatXAF(batch.total_amount_xaf)} />
+              {batch.note && <Row label={t('detail.fields.notes', { defaultValue: 'Note' })} value={batch.note} />}
             </Card>
 
             {/* Lines */}
-            <SectionTitle>Bénéficiaires</SectionTitle>
+            <SectionTitle>{t('bulk.beneficiaries', { defaultValue: 'Bénéficiaires' })}</SectionTitle>
             <div className="space-y-2.5">
               {lines.map((l) => (
                 <button
@@ -124,7 +144,7 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
                   <MethodGlyph method={l.method} />
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>
-                      {l.beneficiary_name || PAYMENT_METHOD[uiMethod(l.method)]?.label || l.reference}
+                      {l.beneficiary_name || methodLabel(l.method)}
                     </p>
                     <p className={cn('truncate text-[12px]', TEXT.muted)}>
                       {l.beneficiary_identifier || l.beneficiary_bank_account || l.reference}
@@ -136,11 +156,7 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
                     </p>
                     <p className={cn('text-[11px] tabular-nums', TEXT.muted)}>{formatXAF(l.amount_xaf)}</p>
                   </div>
-                  <StatusPill
-                    tone={paymentStatusTone(l.status) as Tone}
-                    label={STATUS_LABEL[l.status] ?? l.status}
-                    className="shrink-0"
-                  />
+                  <StatusPill tone={paymentStatusTone(l.status) as Tone} label={statusLabel(l.status)} className="shrink-0" />
                   <ChevronRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
                 </button>
               ))}

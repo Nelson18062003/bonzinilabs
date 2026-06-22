@@ -9,10 +9,12 @@
 // Création atomique tout-ou-rien via useCreatePaymentBatch →
 // create_payment_batch (un verrou wallet, une vérif de solde).
 // Conversion XAF↔¥ IDENTIQUE à MobileNewPayment (taux = ¥ / 1 000 000 XAF).
+// i18n : namespace `payments` (réutilise method.* / form.*), clés `bulk.*`.
 // Responsive : même écran pour le shell desktop et le conteneur mobile.
 // ============================================================
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAllClients } from '@/hooks/useAdminDeposits';
@@ -76,9 +78,12 @@ function MethodGlyph({ method, size = 'md' }: { method: PaymentMethodKey; size?:
 
 export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {}) {
   const navigate = useNavigate();
+  const { t } = useTranslation('payments');
   const { data: clients = [] } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
   const createBatch = useCreatePaymentBatch();
+
+  const methodLabel = (m: PaymentMethodKey) => t(`method.${dbMethod(m)}`, { defaultValue: PAYMENT_METHOD[m].label });
 
   const { data: walletsMap = new Map<string, number>() } = useQuery({
     queryKey: ['all-wallets-for-bulk-payment'],
@@ -221,15 +226,24 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
       <div className={cn('mx-auto w-full max-w-3xl px-4 pb-40', desktop ? 'pt-8' : 'pt-6')}>
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
-          <Holder icon={ChevronLeft} size="sm" onClick={() => navigate('/m/payments')} ariaLabel="Retour" />
+          <Holder
+            icon={ChevronLeft}
+            size="sm"
+            onClick={() => navigate('/m/payments')}
+            ariaLabel={t('bulk.back', { defaultValue: 'Retour' })}
+          />
           <div>
-            <h1 className={cn('text-[22px] font-extrabold tracking-tight', TEXT.strong)}>Paiement groupé</h1>
-            <p className={cn('text-[13px]', TEXT.muted)}>Plusieurs bénéficiaires, un seul client, payés ensemble</p>
+            <h1 className={cn('text-[22px] font-extrabold tracking-tight', TEXT.strong)}>
+              {t('bulk.title', { defaultValue: 'Paiement groupé' })}
+            </h1>
+            <p className={cn('text-[13px]', TEXT.muted)}>
+              {t('bulk.subtitle', { defaultValue: 'Plusieurs bénéficiaires, un seul client, payés ensemble' })}
+            </p>
           </div>
         </div>
 
         {/* 1 — Client */}
-        <SectionTitle>Client à débiter</SectionTitle>
+        <SectionTitle>{t('bulk.clientToDebit', { defaultValue: 'Client à débiter' })}</SectionTitle>
         {client ? (
           <Card className="mb-6 flex items-center gap-3">
             <Avatar name={`${client.first_name ?? ''} ${client.last_name ?? ''}`} tone="info" />
@@ -238,11 +252,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 {client.first_name} {client.last_name}
               </p>
               <p className={cn('flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
-                <Wallet className="h-3.5 w-3.5" /> Solde {formatXAF(clientBalance)}
+                <Wallet className="h-3.5 w-3.5" /> {t('form.balance', { defaultValue: 'Solde' })} {formatXAF(clientBalance)}
               </p>
             </div>
             <SoftPill onClick={() => setClient(null)} className="px-4 py-2 text-[13px]">
-              Changer
+              {t('bulk.change', { defaultValue: 'Changer' })}
             </SoftPill>
           </Card>
         ) : (
@@ -252,7 +266,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
               <TextInput
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un client (nom, téléphone)…"
+                placeholder={t('bulk.searchClient', { defaultValue: 'Rechercher un client (nom, téléphone)…' })}
                 className="pl-9"
               />
             </div>
@@ -280,7 +294,9 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 </button>
               ))}
               {filtered.length === 0 && (
-                <p className={cn('px-2 py-8 text-center text-[13px]', TEXT.muted)}>Aucun client trouvé.</p>
+                <p className={cn('px-2 py-8 text-center text-[13px]', TEXT.muted)}>
+                  {t('bulk.noClientFound', { defaultValue: 'Aucun client trouvé.' })}
+                </p>
               )}
             </div>
           </Card>
@@ -289,18 +305,18 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
         {/* 2 — Lines */}
         {client && (
           <>
-            <SectionTitle action={{ label: 'Ajouter', onClick: openAdd }}>
-              Bénéficiaires ({lines.length})
+            <SectionTitle action={{ label: t('bulk.add', { defaultValue: 'Ajouter' }), onClick: openAdd }}>
+              {t('bulk.beneficiariesCount', { count: lines.length, defaultValue: `Bénéficiaires (${lines.length})` })}
             </SectionTitle>
 
             {lines.length === 0 ? (
               <Card className="mb-6 flex flex-col items-center py-10 text-center">
                 <Holder icon={Users} size="lg" />
                 <p className={cn('mt-3 text-[14px] font-medium', TEXT.muted)}>
-                  Aucun bénéficiaire pour l'instant.
+                  {t('bulk.noBeneficiaries', { defaultValue: "Aucun bénéficiaire pour l'instant." })}
                 </p>
                 <PrimaryPill onClick={openAdd} className="mt-4">
-                  <Plus className="h-4 w-4" /> Ajouter un bénéficiaire
+                  <Plus className="h-4 w-4" /> {t('bulk.addBeneficiary', { defaultValue: 'Ajouter un bénéficiaire' })}
                 </PrimaryPill>
               </Card>
             ) : (
@@ -311,10 +327,10 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className={cn('truncate text-[14px] font-bold', TEXT.strong)}>
-                          {l.name || PAYMENT_METHOD[l.method].label}
+                          {l.name || methodLabel(l.method)}
                         </span>
                         <span className="shrink-0 text-[11px] font-bold" style={{ color: PAYMENT_METHOD[l.method].color }}>
-                          {PAYMENT_METHOD[l.method].label}
+                          {methodLabel(l.method)}
                         </span>
                       </div>
                       <p className={cn('truncate text-[12px]', TEXT.muted)}>
@@ -328,13 +344,13 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                       <p className={cn('text-[11px] tabular-nums', TEXT.muted)}>{formatXAF(l.xaf)}</p>
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">
-                      <Holder icon={Pencil} size="sm" onClick={() => openEdit(l)} ariaLabel="Modifier" />
+                      <Holder icon={Pencil} size="sm" onClick={() => openEdit(l)} ariaLabel={t('detail.edit', { defaultValue: 'Modifier' })} />
                       <Holder
                         icon={Trash2}
                         size="sm"
                         tone="danger"
                         onClick={() => setLines((prev) => prev.filter((x) => x.id !== l.id))}
-                        ariaLabel="Retirer"
+                        ariaLabel={t('bulk.change', { defaultValue: 'Retirer' })}
                       />
                     </div>
                   </Card>
@@ -348,14 +364,18 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                     TEXT.muted,
                   )}
                 >
-                  <Plus className="h-4 w-4" /> Ajouter un bénéficiaire
+                  <Plus className="h-4 w-4" /> {t('bulk.addBeneficiary', { defaultValue: 'Ajouter un bénéficiaire' })}
                 </button>
               </div>
             )}
 
             {/* Optional note */}
-            <FormField label="Note (optionnel)" className="mb-6">
-              <TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Référence interne, contexte…" />
+            <FormField label={t('bulk.note', { defaultValue: 'Note (optionnel)' })} className="mb-6">
+              <TextInput
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('bulk.notePlaceholder', { defaultValue: 'Référence interne, contexte…' })}
+              />
             </FormField>
           </>
         )}
@@ -377,7 +397,9 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 )}
               >
                 {overBudget && <AlertTriangle className="h-3.5 w-3.5" />}
-                {overBudget ? 'Solde insuffisant' : `Restant ${formatXAF(remaining)}`}
+                {overBudget
+                  ? t('form.insufficientBalance', { defaultValue: 'Solde insuffisant' })
+                  : t('bulk.remaining', { amount: formatXAF(remaining), defaultValue: `Restant ${formatXAF(remaining)}` })}
               </p>
             </div>
             <PrimaryPill
@@ -386,7 +408,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
               loading={createBatch.isPending}
               className="shrink-0"
             >
-              Créer ({lines.length})
+              {t('bulk.create', { count: lines.length, defaultValue: `Créer (${lines.length})` })}
             </PrimaryPill>
           </div>
         </div>
@@ -396,7 +418,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
       <BottomSheet
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
-        title={editingId ? 'Modifier le bénéficiaire' : 'Nouveau bénéficiaire'}
+        title={
+          editingId
+            ? t('bulk.editBeneficiary', { defaultValue: 'Modifier le bénéficiaire' })
+            : t('bulk.newBeneficiary', { defaultValue: 'Nouveau bénéficiaire' })
+        }
       >
         <div className="space-y-4">
           {/* Method */}
@@ -417,7 +443,9 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                   style={active ? { borderColor: meta.color } : undefined}
                 >
                   <MethodGlyph method={m} size="sm" />
-                  <span className={cn('text-[11px] font-bold', active ? TEXT.strong : TEXT.muted)}>{meta.label}</span>
+                  <span className={cn('truncate text-[11px] font-bold', active ? TEXT.strong : TEXT.muted)}>
+                    {methodLabel(m)}
+                  </span>
                 </button>
               );
             })}
@@ -438,26 +466,27 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
               inputMode="numeric"
               value={eRawAmount}
               onChange={(e) => setERawAmount(e.target.value.replace(/[^\d]/g, ''))}
-              placeholder={eCurrency === 'cny' ? 'Montant en ¥' : 'Montant en XAF'}
+              placeholder={
+                eCurrency === 'cny'
+                  ? t('bulk.amountInRmb', { defaultValue: 'Montant en ¥' })
+                  : t('bulk.amountInXaf', { defaultValue: 'Montant en XAF' })
+              }
             />
             <div className={cn('mt-1.5 flex items-center justify-between px-1 text-[12px]', TEXT.muted)}>
               <span>
-                {eCurrency === 'cny' ? '≈ ' : '≈ '}
+                ≈{' '}
                 <span className="font-bold tabular-nums">
                   {eCurrency === 'cny' ? formatXAF(eXaf) : formatCurrencyRMB(eCny)}
                 </span>
               </span>
-              <button
-                type="button"
-                onClick={() => setECustomRate((v) => !v)}
-                className="font-semibold"
-                style={{ color: VIOLET }}
-              >
-                {eCustomRate ? 'Taux du jour' : 'Taux personnalisé'}
+              <button type="button" onClick={() => setECustomRate((v) => !v)} className="font-semibold" style={{ color: VIOLET }}>
+                {eCustomRate
+                  ? t('bulk.dailyRate', { defaultValue: 'Taux du jour' })
+                  : t('bulk.customRate', { defaultValue: 'Taux personnalisé' })}
               </button>
             </div>
             {eCustomRate && (
-              <FormField label="Taux (¥ pour 1 000 000 XAF)" className="mt-2">
+              <FormField label={t('bulk.rateLabel', { defaultValue: 'Taux (¥ pour 1 000 000 XAF)' })} className="mt-2">
                 <TextInput
                   inputMode="numeric"
                   value={eCustomRateStr}
@@ -469,43 +498,47 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
           </div>
 
           {/* Beneficiary fields */}
-          <FormField label={isCash ? 'Nom du bénéficiaire' : 'Nom du bénéficiaire'}>
-            <TextInput value={eName} onChange={(e) => setEName(e.target.value)} placeholder="Nom complet" />
+          <FormField label={t('form.beneficiaryName', { defaultValue: 'Nom du bénéficiaire' })}>
+            <TextInput value={eName} onChange={(e) => setEName(e.target.value)} placeholder={t('bulk.fullName', { defaultValue: 'Nom complet' })} />
           </FormField>
 
           {!isCash && !isBank && (
-            <FormField label={`Identifiant ${PAYMENT_METHOD[eMethod].label}`}>
-              <TextInput value={eIdentifier} onChange={(e) => setEIdentifier(e.target.value)} placeholder="ID / téléphone / e-mail" />
+            <FormField label={t('bulk.identifierLabel', { method: methodLabel(eMethod), defaultValue: `Identifiant ${methodLabel(eMethod)}` })}>
+              <TextInput
+                value={eIdentifier}
+                onChange={(e) => setEIdentifier(e.target.value)}
+                placeholder={t('bulk.identifierPlaceholder', { defaultValue: 'ID / téléphone / e-mail' })}
+              />
             </FormField>
           )}
 
           {isBank && (
             <>
-              <FormField label="Banque">
-                <TextInput value={eBank} onChange={(e) => setEBank(e.target.value)} placeholder="Nom de la banque" />
+              <FormField label={t('bulk.bank', { defaultValue: 'Banque' })}>
+                <TextInput value={eBank} onChange={(e) => setEBank(e.target.value)} placeholder={t('bulk.bankPlaceholder', { defaultValue: 'Nom de la banque' })} />
               </FormField>
-              <FormField label="Numéro de compte">
-                <TextInput value={eAccount} onChange={(e) => setEAccount(e.target.value)} placeholder="Compte / IBAN" />
+              <FormField label={t('bulk.account', { defaultValue: 'Numéro de compte' })}>
+                <TextInput value={eAccount} onChange={(e) => setEAccount(e.target.value)} placeholder={t('bulk.accountPlaceholder', { defaultValue: 'Compte / IBAN' })} />
               </FormField>
             </>
           )}
 
           {(isCash || !isBank) && (
-            <FormField label="Téléphone (optionnel)">
-              <TextInput value={ePhone} onChange={(e) => setEPhone(e.target.value)} placeholder="Téléphone" />
+            <FormField label={t('bulk.phoneOptional', { defaultValue: 'Téléphone (optionnel)' })}>
+              <TextInput value={ePhone} onChange={(e) => setEPhone(e.target.value)} placeholder={t('bulk.phone', { defaultValue: 'Téléphone' })} />
             </FormField>
           )}
 
-          <FormField label="Note (optionnel)">
-            <TextInput value={eNotes} onChange={(e) => setENotes(e.target.value)} placeholder="Précision" />
+          <FormField label={t('bulk.note', { defaultValue: 'Note (optionnel)' })}>
+            <TextInput value={eNotes} onChange={(e) => setENotes(e.target.value)} placeholder={t('bulk.precision', { defaultValue: 'Précision' })} />
           </FormField>
 
           <div className="flex gap-2.5 pt-1">
             <SoftPill onClick={() => setEditorOpen(false)} className="flex-1">
-              Annuler
+              {t('bulk.cancel', { defaultValue: 'Annuler' })}
             </SoftPill>
             <PrimaryPill onClick={commitLine} disabled={!editorValid} className="flex-1">
-              {editingId ? 'Enregistrer' : 'Ajouter'}
+              {editingId ? t('bulk.save', { defaultValue: 'Enregistrer' }) : t('bulk.add', { defaultValue: 'Ajouter' })}
             </PrimaryPill>
           </div>
         </div>
