@@ -66,7 +66,7 @@ function toFormValues(b: Beneficiary): BeneficiaryFormValues {
   };
 }
 
-export default function MobileClientBeneficiaries() {
+export default function MobileClientBeneficiaries({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('client');
   const { clientId } = useParams();
   const { data: client } = useClient(clientId || '');
@@ -103,6 +103,7 @@ export default function MobileClientBeneficiaries() {
   if ((view.kind === 'add' || view.kind === 'edit') && clientId) {
     return (
       <BeneficiaryEditor
+        desktop={desktop}
         initial={
           view.kind === 'edit' ? toFormValues(view.beneficiary) : emptyBeneficiaryForm('alipay')
         }
@@ -156,24 +157,36 @@ export default function MobileClientBeneficiaries() {
 
   // ── List view ────────────────────────────────────────────────
   return (
-    <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
-      <MobileHeader
-        title={t('beneficiaries.title')}
-        subtitle={clientName || undefined}
-        showBack
-        backTo={`/m/clients/${clientId}`}
-        rightElement={
-          <button
-            onClick={() => setView({ kind: 'add' })}
-            aria-label={t('beneficiaries.add')}
-            className={cn('flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
-          >
-            <Plus className="h-5 w-5" />
+    <div className={desktop ? '' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+      {desktop ? (
+        <header className="mb-5 flex items-end justify-between gap-3">
+          <div>
+            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('beneficiaries.title')}</h2>
+            {clientName && <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{clientName}</p>}
+          </div>
+          <button onClick={() => setView({ kind: 'add' })} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
+            <Plus className="h-4 w-4" /> {t('beneficiaries.add')}
           </button>
-        }
-      />
+        </header>
+      ) : (
+        <MobileHeader
+          title={t('beneficiaries.title')}
+          subtitle={clientName || undefined}
+          showBack
+          backTo={`/m/clients/${clientId}`}
+          rightElement={
+            <button
+              onClick={() => setView({ kind: 'add' })}
+              aria-label={t('beneficiaries.add')}
+              className={cn('flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          }
+        />
+      )}
 
-      <div className="flex-1 space-y-3 px-4 py-5">
+      <div className={desktop ? 'space-y-3' : 'flex-1 space-y-3 px-4 py-5'}>
         <div className="relative">
           <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
           <TextInput
@@ -311,6 +324,7 @@ function FilterChip({
 }
 
 function BeneficiaryEditor({
+  desktop = false,
   initial,
   isEdit,
   existingQr,
@@ -319,6 +333,7 @@ function BeneficiaryEditor({
   onCancel,
   onSave,
 }: {
+  desktop?: boolean;
   initial: BeneficiaryFormValues;
   isEdit: boolean;
   existingQr: boolean;
@@ -336,13 +351,19 @@ function BeneficiaryEditor({
   const valid = isBeneficiaryFormValid(values, { hasQr });
 
   return (
-    <div className={cn('flex min-h-screen flex-col', SURFACE.canvas)}>
-      <MobileHeader
-        title={isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}
-        showBack
-        onBack={onCancel}
-      />
-      <div className="flex-1 overflow-y-auto px-4 py-5">
+    <div className={desktop ? '' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>{isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}</h2>
+        </header>
+      ) : (
+        <MobileHeader
+          title={isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}
+          showBack
+          onBack={onCancel}
+        />
+      )}
+      <div className={desktop ? 'space-y-3' : 'flex-1 overflow-y-auto px-4 py-5'}>
         {isEdit && (
           <p className={cn('mb-3 rounded-2xl p-3 text-[12px]', SURFACE.card, SURFACE.shadow, TEXT.muted)}>
             {t('beneficiaries.snapshotNotice')}

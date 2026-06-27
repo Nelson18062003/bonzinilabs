@@ -58,7 +58,7 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
 } as const;
 
-export function MobileSupportStatsScreen() {
+export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
@@ -118,14 +118,20 @@ export function MobileSupportStatsScreen() {
   ];
 
   return (
-    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader
-        title={t('admin.statsTitle')}
-        showBack
-        onBack={() => navigate('/m/support')}
-      />
+    <div className={desktop ? '' : cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      {desktop ? (
+        <header className="mb-5">
+          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('admin.statsTitle')}</h2>
+        </header>
+      ) : (
+        <MobileHeader
+          title={t('admin.statsTitle')}
+          showBack
+          onBack={() => navigate('/m/support')}
+        />
+      )}
 
-      <div className="px-4 pt-4">
+      <div className={desktop ? '' : 'px-4 pt-4'}>
         <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
           {periodFilters.map((filter) => (
             <button

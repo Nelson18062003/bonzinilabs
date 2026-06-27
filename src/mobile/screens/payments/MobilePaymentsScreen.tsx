@@ -17,6 +17,7 @@ import {
   TO_PROCESS_STATUSES,
 } from '@/types/payment';
 import type { PaymentStatus } from '@/types/payment';
+import { type FilterKey, METHOD_FILTERS, SORT_OPTIONS, logoMethod } from '@/lib/paymentsList';
 import {
   SURFACE,
   TEXT,
@@ -34,11 +35,7 @@ import {
   Plus, Search, Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
   FileDown, Loader2,
 } from 'lucide-react';
-import { downloadPDF } from '@/lib/pdf/downloadPDF';
-import { BatchPaymentsPDF } from '@/lib/pdf/templates/BatchPaymentsPDF';
-import type { BatchPaymentEntry } from '@/lib/pdf/templates/BatchPaymentsPDF';
-import { supabaseAdmin } from '@/integrations/supabase/client';
-import { signStored } from '@/lib/signedUrls';
+import { exportPendingPaymentsPDF } from '@/lib/exportPendingPaymentsPDF';
 import { toast } from 'sonner';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
@@ -49,27 +46,8 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 
-// ── Configuration des filtres ───────────────────────────────
-
-type FilterKey = PaymentStatus | 'all' | 'to_process';
-
-const METHOD_FILTERS: { key: string; label: string }[] = [
-  { key: 'all', label: 'Toutes méthodes' },
-  ...Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => ({ key, label })),
-];
-
-const SORT_OPTIONS: { key: string; label: string; field: 'created_at' | 'amount_rmb'; ascending: boolean }[] = [
-  { key: 'newest', label: 'Plus récent', field: 'created_at', ascending: false },
-  { key: 'oldest', label: 'Plus ancien', field: 'created_at', ascending: true },
-  { key: 'amount_desc', label: 'Montant ↓', field: 'amount_rmb', ascending: false },
-  { key: 'amount_asc', label: 'Montant ↑', field: 'amount_rmb', ascending: true },
-];
-
-// Map méthode DB → logo (PaymentMethodLogo n'accepte que 4 clés).
-function logoMethod(method: string): 'alipay' | 'wechat' | 'bank_transfer' | 'cash' {
-  if (method === 'alipay' || method === 'wechat' || method === 'cash') return method;
-  return 'bank_transfer';
-}
+// Filtres (FilterKey, METHOD_FILTERS, SORT_OPTIONS) et logoMethod sont partagés
+// avec l'écran desktop — voir '@/lib/paymentsList'.
 
 // ── Point SLA (calqué sur deposits V2) ───────────────────────
 function SlaDot({ level }: { level: SlaLevel }) {
@@ -212,89 +190,12 @@ export function MobilePaymentsScreen() {
     if (isExporting) return;
     setIsExporting(true);
     try {
-      // Columns added by the 20260421* migrations. If they haven't been
-      // applied to the remote DB yet, PostgREST returns an error complaining
-      // about the unknown column. Detect that and retry with the legacy
-      // column set so the export keeps working while the migration catches up.
-      const LEGACY_COLUMNS =
-        'id, reference, amount_rmb, method, created_at, beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, beneficiary_notes';
-      const EXTENDED_COLUMNS = `${LEGACY_COLUMNS}, beneficiary_bank_extra, beneficiary_identifier`;
-
-      type PaymentRow = {
-        id: string;
-        reference: string;
-        amount_rmb: number;
-        method: string;
-        created_at: string | null;
-        beneficiary_name: string | null;
-        beneficiary_phone: string | null;
-        beneficiary_email: string | null;
-        beneficiary_bank_name: string | null;
-        beneficiary_bank_account: string | null;
-        beneficiary_qr_code_url: string | null;
-        beneficiary_notes: string | null;
-        beneficiary_bank_extra?: string | null;
-        beneficiary_identifier?: string | null;
-      };
-
-      const runSelect = async (columns: string) =>
-        supabaseAdmin
-          .from('payments')
-          .select(columns)
-          .eq('status', 'processing')
-          .neq('method', 'cash');
-
-      let payments: PaymentRow[] | null = null;
-      {
-        const res = await runSelect(EXTENDED_COLUMNS);
-        if (res.error) {
-          const missingColumn =
-            res.error.code === '42703' ||
-            /column .* does not exist/i.test(res.error.message || '');
-          if (!missingColumn) throw res.error;
-          const fallback = await runSelect(LEGACY_COLUMNS);
-          if (fallback.error) throw fallback.error;
-          payments = fallback.data as unknown as PaymentRow[];
-        } else {
-          payments = res.data as unknown as PaymentRow[];
-        }
-      }
-
-      if (!payments || payments.length === 0) {
+      const count = await exportPendingPaymentsPDF();
+      if (count === 0) {
         toast.error(t('noPaymentsToExport', { defaultValue: 'Aucun paiement en cours à exporter' }));
         return;
       }
-
-      // Generate signed URLs for QR codes
-      const entries: BatchPaymentEntry[] = await Promise.all(
-        payments.map(async (p) => {
-          // Heals raw paths AND values stored as signed/public URLs.
-          const qrUrl = await signStored(supabaseAdmin.storage, p.beneficiary_qr_code_url);
-          return {
-            id: p.id,
-            reference: p.reference,
-            amount_rmb: p.amount_rmb,
-            method: p.method,
-            created_at: p.created_at,
-            beneficiary_name: p.beneficiary_name,
-            beneficiary_phone: p.beneficiary_phone,
-            beneficiary_email: p.beneficiary_email,
-            beneficiary_bank_name: p.beneficiary_bank_name,
-            beneficiary_bank_account: p.beneficiary_bank_account,
-            beneficiary_bank_extra: p.beneficiary_bank_extra ?? null,
-            beneficiary_qr_code_url: qrUrl,
-            beneficiary_notes: p.beneficiary_notes,
-            beneficiary_identifier: p.beneficiary_identifier ?? null,
-          };
-        }),
-      );
-
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      await downloadPDF(
-        <BatchPaymentsPDF payments={entries} generatedAt={new Date()} />,
-        `Bonzini_Payments_Pending_${dateStr}.pdf`,
-      );
-      toast.success(t('exportDownloaded', { defaultValue: `Export de ${entries.length} paiement(s) téléchargé`, count: entries.length }));
+      toast.success(t('exportDownloaded', { defaultValue: `Export de ${count} paiement(s) téléchargé`, count }));
     } catch (error) {
       console.error('Error exporting batch payments:', error);
       toast.error(t('exportError', { defaultValue: "Erreur lors de l'export" }));

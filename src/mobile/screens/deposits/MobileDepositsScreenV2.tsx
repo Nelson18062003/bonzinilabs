@@ -14,7 +14,15 @@ import {
   DEPOSIT_STATUS_LABELS,
   DEPOSIT_METHOD_LABELS_SHORT,
 } from '@/types/deposit';
-import type { DepositStatus, DepositMethod } from '@/types/deposit';
+import {
+  FAMILIES_CONF,
+  getFamilyFromMethod,
+  FAMILY_TO_METHODS,
+  TO_PROCESS_STATUSES,
+  getPeriodDates,
+  type FilterKey,
+  type PeriodPreset,
+} from '@/lib/depositsList';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
@@ -37,32 +45,8 @@ import {
   Card,
 } from '@/mobile/designKit';
 
-// ── Familles de méthode (identité de marque conservée) ───────
-const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean; name: string }> = {
-  BANK: { letter: 'B', bg: '#1e3a5f', name: 'Banque' },
-  AGENCY_BONZINI: { letter: 'A', bg: '#A947FE', name: 'Agence' },
-  ORANGE_MONEY: { letter: 'O', bg: '#ff6600', name: 'Orange' },
-  MTN_MONEY: { letter: 'M', bg: '#ffcb05', dark: true, name: 'MTN' },
-  WAVE: { letter: 'W', bg: '#1dc3e3', name: 'Wave' },
-};
-
-function getFamilyFromMethod(method: string): string {
-  if (['bank_transfer', 'bank_cash'].includes(method)) return 'BANK';
-  if (method === 'agency_cash') return 'AGENCY_BONZINI';
-  if (['om_transfer', 'om_withdrawal'].includes(method)) return 'ORANGE_MONEY';
-  if (['mtn_transfer', 'mtn_withdrawal'].includes(method)) return 'MTN_MONEY';
-  if (method === 'wave') return 'WAVE';
-  return 'BANK';
-}
-
-// Mapping famille → méthodes DB (pour filtrage)
-const FAMILY_TO_METHODS: Record<string, DepositMethod[]> = {
-  BANK: ['bank_transfer', 'bank_cash'],
-  AGENCY_BONZINI: ['agency_cash'],
-  ORANGE_MONEY: ['om_transfer', 'om_withdrawal'],
-  MTN_MONEY: ['mtn_transfer', 'mtn_withdrawal'],
-  WAVE: ['wave'],
-};
+// Méthode families, status buckets & period presets are shared with the desktop
+// screen — see '@/lib/depositsList'.
 
 // ── Composant MIcon (vignette méthode, couleur de marque) ────
 function MIcon({ family, size = 38 }: { family: string; size?: number }) {
@@ -99,38 +83,6 @@ function SlaDot({ level }: { level: SlaLevel }) {
       }}
     />
   );
-}
-
-// ── Filtres statut ───────────────────────────────────────────
-type FilterKey = DepositStatus | 'all' | 'to_process';
-const TO_PROCESS_STATUSES: DepositStatus[] = ['proof_submitted', 'admin_review'];
-
-// ── Présets période ──────────────────────────────────────────
-type PeriodPreset = 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom';
-
-function getPeriodDates(preset: PeriodPreset): { dateFrom: string; dateTo: string } {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  if (preset === 'today') {
-    return { dateFrom: ymd(now), dateTo: ymd(now) };
-  }
-  if (preset === 'yesterday') {
-    const y = new Date(now);
-    y.setDate(y.getDate() - 1);
-    return { dateFrom: ymd(y), dateTo: ymd(y) };
-  }
-  if (preset === 'week') {
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    return { dateFrom: ymd(monday), dateTo: '' };
-  }
-  if (preset === 'month') {
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { dateFrom: ymd(first), dateTo: '' };
-  }
-  return { dateFrom: '', dateTo: '' };
 }
 
 // KPI rapides → tone unifié (la couleur porte le statut).

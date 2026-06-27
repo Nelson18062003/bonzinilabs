@@ -3,7 +3,8 @@ import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import i18n from '@/i18n';
 import { subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
-import type { DailyRate, RateAdjustment, CalculationResult } from '@/types/rates';
+import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import type { DailyRate, RateAdjustment, CalculationResult, RateSuggestion } from '@/types/rates';
 
 export type ChartPeriod = '7d' | '30d' | '3m' | '1y';
 
@@ -168,6 +169,83 @@ export function useUpdateRateAdjustment() {
     },
     onError: (error: Error) => {
       toast.error(error.message || i18n.t('hooks.updateRateAdjustment.error', { ns: 'common', defaultValue: 'Erreur lors de la mise à jour' }));
+    },
+  });
+}
+
+// ============================================================
+// Rate suggestion hooks (admin only)
+// ============================================================
+
+/** Fetch the most recent rate suggestion (audit + display) */
+export function useLatestSuggestion() {
+  return useQuery({
+    queryKey: ['rate-suggestions', 'latest'],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('rate_suggestions')
+        .select('*')
+        .order('computed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data as RateSuggestion | null) ?? null;
+    },
+    staleTime: 30_000,
+    retry: 1,
+  });
+}
+
+/** Trigger the suggest-daily-rates Edge Function to compute a fresh suggestion */
+export function useComputeSuggestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<RateSuggestion> => {
+      const { data: { session } } = await supabaseAdmin.auth.getSession();
+      if (!session) throw new Error(i18n.t('hooks.computeSuggestion.notAuth', { ns: 'common', defaultValue: 'Session admin requise' }));
+
+      const res = await fetch(`${VITE_SUPABASE_URL}/functions/v1/suggest-daily-rates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const json = await res.json().catch(() => ({ success: false, error: res.statusText }));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || `Erreur ${res.status}`);
+      }
+      return json.suggestion as RateSuggestion;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rate-suggestions'] });
+      toast.success(i18n.t('hooks.computeSuggestion.success', { ns: 'common', defaultValue: 'Suggestion mise à jour' }));
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || i18n.t('hooks.computeSuggestion.error', { ns: 'common', defaultValue: 'Échec du calcul de la suggestion' }));
+    },
+  });
+}
+
+/** Mark a suggestion as applied after the admin publishes the corresponding rates */
+export function useMarkSuggestionApplied() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { suggestionId: string; rateId: string }) => {
+      const { data, error } = await supabaseAdmin.rpc('mark_suggestion_applied', {
+        p_suggestion_id: params.suggestionId,
+        p_rate_id: params.rateId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rate-suggestions'] });
     },
   });
 }

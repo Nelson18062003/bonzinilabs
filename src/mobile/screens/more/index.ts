@@ -5,3 +5,4 @@ export { MobileHistoryScreen } from './MobileHistoryScreen';
 export { MobileNotificationsScreen } from './MobileNotificationsScreen';
 export { MobileSettingsScreen } from './MobileSettingsScreen';
 export { MobileAdminProfile } from './MobileAdminProfile';
+export { MobileBriefsScreen } from './MobileBriefsScreen';

@@ -11,13 +11,19 @@
 // getEffectiveAt (now/today/yesterday/custom + heure/minute), états.
 // ============================================================
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
-import { Check } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Check, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DateField, TextField } from '@/components/form';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
-import { useCreateDailyRates } from '@/hooks/useDailyRates';
+import {
+  useCreateDailyRates,
+  useLatestSuggestion,
+  useComputeSuggestion,
+  useMarkSuggestionApplied,
+} from '@/hooks/useDailyRates';
 import { SURFACE, TEXT, PrimaryPill, StatusPill } from '@/mobile/designKit';
 import { MethodLogo } from '../components/MethodLogo';
 
@@ -51,6 +57,15 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   }, [currentRate]);
 
   const createRates = useCreateDailyRates();
+  const { data: latestSuggestion } = useLatestSuggestion();
+  const computeSuggestion = useComputeSuggestion();
+  const markApplied = useMarkSuggestionApplied();
+
+  const handleUseSuggestion = () => {
+    if (!latestSuggestion) return;
+    const v = latestSuggestion.suggested_rate.toString();
+    setRates({ cash: v, alipay: v, wechat: v, virement: v });
+  };
 
   const getEffectiveAt = (): string => {
     const now = new Date();
@@ -70,13 +85,23 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   };
 
   const handleApply = () => {
-    createRates.mutate({
-      rate_cash: parseFloat(rates.cash) || 0,
-      rate_alipay: parseFloat(rates.alipay) || 0,
-      rate_wechat: parseFloat(rates.wechat) || 0,
-      rate_virement: parseFloat(rates.virement) || 0,
-      effective_at: getEffectiveAt(),
-    });
+    const suggestionId = latestSuggestion && !latestSuggestion.applied ? latestSuggestion.id : null;
+    createRates.mutate(
+      {
+        rate_cash: parseFloat(rates.cash) || 0,
+        rate_alipay: parseFloat(rates.alipay) || 0,
+        rate_wechat: parseFloat(rates.wechat) || 0,
+        rate_virement: parseFloat(rates.virement) || 0,
+        effective_at: getEffectiveAt(),
+      },
+      {
+        onSuccess: (result) => {
+          if (suggestionId && result.rate_id) {
+            markApplied.mutate({ suggestionId, rateId: result.rate_id });
+          }
+        },
+      },
+    );
   };
 
   const activeSince = currentRate?.effective_at
@@ -110,6 +135,94 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           </div>
         </div>
       )}
+
+      {/* ── 1.5. SUGGESTION AUTO — Binance P2P live ── */}
+      <div className={cn('rounded-[20px] p-4', SURFACE.card, SURFACE.shadow)}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+              <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </span>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                Suggestion automatique
+              </div>
+              <div className={cn('text-[11px]', TEXT.muted)}>
+                Binance P2P · méthode Nelson v2
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => computeSuggestion.mutate()}
+            disabled={computeSuggestion.isPending}
+            className="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors disabled:opacity-60"
+          >
+            {computeSuggestion.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Recalculer
+          </button>
+        </div>
+
+        {!latestSuggestion ? (
+          <div className={cn('mt-3 text-[12px]', TEXT.muted)}>
+            Aucune suggestion encore. Touche <b>Recalculer</b> pour interroger Binance P2P en direct.
+          </div>
+        ) : (
+          <>
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-3.5 py-3 dark:bg-amber-500/10">
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  Taux suggéré · 1M XAF
+                </div>
+                <div className="mt-0.5 text-[24px] font-extrabold leading-none tabular-nums text-amber-700 dark:text-amber-300">
+                  {latestSuggestion.suggested_rate.toLocaleString('fr-FR')} <span className="text-sm">CNY</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleUseSuggestion}
+                className="shrink-0 rounded-full bg-amber-600 px-3.5 py-2 text-[12px] font-bold text-white"
+              >
+                Pré-remplir
+              </button>
+            </div>
+
+            <div className="mt-2.5 grid grid-cols-2 gap-2 text-[11px]">
+              <div className={cn('rounded-xl px-3 py-2', SURFACE.card)}>
+                <div className={cn('text-[9px] font-bold uppercase tracking-wider', TEXT.muted)}>
+                  CMR · max + {latestSuggestion.cmr_margin_xaf} XAF
+                </div>
+                <div className={cn('font-bold tabular-nums', TEXT.strong)}>
+                  {(latestSuggestion.cmr_rate_max + latestSuggestion.cmr_margin_xaf).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} XAF/USDT
+                </div>
+                <div className={cn('text-[10px]', TEXT.muted)}>
+                  {latestSuggestion.cmr_orders.length} ordres MTN/Orange
+                </div>
+              </div>
+              <div className={cn('rounded-xl px-3 py-2', SURFACE.card)}>
+                <div className={cn('text-[9px] font-bold uppercase tracking-wider', TEXT.muted)}>
+                  CHN · moyenne
+                </div>
+                <div className={cn('font-bold tabular-nums', TEXT.strong)}>
+                  {latestSuggestion.chn_rate_avg.toLocaleString('fr-FR', { maximumFractionDigits: 4 })} CNY/USDT
+                </div>
+                <div className={cn('text-[10px]', TEXT.muted)}>
+                  {latestSuggestion.chn_orders.length} ordres Alipay/WeChat
+                </div>
+              </div>
+            </div>
+
+            <div className={cn('mt-2 text-center text-[10px]', TEXT.muted)}>
+              Calculé il y a {formatDistanceToNow(new Date(latestSuggestion.computed_at), { locale: fr })}
+              {latestSuggestion.applied && ' · déjà appliqué'}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ── 2. SAISIE — nouveaux taux ── */}
       <div>

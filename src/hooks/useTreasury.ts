@@ -630,3 +630,52 @@ export function useWacEvolution(fromIso: string, toIso: string) {
     staleTime: 30_000,
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Flux USDT effectif — une ligne par opération réellement saisie dans Trésorerie.
+// Source : tables usdt_purchases / usdt_sales (`implicit_rate` = taux effectif
+// de l'opération, calculé à la saisie : xaf_amount/usdt pour un achat,
+// cny_amount/usdt pour une vente). Les opérations annulées sont exclues.
+//
+// Les graphes du dashboard (évolution + distribution) consomment cette série
+// telle quelle : un point = une opération réelle, pas un snapshot de marché.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface FlowPoint {
+  at: string;
+  rate: number;   // implicit_rate : XAF/USDT (achat) ou CNY/USDT (vente)
+  usdt: number;   // volume USDT de l'opération (pour pondérer la distribution)
+}
+
+export function useUsdtFlowEvolution(fromIso: string, toIso: string) {
+  return useQuery({
+    queryKey: ['treasury', 'usdt-flow-evolution', fromIso, toIso],
+    queryFn: async (): Promise<{ purchases: FlowPoint[]; sales: FlowPoint[] }> => {
+      const [purchases, sales] = await Promise.all([
+        supabaseAdmin
+          .from('usdt_purchases')
+          .select('occurred_at, implicit_rate, usdt_amount, voided_at')
+          .gte('occurred_at', fromIso)
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: true }),
+        supabaseAdmin
+          .from('usdt_sales')
+          .select('occurred_at, implicit_rate, usdt_amount, voided_at')
+          .gte('occurred_at', fromIso)
+          .lte('occurred_at', toIso)
+          .order('occurred_at', { ascending: true }),
+      ]);
+      if (purchases.error) throw purchases.error;
+      if (sales.error) throw sales.error;
+      return {
+        purchases: (purchases.data ?? [])
+          .filter((p) => !p.voided_at && p.implicit_rate != null)
+          .map((p) => ({ at: p.occurred_at, rate: Number(p.implicit_rate), usdt: Number(p.usdt_amount) })),
+        sales: (sales.data ?? [])
+          .filter((s) => !s.voided_at && s.implicit_rate != null)
+          .map((s) => ({ at: s.occurred_at, rate: Number(s.implicit_rate), usdt: Number(s.usdt_amount) })),
+      };
+    },
+    staleTime: 30_000,
+  });
+}

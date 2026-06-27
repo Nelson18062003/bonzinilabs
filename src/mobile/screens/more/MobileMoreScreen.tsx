@@ -18,6 +18,7 @@ import {
   MessageCircle,
   MessageSquareQuote,
   Sparkles,
+  Newspaper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -164,6 +165,12 @@ export function MobileMoreScreen() {
               description={t('notificationCenter', { defaultValue: 'Centre de notifications' })}
               onClick={() => navigate('/m/more/notifications')}
               badge={notifCount && notifCount > 0 ? String(notifCount) : undefined}
+            />
+            <MenuRow
+              icon={Newspaper}
+              label="Veille macro"
+              description="Macro, news Iran, posts Trump, prédictions IA"
+              onClick={() => navigate('/m/more/briefs')}
             />
           </Card>
         </div>

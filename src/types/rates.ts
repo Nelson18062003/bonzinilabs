@@ -62,3 +62,27 @@ export const TIERS = [
 export const MIN_AMOUNT_XAF = 10_000;
 
 export type InputCurrency = 'xaf' | 'cny';
+
+export interface SuggestionMerchant {
+  name: string;
+  price: number;
+  tradable: number;
+  orders: number;
+  finishRate: number;
+}
+
+export interface RateSuggestion {
+  id: string;
+  computed_at: string;
+  cmr_rate_max: number;
+  cmr_margin_xaf: number;
+  cmr_orders: SuggestionMerchant[];
+  chn_rate_avg: number;
+  chn_orders: SuggestionMerchant[];
+  suggested_rate: number;
+  method: string;
+  applied: boolean;
+  applied_at: string | null;
+  applied_rate_id: string | null;
+  applied_by: string | null;
+}

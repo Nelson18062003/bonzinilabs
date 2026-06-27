@@ -10,6 +10,8 @@ interface MobileHeaderProps {
   backTo?: string;
   onBack?: () => void;
   rightElement?: ReactNode;
+  /** Élément optionnel affiché juste avant le titre (ex. avatar / mascotte). */
+  leading?: ReactNode;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export function MobileHeader({
   backTo,
   onBack,
   rightElement,
+  leading,
   className
 }: MobileHeaderProps) {
   const navigate = useNavigate();
@@ -33,6 +36,15 @@ export function MobileHeader({
       navigate(-1);
     }
   };
+
+  const titleBlock = (
+    <>
+      <h1 className="text-base font-semibold truncate">{title}</h1>
+      {subtitle && (
+        <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+      )}
+    </>
+  );
 
   return (
     <header
@@ -57,12 +69,10 @@ export function MobileHeader({
           )}
         </div>
 
-        {/* Center - Title */}
-        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
-          <h1 className="text-base font-semibold truncate">{title}</h1>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
-          )}
+        {/* Center - Title (+ leading element if provided) */}
+        <div className={cn('flex-1 flex justify-center min-w-0', leading ? 'flex-row items-center gap-2' : 'flex-col items-center')}>
+          {leading}
+          {leading ? <div className="flex flex-col items-center min-w-0">{titleBlock}</div> : titleBlock}
         </div>
 
         {/* Right side - Actions or spacer */}

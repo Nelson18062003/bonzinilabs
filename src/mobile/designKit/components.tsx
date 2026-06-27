@@ -47,6 +47,7 @@ export function Holder({
   size = 'md',
   className,
   onClick,
+  ariaLabel,
   children,
 }: {
   /** Optional lucide-style icon component. */
@@ -56,6 +57,8 @@ export function Holder({
   className?: string;
   /** When set, the holder renders as a button. */
   onClick?: () => void;
+  /** Accessible label when the holder is an icon-only button. */
+  ariaLabel?: string;
   /** Alternative content (e.g. initials) when no icon is given. */
   children?: React.ReactNode;
 }) {
@@ -71,7 +74,7 @@ export function Holder({
   );
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={classes}>
+      <button type="button" onClick={onClick} aria-label={ariaLabel} className={classes}>
         {inner}
       </button>
     );

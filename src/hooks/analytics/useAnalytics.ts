@@ -1181,3 +1181,58 @@ export function useDepositStatusTimeline(range: DateRange) {
   });
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// 16. USDT cost & price history — agrégation rate_snapshots
+//   - costXaf : ce que coûte 1 USDT en XAF côté Cameroun (VWAP des asks)
+//   - priceCny : ce que rapporte 1 USDT en CNY côté Chine (VWAP des bids ajustés OTC)
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface UsdtFlowPoint {
+  bucket: string;
+  label: string;
+  costXaf: number | null;     // moyenne pondérée du xaf_ask sur le bucket
+  priceCny: number | null;    // moyenne pondérée du cny_bid_adjusted sur le bucket
+  count: number;              // nb de snapshots agrégés (utile pour le tooltip)
+}
+
+export function useUsdtFlowHistory(range: DateRange) {
+  return useQuery<UsdtFlowPoint[]>({
+    queryKey: ['analytics-v2-usdt-flow', range.from.toISOString(), range.to.toISOString(), range.granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
+    queryFn: async () => {
+      const { fromISO, toISO } = toSupabaseBounds(range);
+      const { data, error } = await supabaseAdmin
+        .from('rate_snapshots')
+        .select('created_at, xaf_ask, cny_bid_adjusted')
+        .gte('created_at', fromISO)
+        .lt('created_at', toISO)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+
+      const buckets = new Map<string, { sumXaf: number; sumCny: number; count: number }>();
+      for (const b of bucketStarts(range)) {
+        buckets.set(b.toISOString(), { sumXaf: 0, sumCny: 0, count: 0 });
+      }
+
+      for (const row of data ?? []) {
+        if (!row.created_at) continue;
+        const key = bucketKeyFor(new Date(row.created_at), range.granularity);
+        const bucket = buckets.get(key);
+        if (!bucket) continue;
+        if (row.xaf_ask != null) bucket.sumXaf += Number(row.xaf_ask);
+        if (row.cny_bid_adjusted != null) bucket.sumCny += Number(row.cny_bid_adjusted);
+        bucket.count += 1;
+      }
+
+      return [...buckets.entries()].map(([iso, v]) => ({
+        bucket: iso,
+        label: labelFor(new Date(iso), range.granularity),
+        costXaf: v.count > 0 ? v.sumXaf / v.count : null,
+        priceCny: v.count > 0 ? v.sumCny / v.count : null,
+        count: v.count,
+      }));
+    },
+  });
+}
+

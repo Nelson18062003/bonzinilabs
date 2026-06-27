@@ -67,7 +67,7 @@ function Computed({ label, value, unit, decimals }: { label: string; value: numb
   );
 }
 
-export function MobileNewPurchase() {
+export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {}) {
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
   const { data: suppliers } = useCounterparties('usdt_supplier');
@@ -173,10 +173,17 @@ export function MobileNewPurchase() {
     setSplits((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
   return (
-    <div className="flex flex-col min-h-full bg-background">
-      <MobileHeader title="Nouvel achat USDT" showBack backTo="/m/more/treasury" />
+    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
+      {desktop ? (
+        <header className="mb-6">
+          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">Nouvel achat USDT</h2>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Entrée de stock USDT contre XAF</p>
+        </header>
+      ) : (
+        <MobileHeader title="Nouvel achat USDT" showBack backTo="/m/more/treasury" />
+      )}
 
-      <div className="px-5 py-5 space-y-6">
+      <div className={desktop ? 'space-y-6' : 'px-5 py-5 space-y-6'}>
         {/* Fournisseur */}
         <div>
           <FieldLabel>Fournisseur</FieldLabel>

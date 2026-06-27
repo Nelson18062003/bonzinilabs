@@ -121,7 +121,7 @@ export function ActionTile({
   tone?: Tone;
 }) {
   return (
-    <button onClick={onClick} className={cn(SOFT_CARD, 'flex w-full items-center gap-3.5 p-4 text-left transition active:scale-[0.99]')}>
+    <button onClick={onClick} className={cn(SOFT_CARD, 'flex w-full items-center gap-3.5 p-4 text-left outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]')}>
       <IconChip icon={icon} tone={tone} />
       <div className="min-w-0 flex-1">
         <div className="text-[15px] font-semibold text-foreground">{label}</div>
