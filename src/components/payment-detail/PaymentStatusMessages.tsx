@@ -1,7 +1,9 @@
 // ============================================================
-// Status-driven narrative cards.
-// Renders zero or more PaymentStatusCards depending on the current
-// payment state and any client-visible message Bonzini left.
+// Messages de statut — fiche v7 : la narration générique (prêt /
+// en cours / terminé) vit désormais dans le Suivi ; ne restent ici
+// que les cartes porteuses d'information : motif de rejet,
+// annulation admin et message de Bonzini (client_visible_comment,
+// toujours prioritaire — piège #10).
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
@@ -17,30 +19,6 @@ export function PaymentStatusMessages({ payment }: Props) {
 
   return (
     <>
-      {payment.status === 'ready_for_payment' && (
-        <PaymentStatusCard
-          variant="info"
-          title={t('detail.readyForProcessing')}
-          description={t('detail.bonziniWillProcess')}
-        />
-      )}
-
-      {payment.status === 'processing' && (
-        <PaymentStatusCard
-          variant="progress"
-          spinIcon
-          title={t('statusConfig.processing')}
-          description={t('detail.bonziniWillProcess')}
-        />
-      )}
-
-      {payment.status === 'completed' && payment.method !== 'cash' && (
-        <PaymentStatusCard
-          variant="success"
-          title={t('statusConfig.completed')}
-        />
-      )}
-
       {payment.status === 'rejected' && payment.rejection_reason && (
         <PaymentStatusCard
           variant="rejected"

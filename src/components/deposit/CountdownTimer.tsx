@@ -55,43 +55,43 @@ interface CountdownTimerProps {
 const URGENCY_STYLES = {
   expired: {
     icon: XCircle,
-    textColor: 'text-muted-foreground',
-    bgColor: 'bg-muted/50',
-    borderColor: 'border-muted',
-    progressColor: 'bg-muted',
-    iconColor: 'text-muted-foreground',
-    bannerBorder: 'border-gray-400',
-    bannerBg: 'bg-gray-400/5',
+    textColor: 'text-[#8E8BA0] dark:text-[#9B98AD]',
+    bgColor: 'bg-[#F0EFF5] dark:bg-white/[0.04]',
+    borderColor: 'border-transparent',
+    progressColor: 'bg-[#C7C4D6]',
+    iconColor: 'text-[#8E8BA0] dark:text-[#9B98AD]',
+    bannerBorder: 'border-[#C7C4D6]',
+    bannerBg: 'bg-[#F0EFF5] dark:bg-white/[0.04]',
   },
   critical: {
     icon: AlertTriangle,
-    textColor: 'text-destructive',
-    bgColor: 'bg-destructive/5',
-    borderColor: 'border-destructive/30',
-    progressColor: 'bg-destructive',
-    iconColor: 'text-destructive',
-    bannerBorder: 'border-destructive',
-    bannerBg: 'bg-destructive/5',
+    textColor: 'text-[#C0504D] dark:text-[#E79A9A]',
+    bgColor: 'bg-[#FBE7E7] dark:bg-[#3A2526]',
+    borderColor: 'border-[#C0504D]/25',
+    progressColor: 'bg-[#C0504D]',
+    iconColor: 'text-[#C0504D] dark:text-[#E79A9A]',
+    bannerBorder: 'border-[#C0504D]',
+    bannerBg: 'bg-[#FBE7E7] dark:bg-[#3A2526]',
   },
   warning: {
     icon: Clock,
-    textColor: 'text-amber-600',
-    bgColor: 'bg-amber-50 dark:bg-amber-500/5',
-    borderColor: 'border-amber-200 dark:border-amber-500/30',
-    progressColor: 'bg-amber-500',
-    iconColor: 'text-amber-600',
-    bannerBorder: 'border-amber-500',
-    bannerBg: 'bg-amber-500/5',
+    textColor: 'text-[#9A6B12] dark:text-[#E7C083]',
+    bgColor: 'bg-[#F8EFD8] dark:bg-[#372D14]',
+    borderColor: 'border-[#E8932A]/25',
+    progressColor: 'bg-[#E8932A]',
+    iconColor: 'text-[#9A6B12] dark:text-[#E7C083]',
+    bannerBorder: 'border-[#E8932A]',
+    bannerBg: 'bg-[#F8EFD8] dark:bg-[#372D14]',
   },
   normal: {
     icon: Clock,
-    textColor: 'text-emerald-600',
-    bgColor: 'bg-emerald-50 dark:bg-emerald-500/5',
-    borderColor: 'border-emerald-200 dark:border-emerald-500/30',
-    progressColor: 'bg-emerald-500',
-    iconColor: 'text-emerald-600',
-    bannerBorder: 'border-emerald-500',
-    bannerBg: 'bg-emerald-500/5',
+    textColor: 'text-[#5B4CC4] dark:text-[#B5AAF0]',
+    bgColor: 'bg-[#EAE7FA] dark:bg-[#272252]',
+    borderColor: 'border-[#8B5CF6]/25',
+    progressColor: 'bg-[#8B5CF6]',
+    iconColor: 'text-[#5B4CC4] dark:text-[#B5AAF0]',
+    bannerBorder: 'border-[#8B5CF6]',
+    bannerBg: 'bg-[#EAE7FA] dark:bg-[#272252]',
   },
 } as const;
 
@@ -128,7 +128,7 @@ export function CountdownTimer({
     return (
       <div className={cn('flex items-center gap-1.5', styles.textColor)}>
         <IconComponent className={cn('w-4 h-4', styles.iconColor)} />
-        <span className="text-sm font-medium tabular-nums">{timer.formattedTime}</span>
+        <span className="text-[13px] font-bold tabular-nums">{timer.formattedTime}</span>
       </div>
     );
   }
@@ -136,7 +136,7 @@ export function CountdownTimer({
   // Banner variant: left-border accent style
   if (variant === 'banner') {
     return (
-      <div className={cn('rounded-xl border-l-4 p-4', styles.bannerBorder, styles.bannerBg)}>
+      <div className={cn('rounded-2xl border-l-4 p-4', styles.bannerBorder, styles.bannerBg)}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <IconComponent className={cn('w-4 h-4', styles.iconColor)} />
@@ -149,7 +149,7 @@ export function CountdownTimer({
           </span>
         </div>
 
-        <div className="relative h-1.5 rounded-full bg-muted/50 overflow-hidden">
+        <div className="relative h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
           <div
             className={cn(
               'absolute inset-y-0 left-0 rounded-full transition-all duration-1000',
@@ -174,7 +174,7 @@ export function CountdownTimer({
 
   // Default variant: card style
   return (
-    <div className={cn('rounded-xl border p-4', styles.bgColor, styles.borderColor)}>
+    <div className={cn('rounded-2xl border p-4', styles.bgColor, styles.borderColor)}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <IconComponent className={cn('w-5 h-5', styles.iconColor)} />
@@ -187,7 +187,7 @@ export function CountdownTimer({
         </span>
       </div>
 
-      <div className="relative h-2 rounded-full bg-muted/50 overflow-hidden">
+      <div className="relative h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
         <div
           className={cn(
             'absolute inset-y-0 left-0 rounded-full transition-all duration-1000',

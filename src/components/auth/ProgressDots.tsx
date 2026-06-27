@@ -15,8 +15,8 @@ export function ProgressDots({ totalSteps, currentStep, className }: ProgressDot
           className={cn(
             'h-2 rounded-full transition-all duration-300',
             i === currentStep
-              ? 'w-8 bg-primary'
-              : 'w-2 bg-muted-foreground/30'
+              ? 'w-8 bg-[#8B5CF6]'
+              : 'w-2 bg-black/15 dark:bg-white/20'
           )}
         />
       ))}

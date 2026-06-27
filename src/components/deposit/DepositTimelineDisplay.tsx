@@ -1,43 +1,15 @@
 // ============================================================
-// MODULE DEPOTS — DepositTimelineDisplay
-// Visual timeline with step indicators (default + compact variant)
+// MODULE DEPOTS — DepositTimelineDisplay (refonte « Direction A »).
+// Suivi en jalons cycle de vie : vert = fait · lilas = en cours côté
+// Bonzini · rouge = action requise / refusé / annulé · gris = à venir.
+// API inchangée (steps issus de buildDepositTimelineSteps, variant).
 // ============================================================
-import {
-  Check,
-  Clock,
-  FileText,
-  Search,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Ban,
-} from 'lucide-react';
+import { Check, AlertCircle, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TimelineStepUI } from '@/lib/depositTimeline';
-import { getStepColors } from '@/lib/depositTimeline';
+import { TEXT } from '@/mobile/designKit';
 
-function getIcon(stepKey: string, status: 'completed' | 'current' | 'pending') {
-  if (status === 'completed') return Check;
-
-  switch (stepKey) {
-    case 'created':
-      return Clock;
-    case 'proof_submitted':
-      return FileText;
-    case 'admin_review':
-      return Search;
-    case 'validated':
-      return CheckCircle;
-    case 'correction_requested':
-      return AlertCircle;
-    case 'rejected':
-      return XCircle;
-    case 'cancelled':
-      return Ban;
-    default:
-      return Clock;
-  }
-}
+const GREEN = '#2E7D52', LILAC = '#8B5CF6', RED = '#C0504D';
 
 interface DepositTimelineDisplayProps {
   steps: TimelineStepUI[];
@@ -45,118 +17,51 @@ interface DepositTimelineDisplayProps {
   variant?: 'default' | 'compact';
 }
 
-export function DepositTimelineDisplay({ steps, className, variant = 'default' }: DepositTimelineDisplayProps) {
-  const isCompact = variant === 'compact';
+/** Couleur + icône du jalon courant selon sa nature. */
+function currentTone(key: string): { color: string; Icon: typeof Check; spin?: boolean } {
+  if (key === 'validated') return { color: GREEN, Icon: Check };
+  if (key === 'rejected' || key === 'cancelled') return { color: RED, Icon: X };
+  if (key === 'correction_requested') return { color: RED, Icon: AlertCircle };
+  return { color: LILAC, Icon: Loader2, spin: true };
+}
 
+export function DepositTimelineDisplay({ steps, className }: DepositTimelineDisplayProps) {
   return (
     <div className={cn('relative', className)}>
       {steps.map((step, index) => {
-        const Icon = getIcon(step.key, step.status);
-        const isLast = index === steps.length - 1;
-        const colorClasses = getStepColors(step.key, step.status);
+        const last = index === steps.length - 1;
+        const done = step.status === 'completed';
+        const current = step.status === 'current';
+        const tone = current ? currentTone(step.key) : null;
+        const dotColor = done ? GREEN : tone?.color;
+        const Icon = done ? Check : tone?.Icon;
+        const next = steps[index + 1];
+        const lineColor = done && next && (next.status === 'completed' || next.status === 'current') ? GREEN : undefined;
 
         return (
-          <div
-            key={step.id}
-            className={cn(
-              'flex',
-              isCompact ? 'gap-3 pb-4 last:pb-0' : 'gap-4 pb-6 last:pb-0',
-            )}
-          >
-            {/* Circle + connector line */}
+          <div key={step.id} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div
-                className={cn(
-                  'rounded-full flex items-center justify-center transition-all border-2',
-                  isCompact ? 'w-7 h-7' : 'w-10 h-10',
-                  colorClasses,
-                )}
-              >
-                <Icon className={isCompact ? 'w-3.5 h-3.5' : 'w-5 h-5'} />
-              </div>
-              {!isLast && (
+              {dotColor && Icon ? (
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ background: dotColor }}>
+                  <Icon className={cn('h-3 w-3 text-white', tone?.spin && 'animate-spin')} strokeWidth={3} />
+                </div>
+              ) : (
+                <div className="h-5 w-5 shrink-0 rounded-full border-2 border-black/[0.10] dark:border-white/[0.12]" />
+              )}
+              {!last && (
                 <div
-                  className={cn(
-                    'flex-1 mt-1.5',
-                    isCompact ? 'w-px min-h-[16px]' : 'w-0.5 mt-2 min-h-[24px]',
-                    step.status === 'completed' ? 'bg-primary' : 'bg-border',
-                  )}
+                  className={cn('my-1 w-0.5 flex-1', !lineColor && 'bg-black/[0.08] dark:bg-white/[0.10]')}
+                  style={{ minHeight: 16, ...(lineColor ? { background: lineColor } : {}) }}
                 />
               )}
             </div>
 
-            {/* Label + description + date + badge */}
-            <div className={cn('flex-1', isCompact ? 'pt-1' : 'pt-2')}>
-              <p
-                className={cn(
-                  isCompact ? 'text-sm font-medium' : 'font-medium',
-                  step.status === 'pending' ? 'text-muted-foreground' : 'text-foreground',
-                )}
-              >
-                {step.label}
-              </p>
-
+            <div className={cn('min-w-0 flex-1', last ? 'pb-0' : 'pb-3')}>
+              <p className={cn('text-[14px] font-bold', step.status === 'pending' ? TEXT.muted : TEXT.strong)}>{step.label}</p>
               {step.description && step.status !== 'pending' && (
-                <p className={cn('text-muted-foreground mt-0.5', isCompact ? 'text-xs' : 'text-sm')}>
-                  {step.description}
-                </p>
+                <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{step.description}</p>
               )}
-
-              {step.formattedDate && (
-                <p className="text-xs text-muted-foreground mt-0.5">{step.formattedDate}</p>
-              )}
-
-              {/* Status badges */}
-              {step.status === 'current' &&
-                !['validated', 'rejected', 'correction_requested', 'cancelled'].includes(step.key) && (
-                  <span className={cn(
-                    'inline-flex items-center gap-1 text-primary font-medium mt-1 bg-primary/10 px-2 py-0.5 rounded-full',
-                    isCompact ? 'text-[10px]' : 'text-xs',
-                  )}>
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                    En cours
-                  </span>
-                )}
-
-              {step.status === 'current' && step.key === 'validated' && (
-                  <span className={cn(
-                    'inline-flex items-center gap-1 text-emerald-600 font-medium mt-1 bg-emerald-100 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full',
-                    isCompact ? 'text-[10px]' : 'text-xs',
-                  )}>
-                    <CheckCircle className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-                    Terminé
-                  </span>
-                )}
-
-              {step.status === 'current' && step.key === 'rejected' && (
-                <span className={cn(
-                  'inline-flex items-center gap-1 text-destructive font-medium mt-1 bg-destructive/10 px-2 py-0.5 rounded-full',
-                  isCompact ? 'text-[10px]' : 'text-xs',
-                )}>
-                  <XCircle className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-                  Rejeté
-                </span>
-              )}
-
-              {step.status === 'current' && step.key === 'correction_requested' && (
-                <span className={cn(
-                  'inline-flex items-center gap-1 text-amber-600 font-medium mt-1 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded-full',
-                  isCompact ? 'text-[10px]' : 'text-xs',
-                )}>
-                  <AlertCircle className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-                  Action requise
-                </span>
-              )}
-
-              {step.status === 'current' && step.key === 'cancelled' && (
-                <span className={cn(
-                  'inline-flex items-center gap-1 text-gray-500 font-medium mt-1 bg-gray-500/10 px-2 py-0.5 rounded-full',
-                  isCompact ? 'text-[10px]' : 'text-xs',
-                )}>
-                  <Ban className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-                  Annulé
-                </span>
-              )}
+              {step.formattedDate && <p className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{step.formattedDate}</p>}
             </div>
           </div>
         );

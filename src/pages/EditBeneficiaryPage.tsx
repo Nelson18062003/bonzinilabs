@@ -1,19 +1,16 @@
 // ============================================================
-// PAGE — Edit Beneficiary (client side).
-// Full-page editor that replaces the in-place dialog. The page
-// pattern matches the admin's MobileBeneficiaryEdit so iOS keyboards
-// don't fight a Dialog scroll container — this is a much better
-// mobile UX. The form rendering / state is delegated to the shared
-// <BeneficiaryEditForm>; this page only owns chrome + side effects.
+// PAGE — Edit Beneficiary (client side). Refonte « Direction A » (designKit) :
+// canvas, en-tête unique, barre d'actions en bas (SoftPill/PrimaryPill).
+// <BeneficiaryEditForm> partagé conservé. Logique 100% PRÉSERVÉE :
+// toStoredPath (jamais d'URL signée en base), upload QR, save carnet opt-in
+// non-bloquant, transitions de statut via la RPC.
 // ============================================================
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { toStoredPath } from '@/lib/signedUrls';
@@ -29,6 +26,7 @@ import {
   BeneficiaryEditForm,
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryEditForm';
+import { SURFACE, TEXT, PrimaryPill, SoftPill } from '@/mobile/designKit';
 
 export default function EditBeneficiaryPage() {
   const { paymentId } = useParams();
@@ -47,6 +45,24 @@ export default function EditBeneficiaryPage() {
     if (paymentId) navigate(`/payments/${paymentId}`);
     else navigate('/payments');
   };
+
+  // En-tête drill-in unifié (même langage que la fiche / le wizard).
+  const Header = ({ title }: { title: string }) => (
+    <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+      <button
+        onClick={goBackToPayment}
+        aria-label={t('detail.backToPayments')}
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95',
+          SURFACE.card,
+          SURFACE.shadow,
+        )}
+      >
+        <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+      </button>
+      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</span>
+    </div>
+  );
 
   const handleSave = async (values: BeneficiaryFormValues, qrFile: File | null) => {
     if (!payment || !paymentId) return;
@@ -136,13 +152,15 @@ export default function EditBeneficiaryPage() {
 
   if (isLoading) {
     return (
-      <MobileLayout>
-        <PageHeader title={t('detail.dialog.editTitle')} showBack onBack={goBackToPayment} />
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-32 w-full rounded-xl" />
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+          <Header title={t('detail.dialog.editTitle')} />
+          <div className="space-y-3 p-4 pt-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={cn('h-12 w-full animate-pulse rounded-2xl', SURFACE.card, SURFACE.shadow)} />
+            ))}
+            <div className={cn('h-32 w-full animate-pulse rounded-2xl', SURFACE.card, SURFACE.shadow)} />
+          </div>
         </div>
       </MobileLayout>
     );
@@ -150,13 +168,12 @@ export default function EditBeneficiaryPage() {
 
   if (!payment) {
     return (
-      <MobileLayout>
-        <PageHeader title={t('detail.dialog.editTitle')} showBack onBack={() => navigate('/payments')} />
-        <div className="p-4 text-center">
-          <p className="text-muted-foreground">{t('detail.notFound')}</p>
-          <Button onClick={() => navigate('/payments')} className="mt-4">
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center', SURFACE.canvas)}>
+          <p className={cn('text-[15px]', TEXT.muted)}>{t('detail.notFound')}</p>
+          <PrimaryPill onClick={() => navigate('/payments')} className="mt-5">
             {t('detail.backToPayments')}
-          </Button>
+          </PrimaryPill>
         </div>
       </MobileLayout>
     );
@@ -174,79 +191,61 @@ export default function EditBeneficiaryPage() {
     ? t('detail.dialog.editTitle')
     : t('detail.dialog.addTitle');
 
+  const leadIn: Record<string, string> = {
+    alipay: t('detail.dialog.alipayDescription'),
+    wechat: t('detail.dialog.wechatDescription'),
+    bank_transfer: t('detail.dialog.bankTransferDescription'),
+    cash: t('detail.dialog.cashDescription'),
+  };
+
   return (
-    <MobileLayout showNav={false}>
-      <PageHeader title={headerTitle} showBack onBack={goBackToPayment} />
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+        <Header title={headerTitle} />
 
-      <div className="px-4 py-4 pb-32">
-        {/* Method-specific lead-in */}
-        {payment.method === 'alipay' && (
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('detail.dialog.alipayDescription')}
-          </p>
-        )}
-        {payment.method === 'wechat' && (
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('detail.dialog.wechatDescription')}
-          </p>
-        )}
-        {payment.method === 'bank_transfer' && (
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('detail.dialog.bankTransferDescription')}
-          </p>
-        )}
-        {payment.method === 'cash' && (
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('detail.dialog.cashDescription')}
-          </p>
-        )}
-
-        <BeneficiaryEditForm
-          payment={payment}
-          isSubmitting={isBusy}
-          onSubmit={handleSave}
-          onValidationError={(key) => toast.error(t(key))}
-          renderActions={({ submit }) => (
-            <div className="fixed inset-x-0 bottom-0 bg-background border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-10">
-              {payment.method !== 'cash' && !payment.beneficiary_id && (
-                <label className="flex items-center gap-2 text-sm text-muted-foreground mb-3 max-w-screen-md mx-auto cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={alsoSave}
-                    onChange={(e) => setAlsoSave(e.target.checked)}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  {tc('beneficiaries.saveToCarnet', { defaultValue: 'Enregistrer aussi dans mon carnet' })}
-                </label>
-              )}
-              <div className="flex gap-3 max-w-screen-md mx-auto">
-                <button
-                  type="button"
-                  onClick={goBackToPayment}
-                  disabled={isBusy}
-                  className="flex-1 h-12 rounded-xl border border-border font-medium text-sm disabled:opacity-50"
-                >
-                  {t('detail.dialog.close')}
-                </button>
-                {payment.method !== 'cash' && (
-                  <button
-                    type="button"
-                    onClick={submit}
-                    disabled={isBusy}
-                    className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isBusy ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-5 h-5" />
-                    )}
-                    {t('detail.dialog.save')}
-                  </button>
-                )}
-              </div>
-            </div>
+        <div className="px-4 py-4 pb-40">
+          {leadIn[payment.method] && (
+            <p className={cn('mb-4 text-[14px]', TEXT.muted)}>{leadIn[payment.method]}</p>
           )}
-        />
+
+          <BeneficiaryEditForm
+            payment={payment}
+            isSubmitting={isBusy}
+            onSubmit={handleSave}
+            onValidationError={(key) => toast.error(t(key))}
+            renderActions={({ submit }) => (
+              <div
+                className={cn(
+                  'fixed inset-x-0 bottom-0 z-10 border-t border-black/[0.06] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-white/[0.08]',
+                  SURFACE.card,
+                )}
+              >
+                {payment.method !== 'cash' && !payment.beneficiary_id && (
+                  <label className={cn('mx-auto mb-3 flex max-w-screen-md cursor-pointer items-center gap-2 text-[13px]', TEXT.muted)}>
+                    <input
+                      type="checkbox"
+                      checked={alsoSave}
+                      onChange={(e) => setAlsoSave(e.target.checked)}
+                      className="h-4 w-4 rounded border-black/20 accent-[#8B5CF6] dark:border-white/25"
+                    />
+                    {tc('beneficiaries.saveToCarnet', { defaultValue: 'Enregistrer aussi dans mon carnet' })}
+                  </label>
+                )}
+                <div className="mx-auto flex max-w-screen-md gap-3">
+                  <SoftPill onClick={goBackToPayment} disabled={isBusy} className="flex-1 py-[15px] text-[15px]">
+                    {t('detail.dialog.close')}
+                  </SoftPill>
+                  {payment.method !== 'cash' && (
+                    <PrimaryPill onClick={submit} loading={isBusy} className="flex-1 py-[15px] text-[15px]">
+                      <CheckCircle className="h-5 w-5" />
+                      {t('detail.dialog.save')}
+                    </PrimaryPill>
+                  )}
+                </div>
+              </div>
+            )}
+          />
+        </div>
       </div>
     </MobileLayout>
   );

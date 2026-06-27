@@ -33,6 +33,24 @@ import {
 } from '@/mobile/screens/treasury';
 import { DirectionA, DirectionB, DirectionC } from './directions';
 import { DashDirA, DashDirB, DashDirC } from './dashDirections';
+import { PayDirA, PayDirB, PayDirC } from './clientPayDirections';
+import { PayListV2, PayDetailV2 } from './clientPayLayoutV2';
+import { PayListV3, PayDetailV3 } from './clientPayLayoutV3';
+import { PayListV4, PayDetailV4 } from './clientPayLayoutV4';
+import { PayDetailV5 } from './clientPayLayoutV5';
+import { PayListV6, PayDetailV6 } from './clientPayLayoutV6';
+import { PayListV7, PayDetailV7 } from './clientPayLayoutV7';
+import { PayListV8 } from './clientPayLayoutV8';
+import { WizMethod, WizAmount, WizBenefSaved, WizBenefNew, WizConfirm } from './clientPayWizard';
+import { DepList, DepWizAmount, DepWizMethod, DepWizBank, DepWizRecap, DepDetailAwaiting, DepDetailValidated } from './clientDepositLayout';
+import { WalletHomeShown, WalletHomeHidden } from './clientWalletLayout';
+import { BenefList, BenefEditor } from './clientBeneficiariesLayout';
+import { HistoryScreen } from './clientHistoryLayout';
+import { ProfileScreen, NotificationsScreen } from './clientProfileLayout';
+import { RatesScreen } from './clientRatesLayout';
+import { SupportList } from './clientSupportLayout';
+import { AuthLogin, AuthSignup, AuthOnboarding } from './clientAuthLayout';
+import { ShellHome, ShellPayments } from './clientShellLayout';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -94,6 +112,59 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'dash-a': { Comp: DashDirA, route: '/' },
   'dash-b': { Comp: DashDirB, route: '/' },
   'dash-c': { Comp: DashDirC, route: '/' },
+  // Refonte app CLIENT — directions module Paiements
+  'cpay-a': { Comp: PayDirA, route: '/' },
+  'cpay-b': { Comp: PayDirB, route: '/' },
+  'cpay-c': { Comp: PayDirC, route: '/' },
+  // Refonte STRUCTURE (IA) — liste + détail repensés
+  'cpay-list-v2': { Comp: PayListV2, route: '/' },
+  'cpay-detail-v2': { Comp: PayDetailV2, route: '/' },
+  'cpay-list-v3': { Comp: PayListV3, route: '/' },
+  'cpay-detail-v3': { Comp: PayDetailV3, route: '/' },
+  'cpay-list-v4': { Comp: PayListV4, route: '/' },
+  'cpay-detail-v4': { Comp: PayDetailV4, route: '/' },
+  'cpay-detail-v5': { Comp: PayDetailV5, route: '/' },
+  'cpay-list-v6': { Comp: PayListV6, route: '/' },
+  'cpay-detail-v6': { Comp: PayDetailV6, route: '/' },
+  'cpay-list-v7': { Comp: PayListV7, route: '/' },
+  'cpay-detail-v7': { Comp: PayDetailV7, route: '/' },
+  'cpay-list-v8': { Comp: PayListV8, route: '/' },
+  // Refonte STRUCTURE — wizard « Nouveau paiement » (étape 4.1)
+  'cpay-wiz-method': { Comp: WizMethod, route: '/' },
+  'cpay-wiz-amount': { Comp: WizAmount, route: '/' },
+  'cpay-wiz-benef': { Comp: WizBenefSaved, route: '/' },
+  'cpay-wiz-benef-new': { Comp: WizBenefNew, route: '/' },
+  'cpay-wiz-confirm': { Comp: WizConfirm, route: '/' },
+  // Refonte module CLIENT — Dépôts / Recharges
+  'cdep-list': { Comp: DepList, route: '/' },
+  'cdep-wiz-amount': { Comp: DepWizAmount, route: '/' },
+  'cdep-wiz-method': { Comp: DepWizMethod, route: '/' },
+  'cdep-wiz-bank': { Comp: DepWizBank, route: '/' },
+  'cdep-wiz-recap': { Comp: DepWizRecap, route: '/' },
+  'cdep-detail-awaiting': { Comp: DepDetailAwaiting, route: '/' },
+  'cdep-detail-validated': { Comp: DepDetailValidated, route: '/' },
+  // Refonte module CLIENT — Wallet / Accueil
+  'cwallet-home': { Comp: WalletHomeShown, route: '/' },
+  'cwallet-home-hidden': { Comp: WalletHomeHidden, route: '/' },
+  // Refonte module CLIENT — Bénéficiaires (carnet)
+  'cbenef-list': { Comp: BenefList, route: '/' },
+  'cbenef-editor': { Comp: BenefEditor, route: '/' },
+  // Refonte module CLIENT — Historique
+  'chist-list': { Comp: HistoryScreen, route: '/' },
+  // Refonte module CLIENT — Profil / Notifications
+  'cprofile': { Comp: ProfileScreen, route: '/' },
+  'cnotifs': { Comp: NotificationsScreen, route: '/' },
+  // Refonte module CLIENT — Taux de change
+  'crates': { Comp: RatesScreen, route: '/' },
+  // Refonte module CLIENT — Support (liste)
+  'csupport-list': { Comp: SupportList, route: '/' },
+  // Refonte module CLIENT — Auth / Onboarding
+  'cauth-login': { Comp: AuthLogin, route: '/' },
+  'cauth-signup': { Comp: AuthSignup, route: '/' },
+  'cauth-onboarding': { Comp: AuthOnboarding, route: '/' },
+  // Refonte module CLIENT — Shell & navigation (DERNIER module)
+  'cshell-home': { Comp: ShellHome, route: '/' },
+  'cshell-payments': { Comp: ShellPayments, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },

@@ -81,7 +81,7 @@ export function SimulatorResult({
       <div className={cn('my-1 text-center text-lg', TEXT.muted)}>↓</div>
 
       {/* CNY reçu — focal, gros chiffre */}
-      <div className="mb-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+      <div className="mb-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
         <div className={cn('text-[11px] font-medium uppercase tracking-wide', TEXT.muted)}>
           Le client reçoit
         </div>

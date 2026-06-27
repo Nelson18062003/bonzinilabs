@@ -1,8 +1,50 @@
 {
+  "cashQr": {
+    "title": "付款二维码",
+    "beneficiary": "收款人",
+    "paymentId": "付款 ID",
+    "idCopied": "ID 已复制！",
+    "copyFailed": "无法复制",
+    "download": "下载二维码",
+    "instruction": "在 Bonzini 广州办公室出示此二维码以领取现金"
+  },
+  "cashReceipt": {
+    "downloaded": "PDF 收据已下载",
+    "error": "生成 PDF 时出错",
+    "availableAfterPayment": "付款后可用",
+    "client": "客户",
+    "downloadLabel": "下载 PDF 收据"
+  },
   "title": "我的付款",
   "subtitle": "转账到中国",
   "newPayment": "新付款",
   "noPayments": "暂无付款",
+  "list": {
+    "dayRate": "今日汇率",
+    "searchPlaceholder": "搜索供应商或参考号…",
+    "noPaymentsForFilter": "此筛选条件下暂无付款。",
+    "beneficiaryToComplete": "待完善收款人",
+    "toComplete": "待完善",
+    "periods": {
+      "all": "全部",
+      "month": "本月",
+      "week": "本周"
+    },
+    "tabs": {
+      "all": "全部",
+      "todo": "待处理",
+      "progress": "进行中",
+      "done": "已完成"
+    },
+    "statusHint": {
+      "missingBeneficiary": "缺少收款人信息",
+      "cashPending": "需在办公室出示QR码",
+      "progress": "Bonzini 正在为您结算供应商",
+      "paidOn": "付款于 {{date}}",
+      "rejected": "付款已拒绝",
+      "cancelled": "付款已取消"
+    }
+  },
   "status": {
     "created": "已创建",
     "waiting_beneficiary_info": "等待中",
@@ -166,7 +208,12 @@
     "qrCodeBeneficiary": "收款人QR码",
     "tapToEnlarge": "点击放大",
     "beneficiary": "收款人",
+    "beneficiaryWithMethod": "收款人 · {{method}}",
     "missingInfo": "缺少信息",
+    "missingBeneficiaryInfo": "缺少收款人信息",
+    "completeBeneficiary": "完善信息",
+    "enlarge": "放大",
+    "cashPickupPresentQr": "在Bonzini办公室领取 — 请出示上方QR码。",
     "addBeneficiaryPrompt": "请补充收款人信息，以便Bonzini为您处理付款。",
     "documents": "文档",
     "noDocuments": "暂无文档。",
@@ -188,6 +235,41 @@
     "signatureRecordedOn": "签名记录于",
     "signedBy": "签名人",
     "beneficiarySignature": "收款人签名",
+    "hero": {
+      "settlementAmount": "结算金额",
+      "supplierReceives": "供应商收到",
+      "rateApplied": "已应用今日汇率",
+      "amountRecredited": "{{amount}} XAF 已退回您的余额",
+      "youPaid": "您已支付 {{amount}} XAF"
+    },
+    "tracking": {
+      "title": "付款追踪",
+      "created": "付款已创建",
+      "beneficiaryDetails": "收款人信息",
+      "qrPresentedAtOffice": "已在办公室出示QR码",
+      "processingByBonzini": "Bonzini 处理中",
+      "beneficiaryPaid": "收款人已收款",
+      "cashHandedToBeneficiary": "现金已交付收款人",
+      "paymentRejected": "付款已拒绝",
+      "paymentCancelled": "付款已取消",
+      "completeBeneficiary": "完善信息",
+      "sub": {
+        "qrScanned": "QR码已扫描",
+        "completed": "已完善",
+        "presentQrAtOffice": "请在Bonzini办公室出示此QR码",
+        "missingDetails": "缺少信息",
+        "processingAtOffice": "正在Bonzini办公室处理",
+        "bonziniSettling": "Bonzini 正在为您结算供应商",
+        "inProgress": "进行中…"
+      }
+    },
+    "documents": {
+      "title": "凭证与详情",
+      "paymentProof": "付款凭证",
+      "addedByBonzini": "由Bonzini添加 · 点击放大",
+      "paidOn": "付款于",
+      "processedOn": "处理于"
+    },
     "fields": {
       "name": "姓名",
       "phone": "电话",
@@ -197,7 +279,12 @@
       "notes": "备注",
       "beneficiaryName": "收款人姓名",
       "beneficiaryPhone": "收款人电话",
-      "beneficiaryEmail": "收款人邮箱"
+      "beneficiaryEmail": "收款人邮箱",
+      "supplierName": "供应商名称",
+      "accountHolder": "账户持有人",
+      "swiftIban": "SWIFT / IBAN",
+      "wechatId": "微信账号",
+      "alipayId": "支付宝账号"
     },
     "form": {
       "provideAtLeastOne": "请至少提供一种付款渠道。",
@@ -217,6 +304,8 @@
       "accountNumberRequired": "账号（必填）",
       "bankAccountNumber": "银行账号",
       "accountHolderName": "账户持有人姓名",
+      "bankNameExample": "例如：中国银行、工商银行…",
+      "swiftPlaceholder": "SWIFT / IBAN / 分行",
       "commentOptional": "备注（可选）",
       "additionalInstructions": "补充说明",
       "noInfoRequired": "无需提供任何信息。",

@@ -3,6 +3,8 @@ import { BottomNav } from './BottomNav';
 import { ClientHeader } from './ClientHeader';
 import { ClientSidebar } from './ClientSidebar';
 import { AnimatedPage } from '@/components/transitions/AnimatedPage';
+import { cn } from '@/lib/utils';
+import { SURFACE } from '@/mobile/designKit';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -12,7 +14,7 @@ interface MobileLayoutProps {
 
 export const MobileLayout = ({ children, showNav = true, showHeader = true }: MobileLayoutProps) => {
   return (
-    <div className="min-h-[100dvh] bg-background flex">
+    <div className={cn('flex min-h-[100dvh]', SURFACE.canvas)}>
       {/* Desktop Sidebar */}
       {showNav && <ClientSidebar />}
 

@@ -1,6 +1,6 @@
 {
   "title": "My Deposits",
-  "subtitle": "History and tracking",
+  "subtitle": "Top up your account in XAF",
   "newDeposit": "Make a deposit",
   "noDeposits": "No deposits yet",
   "loadError": "Error loading deposits",
@@ -250,7 +250,8 @@
     "deleteProofDesc": "Please specify the reason for deletion. This action is irreversible.",
     "specifyReason": "Specify the reason...",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "reference": "Reference"
   },
   "new": {
     "amountToDeposit": "Amount to deposit",
@@ -349,5 +350,6 @@
     "criticalBannerWarning": "Warning: deadline almost up!",
     "warningBannerMessage": "Remember to send your proof quickly",
     "normalBannerMessage": "Make the deposit and send the proof"
-  }
+  },
+  "searchPlaceholder": "Search (reference, method…)"
 }

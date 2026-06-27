@@ -21,6 +21,8 @@ import {
   useMarkConversationReadClient,
 } from '@/hooks/useClientChat';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import type { ChatMessage } from '@/types/chat';
 
 // Fond de la zone de messages (identique côté admin — cohérence cross-app).
@@ -90,26 +92,24 @@ const SupportPage = () => {
   const headerTitle = conversation?.subject || t('list.defaultSubject');
 
   const header = (
-    <header className="flex items-center gap-2 border-b border-border bg-background px-2 py-2.5"
-            style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}>
+    <header
+      className={cn('flex items-center gap-2.5 border-b border-black/[0.05] px-3 py-2.5 dark:border-white/[0.07]', SURFACE.card)}
+      style={{ paddingTop: 'calc(10px + env(safe-area-inset-top))' }}
+    >
       <button
         type="button"
         onClick={() => navigate('/support')}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted -ml-1"
+        className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.holder)}
         aria-label={t('detail.back')}
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className={cn('h-5 w-5', TEXT.strong)} />
       </button>
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bonzini-violet text-sm font-semibold text-white">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1C1B22] text-sm font-black text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]">
         B
       </div>
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground">
-          {headerTitle}
-        </h1>
-        <p className="truncate text-[11px] leading-tight text-muted-foreground">
-          {t('detail.bonziniTeam')}
-        </p>
+        <h1 className={cn('truncate text-[15px] font-black leading-tight', TEXT.strong)}>{headerTitle}</h1>
+        <p className={cn('truncate text-[11px] leading-tight', TEXT.muted)}>{t('detail.bonziniTeam')}</p>
       </div>
       <ResponseTimeBadge compact />
     </header>

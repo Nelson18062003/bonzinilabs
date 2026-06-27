@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { isProviderEmailVerified, isProfileComplete } from '@/lib/authGate';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
 
 /**
  * Route de retour OAuth (/auth/callback). Le client `supabase` (PKCE,
@@ -21,6 +23,7 @@ import { Button } from '@/components/ui/button';
  */
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const handled = useRef(false);
@@ -94,41 +97,34 @@ export default function AuthCallbackPage() {
   }, []);
 
   if (error) {
-    const messages: Record<string, { title: string; body: string }> = {
-      email_unverified: {
-        title: 'Email non vérifié',
-        body: "Votre compte Google n'a pas d'email vérifié. Utilisez un email vérifié ou créez un compte par mot de passe.",
-      },
-      email_taken: {
-        title: 'Compte déjà existant',
-        body: 'Un compte existe déjà avec cet email. Connectez-vous par mot de passe, puis liez Google depuis votre profil.',
-      },
-      timeout: {
-        title: 'Connexion impossible',
-        body: 'La connexion a expiré. Veuillez réessayer.',
-      },
-      generic: {
-        title: 'Connexion impossible',
-        body: 'Une erreur est survenue pendant la connexion. Veuillez réessayer.',
-      },
-    };
-    const m = messages[error] ?? messages.generic;
+    const key =
+      error === 'email_unverified' ? 'emailUnverified'
+      : error === 'email_taken' ? 'emailTaken'
+      : error === 'timeout' ? 'timeout'
+      : 'generic';
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
-        <BonziniLogo className="h-9 mb-8" />
-        <AlertCircle className="h-10 w-10 text-destructive mb-4" />
-        <h1 className="text-lg font-semibold mb-2">{m.title}</h1>
-        <p className="text-sm text-muted-foreground max-w-sm mb-6">{m.body}</p>
-        <Button onClick={() => navigate('/auth', { replace: true })}>Retour à la connexion</Button>
+      <div className={cn('flex min-h-screen flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
+        <BonziniLogo className="mb-8 h-9" />
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FBE7E7] dark:bg-[#3A2526]">
+          <AlertCircle className="h-7 w-7 text-[#C0504D] dark:text-[#E79A9A]" />
+        </div>
+        <h1 className={cn('mb-2 text-[18px] font-black', TEXT.strong)}>{t(`callback.${key}.title`)}</h1>
+        <p className={cn('mb-6 max-w-sm text-[13px]', TEXT.muted)}>{t(`callback.${key}.body`)}</p>
+        <button
+          onClick={() => navigate('/auth', { replace: true })}
+          className={cn('flex h-12 items-center justify-center px-6 text-[15px] font-bold transition active:scale-[0.99]', PRIMARY_PILL)}
+        >
+          {t('callback.back')}
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
-      <BonziniLogo className="h-9 mb-8" />
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-sm text-muted-foreground mt-4">Connexion en cours…</p>
+    <div className={cn('flex min-h-screen flex-col items-center justify-center p-6', SURFACE.canvas)}>
+      <BonziniLogo className="mb-8 h-9" />
+      <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6]" />
+      <p className={cn('mt-4 text-[13px]', TEXT.muted)}>{t('callback.connecting')}</p>
     </div>
   );
 }

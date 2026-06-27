@@ -132,7 +132,7 @@ export function Rates() {
             </div>
           ))}
         </div>
-        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#221F33]">
+        <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
           <div className={cn('text-[12px] font-medium', TEXT.muted)}>Votre fournisseur reçoit</div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-[28px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>

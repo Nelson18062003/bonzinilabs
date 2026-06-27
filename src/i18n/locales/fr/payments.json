@@ -1,8 +1,50 @@
 {
+  "cashQr": {
+    "title": "QR Code de paiement",
+    "beneficiary": "Bénéficiaire",
+    "paymentId": "ID du paiement",
+    "idCopied": "ID copié !",
+    "copyFailed": "Impossible de copier",
+    "download": "Télécharger le QR Code",
+    "instruction": "Présentez ce QR Code au bureau Bonzini Guangzhou pour récupérer votre argent"
+  },
+  "cashReceipt": {
+    "downloaded": "Reçu PDF téléchargé",
+    "error": "Erreur lors de la génération du PDF",
+    "availableAfterPayment": "Disponible après paiement",
+    "client": "Client",
+    "downloadLabel": "Télécharger le reçu PDF"
+  },
   "title": "Mes Paiements",
-  "subtitle": "Envois vers la Chine",
+  "subtitle": "Réglez vos fournisseurs en Chine",
   "newPayment": "Nouveau paiement",
   "noPayments": "Aucun paiement pour le moment",
+  "list": {
+    "dayRate": "Taux du jour",
+    "searchPlaceholder": "Rechercher un fournisseur, une référence…",
+    "noPaymentsForFilter": "Aucun paiement pour ce filtre.",
+    "beneficiaryToComplete": "Bénéficiaire à compléter",
+    "toComplete": "à compléter",
+    "periods": {
+      "all": "Tout",
+      "month": "Ce mois",
+      "week": "Cette semaine"
+    },
+    "tabs": {
+      "all": "Tous",
+      "todo": "À traiter",
+      "progress": "En cours",
+      "done": "Terminés"
+    },
+    "statusHint": {
+      "missingBeneficiary": "Coordonnées du bénéficiaire manquantes",
+      "cashPending": "QR à présenter au bureau",
+      "progress": "Bonzini règle votre fournisseur",
+      "paidOn": "Payé le {{date}}",
+      "rejected": "Paiement refusé",
+      "cancelled": "Paiement annulé"
+    }
+  },
   "status": {
     "created": "Créé",
     "waiting_beneficiary_info": "En attente",
@@ -45,23 +87,23 @@
   },
   "form": {
     "steps": {
-      "method": "Mode",
+      "method": "Méthode",
       "amount": "Montant",
-      "beneficiary": "Bénéf.",
+      "beneficiary": "Bénéficiaire",
       "confirm": "Résumé"
     },
     "methods": {
       "alipay": {
         "label": "Alipay",
-        "desc": "Paiement via Alipay"
+        "desc": "Règlement sur compte Alipay"
       },
       "wechat": {
         "label": "WeChat Pay",
-        "desc": "Paiement via WeChat"
+        "desc": "Règlement sur compte WeChat"
       },
       "bank_transfer": {
         "label": "Virement bancaire",
-        "desc": "Transfert vers compte bancaire"
+        "desc": "Règlement sur compte bancaire"
       },
       "cash": {
         "label": "Cash",
@@ -70,15 +112,18 @@
     },
     "chooseMethod": "Choisissez un mode de paiement",
     "enterAmount": "Entrez le montant",
-    "howToReceive": "Comment votre fournisseur reçoit-il l'argent ?",
+    "howToReceive": "Comment votre fournisseur est-il payé ?",
+    "rateDependsOnMethod": "Le taux du jour dépend du mode choisi.",
     "rateApplied": "Taux appliqué",
     "byXAF": "En XAF",
     "byRMB": "En RMB",
     "youSend": "Vous payez",
-    "supplierReceives": "Fournisseur reçoit",
+    "supplierReceives": "Votre bénéficiaire reçoit",
     "amountDebited": "Montant débité",
     "rate": "Taux",
     "balance": "Solde",
+    "balanceAfterPayment": "Solde après paiement",
+    "minMaxCaption": "Minimum 10 000 XAF · Maximum 50 000 000 XAF",
     "all": "Tout",
     "addFunds": "Recharger mon compte",
     "insufficientBalance": "Solde insuffisant",
@@ -94,10 +139,10 @@
     "success": "Paiement créé avec succès",
     "error": "Erreur lors de la création du paiement",
     "beneficiary": {
-      "title": "À qui voulez-vous payer ?",
+      "title": "Qui voulez-vous payer ?",
       "whoPicks": "Qui retire les fonds ?",
       "mustPresentQr": "Le bénéficiaire devra présenter un QR Code à l'agent Bonzini.",
-      "selectOrCreate": "Choisissez un bénéficiaire enregistré ou créez-en un nouveau.",
+      "selectOrCreate": "Choisissez un bénéficiaire {{method}} enregistré ou créez-en un nouveau.",
       "existing": "Enregistré",
       "new": "Nouveau",
       "noneRegistered": "Aucun bénéficiaire enregistré pour le moment.",
@@ -127,7 +172,7 @@
       "accountNumber": "Numéro de compte",
       "swiftAgency": "SWIFT / IBAN / agence (optionnel)",
       "additionalInfo": "Informations complémentaires",
-      "addLater": "Compléter plus tard",
+      "addLater": "Compléter les coordonnées plus tard",
       "dontSave": "Ne pas enregistrer ce bénéficiaire",
       "saveFailedPaymentContinues": "Bénéficiaire non enregistré au carnet — le paiement continue"
     },
@@ -135,9 +180,9 @@
       "method": "Mode de paiement",
       "beneficiary": "Bénéficiaire",
       "beneficiaryLater": "À compléter après création",
-      "amountDebited": "Montant débité",
+      "amountDebited": "Débité maintenant",
       "newBalance": "Nouveau solde",
-      "debitNotice": "Votre solde sera débité à la confirmation."
+      "debitNotice": "Votre solde est débité à la confirmation. Bonzini règle ensuite votre fournisseur et vous envoie la preuve."
     }
   },
   "detail": {
@@ -167,7 +212,12 @@
     "qrCodeBeneficiary": "QR Code du bénéficiaire",
     "tapToEnlarge": "Appuyer pour agrandir",
     "beneficiary": "Bénéficiaire",
+    "beneficiaryWithMethod": "Bénéficiaire · {{method}}",
     "missingInfo": "Informations manquantes",
+    "missingBeneficiaryInfo": "Coordonnées du bénéficiaire manquantes",
+    "completeBeneficiary": "Compléter les coordonnées",
+    "enlarge": "Agrandir",
+    "cashPickupPresentQr": "Retrait au bureau Bonzini — présentez le QR ci-dessus.",
     "addBeneficiaryPrompt": "Ajoutez les coordonnées du bénéficiaire pour que Bonzini puisse régler votre paiement.",
     "documents": "Documents",
     "noDocuments": "Aucun document pour le moment.",
@@ -189,6 +239,41 @@
     "signatureRecordedOn": "Signature enregistrée le",
     "signedBy": "Signé par",
     "beneficiarySignature": "Signature du bénéficiaire",
+    "hero": {
+      "settlementAmount": "Montant du règlement",
+      "supplierReceives": "Votre bénéficiaire reçoit",
+      "rateApplied": "Taux du jour appliqué",
+      "amountRecredited": "{{amount}} XAF recrédités sur votre solde",
+      "youPaid": "Vous avez payé {{amount}} XAF"
+    },
+    "tracking": {
+      "title": "Suivi du paiement",
+      "created": "Paiement créé",
+      "beneficiaryDetails": "Coordonnées du bénéficiaire",
+      "qrPresentedAtOffice": "QR présenté au bureau",
+      "processingByBonzini": "Traitement par Bonzini",
+      "beneficiaryPaid": "Bénéficiaire payé",
+      "cashHandedToBeneficiary": "Cash remis au bénéficiaire",
+      "paymentRejected": "Paiement refusé",
+      "paymentCancelled": "Paiement annulé",
+      "completeBeneficiary": "Compléter les coordonnées",
+      "sub": {
+        "qrScanned": "QR scanné",
+        "completed": "Complétées",
+        "presentQrAtOffice": "Présentez ce QR au bureau Bonzini",
+        "missingDetails": "Coordonnées manquantes",
+        "processingAtOffice": "En cours au bureau Bonzini",
+        "bonziniSettling": "Bonzini règle votre fournisseur",
+        "inProgress": "En cours…"
+      }
+    },
+    "documents": {
+      "title": "Preuve & détails",
+      "paymentProof": "Preuve de paiement",
+      "addedByBonzini": "Ajoutée par Bonzini · toucher pour agrandir",
+      "paidOn": "Payé le",
+      "processedOn": "Traité le"
+    },
     "fields": {
       "name": "Nom",
       "phone": "Téléphone",
@@ -198,7 +283,12 @@
       "notes": "Notes",
       "beneficiaryName": "Nom du bénéficiaire",
       "beneficiaryPhone": "Téléphone du bénéficiaire",
-      "beneficiaryEmail": "Email du bénéficiaire"
+      "beneficiaryEmail": "Email du bénéficiaire",
+      "supplierName": "Nom du fournisseur",
+      "accountHolder": "Titulaire du compte",
+      "swiftIban": "SWIFT / IBAN",
+      "wechatId": "Identifiant WeChat",
+      "alipayId": "Identifiant Alipay"
     },
     "form": {
       "provideAtLeastOne": "Fournissez au moins un canal de paiement.",
@@ -218,6 +308,8 @@
       "accountNumberRequired": "Numéro de compte (obligatoire)",
       "bankAccountNumber": "Numéro de compte bancaire",
       "accountHolderName": "Nom du titulaire du compte",
+      "bankNameExample": "Ex : Bank of China, ICBC…",
+      "swiftPlaceholder": "SWIFT / IBAN / agence",
       "commentOptional": "Commentaire (optionnel)",
       "additionalInstructions": "Instructions supplémentaires",
       "noInfoRequired": "Aucune information à fournir.",
