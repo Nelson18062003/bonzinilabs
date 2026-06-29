@@ -138,6 +138,48 @@
     "deposits": "充值",
     "payments": "付款",
     "history": "历史",
-    "profile": "个人"
+    "profile": "个人",
+    "notifications": "通知",
+    "theme": "主题"
+  },
+  "rates": {
+    "title": "汇率",
+    "hero": {
+      "todayLabel": "今日汇率 · XAF → ¥"
+    },
+    "paymentMethod": {
+      "title": "付款方式"
+    },
+    "country": {
+      "title": "国家"
+    },
+    "converter": {
+      "title": "换算器",
+      "perXaf": "按 XAF",
+      "perCny": "按 ¥",
+      "youSend": "您支付",
+      "youReceive": "您收到",
+      "rateAtPayment": "付款时所适用的汇率",
+      "minAmount": "最低金额：{{amount}} XAF"
+    },
+    "indicator": {
+      "bestRate": "最优汇率",
+      "standardRate": "标准汇率",
+      "smallAmount": "小额",
+      "appliedRate": "适用于您金额的汇率",
+      "rateLine": "1 000 000 XAF = {{rate}} ¥"
+    },
+    "banner": {
+      "title": "实时跟踪汇率",
+      "subtitle": "每天早晨更新，为您提供最优汇率。"
+    },
+    "trend": {
+      "perAmount": "对应 1 000 000 XAF",
+      "title": "走势",
+      "noData": "此期间暂无数据",
+      "min": "最低",
+      "avg": "平均",
+      "max": "最高"
+    }
   }
 }

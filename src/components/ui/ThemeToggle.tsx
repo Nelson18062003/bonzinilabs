@@ -12,16 +12,16 @@ export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className={cn('flex gap-1 bg-muted rounded-lg p-1', className)}>
+    <div className={cn('flex gap-1 rounded-2xl bg-[#EDEAFA] p-1 dark:bg-[#2F2C3D]', className)}>
       {themes.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
           onClick={() => setTheme(value)}
           className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
             theme === value
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-white text-[#1B1A24] shadow-sm dark:bg-[#46415C] dark:text-[#F2F1F7]'
+              : 'text-[#8E8BA0] hover:text-[#1B1A24] dark:text-[#9B98AD] dark:hover:text-[#F2F1F7]'
           )}
           title={label}
         >
@@ -44,7 +44,7 @@ export function ThemeToggleCompact() {
   return (
     <button
       onClick={() => setTheme(next)}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium text-foreground active:scale-95 transition-all"
+      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#EDEAFA] text-sm font-medium text-[#1B1A24] active:scale-95 transition-all dark:bg-[#2F2C3D] dark:text-[#F2F1F7]"
     >
       <CurrentIcon className="w-4 h-4" />
       {label}

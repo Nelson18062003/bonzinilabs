@@ -40,13 +40,18 @@ export function paymentStatusTone(s: string): Tone {
     case 'rejected':
     case 'failed':
     case 'cancelled':
+    case 'cancelled_by_admin':
       return 'danger';
     case 'processing':
     case 'cash_scanned':
     case 'in_progress':
+    case 'ready_for_payment':
       return 'info';
     case 'to_process':
     case 'pending':
+    case 'created':
+    case 'waiting_beneficiary_info':
+    case 'cash_pending':
       return 'pending';
     default:
       return 'neutral';

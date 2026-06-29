@@ -1,6 +1,16 @@
-import { useState, useMemo } from 'react';
+// ============================================================
+// PAGE — ClientRatesPage (Taux de change) · refonte « Direction A ».
+// En-tête drill-in + canvas designKit · hero · pays · méthodes (vrais
+// logos) · convertisseur · indicateur de palier · tendance · info.
+// Calculs 100% PRÉSERVÉS (useClientRates, calculateFinalRate, etc.).
+// ============================================================
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import { useClientRates } from '@/hooks/useDailyRates';
 import type { PaymentMethodKey } from '@/types/rates';
 
@@ -13,6 +23,8 @@ import { RateTrendChart } from './components/RateTrendChart';
 import { RateInfoBanner } from './components/RateInfoBanner';
 
 export function ClientRatesPage() {
+  const navigate = useNavigate();
+  const { t } = useTranslation('client');
   const { data, isLoading } = useClientRates();
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodKey>('cash');
@@ -21,28 +33,29 @@ export function ClientRatesPage() {
 
   const numAmount = parseFloat(amount) || 0;
 
+  const Header = (
+    <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+      <button
+        onClick={() => navigate(-1)}
+        aria-label={t('rates.title', { defaultValue: 'Taux de change' })}
+        className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.card, SURFACE.shadow)}
+      >
+        <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+      </button>
+      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('rates.title', { defaultValue: 'Taux de change' })}</span>
+    </div>
+  );
+
   if (isLoading || !data?.activeRate) {
     return (
-      <MobileLayout>
-        <PageHeader title="Taux de change" showBack />
-        <div className="px-4 space-y-5">
-          <div className="rounded-2xl p-5 animate-pulse bg-amber-50/50 border border-amber-200/50">
-            <div className="h-3 w-16 bg-amber-200/40 rounded mb-4" />
-            <div className="h-8 w-48 bg-amber-200/40 rounded mb-3" />
-            <div className="h-4 w-32 bg-amber-200/40 rounded" />
-          </div>
-          <div className="bg-white rounded-2xl p-5 animate-pulse space-y-3">
-            <div className="h-10 bg-gray-100 rounded-lg" />
-            <div className="h-14 bg-gray-100 rounded-xl" />
-            <div className="h-14 bg-gray-100 rounded-xl" />
-          </div>
-          <div className="bg-white rounded-2xl p-4 animate-pulse">
-            <div className="flex gap-2 mb-3">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="flex-1 h-8 bg-gray-100 rounded-md" />
-              ))}
-            </div>
-            <div className="h-[200px] bg-gray-100 rounded" />
+      <MobileLayout showNav={false} showHeader={false}>
+        <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+          {Header}
+          <div className="space-y-5 p-4 pt-3">
+            <div className={cn('h-44 animate-pulse rounded-[26px]', SURFACE.card, SURFACE.shadow)} />
+            <div className={cn('h-12 animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
+            <div className={cn('h-24 animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+            <div className={cn('h-64 animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
           </div>
         </div>
       </MobileLayout>
@@ -52,54 +65,49 @@ export function ClientRatesPage() {
   const { activeRate, adjustments } = data;
 
   return (
-    <MobileLayout>
-      <PageHeader title="Taux de change" showBack />
-
-      <div className="px-4 space-y-3 pb-6">
-        <RateHeroCard
-          activeRate={activeRate}
-          adjustments={adjustments}
-          selectedMethod={selectedMethod}
-          selectedCountry={selectedCountry}
-          previousRate={null}
-        />
-
-        <CountrySelector
-          activeRate={activeRate}
-          adjustments={adjustments}
-          selectedMethod={selectedMethod}
-          selectedCountry={selectedCountry}
-          onCountryChange={setSelectedCountry}
-        />
-
-        <PaymentMethodSelector
-          activeRate={activeRate}
-          adjustments={adjustments}
-          selectedMethod={selectedMethod}
-          selectedCountry={selectedCountry}
-          onMethodChange={setSelectedMethod}
-        />
-
-        <RateConverter
-          activeRate={activeRate}
-          adjustments={adjustments}
-          selectedMethod={selectedMethod}
-          selectedCountry={selectedCountry}
-          amount={amount}
-          onAmountChange={setAmount}
-        />
-
-        <RateIndicator
-          activeRate={activeRate}
-          adjustments={adjustments}
-          selectedMethod={selectedMethod}
-          selectedCountry={selectedCountry}
-          amount={numAmount}
-        />
-
-        <RateTrendChart />
-
-        <RateInfoBanner />
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+        {Header}
+        <div className="space-y-5 p-4 pt-3">
+          <RateHeroCard
+            activeRate={activeRate}
+            adjustments={adjustments}
+            selectedMethod={selectedMethod}
+            selectedCountry={selectedCountry}
+            previousRate={null}
+          />
+          <CountrySelector
+            activeRate={activeRate}
+            adjustments={adjustments}
+            selectedMethod={selectedMethod}
+            selectedCountry={selectedCountry}
+            onCountryChange={setSelectedCountry}
+          />
+          <PaymentMethodSelector
+            activeRate={activeRate}
+            adjustments={adjustments}
+            selectedMethod={selectedMethod}
+            selectedCountry={selectedCountry}
+            onMethodChange={setSelectedMethod}
+          />
+          <RateConverter
+            activeRate={activeRate}
+            adjustments={adjustments}
+            selectedMethod={selectedMethod}
+            selectedCountry={selectedCountry}
+            amount={amount}
+            onAmountChange={setAmount}
+          />
+          <RateIndicator
+            activeRate={activeRate}
+            adjustments={adjustments}
+            selectedMethod={selectedMethod}
+            selectedCountry={selectedCountry}
+            amount={numAmount}
+          />
+          <RateTrendChart />
+          <RateInfoBanner />
+        </div>
       </div>
     </MobileLayout>
   );

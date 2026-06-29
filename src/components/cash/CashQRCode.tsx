@@ -1,10 +1,11 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, Copy, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { formatCurrencyRMB } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 
 interface CashQRCodeProps {
   paymentId: string;
@@ -23,6 +24,7 @@ export function CashQRCode({
   showDownload = true,
   size = 240,
 }: CashQRCodeProps) {
+  const { t } = useTranslation('payments');
   const [copied, setCopied] = useState(false);
 
   // QR Code payload kept intentionally SMALL for reliable scanning.
@@ -46,7 +48,7 @@ export function CashQRCode({
       canvas.width = img.width;
       canvas.height = img.height;
       ctx?.drawImage(img, 0, 0);
-      
+
       const link = document.createElement('a');
       link.download = `bonzini-${paymentReference}.png`;
       link.href = canvas.toDataURL('image/png');
@@ -60,21 +62,22 @@ export function CashQRCode({
     try {
       await navigator.clipboard.writeText(paymentId);
       setCopied(true);
-      toast.success('ID copié !');
+      toast.success(t('cashQr.idCopied'));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Impossible de copier');
+      toast.error(t('cashQr.copyFailed'));
     }
   };
 
   return (
-    <Card className="p-6 flex flex-col items-center gap-4 bg-white">
-      <div className="text-center mb-2">
-        <p className="text-sm text-muted-foreground">QR Code de paiement</p>
-        <p className="font-semibold text-lg">{paymentReference}</p>
+    <div className={cn('flex flex-col items-center gap-4 rounded-[22px] p-6', SURFACE.card, SURFACE.shadow)}>
+      <div className="mb-2 text-center">
+        <p className={cn('text-sm', TEXT.muted)}>{t('cashQr.title')}</p>
+        <p className={cn('text-lg font-bold', TEXT.strong)}>{paymentReference}</p>
       </div>
-      
-      <div className="p-4 bg-white rounded-xl border-2 border-primary/20">
+
+      {/* QR island — always white for reliable scanning. */}
+      <div className="rounded-xl border border-black/10 bg-white p-4">
         <QRCodeSVG
           id={`qr-${paymentId}`}
           value={qrData}
@@ -85,46 +88,46 @@ export function CashQRCode({
       </div>
 
       <div className="text-center">
-        <p className="text-2xl font-bold text-primary">
+        <p className={cn('text-2xl font-bold', TEXT.strong)}>
           {formatCurrencyRMB(amountRMB)}
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Bénéficiaire: <span className="font-medium text-foreground">{beneficiaryName}</span>
+        <p className={cn('mt-1 text-sm', TEXT.muted)}>
+          {t('cashQr.beneficiary')}: <span className={cn('font-medium', TEXT.strong)}>{beneficiaryName}</span>
         </p>
       </div>
 
-      {/* ID copiable */}
-      <div className="w-full p-3 bg-muted rounded-lg">
-        <p className="text-xs text-muted-foreground text-center mb-2">ID du paiement</p>
+      {/* Copyable ID */}
+      <div className={cn('w-full rounded-xl p-3', SURFACE.holder)}>
+        <p className={cn('mb-2 text-center text-xs', TEXT.muted)}>{t('cashQr.paymentId')}</p>
         <div className="flex items-center gap-2">
-          <code className="flex-1 text-xs font-mono bg-background p-2 rounded border truncate">
+          <code className={cn('flex-1 truncate rounded-lg p-2 font-mono text-xs', SURFACE.card, TEXT.strong)}>
             {paymentId}
           </code>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <button
+            type="button"
             onClick={handleCopyId}
-            className="shrink-0"
+            aria-label={t('cashQr.paymentId')}
+            className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition active:scale-95', SURFACE.card, SURFACE.shadow)}
           >
-            {copied ? (
-              <Check className="w-4 h-4 text-green-500" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
-          </Button>
+            {copied ? <Check className="h-4 w-4 text-[#2E7D52]" /> : <Copy className={cn('h-4 w-4', TEXT.muted)} />}
+          </button>
         </div>
       </div>
 
       {showDownload && (
-        <Button variant="outline" onClick={handleDownload} className="w-full">
-          <Download className="w-4 h-4 mr-2" />
-          Télécharger le QR Code
-        </Button>
+        <button
+          type="button"
+          onClick={handleDownload}
+          className={cn('flex w-full items-center justify-center gap-2 rounded-full py-3 text-[14px] font-bold transition active:scale-[0.99]', SURFACE.holder)}
+        >
+          <Download className="h-4 w-4" />
+          {t('cashQr.download')}
+        </button>
       )}
 
-      <p className="text-xs text-muted-foreground text-center">
-        Présentez ce QR Code au bureau Bonzini Guangzhou pour récupérer votre argent
+      <p className={cn('text-center text-xs', TEXT.muted)}>
+        {t('cashQr.instruction')}
       </p>
-    </Card>
+    </div>
   );
 }

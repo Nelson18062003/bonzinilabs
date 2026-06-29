@@ -1,7 +1,17 @@
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/button';
+// ============================================================
+// APP CLIENT — NotificationsPage · refonte « Direction A ».
+// En-tête drill-in + « Tout marquer lu » · liste designKit (icône par
+// type, non-lu = pleine opacité + point lilas, lu = estompé). Logique
+// 100% PRÉSERVÉE (marquer lu / tout marquer, navigation au clic).
+// ============================================================
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { ArrowLeft, Bell, CheckCircle2, XCircle, AlertCircle, Loader2, CheckCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { MobileLayout } from '@/components/layout/MobileLayout';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import {
   useMyNotifications,
   useMarkNotificationAsRead,
@@ -10,19 +20,16 @@ import {
   getNotificationPath,
   type Notification,
 } from '@/hooks/useNotifications';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import {
-  Bell,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  CheckCheck,
-  ChevronRight,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+
+const LILAC = '#8B5CF6';
+
+// style.icon (getNotificationStyle) → tuile de ton designKit.
+const TONE: Record<string, { box: string; Icon: typeof Bell }> = {
+  'check-circle': { box: 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]', Icon: CheckCircle2 },
+  'x-circle': { box: 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]', Icon: XCircle },
+  'alert-circle': { box: 'bg-[#FDF1DD] text-[#9A6B12] dark:bg-[#3A2F1A] dark:text-[#E0B978]', Icon: AlertCircle },
+  bell: { box: 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]', Icon: Bell },
+};
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
@@ -33,149 +40,86 @@ const NotificationsPage = () => {
 
   const hasUnread = notifications?.some((n) => !n.is_read);
 
-  const getIcon = (type: string) => {
-    const style = getNotificationStyle(type as Notification['type']);
-    switch (style.icon) {
-      case 'check-circle':
-        return CheckCircle;
-      case 'x-circle':
-        return XCircle;
-      case 'alert-circle':
-        return AlertCircle;
-      default:
-        return Bell;
-    }
-  };
-
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if not already
-    if (!notification.is_read) {
-      await markAsRead.mutateAsync(notification.id);
-    }
-
-    // Navigate to related page
-    const path = getNotificationPath(notification);
-    navigate(path);
+    if (!notification.is_read) await markAsRead.mutateAsync(notification.id);
+    navigate(getNotificationPath(notification));
   };
 
-  const handleMarkAllAsRead = async () => {
-    await markAllAsRead.mutateAsync();
-  };
-
-  if (isLoading) {
-    return (
-      <MobileLayout showNav={false}>
-        <PageHeader title={t('notifications.title')} showBack />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </MobileLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <MobileLayout showNav={false}>
-        <PageHeader title={t('notifications.title')} showBack />
-        <div className="px-4 py-12 text-center">
-          <p className="text-destructive">{t('notifications.loadError')}</p>
-        </div>
-      </MobileLayout>
-    );
-  }
+  const Header = (
+    <div className="flex items-center gap-3 px-4 pb-1 pt-4">
+      <button
+        onClick={() => navigate(-1)}
+        aria-label={t('notifications.title')}
+        className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.card, SURFACE.shadow)}
+      >
+        <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
+      </button>
+      <span className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('notifications.title')}</span>
+      {hasUnread && (
+        <button
+          onClick={() => markAllAsRead.mutate()}
+          disabled={markAllAsRead.isPending}
+          className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-[#5B4CC4] active:opacity-70 disabled:opacity-50 dark:text-[#B5AAF0]"
+        >
+          <CheckCheck className="h-4 w-4" />
+          {t('notifications.markAllRead')}
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <MobileLayout showNav={false}>
-      <PageHeader
-        title="Notifications"
-        showBack
-        rightElement={
-          hasUnread ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              disabled={markAllAsRead.isPending}
-              className="text-primary"
-            >
-              <CheckCheck className="w-4 h-4 mr-1" />
-              {t('notifications.markAllRead')}
-            </Button>
-          ) : undefined
-        }
-      />
+    <MobileLayout showNav={false} showHeader={false}>
+      <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
+        {Header}
 
-      <div className="px-4 py-4 space-y-2">
-        {notifications && notifications.length > 0 ? (
-          notifications.map((notification, index) => {
-            const style = getNotificationStyle(notification.type);
-            const IconComponent = getIcon(notification.type);
-
-            return (
-              <div
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={cn(
-                  'card-elevated p-4 cursor-pointer transition-all animate-slide-up',
-                  notification.is_read
-                    ? 'opacity-60 hover:opacity-80'
-                    : 'border-l-4 border-l-primary hover:border-primary/30'
-                )}
-                style={{ animationDelay: `${index * 30}ms` }}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
-                      style.bgColor
-                    )}
-                  >
-                    <IconComponent className={cn('w-5 h-5', style.color)} />
+        <div className="space-y-2.5 px-4 py-4">
+          {isLoading ? (
+            [0, 1, 2].map((i) => (
+              <div key={i} className={cn('h-20 animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
+            ))
+          ) : error ? (
+            <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
+              <p className="text-[14px] text-[#C0504D] dark:text-[#E79A9A]">{t('notifications.loadError')}</p>
+            </div>
+          ) : notifications && notifications.length > 0 ? (
+            notifications.map((n) => {
+              const tone = TONE[getNotificationStyle(n.type).icon] ?? TONE.bell;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => handleNotificationClick(n)}
+                  className={cn(
+                    'flex w-full items-start gap-3 rounded-[18px] p-4 text-left transition active:scale-[0.99]',
+                    SURFACE.card,
+                    SURFACE.shadow,
+                    n.is_read && 'opacity-60',
+                  )}
+                >
+                  <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', tone.box)}>
+                    <tone.Icon className="h-5 w-5" />
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p
-                          className={cn(
-                            'font-semibold text-foreground',
-                            !notification.is_read && 'text-primary'
-                          )}
-                        >
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {format(new Date(notification.created_at), "dd MMM yyyy 'à' HH:mm", {
-                            locale: fr,
-                          })}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
+                  <div className="min-w-0 flex-1">
+                    <div className={cn('text-[14px] font-bold', TEXT.strong)}>{n.title}</div>
+                    <div className={cn('mt-0.5 line-clamp-2 text-[13px]', TEXT.muted)}>{n.message}</div>
+                    <div className={cn('mt-1.5 text-[11px]', TEXT.muted)}>
+                      {format(new Date(n.created_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
                     </div>
                   </div>
-                </div>
-
-                {/* Unread indicator */}
-                {!notification.is_read && (
-                  <div className="absolute top-3 right-3 w-2 h-2 bg-primary rounded-full" />
-                )}
+                  {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: LILAC }} />}
+                </button>
+              );
+            })
+          ) : (
+            <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
+              <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
+                <Bell className="h-7 w-7" />
               </div>
-            );
-          })
-        ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Bell className="w-8 h-8 text-muted-foreground" />
+              <p className={cn('text-[15px] font-bold', TEXT.strong)}>{t('notifications.noNotifications')}</p>
+              <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('notifications.noNotificationsHint')}</p>
             </div>
-            <p className="text-muted-foreground">{t('notifications.noNotifications')}</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('notifications.noNotificationsHint')}
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </MobileLayout>
   );

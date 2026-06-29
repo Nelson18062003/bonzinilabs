@@ -1,7 +1,8 @@
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatXAF } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
+import { formatNumber } from '@/lib/formatters';
 
 interface BalanceCardProps {
   balanceXAF: number;
@@ -11,62 +12,50 @@ interface BalanceCardProps {
   hasError?: boolean;
 }
 
+// Carte SOLDE — premium charbon, SANS dégradé (designKit). Le solde est le focal.
+const CARD =
+  'rounded-[26px] bg-[#1C1B22] p-6 shadow-[0_14px_40px_-16px_rgba(28,27,34,0.55)] dark:bg-[#211F2B] dark:ring-1 dark:ring-white/[0.06]';
+
 export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardProps) => {
   const { t } = useTranslation('client');
   const [showBalance, setShowBalance] = useState(true);
 
-  // Error fallback
   if (hasError) {
     return (
-      <div className="card-primary p-6 animate-fade-in">
-        <div className="flex flex-col items-center justify-center py-4">
-          <RefreshCw className="w-8 h-8 text-primary-foreground/50 mb-2" />
-          <p className="text-primary-foreground/70 text-sm text-center">
-            {t('wallet.balanceUnavailable')}
-          </p>
-          <p className="text-primary-foreground/50 text-xs mt-1">
-            {t('wallet.retryLater')}
-          </p>
-        </div>
+      <div className={cn(CARD, 'flex flex-col items-center justify-center py-8 text-center')}>
+        <RefreshCw className="mb-2 h-8 w-8 text-white/50" />
+        <p className="text-[14px] text-white/70">{t('wallet.balanceUnavailable')}</p>
+        <p className="mt-1 text-[12px] text-white/45">{t('wallet.retryLater')}</p>
       </div>
     );
   }
 
   return (
-    <div className="card-primary p-6 animate-fade-in">
-      {/* Header with label and toggle */}
-      <div className="flex items-center justify-between mb-2">
+    <div className={cn(CARD, 'animate-fade-in')}>
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-primary-foreground/80 text-sm font-medium">{t('wallet.availableBalance')}</span>
-          {isRefreshing && (
-            <RefreshCw className="w-3 h-3 text-primary-foreground/60 animate-spin" />
-          )}
+          <span className="text-[13px] font-medium text-white/65">{t('wallet.availableBalance')}</span>
+          {isRefreshing && <RefreshCw className="h-3.5 w-3.5 animate-spin text-white/60" />}
         </div>
         <button
-          onClick={() => setShowBalance(!showBalance)}
-          className="w-11 h-11 flex items-center justify-center rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors"
+          onClick={() => setShowBalance((v) => !v)}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition active:scale-95"
           aria-label={showBalance ? t('wallet.hideBalance') : t('wallet.showBalance')}
         >
-          {showBalance ? (
-            <EyeOff className="w-4 h-4 text-primary-foreground/80" />
-          ) : (
-            <Eye className="w-4 h-4 text-primary-foreground/80" />
-          )}
+          {showBalance ? <EyeOff className="h-4 w-4 text-white/80" /> : <Eye className="h-4 w-4 text-white/80" />}
         </button>
       </div>
 
-      {/* Balance Display */}
-      <div className="mb-4">
-        {showBalance ? (
-          <>
-            <p className="balance-display text-primary-foreground">
-              {formatXAF(balanceXAF)} <span className="text-2xl font-medium text-primary-foreground/70">XAF</span>
-            </p>
-          </>
-        ) : (
-          <p className="balance-display text-primary-foreground">• • • • • •</p>
-        )}
-      </div>
+      {showBalance ? (
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="text-[44px] font-black leading-none tracking-tight tabular-nums text-white">
+            {formatNumber(balanceXAF)}
+          </span>
+          <span className="text-[18px] font-extrabold text-[#E8932A]">XAF</span>
+        </div>
+      ) : (
+        <div className="mt-3 text-[40px] font-black leading-none text-white">• • • • •</div>
+      )}
     </div>
   );
 };

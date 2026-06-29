@@ -145,14 +145,14 @@ export function PremiumInput({
         {/* Validation checkmark */}
         {showValidCheck && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 animate-scale-in">
-            <Check className="w-5 h-5 text-green-500" />
+            <Check className="w-5 h-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
           </div>
         )}
       </div>
 
       {/* Error message */}
       {error && (
-        <p className="text-destructive text-xs mt-1.5 ml-1 animate-fade-in">
+        <p className="text-[#C0504D] dark:text-[#E79A9A] text-xs mt-1.5 ml-1 animate-fade-in">
           {error}
         </p>
       )}

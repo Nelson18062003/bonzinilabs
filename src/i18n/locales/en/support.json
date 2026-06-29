@@ -92,7 +92,8 @@
     "create": "Create",
     "empty": "No conversations yet",
     "defaultSubject": "General discussion",
-    "closedBadge": "Conversation closed"
+    "closedBadge": "Conversation closed",
+    "sectionTitle": "My conversations"
   },
   "detail": {
     "back": "Back",

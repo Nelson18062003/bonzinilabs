@@ -5,6 +5,7 @@ import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface CashReceiptDownloadButtonProps {
   payment: {
@@ -45,8 +46,9 @@ export function CashReceiptDownloadButton({
   variant = 'outline',
   size = 'default',
   className,
-  label = 'Télécharger le reçu PDF',
+  label,
 }: CashReceiptDownloadButtonProps) {
+  const { t } = useTranslation('payments');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const isCashPayment = payment.method === 'cash';
@@ -64,7 +66,7 @@ export function CashReceiptDownloadButton({
 
       const clientName = client
         ? `${client.first_name} ${client.last_name}`
-        : 'Client';
+        : t('cashReceipt.client');
 
       const receiptData: PaymentReceiptData = {
         id: payment.id,
@@ -90,10 +92,10 @@ export function CashReceiptDownloadButton({
         <PaymentReceiptPDF data={receiptData} />,
         `recu_paiement_${payment.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
-      toast.success('Reçu PDF téléchargé');
+      toast.success(t('cashReceipt.downloaded'));
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Erreur lors de la génération du PDF');
+      toast.error(t('cashReceipt.error'));
     } finally {
       setIsGenerating(false);
     }
@@ -116,7 +118,7 @@ export function CashReceiptDownloadButton({
       ) : (
         <FileDown className="w-4 h-4 mr-2" />
       )}
-      {!isPaid ? 'Disponible après paiement' : label}
+      {!isPaid ? t('cashReceipt.availableAfterPayment') : (label ?? t('cashReceipt.downloadLabel'))}
     </Button>
   );
 }

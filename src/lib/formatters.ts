@@ -22,6 +22,15 @@ export function formatRMB(amount: number): string {
   }).format(amount);
 }
 
+/** ¥ « propre » : pas de décimales quand le montant est entier (langage v7/v8). */
+export function formatYuan(amount: number): string {
+  const decimals = Number.isInteger(amount) ? 0 : 2;
+  return new Intl.NumberFormat(getCurrentLocale(), {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount);
+}
+
 export function formatCurrencyRMB(amountRMB: number): string {
   return '¥ ' + new Intl.NumberFormat(getCurrentLocale(), {
     style: 'decimal',

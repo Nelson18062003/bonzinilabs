@@ -1,12 +1,16 @@
 // ============================================================
-// Step 4 — Confirm.
-// Read-only summary: amount + method + beneficiary + new balance.
-// Triggers the actual createPayment mutation via the orchestrator.
+// Step 4 — Confirm (structure wizard validée, même langage que la
+// fiche v7) : hero logo+label · « Votre bénéficiaire reçoit » · gros ¥
+// · « Vous payez X XAF » · taux en bloc lilas « 1 000 000 XAF = … ¥ » ·
+// récap (bénéficiaire, compte, débité maintenant, nouveau solde) ·
+// note lilas de débit. Lecture seule ; createPayment vit dans la page.
 // ============================================================
 import { useTranslation } from 'react-i18next';
-import { AlertCircle } from 'lucide-react';
-import { formatXAF, formatRMB } from '@/lib/formatters';
+import { AlertCircle, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { formatXAF, formatNumber, formatYuan } from '@/lib/formatters';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { SURFACE, TEXT } from '@/mobile/designKit';
 import type { PaymentMethodType } from './types';
 
 interface Props {
@@ -18,6 +22,8 @@ interface Props {
   showRate: boolean;
   balanceAfter: number;
   beneficiaryName: string | undefined;
+  /** Ligne secondaire du bénéficiaire (identifiant / compte / téléphone). */
+  beneficiarySub?: { label: string; value: string };
   hasBeneficiary: boolean;
 }
 
@@ -30,58 +36,77 @@ export function NewPaymentConfirmStep({
   showRate,
   balanceAfter,
   beneficiaryName,
+  beneficiarySub,
   hasBeneficiary,
 }: Props) {
   const { t } = useTranslation('payments');
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="card-elevated p-6 text-center">
-        <div className="flex justify-center mb-4">
-          <PaymentMethodLogo method={selectedMethod} size={64} />
+    <div className="animate-fade-in space-y-4">
+      {/* Hero — même langage que la fiche v7 */}
+      <div className={cn('rounded-[26px] p-6', SURFACE.card, SURFACE.shadow)}>
+        <div className="flex items-center gap-2">
+          <PaymentMethodLogo method={selectedMethod} size={30} />
+          <span className={cn('text-[13px] font-bold', TEXT.strong)}>{methodLabel}</span>
         </div>
-        <p className="text-sm text-muted-foreground">{t('form.youSend')}</p>
-        <p className="text-3xl font-bold text-foreground mb-1">¥{formatRMB(amountRMB)}</p>
-        <p className="text-sm text-muted-foreground">({formatXAF(amountXAF)} XAF)</p>
-      </div>
-
-      <div className="card-elevated p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">{t('form.confirm.method')}</span>
-          <span className="font-medium">{methodLabel}</span>
+        <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>{t('form.supplierReceives')}</div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="text-[30px] font-black text-[#E8932A]">¥</span>
+          <span className={cn('text-[46px] font-black leading-none tracking-tight tabular-nums', TEXT.strong)}>
+            {formatYuan(amountRMB)}
+          </span>
+        </div>
+        <div className={cn('mt-2.5 text-[15px] font-bold tabular-nums', TEXT.muted)}>
+          {t('form.youSend')} {formatXAF(amountXAF)} XAF
         </div>
         {showRate && (
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{t('form.rate')}</span>
-            <span className="font-medium">1M XAF = ¥{formatRMB(1_000_000 * rate)}</span>
+          <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
+            <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>
+              Taux du jour appliqué
+            </div>
+            <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>
+              1 000 000 XAF = {formatNumber(Math.round(1_000_000 * rate))} ¥
+            </div>
           </div>
         )}
-        {beneficiaryName && (
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{t('form.confirm.beneficiary')}</span>
-            <span className="font-medium">{beneficiaryName}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between pt-3 border-t border-border">
-          <span className="font-semibold">{t('form.confirm.amountDebited')}</span>
-          <span className="font-bold">{formatXAF(amountXAF)} XAF</span>
+      </div>
+
+      {/* Récap — bénéficiaire + débit (la méthode et le taux vivent dans le hero) */}
+      <div className={cn('rounded-[22px] p-5', SURFACE.card, SURFACE.shadow)}>
+        {beneficiaryName && <Row label={t('form.confirm.beneficiary')} value={beneficiaryName} />}
+        {beneficiarySub && <Row label={beneficiarySub.label} value={beneficiarySub.value} />}
+        <div
+          className={cn(
+            'flex items-center justify-between gap-3',
+            (beneficiaryName || beneficiarySub) && 'mt-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.08]',
+          )}
+        >
+          <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{t('form.confirm.amountDebited')}</span>
+          <span className={cn('text-[15px] font-black tabular-nums', TEXT.strong)}>{formatXAF(amountXAF)} XAF</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">{t('form.confirm.newBalance')}</span>
-          <span className="font-medium">{formatXAF(balanceAfter)} XAF</span>
-        </div>
+        <Row label={t('form.confirm.newBalance')} value={`${formatXAF(balanceAfter)} XAF`} />
       </div>
 
       {!hasBeneficiary && selectedMethod !== 'cash' && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-yellow-500/10 text-yellow-600 text-sm">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+        <div className="flex items-center gap-2 rounded-2xl bg-[#FDF1DD] p-3.5 text-[13px] text-[#9A6B12] dark:bg-[#3A2F1A] dark:text-[#E0B978]">
+          <AlertCircle className="h-5 w-5 shrink-0" />
           <span>{t('form.confirm.beneficiaryLater')}</span>
         </div>
       )}
 
-      <p className="text-xs text-center text-muted-foreground">
-        {t('form.confirm.debitNotice', { amount: `${formatXAF(amountXAF)} XAF` })}
-      </p>
+      <div className="flex items-start gap-2.5 rounded-2xl bg-[#EAE7FA] p-3.5 dark:bg-[#272252]">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#5B4CC4] dark:text-[#B5AAF0]" />
+        <p className="text-[12.5px] text-[#5B4CC4] dark:text-[#B5AAF0]">{t('form.confirm.debitNotice')}</p>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <span className={cn('text-[13px]', TEXT.muted)}>{label}</span>
+      <span className={cn('truncate text-[13px] font-bold tabular-nums', TEXT.strong)}>{value}</span>
     </div>
   );
 }

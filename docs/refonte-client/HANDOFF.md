@@ -1,0 +1,248 @@
+# PASSATION — Refonte app CLIENT (reprendre ici dans une nouvelle session)
+
+> **Tu es une nouvelle session Claude.** Lis ce doc en entier : il contient tout
+> le contexte pour continuer la refonte de l'app **client** sans rien casser.
+> Branche de travail : **`claude/stoic-ritchie-Ov4D2`** (tout est poussé).
+
+## 0. Démarrage rapide
+1. `git fetch origin claude/stoic-ritchie-Ov4D2 && git checkout -f -B claude/stoic-ritchie-Ov4D2 origin/claude/stoic-ritchie-Ov4D2`
+2. Vérifs : `npm run type-check`, `npm run build`. Toujours **commit + push après chaque étape**
+   (le conteneur se réinitialise parfois sur un vieux commit `c71d274` ; si ça arrive,
+   refais l'étape 1 pour restaurer — rien n'est perdu, tout est sur origin).
+3. ✅ **Refonte client TERMINÉE** — tous les modules sont refondus + implémentés (voir §4.1).
+
+## 1. Objectif & méthode
+Refonte **from scratch** de l'app mobile **client** (`src/pages/`, `src/components/`,
+entrée `index.html`, client Supabase **`supabase`** — jamais `supabaseAdmin`), **module
+par module**, en **préservant 100 % de la logique métier**. On éradique le vieux look
+(dégradés violets, `card-glass`, `liquid-nav`, halos) au profit du **designKit unifié**
+de l'admin.
+
+## 2. Décisions de design VERROUILLÉES (validées par le client)
+- **Direction A** : réutiliser **`@/mobile/designKit`** (`SURFACE`, `TEXT`, `PRIMARY_PILL`,
+  `SOFT_PILL`, `StatusPill`, `PrimaryPill`, `SoftPill`, `paymentStatusTone`, etc.). Canvas
+  lilas, cartes blanches ombre douce, **zéro dégradé / verre / halo**, couleur = sens.
+- **Sémantique cycle de vie 3 tons** (helper **`src/lib/paymentLifecycle.ts`**) :
+  - 🔴 **rouge `#C0504D`** = `todo` (action requise du client : coordonnées manquantes,
+    QR cash à présenter) ; aussi `failed` (refusé/annulé).
+  - 🟣 **lilas `#8B5CF6`** = `progress` (Bonzini travaille).
+  - 🟢 **vert `#2E7D52`** = `done` (payé).
+- **Marque** : « **Réglez** vos fournisseurs » (pas « Envois »), « **Règlement** » (pas
+  « Transfert »), « **bénéficiaire** » sur la fiche, taux au format **« 1 000 000 XAF = 11 350 ¥ »**
+  (XAF d'abord, « XAF » pas « francs »).
+- **Pas de numérotation** des paiements : la **référence** `BZ-PM-…` + nom du fournisseur +
+  date suffisent.
+- Icône **`Send`** (avion) sur la carte « Payer un fournisseur » (pas un `+`).
+
+## 3. FAIT (implémenté sur le vrai code, poussé)
+- **Re-skin Direction A** de tous les écrans paiements (commits antérieurs) : liste, wizard
+  (5 étapes), détail (orchestrateur + 9 composants `payment-detail/*`), édition bénéficiaire.
+- **LISTE refondue structure v8** → `src/pages/PaymentsPage.tsx` :
+  carte « Nouveau paiement » (icône envoi) + taux du jour (`useClientRates`), **barre de
+  recherche** (fournisseur/référence), **filtres** statut (Tous/À traiter/En cours/Terminés
+  + compteur) **+ période** (Tout/Ce mois/Cette semaine), **cartes cycle de vie** (barre
+  d'avancement colorée, à-traiter ROUGE en tête, référence affichée). `useMyPayments` intact.
+- **FICHE refondue structure v7** → `src/pages/PaymentDetailPage.tsx` + `payment-detail/*` :
+  en-tête drill-in (retour rond + référence) · **action en tête** (reçu `PRIMARY_PILL` si
+  `completed`, carte ROUGE « Compléter les coordonnées » si `waiting_beneficiary_info`,
+  sinon reçu en pilule douce dans Preuve & détails) · **hero** gros ¥ (58px) + « Vous avez
+  payé X XAF » (« recrédités » si rejeté/annulé — `cancel_payment` recrédite bien) + taux
+  lilas « 1 000 000 XAF = 11 350 ¥ » + pastille cycle de vie (`lifecycleStatusLabel`,
+  PARTAGÉE avec la liste — badges unifiés) · **Bénéficiaire** (intitulé hors carte +
+  Modifier/Verrouillé, QR vignette 88px « Agrandir », champs copiables nuancés par méthode,
+  cash = nom + téléphone) · **Suivi** = nouveau `PaymentTrackingSection` (4 jalons
+  `paymentLifecycle`, dates réelles via `buildPaymentTimelineSteps`, l'étape courante porte
+  l'action rouge si todo) · **Preuve & détails** (`PaymentDocumentsSection` : preuves
+  admin/client + upload + lignes Référence/Méthode/Créé le/Payé le). `PaymentStatusMessages`
+  réduit aux cartes porteuses d'info (motif rejet, annulation, message Bonzini).
+  SUPPRIMÉS (orphelins) : `PaymentDetailsAccordion`, `PaymentTimelineDisplay`,
+  `STATUS_BADGE_STYLES`. Reçu PDF / upload preuves / QR drawer / cash QR intacts.
+- **WIZARD refondu (maquette VALIDÉE par le client → implémenté)** →
+  `src/pages/NewPaymentPage.tsx` + `payment-form/*`. Maquette de référence :
+  `src/__screenshot__/clientPayWizard.tsx` (clés `cpay-wiz-*`). Décisions validées :
+  en-tête drill-in (retour rond + titre) · **AUCUNE barre d'étapes sur l'écran Méthode**
+  (demande client), visible ensuite avec libellés pleins (Méthode/Montant/Bénéficiaire/Résumé)
+  · cartes méthode avec **taux du jour par mode** (ambre, `getBaseRate`, descriptions
+  « Règlement sur compte… ») · montant : segment XAF/RMB en carte blanche, **saisie groupée
+  en milliers** (état brut préservé), pastille solde, bloc lilas « Votre bénéficiaire
+  reçoit » + « Taux du jour · 1 000 000 XAF = 11 480 ¥ » (taux **entier** via
+  `Math.round(1e6*rate)`), « Solde après paiement », presets 100K/250K/500K/1M/Tout une
+  ligne, rappel bornes · bénéficiaire : onglets violet en carte, sous-titre avec méthode,
+  « Compléter les coordonnées plus tard » en **lien discret** (≠ CTA), icônes User/Users ·
+  résumé : hero langage fiche v7 (¥ `formatYuan`, taux lilas) + récap (bénéficiaire +
+  identifiant/compte/téléphone via `beneficiarySub`, « Débité maintenant », nouveau solde)
+  + note lilas de débit · CTA pied avec flèche. `formatYuan` ajouté aux formatters.
+  LOGIQUE 100 % intacte : `BeneficiaryForm` partagé (champs par méthode), switch devise
+  vide l'input, « Tout » = min(solde, 50M), bornes/zod, doublon soft, cash+self,
+  snapshot gelé, `SuccessScreen` inchangé.
+- **PASSE D'UNIFORMISATION (audit Playwright) — module paiements 100 % cohérent** :
+  · `BeneficiaryForm` (créer) re-stylé designKit : `inputCls` = mêmes classes que la lib
+    `form/` (parité avec l'écran d'édition + reste de l'app), chips méthode/identifiant/
+    relation en cartes designKit (anneau lilas), QR en boîte pointillée designKit, erreurs
+    en rouge sémantique `#C0504D`. Nouvelle prop **`hideRelation`** posée par le wizard →
+    supprime le **doublon « Moi-même »** (haut Moi-même/Autre + bas Relation). Touche aussi
+    le carnet client/admin (amélioration, logique inchangée).
+  · `EditBeneficiaryPage` : en-tête **drill-in** (rond retour + titre) au lieu du vieux
+    `PageHeader` à bordure ; `pb-40` sous la barre d'action fixe.
+  · **¥ uniformisé** via `formatYuan` (décimales seulement si non entier) : `SuccessScreen`
+    (était `formatRMB`), liste (`PaymentsPage`, était `formatCurrencyRMB`), `PaymentHeroCard`
+    (centralisé). Note : `groupDigits` (montant) garde un léger saut de curseur en édition
+    au milieu — défaut mineur connu, design validé conservé.
+
+- **MODULE DÉPÔTS — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  · `src/lib/depositLifecycle.ts` (cycle de vie 3 tons, jumeau de paymentLifecycle).
+  · `src/mobile/components/deposits/DepositLogos.tsx` — **vrais logos de marque** (assets
+    `src/assets/deposit-logos/`) : Orange (SVG Wikimedia), Wave (pingouin wave.com),
+    Ecobank/UBA (Wikimedia), Afriland (emblème). MTN composé (jaune + « MTN » bleu). CCA
+    monogramme (logo non libre). `DepositMethodLogo` / `DepositFamilyLogo` / `DepositBankLogo`.
+  · `DepositsPage` (liste) · `NewDepositPage` (wizard : montant→famille→sous-méthode→
+    banque/agence→récap, header drill-in, phases libellées, coordonnées Bonzini) ·
+    `DepositDetailPage` (action reçu/preuve+countdown, hero XAF, coordonnées, preuve
+    strip+upload, suivi, annuler, détails). `DepositInstructions` + `DepositTimelineDisplay`
+    re-stylés designKit. `ProofUpload`/`CountdownTimer` réutilisés. Logique 100% préservée
+    (bornes **50 000 / 50 000 000** XAF — min dépôt = 50k !, getRecapInfo, create_deposit,
+    upload/suppression preuves, annulation, reçu PDF, confirmed_amount_xaf). i18n maquette
+    `src/__screenshot__/clientDepositLayout.tsx` (clés `cdep-*`).
+
+- **MODULE WALLET / ACCUEIL — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/WalletPage.tsx` + `src/components/wallet/*` (`BalanceCard`, `QuickActions`,
+  `OperationsList`, `WelcomeGreeting`). Carte SOLDE premium **charbon sans dégradé**
+  (`card-primary`/gradient supprimé) + œil masquer · actions rapides (Déposer/Payer/
+  Bénéficiaires/Historique) · **taux du jour designKit inline** (4 méthodes, `PaymentMethodLogo`,
+  `useClientRates` — le `RateCard` partagé admin n'est PLUS importé ici mais reste intact) ·
+  activité récente (crédit vert/débit, `useMyWalletOperations`, « Voir tout » → /history).
+  Maquette : `src/__screenshot__/clientWalletLayout.tsx` (clés `cwallet-*`). i18n `wallet.*`
+  complété (fr+en). Logique préservée (solde, masquage, opérations, taux).
+
+- **MODULE BÉNÉFICIAIRES (carnet) — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/BeneficiariesPage.tsx`. Liste alias-first (`PaymentMethodLogo` réel + alias +
+  tag relation + identifiant), recherche, filtres par mode (chips lilas), modifier/archiver
+  (archive = soft, snapshot préservé), état vide · éditeur plein écran (drill-in +
+  `BeneficiaryForm` déjà refondu + pied Annuler/Enregistrer). Logique 100% préservée
+  (create/update/archive, isBeneficiaryFormValid, QR). Maquette `clientBeneficiariesLayout.tsx`
+  (clés `cbenef-*`). NB : `EditBeneficiaryPage` (édition bénéf D'UN PAIEMENT) déjà refondu
+  lors du module paiements — distinct de ce carnet.
+
+- **MODULE HISTORIQUE — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/HistoryPage.tsx`. Opérations groupées par jour (crédit vert ↙ / débit neutre ↗),
+  filtres Tous/Crédits/Débits, bouton Relevé (PDF). Logique 100% préservée : `isDebitOperation`
+  (tous types : deposit/payment/refund/admin/adjustment…), groupement par date, libellés i18n
+  `history.operationLabels.*`, `generateClientStatement`. Maquette `clientHistoryLayout.tsx`
+  (clé `chist-list`).
+
+- **MODULE PROFIL + NOTIFICATIONS — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/ProfilePage.tsx` (carte identité premium sans dégradé + nom entreprise ·
+  sections Compte/Préférences avec `LanguageSwitcher`/`ThemeToggle` réels · déconnexion) ·
+  `src/pages/NotificationsPage.tsx` (drill-in + tout-marquer-lu, liste designKit par type,
+  non-lu = point lilas). NB : `useMyNotifications` est un **stub** (renvoie [] ) → l'écran
+  affiche l'état vide tant que le backend notif n'est pas branché (normal, pas un bug). Le
+  badge KYC de la maquette n'est PAS rendu (champ absent de `useMyProfile` → remplacé par le
+  nom d'entreprise). Maquette `clientProfileLayout.tsx` (`cprofile`, `cnotifs`). i18n
+  `profile.section*` (fr+en).
+
+- **PASSE DE COHÉRENCE TRANSVERSALE (audit détails)** : unifié les 6 écrans à onglets
+  (Paiements, Dépôts, Bénéficiaires, Historique, Wallet, Profil) → conteneur
+  `min-h-[100dvh] space-y-5 px-4 pb-6 pt-6` partout · titres de page `text-[26px]` (greeting
+  Wallet aligné) · chips de filtre `px-3.5 py-2` + conteneur `-mx-4 … overflow-x-auto`
+  partout · **recherche ajoutée à Dépôts** (réf/méthode/banque/agence) **et Historique**
+  (description) pour parité avec Paiements/Bénéficiaires. i18n `deposits.searchPlaceholder`,
+  `client.history.search`, `client.wallet.*`, `client.profile.section*` (fr+en). Rayons
+  assumés par type (hero 24-26px · carte cycle de vie 22px · ligne simple 18px). NB : shell
+  (top bar + bottom nav) encore ancien — refonte EN DERNIER.
+
+- **MODULE TAUX (Taux de change) — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/rates/ClientRatesPage.tsx` (drill-in + canvas) + `components/*` :
+  `RateHeroCard` (hero sans dégradé ambre, XAF→¥ + variation), `CountrySelector` (chips
+  designKit), `PaymentMethodSelector` (tuiles **vrais logos** `PaymentMethodLogo` + taux),
+  `RateConverter` (XAF↔¥ bidirectionnel + montants rapides), `RateIndicator` (palier
+  Meilleur/Standard/Petit), `RateTrendChart` (recharts lilas, 7J/30J/3M/1A), `RateInfoBanner`.
+  Calculs 100% PRÉSERVÉS (`useClientRates`, `calculateFinalRate`, `getBaseRate`, tiers).
+  Maquette `clientRatesLayout.tsx` (clé `crates`). i18n `client.rates.title` (fr+en).
+  NB : `RateCard` partagé admin/dashboard NON touché (composant distinct).
+
+- **MODULE SUPPORT — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/SupportListPage.tsx` (liste conversations Direction A : carte/formulaire
+  Nouvelle conversation, non-lu lilas + compteur, fermé estompé, badge temps de réponse) +
+  en-tête de `src/pages/SupportPage.tsx` aligné designKit (retour rond, avatar charbon « B »).
+  **Le CHAT lui-même (ChatThread/MessageBubble/MessageInput/VoiceRecorder…) est un design
+  PARTAGÉ admin↔client volontairement unifié → NON touché** (le modifier casserait l'admin).
+  Logique préservée (useMyChatConversations, useCreateChatConversation, ViewportShell).
+  Maquette `clientSupportLayout.tsx` (clé `csupport-list`). i18n `support.list.sectionTitle`.
+
+- **MODULE AUTH / ONBOARDING — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  `src/pages/AuthPage.tsx` (connexion 2 étapes · inscription 5 étapes · OTP email · mot de
+  passe oublié/réinitialisation) + `src/pages/OnboardingPage.tsx`. **Bascule
+  connexion/inscription remontée TOUT EN HAUT** (barre du haut : langue à gauche —
+  « Créer un compte »/« Se connecter » à droite avec flèche) → pied de page supprimé.
+  Canvas calme via `LoginBackground` (dégradé + halos animés supprimés), CTA pill charbon
+  partagée (`CTA_PILL`), `ProgressDots` lilas, boutons retour ronds designKit, liens lilas,
+  sélecteurs pays/date + `PhoneCountryInput` en focus lilas. `PhoneCountryInput` gagne
+  `hideLabel` (onboarding fournit son propre libellé fort → plus de doublon « Téléphone »).
+  Logique 100% PRÉSERVÉE (signIn/signUp/verifyEmailOtp/Google/reset, RPC
+  `complete_client_onboarding`, gardes de redirection). Maquette `clientAuthLayout.tsx`
+  (clés `cauth-login|cauth-signup|cauth-onboarding`). i18n `login.switchToSignup` +
+  `signup.switchToLogin` (fr+en). Vrais écrans Playwright clair+sombre, 0 erreur.
+
+- **MODULE SHELL & NAVIGATION — refondu + IMPLÉMENTÉ (maquette validée → vrai code)** :
+  Nouveau **`src/components/navigation/ClientTabBar.tsx`** (barre du bas SOBRE : carte
+  blanche flottante + ombre douce, onglet actif = pastille lilas `#8B5CF6` — langage
+  « sélection » de l'app —, libellé actif fort/inactifs estompés, badges rouges `#C0504D`,
+  détection via `matchPath`) branché dans `src/components/layout/BottomNav.tsx` à la place
+  de `LiquidTabBar`. `ClientHeader` sobre (canvas, plus de bordure/flou, cloche en holder
+  carte + compteur). `MobileLayout` sur `SURFACE.canvas`. `ClientSidebar` (desktop) : actif
+  en lilas doux. **La `LiquidTabBar` est PARTAGÉE avec l'admin (`MobileTabBar`,
+  `AgentCashTabBar`) → volontairement NON touchée** (le client a son propre `ClientTabBar`).
+  Logique 100% PRÉSERVÉE (items + hooks badges `useUnreadNotificationCount` /
+  `useMyChatConversations`, routes, `matchPath`). Maquette `clientShellLayout.tsx` (clés
+  `cshell-home|cshell-payments`). Vrais écrans Playwright clair+sombre, 0 erreur.
+
+- **PASSE DE COHÉRENCE TRANSVERSALE (audit approfondi 4 agents + plusieurs vagues)** :
+  - *Vague 1 (visuel)* : fuite violet `--primary` de `.premium-input` (CSS) → lilas ;
+    rouge danger unifié sur `#C0504D` (remplace `destructive` + le `#D14343` du `PrimaryPill`) ;
+    unité devise (XAF **et** ¥) en ambre `#E8932A` sur les montants focaux. Composants restés
+    en ancien look migrés : `ProofUpload` (dégradé→pill), `CountdownTimer` (palette→tokens),
+    `PhoneCountryInput`, `BeneficiaryForm`, `ThemeToggle`, `ResponseTimeBadge`, `OperationsList`
+    (variantes dark). `PrimaryCTA` (mort) supprimé. `#221F33`→`#2F2C3D`, rayons `[20px]`→`[22px]`.
+  - *Vague 2 (i18n + pages orphelines)* : i18n fr/en/zh de OnboardingPage (`auth.onboarding.*`),
+    écran Taux (`client.rates.*`), fiche/liste Paiements (`payments.*`), messages OAuth
+    (`auth.callback.*`). Refonte Direction A de `ResetPasswordPage` + `AuthCallbackPage`
+    (étaient en shadcn Card/Alert/Button).
+  - *Vagues 3-4 (détails + flux cash)* : `SuccessScreen` variante admin morte supprimée ;
+    cases à cocher natives → accent lilas ; `ClientSidebar` desktop i18n + survol `#C0504D` ;
+    `CashQRCode` refonte designKit theme-aware + i18n (`payments.cashQr.*`), `CashReceiptDownloadButton`
+    i18n (`payments.cashReceipt.*`) — sûrs car le pont agent-cash appelle `i18n.changeLanguage`
+    (langue globale) ; `BeneficiaryEditForm` placeholders i18n + vert `#2E7D52` ; `NotFound` +
+    `ProtectedRoute` (spinner) → canvas/lilas ; `CashBeneficiaryForm` (mort) supprimé.
+  - **Hors périmètre client (justifié, NON touché)** : `SignatureCanvas` (agent/office),
+    `VoiceRecorder` + moteur de chat (partagé), primitives `ui/*` (checkbox/switch — non rendues
+    côté client), `LiquidTabBar`/`RateCard` (admin). Balayage final : 0 texte FR codé en dur,
+    0 fuite `primary`/dégradé/`destructive` dans les écrans client. type-check + build + lint OK.
+
+## 4. À FAIRE — dans l'ordre
+### 4.1 Modules client restants
+✅ **TERMINÉ — tous les modules client sont refondus + implémentés** (Paiements · Dépôts ·
+Wallet · Bénéficiaires · Historique · Profil/Notifications · Taux · Support · Auth/Onboarding
+· Shell & nav) + passe de cohérence transversale (2 vagues). La refonte « Direction A » de
+l'app CLIENT est complète.
+NB volontairement NON touchés (partagés avec l'admin) : le moteur de chat
+(ChatThread/MessageBubble/MessageInput), `RateCard`, et `LiquidTabBar`.
+
+## 5. PIÈGES à NE PAS CASSER (détail exhaustif : `docs/refonte-client/01-analyse-paiements.md`)
+cash + « me payer moi-même » (pré-rempli, aucun champ) · switch devise XAF↔RMB **vide
+l'input** · presets « Tous » = min(solde, 50M) · bornes **10 000 / 50 000 000 XAF** +
+`Number.isSafeInteger` · détection de doublon **soft** · « compléter plus tard » →
+`waiting_beneficiary_info` · **snapshot bénéficiaire gelé** · **`toStoredPath`** (jamais
+d'URL signée en base) · statuts verrouillés (processing/completed/rejected) · taux décimal
+stocké en micro-unités (`normalizeRateToInt`).
+
+## 6. Outillage captures
+- Vrais écrans client : **`tools/shoot-client-current.mjs`** (amorce une session client +
+  intercepte Supabase ; `PORT=8080 node tools/shoot-client-current.mjs`). Lance d'abord
+  `npx vite --host 127.0.0.1 --port 8080`.
+- Maquettes : harness `screenshot.html?screen=<clé>&theme=<light|dark>&font=dm` +
+  `tools/shoot-one.mjs` (`KEY=cpay-detail-v7`). Clés enregistrées dans `src/__screenshot__/main.tsx`.
+
+## 7. Docs liés
+`docs/refonte-client/00-plan.md` (plan) · `01-analyse-paiements.md` (analyse + pièges) ·
+maquettes `src/__screenshot__/clientPayLayout{V2..V8}.tsx`. PRs ouvertes : #147 (refonte
+admin) / #148 (fix flyer) — ne pas confondre avec ce travail client (pas encore de PR client).
