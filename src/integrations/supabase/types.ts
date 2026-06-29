@@ -539,6 +539,45 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_batches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          line_count: number
+          note: string | null
+          reference: string
+          total_amount_rmb: number
+          total_amount_xaf: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          line_count?: number
+          note?: string | null
+          reference: string
+          total_amount_rmb?: number
+          total_amount_xaf?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          line_count?: number
+          note?: string | null
+          reference?: string
+          total_amount_rmb?: number
+          total_amount_xaf?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_proofs: {
         Row: {
           created_at: string
@@ -625,6 +664,7 @@ export type Database = {
           amount_xaf: number
           balance_after: number
           balance_before: number
+          batch_id: string | null
           beneficiary_bank_account: string | null
           beneficiary_bank_extra: string | null
           beneficiary_bank_name: string | null
@@ -669,6 +709,7 @@ export type Database = {
           amount_xaf: number
           balance_after: number
           balance_before: number
+          batch_id?: string | null
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
@@ -713,6 +754,7 @@ export type Database = {
           amount_xaf?: number
           balance_after?: number
           balance_before?: number
+          batch_id?: string | null
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
@@ -757,6 +799,13 @@ export type Database = {
             columns: ["beneficiary_id"]
             isOneToOne: false
             referencedRelation: "beneficiaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payment_batches"
             referencedColumns: ["id"]
           },
         ]
@@ -1788,6 +1837,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_payment_batch: {
+        Args: { p_lines: Json; p_note?: string; p_user_id: string }
+        Returns: Json
+      }
       create_wallet_adjustment: {
         Args: {
           p_adjustment_type: string
@@ -1802,6 +1855,7 @@ export type Database = {
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
       generate_deposit_reference: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
+      generate_payment_batch_reference: { Args: never; Returns: string }
       get_client_ledger: {
         Args: {
           p_entry_type?: Database["public"]["Enums"]["ledger_entry_type"]

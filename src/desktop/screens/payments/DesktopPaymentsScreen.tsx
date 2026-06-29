@@ -7,7 +7,7 @@
  */
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, X, Paperclip, CreditCard, FileDown, Loader2 } from 'lucide-react';
+import { Plus, Search, X, Paperclip, CreditCard, FileDown, Loader2, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -168,6 +168,12 @@ export function DesktopPaymentsScreen() {
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
             Exporter (PDF)
+          </button>
+          <button
+            onClick={() => navigate('/m/payments/batch/new')}
+            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', SOFT_PILL)}
+          >
+            <Layers className="h-4 w-4" /> Paiement groupé
           </button>
           <button
             onClick={() => navigate('/m/payments/new')}
