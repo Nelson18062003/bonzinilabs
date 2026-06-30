@@ -42,9 +42,11 @@ const MODEL_SUMMARY = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5-
 // Réflexion adaptative : supportée par Sonnet 4.6 / Opus 4.6+ / Fable 5 (où elle est de toute
 // façon toujours active). Haiku ne la supporte pas → on n'envoie pas le paramètre dans ce cas.
 const MODEL_THINKING = MODEL.includes("haiku") ? {} : { thinking: { type: "adaptive" } };
-// Profondeur de raisonnement (optionnel) : secret ASSISTANT_EFFORT ∈ low|medium|high|max.
-// Vide = défaut API (high). "medium" est un bon réglage si la latence devient un sujet.
-const ASSISTANT_EFFORT = (Deno.env.get("ASSISTANT_EFFORT") ?? "").trim();
+// Profondeur de raisonnement : secret ASSISTANT_EFFORT ∈ low|medium|high|max.
+// Défaut = "medium" : Mola réfléchit PROPORTIONNELLEMENT à la difficulté (rapide sur les
+// questions simples, profond sur le complexe) au lieu de réfléchir à fond pour TOUT. Même
+// modèle (Opus 4.8) : on ne baisse pas l'intelligence, on retire la sur-réflexion inutile.
+const ASSISTANT_EFFORT = (Deno.env.get("ASSISTANT_EFFORT") ?? "medium").trim();
 const MODEL_EFFORT = ASSISTANT_EFFORT ? { output_config: { effort: ASSISTANT_EFFORT } } : {};
 // La réflexion adaptative consomme des tokens de sortie → plafond largement relevé (on streame).
 const MAX_TOKENS = 16000;
