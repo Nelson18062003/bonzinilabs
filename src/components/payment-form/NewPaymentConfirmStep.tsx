@@ -65,7 +65,7 @@ export function NewPaymentConfirmStep({
               Taux du jour appliqué
             </div>
             <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>
-              1 000 000 XAF = {formatNumber(Math.round(1_000_000 * rate))} ¥
+              1 000 000 XAF = ¥{formatNumber(Math.round(1_000_000 * rate))}
             </div>
           </div>
         )}

@@ -136,7 +136,7 @@ const PaymentsPage = () => {
             <div className={cn('text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</div>
             {dayRate ? (
               <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>
-                {t('list.dayRate')} · <span className="font-bold text-[#E8932A]">{formatNumber(dayRate)}</span> ¥ / 1 000 000 XAF
+                {t('list.dayRate')} · <span className="font-bold text-[#E8932A]">¥{formatNumber(dayRate)}</span> / 1 000 000 XAF
               </div>
             ) : null}
           </div>

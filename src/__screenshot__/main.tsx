@@ -51,6 +51,7 @@ import { RatesScreen } from './clientRatesLayout';
 import { SupportList } from './clientSupportLayout';
 import { AuthLogin, AuthSignup, AuthOnboarding } from './clientAuthLayout';
 import { ShellHome, ShellPayments } from './clientShellLayout';
+import { BulkV2Drawer, BulkV2Flow } from './bulkBenefDrawer';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -77,7 +78,7 @@ import {
   MobileDepositDetailV2,
   MobileNewDepositV2,
 } from '@/mobile/screens/deposits';
-import { MobileNewPayment } from '@/mobile/screens/payments';
+import { MobileNewPayment, BulkPaymentCreate } from '@/mobile/screens/payments';
 import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
 import {
   MobileAdminsScreen,
@@ -165,6 +166,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // Refonte module CLIENT — Shell & navigation (DERNIER module)
   'cshell-home': { Comp: ShellHome, route: '/' },
   'cshell-payments': { Comp: ShellPayments, route: '/' },
+  // Refonte v2 — paiement groupé (admin) : drawer + flux
+  'bulk-v2-drawer': { Comp: BulkV2Drawer, route: '/' },
+  'bulk-v2-flow': { Comp: BulkV2Flow, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
@@ -206,6 +210,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'deposit-new': { Comp: MobileNewDepositV2, route: '/m/deposits/new' },
   // Payments module (Phase 2 M4)
   'payment-new': { Comp: MobileNewPayment, route: '/m/payments/new' },
+  'bulk-create': { Comp: BulkPaymentCreate, route: '/m/payments/batch/new' },
   // Rates module (Phase 2 M5)
   rates: { Comp: MobileRatesScreen, route: '/m/rates' },
   // Admins module (Phase 2 M6)

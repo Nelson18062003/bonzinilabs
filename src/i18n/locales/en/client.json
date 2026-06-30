@@ -175,7 +175,7 @@
       "standardRate": "Standard rate",
       "smallAmount": "Small amount",
       "appliedRate": "Rate applied to your amount",
-      "rateLine": "1,000,000 XAF = {{rate}} ¥"
+      "rateLine": "1,000,000 XAF = ¥{{rate}}"
     },
     "banner": {
       "title": "Track rates in real time",

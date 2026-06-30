@@ -132,7 +132,7 @@ export function NewPaymentAmountStep({
             <div className={cn('mt-3 border-t border-black/[0.05] pt-2.5 text-[12px] tabular-nums dark:border-white/[0.08]', TEXT.muted)}>
               Taux du jour ·{' '}
               <span className={cn('font-bold', TEXT.strong)}>
-                1 000 000 XAF = {formatNumber(Math.round(1_000_000 * rate))} ¥
+                1 000 000 XAF = ¥{formatNumber(Math.round(1_000_000 * rate))}
               </span>
             </div>
           )}

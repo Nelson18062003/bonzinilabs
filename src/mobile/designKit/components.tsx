@@ -12,6 +12,7 @@
  * fully typed. Dark mode is handled entirely through the token classes.
  */
 import * as React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Loader2, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -415,48 +416,81 @@ export function BottomSheet({
   children: React.ReactNode;
   className?: string;
 }) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!open) return;
+    // Focus trap: keep keyboard focus inside the sheet while it is open.
+    const focusables = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     window.addEventListener('keydown', onKey);
+    const focusTimer = window.setTimeout(() => focusables()[0]?.focus(), 60);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
+      window.clearTimeout(focusTimer);
       document.body.style.overflow = prev;
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal="true">
-      <button
-        type="button"
-        aria-label="Fermer"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-      />
-      <div
-        className={cn(
-          'relative max-h-[90dvh] overflow-y-auto rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
-          SURFACE.card,
-          'shadow-[0_-12px_40px_-12px_rgba(46,32,92,0.30)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
-          className,
-        )}
-      >
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-black/10 dark:bg-white/15" />
-        {title != null && (
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2>
-            <Holder icon={X} size="sm" onClick={onClose} />
-          </div>
-        )}
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="bottomsheet"
+          className="fixed inset-0 z-[60] flex flex-col justify-end"
+          role="dialog"
+          aria-modal="true"
+        >
+          <motion.button
+            type="button"
+            aria-label="Fermer"
+            onClick={onClose}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.div
+            ref={panelRef}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
+            className={cn(
+              'relative max-h-[90dvh] overflow-y-auto rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
+              SURFACE.card,
+              'shadow-[0_-12px_40px_-12px_rgba(46,32,92,0.30)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
+              className,
+            )}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-black/10 dark:bg-white/15" />
+            {title != null && (
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2>
+                <Holder icon={X} size="sm" onClick={onClose} />
+              </div>
+            )}
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

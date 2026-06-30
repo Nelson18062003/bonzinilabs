@@ -41,7 +41,7 @@ export function DesktopTopbar() {
         {rate?.rate_alipay ? (
           <div className={cn('hidden items-center gap-2 rounded-full px-3.5 py-2 xl:flex', SURFACE.card, SURFACE.shadow)}>
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#2E7D52]" />
-            <span className={cn('text-[12px] font-bold', TEXT.strong)}>1 ¥ = {formatNumber(rate.rate_alipay)} XAF</span>
+            <span className={cn('text-[12px] font-bold', TEXT.strong)}>¥1 = {formatNumber(rate.rate_alipay)} XAF</span>
           </div>
         ) : null}
 
