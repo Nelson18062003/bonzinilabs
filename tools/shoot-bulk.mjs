@@ -59,6 +59,10 @@ for (const theme of ['light', 'dark']) {
     console.log(`OK empty-${theme}`);
     await page.locator('button:has-text("Ajouter un bénéficiaire")').first().click();
     await page.waitForTimeout(800);
+    // selective channels: reveal QR + ID to show the chooser working
+    await page.locator('button:has-text("QR code")').first().click().catch(() => {});
+    await page.locator('button:has-text("ID")').first().click().catch(() => {});
+    await page.waitForTimeout(450);
     await page.screenshot({ path: `shots/bulk-real-drawer-${theme}.png` });
     console.log(`OK drawer-${theme}`);
   } catch (e) {

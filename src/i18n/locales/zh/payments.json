@@ -442,6 +442,10 @@
     "errPhone": "需要电话",
     "errLong": "某个字段过长",
     "errIncomplete": "收款人信息不完整",
-    "dupWarn": "该收款人已在批次中"
+    "dupWarn": "该收款人已在批次中",
+    "channels": "收款人联系方式",
+    "channelsHint": "选择一种或多种方式（至少一种）。",
+    "idPlaceholder": "供应商的支付宝 / 微信 ID",
+    "close": "关闭"
   }
 }

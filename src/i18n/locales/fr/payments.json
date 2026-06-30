@@ -446,6 +446,10 @@
     "errPhone": "Téléphone requis",
     "errLong": "Un champ est trop long",
     "errIncomplete": "Bénéficiaire incomplet",
-    "dupWarn": "Ce bénéficiaire est déjà dans le lot"
+    "dupWarn": "Ce bénéficiaire est déjà dans le lot",
+    "channels": "Coordonnées du bénéficiaire",
+    "channelsHint": "Choisissez un ou plusieurs moyens (au moins un).",
+    "idPlaceholder": "ID Alipay / WeChat du fournisseur",
+    "close": "Fermer"
   }
 }

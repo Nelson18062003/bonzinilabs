@@ -417,6 +417,12 @@ export function BottomSheet({
   className?: string;
 }) {
   const panelRef = React.useRef<HTMLDivElement>(null);
+  // Keep onClose in a ref so the effect below depends ONLY on `open`. If it
+  // depended on `onClose` (an inline arrow recreated on every parent render),
+  // the effect would re-run on EVERY keystroke and its initial-focus would
+  // steal focus from the field being typed in — dismissing the mobile keyboard.
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
   React.useEffect(() => {
     if (!open) return;
     // Focus trap: keep keyboard focus inside the sheet while it is open.
@@ -427,7 +433,7 @@ export function BottomSheet({
         ) ?? [],
       ).filter((el) => el.offsetParent !== null);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Escape') { onCloseRef.current(); return; }
       if (e.key !== 'Tab') return;
       const list = focusables();
       if (list.length === 0) return;
@@ -437,6 +443,8 @@ export function BottomSheet({
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     window.addEventListener('keydown', onKey);
+    // Focus the first control ONCE when the sheet opens (buttons don't pop the
+    // mobile keyboard); runs only on open thanks to the [open]-only deps.
     const focusTimer = window.setTimeout(() => focusables()[0]?.focus(), 60);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -445,7 +453,8 @@ export function BottomSheet({
       window.clearTimeout(focusTimer);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <AnimatePresence>

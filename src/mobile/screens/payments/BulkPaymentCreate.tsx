@@ -13,7 +13,7 @@
 // (useAdminClientBeneficiaries / useAdminCreateBeneficiary), l'upload QR
 // du data layer (qr_code_files), et la validation par méthode (spec.ts).
 // ============================================================
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -41,7 +41,6 @@ import { toStoredPath } from '@/lib/signedUrls';
 import { validateUploadFile, cn } from '@/lib/utils';
 import type { PaymentMethodKey } from '@/types/rates';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
-import { PaymentQrViewerDrawer } from '@/components/payment-detail/PaymentQrViewerDrawer';
 import {
   ChevronLeft, Plus, Search, Trash2, Pencil, Copy, Wallet, AlertTriangle, Users,
   QrCode, Check, Phone, Mail, Hash, Maximize2, RotateCcw, Landmark, Banknote, BookUser,
@@ -174,6 +173,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   const [eQrStoredPath, setEQrStoredPath] = useState<string | undefined>();
   const [eBeneficiaryId, setEBeneficiaryId] = useState<string | undefined>();
   const [eSaveToCarnet, setESaveToCarnet] = useState(false);
+  const [eCh, setECh] = useState({ qr: false, id: false, phone: false, email: false });
 
   const { data: carnet = [] } = useAdminClientBeneficiaries(client?.user_id);
 
@@ -235,8 +235,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
     return full.includes(search.toLowerCase()) || (c.phone ?? '').includes(search);
   });
 
-  // cleanup the local blob preview
-  useEffect(() => () => { if (eQrPreview) URL.revokeObjectURL(eQrPreview); }, [eQrPreview]);
+  // Revoke the local blob preview ONLY on unmount (via a ref). Revoking it on
+  // every change races React StrictMode's double-invoke and blanks the preview.
+  const qrPreviewRef = useRef<string | undefined>(undefined);
+  qrPreviewRef.current = eQrPreview;
+  useEffect(() => () => { if (qrPreviewRef.current) URL.revokeObjectURL(qrPreviewRef.current); }, []);
 
   function resetEditor() {
     setEMethod('alipay'); setECurrency('cny'); setERawAmount('');
@@ -246,6 +249,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
     setERelation('supplier'); setEComment('');
     setEQrFile(undefined); setEQrPreview(undefined); setEQrStoredUrl(undefined); setEQrStoredPath(undefined);
     setEBeneficiaryId(undefined); setESaveToCarnet(false); setTriedCommit(false);
+    setECh({ qr: false, id: false, phone: false, email: false });
   }
 
   function openAdd() { resetEditor(); setEditingId(null); setEditorOpen(true); }
@@ -259,6 +263,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
     setERelation(l.relation); setEComment(l.clientComment);
     setEQrFile(l.qrFile); setEQrPreview(l.qrPreview); setEQrStoredUrl(l.qrStoredUrl); setEQrStoredPath(l.qrStoredPath);
     setEBeneficiaryId(l.beneficiaryId); setESaveToCarnet(l.saveToCarnet); setTriedCommit(false);
+    setECh({ qr: !!(l.qrFile || l.qrStoredPath), id: !!l.identifier, phone: !!l.phone, email: !!l.email });
     setEditorOpen(true);
   }
 
@@ -274,6 +279,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
     setEQrStoredUrl(b.qr_code_url ?? undefined);
     setEQrStoredPath(b.qr_code_url ? toStoredPath(b.qr_code_url) ?? undefined : undefined);
     setEBeneficiaryId(b.id); setESaveToCarnet(false);
+    setECh({ qr: !!b.qr_code_url, id: !!b.identifier, phone: !!b.phone, email: !!b.email });
     setCarnetOpen(false);
   }
 
@@ -289,6 +295,19 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   function removeQr() {
     if (eQrPreview) URL.revokeObjectURL(eQrPreview);
     setEQrFile(undefined); setEQrPreview(undefined); setEQrStoredUrl(undefined); setEQrStoredPath(undefined);
+  }
+
+  function toggleCh(ch: 'qr' | 'id' | 'phone' | 'email') {
+    setECh((c) => {
+      const on = !c[ch];
+      if (!on) {
+        if (ch === 'qr') removeQr();
+        if (ch === 'id') setEIdentifier('');
+        if (ch === 'phone') setEPhone('');
+        if (ch === 'email') setEEmail('');
+      }
+      return { ...c, [ch]: on };
+    });
   }
 
   function commitLine() {
@@ -581,50 +600,66 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
             </div>
           </div>
 
-          {/* beneficiary — QR (alipay/wechat) */}
-          {isQrMethod && (
-            <FormField label={t('bulk.qrCode', { defaultValue: 'QR code' })}>
-              {eQrPreview || eQrStoredUrl ? (
-                <div className="flex items-center gap-3 rounded-2xl bg-black/[0.035] p-2.5 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.05] dark:ring-white/[0.08]">
-                  <button type="button" onClick={() => setQrZoom({ url: (eQrPreview || eQrStoredUrl)!, name: eName || methodLabel(eMethod) })} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-black/10">
-                    <img src={eQrPreview || eQrStoredUrl} alt="QR" className="h-full w-full object-cover" />
-                    <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2 ring-white dark:ring-[#26242F]" style={{ background: VIOLET }}><Maximize2 className="h-3 w-3" /></span>
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('flex items-center gap-1.5 text-[13px] font-bold', TEXT.strong)}><Check className="h-4 w-4" style={{ color: GREEN }} /> {t('bulk.qrAdded', { defaultValue: 'QR code ajouté' })}</p>
-                    <p className="mt-0.5 text-[11.5px] font-semibold" style={{ color: VIOLET }}>{t('bulk.qrTapZoom', { defaultValue: 'Appuyer pour agrandir' })}</p>
-                  </div>
-                  <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.06]"><Pencil className={cn('h-3.5 w-3.5', TEXT.muted)} /><input type="file" accept="image/*" className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} /></label>
-                  <button type="button" onClick={removeQr} className="flex h-8 w-8 items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.06]"><X className={cn('h-4 w-4', TEXT.muted)} /></button>
-                </div>
-              ) : (
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-black/12 bg-black/[0.015] px-3.5 py-3 dark:border-white/15 dark:bg-white/[0.02]">
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} />
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: `${VIOLET}1A` }}><QrCode className="h-6 w-6" style={{ color: VIOLET }} /></span>
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('text-[13px] font-bold', TEXT.strong)}>{t('bulk.qrAdd', { defaultValue: 'Ajouter le QR code' })}</p>
-                    <p className={cn('text-[11.5px]', TEXT.muted)}>{t('bulk.qrHint', { defaultValue: 'Le plus fiable pour Alipay / WeChat' })}</p>
-                  </div>
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full text-white" style={{ background: VIOLET }}><Plus className="h-4 w-4" /></span>
-                </label>
-              )}
-            </FormField>
-          )}
+          {/* name (always) */}
+          <FormField label={t('form.beneficiaryName', { defaultValue: 'Nom du bénéficiaire' })}>
+            <TextInput value={eName} onChange={(e) => setEName(e.target.value)} placeholder={t('bulk.fullName', { defaultValue: 'Nom complet' })} />
+          </FormField>
 
-          {/* identifier (alipay/wechat) */}
+          {/* alipay/wechat — choose one or several reachability channels */}
           {isQrMethod && (
             <div>
-              <label className={cn('mb-1.5 ml-0.5 block text-[12.5px] font-bold', TEXT.strong)}>{t('bulk.identifier', { defaultValue: 'Identifiant' })}</label>
-              <div className="mb-2 flex gap-1.5">
-                <Chip icon={Hash} label="ID" on={eIdType === 'id'} onClick={() => setEIdType('id')} />
-                <Chip icon={Phone} label={t('bulk.phone', { defaultValue: 'Téléphone' })} on={eIdType === 'phone'} onClick={() => setEIdType('phone')} />
-                <Chip icon={Mail} label="E-mail" on={eIdType === 'email'} onClick={() => setEIdType('email')} />
+              <label className={cn('mb-1 ml-0.5 block text-[12.5px] font-bold', TEXT.strong)}>{t('bulk.channels', { defaultValue: 'Coordonnées du bénéficiaire' })}</label>
+              <p className={cn('mb-2 ml-0.5 text-[11.5px]', TEXT.muted)}>{t('bulk.channelsHint', { defaultValue: 'Choisissez un ou plusieurs moyens (au moins un).' })}</p>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                <Chip icon={QrCode} label="QR code" on={eCh.qr} onClick={() => toggleCh('qr')} />
+                <Chip icon={Hash} label="ID" on={eCh.id} onClick={() => toggleCh('id')} />
+                <Chip icon={Phone} label={t('bulk.phone', { defaultValue: 'Téléphone' })} on={eCh.phone} onClick={() => toggleCh('phone')} />
+                <Chip icon={Mail} label="E-mail" on={eCh.email} onClick={() => toggleCh('email')} />
               </div>
-              <TextInput value={eIdentifier} onChange={(e) => setEIdentifier(e.target.value)} placeholder={t('bulk.identifierPlaceholder', { defaultValue: 'ID / téléphone / e-mail du fournisseur' })} />
+              {eCh.qr && (
+                eQrPreview || eQrStoredUrl ? (
+                  <div className="mb-3 flex items-center gap-3 rounded-2xl bg-black/[0.035] p-2.5 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.05] dark:ring-white/[0.08]">
+                    <button type="button" onClick={() => setQrZoom({ url: (eQrPreview || eQrStoredUrl)!, name: eName || methodLabel(eMethod) })} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-black/10">
+                      <img src={eQrPreview || eQrStoredUrl} alt="QR" className="h-full w-full object-cover" />
+                      <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2 ring-white dark:ring-[#26242F]" style={{ background: VIOLET }}><Maximize2 className="h-3 w-3" /></span>
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('flex items-center gap-1.5 text-[13px] font-bold', TEXT.strong)}><Check className="h-4 w-4" style={{ color: GREEN }} /> {t('bulk.qrAdded', { defaultValue: 'QR code ajouté' })}</p>
+                      <p className="mt-0.5 text-[11.5px] font-semibold" style={{ color: VIOLET }}>{t('bulk.qrTapZoom', { defaultValue: 'Appuyer pour agrandir' })}</p>
+                    </div>
+                    <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.06]"><Pencil className={cn('h-3.5 w-3.5', TEXT.muted)} /><input type="file" accept="image/*" className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} /></label>
+                  </div>
+                ) : (
+                  <label className="mb-3 flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-black/12 bg-black/[0.015] px-3.5 py-3 dark:border-white/15 dark:bg-white/[0.02]">
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} />
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: `${VIOLET}1A` }}><QrCode className="h-6 w-6" style={{ color: VIOLET }} /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('text-[13px] font-bold', TEXT.strong)}>{t('bulk.qrAdd', { defaultValue: 'Ajouter le QR code' })}</p>
+                      <p className={cn('text-[11.5px]', TEXT.muted)}>{t('bulk.qrHint', { defaultValue: 'Le plus fiable pour Alipay / WeChat' })}</p>
+                    </div>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full text-white" style={{ background: VIOLET }}><Plus className="h-4 w-4" /></span>
+                  </label>
+                )
+              )}
+              {eCh.id && (
+                <FormField label={t('bulk.identifier', { defaultValue: 'Identifiant' })}>
+                  <TextInput value={eIdentifier} onChange={(e) => setEIdentifier(e.target.value)} placeholder={t('bulk.idPlaceholder', { defaultValue: 'ID Alipay / WeChat du fournisseur' })} />
+                </FormField>
+              )}
+              {eCh.phone && (
+                <FormField label={t('bulk.phone', { defaultValue: 'Téléphone' })}>
+                  <TextInput value={ePhone} onChange={(e) => setEPhone(e.target.value)} placeholder="+86 …" />
+                </FormField>
+              )}
+              {eCh.email && (
+                <FormField label="E-mail">
+                  <TextInput value={eEmail} onChange={(e) => setEEmail(e.target.value)} placeholder="nom@exemple.com" />
+                </FormField>
+              )}
             </div>
           )}
 
-          {/* bank (virement) */}
+          {/* virement — bank coordinates */}
           {isBank && (
             <>
               <FormField label={t('bulk.bank', { defaultValue: 'Banque' })}>
@@ -636,42 +671,26 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
               <FormField label={t('bulk.account', { defaultValue: 'Numéro de compte / IBAN' })}>
                 <TextInput value={eAccount} onChange={(e) => setEAccount(e.target.value)} placeholder={t('bulk.accountPlaceholder', { defaultValue: 'Compte / IBAN' })} />
               </FormField>
-              <FormField label={t('bulk.bankExtra', { defaultValue: 'SWIFT / agence' })} className="[&_label]:after:content-none">
+              <FormField label={t('bulk.bankExtra', { defaultValue: 'SWIFT / agence' })}>
                 <TextInput value={eBankExtra} onChange={(e) => setEBankExtra(e.target.value)} placeholder="BKCHCNBJ…" />
               </FormField>
             </>
           )}
 
-          {/* cash info */}
+          {/* cash — phone (required) + auto withdrawal QR */}
           {isCash && (
-            <div className="flex items-start gap-2 rounded-2xl px-3.5 py-3" style={{ background: `${VIOLET}14` }}>
-              <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: VIOLET }} />
-              <p className={cn('text-[12px] leading-snug', TEXT.strong)}>{t('bulk.cashInfo', { defaultValue: 'Un QR de retrait est généré automatiquement — rien à joindre.' })}</p>
-            </div>
-          )}
-
-          {/* common: alias + name + relation */}
-          <FormField label={t('bulk.alias', { defaultValue: 'Alias (libellé court)' })}>
-            <TextInput value={eAlias} onChange={(e) => setEAlias(e.target.value)} placeholder={t('bulk.aliasPlaceholder', { defaultValue: 'Par défaut : le nom' })} />
-          </FormField>
-          <FormField label={t('form.beneficiaryName', { defaultValue: 'Nom du bénéficiaire' })}>
-            <TextInput value={eName} onChange={(e) => setEName(e.target.value)} placeholder={t('bulk.fullName', { defaultValue: 'Nom complet' })} />
-          </FormField>
-          <FormField label={t('bulk.relation', { defaultValue: 'Relation' })}>
-            <div className="flex gap-1.5">
-              <Chip label={t('bulk.relSelf', { defaultValue: 'Soi-même' })} on={eRelation === 'self'} onClick={() => setERelation('self')} />
-              <Chip label={t('bulk.relSupplier', { defaultValue: 'Fournisseur' })} on={eRelation === 'supplier'} onClick={() => setERelation('supplier')} />
-              <Chip label={t('bulk.relOther', { defaultValue: 'Autre' })} on={eRelation === 'other'} onClick={() => setERelation('other')} />
-            </div>
-          </FormField>
-
-          {!isBank && (
-            <FormField label={t(isCash ? 'bulk.phoneReq' : 'bulk.phoneOpt', { defaultValue: isCash ? 'Téléphone' : 'Téléphone (optionnel)' })}>
-              <div className="flex items-center gap-2">
-                {isCash && <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl" style={{ background: `${PAYMENT_METHOD.cash.color}1F` }}><Banknote className="h-5 w-5" style={{ color: PAYMENT_METHOD.cash.color }} /></span>}
-                <div className="flex-1"><TextInput value={ePhone} onChange={(e) => setEPhone(e.target.value)} placeholder="+86 …" /></div>
+            <>
+              <FormField label={t('bulk.phoneReq', { defaultValue: 'Téléphone' })}>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl" style={{ background: `${PAYMENT_METHOD.cash.color}1F` }}><Banknote className="h-5 w-5" style={{ color: PAYMENT_METHOD.cash.color }} /></span>
+                  <div className="flex-1"><TextInput value={ePhone} onChange={(e) => setEPhone(e.target.value)} placeholder="+86 …" /></div>
+                </div>
+              </FormField>
+              <div className="flex items-start gap-2 rounded-2xl px-3.5 py-3" style={{ background: `${VIOLET}14` }}>
+                <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: VIOLET }} />
+                <p className={cn('text-[12px] leading-snug', TEXT.strong)}>{t('bulk.cashInfo', { defaultValue: 'Un QR de retrait est généré automatiquement — rien à joindre.' })}</p>
               </div>
-            </FormField>
+            </>
           )}
 
           <FormField label={t('bulk.clientComment', { defaultValue: 'Commentaire visible par le client (optionnel)' })}>
@@ -687,6 +706,22 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 <p className={cn('text-[11.5px]', TEXT.muted)}>{t('bulk.saveCarnetHint', { defaultValue: 'Réutilisable pour les prochains paiements de ce client' })}</p>
               </div>
             </button>
+          )}
+
+          {/* alias + relation — carnet metadata, only when saving / editing a saved one */}
+          {(eSaveToCarnet || eBeneficiaryId) && (
+            <>
+              <FormField label={t('bulk.alias', { defaultValue: 'Alias (libellé court)' })}>
+                <TextInput value={eAlias} onChange={(e) => setEAlias(e.target.value)} placeholder={t('bulk.aliasPlaceholder', { defaultValue: 'Par défaut : le nom' })} />
+              </FormField>
+              <FormField label={t('bulk.relation', { defaultValue: 'Relation' })}>
+                <div className="flex gap-1.5">
+                  <Chip label={t('bulk.relSelf', { defaultValue: 'Soi-même' })} on={eRelation === 'self'} onClick={() => setERelation('self')} />
+                  <Chip label={t('bulk.relSupplier', { defaultValue: 'Fournisseur' })} on={eRelation === 'supplier'} onClick={() => setERelation('supplier')} />
+                  <Chip label={t('bulk.relOther', { defaultValue: 'Autre' })} on={eRelation === 'other'} onClick={() => setERelation('other')} />
+                </div>
+              </FormField>
+            </>
           )}
 
           {triedCommit && errMsg() && (
@@ -747,8 +782,14 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
         </div>
       </BottomSheet>
 
-      {/* ── QR fullscreen ── */}
-      <PaymentQrViewerDrawer url={qrZoom?.url ?? null} beneficiaryName={qrZoom?.name ?? null} onClose={() => setQrZoom(null)} />
+      {/* ── QR fullscreen (above the sheet: z-[70] > z-[60]) ── */}
+      {qrZoom && (
+        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-black/85 p-6" onClick={() => setQrZoom(null)} role="dialog" aria-modal="true">
+          <img src={qrZoom.url} alt="QR" className="max-h-[68vh] w-auto max-w-[88vw] rounded-2xl bg-white p-3" onClick={(e) => e.stopPropagation()} />
+          <p className="text-[15px] font-bold text-white">{qrZoom.name}</p>
+          <button type="button" onClick={() => setQrZoom(null)} className="rounded-full bg-white/15 px-5 py-2.5 text-[14px] font-bold text-white backdrop-blur">{t('bulk.close', { defaultValue: 'Fermer' })}</button>
+        </div>
+      )}
     </div>
   );
 }
