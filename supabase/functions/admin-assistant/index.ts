@@ -33,11 +33,12 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 // et produisait les symptômes connus : mauvais taux, « je ne peux pas », boucles, lenteur à
 // l'arrivée. Désormais un seul modèle frontière pilote toute la boucle, avec réflexion
 // adaptative — moins d'itérations, des montants/taux fiables, un cache stable.
-//   - Défaut : claude-opus-4-8 (le meilleur rapport intelligence/latence pour un assistant interactif).
+//   - Défaut : claude-sonnet-4-6 (cerveau frontière RAPIDE — test de vitesse). Opus 4.8 reste
+//     dispo via le secret ASSISTANT_MODEL=claude-opus-4-8 (plus intelligent, mais plus lent).
 //   - Pour essayer Claude Fable 5 : secret ASSISTANT_MODEL=claude-fable-5 (géré : thinking
 //     toujours actif, stop_reason "refusal", ~30 % de tokens en plus, $10/$50 par MTok vs $5/$25).
 //   - ASSISTANT_MODEL_FAST ne sert plus qu'aux résumés de conversation (compaction).
-const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-opus-4-8";
+const MODEL = Deno.env.get("ASSISTANT_MODEL") ?? Deno.env.get("ASSISTANT_MODEL_SMART") ?? "claude-sonnet-4-6";
 const MODEL_SUMMARY = Deno.env.get("ASSISTANT_MODEL_FAST") ?? "claude-haiku-4-5-20251001";
 // Réflexion adaptative : supportée par Sonnet 4.6 / Opus 4.6+ / Fable 5 (où elle est de toute
 // façon toujours active). Haiku ne la supporte pas → on n'envoie pas le paramètre dans ce cas.
@@ -45,7 +46,7 @@ const MODEL_THINKING = MODEL.includes("haiku") ? {} : { thinking: { type: "adapt
 // Profondeur de raisonnement : secret ASSISTANT_EFFORT ∈ low|medium|high|max.
 // Défaut = "medium" : Mola réfléchit PROPORTIONNELLEMENT à la difficulté (rapide sur les
 // questions simples, profond sur le complexe) au lieu de réfléchir à fond pour TOUT. Même
-// modèle (Opus 4.8) : on ne baisse pas l'intelligence, on retire la sur-réflexion inutile.
+// modèle : on ne baisse pas l'intelligence, on retire la sur-réflexion inutile.
 const ASSISTANT_EFFORT = (Deno.env.get("ASSISTANT_EFFORT") ?? "medium").trim();
 const MODEL_EFFORT = ASSISTANT_EFFORT ? { output_config: { effort: ASSISTANT_EFFORT } } : {};
 // La réflexion adaptative consomme des tokens de sortie → plafond largement relevé (on streame).
