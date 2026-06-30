@@ -78,7 +78,7 @@ import {
   MobileDepositDetailV2,
   MobileNewDepositV2,
 } from '@/mobile/screens/deposits';
-import { MobileNewPayment } from '@/mobile/screens/payments';
+import { MobileNewPayment, BulkPaymentCreate } from '@/mobile/screens/payments';
 import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
 import {
   MobileAdminsScreen,
@@ -210,6 +210,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'deposit-new': { Comp: MobileNewDepositV2, route: '/m/deposits/new' },
   // Payments module (Phase 2 M4)
   'payment-new': { Comp: MobileNewPayment, route: '/m/payments/new' },
+  'bulk-create': { Comp: BulkPaymentCreate, route: '/m/payments/batch/new' },
   // Rates module (Phase 2 M5)
   rates: { Comp: MobileRatesScreen, route: '/m/rates' },
   // Admins module (Phase 2 M6)
