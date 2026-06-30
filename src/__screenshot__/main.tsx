@@ -51,6 +51,7 @@ import { RatesScreen } from './clientRatesLayout';
 import { SupportList } from './clientSupportLayout';
 import { AuthLogin, AuthSignup, AuthOnboarding } from './clientAuthLayout';
 import { ShellHome, ShellPayments } from './clientShellLayout';
+import { BulkBenefDrawerMock } from './bulkBenefDrawer';
 import { MolaCards } from './molaCards';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
@@ -165,6 +166,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // Refonte module CLIENT — Shell & navigation (DERNIER module)
   'cshell-home': { Comp: ShellHome, route: '/' },
   'cshell-payments': { Comp: ShellPayments, route: '/' },
+  // Refonte — drawer « Nouveau bénéficiaire » du paiement groupé (admin)
+  'bulk-benef': { Comp: BulkBenefDrawerMock, route: '/' },
   mola: { Comp: MolaCards, route: '/' },
   'mola-nav': { Comp: MolaNav, route: '/' },
   'mola-screen': { Comp: MolaScreen, route: '/' },
