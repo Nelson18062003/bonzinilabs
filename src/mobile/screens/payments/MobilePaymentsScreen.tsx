@@ -33,7 +33,7 @@ import {
 } from '@/mobile/designKit';
 import {
   Plus, Search, Paperclip, SlidersHorizontal, X, Calendar, CreditCard,
-  FileDown, Loader2,
+  FileDown, Loader2, Layers,
 } from 'lucide-react';
 import { exportPendingPaymentsPDF } from '@/lib/exportPendingPaymentsPDF';
 import { toast } from 'sonner';
@@ -235,6 +235,17 @@ export function MobilePaymentsScreen() {
             >
               {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
               Exporter
+            </button>
+            <button
+              onClick={() => navigate('/m/payments/batch/new')}
+              aria-label="Paiement groupé"
+              title="Paiement groupé"
+              className={cn(
+                'flex h-10 w-10 items-center justify-center transition active:scale-95',
+                SOFT_PILL,
+              )}
+            >
+              <Layers className="h-[18px] w-[18px]" strokeWidth={2.4} />
             </button>
             <button
               onClick={() => navigate('/m/payments/new')}
