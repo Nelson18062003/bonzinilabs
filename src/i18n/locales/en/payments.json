@@ -446,6 +446,10 @@
     "errPhone": "Phone required",
     "errLong": "A field is too long",
     "errIncomplete": "Incomplete beneficiary",
-    "dupWarn": "This beneficiary is already in the batch"
+    "dupWarn": "This beneficiary is already in the batch",
+    "channels": "Beneficiary contact details",
+    "channelsHint": "Choose one or more channels (at least one).",
+    "idPlaceholder": "Supplier's Alipay / WeChat ID",
+    "close": "Close"
   }
 }
