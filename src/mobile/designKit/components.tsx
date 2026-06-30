@@ -416,16 +416,33 @@ export function BottomSheet({
   children: React.ReactNode;
   className?: string;
 }) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!open) return;
+    // Focus trap: keep keyboard focus inside the sheet while it is open.
+    const focusables = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     window.addEventListener('keydown', onKey);
+    const focusTimer = window.setTimeout(() => focusables()[0]?.focus(), 60);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
+      window.clearTimeout(focusTimer);
       document.body.style.overflow = prev;
     };
   }, [open, onClose]);
@@ -450,6 +467,7 @@ export function BottomSheet({
             transition={{ duration: 0.2 }}
           />
           <motion.div
+            ref={panelRef}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

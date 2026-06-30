@@ -489,7 +489,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                   <span className={cn('text-[13px] font-semibold tabular-nums', TEXT.muted)}>{formatXAF(totalXaf)}</span>
                 </div>
                 <p className={cn('mt-0.5 flex items-center gap-1 text-[11.5px] font-medium tabular-nums', overBudget ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.muted)}>
-                  {overBudget ? <><AlertTriangle className="h-3.5 w-3.5" /> {t('form.insufficientBalance', { defaultValue: 'Solde insuffisant' })}</> : <>{t('bulk.remaining', { defaultValue: 'Restant' })} {formatXAF(remaining)}</>}
+                  {overBudget ? <><AlertTriangle className="h-3.5 w-3.5" /> {t('form.insufficientBalance', { defaultValue: 'Solde insuffisant' })}</> : <>{t('bulk.remaining', { amount: formatXAF(remaining), defaultValue: `Restant ${formatXAF(remaining)}` })}</>}
                 </p>
               </div>
               <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: `${VIOLET}1A`, color: VIOLET }}>
@@ -560,7 +560,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                     <p className={cn('text-[12px] tabular-nums', TEXT.muted)}>1 000 000 XAF = <span className="font-bold" style={{ color: AMBER }}>¥{formatYuan(eBaseRate)}</span></p>
                   </div>
                   <button type="button" onClick={() => { setECustomRate(true); setECustomRateStr(String(eBaseRate)); }} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold" style={{ background: `${VIOLET}1F`, color: VIOLET }}>
-                    <Pencil className="h-3.5 w-3.5" /> {t('bulk.customRate', { defaultValue: 'Personnaliser' })}
+                    <Pencil className="h-3.5 w-3.5" /> {t('bulk.personalize', { defaultValue: 'Personnaliser' })}
                   </button>
                 </div>
               ) : (
