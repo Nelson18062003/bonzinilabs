@@ -37,7 +37,7 @@ export function PaymentMethodCard({ method, label, description, rate, isSelected
         <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{description}</p>
         {rate ? (
           <p className={cn('mt-1 text-[12px] tabular-nums', TEXT.muted)}>
-            <span className="font-bold text-[#E8932A]">{formatNumber(rate)}</span> ¥ / 1 000 000 XAF
+            <span className="font-bold text-[#E8932A]">¥{formatNumber(rate)}</span> / 1 000 000 XAF
           </p>
         ) : null}
       </div>

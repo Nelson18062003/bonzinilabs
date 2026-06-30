@@ -167,7 +167,7 @@
       "standardRate": "标准汇率",
       "smallAmount": "小额",
       "appliedRate": "适用于您金额的汇率",
-      "rateLine": "1 000 000 XAF = {{rate}} ¥"
+      "rateLine": "1 000 000 XAF = ¥{{rate}}"
     },
     "banner": {
       "title": "实时跟踪汇率",

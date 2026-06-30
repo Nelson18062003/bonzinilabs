@@ -12,6 +12,7 @@
  * fully typed. Dark mode is handled entirely through the token classes.
  */
 import * as React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Loader2, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -429,34 +430,49 @@ export function BottomSheet({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal="true">
-      <button
-        type="button"
-        aria-label="Fermer"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-      />
-      <div
-        className={cn(
-          'relative max-h-[90dvh] overflow-y-auto rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
-          SURFACE.card,
-          'shadow-[0_-12px_40px_-12px_rgba(46,32,92,0.30)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
-          className,
-        )}
-      >
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-black/10 dark:bg-white/15" />
-        {title != null && (
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2>
-            <Holder icon={X} size="sm" onClick={onClose} />
-          </div>
-        )}
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="bottomsheet"
+          className="fixed inset-0 z-[60] flex flex-col justify-end"
+          role="dialog"
+          aria-modal="true"
+        >
+          <motion.button
+            type="button"
+            aria-label="Fermer"
+            onClick={onClose}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
+            className={cn(
+              'relative max-h-[90dvh] overflow-y-auto rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
+              SURFACE.card,
+              'shadow-[0_-12px_40px_-12px_rgba(46,32,92,0.30)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
+              className,
+            )}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-black/10 dark:bg-white/15" />
+            {title != null && (
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2>
+                <Holder icon={X} size="sm" onClick={onClose} />
+              </div>
+            )}
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

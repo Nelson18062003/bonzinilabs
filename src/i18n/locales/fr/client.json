@@ -175,7 +175,7 @@
       "standardRate": "Taux standard",
       "smallAmount": "Petit montant",
       "appliedRate": "Taux appliqué à votre montant",
-      "rateLine": "1 000 000 XAF = {{rate}} ¥"
+      "rateLine": "1 000 000 XAF = ¥{{rate}}"
     },
     "banner": {
       "title": "Suivez les taux en temps réel",

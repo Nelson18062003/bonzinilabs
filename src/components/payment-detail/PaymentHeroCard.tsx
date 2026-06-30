@@ -75,7 +75,7 @@ export function PaymentHeroCard({ payment }: Props) {
             {t('detail.hero.rateApplied')}
           </div>
           <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>
-            1 000 000 XAF = {formatNumber(rateInt)} ¥
+            1 000 000 XAF = ¥{formatNumber(rateInt)}
           </div>
         </div>
       )}
