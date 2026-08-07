@@ -101,6 +101,22 @@ import {
   AgentCashSuccess,
 } from '@/mobile/screens/agent-cash';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { MobileLoginScreen } from '@/mobile/screens/auth/MobileLoginScreen';
+import {
+  AAuthEmail,
+  AAuthOtpEmail,
+  AAuthTwoFaIntro,
+  AAuthTwoFaInstall,
+  AAuthTwoFaQr,
+  AAuthTwoFaVerify,
+  AAuthBackupCodes,
+  AAuthPasskeyOffer,
+  AAuthDone,
+  AAuthDaily,
+  AAuthDailyTotp,
+  AAuthRecover,
+  AAuthBackupUse,
+} from './adminAuthLayout';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -230,6 +246,22 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
   'agent-confirm': { Comp: AgentCashConfirm, route: '/a/payment/cp1/confirm', path: '/a/payment/:paymentId/confirm', wrap: 'lang' },
   'agent-success': { Comp: AgentCashSuccess, route: '/a/payment/cp2/success', path: '/a/payment/:paymentId/success', wrap: 'lang' },
+  // Connexion admin sans mot de passe — maquettes (adminAuthLayout.tsx).
+  // `aauth-now` = l'écran de connexion RÉEL d'aujourd'hui (référence avant/après).
+  'aauth-now': { Comp: MobileLoginScreen, route: '/m/login' },
+  'aauth-email': { Comp: AAuthEmail, route: '/m/login' },
+  'aauth-otp-email': { Comp: AAuthOtpEmail, route: '/m/login' },
+  'aauth-2fa-intro': { Comp: AAuthTwoFaIntro, route: '/m/login' },
+  'aauth-2fa-install': { Comp: AAuthTwoFaInstall, route: '/m/login' },
+  'aauth-2fa-qr': { Comp: AAuthTwoFaQr, route: '/m/login' },
+  'aauth-2fa-verify': { Comp: AAuthTwoFaVerify, route: '/m/login' },
+  'aauth-backup': { Comp: AAuthBackupCodes, route: '/m/login' },
+  'aauth-passkey': { Comp: AAuthPasskeyOffer, route: '/m/login' },
+  'aauth-done': { Comp: AAuthDone, route: '/m/login' },
+  'aauth-daily': { Comp: AAuthDaily, route: '/m/login' },
+  'aauth-daily-totp': { Comp: AAuthDailyTotp, route: '/m/login' },
+  'aauth-recover': { Comp: AAuthRecover, route: '/m/login' },
+  'aauth-backup-use': { Comp: AAuthBackupUse, route: '/m/login' },
 };
 
 const params = new URLSearchParams(window.location.search);
