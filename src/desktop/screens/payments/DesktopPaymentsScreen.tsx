@@ -1,52 +1,56 @@
 /**
- * Desktop admin — payments as a real data table.
+ * Paiements — the execution queue (règlements fournisseurs vers la Chine).
  *
- * Same data layer as MobilePaymentsScreen (paginated hook, status buckets,
- * method/sort/period filters, debounced search, SLA, batch PDF export) — shown
- * as a wide table with a clickable stat strip and a toolbar.
+ * Same Workbench shape as Dépôts, which is the point: an operator who has
+ * learned one queue has learned all of them. Payment-specific affordances are
+ * the batch entry point, the RMB column and the "réglés aujourd'hui" pulse in
+ * the subtitle.
+ *
+ * Filters and status buckets come from `@/lib/paymentsList`, shared with the
+ * mobile screen.
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, X, Paperclip, CreditCard, FileDown, Loader2, Layers } from 'lucide-react';
+import { Download, Layers, Paperclip, Plus, Search, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { PAYMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS, TO_PROCESS_STATUSES } from '@/types/payment';
-import type { PaymentStatus } from '@/types/payment';
-import { type FilterKey, METHOD_FILTERS, SORT_OPTIONS, logoMethod } from '@/lib/paymentsList';
-import { exportPendingPaymentsPDF } from '@/lib/exportPendingPaymentsPDF';
-import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
+import { PAYMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS, TO_PROCESS_STATUSES, type PaymentStatus } from '@/types/payment';
+import { METHOD_FILTERS, SORT_OPTIONS, logoMethod, type FilterKey } from '@/lib/paymentsList';
+import { getPeriodDates, type PeriodPreset } from '@/lib/depositsList';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
-import { formatCurrencyRMB, formatRelativeDate } from '@/lib/formatters';
+import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
+import { exportPendingPaymentsPDF } from '@/lib/exportPendingPaymentsPDF';
+import { formatRelativeDate, formatCurrencyRMB } from '@/lib/formatters';
 import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
+import { paymentStatusTone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
-import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  type Tone,
-  paymentStatusTone,
-  StatusPill,
-  Amount,
-  Holder,
-  TextInput,
-  ScreenLoader,
-  Card,
-} from '@/mobile/designKit';
+import { DS, DT, DFG } from '@/desktop/ui/tokens';
+import { Avatar, Badge, Button, Chip, EmptyState, Figure, Input, Ref, Segment } from '@/desktop/ui/primitives';
+import { DataTable, type Column } from '@/desktop/ui/DataTable';
+import { FilterGroup, ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
 function SlaDot({ level }: { level: SlaLevel }) {
   const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
   return (
     <span
-      className="inline-block shrink-0 rounded-full"
-      style={{ width: 6, height: 6, background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
-      title={level === 'fresh' ? '< 4h' : level === 'aging' ? '4-12h' : '> 12h'}
+      title={level === 'fresh' ? 'Dans les délais' : level === 'aging' ? 'Bientôt hors délai' : 'Hors délai'}
+      className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+      style={{ background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
     />
   );
 }
+
+/** Same presets as the deposits queue — one period vocabulary for both. */
+const PERIOD_CHIPS: { k: PeriodPreset; l: string }[] = [
+  { k: 'all', l: 'Tout' },
+  { k: 'today', l: 'Auj.' },
+  { k: 'yesterday', l: 'Hier' },
+  { k: 'week', l: 'Semaine' },
+  { k: 'month', l: 'Mois' },
+  { k: 'custom', l: 'Période…' },
+];
 
 const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
   { k: 'all', l: 'Tous' },
@@ -56,342 +60,264 @@ const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
   { k: 'rejected', l: 'Rejetés' },
 ];
 
-const STAT_TILES: { key: FilterKey; label: string; tone: Tone }[] = [
-  { key: 'to_process', label: 'À traiter', tone: 'pending' },
-  { key: 'processing', label: 'En cours', tone: 'info' },
-  { key: 'completed', label: 'Terminés', tone: 'success' },
-  { key: 'all', label: 'Total', tone: 'neutral' },
-];
-
 export function DesktopPaymentsScreen() {
   const navigate = useNavigate();
   const { paymentId } = useParams<{ paymentId: string }>();
+
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [sortKey, setSortKey] = useState('newest');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isExporting, setIsExporting] = useState(false);
-  const debouncedSearch = useDebouncedValue(searchQuery);
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [search, setSearch] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const debouncedSearch = useDebouncedValue(search);
+
   const { data: stats } = usePaymentStats();
 
-  const sortOption = SORT_OPTIONS.find((o) => o.key === sortKey) || SORT_OPTIONS[0];
+  const { dateFrom, dateTo } = useMemo(
+    () => (periodPreset === 'custom' ? { dateFrom: customFrom, dateTo: customTo } : getPeriodDates(periodPreset)),
+    [periodPreset, customFrom, customTo],
+  );
 
-  const filterParams = useMemo<PaymentFilters | undefined>(() => {
-    const params: PaymentFilters = {};
-    if (statusFilter === 'to_process') {
-      params.statuses = TO_PROCESS_STATUSES as string[];
-    } else if (statusFilter !== 'all') {
-      params.status = statusFilter;
-    }
-    if (methodFilter !== 'all') params.method = methodFilter;
-    if (dateFrom) params.dateFrom = dateFrom;
-    if (dateTo) params.dateTo = dateTo;
-    params.sortField = sortOption.field;
-    params.sortAscending = sortOption.ascending;
-    const hasFilters = params.status || params.statuses || params.method || params.dateFrom || params.dateTo;
-    const isDefaultSort = sortOption.key === 'newest';
-    if (!hasFilters && isDefaultSort) return undefined;
-    return params;
-  }, [statusFilter, methodFilter, dateFrom, dateTo, sortOption]);
+  const filters = useMemo<PaymentFilters>(() => {
+    const sort = SORT_OPTIONS.find((s) => s.key === sortKey) ?? SORT_OPTIONS[0];
+    const p: PaymentFilters = { sortField: sort.field, sortAscending: sort.ascending };
+    if (statusFilter === 'to_process') p.statuses = TO_PROCESS_STATUSES;
+    else if (statusFilter !== 'all') p.status = statusFilter as PaymentStatus;
+    if (methodFilter !== 'all') p.method = methodFilter;
+    if (dateFrom) p.dateFrom = dateFrom;
+    if (dateTo) p.dateTo = dateTo;
+    return p;
+  }, [statusFilter, methodFilter, sortKey, dateFrom, dateTo]);
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedAdminPayments(filterParams);
-  const handleLoadMore = useCallback(() => { fetchNextPage(); }, [fetchNextPage]);
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedAdminPayments(filters);
+  const loadMore = useCallback(() => { fetchNextPage(); }, [fetchNextPage]);
 
-  const allPayments = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
-  const filteredPayments = useMemo(() => {
-    if (!debouncedSearch) return allPayments;
-    const search = debouncedSearch.toLowerCase();
-    return allPayments.filter((payment) => {
-      const clientName = `${payment.profiles?.first_name || ''} ${payment.profiles?.last_name || ''}`.toLowerCase();
-      return (
-        clientName.includes(search) ||
-        payment.reference?.toLowerCase().includes(search) ||
-        payment.profiles?.phone?.includes(search)
-      );
+  const rows = useMemo(() => {
+    const list = data?.pages.flatMap((p) => p.data) ?? [];
+    if (!debouncedSearch) return list;
+    const q = debouncedSearch.toLowerCase();
+    return list.filter((p) => {
+      const name = `${p.profiles?.first_name || ''} ${p.profiles?.last_name || ''}`.toLowerCase();
+      return name.includes(q) || p.reference?.toLowerCase().includes(q) || p.profiles?.phone?.includes(q);
     });
-  }, [allPayments, debouncedSearch]);
+  }, [data, debouncedSearch]);
 
-  const counts = {
-    toProcess: stats?.toProcess ?? 0,
-    inProgress: stats?.inProgress ?? 0,
-    completed: stats?.completed ?? 0,
-    total: stats?.total ?? 0,
-  };
-  const countFor = (k: FilterKey): number | null => {
+  const countFor = (k: FilterKey): number => {
     switch (k) {
-      case 'all': return counts.total;
-      case 'to_process': return counts.toProcess;
-      case 'processing': return counts.inProgress;
-      case 'completed': return counts.completed;
-      default: return null;
+      case 'all': return stats?.total ?? 0;
+      case 'to_process': return stats?.toProcess ?? 0;
+      case 'processing': return stats?.inProgress ?? 0;
+      case 'completed': return stats?.completed ?? 0;
+      default: return 0;
     }
   };
 
-  const handleExportBatch = useCallback(async () => {
-    if (isExporting) return;
-    setIsExporting(true);
+  const hasFilters = statusFilter !== 'all' || methodFilter !== 'all' || periodPreset !== 'all' || !!debouncedSearch;
+
+  const handleExport = async () => {
+    setExporting(true);
     try {
       const count = await exportPendingPaymentsPDF();
-      if (count === 0) {
-        toast.error('Aucun paiement en cours à exporter');
-        return;
-      }
-      toast.success(`Export de ${count} paiement(s) téléchargé`);
-    } catch (error) {
-      console.error('Error exporting batch payments:', error);
-      toast.error("Erreur lors de l'export");
+      if (!count) toast.info('Aucun paiement en cours à exporter');
+    } catch {
+      toast.error("L'export a échoué");
     } finally {
-      setIsExporting(false);
+      setExporting(false);
     }
-  }, [isExporting]);
+  };
+
+  const columns: Column<(typeof rows)[number]>[] = [
+    { key: 'reference', header: 'Référence', width: '150px', cell: (p) => <Ref>{p.reference}</Ref> },
+    {
+      key: 'client',
+      header: 'Client',
+      cell: (p) => {
+        const name = p.profiles ? `${p.profiles.first_name} ${p.profiles.last_name}` : 'Client inconnu';
+        return (
+          <span className="flex items-center gap-2">
+            <Avatar name={name} size="sm" />
+            <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
+            {p.proof_count ? (
+              <span className={cn('inline-flex shrink-0 items-center gap-0.5 text-[10.5px]', DFG.faint)}>
+                <Paperclip className="h-3 w-3" />
+                {p.proof_count}
+              </span>
+            ) : null}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'amount_rmb',
+      header: 'Montant',
+      align: 'right',
+      width: '130px',
+      cell: (p) => <Figure value={formatCurrencyRMB(p.amount_rmb)} />,
+    },
+    {
+      key: 'method',
+      header: 'Méthode',
+      width: '140px',
+      cell: (p) => (
+        <span className="flex items-center gap-2">
+          <PaymentMethodLogo method={logoMethod(p.method)} size={22} />
+          <span className={cn('truncate', DFG.muted)}>{PAYMENT_METHOD_LABELS[p.method] || p.method}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Créé',
+      width: '120px',
+      cell: (p) => <span className={DFG.muted}>{formatRelativeDate(p.created_at)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      align: 'right',
+      width: '160px',
+      cell: (p) => {
+        const sla = getPaymentSlaLevel(p.created_at, p.status);
+        return (
+          <span className="flex items-center justify-end gap-1.5">
+            {sla && <SlaDot level={sla} />}
+            <Badge tone={paymentStatusTone(p.status)}>{PAYMENT_STATUS_LABELS[p.status] || p.status}</Badge>
+          </span>
+        );
+      },
+    },
+  ];
+
+  const todaySettled = stats?.today_completed ?? 0;
 
   return (
-    <MasterDetailLayout detail={paymentId ? <MobilePaymentDetail /> : null}>
-    <div className="space-y-6">
-      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
-
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Paiements</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            {counts.total} paiement{counts.total > 1 ? 's' : ''} · {counts.toProcess} à traiter
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleExportBatch}
-            disabled={isExporting}
-            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold disabled:opacity-50', SOFT_PILL)}
-          >
-            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            Exporter (PDF)
-          </button>
-          <button
-            onClick={() => navigate('/m/payments/batch/new')}
-            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', SOFT_PILL)}
-          >
-            <Layers className="h-4 w-4" /> Paiement groupé
-          </button>
-          <button
-            onClick={() => navigate('/m/payments/new')}
-            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
-          >
-            <Plus className="h-4 w-4" /> Nouveau paiement
-          </button>
-        </div>
-      </header>
-
-      {/* Stat strip (clickable filters) */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STAT_TILES.map((tile) => {
-          const active = statusFilter === tile.key;
-          return (
-            <button
-              key={tile.key}
-              onClick={() => setStatusFilter(active ? 'all' : tile.key)}
-              className={cn(
-                'rounded-[22px] p-4 text-left transition active:scale-[0.99]',
-                SURFACE.card,
-                SURFACE.shadow,
-                active && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
-              )}
-            >
-              <p className={cn('text-[12px] font-medium', TEXT.muted)}>{tile.label}</p>
-              <p className={cn('mt-1 text-[24px] font-extrabold leading-none tabular-nums', TEXT.strong)}>
-                {countFor(tile.key) ?? 0}
-              </p>
-            </button>
-          );
-        })}
-      </section>
-
-      {/* Toolbar */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative w-full max-w-sm">
-            <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-            <TextInput
-              placeholder="Nom, téléphone ou référence…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 text-[14px]"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                aria-label="Effacer"
-                className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            {STATUS_CHIPS.map((ch) => {
-              const active = statusFilter === ch.k;
-              const c = countFor(ch.k);
-              return (
-                <button
-                  key={ch.k}
-                  onClick={() => setStatusFilter(ch.k)}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
-                    active ? PRIMARY_PILL : SOFT_PILL,
-                  )}
+    <Workbench
+      head={
+        <>
+          <style>{'@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }'}</style>
+          <ScreenHead
+            title="Paiements"
+            subtitle={
+              todaySettled > 0
+                ? `${countFor('all')} paiements · ${todaySettled} réglés aujourd'hui (${formatCurrencyRMB(stats?.today_amount_rmb ?? 0)})`
+                : `${countFor('all')} paiements · ${countFor('to_process')} à exécuter`
+            }
+            actions={
+              <>
+                <Button icon={Download} loading={exporting} onClick={handleExport}>
+                  Export PDF
+                </Button>
+                <Button icon={Layers} onClick={() => navigate('/m/payments/batch/new')}>
+                  Paiement groupé
+                </Button>
+                <Button variant="primary" icon={Plus} onClick={() => navigate('/m/payments/new')}>
+                  Nouveau paiement
+                </Button>
+              </>
+            }
+          />
+        </>
+      }
+      toolbar={
+        <Toolbar
+          trailing={
+            <>
+              <Segment
+                value={sortKey}
+                onChange={setSortKey}
+                options={SORT_OPTIONS.map((s) => ({ value: s.key, label: s.label }))}
+              />
+              {hasFilters ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={X}
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setMethodFilter('all');
+                    setPeriodPreset('all');
+                    setSearch('');
+                  }}
                 >
-                  {ch.l}
-                  {c != null && c > 0 && (
-                    <span
-                      className={cn(
-                        'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
-                        active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
-                      )}
-                    >
-                      {c}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                  Réinitialiser
+                </Button>
+              ) : null}
+            </>
+          }
+        >
+          <div className="relative mr-1 w-64">
+            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.faint)} />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nom, téléphone ou référence…"
+              className="pl-8"
+            />
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn('mr-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</span>
+          {STATUS_CHIPS.map((c) => (
+            <Chip key={c.k} active={statusFilter === c.k} count={countFor(c.k)} onClick={() => setStatusFilter(c.k)}>
+              {c.l}
+            </Chip>
+          ))}
+
+          <span className={cn('mx-1 h-4 w-px border-l', DS.line)} />
+
+          <FilterGroup label="Méthode">
             {METHOD_FILTERS.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setMethodFilter(m.key)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  methodFilter === m.key ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
+              <Chip key={m.key} active={methodFilter === m.key} onClick={() => setMethodFilter(m.key)}>
                 {m.label}
-              </button>
+              </Chip>
             ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn('mr-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Tri</span>
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setSortKey(opt.key)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  sortKey === opt.key ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</span>
-            <TextInput type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 text-[13px]" />
-            <span className={cn('text-[13px]', TEXT.muted)}>→</span>
-            <TextInput type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 text-[13px]" />
-          </div>
-        </div>
-      </section>
+          </FilterGroup>
 
-      {/* Table */}
-      <Card className="overflow-hidden p-0">
-        {isLoading ? (
-          <ScreenLoader />
-        ) : filteredPayments.length > 0 ? (
-          <>
-            <table className="w-full text-left">
-              <thead>
-                <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
-                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
-                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPayments.map((payment) => {
-                  const clientName = payment.profiles
-                    ? `${payment.profiles.first_name} ${payment.profiles.last_name}`
-                    : 'Client inconnu';
-                  const proofCount = payment.proof_count || 0;
-                  const slaLevel = getPaymentSlaLevel(payment.created_at, payment.status);
-                  const statusLabel = PAYMENT_STATUS_LABELS[payment.status as PaymentStatus] || payment.status;
-                  const methodLabel = PAYMENT_METHOD_LABELS[payment.method] || payment.method;
-                  return (
-                    <tr
-                      key={payment.id}
-                      onClick={() => navigate(`/m/payments/${payment.id}`)}
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/payments/${payment.id}`); } }}
-                      className={cn(
-                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
-                        paymentId === payment.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
-                      )}
-                    >
-                      <td className="px-5 py-3">
-                        <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
-                          {payment.reference}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{clientName}</span>
-                          {proofCount > 0 && (
-                            <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
-                              <Paperclip className="h-3 w-3" />
-                              {proofCount}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-right">
-                        <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-2">
-                          <PaymentMethodLogo method={logoMethod(payment.method)} size={26} />
-                          <span className={cn('text-[12px]', TEXT.muted)}>{methodLabel}</span>
-                        </div>
-                      </td>
-                      <td className={cn('px-2 py-3 text-[12px]', TEXT.muted)}>{formatRelativeDate(payment.created_at)}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {slaLevel && <SlaDot level={slaLevel} />}
-                          <StatusPill tone={paymentStatusTone(payment.status)} label={statusLabel} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {!debouncedSearch && (
-              <div className="px-5 py-3">
-                <InfiniteScrollTrigger onLoadMore={handleLoadMore} hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={CreditCard} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun paiement trouvé</p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
-              {statusFilter !== 'all' || methodFilter !== 'all' || dateFrom || dateTo
-                ? 'Essayez de modifier vos filtres'
-                : 'Les paiements apparaîtront ici'}
+          <FilterGroup label="Période">
+            {PERIOD_CHIPS.map((p) => (
+              <Chip key={p.k} active={periodPreset === p.k} onClick={() => setPeriodPreset(p.k)}>
+                {p.l}
+              </Chip>
+            ))}
+          </FilterGroup>
+
+          {periodPreset === 'custom' && (
+            <span className="flex items-center gap-1.5">
+              <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-[140px]" />
+              <span className={cn(DT.label, DFG.faint)}>→</span>
+              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-[140px]" />
+            </span>
+          )}
+        </Toolbar>
+      }
+      inspector={paymentId ? <MobilePaymentDetail /> : null}
+    >
+      <DataTable
+        label="Liste des paiements"
+        rows={rows}
+        columns={columns}
+        getRowId={(p) => p.id}
+        activeId={paymentId ?? null}
+        onRowClick={(p) => navigate(`/m/payments/${p.id}`)}
+        isLoading={isLoading}
+        empty={
+          <EmptyState
+            icon={Send}
+            title="Aucun paiement trouvé"
+            hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : 'Les règlements fournisseurs apparaîtront ici.'}
+          />
+        }
+        footer={
+          !debouncedSearch ? (
+            <InfiniteScrollTrigger onLoadMore={loadMore} hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} />
+          ) : (
+            <p className={cn(DT.label, DFG.faint, 'text-center')}>
+              {rows.length} résultat{rows.length > 1 ? 's' : ''} dans les pages chargées
             </p>
-          </div>
-        )}
-      </Card>
-    </div>
-    </MasterDetailLayout>
+          )
+        }
+      />
+    </Workbench>
   );
 }

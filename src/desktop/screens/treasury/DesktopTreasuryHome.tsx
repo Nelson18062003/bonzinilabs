@@ -1,175 +1,188 @@
 /**
- * Desktop admin — Treasury home.
+ * Trésorerie — vue d'ensemble.
  *
- * Same data and treasury design-kit primitives as MobileTreasuryHome
- * (balances, WAC, USDT stock + ActionTile navigation), laid out for a wide
- * screen: balances + WAC on one row, navigation tiles in a grid.
+ * The old desktop home was a launcher: three balance cards followed by ten
+ * navigation tiles duplicating what the sidebar could not show. Now that every
+ * treasury screen has its own rail entry, the tiles are gone and the page does
+ * the job its name promises — state of the treasury at a glance:
+ *
+ *   · position per currency (XAF / USDT / CNY) and the current WAC
+ *   · the two numbers that can hurt: negative USDT stock, immobilised capital
+ *   · every account with its balance, grouped by currency, so a treasurer can
+ *     reconcile without opening a second screen
+ *
+ * Same hooks as MobileTreasuryHome; guarded on `canViewTreasury`.
  */
 import { Navigate, useNavigate } from 'react-router-dom';
-import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  Users,
-  Wallet,
-  ClipboardCheck,
-  TrendingUp,
-  AlertTriangle,
-  BarChart3,
-  History,
-  Image as ImageIcon,
-} from 'lucide-react';
+import { AlertTriangle, Building2, Coins, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryAccountBalances, useUsdtStock, useUsdtWac } from '@/hooks/useTreasury';
-import {
-  ActionTile,
-  IconChip,
-  SectionTitle,
-  SOFT_CARD,
-  TONE_DOT,
-  TONE_TEXT,
-  type Tone,
-} from '@/components/treasury/ui';
-import { PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
+import { DS, DT, DFG } from '@/desktop/ui/tokens';
+import { Badge, Button, EmptyState, Figure, Metric, Panel, PanelHead, Spinner } from '@/desktop/ui/primitives';
+import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
-function formatNumber(n: number | null | undefined, decimals = 2): string {
+const CURRENCY_META: Record<string, { label: string; decimals: number; icon: typeof Wallet }> = {
+  XAF: { label: 'Franc CFA', decimals: 0, icon: Wallet },
+  USDT: { label: 'Tether', decimals: 2, icon: Coins },
+  CNY: { label: 'Yuan', decimals: 2, icon: Building2 },
+};
+
+/** Human label for a `treasury_account_kind` enum value. */
+const KIND_LABEL: Record<string, string> = {
+  bank: 'Banque',
+  mobile_money: 'Mobile money',
+  crypto_pool: 'Pool crypto',
+  cash: 'Caisse',
+  alipay: 'Alipay',
+  wechat: 'WeChat',
+  other: 'Autre',
+};
+
+function fmt(n: number | null | undefined, decimals = 2): string {
   if (n === null || n === undefined) return '—';
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
-function CurrencyCard({
-  label,
-  amount,
-  unit,
-  accountCount,
-  tone,
-  warning,
-}: {
-  label: string;
-  amount: number;
-  unit: string;
-  accountCount: number;
-  tone: Exclude<Tone, 'neutral' | 'danger'>;
-  warning?: boolean;
-}) {
-  const display =
-    Math.abs(amount) >= 1_000_000
-      ? `${(amount / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M`
-      : formatNumber(amount, 0);
-  return (
-    <div className={cn(SOFT_CARD, 'p-4')}>
-      <div className="mb-2.5 flex items-center gap-1.5">
-        <span className={cn('h-2 w-2 shrink-0 rounded-full', warning ? 'bg-red-500' : TONE_DOT[tone])} />
-        <span className={cn('text-[10px] font-bold uppercase tracking-wider', warning ? 'text-red-600 dark:text-red-400' : TONE_TEXT[tone])}>
-          {label}
-        </span>
-        {warning && <AlertTriangle className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
-      </div>
-      <div className={cn('text-[24px] font-extrabold leading-none tracking-tight tabular-nums', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
-        {display}
-      </div>
-      <div className="mt-1.5 text-[11px] text-muted-foreground">
-        {unit} · {accountCount} compte{accountCount > 1 ? 's' : ''}
-      </div>
-    </div>
-  );
 }
 
 export function DesktopTreasuryHome() {
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
-  const { data: balances } = useTreasuryAccountBalances();
+  const { data: balances, isLoading } = useTreasuryAccountBalances();
   const { data: wac } = useUsdtWac();
-  const { data: stockUsdt } = useUsdtStock();
+  const { data: stock } = useUsdtStock();
 
-  if (!hasPermission('canViewTreasury')) {
-    return <Navigate to="/m" replace />;
-  }
+  if (!hasPermission('canViewTreasury')) return <Navigate to="/m" replace />;
+  if (isLoading) return <Spinner className="py-32" />;
 
-  const totals = (balances ?? []).reduce<Record<string, { total: number; count: number }>>((acc, b) => {
-    const cur = b.currency ?? 'XAF';
-    if (!acc[cur]) acc[cur] = { total: 0, count: 0 };
-    acc[cur].total += Number(b.balance ?? 0);
-    acc[cur].count += 1;
-    return acc;
-  }, {});
-  const stockNegative = (stockUsdt ?? 0) < 0;
+  const rows = balances ?? [];
+  const byCurrency = (cur: string) => rows.filter((b) => b.currency === cur);
+  const totalFor = (cur: string) => byCurrency(cur).reduce((s, b) => s + (b.balance ?? 0), 0);
+
+  const stockNegative = (stock ?? 0) < 0;
+  /** Capital parked in USDT at its weighted average cost. */
+  const immobilised = (stock ?? 0) * (wac ?? 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Trésorerie</h2>
-          <p className="mt-1 text-[14px] text-muted-foreground">Soldes, coût moyen et opérations USDT</p>
+    <Workspace
+      head={
+        <ScreenHead
+          title="Trésorerie"
+          subtitle="Position par devise, coût moyen pondéré et soldes de comptes"
+          actions={
+            hasPermission('canManageTreasury') ? (
+              <>
+                <Button icon={TrendingUp} onClick={() => navigate('/m/more/treasury/purchase')}>
+                  Nouvel achat USDT
+                </Button>
+                <Button variant="primary" icon={TrendingDown} onClick={() => navigate('/m/more/treasury/sale')}>
+                  Nouvelle vente USDT
+                </Button>
+              </>
+            ) : undefined
+          }
+        />
+      }
+    >
+      {stockNegative && (
+        <div className={cn('mb-4 flex items-start gap-3 rounded-xl border border-[#C0504D]/30 bg-[#FBE7E7] px-4 py-3 dark:bg-[#3A2526]')}>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
+          <div>
+            <p className="text-[13px] font-bold text-[#C0504D] dark:text-[#E79A9A]">Stock USDT négatif</p>
+            <p className={cn(DT.label, DFG.base, 'mt-0.5')}>
+              Plus d'USDT ont été vendus qu'achetés ({fmt(stock, 2)} USDT). Enregistrez l'achat manquant ou corrigez
+              l'opération fautive avant de publier un taux de revient.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => navigate('/m/more/treasury/purchase')}
-            className={cn('inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold', SOFT_PILL)}
-          >
-            <ArrowDownToLine className="h-4 w-4" /> Nouvel achat
-          </button>
-          <button
-            onClick={() => navigate('/m/more/treasury/sale')}
-            className={cn('inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
-          >
-            <ArrowUpFromLine className="h-4 w-4" /> Nouvelle vente
-          </button>
-        </div>
-      </header>
+      )}
 
-      {/* Balances + WAC */}
-      <section>
-        <SectionTitle>Soldes & coût</SectionTitle>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <CurrencyCard label="XAF" amount={totals.XAF?.total ?? 0} unit="XAF" accountCount={totals.XAF?.count ?? 0} tone="violet" />
-          <CurrencyCard label="USDT" amount={totals.USDT?.total ?? 0} unit="USDT" accountCount={totals.USDT?.count ?? 0} tone="amber" warning={stockNegative} />
-          <CurrencyCard label="CNY" amount={totals.CNY?.total ?? 0} unit="CNY" accountCount={totals.CNY?.count ?? 0} tone="orange" />
-          <div className={cn(SOFT_CARD, 'flex items-center gap-3.5 p-4')}>
-            <IconChip icon={TrendingUp} tone="amber" size="lg" />
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">WAC USDT</div>
-              <div className="text-[20px] font-extrabold leading-tight tracking-tight tabular-nums text-foreground">
-                {formatNumber(wac, 4)}
+      {/* Position */}
+      <section className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Metric
+          icon={Wallet}
+          tone="info"
+          label="Position XAF"
+          value={fmt(totalFor('XAF'), 0)}
+          unit="XAF"
+          hint={`${byCurrency('XAF').length} compte(s)`}
+        />
+        <Metric
+          icon={Coins}
+          tone={stockNegative ? 'danger' : 'pending'}
+          label="Stock USDT"
+          value={fmt(stock, 2)}
+          unit="USDT"
+          hint={`WAC ${fmt(wac, 4)} XAF/USDT`}
+        />
+        <Metric
+          icon={Building2}
+          tone="success"
+          label="Position CNY"
+          value={fmt(totalFor('CNY'), 2)}
+          unit="CNY"
+          hint={`${byCurrency('CNY').length} compte(s)`}
+        />
+        <Metric
+          icon={TrendingUp}
+          tone="neutral"
+          label="Capital immobilisé"
+          value={fmt(immobilised, 0)}
+          unit="XAF"
+          hint="Stock USDT valorisé au coût moyen pondéré"
+        />
+      </section>
+
+      {/* Accounts */}
+      <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
+        {(['XAF', 'USDT', 'CNY'] as const).map((cur) => {
+          const meta = CURRENCY_META[cur];
+          const accounts = byCurrency(cur);
+          return (
+            <Panel key={cur} className="overflow-hidden">
+              <PanelHead
+                title={
+                  <span className="flex items-center gap-2">
+                    {cur}
+                    <span className={cn(DT.label, DFG.faint, 'font-normal')}>{meta.label}</span>
+                  </span>
+                }
+                actions={<Figure value={fmt(totalFor(cur), meta.decimals)} size="md" />}
+              />
+              {accounts.length === 0 ? (
+                <EmptyState icon={meta.icon} title="Aucun compte" hint={`Aucun compte ${cur} actif.`} />
+              ) : (
+                accounts.map((a) => (
+                  <div key={a.id} className={cn('flex items-center gap-3 border-b px-4 py-2.5 last:border-0', DS.line)}>
+                    <span className="min-w-0 flex-1">
+                      <span className={cn('block truncate text-[12.5px] font-semibold', DFG.strong)}>{a.label}</span>
+                      <span className={cn('block truncate text-[11px]', DFG.faint)}>
+                        {KIND_LABEL[a.kind ?? ''] ?? a.kind} · {a.entry_count ?? 0} écriture
+                        {(a.entry_count ?? 0) > 1 ? 's' : ''}
+                      </span>
+                    </span>
+                    <Figure
+                      value={fmt(a.balance, meta.decimals)}
+                      size="md"
+                      tone={(a.balance ?? 0) < 0 ? 'negative' : undefined}
+                    />
+                  </div>
+                ))
+              )}
+              <div className={cn('border-t px-4 py-2', DS.line)}>
+                <Button size="sm" variant="ghost" onClick={() => navigate('/m/more/treasury/accounts')}>
+                  Ajuster les soldes →
+                </Button>
               </div>
-              <div className="text-[10px] text-muted-foreground">XAF/USDT</div>
-            </div>
-          </div>
-        </div>
-        {stockNegative && (
-          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-            <span className="text-[12px] font-medium text-red-600 dark:text-red-300">
-              Stock USDT négatif : {formatNumber(stockUsdt)} — enregistrez un achat manquant.
-            </span>
-          </div>
-        )}
+            </Panel>
+          );
+        })}
       </section>
 
-      {/* Analyse */}
-      <section>
-        <SectionTitle>Analyse</SectionTitle>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <ActionTile icon={BarChart3} label="Dashboard analytique" description="Volumes, taux moyens, bénéfice, top contreparties" onClick={() => navigate('/m/more/treasury/dashboard')} tone="violet" />
-          <ActionTile icon={History} label="Historique opérations" description="Toutes les opérations + annulation" onClick={() => navigate('/m/more/treasury/operations')} tone="neutral" />
-          <ActionTile icon={ImageIcon} label="Dashboard soldes (PNG/PDF)" description="Générer le visuel des soldes par compte" onClick={() => navigate('/m/more/treasury/balance-dashboard')} tone="orange" />
-        </div>
-      </section>
-
-      {/* Actions */}
-      <section>
-        <SectionTitle>Actions</SectionTitle>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <ActionTile icon={ArrowDownToLine} label="Nouvel achat USDT" description="Saisir un achat XAF → USDT" onClick={() => navigate('/m/more/treasury/purchase')} tone="violet" />
-          <ActionTile icon={ArrowDownToLine} label="Mes achats USDT" description="Liste, total, suppression" onClick={() => navigate('/m/more/treasury/purchases')} tone="neutral" />
-          <ActionTile icon={ArrowUpFromLine} label="Nouvelle vente USDT" description="Saisir une vente USDT → CNY" onClick={() => navigate('/m/more/treasury/sale')} tone="amber" />
-          <ActionTile icon={ArrowUpFromLine} label="Mes ventes USDT" description="Liste, total, suppression" onClick={() => navigate('/m/more/treasury/sales')} tone="neutral" />
-          <ActionTile icon={Users} label="Contreparties" description="Fournisseurs USDT et acheteurs CNY" onClick={() => navigate('/m/more/treasury/counterparties')} tone="orange" />
-          <ActionTile icon={Wallet} label="Comptes & soldes" description="Soldes par compte, historique" onClick={() => navigate('/m/more/treasury/accounts')} tone="neutral" />
-          <ActionTile icon={ClipboardCheck} label="Inventaire des comptes" description="Réconciliation cash / Alipay / WeChat" onClick={() => navigate('/m/more/treasury/inventory')} tone="neutral" />
-        </div>
-      </section>
-    </div>
+      <p className={cn(DT.label, DFG.faint, 'mt-4')}>
+        <Badge tone="info">Rappel</Badge>{' '}
+        Le WAC est recalculé à chaque achat ; le taux de revient XAF/CNY publié dans <strong>Analyse</strong> en découle
+        directement.
+      </p>
+    </Workspace>
   );
 }

@@ -153,7 +153,7 @@ for (const [name, path] of ROUTES) {
     await page.goto(path, { waitUntil: 'domcontentloaded' }).catch(() => {});
     // Wait for the desktop shell (auth resolves → sidebar renders) or time out.
     const shell = await page
-      .getByText('Console admin')
+      .getByText("Console d'opérations")
       .first()
       .waitFor({ state: 'visible', timeout: 12_000 })
       .then(() => true)

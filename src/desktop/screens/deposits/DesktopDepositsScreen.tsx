@@ -1,14 +1,20 @@
 /**
- * Desktop admin — deposits as a real data table.
+ * Dépôts — the validation queue.
  *
- * Same data layer and filters as MobileDepositsScreenV2 (paginated hook, status
- * buckets, method families, period presets, debounced search, SLA, infinite
- * scroll) — only the presentation differs: a wide table with a clickable stat
- * strip, a toolbar and inline filters instead of a stacked card list.
+ * Rebuilt as a Workbench: the list owns the viewport, the record opens in a
+ * docked inspector, and nothing about the operator's position in the queue is
+ * lost when they open, act on and close a deposit. Filters collapse into one
+ * strip instead of three stacked rows, and the status chips carry their own
+ * counts — so the queue state and the way to filter it are a single control
+ * rather than a KPI row duplicating the chips underneath it.
+ *
+ * Data layer is unchanged and still shared with MobileDepositsScreenV2
+ * (`@/lib/depositsList`), so mobile and desktop can never disagree on what
+ * "à traiter" means.
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, X, Paperclip, FileText } from 'lucide-react';
+import { FileText, Paperclip, Plus, Search, X } from 'lucide-react';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -25,50 +31,36 @@ import {
   type FilterKey,
   type PeriodPreset,
 } from '@/lib/depositsList';
+import { depositStatusTone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobileDepositDetailV2 } from '@/mobile/screens/deposits';
-import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  type Tone,
-  depositStatusTone,
-  StatusPill,
-  Amount,
-  Holder,
-  TextInput,
-  ScreenLoader,
-  Card,
-} from '@/mobile/designKit';
+import { DS, DT, DFG } from '@/desktop/ui/tokens';
+import { Avatar, Badge, Button, Chip, EmptyState, Figure, Input, Ref } from '@/desktop/ui/primitives';
+import { DataTable, type Column } from '@/desktop/ui/DataTable';
+import { FilterGroup, ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
-function MIcon({ family, size = 32 }: { family: string; size?: number }) {
+/** Method family glyph — the same colour key as the mobile list. */
+function MethodGlyph({ family }: { family: string }) {
   const f = FAMILIES_CONF[family];
   if (!f) return null;
   return (
-    <div
-      className="flex shrink-0 items-center justify-center font-black"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: Math.round(size * 0.3),
-        background: f.bg,
-        fontSize: Math.round(size * 0.38),
-        color: f.dark ? '#1a1028' : '#fff',
-      }}
+    <span
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black"
+      style={{ background: f.bg, color: f.dark ? '#1a1028' : '#fff' }}
     >
       {f.letter}
-    </div>
+    </span>
   );
 }
 
+/** Ageing indicator: green under SLA, amber approaching, red past. */
 function SlaDot({ level }: { level: SlaLevel }) {
   const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
   return (
     <span
-      className="inline-block shrink-0 rounded-full"
-      style={{ width: 6, height: 6, background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
+      title={level === 'fresh' ? 'Dans les délais' : level === 'aging' ? 'Bientôt hors délai' : 'Hors délai'}
+      className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+      style={{ background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
     />
   );
 }
@@ -81,13 +73,6 @@ const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
   { k: 'rejected', l: 'Rejetés' },
 ];
 
-const STAT_TILES: { key: FilterKey; label: string; tone: Tone }[] = [
-  { key: 'to_process', label: 'À traiter', tone: 'info' },
-  { key: 'pending_correction', label: 'À corriger', tone: 'pending' },
-  { key: 'validated', label: 'Validés', tone: 'success' },
-  { key: 'rejected', label: 'Rejetés', tone: 'danger' },
-];
-
 const METHOD_CHIPS = [
   { k: 'all', l: 'Toutes' },
   { k: 'BANK', l: 'Banque' },
@@ -98,324 +83,249 @@ const METHOD_CHIPS = [
 ];
 
 const PERIOD_CHIPS: { k: PeriodPreset; l: string }[] = [
-  { k: 'all', l: 'Toutes' },
-  { k: 'today', l: "Aujourd'hui" },
+  { k: 'all', l: 'Tout' },
+  { k: 'today', l: "Auj." },
   { k: 'yesterday', l: 'Hier' },
-  { k: 'week', l: 'Cette semaine' },
-  { k: 'month', l: 'Ce mois' },
-  { k: 'custom', l: 'Personnalisé' },
+  { k: 'week', l: 'Semaine' },
+  { k: 'month', l: 'Mois' },
+  { k: 'custom', l: 'Période…' },
 ];
 
 export function DesktopDepositsScreen() {
   const navigate = useNavigate();
   const { depositId } = useParams<{ depositId: string }>();
+
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [familyFilter, setFamilyFilter] = useState('all');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
-  const [customDateFrom, setCustomDateFrom] = useState('');
-  const [customDateTo, setCustomDateTo] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearch = useDebouncedValue(searchQuery);
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
+
   const { data: stats } = useDepositStats();
 
-  const { dateFrom, dateTo } = useMemo(() => {
-    if (periodPreset === 'custom') return { dateFrom: customDateFrom, dateTo: customDateTo };
-    return getPeriodDates(periodPreset);
-  }, [periodPreset, customDateFrom, customDateTo]);
+  const { dateFrom, dateTo } = useMemo(
+    () => (periodPreset === 'custom' ? { dateFrom: customFrom, dateTo: customTo } : getPeriodDates(periodPreset)),
+    [periodPreset, customFrom, customTo],
+  );
 
   const filterParams = useMemo<DepositFilters | undefined>(() => {
-    const params: DepositFilters = {};
-    if (statusFilter === 'to_process') {
-      params.statuses = TO_PROCESS_STATUSES as string[];
-    } else if (statusFilter !== 'all') {
-      params.status = statusFilter;
-    }
-    if (dateFrom) params.dateFrom = dateFrom;
-    if (dateTo) params.dateTo = dateTo;
-    params.sortField = 'created_at';
-    params.sortAscending = false;
-    const hasFilters = params.status || params.statuses || params.dateFrom || params.dateTo;
-    return hasFilters ? params : undefined;
+    const p: DepositFilters = {};
+    if (statusFilter === 'to_process') p.statuses = TO_PROCESS_STATUSES as string[];
+    else if (statusFilter !== 'all') p.status = statusFilter;
+    if (dateFrom) p.dateFrom = dateFrom;
+    if (dateTo) p.dateTo = dateTo;
+    p.sortField = 'created_at';
+    p.sortAscending = false;
+    return p.status || p.statuses || p.dateFrom || p.dateTo ? p : undefined;
   }, [statusFilter, dateFrom, dateTo]);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedAdminDeposits(filterParams);
-  const handleLoadMore = useCallback(() => { fetchNextPage(); }, [fetchNextPage]);
+  const loadMore = useCallback(() => { fetchNextPage(); }, [fetchNextPage]);
 
-  const allDeposits = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
-
-  const filteredDeposits = useMemo(() => {
-    let list = allDeposits;
+  const rows = useMemo(() => {
+    let list = data?.pages.flatMap((p) => p.data) ?? [];
     if (familyFilter !== 'all') {
       const methods = FAMILY_TO_METHODS[familyFilter] || [];
       list = list.filter((d) => methods.includes(d.method));
     }
     if (debouncedSearch) {
-      const search = debouncedSearch.toLowerCase();
-      list = list.filter((deposit) => {
-        const clientName = `${deposit.profiles?.first_name || ''} ${deposit.profiles?.last_name || ''}`.toLowerCase();
-        return (
-          clientName.includes(search) ||
-          deposit.reference?.toLowerCase().includes(search) ||
-          deposit.profiles?.phone?.includes(search)
-        );
+      const q = debouncedSearch.toLowerCase();
+      list = list.filter((d) => {
+        const name = `${d.profiles?.first_name || ''} ${d.profiles?.last_name || ''}`.toLowerCase();
+        return name.includes(q) || d.reference?.toLowerCase().includes(q) || d.profiles?.phone?.includes(q);
       });
     }
     return list;
-  }, [allDeposits, debouncedSearch, familyFilter]);
+  }, [data, familyFilter, debouncedSearch]);
 
-  const counts = {
-    toProcess: stats?.to_process ?? 0,
-    correction: stats?.pending_correction ?? 0,
-    validated: stats?.validated ?? 0,
-    rejected: stats?.rejected ?? 0,
-    total: stats?.total ?? 0,
-  };
-  const countFor = (k: FilterKey): number | null => {
+  const countFor = (k: FilterKey): number => {
     switch (k) {
-      case 'all': return counts.total;
-      case 'to_process': return counts.toProcess;
-      case 'pending_correction': return counts.correction;
-      case 'validated': return counts.validated;
-      case 'rejected': return counts.rejected;
-      default: return null;
+      case 'all': return stats?.total ?? 0;
+      case 'to_process': return stats?.to_process ?? 0;
+      case 'pending_correction': return stats?.pending_correction ?? 0;
+      case 'validated': return stats?.validated ?? 0;
+      case 'rejected': return stats?.rejected ?? 0;
+      default: return 0;
     }
   };
 
+  const hasFilters = statusFilter !== 'all' || familyFilter !== 'all' || periodPreset !== 'all' || !!debouncedSearch;
+
+  const columns: Column<(typeof rows)[number]>[] = [
+    {
+      key: 'reference',
+      header: 'Référence',
+      width: '150px',
+      cell: (d) => <Ref>{d.reference}</Ref>,
+    },
+    {
+      key: 'client',
+      header: 'Client',
+      cell: (d) => {
+        const name = d.profiles ? `${d.profiles.first_name} ${d.profiles.last_name}` : 'Client inconnu';
+        return (
+          <span className="flex items-center gap-2">
+            <Avatar name={name} size="sm" />
+            <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
+            {d.proof_count ? (
+              <span className={cn('inline-flex shrink-0 items-center gap-0.5 text-[10.5px]', DFG.faint)}>
+                <Paperclip className="h-3 w-3" />
+                {d.proof_count}
+              </span>
+            ) : null}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'amount',
+      header: 'Montant',
+      align: 'right',
+      width: '140px',
+      cell: (d) => <Figure value={formatXAF(d.amount_xaf)} />,
+    },
+    {
+      key: 'method',
+      header: 'Méthode',
+      width: '150px',
+      cell: (d) => (
+        <span className="flex items-center gap-2">
+          <MethodGlyph family={getFamilyFromMethod(d.method)} />
+          <span className={cn('truncate', DFG.muted)}>{DEPOSIT_METHOD_LABELS_SHORT[d.method] || d.method}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Créé',
+      width: '120px',
+      cell: (d) => <span className={DFG.muted}>{formatRelativeDate(d.created_at)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      align: 'right',
+      width: '150px',
+      cell: (d) => {
+        const sla = getDepositSlaLevel(d.created_at, d.status);
+        return (
+          <span className="flex items-center justify-end gap-1.5">
+            {sla && <SlaDot level={sla} />}
+            <Badge tone={depositStatusTone(d.status)}>{DEPOSIT_STATUS_LABELS[d.status] || d.status}</Badge>
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
-    <MasterDetailLayout detail={depositId ? <MobileDepositDetailV2 /> : null}>
-    <div className="space-y-6">
-      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
-
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Dépôts</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            {counts.total} dépôt{counts.total > 1 ? 's' : ''} · {counts.toProcess} à traiter
-          </p>
-        </div>
-        <button
-          onClick={() => navigate('/m/deposits/new')}
-          className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
+    <Workbench
+      head={
+        <>
+          <style>{'@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }'}</style>
+          <ScreenHead
+            title="Dépôts"
+            subtitle={`${countFor('all')} dépôts · ${countFor('to_process')} en attente de validation`}
+            actions={
+              <Button variant="primary" icon={Plus} onClick={() => navigate('/m/deposits/new')}>
+                Nouveau dépôt
+              </Button>
+            }
+          />
+        </>
+      }
+      toolbar={
+        <Toolbar
+          trailing={
+            hasFilters ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={X}
+                onClick={() => {
+                  setStatusFilter('all');
+                  setFamilyFilter('all');
+                  setPeriodPreset('all');
+                  setSearch('');
+                }}
+              >
+                Réinitialiser
+              </Button>
+            ) : undefined
+          }
         >
-          <Plus className="h-4 w-4" /> Nouveau dépôt
-        </button>
-      </header>
-
-      {/* Stat strip (clickable filters) */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STAT_TILES.map((tile) => {
-          const active = statusFilter === tile.key;
-          return (
-            <button
-              key={tile.key}
-              onClick={() => setStatusFilter(active ? 'all' : tile.key)}
-              className={cn(
-                'rounded-[22px] p-4 text-left transition active:scale-[0.99]',
-                SURFACE.card,
-                SURFACE.shadow,
-                active && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
-              )}
-            >
-              <p className={cn('text-[12px] font-medium', TEXT.muted)}>{tile.label}</p>
-              <p className={cn('mt-1 text-[24px] font-extrabold leading-none tabular-nums', TEXT.strong)}>
-                {countFor(tile.key) ?? 0}
-              </p>
-            </button>
-          );
-        })}
-      </section>
-
-      {/* Toolbar */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative w-full max-w-sm">
-            <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-            <TextInput
+          <div className="relative mr-1 w-64">
+            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.faint)} />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Nom, téléphone ou référence…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 text-[14px]"
+              className="pl-8"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                aria-label="Effacer"
-                className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
           </div>
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            {STATUS_CHIPS.map((ch) => {
-              const active = statusFilter === ch.k;
-              const c = countFor(ch.k);
-              return (
-                <button
-                  key={ch.k}
-                  onClick={() => setStatusFilter(ch.k)}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
-                    active ? PRIMARY_PILL : SOFT_PILL,
-                  )}
-                >
-                  {ch.l}
-                  {c != null && c > 0 && (
-                    <span
-                      className={cn(
-                        'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
-                        active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
-                      )}
-                    >
-                      {c}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn('mr-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</span>
+          {STATUS_CHIPS.map((c) => (
+            <Chip key={c.k} active={statusFilter === c.k} count={countFor(c.k)} onClick={() => setStatusFilter(c.k)}>
+              {c.l}
+            </Chip>
+          ))}
+
+          <span className={cn('mx-1 h-4 w-px', DS.line, 'border-l')} />
+
+          <FilterGroup label="Méthode">
             {METHOD_CHIPS.map((m) => (
-              <button
-                key={m.k}
-                onClick={() => setFamilyFilter(m.k)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  familyFilter === m.k ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
+              <Chip key={m.k} active={familyFilter === m.k} onClick={() => setFamilyFilter(m.k)}>
                 {m.l}
-              </button>
+              </Chip>
             ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn('mr-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</span>
-            {PERIOD_CHIPS.map((p) => (
-              <button
-                key={p.k}
-                onClick={() => setPeriodPreset(p.k)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  periodPreset === p.k ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
-                {p.l}
-              </button>
-            ))}
-          </div>
-          {periodPreset === 'custom' && (
-            <div className="flex items-center gap-2">
-              <TextInput type="date" value={customDateFrom} onChange={(e) => setCustomDateFrom(e.target.value)} className="h-10 text-[13px]" />
-              <span className={cn('text-[13px]', TEXT.muted)}>→</span>
-              <TextInput type="date" value={customDateTo} onChange={(e) => setCustomDateTo(e.target.value)} className="h-10 text-[13px]" />
-            </div>
-          )}
-        </div>
-      </section>
+          </FilterGroup>
 
-      {/* Table */}
-      <Card className="overflow-hidden p-0">
-        {isLoading ? (
-          <ScreenLoader />
-        ) : filteredDeposits.length > 0 ? (
-          <>
-            <table className="w-full text-left">
-              <thead>
-                <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
-                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant XAF</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
-                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDeposits.map((deposit) => {
-                  const clientName = deposit.profiles
-                    ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
-                    : 'Client inconnu';
-                  const proofCount = deposit.proof_count || 0;
-                  const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
-                  const family = getFamilyFromMethod(deposit.method);
-                  const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
-                  const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
-                  return (
-                    <tr
-                      key={deposit.id}
-                      onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
-                      className={cn(
-                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
-                        depositId === deposit.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
-                      )}
-                    >
-                      <td className="px-5 py-3">
-                        <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
-                          {deposit.reference}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{clientName}</span>
-                          {proofCount > 0 && (
-                            <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
-                              <Paperclip className="h-3 w-3" />
-                              {proofCount}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-right">
-                        <Amount value={formatXAF(deposit.amount_xaf)} size="md" />
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-2">
-                          <MIcon family={family} size={28} />
-                          <span className={cn('text-[12px]', TEXT.muted)}>{methodShort}</span>
-                        </div>
-                      </td>
-                      <td className={cn('px-2 py-3 text-[12px]', TEXT.muted)}>{formatRelativeDate(deposit.created_at)}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {slaLevel && <SlaDot level={slaLevel} />}
-                          <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {!debouncedSearch && (
-              <div className="px-5 py-3">
-                <InfiniteScrollTrigger
-                  onLoadMore={handleLoadMore}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={FileText} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun dépôt trouvé</p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
-              {statusFilter !== 'all' || familyFilter !== 'all' || periodPreset !== 'all'
-                ? 'Essayez de modifier vos filtres'
-                : 'Les dépôts apparaîtront ici'}
+          <FilterGroup label="Période">
+            {PERIOD_CHIPS.map((p) => (
+              <Chip key={p.k} active={periodPreset === p.k} onClick={() => setPeriodPreset(p.k)}>
+                {p.l}
+              </Chip>
+            ))}
+          </FilterGroup>
+
+          {periodPreset === 'custom' && (
+            <span className="flex items-center gap-1.5">
+              <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-[140px]" />
+              <span className={DT.label}>→</span>
+              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-[140px]" />
+            </span>
+          )}
+        </Toolbar>
+      }
+      inspector={depositId ? <MobileDepositDetailV2 /> : null}
+    >
+      <DataTable
+        label="Liste des dépôts"
+        rows={rows}
+        columns={columns}
+        getRowId={(d) => d.id}
+        activeId={depositId ?? null}
+        onRowClick={(d) => navigate(`/m/deposits/${d.id}`)}
+        isLoading={isLoading}
+        empty={
+          <EmptyState
+            icon={FileText}
+            title="Aucun dépôt trouvé"
+            hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : 'Les dépôts déclarés apparaîtront ici.'}
+          />
+        }
+        footer={
+          !debouncedSearch ? (
+            <InfiniteScrollTrigger onLoadMore={loadMore} hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} />
+          ) : (
+            <p className={cn(DT.label, DFG.faint, 'text-center')}>
+              {rows.length} résultat{rows.length > 1 ? 's' : ''} dans les pages chargées
             </p>
-          </div>
-        )}
-      </Card>
-    </div>
-    </MasterDetailLayout>
+          )
+        }
+      />
+    </Workbench>
   );
 }

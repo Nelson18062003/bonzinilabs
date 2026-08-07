@@ -1,32 +1,26 @@
 /**
- * Desktop admin — clients as a data table.
+ * Clients — the customer base as a workbench.
  *
- * Same data layer as MobileClientsScreen (useClients with search + status),
- * presented as a wide table: client, status, phone, wallet balance and totals,
- * with a row → detail. Search + status filter chips in a toolbar.
+ * Adds what the old table lacked on desktop: a portfolio summary (how much of
+ * our clients' money we are holding, how concentrated it is), sortable money
+ * columns, and the client file opening in the inspector so an operator can walk
+ * a list of accounts without losing their place.
+ *
+ * Data layer unchanged (`useClients`), shared with MobileClientsScreen.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, Plus, User, X } from 'lucide-react';
+import { Plus, Search, Users, Wallet, X } from 'lucide-react';
 import { useClients } from '@/hooks/useClientManagement';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { formatCurrency, formatXAF } from '@/lib/formatters';
+import { formatXAF } from '@/lib/formatters';
+import { clientStatusTone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobileClientDetail } from '@/mobile/screens/clients';
-import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  clientStatusTone,
-  Avatar,
-  StatusPill,
-  TextInput,
-  Holder,
-  ScreenLoader,
-  Card,
-} from '@/mobile/designKit';
+import { DT, DFG } from '@/desktop/ui/tokens';
+import { Avatar, Badge, Button, Chip, EmptyState, Figure, Input, Metric } from '@/desktop/ui/primitives';
+import { DataTable, type Column, type SortState } from '@/desktop/ui/DataTable';
+import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 import type { ClientStatus } from '@/types/admin';
 
 const STATUS_FILTERS: { value: ClientStatus | 'all'; label: string }[] = [
@@ -47,145 +41,169 @@ const STATUS_LABEL: Record<ClientStatus, string> = {
 export function DesktopClientsScreen() {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearch = useDebouncedValue(searchQuery);
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
+  const [sort, setSort] = useState<SortState | null>(null);
+  const debouncedSearch = useDebouncedValue(search);
 
   const { data: clients, isLoading } = useClients({
     search: debouncedSearch || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
   });
 
-  const filteredClients = clients?.filter((client) =>
-    statusFilter === 'all' ? true : client.status === statusFilter,
-  );
+  const rows = useMemo(() => {
+    let list = (clients ?? []).filter((c) => (statusFilter === 'all' ? true : c.status === statusFilter));
+    if (sort) {
+      const dir = sort.dir === 'asc' ? 1 : -1;
+      list = [...list].sort((a, b) => {
+        const pick = (c: (typeof list)[number]) =>
+          sort.key === 'balance' ? c.walletBalance
+          : sort.key === 'deposits' ? c.totalDeposits
+          : sort.key === 'payments' ? c.totalPayments
+          : `${c.firstName} ${c.lastName}`.toLowerCase();
+        const av = pick(a);
+        const bv = pick(b);
+        return av === bv ? 0 : av > bv ? dir : -dir;
+      });
+    }
+    return list;
+  }, [clients, statusFilter, sort]);
+
+  /* Portfolio context: what we hold and how concentrated it is. Neither number
+     existed on desktop before, and both change how you read the list. */
+  const portfolio = useMemo(() => {
+    const total = rows.reduce((s, c) => s + (c.walletBalance || 0), 0);
+    const top = [...rows].sort((a, b) => (b.walletBalance || 0) - (a.walletBalance || 0)).slice(0, 5);
+    const topShare = total > 0 ? Math.round((top.reduce((s, c) => s + (c.walletBalance || 0), 0) / total) * 100) : 0;
+    const withBalance = rows.filter((c) => (c.walletBalance || 0) > 0).length;
+    return { total, topShare, withBalance };
+  }, [rows]);
+
+  const hasFilters = statusFilter !== 'all' || !!debouncedSearch;
+
+  const columns: Column<(typeof rows)[number]>[] = [
+    {
+      key: 'name',
+      header: 'Client',
+      width: '26%',
+      sortable: true,
+      cell: (c) => {
+        const name = `${c.firstName} ${c.lastName}`.trim();
+        return (
+          <span className="flex items-center gap-2.5">
+            <Avatar name={name} />
+            <span className={cn('min-w-0 truncate font-semibold', DFG.strong)}>{name || '—'}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'phone',
+      header: 'Téléphone',
+      width: '190px',
+      cell: (c) => <span className={cn('whitespace-nowrap tabular-nums', DFG.muted)}>{c.phone || '—'}</span>,
+    },
+    {
+      key: 'balance',
+      header: 'Solde',
+      align: 'right',
+      width: '150px',
+      sortable: true,
+      cell: (c) => <Figure value={formatXAF(c.walletBalance || 0)} className={c.walletBalance ? undefined : DFG.faint} />,
+    },
+    {
+      key: 'deposits',
+      header: 'Dépôts cumulés',
+      align: 'right',
+      width: '150px',
+      sortable: true,
+      cell: (c) => <span className={cn('tabular-nums', DFG.muted)}>{formatXAF(c.totalDeposits || 0)}</span>,
+    },
+    {
+      key: 'payments',
+      header: 'Paiements cumulés',
+      align: 'right',
+      width: '160px',
+      sortable: true,
+      cell: (c) => <span className={cn('tabular-nums', DFG.muted)}>{formatXAF(c.totalPayments || 0)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      align: 'right',
+      width: '110px',
+      cell: (c) => <Badge tone={clientStatusTone(c.status)}>{STATUS_LABEL[c.status] ?? c.status}</Badge>,
+    },
+  ];
 
   return (
-    <MasterDetailLayout detail={clientId ? <MobileClientDetail /> : null}>
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Clients</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            {filteredClients ? `${filteredClients.length} client${filteredClients.length > 1 ? 's' : ''}` : '—'}
-          </p>
+    <Workbench
+      head={
+        <ScreenHead
+          title="Clients"
+          subtitle={`${rows.length} client${rows.length > 1 ? 's' : ''} · ${portfolio.withBalance} avec un solde actif`}
+          actions={
+            <Button variant="primary" icon={Plus} onClick={() => navigate('/m/clients/new')}>
+              Nouveau client
+            </Button>
+          }
+        />
+      }
+      metrics={
+        <div className="grid grid-cols-3 gap-2.5">
+          <Metric icon={Wallet} tone="info" label="Encours total" value={formatXAF(portfolio.total)} hint="Somme des soldes wallet affichés" />
+          <Metric icon={Users} tone="neutral" label="Clients listés" value={rows.length} hint="Après filtres et recherche" />
+          <Metric label="Concentration top 5" value={`${portfolio.topShare} %`} tone="pending" hint="Part de l'encours détenue par les 5 plus gros soldes" />
         </div>
-        <button
-          onClick={() => navigate('/m/clients/new')}
-          className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
+      }
+      toolbar={
+        <Toolbar
+          trailing={
+            hasFilters ? (
+              <Button size="sm" variant="ghost" icon={X} onClick={() => { setStatusFilter('all'); setSearch(''); }}>
+                Réinitialiser
+              </Button>
+            ) : undefined
+          }
         >
-          <Plus className="h-4 w-4" /> Nouveau client
-        </button>
-      </header>
-
-      {/* Toolbar */}
-      <section className="flex flex-wrap items-center gap-2.5">
-        <div className="relative w-full max-w-sm">
-          <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-          <TextInput
-            placeholder="Rechercher par nom, téléphone…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-10 text-[14px]"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              aria-label="Effacer"
-              className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              className={cn(
-                'rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
-                statusFilter === f.value ? PRIMARY_PILL : SOFT_PILL,
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Table */}
-      <Card className="overflow-hidden p-0">
-        {isLoading ? (
-          <ScreenLoader />
-        ) : filteredClients && filteredClients.length > 0 ? (
-          <table className="w-full text-left">
-            <thead>
-              <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                <th scope="col" className="px-5 py-3 font-bold">Client</th>
-                <th scope="col" className="px-2 py-3 font-bold">Téléphone</th>
-                <th scope="col" className="px-2 py-3 text-right font-bold">Solde XAF</th>
-                <th scope="col" className="px-2 py-3 text-right font-bold">Dépôts</th>
-                <th scope="col" className="px-5 py-3 text-right font-bold">Paiements</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map((client) => {
-                const name = `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || '?';
-                return (
-                  <tr
-                    key={client.id}
-                    onClick={() => navigate(`/m/clients/${client.id}`)}
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/clients/${client.id}`); } }}
-                    className={cn(
-                      'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
-                      clientId === client.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
-                    )}
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={name} size="sm" />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={cn('truncate text-[13px] font-semibold', TEXT.strong)}>{name}</span>
-                            <StatusPill tone={clientStatusTone(client.status)} label={STATUS_LABEL[client.status] ?? client.status} />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={cn('px-2 py-3 text-[13px]', TEXT.muted)}>{client.phone || '—'}</td>
-                    <td className={cn('px-2 py-3 text-right text-[14px] font-bold tabular-nums', TEXT.strong)}>
-                      {formatXAF(client.walletBalance || 0)}
-                    </td>
-                    <td className={cn('px-2 py-3 text-right text-[13px] tabular-nums', TEXT.muted)}>
-                      {formatCurrency(client.totalDeposits || 0)}
-                    </td>
-                    <td className={cn('px-5 py-3 text-right text-[13px] tabular-nums', TEXT.muted)}>
-                      {formatCurrency(client.totalPayments || 0)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={User} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
-              {searchQuery || statusFilter !== 'all' ? 'Aucun client trouvé' : 'Aucun client pour le moment'}
-            </p>
-            <button
-              onClick={() => navigate('/m/clients/new')}
-              className={cn('mt-4 inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
-            >
-              <Plus className="h-4 w-4" /> Créer un client
-            </button>
+          <div className="relative mr-1 w-72">
+            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.faint)} />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nom ou téléphone…"
+              className="pl-8"
+            />
           </div>
-        )}
-      </Card>
-    </div>
-    </MasterDetailLayout>
+          {STATUS_FILTERS.map((f) => (
+            <Chip key={f.value} active={statusFilter === f.value} onClick={() => setStatusFilter(f.value)}>
+              {f.label}
+            </Chip>
+          ))}
+        </Toolbar>
+      }
+      inspector={clientId ? <MobileClientDetail /> : null}
+    >
+      <DataTable
+        label="Liste des clients"
+        rows={rows}
+        columns={columns}
+        getRowId={(c) => c.id}
+        activeId={clientId ?? null}
+        onRowClick={(c) => navigate(`/m/clients/${c.id}`)}
+        sort={sort}
+        onSortChange={setSort}
+        isLoading={isLoading}
+        empty={
+          <EmptyState
+            icon={Users}
+            title="Aucun client trouvé"
+            hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : 'Créez un premier client pour démarrer.'}
+            action={<Button variant="primary" icon={Plus} onClick={() => navigate('/m/clients/new')}>Nouveau client</Button>}
+          />
+        }
+        footer={<p className={cn(DT.label, DFG.faint, 'text-center')}>{rows.length} client{rows.length > 1 ? 's' : ''} affiché{rows.length > 1 ? 's' : ''} · 200 max par requête</p>}
+      />
+    </Workbench>
   );
 }

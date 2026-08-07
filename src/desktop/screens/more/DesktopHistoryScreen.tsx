@@ -1,17 +1,20 @@
 /**
- * Desktop admin — audit log ("Journaux").
+ * Journal d'audit — every privileged action, read-only.
  *
- * Same data and filtering as MobileHistoryScreen (useAdminAuditLogs, debounced
- * search + target-type chips) presented as a wide table instead of a stacked
- * card list. Read-only.
+ * Rebuilt on the shared DataTable so it reads like the rest of the console.
+ * Same data (`useAdminAuditLogs`) and same filters as MobileHistoryScreen.
  */
-import { useState } from 'react';
-import { Search, X, User, ArrowDownToLine, ArrowUpFromLine, TrendingUp, Shield, History } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowDownToLine, ArrowUpFromLine, ScrollText, Search, Shield, TrendingUp, User, X } from 'lucide-react';
 import { useAdminAuditLogs } from '@/hooks/useAdminData';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatDate } from '@/lib/formatters';
+import type { Tone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
-import { TEXT, PRIMARY_PILL, SOFT_PILL, type Tone, Card, Avatar, StatusPill, TextInput, Holder, ScreenLoader } from '@/mobile/designKit';
+import { DT, DFG } from '@/desktop/ui/tokens';
+import { Avatar, Badge, Button, Chip, EmptyState, Holder, Input, Ref } from '@/desktop/ui/primitives';
+import { DataTable, type Column } from '@/desktop/ui/DataTable';
+import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
 const FILTERS = [
   { value: 'all', label: 'Tous' },
@@ -23,121 +26,139 @@ const FILTERS = [
 
 function actionIcon(actionType: string) {
   const a = actionType.toLowerCase();
-  if (a.includes('deposit')) return <ArrowDownToLine className="h-3 w-3" />;
-  if (a.includes('payment')) return <ArrowUpFromLine className="h-3 w-3" />;
-  if (a.includes('rate')) return <TrendingUp className="h-3 w-3" />;
-  if (a.includes('client')) return <User className="h-3 w-3" />;
-  return <Shield className="h-3 w-3" />;
+  if (a.includes('deposit')) return ArrowDownToLine;
+  if (a.includes('payment')) return ArrowUpFromLine;
+  if (a.includes('rate')) return TrendingUp;
+  if (a.includes('client')) return User;
+  return Shield;
 }
 
 function targetTone(targetType: string): Tone {
   switch (targetType) {
-    case 'deposit':
-      return 'success';
-    case 'payment':
-      return 'info';
-    case 'rate':
-      return 'pending';
-    default:
-      return 'neutral';
+    case 'deposit': return 'success';
+    case 'payment': return 'info';
+    case 'rate': return 'pending';
+    default: return 'neutral';
   }
 }
 
 export function DesktopHistoryScreen() {
   const { data: logs, isLoading } = useAdminAuditLogs();
   const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('all');
+  const debouncedSearch = useDebouncedValue(search);
 
-  const filteredLogs =
-    logs?.filter((log) => {
-      const q = debouncedSearch.toLowerCase();
-      const matchesSearch =
-        log.action_type.toLowerCase().includes(q) ||
-        (log.adminProfile?.first_name?.toLowerCase().includes(q) ?? false);
-      const matchesType = typeFilter === 'all' || log.target_type === typeFilter;
-      return matchesSearch && matchesType;
-    }) || [];
+  const rows = useMemo(
+    () =>
+      (logs ?? []).filter((log) => {
+        if (typeFilter !== 'all' && log.target_type !== typeFilter) return false;
+        if (!debouncedSearch) return true;
+        const q = debouncedSearch.toLowerCase();
+        return (
+          log.action_type.toLowerCase().includes(q) ||
+          (log.adminProfile?.first_name?.toLowerCase().includes(q) ?? false) ||
+          (log.description?.toLowerCase().includes(q) ?? false)
+        );
+      }),
+    [logs, typeFilter, debouncedSearch],
+  );
+
+  const hasFilters = typeFilter !== 'all' || !!debouncedSearch;
+
+  const columns: Column<(typeof rows)[number]>[] = [
+    {
+      key: 'admin',
+      header: 'Administrateur',
+      width: '220px',
+      cell: (log) => {
+        const name = `${log.adminProfile?.first_name ?? ''} ${log.adminProfile?.last_name ?? ''}`.trim() || 'Système';
+        return (
+          <span className="flex items-center gap-2">
+            <Avatar name={name} size="sm" />
+            <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      width: '260px',
+      cell: (log) => {
+        const Icon = actionIcon(log.action_type);
+        return (
+          <span className="flex items-center gap-2">
+            <Holder icon={Icon} tone={targetTone(log.target_type)} size="sm" />
+            <Ref>{log.action_type}</Ref>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'description',
+      header: 'Détail',
+      cell: (log) => <span className={cn('line-clamp-1', DFG.base)}>{log.description || '—'}</span>,
+    },
+    {
+      key: 'target',
+      header: 'Cible',
+      width: '120px',
+      cell: (log) => <Badge tone={targetTone(log.target_type)}>{log.target_type}</Badge>,
+    },
+    {
+      key: 'date',
+      header: 'Date',
+      align: 'right',
+      width: '180px',
+      cell: (log) => <span className={cn('whitespace-nowrap', DFG.muted)}>{formatDate(log.created_at, 'datetime')}</span>,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Journaux</h2>
-        <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-          {filteredLogs.length} action{filteredLogs.length > 1 ? 's' : ''} d'administration
-        </p>
-      </header>
-
-      {/* Toolbar */}
-      <section className="flex flex-wrap items-center gap-2.5">
-        <div className="relative w-full max-w-sm">
-          <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-          <TextInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher une action…" className="pl-10 pr-10 text-[14px]" />
-          {search && (
-            <button onClick={() => setSearch('')} aria-label="Effacer" className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}>
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          {FILTERS.map((f) => (
-            <button key={f.value} onClick={() => setTypeFilter(f.value)} className={cn('rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors', typeFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Table */}
-      <Card className="overflow-hidden p-0">
-        {isLoading ? (
-          <ScreenLoader />
-        ) : filteredLogs.length > 0 ? (
-          <table className="w-full text-left">
-            <thead>
-              <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                <th className="px-5 py-3 font-bold">Administrateur</th>
-                <th className="px-2 py-3 font-bold">Action</th>
-                <th className="px-2 py-3 font-bold">Cible</th>
-                <th className="px-5 py-3 text-right font-bold">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLogs.map((log) => {
-                const name = log.adminProfile ? `${log.adminProfile.first_name} ${log.adminProfile.last_name}` : 'Admin';
-                return (
-                  <tr key={log.id} className="border-t border-black/[0.05] dark:border-white/[0.05]">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={name} size="sm" />
-                        <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{name}</span>
-                      </div>
-                    </td>
-                    <td className={cn('px-2 py-3 text-[12.5px]', TEXT.muted)}>{log.action_type}</td>
-                    <td className="px-2 py-3">
-                      <StatusPill
-                        tone={targetTone(log.target_type)}
-                        label={
-                          <span className="flex items-center gap-1">
-                            {actionIcon(log.action_type)}
-                            {log.target_type}
-                          </span>
-                        }
-                      />
-                    </td>
-                    <td className={cn('px-5 py-3 text-right text-[12px]', TEXT.muted)}>{formatDate(log.created_at)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={History} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun log trouvé</p>
+    <Workbench
+      head={
+        <ScreenHead
+          title="Journal d'audit"
+          subtitle={`${rows.length} action${rows.length > 1 ? 's' : ''} enregistrée${rows.length > 1 ? 's' : ''} · lecture seule`}
+        />
+      }
+      toolbar={
+        <Toolbar
+          trailing={
+            hasFilters ? (
+              <Button size="sm" variant="ghost" icon={X} onClick={() => { setTypeFilter('all'); setSearch(''); }}>
+                Réinitialiser
+              </Button>
+            ) : undefined
+          }
+        >
+          <div className="relative mr-1 w-72">
+            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.faint)} />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Action, administrateur ou détail…" className="pl-8" />
           </div>
-        )}
-      </Card>
-    </div>
+          {FILTERS.map((f) => (
+            <Chip key={f.value} active={typeFilter === f.value} onClick={() => setTypeFilter(f.value)}>
+              {f.label}
+            </Chip>
+          ))}
+        </Toolbar>
+      }
+    >
+      <DataTable
+        label="Journal d'audit"
+        rows={rows}
+        columns={columns}
+        getRowId={(log) => log.id}
+        isLoading={isLoading}
+        empty={
+          <EmptyState
+            icon={ScrollText}
+            title="Aucune action enregistrée"
+            hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : undefined}
+          />
+        }
+        footer={<p className={cn(DT.label, DFG.faint, 'text-center')}>Journal en lecture seule — les entrées ne peuvent pas être modifiées.</p>}
+      />
+    </Workbench>
   );
 }

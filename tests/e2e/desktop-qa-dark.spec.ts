@@ -54,7 +54,7 @@ test.beforeEach(async ({ context }) => {
 for (const [name, path] of DARK_ROUTES) {
   test(name, async ({ page }) => {
     await page.goto(path, { waitUntil: 'domcontentloaded' }).catch(() => {});
-    await page.getByText('Console admin').first().waitFor({ state: 'visible', timeout: 12_000 }).catch(() => {});
+    await page.getByText("Console d'opérations").first().waitFor({ state: 'visible', timeout: 12_000 }).catch(() => {});
     await page.waitForTimeout(700);
     // Sanity: the dark class is actually applied to <html>.
     const isDark = await page.evaluate(() => document.documentElement.classList.contains('dark'));

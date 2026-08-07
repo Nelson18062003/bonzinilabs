@@ -18,6 +18,11 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',
     viewport: { width: 1440, height: 900 },
+    // Allow running against a Chromium that is already on the machine (CI images,
+    // sandboxes) instead of Playwright's own download cache.
+    ...(process.env.PW_CHROMIUM_PATH
+      ? { launchOptions: { executablePath: process.env.PW_CHROMIUM_PATH } }
+      : {}),
   },
   webServer: {
     command: 'npx vite --host --port 8080',

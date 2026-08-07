@@ -61,7 +61,7 @@ function watch(page: import('@playwright/test').Page) {
 test('interaction: global search dropdown', async ({ page }) => {
   const errs = watch(page);
   await page.goto('/m', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Console admin').first().waitFor({ timeout: 12_000 });
+  await page.getByText("Console d'opérations").first().waitFor({ timeout: 12_000 });
   await page.getByPlaceholder('Rechercher un client').fill('BZ');
   // "BZ-DP-1001" only appears in the search dropdown on this route.
   await page.getByText('BZ-DP-1001').waitFor({ timeout: 8_000 });
@@ -76,7 +76,7 @@ test('interaction: global search dropdown', async ({ page }) => {
 test('interaction: notifications dropdown', async ({ page }) => {
   const errs = watch(page);
   await page.goto('/m', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Console admin').first().waitFor({ timeout: 12_000 });
+  await page.getByText("Console d'opérations").first().waitFor({ timeout: 12_000 });
   await page.getByRole('button', { name: 'Notifications' }).click();
   await page.getByText('Voir tout').waitFor({ timeout: 8_000 });
   await page.waitForTimeout(400);
@@ -88,7 +88,7 @@ test('interaction: notifications dropdown', async ({ page }) => {
 test('interaction: deposits table populated', async ({ page }) => {
   const errs = watch(page);
   await page.goto('/m/deposits', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Console admin').first().waitFor({ timeout: 12_000 });
+  await page.getByText("Console d'opérations").first().waitFor({ timeout: 12_000 });
   await page.getByText('BZ-DP-1001').first().waitFor({ timeout: 8_000 });
   await page.waitForTimeout(400);
   mkdirSync('qa-shots', { recursive: true });

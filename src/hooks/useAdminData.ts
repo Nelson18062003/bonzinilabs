@@ -29,7 +29,11 @@ export function useAdminUsers() {
         firstName: role.first_name || 'Admin',
         lastName: role.last_name || '',
         role: role.role,
-        status: 'ACTIVE' as const,
+        // `is_disabled` is what actually blocks a login (see AdminAuthContext),
+        // so it has to drive the status the admins screen shows — hardcoding
+        // ACTIVE made revoked accounts look live and the "Désactivés" filter
+        // impossible to satisfy.
+        status: (role.is_disabled ? 'DISABLED' : 'ACTIVE') as 'ACTIVE' | 'DISABLED',
         createdAt: role.created_at,
         lastLoginAt: null,
       }));
