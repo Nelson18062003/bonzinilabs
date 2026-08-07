@@ -41,3 +41,6 @@ shots/
 qa-shots/
 playwright-report/
 test-results/
+
+# Intermédiaire de génération du PDF coordonnées bancaires (polices/logos en base64)
+docs/coordonnees-bancaires-bonzini.html
