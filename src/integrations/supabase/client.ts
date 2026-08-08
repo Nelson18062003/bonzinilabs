@@ -38,10 +38,12 @@ export const supabaseAdmin = createClient<Database>(
       storageKey: 'bonzini-admin-auth',
       persistSession: true,
       autoRefreshToken: true,
-      // L'app admin n'utilise PAS l'OAuth. On désactive la détection du
-      // ?code= pour éviter toute course avec le client sur /auth/callback.
-      // (Mitigation complémentaire ; la garde primaire est de ne jamais
-      // monter supabaseAdmin sur la route de callback — cf. design-social-login.md §2.)
+      // L'app admin utilise l'OAuth Google depuis /m/login, mais le retour se
+      // fait sur SA PROPRE route (/m/auth/callback), jamais sur /auth/callback
+      // du client — cf. design-social-login.md §2.
+      // detectSessionInUrl reste FALSE : l'échange du ?code= est fait à la main
+      // sur cette route, ce qui évite toute course entre les deux GoTrueClient.
+      flowType: 'pkce',
       detectSessionInUrl: false,
       // Idem côté admin : évite le blocage du Navigator LockManager sur iOS.
       lock: processLock,

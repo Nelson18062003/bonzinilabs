@@ -47,6 +47,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
 const MobileLoginScreen = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.MobileLoginScreen })));
+const AdminAuthCallback = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.AdminAuthCallback })));
 const MobileDashboard = lazy(() => import("./mobile/screens/dashboard").then(m => ({ default: m.MobileDashboard })));
 const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
@@ -190,6 +191,7 @@ const App = () => (
 
                 {/* Mobile Admin Routes */}
                 <Route path="/m/login" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></AdminRouteWrapper>} />
+                <Route path="/m/auth/callback" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><AdminAuthCallback /></AdminRouteWrapper>} />
                 <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileNewDeposit desktop />}><MobileNewDeposit /></AdminRouteWrapper>} />

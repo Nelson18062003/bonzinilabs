@@ -134,6 +134,18 @@ interface AdminAuthContextType {
   isLoading: boolean;
   permissions: RolePermission | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  /** Envoie un code à 6 chiffres par email (aucun compte n'est créé). */
+  requestEmailCode: (email: string) => Promise<{ success: boolean; error?: string }>;
+  /** Vérifie le code reçu par email et ouvre la session admin. */
+  verifyEmailCode: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  /** Envoie un lien de réinitialisation du mot de passe. */
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
+  /** Démarre l'OAuth Google (retour sur /m/auth/callback). */
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  /** Termine l'OAuth : échange le ?code= puis vérifie le rôle admin. */
+  completeGoogleLogin: (url: string) => Promise<{ success: boolean; error?: string }>;
+  /** Dernière adresse utilisée sur cet appareil (pré-remplissage). */
+  lastEmail: string | null;
   logout: () => Promise<void>;
   hasPermission: (permission: keyof RolePermission) => boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,6 +160,26 @@ interface AdminAuthContextType {
 // fake value. Production code must keep using the `useAdminAuth` hook below.
 export const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
+// Adresse retenue sur l'appareil pour éviter de la retaper à chaque connexion.
+// Aucun secret : juste l'email, pour pré-remplir l'écran.
+const LAST_EMAIL_KEY = 'bonzini-admin-last-email';
+
+function readLastEmail(): string | null {
+  try {
+    return localStorage.getItem(LAST_EMAIL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function rememberEmail(email: string) {
+  try {
+    localStorage.setItem(LAST_EMAIL_KEY, email);
+  } catch {
+    /* stockage indisponible (navigation privée) — sans conséquence */
+  }
+}
+
 // Garde-fou : empêche une requête réseau de rester bloquée indéfiniment.
 function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -160,6 +192,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastEmail, setLastEmail] = useState<string | null>(() => readLastEmail());
 
   // Fetch user role and profile after login
   const fetchAdminData = async (user: User) => {
@@ -250,6 +283,30 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Contrôle d'accès commun à TOUS les chemins de connexion (mot de passe,
+  // code email, Google) : sans rôle, ou si le compte est désactivé, la session
+  // est immédiatement refermée.
+  const authorize = async (user: User): Promise<{ success: boolean; error?: string }> => {
+    const adminData = await fetchAdminData(user);
+
+    if (!adminData) {
+      await supabaseAdmin.auth.signOut();
+      return { success: false, error: 'Unauthorized access. No role assigned to this account.' };
+    }
+
+    if ('disabled' in adminData) {
+      await supabaseAdmin.auth.signOut();
+      return { success: false, error: 'This account has been disabled. Contact an administrator.' };
+    }
+
+    setCurrentUser(adminData);
+    if (adminData.email) {
+      rememberEmail(adminData.email);
+      setLastEmail(adminData.email);
+    }
+    return { success: true };
+  };
+
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data, error } = await withTimeout(
@@ -270,25 +327,117 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Check if user is an admin/agent
-      const adminData = await fetchAdminData(data.user);
-
-      if (!adminData) {
-        await supabaseAdmin.auth.signOut();
-        return { success: false, error: 'Unauthorized access. No role assigned to this account.' };
-      }
-
-      if ('disabled' in adminData) {
-        await supabaseAdmin.auth.signOut();
-        return { success: false, error: 'This account has been disabled. Contact an administrator.' };
-      }
-
-      setCurrentUser(adminData);
-      return { success: true };
+      return await authorize(data.user);
     } catch (error) {
       console.error('Login error:', error);
       // Remonter la vraie cause au lieu d'un message générique muet.
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `Erreur de connexion : ${msg}` };
+    }
+  };
+
+  // ── Connexion par code email (OTP) ────────────────────────────────────────
+  // `shouldCreateUser: false` est NON NÉGOCIABLE : sans lui, saisir n'importe
+  // quelle adresse sur l'écran d'admin créerait un compte.
+  const requestEmailCode = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    const normalized = email.toLowerCase().trim();
+    try {
+      const { error } = await withTimeout(
+        supabaseAdmin.auth.signInWithOtp({
+          email: normalized,
+          options: { shouldCreateUser: false },
+        }),
+        15000,
+        'envoi du code',
+      );
+
+      // Une adresse inconnue renvoie une erreur explicite. On ne la remonte PAS :
+      // répondre différemment selon que le compte existe ou non transformerait
+      // cet écran en outil d'énumération des comptes admin. L'écran suivant
+      // s'affiche dans tous les cas ; seul un vrai code pourra aboutir.
+      if (error && !/not found|no user|signups not allowed/i.test(error.message)) {
+        return { success: false, error: error.message };
+      }
+
+      rememberEmail(normalized);
+      setLastEmail(normalized);
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: msg };
+    }
+  };
+
+  const verifyEmailCode = async (email: string, token: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await withTimeout(
+        supabaseAdmin.auth.verifyOtp({
+          email: email.toLowerCase().trim(),
+          token: token.trim(),
+          type: 'email',
+        }),
+        15000,
+        'vérification du code',
+      );
+
+      if (error) return { success: false, error: error.message };
+      if (!data.user) return { success: false, error: 'Code invalide.' };
+
+      return await authorize(data.user);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: msg };
+    }
+  };
+
+  // ── Google (OAuth) ────────────────────────────────────────────────────────
+  // Le retour se fait sur /m/auth/callback, route montée UNIQUEMENT dans l'app
+  // admin : le client `supabase` n'y est jamais monté, donc aucune course sur
+  // le ?code= entre les deux GoTrueClient.
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    const { error } = await supabaseAdmin.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/m/auth/callback`,
+        scopes: 'openid email profile',
+      },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  };
+
+  const completeGoogleLogin = async (url: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await withTimeout(
+        supabaseAdmin.auth.exchangeCodeForSession(url),
+        15000,
+        'connexion Google',
+      );
+      if (error) return { success: false, error: error.message };
+      if (!data.user) return { success: false, error: 'Connexion Google incomplète.' };
+
+      // Un compte Google valide n'est PAS un compte admin : le rôle fait foi.
+      return await authorize(data.user);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: msg };
+    }
+  };
+
+  const requestPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await withTimeout(
+        supabaseAdmin.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+          redirectTo: `${window.location.origin}/m/login`,
+        }),
+        15000,
+        'envoi du lien',
+      );
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: msg };
     }
   };
 
@@ -350,6 +499,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         permissions,
         login,
+        requestEmailCode,
+        verifyEmailCode,
+        requestPasswordReset,
+        loginWithGoogle,
+        completeGoogleLogin,
+        lastEmail,
         logout,
         hasPermission,
         logAction,
