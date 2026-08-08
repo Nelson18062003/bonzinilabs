@@ -1,43 +1,150 @@
 /**
- * Desktop admin — Treasury inventory (cash / Alipay / WeChat reconciliation).
- * Same data, validation and snapshot mutation as MobileInventoryScreen, in a
- * 2-column grid; the selected account expands its reconciliation form in place.
+ * Trésorerie — inventaire des comptes (caisse / Alipay / WeChat).
+ *
+ * Rebuilt onto the console's dimensional contract (`@/desktop/ui/tokens`).
+ * Beyond the measurements, two things changed shape:
+ *
+ *   · **the account cards are `Metric` tiles.** Selecting an account is exactly
+ *     what `Metric`'s `onClick` / `active` / `aria-pressed` triple exists for,
+ *     and the number on the tile — the theoretical balance — is the number the
+ *     operator is about to contradict. The previous version painted its own
+ *     `ring-2` selection and a 36px circle to say the same thing, without ever
+ *     exposing the pressed state to assistive tech.
+ *   · **the reconciliation form left the card.** It used to expand inside
+ *     whichever tile was tapped, so a two-column grid re-flowed under the
+ *     operator's cursor mid-entry. It is now one panel below the grid, which
+ *     also lets the theoretical balance keep a single home (the tile) instead of
+ *     being reprinted inside the form.
+ *
+ * Same data, same validation, same `record_inventory_snapshot` RPC as the mobile
+ * screen. Guarded on `canViewTreasury`; writing needs `canManageTreasury`.
  */
-import { useState } from 'react';
+import * as React from 'react';
 import { Navigate } from 'react-router-dom';
-import { ClipboardCheck, AlertTriangle } from 'lucide-react';
-import { TextField } from '@/components/form';
-import { MoneyField } from '@/components/treasury/MoneyField';
-import { INSET, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
-import { Holder } from '@/mobile/designKit';
+import { AlertTriangle, ClipboardCheck } from 'lucide-react';
+import { parseAmount } from '@/components/form/AmountField';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRecordInventorySnapshot, useTreasuryAccountBalances } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
+import { DT, DFG } from '@/desktop/ui/tokens';
+import {
+  Badge,
+  Button,
+  DataRow,
+  EmptyState,
+  Field,
+  Figure,
+  Input,
+  Metric,
+  Panel,
+  PanelHead,
+  Skeleton,
+} from '@/desktop/ui/primitives';
+import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
-// Only physical / digital "wallet" CNY accounts need inventory; bank accounts are auto-reconciled.
+/** Only physical / digital "wallet" accounts need a count; banks auto-reconcile. */
 const INVENTORY_KINDS = ['cash', 'alipay', 'wechat'];
+
+const KIND_LABEL: Record<string, string> = {
+  cash: 'Caisse',
+  alipay: 'Alipay',
+  wechat: 'WeChat',
+};
+
+function decimalsFor(currency: string) {
+  return currency === 'USDT' ? 4 : currency === 'CNY' ? 2 : 0;
+}
+
+function fmt(n: number, currency: string) {
+  const d = decimalsFor(currency);
+  return n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+/**
+ * Money entry on the console ladder — geometry from `Input`, grammar from the
+ * shared `parseAmount`, so the accepted number format does not fork per surface.
+ */
+function MoneyInput({
+  label,
+  currency,
+  decimals,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  currency: string;
+  decimals: number;
+  value: number | null;
+  onValueChange: (v: number | null) => void;
+}) {
+  const formatter = React.useMemo(
+    () => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: decimals, useGrouping: true }),
+    [decimals],
+  );
+  const format = React.useCallback(
+    (n: number | null) => (n == null || Number.isNaN(n) ? '' : formatter.format(n)),
+    [formatter],
+  );
+  const [display, setDisplay] = React.useState(() => format(value));
+  const [focused, setFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!focused) setDisplay(format(value));
+  }, [value, focused, format]);
+
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-2">
+        <Input
+          inputMode={decimals > 0 ? 'decimal' : 'numeric'}
+          value={display}
+          placeholder="0"
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            const parsed = parseAmount(display, decimals > 0);
+            setDisplay(parsed == null ? '' : format(parsed));
+          }}
+          onChange={(e) => {
+            const cleaned = e.target.value.replace(/[^\d.,\s-]/g, '');
+            setDisplay(cleaned);
+            onValueChange(parseAmount(cleaned, decimals > 0));
+          }}
+          className="text-right tabular-nums"
+        />
+        <span className={cn(DT.label, DFG.muted, 'shrink-0')}>{currency}</span>
+      </div>
+    </Field>
+  );
+}
 
 export function DesktopInventoryScreen() {
   const { hasPermission } = useAdminAuth();
-  const { data } = useTreasuryAccountBalances();
+  const { data, isLoading } = useTreasuryAccountBalances();
   const submit = useRecordInventorySnapshot();
+
+  const [activeAccountId, setActiveAccountId] = React.useState<string | null>(null);
+  const [actual, setActual] = React.useState<number | null>(null);
+  const [reason, setReason] = React.useState('');
+
+  if (!hasPermission('canViewTreasury')) return <Navigate to="/m" replace />;
+
   const canManage = hasPermission('canManageTreasury');
-
-  const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
-  const [actual, setActual] = useState<number | null>(null);
-  const [reason, setReason] = useState('');
-
-  if (!hasPermission('canViewTreasury')) {
-    return <Navigate to="/m" replace />;
-  }
-
   const accounts = (data ?? []).filter((a) => a.kind && INVENTORY_KINDS.includes(a.kind));
   const active = accounts.find((a) => a.id === activeAccountId);
+  const currency = active?.currency ?? 'XAF';
+
   const theoretical = Number(active?.balance ?? 0);
   const variance = activeAccountId && actual !== null ? actual - theoretical : 0;
   const reasonRequired = variance !== 0;
   const reasonValid = reason.trim().length >= 10;
   const valid = !!activeAccountId && actual !== null && (!reasonRequired || reasonValid);
+
+  const select = (id: string | null) => {
+    setActiveAccountId(id);
+    setActual(null);
+    setReason('');
+  };
 
   const handleSubmit = async () => {
     if (!valid || !activeAccountId || actual === null) return;
@@ -46,106 +153,129 @@ export function DesktopInventoryScreen() {
       actual_balance: actual,
       variance_reason: reasonRequired ? reason.trim() : undefined,
     });
-    if (result.success) {
-      setActiveAccountId(null);
-      setActual(null);
-      setReason('');
-    }
+    if (result.success) select(null);
   };
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Inventaire des comptes</h2>
-        <p className="mt-1 max-w-2xl text-[13px] leading-snug text-muted-foreground">
-          Réconcilie le solde théorique (calculé depuis le ledger) avec le solde réellement constaté. Tout écart doit être justifié.
-        </p>
-      </header>
-
-      {accounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Holder icon={ClipboardCheck} size="lg" />
-          <p className="mt-4 text-[14px] font-medium text-muted-foreground">Aucun compte cash / Alipay / WeChat à inventorier.</p>
+    <Workspace
+      head={
+        <ScreenHead
+          title="Inventaire des comptes"
+          subtitle="Réconcilie le solde théorique (calculé depuis le ledger) avec le solde réellement constaté. Tout écart doit être justifié."
+        />
+      }
+    >
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))}
         </div>
+      ) : accounts.length === 0 ? (
+        <Panel>
+          <EmptyState
+            icon={ClipboardCheck}
+            title="Aucun compte à inventorier"
+            hint="Seuls les comptes caisse, Alipay et WeChat se comptent à la main — les comptes bancaires sont réconciliés automatiquement."
+          />
+        </Panel>
       ) : (
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-          {accounts.map((a) => {
-            const isActive = a.id === activeAccountId;
-            const balance = Number(a.balance ?? 0);
-            return (
-              <div key={a.id} className={cn(SOFT_CARD, 'overflow-hidden', isActive && 'ring-2 ring-bonzini-violet/40')}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!canManage) return;
-                    if (isActive) {
-                      setActiveAccountId(null);
-                    } else {
-                      setActiveAccountId(a.id ?? null);
-                      setActual(null);
-                      setReason('');
-                    }
-                  }}
-                  className="flex w-full items-center justify-between p-4 active:bg-muted/30"
-                >
-                  <div className="min-w-0 text-left">
-                    <div className="truncate font-semibold text-foreground">{a.label}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Solde théorique : {balance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {a.currency}
-                    </div>
+        <>
+          {/* The tiles ARE the selector: the number on each one is the balance the
+              operator is about to confirm or contradict. */}
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {accounts.map((a) => {
+              const isActive = a.id === activeAccountId;
+              return (
+                <Metric
+                  key={a.id}
+                  icon={ClipboardCheck}
+                  label={a.label ?? '—'}
+                  value={fmt(Number(a.balance ?? 0), a.currency ?? 'XAF')}
+                  unit={a.currency ?? undefined}
+                  hint={`${KIND_LABEL[a.kind ?? ''] ?? a.kind} · solde théorique`}
+                  active={isActive}
+                  onClick={canManage ? () => select(isActive ? null : (a.id ?? null)) : undefined}
+                />
+              );
+            })}
+          </section>
+
+          {!canManage ? (
+            <p className={cn(DT.label, DFG.muted, 'mt-4')}>
+              <Badge tone="info">Lecture seule</Badge> Enregistrer un inventaire demande la permission
+              « gestion trésorerie ».
+            </p>
+          ) : null}
+
+          {canManage && active ? (
+            <Panel className="mt-4 max-w-xl">
+              <PanelHead title={`Inventaire — ${active.label}`} hint="Comptez, saisissez, justifiez l'écart." />
+              <div className="space-y-4 p-4">
+                <MoneyInput
+                  label="Solde réel constaté"
+                  currency={currency}
+                  decimals={decimalsFor(currency)}
+                  value={actual}
+                  onValueChange={setActual}
+                />
+
+                {/* Le solde théorique n'est PAS réimprimé ici : il est sur la
+                    tuile sélectionnée, quatre centimètres plus haut. */}
+                <DataRow
+                  label="Écart"
+                  value={
+                    actual === null ? (
+                      <span className={DFG.faint}>—</span>
+                    ) : (
+                      <Figure
+                        value={`${variance > 0 ? '+' : ''}${fmt(variance, currency)}`}
+                        unit={currency}
+                        size="md"
+                        tone={variance === 0 ? 'positive' : 'negative'}
+                      />
+                    )
+                  }
+                />
+
+                {reasonRequired ? (
+                  <div>
+                    <Field label="Motif de l'écart (10 caractères min)">
+                      <Input
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        aria-invalid={reason.length > 0 && !reasonValid}
+                        placeholder="ex : billet manquant constaté à la fermeture"
+                      />
+                    </Field>
+                    {!reasonValid ? (
+                      <p className={cn(DT.label, 'mt-1 flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]')}>
+                        <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />
+                        Motif obligatoire et d'au moins 10 caractères.
+                      </p>
+                    ) : null}
                   </div>
-                  <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', isActive ? 'bg-violet-500/10 text-bonzini-violet' : 'bg-muted text-muted-foreground')}>
-                    <ClipboardCheck className="h-4 w-4" />
-                  </div>
-                </button>
+                ) : null}
 
-                {isActive && canManage && a.currency && (
-                  <div className="space-y-3 border-t border-border bg-muted/30 px-4 pb-4 pt-3.5">
-                    <MoneyField
-                      label="Solde réel constaté"
-                      currency={a.currency}
-                      value={actual}
-                      onValueChange={setActual}
-                      allowDecimal
-                      decimals={a.currency === 'USDT' ? 4 : a.currency === 'CNY' ? 2 : 0}
-                      max={null}
-                    />
-
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div className={cn(INSET, 'p-2.5')}>
-                        <div className="text-muted-foreground">Théorique</div>
-                        <div className="font-bold tabular-nums text-foreground">{theoretical.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</div>
-                      </div>
-                      <div className={cn('rounded-2xl p-2.5', variance === 0 ? 'bg-emerald-500/10' : 'bg-red-500/10')}>
-                        <div className={cn(variance === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>Écart</div>
-                        <div className={cn('font-bold tabular-nums', variance === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
-                          {variance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
-                        </div>
-                      </div>
-                    </div>
-
-                    {reasonRequired && (
-                      <div>
-                        <TextField label="Motif de l'écart (10 caractères min)" value={reason} onChange={(e) => setReason(e.target.value)} />
-                        {!reasonValid && (
-                          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-red-600 dark:text-red-400">
-                            <AlertTriangle className="h-3 w-3" />
-                            Motif obligatoire et au moins 10 caractères.
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <PrimaryPill onClick={handleSubmit} disabled={!valid} loading={submit.isPending}>
-                      Enregistrer l'inventaire
-                    </PrimaryPill>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => select(null)}>
+                    Annuler
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="flex-1"
+                    disabled={!valid}
+                    loading={submit.isPending}
+                    onClick={handleSubmit}
+                  >
+                    Enregistrer l'inventaire
+                  </Button>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            </Panel>
+          ) : null}
+        </>
       )}
-    </div>
+    </Workspace>
   );
 }

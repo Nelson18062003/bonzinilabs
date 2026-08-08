@@ -1,29 +1,121 @@
 /**
- * Desktop admin — Treasury counterparties (USDT suppliers / CNY buyers).
- * Same data + create mutation as MobileCounterpartiesScreen, laid out for a
- * wide screen: tabs + archived toggle + (toggleable) create form + 2-col grid.
+ * Contreparties — fournisseurs USDT et acheteurs CNY.
+ *
+ * Rebuilt onto the desktop dimensional contract (`@/desktop/ui`). What left:
+ * the mobile treasury `Segmented` (~39px) and `Pill` (36px) from the tab row,
+ * the 40px header pill, the 52px `PrimaryPill` and its hand-rolled 52px
+ * "Annuler" twin, and the hand-set 26px title. What replaced them: `Segment`
+ * and `Chip` inside a `Toolbar` (28px), a `ScreenHead` action `Button` (32px)
+ * and a form built from `Field` / `Input` / `Select` / `Button` at the page
+ * step (32px).
+ *
+ * Two shape changes:
+ *  · the card grid is a `DataTable` — a counterparty row is a code, a name, a
+ *    phone and a WeChat id, which is a table, and the table brings the sticky
+ *    header and keyboard navigation every other list in the console has;
+ *  · the create form moved from a block wedged between the tabs and the list
+ *    into the `Workbench` inspector, so opening it no longer pushes the list
+ *    down the page and closing it does not re-render the list.
+ *
+ * The phone control is the same two-part control as the shared
+ * `PhoneInputWithCountry` — a dial-code `<select>` plus a digits-only field,
+ * emitting the canonical `joinPhone(...)` string — rebuilt here on the desktop
+ * primitives so it sits on the 32px step. The value semantics are unchanged:
+ * `splitPhone` / `joinPhone` are the same shared helpers.
+ *
+ * Data layer untouched (`useCounterparties`, `useCreateCounterparty`).
  */
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, Plus, Phone, MessageCircle, Archive, ChevronRight, Users } from 'lucide-react';
-import { PhoneInputWithCountry, TextField } from '@/components/form';
-import { Segmented } from '@/components/treasury/Segmented';
-import { INSET, Pill, PrimaryPill, SOFT_CARD } from '@/components/treasury/ui';
-import { PRIMARY_PILL, Holder } from '@/mobile/designKit';
+import { AlertTriangle, Archive, Plus, RefreshCw, Users } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useCreateCounterparty } from '@/hooks/useTreasury';
-import { formatPhone } from '@/data/countryCodes';
+import { COUNTRY_CODES, formatPhone, joinPhone, splitPhone } from '@/data/countryCodes';
 import type { Database } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
+import { CONTROL, DT, DFG } from '@/desktop/ui/tokens';
+import { Badge, Button, Chip, EmptyState, Field, Input, Ref, Segment, Select } from '@/desktop/ui/primitives';
+import { DataTable, type Column } from '@/desktop/ui/DataTable';
+import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
 type CounterpartyType = Database['public']['Enums']['treasury_counterparty_type'];
+
+const TABS: { value: CounterpartyType; label: string }[] = [
+  { value: 'usdt_supplier', label: 'Fournisseurs USDT' },
+  { value: 'cny_buyer', label: 'Acheteurs CNY' },
+];
+
+/**
+ * Dial code + national digits, emitting the canonical `+237691234567` string.
+ * Same contract as the shared mobile `PhoneInputWithCountry`, on the desktop
+ * control step.
+ */
+function PhoneEntry({
+  label,
+  value,
+  onValueChange,
+  defaultDialCode,
+}: {
+  label: string;
+  value: string | null;
+  onValueChange: (next: string | null) => void;
+  defaultDialCode: string;
+}) {
+  const initial = useMemo(() => splitPhone(value, defaultDialCode), [value, defaultDialCode]);
+  const [dialCode, setDialCode] = useState(initial.dialCode);
+  const [local, setLocal] = useState(initial.local);
+
+  // Sync from the outside (form reset, tab switch changing the default code).
+  useEffect(() => {
+    const next = splitPhone(value, defaultDialCode);
+    setDialCode(next.dialCode);
+    setLocal(next.local);
+  }, [value, defaultDialCode]);
+
+  return (
+    <div>
+      <span className={cn(DT.label, DFG.base, 'mb-1 block font-semibold')}>{label}</span>
+      <div className="flex gap-2">
+        <Select
+          aria-label="Code pays"
+          value={dialCode}
+          onChange={(e) => {
+            setDialCode(e.target.value);
+            onValueChange(joinPhone(e.target.value, local));
+          }}
+          className="w-32 font-semibold"
+        >
+          {COUNTRY_CODES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.code}
+            </option>
+          ))}
+        </Select>
+        <Input
+          aria-label={label}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel-national"
+          placeholder="6XX XX XX XX"
+          value={local}
+          onChange={(e) => {
+            const digitsOnly = e.target.value.replace(/\D/g, '');
+            setLocal(digitsOnly);
+            onValueChange(joinPhone(dialCode, digitsOnly));
+          }}
+          className="flex-1 tabular-nums"
+        />
+      </div>
+    </div>
+  );
+}
 
 export function DesktopCounterpartiesScreen() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<CounterpartyType>('usdt_supplier');
   const [showArchived, setShowArchived] = useState(false);
-  const { data, isLoading } = useCounterparties(tab, showArchived);
+  const { data, isLoading, isError, isFetching, refetch } = useCounterparties(tab, showArchived);
   const create = useCreateCounterparty();
   const canManage = hasPermission('canManageTreasury');
 
@@ -62,126 +154,141 @@ export function DesktopCounterpartiesScreen() {
 
   const defaultDialCode = tab === 'usdt_supplier' ? '+237' : '+86';
   const isSupplier = tab === 'usdt_supplier';
+  const rows = data ?? [];
+
+  const columns: Column<(typeof rows)[number]>[] = [
+    {
+      key: 'short_id',
+      header: 'Code',
+      width: '110px',
+      cell: (c) => <Ref>{c.short_id}</Ref>,
+    },
+    {
+      key: 'name',
+      header: 'Contrepartie',
+      cell: (c) => (
+        <span className="block min-w-0">
+          <span className={cn('flex items-center gap-2 truncate font-semibold', DFG.strong)}>
+            {c.display_name}
+            {!c.is_active ? <Badge tone="neutral">Archivée</Badge> : null}
+          </span>
+          {c.legal_name ? <span className={cn('block truncate', DT.label, DFG.muted)}>{c.legal_name}</span> : null}
+        </span>
+      ),
+    },
+    {
+      key: 'phone',
+      header: 'Téléphone',
+      width: '200px',
+      hideBelow: 760,
+      cell: (c) => (
+        <span className={cn('whitespace-nowrap', DFG.muted)}>{c.phone ? formatPhone(c.phone) : '—'}</span>
+      ),
+    },
+    {
+      key: 'wechat',
+      header: 'WeChat',
+      width: '180px',
+      hideBelow: 1000,
+      cell: (c) => <span className={cn('truncate', DFG.muted)}>{c.wechat_id || '—'}</span>,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Contreparties</h2>
-          <p className="mt-1 text-[14px] text-muted-foreground">Fournisseurs USDT et acheteurs CNY</p>
-        </div>
-        {canManage && !showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
-          >
-            <Plus className="h-4 w-4" /> Nouvelle contrepartie
-          </button>
-        )}
-      </header>
+    <Workbench
+      head={
+        <ScreenHead
+          title="Contreparties"
+          subtitle="Fournisseurs USDT et acheteurs CNY"
+          actions={
+            canManage && !showForm ? (
+              <Button variant="primary" icon={Plus} onClick={() => setShowForm(true)}>
+                Nouvelle contrepartie
+              </Button>
+            ) : undefined
+          }
+        />
+      }
+      toolbar={
+        <Toolbar>
+          <Segment value={tab} onChange={setTab} options={TABS} />
+          <Chip active={showArchived} onClick={() => setShowArchived((v) => !v)}>
+            {/* Glyph size comes from the control table, never from a hand-
+                written `h-…` — this chip sits at the toolbar step. */}
+            <Archive className={CONTROL.toolbar.glyph} aria-hidden />
+            Archivées
+          </Chip>
+        </Toolbar>
+      }
+      inspector={
+        canManage && showForm ? (
+          <div className="space-y-4 p-4">
+            <h3 className={cn(DT.title, DFG.strong)}>
+              Nouvelle contrepartie {isSupplier ? '(fournisseur USDT)' : '(acheteur CNY)'}
+            </h3>
 
-      {/* Tabs + archived */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-full max-w-md">
-          <Segmented
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: 'usdt_supplier', label: 'Fournisseurs USDT' },
-              { value: 'cny_buyer', label: 'Acheteurs CNY' },
-            ]}
-          />
-        </div>
-        <div className="ml-auto">
-          <Pill active={showArchived} onClick={() => setShowArchived((v) => !v)}>
-            <Archive className="h-3.5 w-3.5" /> Archivées
-          </Pill>
-        </div>
-      </div>
+            <div className="space-y-3">
+              <Field label="Nom" required>
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </Field>
+              <Field label="Entreprise">
+                <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+              </Field>
+              <PhoneEntry
+                label="Téléphone / WhatsApp"
+                value={phone}
+                onValueChange={setPhone}
+                defaultDialCode={defaultDialCode}
+              />
+              {!isSupplier ? (
+                <Field label="WeChat ID">
+                  <Input value={wechat} onChange={(e) => setWechat(e.target.value)} />
+                </Field>
+              ) : null}
+              <Field label="Notes">
+                <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </Field>
+            </div>
 
-      {/* Create form */}
-      {canManage && showForm && (
-        <div className={cn(INSET, 'max-w-xl space-y-2.5 p-4')}>
-          <div className="text-[13px] font-bold text-foreground">
-            Nouvelle contrepartie {isSupplier ? '(fournisseur USDT)' : '(acheteur CNY)'}
-          </div>
-          <TextField label="Nom" value={name} onChange={(e) => setName(e.target.value)} />
-          <TextField label="Entreprise" value={company} onChange={(e) => setCompany(e.target.value)} />
-          <PhoneInputWithCountry label="Téléphone / WhatsApp" value={phone} onValueChange={setPhone} defaultDialCode={defaultDialCode} />
-          {!isSupplier && <TextField label="WeChat ID" value={wechat} onChange={(e) => setWechat(e.target.value)} />}
-          <TextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div className="flex gap-2.5 pt-1">
-            <button
-              onClick={resetForm}
-              className="h-[52px] flex-1 rounded-2xl bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
-            >
-              Annuler
-            </button>
-            <div className="flex-1">
-              <PrimaryPill onClick={handleCreate} disabled={!name.trim()} loading={create.isPending}>
+            <div className="flex justify-end gap-2">
+              <Button onClick={resetForm}>Annuler</Button>
+              <Button variant="primary" disabled={!name.trim()} loading={create.isPending} onClick={handleCreate}>
                 Créer
-              </PrimaryPill>
+              </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* List */}
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : (data ?? []).length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Holder icon={Users} size="lg" />
-          <p className="mt-4 text-[14px] font-medium text-muted-foreground">
-            Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l'instant.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-          {(data ?? []).map((c) => {
-            const toneBadge = isSupplier ? 'bg-violet-500/10 text-bonzini-violet' : 'bg-amber-500/10 text-bonzini-amber';
-            return (
-              <button
-                key={c.id}
-                onClick={() => canManage && navigate(`/m/more/treasury/counterparties/${c.id}`)}
-                className={cn(SOFT_CARD, 'flex w-full items-center gap-3 p-3.5 text-left', canManage && 'transition hover:-translate-y-0.5')}
-              >
-                <span className={cn('shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold', toneBadge)}>{c.short_id}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate font-semibold text-foreground">{c.display_name}</span>
-                    {!c.is_active && (
-                      <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
-                        <Archive className="h-3 w-3" />
-                        Archivée
-                      </span>
-                    )}
-                  </div>
-                  {c.legal_name && <div className="truncate text-[12px] text-muted-foreground">{c.legal_name}</div>}
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                    {c.phone && (
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {formatPhone(c.phone)}
-                      </span>
-                    )}
-                    {c.wechat_id && (
-                      <span className="inline-flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3" />
-                        {c.wechat_id}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {canManage && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+        ) : null
+      }
+      onCloseInspector={resetForm}
+    >
+      <DataTable
+        label="Liste des contreparties"
+        rows={rows}
+        columns={columns}
+        getRowId={(c) => c.id}
+        onRowClick={canManage ? (c) => navigate(`/m/more/treasury/counterparties/${c.id}`) : undefined}
+        isLoading={isLoading}
+        empty={
+          isError ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Impossible de charger les contreparties"
+              hint="La requête a échoué — la liste n'est pas vide, elle n'a pas pu être lue."
+              action={
+                <Button icon={RefreshCw} loading={isFetching} onClick={() => refetch()}>
+                  Réessayer
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={Users}
+              title={`Aucune contrepartie ${isSupplier ? 'fournisseur' : 'acheteur'} pour l'instant.`}
+              hint={showArchived ? undefined : 'Les contreparties archivées sont masquées.'}
+            />
+          )
+        }
+      />
+    </Workbench>
   );
 }

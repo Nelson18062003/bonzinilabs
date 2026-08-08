@@ -41,13 +41,31 @@ export interface Scenario {
   usdtStock?: number;
 }
 
-/** Routes that carry a toolbar and a table — the ones metrology cares about. */
+/**
+ * Every desktop route the contract governs.
+ *
+ * The toolbar-alignment test skips a route that has no toolbar; the height and
+ * type-scale test applies everywhere, which is the point of listing the
+ * scrolling pages here too — those were the screens still carrying the mobile
+ * kit's 36-52px controls.
+ */
 export const ROUTES_UNDER_TEST: [string, string][] = [
+  ['dashboard', '/m'],
   ['deposits', '/m/deposits'],
   ['payments', '/m/payments'],
   ['clients', '/m/clients'],
   ['admins', '/m/more/admins'],
   ['audit-log', '/m/more/history'],
+  ['treasury', '/m/more/treasury'],
+  ['treasury-accounts', '/m/more/treasury/accounts'],
+  ['treasury-purchases', '/m/more/treasury/purchases'],
+  ['treasury-sales', '/m/more/treasury/sales'],
+  ['treasury-counterparties', '/m/more/treasury/counterparties'],
+  ['treasury-operations', '/m/more/treasury/operations'],
+  ['treasury-analysis', '/m/more/treasury/dashboard'],
+  ['treasury-inventory', '/m/more/treasury/inventory'],
+  ['support', '/m/support'],
+  ['rates', '/m/more/rates'],
 ];
 
 /** Extract a `col=eq.value` filter from a PostgREST query string. */

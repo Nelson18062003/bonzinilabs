@@ -1,26 +1,54 @@
 /**
- * Desktop admin — Treasury purchases (USDT) list.
+ * Achats USDT — the purchase ledger of the treasury module.
  *
- * Same data, filters and treasury primitives as MobilePurchasesList
- * (useTreasuryOperations, counterparties, period/supplier/channel/sort filters,
- * void dialog, OperationListItem rows) — laid out for a wide screen.
+ * Rebuilt onto the desktop dimensional contract (`@/desktop/ui`). The screen
+ * previously ran a second control vocabulary borrowed from the mobile treasury
+ * kit — a 36px `Pill` beside a ~39px `Segmented`, a 40px header pill and a
+ * hand-rolled 26px title — none of which sits on the console's
+ * 24/28/32 ladder. Every control now comes from the primitives, which read
+ * their geometry from the container they sit in (`Toolbar` → 28px,
+ * `ScreenHead` → 32px, table row → 24px), so nothing can disagree again.
+ *
+ * Two structural moves beyond the swap, both taken from the deposits screen:
+ *  · the rows were cards in a 2-column grid, but they are a table — one
+ *    counterparty, one date, two amounts and a rate per row. `DataTable` gives
+ *    them a sticky header, keyboard navigation, zebra rows and column sorting
+ *    for free, and the "Trier par" select disappears into the column headers
+ *    it was duplicating.
+ *  · a failed query renders an **error** state, never "aucun achat" — telling
+ *    a treasurer the ledger is empty when the backend is down is the worst
+ *    possible lie in a money product.
+ *
+ * Data layer is untouched (`useTreasuryOperations`, `useCounterparties`,
+ * `VoidOperationDialog`), so mobile and desktop still agree on what an achat is.
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { SlidersHorizontal, X, Plus, Loader2, ArrowDownToLine } from 'lucide-react';
-import { DateField } from '@/components/form';
-import { OperationListItem } from '@/components/treasury/OperationListItem';
-import { Segmented } from '@/components/treasury/Segmented';
-import { SelectField } from '@/components/treasury/SelectField';
+import { AlertTriangle, ArrowDownToLine, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { VoidOperationDialog } from '@/components/treasury/VoidOperationDialog';
-import { FieldLabel, INSET, Pill, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useTreasuryOperations, type OperationRow } from '@/hooks/useTreasury';
-import { PRIMARY_PILL, Holder } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
+import { DFG } from '@/desktop/ui/tokens';
+import {
+  Badge,
+  Button,
+  Chip,
+  EmptyState,
+  Figure,
+  IconButton,
+  Input,
+  Metric,
+  Segment,
+  Select,
+} from '@/desktop/ui/primitives';
+import { FilterPopover, type FilterAxis } from '@/desktop/ui/Popover';
+import { DataTable, type Column, type SortState } from '@/desktop/ui/DataTable';
+import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
 type Preset = '7d' | '30d' | '90d' | 'all' | 'custom';
 type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc';
+type PurchaseOp = Extract<OperationRow, { kind: 'purchase' }>;
 
 const CHANNEL_LABELS: Record<string, string> = {
   bank_transfer: 'Virement',
@@ -29,11 +57,12 @@ const CHANNEL_LABELS: Record<string, string> = {
   other: 'Autre',
 };
 
-const SORT_OPTIONS = [
-  { value: 'date_desc', label: 'Date (plus récent)' },
-  { value: 'date_asc', label: 'Date (plus ancien)' },
-  { value: 'amount_desc', label: 'Montant XAF (plus grand)' },
-  { value: 'amount_asc', label: 'Montant XAF (plus petit)' },
+const PERIOD_OPTIONS: { value: Preset; label: string }[] = [
+  { value: '7d', label: '7 j' },
+  { value: '30d', label: '30 j' },
+  { value: '90d', label: '90 j' },
+  { value: 'all', label: 'Tout' },
+  { value: 'custom', label: 'Perso' },
 ];
 
 function getRange(preset: Preset, customFrom?: string, customTo?: string): { from: Date; to: Date } {
@@ -58,6 +87,12 @@ function fmt(n: number, decimals = 2): string {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+function fmtDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 export function DesktopPurchasesList() {
   const navigate = useNavigate();
   const { hasPermission, currentUser } = useAdminAuth();
@@ -66,27 +101,29 @@ export function DesktopPurchasesList() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [showVoided, setShowVoided] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [supplierId, setSupplierId] = useState('');
   const [channel, setChannel] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('date_desc');
   const [confirmDelete, setConfirmDelete] = useState<OperationRow | null>(null);
   const range = useMemo(() => getRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
-  const { data, isLoading } = useTreasuryOperations(range.from.toISOString(), range.to.toISOString());
+  const { data, isLoading, isError, isFetching, refetch } = useTreasuryOperations(
+    range.from.toISOString(),
+    range.to.toISOString(),
+  );
   const { data: suppliers } = useCounterparties('usdt_supplier', true);
 
   if (!hasPermission('canViewTreasury')) {
     return <Navigate to="/m" replace />;
   }
 
-  const activeFilterCount = (supplierId ? 1 : 0) + (channel ? 1 : 0) + (sortBy !== 'date_desc' ? 1 : 0);
+  const hasFilters = !!supplierId || !!channel || sortBy !== 'date_desc';
   const resetFilters = () => {
     setSupplierId('');
     setChannel('');
     setSortBy('date_desc');
   };
 
-  let purchases = (data ?? []).filter((op): op is Extract<OperationRow, { kind: 'purchase' }> => {
+  let purchases = (data ?? []).filter((op): op is PurchaseOp => {
     if (op.kind !== 'purchase') return false;
     if (!showVoided && op.voided_at) return false;
     if (supplierId && op.supplier_id !== supplierId) return false;
@@ -111,122 +148,213 @@ export function DesktopPurchasesList() {
   const totalUsdt = live.reduce((s, p) => s + Number(p.usdt_amount ?? 0), 0);
   const totalXaf = live.reduce((s, p) => s + Number(p.xaf_amount ?? 0), 0);
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-[26px] font-extrabold tracking-tight text-foreground">Achats USDT</h2>
-          <p className="mt-1 text-[14px] text-muted-foreground">{live.length} achat{live.length > 1 ? 's' : ''} sur la période</p>
-        </div>
-        <button
-          onClick={() => navigate('/m/more/treasury/purchase')}
-          className={cn('inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
-        >
-          <Plus className="h-4 w-4" /> Nouvel achat
-        </button>
-      </header>
+  /* The sort lives on the column headers now, so the two representations have
+     to stay in sync: `date_*` ↔ the Date column, `amount_*` ↔ Montant XAF —
+     which is the amount the previous "Trier par" select sorted on. */
+  const sort: SortState = {
+    key: sortBy.startsWith('date') ? 'occurred_at' : 'xaf_amount',
+    dir: sortBy.endsWith('asc') ? 'asc' : 'desc',
+  };
+  const onSortChange = (s: SortState) =>
+    setSortBy(`${s.key === 'occurred_at' ? 'date' : 'amount'}_${s.dir}` as SortKey);
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-full max-w-md">
-          <Segmented
-            value={preset}
-            onChange={setPreset}
-            options={[
-              { value: '7d', label: '7 j' },
-              { value: '30d', label: '30 j' },
-              { value: '90d', label: '90 j' },
-              { value: 'all', label: 'Tout' },
-              { value: 'custom', label: 'Perso' },
-            ]}
-          />
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Pill active={activeFilterCount > 0 || showFilters} onClick={() => setShowFilters((v) => !v)}>
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </Pill>
-          <Pill active={showVoided} onClick={() => setShowVoided((v) => !v)}>
-            Supprimées
-          </Pill>
-        </div>
-      </div>
+  const channelAxis: FilterAxis<string> = {
+    id: 'channel',
+    label: 'Canal de paiement',
+    value: channel,
+    onChange: setChannel,
+    neutral: '',
+    options: [
+      { value: '', label: 'Tous les canaux' },
+      ...Object.entries(CHANNEL_LABELS).map(([value, label]) => ({ value, label })),
+    ],
+  };
 
-      {preset === 'custom' && (
-        <div className={cn(INSET, 'grid max-w-md grid-cols-2 gap-2 p-3')}>
-          <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-          <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
-        </div>
-      )}
-
-      {showFilters && (
-        <div className={cn(SOFT_CARD, 'grid grid-cols-1 gap-3 p-4 md:grid-cols-3')}>
-          <SelectField
-            label="Fournisseur"
-            placeholder="Tous les fournisseurs"
-            value={supplierId}
-            onChange={setSupplierId}
-            options={(suppliers ?? []).map((s) => ({ value: s.id, label: `${s.short_id} · ${s.display_name}` }))}
-          />
-          <div>
-            <FieldLabel>Canal</FieldLabel>
-            <div className="flex flex-wrap gap-2">
-              {['', 'bank_transfer', 'mobile_money', 'cash', 'other'].map((c) => (
-                <Pill key={c || 'all'} active={channel === c} onClick={() => setChannel(c)}>
-                  {c === '' ? 'Tous' : CHANNEL_LABELS[c]}
-                </Pill>
-              ))}
-            </div>
-          </div>
-          <SelectField label="Trier par" value={sortBy} onChange={(v) => setSortBy(v as SortKey)} options={SORT_OPTIONS} />
-          {activeFilterCount > 0 && (
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600 dark:text-red-400"
-            >
-              <X className="h-3.5 w-3.5" />
-              Réinitialiser les filtres
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Summary */}
-      <div className={cn(SOFT_CARD, 'flex items-baseline justify-between gap-2 p-4')}>
-        <span className="text-[12px] text-muted-foreground">Total · {live.length} achat{live.length > 1 ? 's' : ''}</span>
-        <span className="text-right text-[14px] font-bold tabular-nums text-foreground">
-          {fmt(totalUsdt, 2)} <span className="font-normal text-muted-foreground">USDT</span>
-          <span className="mx-1 font-normal text-muted-foreground">·</span>
-          {fmt(totalXaf, 0)} <span className="font-normal text-muted-foreground">XAF</span>
+  const columns: Column<PurchaseOp>[] = [
+    {
+      key: 'occurred_at',
+      header: 'Date',
+      width: '150px',
+      sortable: true,
+      cell: (op) => <span className={cn('whitespace-nowrap', DFG.muted)}>{fmtDateTime(op.occurred_at)}</span>,
+    },
+    {
+      key: 'supplier',
+      header: 'Fournisseur',
+      cell: (op) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <span className={cn('truncate font-semibold', DFG.strong)}>{op.supplier?.display_name ?? '—'}</span>
+          {op.voided_at ? <Badge tone="danger">Annulée</Badge> : null}
         </span>
-      </div>
+      ),
+    },
+    {
+      key: 'xaf_amount',
+      header: 'Montant payé',
+      align: 'right',
+      width: '170px',
+      sortable: true,
+      cell: (op) => <Figure value={fmt(Number(op.xaf_amount), 0)} unit="XAF" />,
+    },
+    {
+      key: 'usdt_amount',
+      header: 'USDT reçus',
+      align: 'right',
+      width: '150px',
+      cell: (op) => <Figure value={fmt(Number(op.usdt_amount), 2)} unit="USDT" />,
+    },
+    {
+      key: 'implicit_rate',
+      header: 'Taux',
+      align: 'right',
+      width: '160px',
+      hideBelow: 1100,
+      cell: (op) => (
+        <span className={cn('whitespace-nowrap tabular-nums', DFG.muted)}>
+          {fmt(Number(op.implicit_rate), 4)} XAF/USDT
+        </span>
+      ),
+    },
+    {
+      key: 'channel',
+      header: 'Canal',
+      width: '140px',
+      hideBelow: 900,
+      cell: (op) => <span className={DFG.muted}>{CHANNEL_LABELS[op.channel ?? ''] ?? '—'}</span>,
+    },
+  ];
 
-      {/* List */}
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : purchases.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Holder icon={ArrowDownToLine} size="lg" />
-          <p className="mt-4 text-[14px] font-medium text-muted-foreground">Aucun achat avec ces critères.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-          {purchases.map((op) => (
-            <OperationListItem
-              key={op.id}
-              op={op}
-              canDelete={isSuperAdmin}
-              onDelete={() => setConfirmDelete(op)}
-              onClick={() => navigate(`/m/more/treasury/purchases/${op.id}`)}
+  if (isSuperAdmin) {
+    columns.push({
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      align: 'right',
+      width: '64px',
+      cell: (op) =>
+        op.voided_at ? null : (
+          <IconButton
+            icon={Trash2}
+            label="Annuler cet achat"
+            className="text-[#C0504D] dark:text-[#E79A9A]"
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDelete(op);
+            }}
+          />
+        ),
+    });
+  }
+
+  return (
+    <>
+      <Workbench
+        head={
+          <ScreenHead
+            title="Achats USDT"
+            subtitle={`${live.length} achat${live.length > 1 ? 's' : ''} sur la période`}
+            actions={
+              <Button variant="primary" icon={Plus} onClick={() => navigate('/m/more/treasury/purchase')}>
+                Nouvel achat
+              </Button>
+            }
+          />
+        }
+        metrics={
+          <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
+            <Metric label="Total payé" value={fmt(totalXaf, 0)} unit="XAF" hint="Achats non annulés" />
+            <Metric label="Total acheté" value={fmt(totalUsdt, 2)} unit="USDT" hint="Achats non annulés" />
+          </div>
+        }
+        toolbar={
+          <Toolbar>
+            <Segment value={preset} onChange={setPreset} options={PERIOD_OPTIONS} />
+
+            {preset === 'custom' ? (
+              <>
+                <Input
+                  type="date"
+                  aria-label="Date de début"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-40"
+                />
+                <Input
+                  type="date"
+                  aria-label="Date de fin"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-40"
+                />
+              </>
+            ) : null}
+
+            <Select
+              aria-label="Fournisseur"
+              value={supplierId}
+              onChange={(e) => setSupplierId(e.target.value)}
+              className="w-56"
+            >
+              <option value="">Tous les fournisseurs</option>
+              {(suppliers ?? []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.short_id} · {s.display_name}
+                </option>
+              ))}
+            </Select>
+
+            <Chip active={showVoided} onClick={() => setShowVoided((v) => !v)}>
+              Supprimées
+            </Chip>
+
+            <FilterPopover
+              axes={[channelAxis]}
+              onClear={resetFilters}
+              /* The fournisseur select and the column sort narrow the list
+                 without touching the axis this popover owns, so the reset has
+                 to be declared here or it never appears in the states an
+                 operator most wants one. */
+              clearable={!!supplierId || sortBy !== 'date_desc'}
             />
-          ))}
-        </div>
-      )}
+          </Toolbar>
+        }
+      >
+        <DataTable
+          label="Liste des achats USDT"
+          rows={purchases}
+          columns={columns}
+          getRowId={(op) => op.id}
+          onRowClick={(op) => navigate(`/m/more/treasury/purchases/${op.id}`)}
+          sort={sort}
+          onSortChange={onSortChange}
+          isLoading={isLoading}
+          empty={
+            isError ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Impossible de charger les achats"
+                hint="La requête a échoué — le registre n'est pas vide, il n'a pas pu être lu."
+                action={
+                  <Button icon={RefreshCw} loading={isFetching} onClick={() => refetch()}>
+                    Réessayer
+                  </Button>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon={ArrowDownToLine}
+                title="Aucun achat avec ces critères."
+                hint={
+                  hasFilters || showVoided || preset !== '30d'
+                    ? 'Essayez de modifier ou réinitialiser vos filtres.'
+                    : 'Les achats USDT enregistrés apparaîtront ici.'
+                }
+              />
+            )
+          }
+        />
+      </Workbench>
 
       {confirmDelete && <VoidOperationDialog op={confirmDelete} onClose={() => setConfirmDelete(null)} />}
-    </div>
+    </>
   );
 }

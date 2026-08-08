@@ -270,6 +270,10 @@ export function Segment<T extends string>({
   const inner = c.h - 4;
   return (
     <div
+      // A Segment is ONE control made of parts. `data-control` says so, so the
+      // metrology spec lines its track up with the Chip beside it instead of
+      // treating each inner button as a separate member of the row.
+      data-control
       style={{ height: c.h, padding: 2 }}
       className={cn('inline-flex items-center gap-1 rounded-md', DS.well, className)}
     >
@@ -470,6 +474,11 @@ export function Metric({
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag
+      // A clickable KPI tile is a *surface*, not a control: it is sized by its
+      // content, not by the height ladder. `data-surface` is how the design
+      // system says so out loud, and how the metrology spec knows not to hold
+      // it to 24/28/32. Only primitives may carry it — never a call site.
+      data-surface
       {...(onClick ? { type: 'button' as const, onClick, 'aria-pressed': !!active } : {})}
       className={cn(
         'rounded-xl border p-3 text-left transition-colors',

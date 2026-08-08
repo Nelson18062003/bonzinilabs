@@ -37,8 +37,25 @@ const OWNED = [
   'header',
   '[data-workbench] [data-toolbar]',
   '[data-workbench] table',
+  // Scrolling pages (dashboards, settings, forms) have no workbench chrome,
+  // so scoping to the workbench alone made those routes pass vacuously.
+  'main',
 ].join(', ');
 const NOT_OURS = '[aria-label="Détail de l\'enregistrement"], .tsqd-parent-container, [aria-label*="Tanstack"]';
+
+/**
+ * Clickable things that are surfaces rather than controls — a KPI tile, a card.
+ * They are sized by their content, so the height ladder does not apply. Only
+ * primitives set `data-surface` (see `Metric`), never a screen.
+ */
+const SURFACE = '[data-surface]';
+
+/**
+ * A composite control — one object on the row, made of parts. `Segment` sets
+ * it: its track is what has to align with the chip beside it, while its inner
+ * buttons deliberately sit 4px inside. Measured at the track, parts skipped.
+ */
+const COMPOSITE = '[data-control]';
 
 test.describe('métrologie', () => {
   test.beforeEach(installConsole());
@@ -54,9 +71,13 @@ test.describe('métrologie', () => {
 
       /* Group controls by the visual row they land on (their vertical centre,
          rounded), then assert every control in a row is the same height. */
-      const rows = await toolbar.evaluate((root, sel) => {
+      const rows = await toolbar.evaluate((root, { sel, surface, composite }) => {
         const out = new Map<number, { h: number; tag: string; label: string }[]>();
-        for (const el of Array.from(root.querySelectorAll(sel)) as HTMLElement[]) {
+        for (const el of Array.from(root.querySelectorAll(`${sel}, ${composite}`)) as HTMLElement[]) {
+          // Measure the outermost control only: a composite's inner buttons are
+          // parts, not members of the row.
+          if (el.parentElement?.closest(composite)) continue;
+          if (el.closest(surface)) continue;
           const r = el.getBoundingClientRect();
           if (r.height === 0) continue;
           const centre = Math.round((r.top + r.height / 2) / 4) * 4;
@@ -68,7 +89,7 @@ test.describe('métrologie', () => {
           out.set(centre, [...(out.get(centre) ?? []), entry]);
         }
         return [...out.entries()].map(([centre, items]) => ({ centre, items }));
-      }, INTERACTIVE);
+      }, { sel: INTERACTIVE, surface: SURFACE, composite: COMPOSITE });
 
       for (const row of rows) {
         const heights = [...new Set(row.items.map((i) => i.h))];
@@ -87,7 +108,7 @@ test.describe('métrologie', () => {
       await page.waitForTimeout(900);
 
       const offenders = await page.evaluate(
-        ({ sel, owned, notOurs, allowedHeights, allowedFonts }) => {
+        ({ sel, owned, notOurs, surface, composite, allowedHeights, allowedFonts }) => {
           const heightViolations: string[] = [];
           const fontViolations: string[] = [];
           const describe = (el: HTMLElement) =>
@@ -96,12 +117,19 @@ test.describe('métrologie', () => {
           const roots = Array.from(document.querySelectorAll(owned)) as HTMLElement[];
           const mine = (el: HTMLElement) => !el.closest(notOurs) && roots.some((r) => r.contains(el));
 
-          for (const el of Array.from(document.querySelectorAll(sel)) as HTMLElement[]) {
+          for (const el of Array.from(document.querySelectorAll(`${sel}, ${composite}`)) as HTMLElement[]) {
             if (!mine(el)) continue;
             const r = el.getBoundingClientRect();
             if (r.height === 0) continue;
-            // Table rows and full-width surfaces are not "controls".
-            if (el.closest('tr') || r.width > 320) continue;
+            // Table rows, KPI tiles and full-width surfaces are not "controls".
+            if (el.closest('tr') || el.closest(surface) || r.width > 320) continue;
+            // A composite is measured at its outer edge, not at each of its parts.
+            if (el.parentElement?.closest(composite)) continue;
+            // A link inside a sentence is not on the height ladder: its box is
+            // the line box of the prose around it. WCAG 2.2 SC 2.5.8 exempts it
+            // in the same terms — "the target is in a sentence or its size is
+            // otherwise constrained by the line-height of non-target text".
+            if (getComputedStyle(el).display === 'inline') continue;
             const h = Math.round(r.height);
             if (!allowedHeights.includes(h)) heightViolations.push(`${describe(el)} → ${h}px`);
           }
@@ -127,7 +155,7 @@ test.describe('métrologie', () => {
             fonts: [...new Set(fontViolations)].slice(0, 20),
           };
         },
-        { sel: INTERACTIVE, owned: OWNED, notOurs: NOT_OURS, allowedHeights: CONTROL_HEIGHTS, allowedFonts: FONT_SIZES },
+        { sel: INTERACTIVE, owned: OWNED, notOurs: NOT_OURS, surface: SURFACE, composite: COMPOSITE, allowedHeights: CONTROL_HEIGHTS, allowedFonts: FONT_SIZES },
       );
 
       expect(offenders.heights, 'hauteurs hors de l’échelle 24/28/32').toEqual([]);
