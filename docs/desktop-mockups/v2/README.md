@@ -26,6 +26,10 @@ Contexte et justification des choix : [`docs/refonte-desktop/README.md`](../../r
 | `13-command-palette` | ⌘K | Actions + destinations + recherche live + repli sur Mola |
 | `14-deposit-inspector` | Dépôts + inspecteur | **Le gain principal** : la file garde ses filtres et sa position pendant qu'on traite un dépôt |
 | `15-rail-collapsed` | ⌘B | Rail réduit à 60 px |
+| `16-role-ops` | Rôle `ops` | Le rail est réellement filtré : ni Trésorerie ni Administrateurs |
+| `17-deposits-empty` | File vide | Un état vide dessiné, colonnes conservées |
+| `18-treasury-alert` | Stock USDT négatif | Le seul état de trésorerie qui coûte de l'argent |
+| `19-notifications` | Cloche | Compte exact, montants unitaires, focus restitué |
 
 ## Sombre — `dark/`
 

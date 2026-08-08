@@ -16,7 +16,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DS, DT, DFG } from './tokens';
+import { DS, DT, DFG, LAYOUT } from './tokens';
 import { IconButton } from './primitives';
 
 /* ── Screen head ─────────────────────────────────────────────────────── */
@@ -65,7 +65,7 @@ export function Toolbar({
 export function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className={cn(DT.micro, DFG.faint, 'mr-0.5')}>{label}</span>
+      <span className={cn(DT.micro, DFG.muted, 'mr-0.5')}>{label}</span>
       {children}
     </div>
   );
@@ -95,9 +95,29 @@ export function Workspace({
 
 /* ── Workbench (list + inspector) ────────────────────────────────────── */
 
+/** Is the viewport wide enough to dock the inspector beside the list? */
+function useDockedInspector() {
+  const query = `(min-width: ${LAYOUT.inspectorDockAt}px)`;
+  const [docked, setDocked] = React.useState(
+    () => typeof window !== 'undefined' && window.matchMedia(query).matches,
+  );
+  React.useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setDocked(mql.matches);
+    mql.addEventListener('change', onChange);
+    onChange();
+    return () => mql.removeEventListener('change', onChange);
+  }, [query]);
+  return docked;
+}
+
 /**
  * Full-height list surface. `inspector` docks on the right and the list keeps
  * its own scroll — closing the inspector never re-renders or re-fetches it.
+ *
+ * The desktop shell mounts from 1024px but a docked 460px panel only fits from
+ * 1280px. Rather than hiding the inspector in that band — which turned every
+ * row click into a silent dead end — it becomes an overlay drawer there.
  */
 export function Workbench({
   head,
@@ -105,6 +125,7 @@ export function Workbench({
   metrics,
   children,
   inspector,
+  onCloseInspector,
   className,
 }: {
   head?: React.ReactNode;
@@ -113,10 +134,27 @@ export function Workbench({
   metrics?: React.ReactNode;
   children: React.ReactNode;
   inspector?: React.ReactNode;
+  /** Called when the operator dismisses the overlay inspector. */
+  onCloseInspector?: () => void;
   className?: string;
 }) {
+  const docked = useDockedInspector();
+  const overlay = !!inspector && !docked;
+
+  /* Escape closes the overlay, like every other transient surface here. */
+  React.useEffect(() => {
+    if (!overlay || !onCloseInspector) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCloseInspector(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [overlay, onCloseInspector]);
+
   return (
-    <div data-workbench className={cn('flex h-[calc(100vh-52px)] min-h-0', className)}>
+    <div
+      data-workbench
+      style={{ height: `calc(100dvh - ${LAYOUT.topbar}px)` }}
+      className={cn('relative flex min-h-0', className)}
+    >
       <div className="flex min-w-0 flex-1 flex-col">
         {(head || metrics || toolbar) && (
           <div className={cn('shrink-0 space-y-3 border-b px-7 pb-3 pt-5', DS.line)}>
@@ -125,80 +163,36 @@ export function Workbench({
             {toolbar}
           </div>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto px-7 py-4">{children}</div>
+        {/* The list owns its own scroll (see DataTable), so this stays clipped. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-7 py-4">{children}</div>
       </div>
-      {inspector ? (
-        <aside className={cn('hidden w-[460px] shrink-0 overflow-y-auto border-l xl:block', DS.line, DS.panel)}>
+
+      {inspector && docked ? (
+        <aside
+          aria-label="Détail de l'enregistrement"
+          style={{ width: LAYOUT.inspector }}
+          className={cn('shrink-0 overflow-y-auto border-l', DS.line, DS.panel)}
+        >
           {inspector}
         </aside>
       ) : null}
-    </div>
-  );
-}
 
-/* ── Inspector ───────────────────────────────────────────────────────── */
-
-/**
- * The right-hand record panel. Header pinned, body scrolls, actions pinned to
- * the bottom so the primary decision is always one click away regardless of how
- * long the record is.
- */
-export function Inspector({
-  eyebrow,
-  title,
-  badge,
-  onClose,
-  actions,
-  children,
-}: {
-  eyebrow?: React.ReactNode;
-  title: React.ReactNode;
-  badge?: React.ReactNode;
-  onClose?: () => void;
-  actions?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex h-full flex-col">
-      <header className={cn('flex shrink-0 items-start gap-3 border-b px-5 py-4', DS.line)}>
-        <div className="min-w-0 flex-1">
-          {eyebrow ? <div className="mb-1 flex items-center gap-2">{eyebrow}</div> : null}
-          <h3 className={cn('truncate text-[16px] font-extrabold leading-6 tracking-[-0.01em]', DFG.strong)}>{title}</h3>
-          {badge ? <div className="mt-2 flex flex-wrap items-center gap-1.5">{badge}</div> : null}
-        </div>
-        {onClose ? <IconButton icon={X} label="Fermer" onClick={onClose} size="sm" /> : null}
-      </header>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-
-      {actions ? (
-        <footer className={cn('shrink-0 border-t px-5 py-3', DS.line, DS.panel)}>
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
-        </footer>
+      {overlay ? (
+        <>
+          <div className="absolute inset-0 z-20 bg-[#0B0A12]/40 dark:bg-black/60" onClick={onCloseInspector} aria-hidden />
+          <aside
+            aria-label="Détail de l'enregistrement"
+            className={cn('absolute inset-y-0 right-0 z-30 w-[min(460px,92vw)] overflow-y-auto border-l', DS.line, DS.panel, DS.float)}
+          >
+            {onCloseInspector ? (
+              <div className={cn('sticky top-0 z-10 flex justify-end border-b px-3 py-2', DS.line, DS.panel)}>
+                <IconButton icon={X} label="Fermer le détail" onClick={onCloseInspector} size="sm" />
+              </div>
+            ) : null}
+            {inspector}
+          </aside>
+        </>
       ) : null}
     </div>
-  );
-}
-
-/** Titled block inside the inspector. */
-export function InspectorSection({
-  title,
-  action,
-  children,
-  className,
-}: {
-  title: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={cn('mb-5 last:mb-0', className)}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <h4 className={cn(DT.micro, DFG.faint)}>{title}</h4>
-        {action}
-      </div>
-      {children}
-    </section>
   );
 }

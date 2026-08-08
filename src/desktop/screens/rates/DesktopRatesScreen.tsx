@@ -2,10 +2,12 @@
  * Taux de change — publish and monitor the day's rates.
  *
  * Two changes beyond the layout rework:
- *  · **Permission guard.** This screen publishes the rate the whole business
- *    prices on, yet it was gated only by hiding its nav entry — anyone who
- *    typed the URL got the full publishing UI. It now requires
- *    `canManageRates`, like every other privileged screen.
+ *  · **Permission guard, scoped to the act that matters.** Publishing the rate
+ *    the whole business prices on used to be gated only by hiding the nav
+ *    entry — anyone who typed the URL got the publishing UI. Only the
+ *    "Publier" column now requires `canManageRates`; reading the day's rate,
+ *    simulating a settlement and browsing history stay open, because
+ *    support and customer-success answer "quel est le taux du jour ?" all day.
  *  · A three-column composition (publier · simuler · historique) so the
  *    operator can set a rate and immediately check what a client would pay,
  *    without scrolling between the two.
@@ -15,8 +17,7 @@
  * formulas across form factors.
  */
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { ChevronDown, Image as ImageIcon } from 'lucide-react';
+import { ChevronDown, Image as ImageIcon, Lock } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
 import { BottomSheet } from '@/mobile/designKit';
@@ -28,7 +29,7 @@ import { RateConfigTab } from '@/mobile/screens/rates/tabs/RateConfigTab';
 import { RateSimulatorTab } from '@/mobile/screens/rates/tabs/RateSimulatorTab';
 import { cn } from '@/lib/utils';
 import { DS, DT, DFG, DFOCUS } from '@/desktop/ui/tokens';
-import { Button } from '@/desktop/ui/primitives';
+import { Button, EmptyState, Panel } from '@/desktop/ui/primitives';
 import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -64,8 +65,7 @@ export function DesktopRatesScreen() {
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
   const [flyerOpen, setFlyerOpen] = useState(false);
 
-  /* Publishing a rate is a privileged, business-critical action. */
-  if (!hasPermission('canManageRates')) return <Navigate to="/m" replace />;
+  const canPublish = hasPermission('canManageRates');
 
   const flyerRates = {
     alipay: activeRate?.rate_alipay || 0,
@@ -81,7 +81,12 @@ export function DesktopRatesScreen() {
           title="Taux de change"
           subtitle="Publier le taux du jour, simuler un règlement et suivre l'historique"
           actions={
-            <Button icon={ImageIcon} onClick={() => setFlyerOpen(true)}>
+            <Button
+              icon={ImageIcon}
+              disabled={rateLoading || !activeRate}
+              title={activeRate ? undefined : 'Aucun taux actif publié'}
+              onClick={() => setFlyerOpen(true)}
+            >
               Flyer du jour
             </Button>
           }
@@ -91,7 +96,17 @@ export function DesktopRatesScreen() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
         <div className="space-y-5 xl:col-span-5">
           <Section title="Publier">
-            <RateSetTab currentRate={activeRate} />
+            {canPublish ? (
+              <RateSetTab currentRate={activeRate} />
+            ) : (
+              <Panel>
+                <EmptyState
+                  icon={Lock}
+                  title="Publication réservée"
+                  hint="Seuls les rôles disposant de la gestion des taux peuvent publier le taux du jour. Le simulateur et l'historique restent accessibles."
+                />
+              </Panel>
+            )}
           </Section>
         </div>
 
@@ -113,9 +128,11 @@ export function DesktopRatesScreen() {
           <Disclosure title="Graphique d'évolution">
             <RateChartTab />
           </Disclosure>
-          <Disclosure title="Ajustements pays & tranches">
-            <RateConfigTab />
-          </Disclosure>
+          {canPublish && (
+            <Disclosure title="Ajustements pays & tranches">
+              <RateConfigTab />
+            </Disclosure>
+          )}
         </div>
       </div>
 

@@ -12,18 +12,18 @@
  * admin file so the profile / role / password workflows stay identical.
  */
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, ShieldCheck, X } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { AlertTriangle, Plus, RefreshCw, Search, ShieldCheck, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAdminUsers } from '@/hooks/useAdminData';
 import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole, type AdminStatus } from '@/contexts/AdminAuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { formatDate } from '@/lib/formatters';
 import { roleMeta } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobileAdminDetail } from '@/mobile/screens/admins';
 import { DT, DFG } from '@/desktop/ui/tokens';
-import { Avatar, Badge, Button, Chip, EmptyState, Input } from '@/desktop/ui/primitives';
+import { Avatar, Badge, Button, Chip, EmptyState, IconButton, Input } from '@/desktop/ui/primitives';
 import { DataTable, type Column } from '@/desktop/ui/DataTable';
 import { FilterGroup, ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
@@ -43,6 +43,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 ];
 
 export function DesktopAdminsScreen() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { adminId } = useParams<{ adminId: string }>();
   const [search, setSearch] = useState('');
@@ -50,7 +51,7 @@ export function DesktopAdminsScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const debouncedSearch = useDebouncedValue(search);
 
-  const { data: admins, isLoading } = useAdminUsers();
+  const { data: admins, isLoading, isError, isFetching, refetch } = useAdminUsers();
   const { currentUser, hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
 
@@ -72,6 +73,8 @@ export function DesktopAdminsScreen() {
     return map;
   }, [admins]);
 
+  if (!canManageUsers) return <Navigate to="/m" replace />;
+
   const disabledCount = (admins ?? []).filter((a) => a.status === 'DISABLED').length;
   const hasFilters = roleFilter !== 'all' || statusFilter !== 'all' || !!debouncedSearch;
 
@@ -89,7 +92,7 @@ export function DesktopAdminsScreen() {
                 {name || '—'}
                 {a.id === currentUser?.id ? <Badge tone="info">Vous</Badge> : null}
               </span>
-              <span className={cn('block truncate text-[11px]', DFG.faint)}>{a.email}</span>
+              <span className={cn('block truncate text-[11px]', DFG.muted)}>{a.email}</span>
             </span>
           </span>
         );
@@ -110,14 +113,16 @@ export function DesktopAdminsScreen() {
       ),
     },
     {
-      key: 'lastLogin',
-      header: 'Dernière connexion',
+      // `user_roles` exposes no last-sign-in column, so the previous
+      // "Dernière connexion" column could only ever read "Jamais" for
+      // everyone — including the account reading the page. Creation date is
+      // the strongest fact this hook actually returns.
+      key: 'createdAt',
+      header: 'Compte créé',
       align: 'right',
-      width: '190px',
+      width: '170px',
       cell: (a) => (
-        <span className={DFG.muted}>
-          {a.lastLoginAt ? formatDistanceToNow(new Date(a.lastLoginAt), { addSuffix: true, locale: fr }) : 'Jamais'}
-        </span>
+        <span className={cn('whitespace-nowrap', DFG.muted)}>{a.createdAt ? formatDate(a.createdAt) : '—'}</span>
       ),
     },
   ];
@@ -126,20 +131,25 @@ export function DesktopAdminsScreen() {
     <Workbench
       head={
         <ScreenHead
-          title="Administrateurs"
-          subtitle={`${admins?.length ?? 0} compte${(admins?.length ?? 0) > 1 ? 's' : ''}${disabledCount ? ` · ${disabledCount} désactivé${disabledCount > 1 ? 's' : ''}` : ''}`}
+          title={t('administrators', { defaultValue: 'Administrateurs' })}
+          subtitle={
+            hasFilters
+              ? `${rows.length} sur ${admins?.length ?? 0} compte${(admins?.length ?? 0) > 1 ? 's' : ''}`
+              : `${admins?.length ?? 0} compte${(admins?.length ?? 0) > 1 ? 's' : ''}${disabledCount ? ` · ${disabledCount} désactivé${disabledCount > 1 ? 's' : ''}` : ''}`
+          }
           actions={
-            canManageUsers ? (
+            <>
+              <IconButton icon={RefreshCw} label="Actualiser" loading={isFetching} onClick={() => refetch()} />
               <Button variant="primary" icon={Plus} onClick={() => navigate('/m/more/admins/new')}>
                 Nouvel administrateur
               </Button>
-            ) : undefined
+            </>
           }
         />
       }
       metrics={
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className={cn(DT.micro, DFG.faint, 'mr-1')}>Effectif par rôle</span>
+          <span className={cn(DT.micro, DFG.muted, 'mr-1')}>Effectif par rôle</span>
           {(Object.keys(ADMIN_ROLE_LABELS) as AppRole[]).map((r) => (
             <Badge key={r} tone={roleMeta(r).tone}>
               {ADMIN_ROLE_LABELS[r]} · {countByRole.get(r) ?? 0}
@@ -158,8 +168,15 @@ export function DesktopAdminsScreen() {
           }
         >
           <div className="relative mr-1 w-64">
-            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.faint)} />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom ou email…" className="pl-8" />
+            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.muted)} />
+            <Input
+              type="search"
+              aria-label="Rechercher un administrateur"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nom ou email…"
+              className="pl-8"
+            />
           </div>
           <FilterGroup label="Rôle">
             {ROLE_FILTERS.map((f) => (
@@ -178,6 +195,7 @@ export function DesktopAdminsScreen() {
         </Toolbar>
       }
       inspector={adminId ? <MobileAdminDetail /> : null}
+      onCloseInspector={() => navigate('/m/more/admins')}
     >
       <DataTable
         label="Liste des administrateurs"
@@ -188,11 +206,20 @@ export function DesktopAdminsScreen() {
         onRowClick={(a) => navigate(`/m/more/admins/${a.id}`)}
         isLoading={isLoading}
         empty={
-          <EmptyState
-            icon={ShieldCheck}
-            title="Aucun administrateur"
-            hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : undefined}
-          />
+          isError ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Impossible de charger les comptes"
+              hint="La requête a échoué — la liste n'est pas vide, elle n'a pas pu être lue."
+              action={<Button icon={RefreshCw} onClick={() => refetch()}>Réessayer</Button>}
+            />
+          ) : (
+            <EmptyState
+              icon={ShieldCheck}
+              title="Aucun administrateur"
+              hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : undefined}
+            />
+          )
         }
       />
     </Workbench>

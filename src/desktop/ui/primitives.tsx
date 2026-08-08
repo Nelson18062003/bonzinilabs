@@ -59,13 +59,16 @@ export function PanelHead({
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md';
 
+/** Pressed feedback, shared by every clickable primitive. */
+const PRESSED = 'active:brightness-95 active:transition-none dark:active:brightness-110';
+
 const BTN_VARIANT: Record<ButtonVariant, string> = {
   primary:
     'bg-[#1A1725] text-white hover:bg-[#2A2637] dark:bg-[#F1F0F6] dark:text-[#15131F] dark:hover:bg-white',
   secondary: cn('border bg-white text-[#15131F] hover:bg-[#1C1836]/[0.04]', DS.line,
     'dark:bg-[#1B1A24] dark:text-[#F3F2F8] dark:hover:bg-white/[0.07]'),
   ghost: cn('text-[#3B3750] dark:text-[#C9C6D6]', DS.hover),
-  danger: 'bg-[#C0504D] text-white hover:bg-[#A94340]',
+  danger: 'bg-[#C0504D] text-white hover:bg-[#A94340] dark:bg-[#B04A47] dark:hover:bg-[#C45B58]',
 };
 
 const BTN_SIZE: Record<ButtonSize, string> = {
@@ -87,19 +90,22 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   return (
     <button
       ref={ref}
+      // Explicit: an omitted `type` inside a <form> defaults to "submit".
+      type="button"
       disabled={disabled || loading}
       className={cn(
         'inline-flex shrink-0 items-center justify-center font-semibold transition-colors',
         'disabled:pointer-events-none disabled:opacity-45',
         BTN_SIZE[size],
         BTN_VARIANT[variant],
+        PRESSED,
         DFOCUS,
         className,
       )}
       {...rest}
     >
       {loading ? (
-        <Loader2 className={cn('animate-spin', size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
+        <Loader2 className={cn('animate-spin motion-reduce:animate-none', size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
       ) : Icon ? (
         <Icon className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
       ) : null}
@@ -112,23 +118,30 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
 export const IconButton = React.forwardRef<
   HTMLButtonElement,
   Omit<ButtonProps, 'children' | 'size'> & { label: string; size?: ButtonSize }
->(function IconButton({ icon: Icon, label, variant = 'ghost', size = 'md', className, ...rest }, ref) {
+>(function IconButton(
+  { icon: Icon, label, variant = 'ghost', size = 'md', loading, disabled, className, ...rest },
+  ref,
+) {
+  const glyph = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   return (
     <button
       ref={ref}
+      type="button"
       title={label}
       aria-label={label}
+      disabled={disabled || loading}
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-lg transition-colors',
         'disabled:pointer-events-none disabled:opacity-45',
         size === 'sm' ? 'h-7 w-7' : 'h-8 w-8',
         BTN_VARIANT[variant],
+        PRESSED,
         DFOCUS,
         className,
       )}
       {...rest}
     >
-      {Icon ? <Icon className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} /> : null}
+      {loading ? <Loader2 className={cn(glyph, 'animate-spin motion-reduce:animate-none')} /> : Icon ? <Icon className={glyph} /> : null}
     </button>
   );
 });
@@ -148,6 +161,8 @@ export function Chip({
       aria-pressed={active}
       className={cn(
         'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-semibold transition-colors',
+        'disabled:pointer-events-none disabled:opacity-45',
+        PRESSED,
         active
           ? 'bg-[#1A1725] text-white dark:bg-[#F1F0F6] dark:text-[#15131F]'
           : cn('border', DS.line, DFG.base, DS.hover),
@@ -214,7 +229,9 @@ export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; 
     <span
       className={cn(
         'inline-flex h-[21px] shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-semibold',
-        TONE_PILL[tone],
+        // `TONE_PILL.neutral` resolves to the shadcn CSS variables, which sit
+        // outside this token system — keep neutral inside it.
+        tone === 'neutral' ? cn(DS.well, DFG.base) : TONE_PILL[tone],
         className,
       )}
     >
@@ -240,7 +257,7 @@ export function Holder({
   children,
   className,
 }: {
-  icon?: LucideIcon;
+  icon?: React.ElementType;
   tone?: Tone;
   size?: 'sm' | 'md' | 'lg';
   children?: React.ReactNode;
@@ -253,7 +270,7 @@ export function Holder({
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-lg',
         box,
-        tone ? TONE_HOLDER[tone] : DS.holder,
+        tone && tone !== 'neutral' ? TONE_HOLDER[tone] : DS.holder,
         className,
       )}
     >
@@ -348,7 +365,7 @@ export function Metric({
       className={cn(
         'rounded-xl border px-3.5 py-3 text-left transition-colors',
         DS.card,
-        active ? cn(DACCENT.border, 'ring-1 ring-[#6B5BD2]/30') : DS.line,
+        active ? cn(DACCENT.border, 'ring-1 ring-[#6B5BD2]/30 dark:ring-[#A99BF0]/40') : DS.line,
         onClick && !active && DS.hover,
         onClick && DFOCUS,
         className,
@@ -358,10 +375,10 @@ export function Metric({
         {Icon ? <Holder icon={Icon} tone={tone} size="sm" /> : null}
         <span className={cn(DT.label, DFG.muted, 'truncate font-medium')}>{label}</span>
       </div>
-      <div className="mt-2">
+      <span className="mt-2 block">
         <Figure value={value} unit={unit} size="lg" />
-      </div>
-      {hint ? <p className={cn('mt-1 truncate text-[11px]', DFG.faint)}>{hint}</p> : null}
+      </span>
+      {hint ? <span className={cn('mt-1 block truncate', DT.tiny, DFG.muted)}>{hint}</span> : null}
     </Tag>
   );
 }
@@ -394,8 +411,11 @@ export function Field({
 }
 
 export const inputClass = cn(
-  'h-8 w-full rounded-lg border bg-white px-2.5 text-[13px] transition-colors',
-  'placeholder:text-[#A5A1B5] dark:bg-[#1B1A24] dark:placeholder:text-[#65627A]',
+  'h-8 w-full rounded-lg border bg-white px-2.5 text-[13px] transition-colors dark:bg-[#1B1A24]',
+  'disabled:cursor-not-allowed disabled:opacity-45',
+  // Money entry: an invalid field has to look invalid, not just fail on submit.
+  'aria-[invalid=true]:border-[#C0504D] aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-[#C0504D]/30',
+  'placeholder:text-[#767187] dark:placeholder:text-[#8B8799]',
   DS.line,
   DFG.strong,
   DFOCUS,
@@ -439,14 +459,20 @@ export function EmptyState({
 export function Spinner({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center justify-center py-14', className)}>
-      <Loader2 className={cn('h-5 w-5 animate-spin', DFG.faint)} />
+      <Loader2 className={cn('h-5 w-5 animate-spin motion-reduce:animate-none', DFG.muted)} />
     </div>
   );
 }
 
 /** Skeleton bar — used while a table or panel loads. */
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded bg-[#1C1836]/[0.07] dark:bg-white/[0.07]', className)} />;
+export function Skeleton({ className, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      aria-hidden
+      className={cn('animate-pulse rounded bg-[#1C1836]/[0.07] motion-reduce:animate-none dark:bg-white/[0.07]', className)}
+      {...rest}
+    />
+  );
 }
 
 /** Section label above a group of panels. */

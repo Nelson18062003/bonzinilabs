@@ -169,7 +169,96 @@ est la prochaine étape.
 
 ---
 
-## 6. Correctifs embarqués
+## 6. Passe de finition — audit et correctifs
+
+Six audits spécialisés (design system · DataTable & layout · shell & palette ·
+écrans de file · écrans restants · a11y/dark/motion/i18n) ont été passés sur
+`src/desktop`. Ce qui en est ressorti et a été corrigé :
+
+### Outillage — la découverte la plus importante
+
+**`npm run type-check` ne compilait rien.** Le `tsconfig.json` racine est
+`{"files": [], "references": […]}` et `tsc --noEmit` ne suit pas les project
+references : la commande sortait 0 sur un code qui contient **200 erreurs
+réelles** sous `tsconfig.app.json`. Cinq d'entre elles étaient dans la nouvelle
+console (un `style` passé à un composant qui ne l'accepte pas, deux `ElementType`
+vs `LucideIcon`, et deux lectures d'une colonne `description` qui n'existe pas).
+
+Un script `type-check:strict` (`tsc --noEmit -p tsconfig.app.json`) a été ajouté,
+et `src/desktop` est désormais **à zéro erreur**. Le script `type-check` d'origine
+n'a pas été modifié : le basculer ferait échouer la commande sur les ~200 erreurs
+préexistantes du reste du repo — c'est un arbitrage qui vous revient.
+
+### Bugs corrigés
+
+- **La palette ⌘K ouvrait une autre ligne que celle surlignée.** Les entrées
+  étaient triées par pertinence puis regroupées, mais le curseur clavier
+  indexait le tableau trié pendant que le rendu numérotait par groupe. Dans une
+  console de paiements, cela veut dire ouvrir le mauvais enregistrement. Une
+  seule séquence sert maintenant au rendu et au clavier.
+- **Le journal d'audit lisait une colonne inexistante** : `admin_audit_logs` n'a
+  pas de `description`, la colonne « Détail » affichait un tiret permanent et la
+  recherche ne matchait jamais. Elle lit le payload `details` (jsonb).
+- **« Dernière connexion » était fabriquée** : `useAdminUsers` code `lastLoginAt:
+  null` en dur, donc tout le monde affichait « Jamais ». Colonne remplacée par la
+  date de création, qui est un fait réel.
+- **Le filtre méthode pouvait bloquer la file** : filtré côté client, si la
+  première page n'en contenait aucun, le déclencheur de scroll infini
+  disparaissait avec l'état vide et aucune page suivante ne pouvait charger.
+- **L'inspecteur était injoignable entre 1024 et 1279 px** : le shell démarre à
+  1024, le panneau était `xl:block`. Cliquer une ligne ne faisait rien. Il
+  s'affiche en tiroir superposé sous 1280.
+- **« Capital immobilisé » ne valait pas la même chose sur deux écrans** : la vue
+  d'ensemble omettait la jambe CNY et le clamp à zéro de la RPC, donc un stock
+  négatif affichait un capital négatif. Renommé « Stock USDT valorisé », clampé.
+
+### Sécurité et permissions
+
+- Gardes d'écran ajoutées : **journal d'audit** (`canViewLogs`),
+  **administrateurs** (`canManageUsers` — l'écran listait nom, email et rôle de
+  tous les admins), **clients** (`canViewClients`).
+- Actions d'écriture regatées sur la permission qui permet de **finir** le
+  travail, pas de lire : « Nouveau dépôt » → `canProcessDeposits`, « Nouveau
+  paiement » / « Paiement groupé » → `canProcessPayments`, « Nouveau client » →
+  `canEditClients`. Un rôle `support` obtenait les trois.
+- L'écran **Taux** ne bloque plus que la publication : support et chargés de
+  clientèle retrouvent le simulateur et l'historique, dont ils ont besoin tous
+  les jours.
+
+### Honnêteté de l'affichage
+
+Une requête en échec affichait « Aucun dépôt trouvé » — dire à un opérateur que
+la file est vide quand le backend est tombé est le pire mensonge possible dans
+un produit financier. Les cinq écrans reconstruits distinguent désormais
+**chargement · erreur · vide · vide après filtre**, et la recherche annonce
+explicitement qu'elle ne porte que sur les pages déjà chargées.
+
+### Accessibilité et confort
+
+Contrastes `muted`/`faint` remontés au-dessus de 4,5:1 sur les trois surfaces et
+dans les deux thèmes (ils étaient à 3,90:1 et 2,29:1) · anneau de focus pleine
+opacité avec repli `forced-colors` · `type="button"` explicite sur les boutons
+(ils étaient `submit` par défaut) · en-tête de tableau collant, `table-fixed`,
+squelette de même géométrie, un seul arrêt de tabulation, ↑/↓/Début/Fin/PgUp/PgDn ·
+palette en `combobox`/`listbox` avec `aria-activedescendant`, piège de focus,
+verrouillage du scroll et restauration du focus · niveau SLA encodé en **forme**
+autant qu'en couleur · titre d'onglet par écran · politique
+`prefers-reduced-motion` globale (le bloc existant était une liste d'autorisation
+que chaque nouvelle animation contournait).
+
+### Reste à faire — signalé, non traité
+
+- **i18n.** La console ships fr/en/zh et les écrans admin mobiles traduisent ;
+  les écrans desktop reconstruits codent le français en dur. Les titres
+  principaux passent par `t()` avec `defaultValue`, mais colonnes, chips et
+  micro-copie restent à extraire. Un admin en `zh` voit aujourd'hui du chinois
+  sur `/m/support` et du français sur `/m/deposits`.
+- `DesktopCreateClient` et `DesktopMoreScreen` sont toujours sur l'ancien kit.
+- Les panneaux de détail restent les écrans mobiles (cf. §5).
+
+---
+
+## 7. Correctifs embarqués (première passe)
 
 Deux écarts relevés pendant la cartographie, corrigés parce qu'ils touchaient
 des écrans réécrits ici :
@@ -205,7 +294,7 @@ Relevés pendant la cartographie, hors périmètre d'une refonte d'interface —
 
 ---
 
-## 7. Régénérer les captures
+## 8. Régénérer les captures
 
 ```bash
 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium \

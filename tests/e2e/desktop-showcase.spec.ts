@@ -58,10 +58,11 @@ function eqFilter(params: URLSearchParams, col: string): string | null {
  * Minimal PostgREST emulator: enough to satisfy the admin hooks (table reads,
  * `eq` filters, `head`+count requests, `.single()` object responses, RPCs).
  */
-function resolve(url: URL, method: string, accept: string): { body: unknown; count: number } {
+function resolve(url: URL, method: string, accept: string, sc: Scenario = {}): { body: unknown; count: number } {
   const path = url.pathname;
   const params = url.searchParams;
   const table = path.replace(/^\/rest\/v1\//, '').split('?')[0];
+  const deposits = (sc.deposits ?? DEPOSITS) as Record<string, unknown>[];
 
   const list = (rows: unknown[]) => ({ body: rows, count: rows.length });
 
@@ -74,10 +75,10 @@ function resolve(url: URL, method: string, accept: string): { body: unknown; cou
     const fn = path.split('/rpc/')[1];
     switch (fn) {
       case 'get_dashboard_stats': return { body: DASHBOARD_STATS, count: 1 };
-      case 'get_deposit_stats': return { body: DEPOSIT_STATS, count: 1 };
+      case 'get_deposit_stats': return { body: sc.depositStats ?? DEPOSIT_STATS, count: 1 };
       case 'get_treasury_dashboard': return { body: TREASURY_DASHBOARD, count: 1 };
       case 'get_wac_usdt': return { body: TREASURY_DASHBOARD.wac_usdt_current, count: 1 };
-      case 'get_usdt_stock': return { body: TREASURY_DASHBOARD.stock_usdt, count: 1 };
+      case 'get_usdt_stock': return { body: sc.usdtStock ?? TREASURY_DASHBOARD.stock_usdt, count: 1 };
       case 'get_top_counterparties': return { body: { top: [] }, count: 0 };
       case 'get_chat_admin_stats': return { body: CHAT_STATS, count: 1 };
       default: return { body: [], count: 0 };
@@ -90,7 +91,7 @@ function resolve(url: URL, method: string, accept: string): { body: unknown; cou
       // returning the whole table there makes `maybeSingle()` throw.
       const uid = eqFilter(params, 'user_id');
       if (uid) {
-        const row = { ...ROLE, id: 'r-0', user_id: uid, email: ADMIN_USER.email };
+        const row = { ...ROLE, role: sc.role ?? ROLE.role, id: 'r-0', user_id: uid, email: ADMIN_USER.email };
         return accept.includes('vnd.pgrst.object') ? { body: row, count: 1 } : list([row]);
       }
       return accept.includes('vnd.pgrst.object') ? { body: ADMIN_ROLES[0], count: 1 } : list(ADMIN_ROLES);
@@ -108,13 +109,13 @@ function resolve(url: URL, method: string, accept: string): { body: unknown; cou
     case 'deposits': {
       const status = eqFilter(params, 'status');
       const id = eqFilter(params, 'id');
-      let rows = DEPOSITS as Record<string, unknown>[];
+      let rows = deposits;
       if (status) rows = rows.filter((d) => d.status === status);
       if (id) rows = rows.filter((d) => d.id === id);
       const statuses = params.get('status')?.startsWith('in.')
         ? params.get('status')!.slice(4, -1).split(',').map((s) => s.replace(/"/g, ''))
         : null;
-      if (statuses) rows = (DEPOSITS as Record<string, unknown>[]).filter((d) => statuses.includes(String(d.status)));
+      if (statuses) rows = deposits.filter((d) => statuses.includes(String(d.status)));
       return accept.includes('vnd.pgrst.object') ? { body: rows[0] ?? null, count: rows.length } : list(rows);
     }
 
@@ -148,7 +149,22 @@ function resolve(url: URL, method: string, accept: string): { body: unknown; cou
   }
 }
 
-function install(theme: 'light' | 'dark') {
+/**
+ * A capture scenario. The default one is "super admin, healthy platform";
+ * overrides let a single test prove a state the happy path never shows —
+ * a restricted role, an empty queue, a treasury alert.
+ */
+interface Scenario {
+  /** Overrides the caller's role, which drives what the rail renders. */
+  role?: string;
+  /** Replaces the deposit dataset (use `[]` for the empty state). */
+  deposits?: unknown[];
+  depositStats?: Record<string, number>;
+  /** Overrides `get_usdt_stock` — negative triggers the treasury alert. */
+  usdtStock?: number;
+}
+
+function install(theme: 'light' | 'dark', scenario: Scenario = {}) {
   return async ({ context }: { context: import('@playwright/test').BrowserContext }) => {
     await context.addInitScript(
       ([session, mode]) => {
@@ -168,7 +184,7 @@ function install(theme: 'light' | 'dark') {
       const req = route.request();
       const url = new URL(req.url());
       const accept = req.headers()['accept'] || '';
-      const { body, count } = resolve(url, req.method(), accept);
+      const { body, count } = resolve(url, req.method(), accept, scenario);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -213,6 +229,16 @@ test.describe('light', () => {
     await page.screenshot({ path: `${OUT}/light/13-command-palette.png` });
   });
   test('light 14-deposit-inspector', async ({ page }) => shoot(page, 'light', '14-deposit-inspector', '/m/deposits/d-0'));
+  test('light 19-notifications', async ({ page }) => {
+    await page.goto('/m', { waitUntil: 'domcontentloaded' });
+    await page.getByText("Console d'opérations").first().waitFor({ timeout: 15_000 }).catch(() => {});
+    await page.addStyleTag({ content: '.tsqd-parent-container,[aria-label*="React Query"]{display:none !important}' }).catch(() => {});
+    await page.waitForTimeout(1_200);
+    await page.getByRole('button', { name: /^Notifications/ }).click();
+    await page.waitForTimeout(500);
+    mkdirSync(`${OUT}/light`, { recursive: true });
+    await page.screenshot({ path: `${OUT}/light/19-notifications.png` });
+  });
   test('light 15-rail-collapsed', async ({ page }) => {
     await page.goto('/m/payments', { waitUntil: 'domcontentloaded' });
     await page.getByText("Console d'opérations").first().waitFor({ timeout: 15_000 }).catch(() => {});
@@ -230,4 +256,37 @@ test.describe('dark', () => {
   for (const [name, path] of ROUTES.slice(0, 8)) {
     test(`dark ${name}`, async ({ page }) => shoot(page, 'dark', name, path));
   }
+});
+
+/**
+ * States the happy path never shows. Each one is a claim about the console that
+ * a reviewer should be able to check with their eyes rather than take on trust.
+ */
+test.describe('states', () => {
+  test.use({ colorScheme: 'light' });
+
+  // Claim: the rail is permission-aware. An `ops` profile has no treasury and
+  // no user management, so those sections must not exist at all.
+  test.describe('role ops', () => {
+    test.beforeEach(install('light', { role: 'ops' }));
+    test('light 16-role-ops', async ({ page }) => shoot(page, 'light', '16-role-ops', '/m'));
+  });
+
+  // Claim: an empty queue is a designed state, not a blank page.
+  test.describe('empty', () => {
+    test.beforeEach(
+      install('light', {
+        deposits: [],
+        depositStats: { total: 0, to_process: 0, pending_correction: 0, validated: 0, rejected: 0, today_amount: 0, today_count: 0 },
+      }),
+    );
+    test('light 17-deposits-empty', async ({ page }) => shoot(page, 'light', '17-deposits-empty', '/m/deposits'));
+  });
+
+  // Claim: a negative USDT stock — the one treasury state that costs money —
+  // is impossible to miss.
+  test.describe('treasury alert', () => {
+    test.beforeEach(install('light', { usdtStock: -1_240.5 }));
+    test('light 18-treasury-alert', async ({ page }) => shoot(page, 'light', '18-treasury-alert', '/m/more/treasury'));
+  });
 });

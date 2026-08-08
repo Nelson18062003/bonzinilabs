@@ -31,8 +31,6 @@ export const DS = {
   well: 'bg-[#F7F7FA] dark:bg-[#101018]',
   /** The 1px separator that replaces shadows. */
   line: 'border-[#1C1836]/[0.09] dark:border-white/[0.08]',
-  /** Same, as a ring (for elements that can't take a border). */
-  ring: 'ring-1 ring-[#1C1836]/[0.09] dark:ring-white/[0.08]',
   /** Hover wash for rows and ghost buttons. */
   hover: 'hover:bg-[#1C1836]/[0.035] dark:hover:bg-white/[0.045]',
   /** Persistent selection wash (selected row, active detail). */
@@ -57,16 +55,25 @@ export const DT = {
   label: 'text-[12px] leading-4',
   /** Column headers, group headings. */
   micro: 'text-[10.5px] font-bold uppercase leading-4 tracking-[0.07em]',
+  /** Hints, units, badge text — the smallest step that still carries meaning. */
+  tiny: 'text-[11px] leading-4',
   /** References, IDs, anything the operator may copy. */
   mono: 'font-mono text-[11.5px] tracking-[-0.01em]',
 } as const;
 
-/** Foreground ramp — four steps, no more. */
+/**
+ * Foreground ramp — four steps, no more.
+ *
+ * `muted` and `faint` carry real content in this console (column headers, units,
+ * hints), so both are tuned to clear WCAG AA 4.5:1 on all three surfaces
+ * (canvas / card / well) in both themes — the first pass shipped #7C7791
+ * (3.90:1 on canvas) and #A5A1B5 (2.29:1), which were unreadable at 11-12px.
+ */
 export const DFG = {
   strong: 'text-[#15131F] dark:text-[#F3F2F8]',
   base: 'text-[#3B3750] dark:text-[#C9C6D6]',
-  muted: 'text-[#7C7791] dark:text-[#8D89A3]',
-  faint: 'text-[#A5A1B5] dark:text-[#65627A]',
+  muted: 'text-[#6A6580] dark:text-[#9C98B0]',
+  faint: 'text-[#767187] dark:text-[#8B8799]',
 } as const;
 
 /** Brand accent — links, active nav, focus, the one "go" colour. */
@@ -77,9 +84,22 @@ export const DACCENT = {
   border: 'border-[#6B5BD2] dark:border-[#A99BF0]',
 } as const;
 
-/** Focus ring — identical on every interactive element in the console. */
+/**
+ * Focus ring — identical on every interactive element in the console.
+ *
+ * Full-opacity accent (5.18:1 on white) so it satisfies WCAG 2.2 SC 2.4.11;
+ * no coloured ring-offset, because focusable elements sit on three different
+ * surfaces and a fixed offset colour paints a halo on two of them; and an
+ * `outline` fallback for forced-colors mode, where box-shadow rings are dropped
+ * and the element would otherwise have no focus indicator at all.
+ */
 export const DFOCUS =
-  'outline-none focus-visible:ring-2 focus-visible:ring-[#6B5BD2]/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-[#A99BF0]/60 dark:focus-visible:ring-offset-[#15141C]';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B5BD2] dark:focus-visible:ring-[#A99BF0] ' +
+  'forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2 forced-colors:focus-visible:outline-offset-2';
+
+/** Unread / actionable count badge. One definition for rail, tabs and bell. */
+export const DBADGE =
+  'bg-[#D8410A] text-white dark:bg-[#FF7A3D] dark:text-[#2A1206]';
 
 /* ── Density ─────────────────────────────────────────────────────────── */
 
@@ -99,6 +119,12 @@ export const LAYOUT = {
   railCollapsed: 60,
   /** Inspector (right master–detail panel) width. */
   inspector: 460,
+  /**
+   * Viewport width from which the inspector can be docked beside the list.
+   * Below it the panel would leave the table under ~530px, so it overlays
+   * instead — the shell itself starts at 1024 (see useIsDesktop).
+   */
+  inspectorDockAt: 1280,
   /** Topbar height. */
   topbar: 52,
 } as const;

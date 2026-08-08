@@ -14,12 +14,12 @@
  * Same hooks as MobileTreasuryHome; guarded on `canViewTreasury`.
  */
 import { Navigate, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Building2, Coins, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import { AlertTriangle, Building2, Coins, RefreshCw, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryAccountBalances, useUsdtStock, useUsdtWac } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';
 import { DS, DT, DFG } from '@/desktop/ui/tokens';
-import { Badge, Button, EmptyState, Figure, Metric, Panel, PanelHead, Spinner } from '@/desktop/ui/primitives';
+import { Badge, Button, EmptyState, Figure, IconButton, Metric, Panel, PanelHead, Skeleton } from '@/desktop/ui/primitives';
 import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
 const CURRENCY_META: Record<string, { label: string; decimals: number; icon: typeof Wallet }> = {
@@ -32,7 +32,7 @@ const CURRENCY_META: Record<string, { label: string; decimals: number; icon: typ
 const KIND_LABEL: Record<string, string> = {
   bank: 'Banque',
   mobile_money: 'Mobile money',
-  crypto_pool: 'Pool crypto',
+  crypto_pool: 'Portefeuille crypto',
   cash: 'Caisse',
   alipay: 'Alipay',
   wechat: 'WeChat',
@@ -47,44 +47,54 @@ function fmt(n: number | null | undefined, decimals = 2): string {
 export function DesktopTreasuryHome() {
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();
-  const { data: balances, isLoading } = useTreasuryAccountBalances();
+  const { data: balances, isLoading, isError, isFetching, refetch } = useTreasuryAccountBalances();
   const { data: wac } = useUsdtWac();
   const { data: stock } = useUsdtStock();
 
-  if (!hasPermission('canViewTreasury')) return <Navigate to="/m" replace />;
-  if (isLoading) return <Spinner className="py-32" />;
+  /* Mobile sends a denied treasurer back to /m/more; match it so the same
+     refusal doesn't land in two different places depending on window width. */
+  if (!hasPermission('canViewTreasury')) return <Navigate to="/m/more" replace />;
 
   const rows = balances ?? [];
   const byCurrency = (cur: string) => rows.filter((b) => b.currency === cur);
   const totalFor = (cur: string) => byCurrency(cur).reduce((s, b) => s + (b.balance ?? 0), 0);
 
   const stockNegative = (stock ?? 0) < 0;
-  /** Capital parked in USDT at its weighted average cost. */
-  const immobilised = (stock ?? 0) * (wac ?? 0);
+  const positionReady = stock !== undefined && wac !== undefined;
+  /**
+   * USDT stock valued at its weighted average cost. Deliberately NOT labelled
+   * "capital immobilisé": the treasury analytics RPC adds the CNY leg and
+   * clamps a negative stock to zero, so two screens showing the same label with
+   * different formulas would be worse than two honest labels.
+   */
+  const usdtAtCost = positionReady ? Math.max(0, stock as number) * (wac as number) : null;
 
   return (
     <Workspace
       head={
         <ScreenHead
           title="Trésorerie"
-          subtitle="Position par devise, coût moyen pondéré et soldes de comptes"
+          subtitle="Position par devise, coût moyen pondéré (CMP) et soldes de comptes"
           actions={
-            hasPermission('canManageTreasury') ? (
-              <>
-                <Button icon={TrendingUp} onClick={() => navigate('/m/more/treasury/purchase')}>
-                  Nouvel achat USDT
-                </Button>
-                <Button variant="primary" icon={TrendingDown} onClick={() => navigate('/m/more/treasury/sale')}>
-                  Nouvelle vente USDT
-                </Button>
-              </>
-            ) : undefined
+            <>
+              <IconButton icon={RefreshCw} label="Actualiser" loading={isFetching} onClick={() => refetch()} />
+              {hasPermission('canManageTreasury') && (
+                <>
+                  <Button icon={TrendingUp} onClick={() => navigate('/m/more/treasury/purchase')}>
+                    Nouvel achat USDT
+                  </Button>
+                  <Button variant="primary" icon={TrendingDown} onClick={() => navigate('/m/more/treasury/sale')}>
+                    Nouvelle vente USDT
+                  </Button>
+                </>
+              )}
+            </>
           }
         />
       }
     >
       {stockNegative && (
-        <div className={cn('mb-4 flex items-start gap-3 rounded-xl border border-[#C0504D]/30 bg-[#FBE7E7] px-4 py-3 dark:bg-[#3A2526]')}>
+        <div className={cn('mb-4 flex items-start gap-3 rounded-xl border border-[#C0504D]/30 bg-[#FBE7E7] px-4 py-3 dark:border-[#E79A9A]/30 dark:bg-[#3A2526]')}>
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
           <div>
             <p className="text-[13px] font-bold text-[#C0504D] dark:text-[#E79A9A]">Stock USDT négatif</p>
@@ -104,15 +114,15 @@ export function DesktopTreasuryHome() {
           label="Position XAF"
           value={fmt(totalFor('XAF'), 0)}
           unit="XAF"
-          hint={`${byCurrency('XAF').length} compte(s)`}
+          hint={`${byCurrency('XAF').length} compte${byCurrency('XAF').length > 1 ? 's' : ''}`}
         />
         <Metric
           icon={Coins}
           tone={stockNegative ? 'danger' : 'pending'}
           label="Stock USDT"
-          value={fmt(stock, 2)}
+          value={stock === undefined ? '—' : fmt(stock, 2)}
           unit="USDT"
-          hint={`WAC ${fmt(wac, 4)} XAF/USDT`}
+          hint={`CMP ${fmt(wac, 4)} XAF/USDT`}
         />
         <Metric
           icon={Building2}
@@ -120,15 +130,15 @@ export function DesktopTreasuryHome() {
           label="Position CNY"
           value={fmt(totalFor('CNY'), 2)}
           unit="CNY"
-          hint={`${byCurrency('CNY').length} compte(s)`}
+          hint={`${byCurrency('CNY').length} compte${byCurrency('CNY').length > 1 ? 's' : ''}`}
         />
         <Metric
           icon={TrendingUp}
           tone="neutral"
-          label="Capital immobilisé"
-          value={fmt(immobilised, 0)}
+          label="Stock USDT valorisé"
+          value={usdtAtCost === null ? '—' : fmt(usdtAtCost, 0)}
           unit="XAF"
-          hint="Stock USDT valorisé au coût moyen pondéré"
+          hint="Au CMP · capital immobilisé complet dans Analyse"
         />
       </section>
 
@@ -148,7 +158,20 @@ export function DesktopTreasuryHome() {
                 }
                 actions={<Figure value={fmt(totalFor(cur), meta.decimals)} size="md" />}
               />
-              {accounts.length === 0 ? (
+              {isLoading ? (
+                <div className="space-y-2 p-4">
+                  {[0, 1].map((i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : isError ? (
+                <EmptyState
+                  icon={AlertTriangle}
+                  title="Soldes indisponibles"
+                  hint="La requête a échoué — ce compte n'est pas à zéro, il n'a pas pu être lu."
+                  action={<Button icon={RefreshCw} onClick={() => refetch()}>Réessayer</Button>}
+                />
+              ) : accounts.length === 0 ? (
                 <EmptyState icon={meta.icon} title="Aucun compte" hint={`Aucun compte ${cur} actif.`} />
               ) : (
                 accounts.map((a) => (
@@ -156,7 +179,7 @@ export function DesktopTreasuryHome() {
                     <span className="min-w-0 flex-1">
                       <span className={cn('block truncate text-[12.5px] font-semibold', DFG.strong)}>{a.label}</span>
                       <span className={cn('block truncate text-[11px]', DFG.faint)}>
-                        {KIND_LABEL[a.kind ?? ''] ?? a.kind} · {a.entry_count ?? 0} écriture
+                        {KIND_LABEL[a.kind ?? ''] ?? a.kind} · {a.entry_count ?? 0} mouvement
                         {(a.entry_count ?? 0) > 1 ? 's' : ''}
                       </span>
                     </span>
@@ -180,8 +203,8 @@ export function DesktopTreasuryHome() {
 
       <p className={cn(DT.label, DFG.faint, 'mt-4')}>
         <Badge tone="info">Rappel</Badge>{' '}
-        Le WAC est recalculé à chaque achat ; le taux de revient XAF/CNY publié dans <strong>Analyse</strong> en découle
-        directement.
+        Le coût moyen pondéré est recalculé à chaque achat ; le taux de revient XAF/CNY publié dans{' '}
+        <strong>Analyse</strong> en découle directement.
       </p>
     </Workspace>
   );

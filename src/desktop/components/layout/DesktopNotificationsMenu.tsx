@@ -1,21 +1,32 @@
 /**
- * Desktop topbar notifications bell + dropdown.
+ * Topbar notifications bell + popover.
  *
- * Wires the previously-inert topbar bell to the same actionable feed as the
- * mobile notifications screen (useAdminNotifications): a count badge, and a
- * popover listing each item (deposit to review, payment ready, …). Clicking an
- * item navigates to its target and closes the menu; "Voir tout" opens the full
- * screen.
+ * Same feed as the mobile notifications screen (`useAdminNotifications`):
+ * deposits waiting for review, payments ready to execute. Rebuilt on the
+ * console tokens so the control matches the other 32px topbar affordances
+ * instead of the 40px mobile pill it used to be.
+ *
+ * Three things it now gets right that it did not before:
+ *  · **The count.** It capped at "9+", which is the one number the badge exists
+ *    to convey — a morning queue of 40 and a queue of 10 looked identical.
+ *  · **Currency.** `AdminNotification` carries its own `currency`; the menu
+ *    hardcoded `formatXAF`. Both feeds happen to be XAF today, so this was not
+ *    a live mis-statement — but it would silently become one the day a feed
+ *    reports in RMB.
+ *  · **Focus.** Escape closes the popover *and* returns focus to the bell,
+ *    instead of dropping it on `<body>`.
  */
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAdminNotifications, type AdminNotificationType } from '@/hooks/useAdminNotifications';
-import { formatXAF } from '@/lib/formatters';
-import { SURFACE, TEXT, type Tone, Holder } from '@/mobile/designKit';
+import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
+import type { Tone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
+import { DS, DT, DFG, DFOCUS } from '@/desktop/ui/tokens';
+import { EmptyState, Figure, Holder, IconButton, Skeleton } from '@/desktop/ui/primitives';
 
 const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone: Tone }> = {
   deposit_needs_review: { icon: ArrowDownToLine, tone: 'info' },
@@ -28,106 +39,123 @@ function relTime(dateStr: string) {
   const date = new Date(dateStr);
   if (isToday(date)) return format(date, "'Aujourd''hui à' HH:mm", { locale: fr });
   if (isYesterday(date)) return format(date, "'Hier à' HH:mm", { locale: fr });
-  return format(date, "dd MMM 'à' HH:mm", { locale: fr });
+  return format(date, "d MMM 'à' HH:mm", { locale: fr });
 }
 
 export function DesktopNotificationsMenu() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const { data: notifications, isLoading } = useAdminNotifications();
 
   const count = notifications?.length ?? 0;
-  const hasAlerts = count > 0;
 
-  // Close on Escape, mirroring the global-search dropdown.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  const go = (path: string) => {
+    setOpen(false);
+    navigate(path);
+  };
+
   return (
     <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Notifications"
-        aria-expanded={open}
-        className={cn('relative flex h-10 w-10 items-center justify-center rounded-full', SURFACE.card, SURFACE.shadow, TEXT.strong)}
-      >
-        <Bell className="h-[18px] w-[18px]" />
-        {hasAlerts && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FE560D] px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-[#ECEAF7] dark:ring-[#141320]">
-            {count > 9 ? '9+' : count}
+      <span className="relative inline-flex">
+        <IconButton
+          ref={triggerRef}
+          icon={Bell}
+          label={count > 0 ? `Notifications — ${count} en attente` : 'Notifications'}
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+        />
+        {count > 0 && (
+          <span
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center',
+              'rounded-full bg-[#FE560D] px-1 text-[10px] font-bold leading-none tabular-nums text-white',
+              // Ringed in the topbar's own colour so the badge reads as cut out
+              // of the bar rather than floating on it.
+              'ring-2 ring-white dark:ring-[#15141C]',
+            )}
+          >
+            {count > 99 ? '99+' : count}
           </span>
         )}
-      </button>
+      </span>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
           <div
-            className={cn(
-              'absolute right-0 top-full z-50 mt-2 w-[384px] overflow-hidden rounded-[20px]',
-              SURFACE.card,
-              'shadow-[0_18px_50px_-12px_rgba(46,32,92,0.35)] ring-1 ring-black/[0.06] dark:ring-white/[0.08]',
-            )}
+            role="dialog"
+            aria-label="Notifications"
+            className={cn('absolute right-0 top-full z-50 mt-2 w-[380px] overflow-hidden rounded-xl border', DS.panel, DS.line, DS.float)}
           >
-            <header className="flex items-center justify-between gap-2 border-b border-black/[0.05] px-4 py-3 dark:border-white/[0.06]">
-              <span className={cn('text-[14px] font-extrabold', TEXT.strong)}>
-                Notifications{hasAlerts ? ` · ${count}` : ''}
+            <header className={cn('flex items-center justify-between gap-2 border-b px-4 py-2.5', DS.line)}>
+              <span className={cn(DT.title, DFG.strong)}>
+                Notifications{count > 0 ? ` · ${count}` : ''}
               </span>
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  navigate('/m/more/notifications');
-                }}
-                className="text-[12px] font-semibold text-[#6B5BD2] hover:underline dark:text-[#A99BF0]"
+                onClick={() => go('/m/more/notifications')}
+                className={cn('rounded text-[12px] font-semibold text-[#6B5BD2] hover:underline dark:text-[#A99BF0]', DFOCUS)}
               >
                 Voir tout
               </button>
             </header>
 
-            <div className="max-h-[min(70vh,520px)] overflow-y-auto p-2">
+            <div className="max-h-[min(70vh,480px)] overflow-y-auto p-1.5">
               {isLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <div className="space-y-1 p-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-3 py-2">
+                      <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-2.5 w-2/3" />
+                        <Skeleton className="h-2.5 w-1/3" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : count > 0 ? (
-                <div className="space-y-1">
-                  {notifications!.map((n) => {
-                    const cfg = TYPE_CONFIG[n.type];
-                    return (
-                      <button
-                        key={n.id}
-                        type="button"
-                        onClick={() => {
-                          setOpen(false);
-                          navigate(n.targetPath);
-                        }}
-                        className="flex w-full items-start gap-3 rounded-2xl p-3 text-left transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
-                      >
-                        <Holder icon={cfg.icon} tone={cfg.tone} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={cn('truncate text-[13px] font-semibold', TEXT.strong)}>{n.title}</p>
-                            <p className={cn('shrink-0 text-[13px] font-bold tabular-nums', TEXT.strong)}>{formatXAF(n.amount)}</p>
-                          </div>
-                          <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>{n.subtitle}</p>
-                          <p className={cn('mt-0.5 text-[10px]', TEXT.muted)}>{relTime(n.createdAt)}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                notifications!.map((n) => {
+                  const cfg = TYPE_CONFIG[n.type];
+                  return (
+                    <button
+                      key={n.id}
+                      type="button"
+                      onClick={() => go(n.targetPath)}
+                      className={cn('flex w-full items-start gap-3 rounded-lg p-2.5 text-left transition-colors', DS.hover, DFOCUS)}
+                    >
+                      <Holder icon={cfg.icon} tone={cfg.tone} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-start justify-between gap-2">
+                          <span className={cn('truncate text-[12.5px] font-semibold', DFG.strong)}>{n.title}</span>
+                          <Figure
+                            value={n.currency === 'RMB' ? formatCurrencyRMB(n.amount) : formatXAF(n.amount)}
+                            unit={n.currency === 'RMB' ? undefined : 'XAF'}
+                            size="md"
+                            className="shrink-0"
+                          />
+                        </span>
+                        <span className={cn('mt-0.5 block truncate text-[11.5px]', DFG.muted)}>{n.subtitle}</span>
+                        <span className={cn('mt-0.5 block text-[10.5px]', DFG.faint)}>{relTime(n.createdAt)}</span>
+                      </span>
+                    </button>
+                  );
+                })
               ) : (
-                <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                  <Holder icon={Bell} size="lg" />
-                  <p className={cn('mt-3 text-[14px] font-bold', TEXT.strong)}>Tout est à jour</p>
-                  <p className={cn('mt-1 text-[12px]', TEXT.muted)}>Aucun élément en attente d'action</p>
-                </div>
+                <EmptyState icon={Bell} title="Tout est à jour" hint="Aucun élément n'attend une action." className="py-10" />
               )}
             </div>
           </div>

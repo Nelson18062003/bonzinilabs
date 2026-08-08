@@ -1243,6 +1243,23 @@
 }
 
 /* Reduced motion — disable liquid nav animations */
+/*
+ * Blanket reduced-motion policy. The per-class block below predates it and is
+ * kept for the few cases that need a different treatment, but the default is
+ * now "honour the preference everywhere" rather than an allow-list that every
+ * new animation has to be added to by hand.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .liquid-pill-track {
     transition-duration: 0.01ms !important;

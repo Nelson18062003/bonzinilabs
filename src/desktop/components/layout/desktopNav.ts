@@ -146,30 +146,41 @@ export const ALL_NAV_ITEMS: (DesktopNavItem & { section: string })[] = DESKTOP_N
   s.items.map((it) => ({ ...it, section: s.label })),
 );
 
-/** Does `pathname` sit inside this item's subtree? */
+/**
+ * Does `pathname` sit inside this item's subtree?
+ *
+ * Deliberately NOT the same predicate as the `end` flag: `end` controls whether
+ * the NavLink paints itself active (so "Conversations" doesn't light up on
+ * `/m/support/stats`), whereas *resolution* — which section owns the route,
+ * what the breadcrumb says — must follow the whole subtree, or a conversation
+ * at `/m/support/:id` belongs to no section and the breadcrumb falls back to
+ * "Administration › Console". Only the root `/m` is exact, since every other
+ * route is nested under it; everywhere else the longest match wins.
+ */
 export function isItemActive(item: DesktopNavItem, pathname: string): boolean {
-  return item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(item.to + '/');
+  if (item.to === '/m') return pathname === '/m';
+  return pathname === item.to || pathname.startsWith(item.to + '/');
+}
+
+/** The most specific nav item owning `pathname`, with its section. */
+function resolveActive(pathname: string): { section: DesktopNavSection; item: DesktopNavItem } | null {
+  let best: { section: DesktopNavSection; item: DesktopNavItem } | null = null;
+  for (const section of DESKTOP_NAV) {
+    for (const item of section.items) {
+      if (!isItemActive(item, pathname)) continue;
+      if (!best || item.to.length > best.item.to.length) best = { section, item };
+    }
+  }
+  return best;
 }
 
 /** The section that owns `pathname`, if any. */
 export function activeSectionId(pathname: string): string | null {
-  for (const section of DESKTOP_NAV) {
-    if (section.items.some((it) => isItemActive(it, pathname))) return section.id;
-  }
-  return null;
+  return resolveActive(pathname)?.section.id ?? null;
 }
 
-/**
- * Breadcrumb for the topbar: [section, page]. Longest matching `to` wins so
- * `/m/more/treasury/sales` resolves to "Ventes USDT", not "Vue d'ensemble".
- */
+/** Breadcrumb for the topbar: [section, page]. */
 export function activeTrail(pathname: string): { section: string; page: string } {
-  let best: { section: string; page: string; len: number } | null = null;
-  for (const section of DESKTOP_NAV) {
-    for (const item of section.items) {
-      if (!isItemActive(item, pathname)) continue;
-      if (!best || item.to.length > best.len) best = { section: section.label, page: item.label, len: item.to.length };
-    }
-  }
-  return best ? { section: best.section, page: best.page } : { section: 'Administration', page: 'Console' };
+  const hit = resolveActive(pathname);
+  return hit ? { section: hit.section.label, page: hit.item.label } : { section: 'Administration', page: 'Console' };
 }

@@ -153,7 +153,7 @@ export function usePaymentStats() {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
 
-      const [readyRes, processingRes, cashScannedRes, completedRes, totalRes, todayRes] = await Promise.all([
+      const [readyRes, processingRes, cashScannedRes, completedRes, rejectedRes, totalRes, todayRes] = await Promise.all([
         supabaseAdmin
           .from('payments')
           .select('id', { count: 'exact', head: true })
@@ -172,6 +172,10 @@ export function usePaymentStats() {
           .eq('status', 'completed'),
         supabaseAdmin
           .from('payments')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'rejected'),
+        supabaseAdmin
+          .from('payments')
           .select('id', { count: 'exact', head: true }),
         supabaseAdmin
           .from('payments')
@@ -187,6 +191,7 @@ export function usePaymentStats() {
         toProcess: (readyRes.count || 0) + (cashScannedRes.count || 0),
         inProgress: processingRes.count || 0,
         completed: completedRes.count || 0,
+        rejected: rejectedRes.count || 0,
         total: totalRes.count || 0,
         today_completed: todayCompleted.length,
         today_amount_rmb: todayAmountRmb,

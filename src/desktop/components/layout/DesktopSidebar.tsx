@@ -22,7 +22,7 @@ import { useAdminConversations } from '@/hooks/useAdminChat';
 import { cn } from '@/lib/utils';
 import { MolaMascot } from '@/components/MolaMascot';
 import { BonziniLogo } from '@/components/BonziniLogo';
-import { DS, DT, DFG, DFOCUS, LAYOUT } from '@/desktop/ui/tokens';
+import { DS, DT, DFG, DFOCUS, DBADGE, LAYOUT } from '@/desktop/ui/tokens';
 import { Avatar, IconButton } from '@/desktop/ui/primitives';
 import { DESKTOP_NAV, activeSectionId, type DesktopNavItem } from './desktopNav';
 
@@ -49,7 +49,9 @@ export function DesktopSidebar({
   const { currentUser, hasPermission, logout } = useAdminAuth();
   const { data: counts } = useAdminActionableCounts();
   const canSupport = hasPermission('canAccessSupportChat');
-  const { data: conversations } = useAdminConversations();
+  /* A 500-row conversation query on every desktop page, for one integer — only
+     run it for roles that can actually open the inbox. */
+  const { data: conversations } = useAdminConversations('open', { enabled: canSupport });
 
   const supportUnread = useMemo(
     () => (canSupport ? (conversations ?? []).reduce((n, c) => n + (c.unread_count_admin || 0), 0) : 0),
@@ -99,7 +101,12 @@ export function DesktopSidebar({
   return (
     <aside
       style={{ width: collapsed ? LAYOUT.railCollapsed : LAYOUT.railExpanded }}
-      className={cn('fixed inset-y-0 left-0 z-30 flex flex-col border-r transition-[width] duration-150', DS.panel, DS.line)}
+      aria-label="Barre latérale"
+      className={cn(
+        'fixed inset-y-0 left-0 z-30 flex flex-col border-r transition-[width] duration-150 motion-reduce:transition-none',
+        DS.panel,
+        DS.line,
+      )}
     >
       {/* Brand */}
       <div className={cn('flex h-[52px] shrink-0 items-center gap-2.5 border-b px-3', DS.line)}>
@@ -107,7 +114,7 @@ export function DesktopSidebar({
         {!collapsed && (
           <div className="min-w-0 flex-1 leading-tight">
             <p className={cn('truncate text-[13px] font-extrabold', DFG.strong)}>Bonzini</p>
-            <p className={cn('truncate text-[10.5px]', DFG.faint)}>Console d'opérations</p>
+            <p className={cn('truncate text-[10.5px]', DFG.muted)}>Console d'opérations</p>
           </div>
         )}
         {!collapsed && (
@@ -122,11 +129,16 @@ export function DesktopSidebar({
       )}
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2">
-        {sections.map((section) => {
-          const open = section.pinned || openSections.includes(section.id);
+      <nav aria-label="Navigation principale" className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2">
+        {sections.map((section, sectionIndex) => {
+          // In rail mode every section is shown, so `aria-expanded` must agree.
+          const expanded = section.pinned || openSections.includes(section.id) || collapsed;
           return (
             <div key={section.id} className="mb-1">
+              {/* Collapsed, the labels are gone — keep the grouping legible. */}
+              {collapsed && sectionIndex > 0 && (
+                <div role="separator" aria-label={section.label} className={cn('mx-2 my-2 h-px border-t', DS.line)} />
+              )}
               {!collapsed &&
                 (section.pinned ? (
                   <p className={cn(DT.micro, DFG.faint, 'px-2 pb-1 pt-3')}>{section.label}</p>
@@ -134,7 +146,8 @@ export function DesktopSidebar({
                   <button
                     type="button"
                     onClick={() => toggleSection(section.id)}
-                    aria-expanded={open}
+                    aria-expanded={expanded}
+                    aria-controls={`nav-section-${section.id}`}
                     className={cn(
                       'mt-3 flex w-full items-center gap-1 rounded-md px-2 py-1 transition-colors',
                       DT.micro,
@@ -144,11 +157,12 @@ export function DesktopSidebar({
                     )}
                   >
                     <span className="flex-1 text-left">{section.label}</span>
-                    <ChevronDown className={cn('h-3 w-3 transition-transform', !open && '-rotate-90')} />
+                    <ChevronDown className={cn('h-3 w-3 transition-transform motion-reduce:transition-none', !expanded && '-rotate-90')} />
                   </button>
                 ))}
 
-              {(open || collapsed) &&
+              <div id={`nav-section-${section.id}`}>
+              {expanded &&
                 section.items.map((item) => {
                   const Icon = item.icon;
                   const badge = badgeFor(item);
@@ -158,6 +172,7 @@ export function DesktopSidebar({
                       to={item.to}
                       end={item.end}
                       title={collapsed ? item.label : undefined}
+                      aria-label={item.label}
                       className={({ isActive }) =>
                         cn(
                           'group relative mb-px flex h-8 items-center gap-2.5 rounded-lg text-[13px] font-medium transition-colors',
@@ -178,18 +193,20 @@ export function DesktopSidebar({
                       {badge > 0 && (
                         <span
                           className={cn(
-                            'flex items-center justify-center rounded-full bg-[#FE560D] font-bold text-white tabular-nums',
-                            collapsed
-                              ? 'absolute right-1.5 top-1 h-1.5 w-1.5'
-                              : 'h-[17px] min-w-[17px] px-1 text-[10px]',
+                            'flex items-center justify-center rounded-full font-bold tabular-nums',
+                            DBADGE,
+                            collapsed ? 'absolute right-1.5 top-1 h-1.5 w-1.5' : 'h-[17px] min-w-[17px] px-1 text-[10px]',
                           )}
                         >
-                          {collapsed ? '' : badge}
+                          {/* Collapsed the badge is a dot — it still has to be
+                              announced, not silently empty. */}
+                          {collapsed ? <span className="sr-only">{badge} en attente</span> : badge}
                         </span>
                       )}
                     </NavLink>
                   );
                 })}
+              </div>
             </div>
           );
         })}
@@ -210,7 +227,7 @@ export function DesktopSidebar({
                 <span className={cn('block truncate text-[12.5px] font-bold', DFG.strong)}>
                   {currentUser?.firstName} {currentUser?.lastName}
                 </span>
-                <span className={cn('block truncate text-[10.5px]', DFG.faint)}>
+                <span className={cn('block truncate text-[10.5px]', DFG.muted)}>
                   {currentUser ? ADMIN_ROLE_LABELS[currentUser.role] : ''}
                 </span>
               </span>

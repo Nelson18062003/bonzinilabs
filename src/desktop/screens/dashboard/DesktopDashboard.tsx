@@ -39,7 +39,7 @@ import { PAYMENT_STATUS_LABELS } from '@/types/payment';
 import { depositStatusTone, paymentStatusTone, roleMeta } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { DS, DT, DFG } from '@/desktop/ui/tokens';
-import { Avatar, Badge, Button, EmptyState, Figure, Holder, Metric, Panel, PanelHead, Ref, Spinner } from '@/desktop/ui/primitives';
+import { Avatar, Badge, Button, EmptyState, Figure, Holder, Metric, Panel, PanelHead, Ref, Skeleton } from '@/desktop/ui/primitives';
 import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
 /* ── Queue ───────────────────────────────────────────────────────────── */
@@ -125,7 +125,7 @@ export function DesktopDashboard() {
   const { currentUser, hasPermission } = useAdminAuth();
   const { greeting } = useGreeting({ firstName: currentUser?.firstName, lastName: currentUser?.lastName });
 
-  const { data: stats, isLoading } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: depositStats } = useDepositStats();
   const { data: paymentStats } = usePaymentStats();
   const { data: rate } = useActiveDailyRate();
@@ -137,16 +137,21 @@ export function DesktopDashboard() {
   const recentDeposits = (deposits ?? []).slice(0, 6);
   const recentPayments = useMemo(() => (paymentPages?.pages[0]?.data ?? []).slice(0, 6), [paymentPages]);
 
-  const pendingDeposits = depositStats?.to_process ?? stats?.pendingDeposits ?? 0;
-  const pendingPayments = (paymentStats?.toProcess ?? 0) + (paymentStats?.inProgress ?? 0);
+  const canDeposits = hasPermission('canViewDeposits');
+  const canPayments = hasPermission('canViewPayments');
+
+  /* Every term is gated the same way as the tile that displays it, so the
+     header total and the tiles can never contradict each other. */
+  const pendingDeposits = canDeposits ? depositStats?.to_process ?? stats?.pendingDeposits ?? 0 : 0;
+  const pendingPayments = canPayments ? (paymentStats?.toProcess ?? 0) + (paymentStats?.inProgress ?? 0) : 0;
   const unreadSupport = canSupport ? (conversations ?? []).reduce((n, c) => n + (c.unread_count_admin || 0), 0) : 0;
   const queueTotal = pendingDeposits + pendingPayments + unreadSupport;
-
-  if (isLoading) return <Spinner className="py-32" />;
+  /* Don't claim an empty queue before its counters have landed. */
+  const queueReady = (!canDeposits || !!depositStats) && (!canPayments || !!paymentStats);
 
   const role = currentUser?.role;
   const shortcuts = [
-    { icon: UserPlus, label: 'Nouveau client', to: '/m/clients/new', perm: 'canViewClients' as const },
+    { icon: UserPlus, label: 'Nouveau client', to: '/m/clients/new', perm: 'canEditClients' as const },
     { icon: BarChart3, label: 'Analytics', to: '/m/dashboard' },
     { icon: Coins, label: 'Trésorerie', to: '/m/more/treasury', perm: 'canViewTreasury' as const },
     { icon: LifeBuoy, label: 'Support', to: '/m/support', perm: 'canAccessSupportChat' as const },
@@ -174,12 +179,12 @@ export function DesktopDashboard() {
           }
           actions={
             <>
-              {hasPermission('canViewDeposits') && (
+              {hasPermission('canProcessDeposits') && (
                 <Button icon={ArrowDownToLine} onClick={() => navigate('/m/deposits/new')}>
                   Nouveau dépôt
                 </Button>
               )}
-              {hasPermission('canViewPayments') && (
+              {hasPermission('canProcessPayments') && (
                 <Button variant="primary" icon={Send} onClick={() => navigate('/m/payments/new')}>
                   Nouveau paiement
                 </Button>
@@ -193,20 +198,53 @@ export function DesktopDashboard() {
       <Panel className="mb-4 overflow-hidden">
         <PanelHead
           title="À traiter maintenant"
-          hint={queueTotal > 0 ? `${queueTotal} élément${queueTotal > 1 ? 's' : ''} en attente d'une décision` : undefined}
+          hint={queueReady && queueTotal > 0 ? `${queueTotal} élément${queueTotal > 1 ? 's' : ''} en attente d'une décision` : undefined}
         />
-        {queueTotal === 0 ? (
+        {!queueReady ? (
+          <div className={cn('flex divide-x', DS.line)}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex flex-1 items-center gap-3.5 px-4 py-3.5">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-2.5 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : queueTotal === 0 ? (
           <EmptyState icon={CheckCircle2} title="File vide" hint="Aucun dépôt, paiement ou message n'attend une action." />
         ) : (
           <div className={cn('flex divide-x', DS.line)}>
-            {hasPermission('canViewDeposits') && (
-              <QueueItem icon={ArrowDownToLine} count={pendingDeposits} label="dépôts à valider" hint="Preuves reçues, en attente de vérification" tone="pending" to="/m/deposits" />
+            {canDeposits && (
+              <QueueItem
+                icon={ArrowDownToLine}
+                count={pendingDeposits}
+                label={`dépôt${pendingDeposits > 1 ? 's' : ''} à valider`}
+                hint="Preuves reçues, en attente de vérification"
+                tone="pending"
+                to="/m/deposits"
+              />
             )}
-            {hasPermission('canViewPayments') && (
-              <QueueItem icon={ArrowUpFromLine} count={pendingPayments} label="paiements à exécuter" hint="Prêts ou en cours vers les fournisseurs" tone="info" to="/m/payments" />
+            {canPayments && (
+              <QueueItem
+                icon={ArrowUpFromLine}
+                count={pendingPayments}
+                label={`paiement${pendingPayments > 1 ? 's' : ''} à exécuter`}
+                hint="Prêts à régler ou déjà en cours d'exécution"
+                tone="info"
+                to="/m/payments"
+              />
             )}
             {canSupport && (
-              <QueueItem icon={LifeBuoy} count={unreadSupport} label="messages non lus" hint="Conversations client en attente de réponse" tone="success" to="/m/support" />
+              <QueueItem
+                icon={LifeBuoy}
+                count={unreadSupport}
+                label={`message${unreadSupport > 1 ? 's' : ''} non lu${unreadSupport > 1 ? 's' : ''}`}
+                hint="Conversations client en attente de réponse"
+                tone="success"
+                to="/m/support"
+              />
             )}
           </div>
         )}
@@ -214,10 +252,10 @@ export function DesktopDashboard() {
 
       {/* ── 2. Context ── */}
       <section className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Metric icon={Wallet} tone="info" label="Solde plateforme" value={formatCurrency(stats?.totalWalletBalance ?? 0, 'XAF', { compact: true })} hint="Total XAF détenu par les wallets clients" />
-        <Metric icon={TrendingUp} tone="info" label="Volume 7 jours" value={formatCurrency(stats?.weekVolume ?? 0, 'XAF', { compact: true })} hint="Flux traité sur la semaine glissante" />
-        <Metric icon={ArrowDownToLine} tone="success" label="Dépôts aujourd'hui" value={formatCurrency(depositStats?.today_amount ?? 0, 'XAF', { compact: true })} hint="Entrées de fonds du jour" />
-        <Metric icon={ArrowUpFromLine} tone="pending" label="Paiements aujourd'hui" value={formatCurrency(stats?.todayPaymentsAmount ?? 0, 'XAF', { compact: true })} hint="Règlements fournisseurs du jour" />
+        <Metric icon={Wallet} tone="info" label="Solde plateforme" value={statsLoading ? '—' : formatCurrency(stats?.totalWalletBalance ?? 0, 'XAF', { compact: true })} hint="Total XAF détenu par les wallets clients" />
+        <Metric icon={TrendingUp} tone="info" label="Volume 7 jours" value={statsLoading ? '—' : formatCurrency(stats?.weekVolume ?? 0, 'XAF', { compact: true })} hint="Flux traité sur la semaine glissante" />
+        <Metric icon={ArrowDownToLine} tone="success" label="Dépôts aujourd'hui" value={depositStats ? formatCurrency(depositStats.today_amount ?? 0, 'XAF', { compact: true }) : '—'} hint="Entrées de fonds du jour" />
+        <Metric icon={ArrowUpFromLine} tone="pending" label="Paiements aujourd'hui" value={statsLoading ? '—' : formatCurrency(stats?.todayPaymentsAmount ?? 0, 'XAF', { compact: true })} hint="Règlements fournisseurs du jour" />
       </section>
 
       {/* ── 3. Live feeds + rail ── */}
@@ -279,7 +317,7 @@ export function DesktopDashboard() {
           <Panel>
             <PanelHead
               title="Taux du jour"
-              hint="Pour 1 000 000 XAF envoyés"
+              hint="Pour 1 000 000 XAF réglés"
               actions={hasPermission('canManageRates') ? <Button size="sm" variant="ghost" onClick={() => navigate('/m/more/rates')}>Gérer</Button> : undefined}
             />
             <div className="px-4 py-2">
@@ -289,7 +327,7 @@ export function DesktopDashboard() {
                 rateRows.map(([label, value]) => (
                   <div key={label} className={cn('flex items-center justify-between border-b py-2 last:border-0', DS.line)}>
                     <span className={cn(DT.body, DFG.base)}>{label}</span>
-                    <Figure value={formatNumber(value ?? 0, 2)} unit="CNY" size="md" />
+                    <Figure value={formatNumber(value ?? 0, 2)} unit="¥" size="md" />
                   </div>
                 ))
               )}
@@ -300,7 +338,7 @@ export function DesktopDashboard() {
           <button
             type="button"
             onClick={() => navigate('/m/assistant')}
-            className="w-full rounded-xl bg-[#1A1725] p-4 text-left transition-colors hover:bg-[#241F33] dark:bg-[#1B1A24] dark:hover:bg-[#242232]"
+            className="w-full rounded-xl bg-[#1A1725] p-4 text-left ring-1 ring-white/[0.06] transition-colors hover:bg-[#241F33] dark:bg-[#08070D] dark:hover:bg-[#12111A]"
           >
             <span className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">

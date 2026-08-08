@@ -33,11 +33,21 @@ type AnyTable = never;
 
 // ── Liste des conversations (admin) avec infos client ───────
 
-export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 'open') {
+/**
+ * @param options.enabled  Skip the query entirely. The desktop rail only needs
+ *   an unread integer, and roles without `canAccessSupportChat` must not pay
+ *   for a 500-row conversation fetch on every page.
+ */
+export function useAdminConversations(
+  statusFilter: 'open' | 'closed' | 'all' = 'open',
+  options?: { enabled?: boolean },
+) {
   const queryClient = useQueryClient();
+  const enabled = options?.enabled ?? true;
 
   const query = useQuery({
     queryKey: ['admin-chat-conversations', statusFilter],
+    enabled,
     staleTime: 10_000,
     queryFn: async (): Promise<ChatConversationWithClient[]> => {
       let q = supabaseAdmin
@@ -111,8 +121,10 @@ export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 
     },
   });
 
-  // Realtime : invalider la liste à chaque INSERT/UPDATE sur les conversations
+  // Realtime : invalider la liste à chaque INSERT/UPDATE sur les conversations.
+  // Inutile — et coûteux — quand la requête elle-même est désactivée.
   useEffect(() => {
+    if (!enabled) return;
     const channel = supabaseAdmin
       .channel('admin-chat-conv-list')
       .on(
@@ -134,7 +146,7 @@ export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 
     return () => {
       supabaseAdmin.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, enabled]);
 
   return query;
 }

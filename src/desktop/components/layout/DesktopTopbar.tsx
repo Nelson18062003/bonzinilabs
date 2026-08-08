@@ -34,10 +34,16 @@ export function DesktopTopbar({ onOpenPalette }: { onOpenPalette: () => void }) 
       )}
     >
       {/* Breadcrumb */}
-      <nav aria-label="Fil d'ariane" className="flex min-w-0 items-center gap-1.5">
-        <span className={cn(DT.label, DFG.faint, 'shrink-0')}>{trail.section}</span>
-        <ChevronRight className={cn('h-3 w-3 shrink-0', DFG.faint)} />
-        <span className={cn('truncate text-[13.5px] font-bold', DFG.strong)}>{trail.page}</span>
+      <nav aria-label="Fil d'ariane" className="min-w-0">
+        <ol className="flex min-w-0 items-center gap-1.5">
+          <li className={cn(DT.label, DFG.muted, 'shrink-0')}>{trail.section}</li>
+          <li aria-hidden className="shrink-0">
+            <ChevronRight className={cn('h-3 w-3', DFG.muted)} />
+          </li>
+          <li aria-current="page" className={cn('truncate text-[13.5px] font-bold', DFG.strong)}>
+            {trail.page}
+          </li>
+        </ol>
       </nav>
 
       <div className="ml-auto flex items-center gap-2">
@@ -53,21 +59,23 @@ export function DesktopTopbar({ onOpenPalette }: { onOpenPalette: () => void }) 
             DFOCUS,
           )}
         >
-          <Search className={cn('h-3.5 w-3.5 shrink-0', DFG.faint)} />
-          <span className={cn('flex-1 truncate text-[12.5px]', DFG.faint)}>Rechercher ou demander à Mola…</span>
-          <kbd className={cn('shrink-0 rounded border px-1.5 py-px text-[10px] font-bold', DS.line, DS.card, DFG.faint)}>⌘K</kbd>
+          <Search className={cn('h-3.5 w-3.5 shrink-0', DFG.muted)} />
+          <span className={cn('flex-1 truncate text-[12.5px]', DFG.muted)}>Rechercher ou demander à Mola…</span>
+          <kbd className={cn('shrink-0 rounded border px-1.5 py-px text-[10px] font-bold', DS.line, DS.card, DFG.muted)}>⌘K</kbd>
         </button>
 
         {/* Live rate — the single number the whole business turns on. */}
         {rate?.rate_alipay ? (
-          <div className={cn('hidden items-center gap-1.5 rounded-lg border px-2.5 py-1.5 2xl:flex', DS.line, DS.card)}>
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#2E7D52]" />
+          /* The number the whole business turns on — it has to survive the
+             1440px laptop the console is actually used on, not just 2xl. */
+          <div className={cn('hidden items-center gap-1.5 rounded-lg border px-2.5 py-1.5 xl:flex', DS.line, DS.card)}>
+            <span className="h-1.5 w-1.5 rounded-full bg-[#2E7D52] dark:bg-[#7FCBA0]" />
             {/* `rate_alipay` is CNY delivered per 1 000 000 XAF — the same unit
                 the rates screen and the client flyer publish. */}
             <span className={cn('text-[12px] font-bold tabular-nums', DFG.strong)}>
               1 M XAF = {formatNumber(rate.rate_alipay, 2)} ¥
             </span>
-            <span className={cn('text-[11px]', DFG.faint)}>· {today}</span>
+            <span className={cn('hidden text-[11px] 2xl:inline', DFG.muted)}>· {today}</span>
           </div>
         ) : null}
 
