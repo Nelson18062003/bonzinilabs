@@ -167,7 +167,7 @@ export function DesktopTreasuryHome() {
           in a colour, four centimetres away, with none of the explanation. */}
       {stockNegative && (
         <div className="mb-4 flex items-start gap-3 rounded-xl border border-[#C0504D]/30 bg-[#FBE7E7] px-4 py-3 dark:border-[#E79A9A]/30 dark:bg-[#3A2526]">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
+          <AlertTriangle className="h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
           <div>
             <p className={cn(DT.body, 'font-bold text-[#C0504D] dark:text-[#E79A9A]')}>Stock USDT négatif</p>
             <p className={cn(DT.label, DFG.base, 'mt-1')}>

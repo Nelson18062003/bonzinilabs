@@ -303,3 +303,138 @@ PW_CHROMIUM_PATH=/opt/pw-browsers/chromium \
 
 Fixtures : `tests/e2e/fixtures/consoleFixtures.ts` (données synthétiques,
 déterministes, aucun accès réseau réel).
+
+---
+
+# Le contrat dimensionnel
+
+## Le défaut
+
+Un relevé exhaustif de `src/desktop` a mesuré, avant cette passe :
+
+| | valeurs distinctes | conséquence visible |
+|---|---:|---|
+| tailles de police | **19** | dix paliers dans une bande de 5 px : 10 · 10,5 · 11 · 11,5 · 12 · 12,5 · 13 · 13,5 · 14 · 15 |
+| hauteurs de contrôle | **14** (+4 calculées) | sept hauteurs de « bouton moyen » : 28 · 29 · 32 · 34 · 36 · 39 · 40 |
+| rayons | **9** valeurs, 10 écritures | `rounded-3xl` et `rounded-[24px]` = même valeur, deux orthographes |
+| espacements hors grille 4 px | **101 sur 320 (32 %)** | `py-[7px]` dans `DataRow`, unique dans tout le dépôt |
+
+Le symptôme que l'utilisateur a signalé — « les tailles sont horribles » — se
+lisait le plus clairement sur cinq barres d'outils identiques : un champ de
+recherche `h-8` (**32 px**) posé à côté de chips `h-7` (**28 px**), sur la même
+ligne `items-center`. Quatre pixels d'écart, cinq fois, plus quatre autres
+écrans où un `Segmented` non déclaré (~39 px) côtoyait un `Pill` de 36 px.
+
+**La cause n'était pas le manque de tokens — ils existaient. C'était que chaque
+appelant choisissait sa propre taille.** `Button` acceptait `size="sm" | "md"`,
+`Input` était figé à 32 px, et rien ne les obligeait à s'accorder.
+
+## Les quatre échelles
+
+Tout ce qui se mesure dans `src/desktop` vient d'une de ces échelles, et de
+rien d'autre :
+
+```
+hauteur de contrôle  24 | 28 | 32
+taille de police     12 | 13 | 15 | 20 | 28
+espacement           multiples de 4
+rayon                4 | 6 | 12 | full
+```
+
+Deux d'entre elles ont un plancher **externe**, pas seulement interne :
+
+- **Aucun texte sous 12 px, et 12 px uniquement en graisse ≥ 600.** Le critère
+  de lisibilité APCA (brouillon WCAG 3) interdit 12 px et 14 px en graisse 400
+  *à n'importe quel contraste* : aucune couleur ne les rachète. Les paliers 10,
+  10,5 et 11 px de la console portaient des en-têtes de colonne et du texte de
+  badge — du contenu à lire. C'est leur suppression qui fait passer l'échelle de
+  19 tailles à 5.
+- **≥ 24 px entre les centres de deux cibles adjacentes** (WCAG 2.2 SC 2.5.8,
+  exception « spacing »). Un contrôle de 24 px n'exige aucun écart, un contrôle
+  de 28 px a de la marge. C'est le vrai plafond de densité d'une barre d'outils :
+  aucune disposition conforme ne dépasse une cible par 24 px d'axe.
+
+Les trois hauteurs sont celles de Primer (`xsmall`/`small`/`medium`).
+L'emprunt est délibéré : un relevé de neuf systèmes publiés place 24 et 32 dans
+huit d'entre eux ; 28 n'est porté que par Primer, qui est aussi le plus dense
+des systèmes d'entreprise documentés. Le palier intermédiaire que tous les
+autres utilisent — 40 — est une taille de confort qui coûterait environ une
+ligne de file par écran.
+
+Le rayon est **fixe par rôle, jamais dérivé de la hauteur**. La règle tentante
+`rayon = hauteur / 4` n'est appliquée par aucun système dense : à 32 px de haut,
+les valeurs réelles sont 4 (Radix), 6 (Primer, Atlassian, Ant, Geist) et 0
+(Carbon). Tous ceux qui publient un défaut de contrôle publient 6.
+
+## Le mécanisme
+
+Le pas n'est plus passé à l'appel — il est **hérité du conteneur** :
+
+```
+<Toolbar>              → pas « toolbar » (28 px)   filtres, recherche
+<ScreenHead actions>   → pas « page »    (32 px)   ce qui démarre une tâche
+ligne de tableau       → pas « inline »  (24 px)   actions de ligne
+```
+
+`CONTROL[pas]` livre d'un seul bloc la hauteur, le padding, le rayon, la taille
+de police, la taille d'icône et l'écart interne. Aucun primitif n'écrit
+`h-…`, `text-[Npx]`, `px-…` ou `rounded-…` à la main sur un contrôle.
+
+Conséquence : **une ligne de barre d'outils ne peut plus mélanger les hauteurs**,
+même par accident. Ce n'est plus une convention à vérifier en revue, c'est une
+propriété structurelle.
+
+## La preuve
+
+Deux garde-fous, à deux coûts différents :
+
+- `tests/unit/desktop-contract.test.ts` — lit la source, s'exécute en
+  millisecondes dans `npm run test`, attrape la dérive à la frappe.
+- `tests/e2e/desktop-metrology.spec.ts` — **mesure ce que le navigateur peint.**
+  Groupe les contrôles par centre vertical arrondi et exige une seule hauteur
+  par ligne ; vérifie que chaque hauteur rendue est dans 24/28/32 et chaque
+  taille de police rendue dans 12/13/15/20/28.
+
+```
+PW_CHROMIUM_PATH=/opt/pw-browsers/chromium \
+  npx playwright test --config=playwright.metrology.config.ts
+```
+
+C'est le second qui a produit la preuve du défaut d'origine, sous cette forme :
+
+```
+Contrôles de hauteurs différentes sur la même ligne :
+  Rechercher dans les dépô=32px, Tous318=28px, À traiter7=28px,
+  À corriger2=28px, Validés296=28px, Rejetés13=28px, Toutes=28px,
+  Banque=28px, Agence=28px, Orange=28px, MTN=28px, Wave=28px
+Received array: [32, 28]
+```
+
+## Densité d'interaction
+
+Un recensement contrôle par contrôle de neuf écrans a compté **157 éléments
+interactifs**, dont **61 (39 %)** utilisés moins d'une fois par jour et rendus
+au même poids visuel que ceux utilisés en continu.
+
+Le défaut n'était donc pas le volume — c'était l'absence de hiérarchie. Deux
+surfaces portent le repli :
+
+- **`FilterPopover`** — un déclencheur qui annonce combien de filtres sont
+  actifs, pour qu'une liste vide ne soit jamais une énigme. `clearable` couvre
+  le cas où seule la recherche restreint la liste.
+- **`MenuButton`** — l'ellipse qui permet à un en-tête d'écran de s'en tenir à
+  trois actions visibles.
+
+| écran | avant | après |
+|---|---:|---:|
+| Tableau de bord | 25 | 14 |
+| Dépôts | 21 | 10 |
+| Paiements | 26 | 10 |
+| Clients | 13 | 8 |
+| Administrateurs | 14 | 11 |
+| Trésorerie (accueil) | 6 | 3 |
+| Journal d'audit | 9 | 4 |
+| Plus / Tous les outils | 14 | **0** (supprimé) |
+
+Aucune capacité n'a été retirée : tout ce qui a disparu de la surface est soit
+un doublon exact, soit relogé dans un popover ou un menu.

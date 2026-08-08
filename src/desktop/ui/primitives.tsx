@@ -100,7 +100,7 @@ export function PanelHead({
     <div className={cn('flex items-center gap-3 border-b px-4', hint ? 'py-3' : 'h-11', DS.line, className)}>
       <div className="min-w-0 flex-1">
         <h3 className={cn(DT.title, DFG.strong, 'truncate')}>{title}</h3>
-        {hint ? <p className={cn(DT.label, DFG.muted, 'mt-0.5 truncate')}>{hint}</p> : null}
+        {hint ? <p className={cn(DT.label, DFG.muted, 'truncate font-normal')}>{hint}</p> : null}
       </div>
       {actions ? (
         <StepScope step="inline">
@@ -509,7 +509,7 @@ export function Field({
 }) {
   return (
     <label className={cn('block', className)}>
-      <span className={cn(DT.label, DFG.base, 'mb-1.5 flex items-center gap-1 font-semibold')}>
+      <span className={cn(DT.label, DFG.base, 'mb-1 flex items-center gap-1 font-semibold')}>
         {label}
         {required ? <span className="text-[#C0504D]">*</span> : null}
       </span>

@@ -92,7 +92,7 @@ export function DesktopAppShell({ children }: { children: ReactNode }) {
         {/* Screens are padded by default. A `Workbench` screen needs the whole
             viewport (its list scrolls internally), so it opts out by tagging
             itself `data-workbench` and the padding collapses. */}
-        <main className="px-7 py-6 [&:has([data-workbench])]:p-0">{children}</main>
+        <main className="px-6 py-6 [&:has([data-workbench])]:p-0">{children}</main>
       </div>
       </div>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
