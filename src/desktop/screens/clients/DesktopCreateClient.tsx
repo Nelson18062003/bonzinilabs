@@ -1,11 +1,22 @@
 /**
- * Desktop admin — new client form.
+ * Clients — création d'un compte.
  *
- * Same logic as the mobile 3-step wizard (useCreateClient, identical fields,
- * validation and success/temp-password screen) but laid out for desktop: a
- * single carded page with a two-column field grid and a real heading instead of
- * the mobile step-bar + sticky footer. No money is involved, so this safely
- * reuses the exact creation mutation.
+ * Rebuilt on the console's dimensional contract. The screen was still wearing
+ * the mobile kit: 48px fields (a thumb target) against 47px footer pills — a
+ * 1px mismatch that reads as a rendering fault — plus 24/22/18/14px type and a
+ * hand-rolled `focus:ring-2 ring-[#C9C2F0]` that fired on mouse focus and in a
+ * different colour from every other control in the console.
+ *
+ * It is now a `Workspace width="narrow"` (the form shape) with a `ScreenHead`,
+ * `Field` + `Input`/`Select` for every input and `Button` for the footer, so
+ * fields and actions are both the 32px `page` step and the focus ring is the
+ * single `DFOCUS` the rest of the console uses.
+ *
+ * **Behaviour is untouched.** Same `useCreateClient` mutation (which calls the
+ * `admin_create_client` SECURITY DEFINER RPC through `supabaseAdmin`), same
+ * submit predicate, same phone normalisation, same temp-password reveal. No
+ * money is involved, so nothing here is a financial control — but the screen
+ * does create real accounts, which is why the logic was moved verbatim.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +24,9 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Copy, UserPlus } from 'lucide-react';
 import { useCreateClient } from '@/hooks/useClientManagement';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, Card, Holder, FormField, TextInput, PrimaryPill, SoftPill } from '@/mobile/designKit';
+import { DT, DFG, DS } from '@/desktop/ui/tokens';
+import { Button, Field, Holder, IconButton, Input, Panel, Select } from '@/desktop/ui/primitives';
+import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
 const COUNTRY_CODES: { country: string; code: string; flag: string }[] = [
   { code: '+237', country: 'Cameroun', flag: '🇨🇲' },
@@ -81,13 +94,8 @@ interface FormData {
   ville: string;
 }
 
-const selectClass = cn(
-  'h-12 w-full rounded-2xl px-4 text-[14px] outline-none transition',
-  SURFACE.card,
-  SURFACE.shadow,
-  TEXT.strong,
-  'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
-);
+/** The one advisory surface of this screen — the "pending" tone of the shared kit. */
+const NOTE = 'bg-[#F8EFD8] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]';
 
 export function DesktopCreateClient() {
   const { t } = useTranslation('common');
@@ -144,108 +152,146 @@ export function DesktopCreateClient() {
     setTimeout(() => setPasswordCopied(false), 2000);
   };
 
-  const optional = <span className={cn('ml-1 text-[12px] font-medium', TEXT.muted)}>optionnel</span>;
-  const required = <span className="text-[#FE560D]">*</span>;
+  const optional = 'Optionnel';
 
   // ── Success ──────────────────────────────────────────────
   if (isSuccess) {
     return (
-      <div className="mx-auto max-w-xl space-y-6">
-        <header className="text-center">
-          <div className="mx-auto mb-3 flex justify-center">
+      <Workspace
+        width="narrow"
+        head={
+          <div className="flex items-start gap-3">
             <Holder icon={Check} tone="success" size="lg" />
+            <ScreenHead
+              title={t('clientCreatedSuccess', { defaultValue: 'Client créé avec succès' })}
+              subtitle={`${form.prenom} ${form.nom} peut maintenant se connecter`}
+              className="min-w-0 flex-1"
+            />
           </div>
-          <h2 className={cn('text-[22px] font-extrabold tracking-tight', TEXT.strong)}>
-            {t('clientCreatedSuccess', { defaultValue: 'Client créé avec succès' })}
-          </h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            {form.prenom} {form.nom} peut maintenant se connecter
-          </p>
-        </header>
-
-        <Card className="p-5">
-          <div className={cn('mb-2 text-[13px]', TEXT.muted)}>
+        }
+      >
+        <Panel className="p-4">
+          <p className={cn(DT.label, DFG.muted)}>
             {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
+          </p>
+          <div className={cn('mt-2 flex items-center justify-between gap-3 rounded-lg p-3', DS.well)}>
+            <code className={cn(DT.body, DFG.strong, 'min-w-0 break-all font-mono font-bold')}>{tempPassword}</code>
+            <IconButton
+              icon={passwordCopied ? Check : Copy}
+              variant="secondary"
+              label={passwordCopied ? 'Mot de passe copié' : 'Copier le mot de passe'}
+              onClick={handleCopyPassword}
+            />
           </div>
-          <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-3.5', SURFACE.canvas)}>
-            <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>{tempPassword}</code>
-            <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} ariaLabel="Copier le mot de passe" />
-          </div>
-          <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <p className={cn('mt-3 rounded-lg px-3 py-2', DT.label, NOTE)}>
             Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.
-          </div>
-        </Card>
+          </p>
+        </Panel>
 
-        <div className="flex gap-2.5">
-          <SoftPill onClick={() => navigate('/m/clients')} className="flex-1">
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button onClick={() => navigate('/m/clients')}>
             {t('backToList', { defaultValue: 'Retour à la liste' })}
-          </SoftPill>
-          <PrimaryPill onClick={() => navigate(`/m/clients/${createdClientId}`)} className="flex-[1.5]">
+          </Button>
+          <Button variant="primary" onClick={() => navigate(`/m/clients/${createdClientId}`)}>
             {t('viewClientProfile', { defaultValue: 'Voir la fiche client' })}
-          </PrimaryPill>
+          </Button>
         </div>
-      </div>
+      </Workspace>
     );
   }
 
   // ── Form ─────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <header className="flex items-center gap-3">
-        <Holder icon={UserPlus} tone="info" />
-        <div>
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>
-            {t('newClient', { defaultValue: 'Nouveau client' })}
-          </h2>
-          <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Identité, contact et localisation</p>
+    <Workspace
+      width="narrow"
+      head={
+        <div className="flex items-start gap-3">
+          <Holder icon={UserPlus} tone="info" size="lg" />
+          <ScreenHead
+            title={t('newClient', { defaultValue: 'Nouveau client' })}
+            subtitle="Identité, contact et localisation"
+            className="min-w-0 flex-1"
+          />
         </div>
-      </header>
+      }
+    >
+      <Panel className="p-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={t('firstName')} required>
+            <Input
+              id="cc-prenom"
+              placeholder="Ex: Fabrice"
+              value={form.prenom}
+              onChange={(e) => set('prenom', e.target.value)}
+              autoComplete="given-name"
+            />
+          </Field>
+          <Field label={t('lastName')} required>
+            <Input
+              id="cc-nom"
+              placeholder="Ex: Bienvenue"
+              value={form.nom}
+              onChange={(e) => set('nom', e.target.value)}
+              autoComplete="family-name"
+            />
+          </Field>
 
-      <Card className="p-6">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={<>{t('firstName')} {required}</>} htmlFor="cc-prenom">
-            <TextInput id="cc-prenom" placeholder="Ex: Fabrice" value={form.prenom} onChange={(e) => set('prenom', e.target.value)} autoComplete="given-name" />
-          </FormField>
-          <FormField label={<>{t('lastName')} {required}</>} htmlFor="cc-nom">
-            <TextInput id="cc-nom" placeholder="Ex: Bienvenue" value={form.nom} onChange={(e) => set('nom', e.target.value)} autoComplete="family-name" />
-          </FormField>
+          <Field label={t('company')} hint={optional} className="sm:col-span-2">
+            <Input
+              id="cc-entreprise"
+              placeholder="Ex: Jako Cargo SARL"
+              value={form.entreprise}
+              onChange={(e) => set('entreprise', e.target.value)}
+              autoComplete="organization"
+            />
+          </Field>
 
-          <div className="sm:col-span-2">
-            <FormField label={<>{t('company')} {optional}</>} htmlFor="cc-entreprise">
-              <TextInput id="cc-entreprise" placeholder="Ex: Jako Cargo SARL" value={form.entreprise} onChange={(e) => set('entreprise', e.target.value)} autoComplete="organization" />
-            </FormField>
-          </div>
+          <Field
+            label="WhatsApp"
+            required
+            hint="Le client recevra son mot de passe par WhatsApp"
+            className="sm:col-span-2"
+          >
+            <div className="flex gap-2">
+              <Select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                aria-label="Indicatif pays"
+                className="w-auto min-w-[112px] shrink-0 cursor-pointer"
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.code}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                id="cc-phone"
+                className="flex-1"
+                placeholder="6XX XXX XXX"
+                value={form.phone}
+                onChange={(e) => set('phone', e.target.value)}
+                type="tel"
+                inputMode="numeric"
+              />
+            </div>
+          </Field>
 
-          <div className="sm:col-span-2">
-            <FormField label={<>WhatsApp {required}</>} htmlFor="cc-phone" hint="Le client recevra son mot de passe par WhatsApp">
-              <div className="flex gap-2">
-                <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className={cn(selectClass, 'w-auto min-w-[112px] shrink-0 cursor-pointer px-3')} aria-label="Indicatif pays">
-                  {COUNTRY_CODES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.flag} {c.code}
-                    </option>
-                  ))}
-                </select>
-                <TextInput id="cc-phone" className="flex-1" placeholder="6XX XXX XXX" value={form.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric" />
-              </div>
-            </FormField>
-          </div>
+          <Field label={t('email')} hint={optional} className="sm:col-span-2">
+            <Input
+              id="cc-email"
+              placeholder="fabrice@jakocargo.com"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+              type="email"
+              autoComplete="email"
+            />
+          </Field>
 
-          <div className="sm:col-span-2">
-            <FormField label={<>{t('email')} {optional}</>} htmlFor="cc-email">
-              <TextInput id="cc-email" placeholder="fabrice@jakocargo.com" value={form.email} onChange={(e) => set('email', e.target.value)} type="email" autoComplete="email" />
-            </FormField>
-          </div>
-
-          <FormField label={<>{t('country')} {required}</>} htmlFor="cc-pays">
-            <select
+          <Field label={t('country')} required>
+            <Select
               id="cc-pays"
-              className={cn(selectClass, 'cursor-pointer appearance-none pr-9')}
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%237a7290' stroke-width='1.5'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 14px center',
-              }}
+              className="cursor-pointer"
               value={form.pays}
               onChange={(e) => set('pays', e.target.value)}
             >
@@ -256,25 +302,36 @@ export function DesktopCreateClient() {
                   ))}
                 </optgroup>
               ))}
-            </select>
-          </FormField>
+            </Select>
+          </Field>
 
-          <FormField label={<>{t('city')} {optional}</>} htmlFor="cc-ville">
-            <TextInput id="cc-ville" placeholder="Ex: Douala" value={form.ville} onChange={(e) => set('ville', e.target.value)} />
-          </FormField>
+          <Field label={t('city')} hint={optional}>
+            <Input
+              id="cc-ville"
+              placeholder="Ex: Douala"
+              value={form.ville}
+              onChange={(e) => set('ville', e.target.value)}
+            />
+          </Field>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
-          Un mot de passe temporaire sera envoyé au client par WhatsApp. Il devra le changer lors de sa première connexion.
-        </div>
+        <p className={cn('mt-4 rounded-lg px-3 py-2', DT.label, NOTE)}>
+          Un mot de passe temporaire sera transmis au client par WhatsApp. Il devra le changer lors de sa première
+          connexion.
+        </p>
+      </Panel>
 
-        <div className="mt-5 flex items-center justify-end gap-2.5">
-          <SoftPill onClick={() => navigate('/m/clients')}>{t('cancel', { defaultValue: 'Annuler' })}</SoftPill>
-          <PrimaryPill onClick={handleCreateClient} disabled={!canSubmit} loading={createClientMutation.isPending}>
-            {t('createTheClient', { defaultValue: 'Créer le client' })}
-          </PrimaryPill>
-        </div>
-      </Card>
-    </div>
+      <div className="mt-4 flex items-center justify-end gap-2">
+        <Button onClick={() => navigate('/m/clients')}>{t('cancel', { defaultValue: 'Annuler' })}</Button>
+        <Button
+          variant="primary"
+          onClick={handleCreateClient}
+          disabled={!canSubmit}
+          loading={createClientMutation.isPending}
+        >
+          {t('createTheClient', { defaultValue: 'Créer le client' })}
+        </Button>
+      </div>
+    </Workspace>
   );
 }
