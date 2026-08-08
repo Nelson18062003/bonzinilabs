@@ -1,11 +1,26 @@
 /**
  * Poste de pilotage — the console home.
  *
- * Reordered around one question: *what needs me right now?* The old home led
- * with four KPI cards, which are context, not work; the queue was a small strip
- * below the fold. Here the queue comes first and is sized to be read from two
- * metres away, KPIs sit under it as context, and the two live feeds (dépôts /
- * paiements) share the body with a right rail carrying the day's rate and Mola.
+ * Reordered around one question: *what needs me right now?* The queue comes
+ * first and is sized to be read from two metres away, two KPI tiles sit under
+ * it as context, and one merged activity feed shares the body with a right rail
+ * carrying the day's rate.
+ *
+ * WHAT THIS SCREEN DELIBERATELY DOES NOT CARRY
+ * The density audit found 25 controls here, and eight of them were routes that
+ * already existed one click away in the always-visible sidebar:
+ *  · a "Raccourcis" panel of four buttons — all four are rail entries, so every
+ *    one of them was a *longer* path to its target than the rail itself;
+ *  · a Mola card — the rail links `/m/assistant` and the command palette
+ *    advertises it, so the card was the third route to the same screen;
+ *  · a "Gérer" button on the rates panel — Marché › Taux de change in the rail.
+ * A shortcut that is less accessible than its target is not a shortcut. The
+ * rates panel stays as a read-only display; nothing was lost, only duplicated
+ * chrome.
+ *
+ * And the two feed panels ("Derniers dépôts" / "Derniers paiements") cost 14
+ * controls for one idea — "what just happened". They are one panel now, sorted
+ * by date, each row stating its own kind and routing to its own record.
  *
  * Same hooks as the mobile dashboard — only the presentation differs, so the
  * two can't drift apart.
@@ -15,17 +30,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  BarChart3,
   CheckCircle2,
   ChevronRight,
-  Coins,
   LifeBuoy,
   Send,
   TrendingUp,
-  UserPlus,
   Wallet,
 } from 'lucide-react';
-import { MolaMascot } from '@/components/MolaMascot';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useDashboardStats } from '@/hooks/useAdminData';
 import { useAdminDeposits, useDepositStats } from '@/hooks/useAdminDeposits';
@@ -36,10 +47,11 @@ import { useGreeting } from '@/hooks/useGreeting';
 import { formatCurrency } from '@/components/analytics';
 import { formatRelativeDate, formatXAF, formatCurrencyRMB, formatNumber, getDepositStatusLabel } from '@/lib/formatters';
 import { PAYMENT_STATUS_LABELS } from '@/types/payment';
-import { depositStatusTone, paymentStatusTone, roleMeta } from '@/mobile/designKit';
+import { depositStatusTone, paymentStatusTone, roleMeta, type Tone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { DS, DT, DFG } from '@/desktop/ui/tokens';
-import { Avatar, Badge, Button, EmptyState, Figure, Holder, Metric, Panel, PanelHead, Ref, Skeleton } from '@/desktop/ui/primitives';
+import { Badge, Button, EmptyState, Figure, Holder, Metric, Panel, PanelHead, Ref, Skeleton } from '@/desktop/ui/primitives';
+import { MenuButton, type MenuItem } from '@/desktop/ui/Popover';
 import { ScreenHead, Workspace } from '@/desktop/ui/layout';
 
 /* ── Queue ───────────────────────────────────────────────────────────── */
@@ -64,56 +76,66 @@ function QueueItem({
     <button
       type="button"
       onClick={() => navigate(to)}
-      className={cn('group flex flex-1 items-center gap-3.5 px-4 py-3.5 text-left transition-colors', DS.hover)}
+      className={cn('group flex flex-1 items-center gap-4 px-4 py-4 text-left transition-colors', DS.hover)}
     >
       <Holder icon={Icon} tone={tone} size="lg" />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
           <Figure value={count} size="hero" />
-          <span className={cn('truncate text-[14px] font-bold', DFG.strong)}>{label}</span>
+          <span className={cn('truncate', DT.title, DFG.strong)}>{label}</span>
         </span>
-        <span className={cn('mt-0.5 block truncate text-[12px]', DFG.muted)}>{hint}</span>
+        <span className={cn('mt-1 block truncate', DT.label, DFG.muted)}>{hint}</span>
       </span>
       <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5', DFG.faint)} />
     </button>
   );
 }
 
-/* ── Feeds ───────────────────────────────────────────────────────────── */
+/* ── Activity feed ───────────────────────────────────────────────────── */
 
-function FeedRow({
-  name,
-  reference,
-  amount,
-  when,
-  status,
-  tone,
-  onClick,
-}: {
+/**
+ * One line of the merged feed.
+ *
+ * Because deposits and payments now share a panel, the *kind* has to be
+ * legible without reading the amount: it is carried three times over — by the
+ * direction icon, by the word under the figure, and by the currency itself
+ * (XAF in, ¥ out).
+ */
+interface FeedEntry {
+  id: string;
+  kind: 'deposit' | 'payment';
   name: string;
   reference: string | null;
   amount: string;
-  when: string;
+  at: string;
   status: string;
-  tone: Parameters<typeof Badge>[0]['tone'];
-  onClick: () => void;
-}) {
+  tone: Tone;
+  to: string;
+}
+
+const KIND_LABEL: Record<FeedEntry['kind'], string> = { deposit: 'Dépôt', payment: 'Paiement' };
+const KIND_ICON: Record<FeedEntry['kind'], ElementType> = { deposit: ArrowDownToLine, payment: ArrowUpFromLine };
+const KIND_TONE: Record<FeedEntry['kind'], Tone> = { deposit: 'success', payment: 'info' };
+
+function FeedRow({ entry, onClick }: { entry: FeedEntry; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn('flex w-full items-center gap-3 border-b px-4 py-2.5 text-left last:border-0 transition-colors', DS.line, DS.hover)}
+      className={cn('flex w-full items-center gap-3 border-b px-4 py-2 text-left last:border-0 transition-colors', DS.line, DS.hover)}
     >
-      <Avatar name={name} size="sm" />
+      <Holder icon={KIND_ICON[entry.kind]} tone={KIND_TONE[entry.kind]} size="sm" />
       <span className="min-w-0 flex-1">
-        <span className={cn('block truncate text-[12.5px] font-semibold', DFG.strong)}>{name}</span>
-        {reference ? <Ref className="mt-0.5">{reference}</Ref> : null}
+        <span className={cn('block truncate font-semibold', DT.body, DFG.strong)}>{entry.name}</span>
+        {entry.reference ? <Ref className="mt-1">{entry.reference}</Ref> : null}
       </span>
       <span className="shrink-0 text-right">
-        <Figure value={amount} size="md" />
-        <span className={cn('mt-0.5 block text-[11px]', DFG.faint)}>{when}</span>
+        <Figure value={entry.amount} size="md" />
+        <span className={cn('mt-1 block', DT.label, DFG.muted)}>
+          {KIND_LABEL[entry.kind]} · {formatRelativeDate(entry.at)}
+        </span>
       </span>
-      <Badge tone={tone}>{status}</Badge>
+      <Badge tone={entry.tone}>{entry.status}</Badge>
     </button>
   );
 }
@@ -134,11 +156,47 @@ export function DesktopDashboard() {
   const canSupport = hasPermission('canAccessSupportChat');
   const { data: conversations } = useAdminConversations();
 
-  const recentDeposits = (deposits ?? []).slice(0, 6);
-  const recentPayments = useMemo(() => (paymentPages?.pages[0]?.data ?? []).slice(0, 6), [paymentPages]);
-
   const canDeposits = hasPermission('canViewDeposits');
   const canPayments = hasPermission('canViewPayments');
+  const canClients = hasPermission('canViewClients');
+
+  /* One feed, both kinds, newest first. Each side is gated by the same
+     permission as its list screen, so a role that cannot open `/m/payments`
+     never sees a payment row it could not click through to. */
+  const feed = useMemo<FeedEntry[]>(() => {
+    const entries: FeedEntry[] = [];
+    if (canDeposits) {
+      for (const d of deposits ?? []) {
+        entries.push({
+          id: `deposit:${d.id}`,
+          kind: 'deposit',
+          name: `${d.profiles?.first_name ?? ''} ${d.profiles?.last_name ?? ''}`.trim() || 'Client',
+          reference: d.reference,
+          amount: formatXAF(d.amount_xaf),
+          at: d.created_at,
+          status: getDepositStatusLabel(d.status),
+          tone: depositStatusTone(d.status),
+          to: `/m/deposits/${d.id}`,
+        });
+      }
+    }
+    if (canPayments) {
+      for (const p of paymentPages?.pages[0]?.data ?? []) {
+        entries.push({
+          id: `payment:${p.id}`,
+          kind: 'payment',
+          name: `${p.profiles?.first_name ?? ''} ${p.profiles?.last_name ?? ''}`.trim() || 'Client',
+          reference: p.reference,
+          amount: formatCurrencyRMB(p.amount_rmb),
+          at: p.created_at,
+          status: PAYMENT_STATUS_LABELS[p.status] ?? p.status,
+          tone: paymentStatusTone(p.status),
+          to: `/m/payments/${p.id}`,
+        });
+      }
+    }
+    return entries.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
+  }, [deposits, paymentPages, canDeposits, canPayments]);
 
   /* Every term is gated the same way as the tile that displays it, so the
      header total and the tiles can never contradict each other. */
@@ -150,12 +208,6 @@ export function DesktopDashboard() {
   const queueReady = (!canDeposits || !!depositStats) && (!canPayments || !!paymentStats);
 
   const role = currentUser?.role;
-  const shortcuts = [
-    { icon: UserPlus, label: 'Nouveau client', to: '/m/clients/new', perm: 'canEditClients' as const },
-    { icon: BarChart3, label: 'Analytics', to: '/m/dashboard' },
-    { icon: Coins, label: 'Trésorerie', to: '/m/more/treasury', perm: 'canViewTreasury' as const },
-    { icon: LifeBuoy, label: 'Support', to: '/m/support', perm: 'canAccessSupportChat' as const },
-  ].filter((s) => !s.perm || hasPermission(s.perm));
 
   const rateRows = rate
     ? ([
@@ -165,6 +217,14 @@ export function DesktopDashboard() {
         ['Virement', rate.rate_virement],
       ] as const)
     : [];
+
+  /* "Tout voir" has to be honest about a mixed list: with both permissions it
+     opens onto the two queues rather than silently picking one of them. */
+  const feedTargets: MenuItem[] = [];
+  if (canDeposits) feedTargets.push({ label: 'Tous les dépôts', icon: ArrowDownToLine, onSelect: () => navigate('/m/deposits') });
+  if (canPayments) feedTargets.push({ label: 'Tous les paiements', icon: ArrowUpFromLine, onSelect: () => navigate('/m/payments') });
+
+  const showFeed = canDeposits || canPayments;
 
   return (
     <Workspace
@@ -203,11 +263,11 @@ export function DesktopDashboard() {
         {!queueReady ? (
           <div className={cn('flex divide-x', DS.line)}>
             {[0, 1, 2].map((i) => (
-              <div key={i} className="flex flex-1 items-center gap-3.5 px-4 py-3.5">
+              <div key={i} className="flex flex-1 items-center gap-4 px-4 py-4">
                 <Skeleton className="h-10 w-10 rounded-lg" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-2/3" />
-                  <Skeleton className="h-2.5 w-1/2" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
               </div>
             ))}
@@ -250,76 +310,81 @@ export function DesktopDashboard() {
         )}
       </Panel>
 
-      {/* ── 2. Context ── */}
-      <section className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Metric icon={Wallet} tone="info" label="Solde plateforme" value={statsLoading ? '—' : formatCurrency(stats?.totalWalletBalance ?? 0, 'XAF', { compact: true })} hint="Total XAF détenu par les wallets clients" />
-        <Metric icon={TrendingUp} tone="info" label="Volume 7 jours" value={statsLoading ? '—' : formatCurrency(stats?.weekVolume ?? 0, 'XAF', { compact: true })} hint="Flux traité sur la semaine glissante" />
-        <Metric icon={ArrowDownToLine} tone="success" label="Dépôts aujourd'hui" value={depositStats ? formatCurrency(depositStats.today_amount ?? 0, 'XAF', { compact: true }) : '—'} hint="Entrées de fonds du jour" />
-        <Metric icon={ArrowUpFromLine} tone="pending" label="Paiements aujourd'hui" value={statsLoading ? '—' : formatCurrency(stats?.todayPaymentsAmount ?? 0, 'XAF', { compact: true })} hint="Règlements fournisseurs du jour" />
-      </section>
+      {/* ── 2. Context — two tiles, and each one opens the screen that
+             decomposes its own number. "Dépôts aujourd'hui" and "Paiements
+             aujourd'hui" are gone: both aggregates are already the subtitle of
+             their own list screen, one click away in the rail. ── */}
+      {statsLoading ? (
+        <section className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2" aria-hidden>
+          {[0, 1].map((i) => (
+            <Panel key={i} className="p-3">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-6 rounded-lg" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <Skeleton className="mt-2 h-7 w-40" />
+              <Skeleton className="mt-1 h-4 w-48" />
+            </Panel>
+          ))}
+        </section>
+      ) : (
+        <section className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Metric
+            icon={Wallet}
+            tone="info"
+            label="Solde plateforme"
+            value={formatCurrency(stats?.totalWalletBalance ?? 0, 'XAF', { compact: true })}
+            hint={canClients ? 'Wallets clients — voir le détail par compte' : 'Total XAF détenu par les wallets clients'}
+            onClick={canClients ? () => navigate('/m/clients') : undefined}
+          />
+          <Metric
+            icon={TrendingUp}
+            tone="info"
+            label="Volume 7 jours"
+            value={formatCurrency(stats?.weekVolume ?? 0, 'XAF', { compact: true })}
+            hint="Semaine glissante — voir les rapports de volume"
+            onClick={() => navigate('/m/dashboard')}
+          />
+        </section>
+      )}
 
-      {/* ── 3. Live feeds + rail ── */}
+      {/* ── 3. Activity + rail ── */}
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="space-y-4 xl:col-span-8">
-          {hasPermission('canViewDeposits') && (
+        {showFeed && (
+          <div className="xl:col-span-8">
             <Panel className="overflow-hidden">
               <PanelHead
-                title="Derniers dépôts"
-                actions={<Button variant="ghost" onClick={() => navigate('/m/deposits')}>Tout voir</Button>}
+                title="Activité récente"
+                hint="Dépôts et paiements, du plus récent au plus ancien"
+                /* No "Tout voir" onto an empty list. */
+                actions={
+                  feed.length === 0 ? undefined : feedTargets.length === 1 ? (
+                    <Button variant="ghost" onClick={feedTargets[0].onSelect}>
+                      Tout voir
+                    </Button>
+                  ) : (
+                    <MenuButton label="Tout voir" items={feedTargets} />
+                  )
+                }
               />
-              {recentDeposits.length === 0 ? (
-                <EmptyState icon={ArrowDownToLine} title="Aucun dépôt" hint="Les dépôts déclarés apparaîtront ici." />
+              {feed.length === 0 ? (
+                <EmptyState
+                  icon={ArrowDownToLine}
+                  title="Aucune opération récente"
+                  hint="Les dépôts déclarés et les règlements fournisseurs apparaîtront ici."
+                />
               ) : (
-                recentDeposits.map((d) => (
-                  <FeedRow
-                    key={d.id}
-                    name={`${d.profiles?.first_name ?? ''} ${d.profiles?.last_name ?? ''}`.trim() || 'Client'}
-                    reference={d.reference}
-                    amount={formatXAF(d.amount_xaf)}
-                    when={formatRelativeDate(d.created_at)}
-                    status={getDepositStatusLabel(d.status)}
-                    tone={depositStatusTone(d.status)}
-                    onClick={() => navigate(`/m/deposits/${d.id}`)}
-                  />
-                ))
+                feed.map((entry) => <FeedRow key={entry.id} entry={entry} onClick={() => navigate(entry.to)} />)
               )}
             </Panel>
-          )}
+          </div>
+        )}
 
-          {hasPermission('canViewPayments') && (
-            <Panel className="overflow-hidden">
-              <PanelHead
-                title="Derniers paiements"
-                actions={<Button variant="ghost" onClick={() => navigate('/m/payments')}>Tout voir</Button>}
-              />
-              {recentPayments.length === 0 ? (
-                <EmptyState icon={ArrowUpFromLine} title="Aucun paiement" hint="Les règlements fournisseurs apparaîtront ici." />
-              ) : (
-                recentPayments.map((p) => (
-                  <FeedRow
-                    key={p.id}
-                    name={`${p.profiles?.first_name ?? ''} ${p.profiles?.last_name ?? ''}`.trim() || 'Client'}
-                    reference={p.reference}
-                    amount={formatCurrencyRMB(p.amount_rmb)}
-                    when={formatRelativeDate(p.created_at)}
-                    status={PAYMENT_STATUS_LABELS[p.status] ?? p.status}
-                    tone={paymentStatusTone(p.status)}
-                    onClick={() => navigate(`/m/payments/${p.id}`)}
-                  />
-                ))
-              )}
-            </Panel>
-          )}
-        </div>
-
-        {/* Right rail */}
-        <div className="space-y-4 xl:col-span-4">
+        {/* Right rail — read-only. Publishing a rate lives in Marché › Taux de
+            change, which the rail already carries. */}
+        <div className={showFeed ? 'xl:col-span-4' : 'xl:col-span-12'}>
           <Panel>
-            <PanelHead
-              title="Taux du jour"
-              hint="Pour 1 000 000 XAF réglés"
-              actions={hasPermission('canManageRates') ? <Button variant="ghost" onClick={() => navigate('/m/more/rates')}>Gérer</Button> : undefined}
-            />
+            <PanelHead title="Taux du jour" hint="Pour 1 000 000 XAF réglés" />
             <div className="px-4 py-2">
               {rateRows.length === 0 ? (
                 <p className={cn(DT.label, DFG.faint, 'py-6 text-center')}>Aucun taux actif publié.</p>
@@ -331,46 +396,6 @@ export function DesktopDashboard() {
                   </div>
                 ))
               )}
-            </div>
-          </Panel>
-
-          {/* Mola — the AI-native entry point, deliberately the one dark surface. */}
-          <button
-            type="button"
-            onClick={() => navigate('/m/assistant')}
-            className="w-full rounded-xl bg-[#1A1725] p-4 text-left ring-1 ring-white/[0.06] transition-colors hover:bg-[#241F33] dark:bg-[#08070D] dark:hover:bg-[#12111A]"
-          >
-            <span className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                <MolaMascot className="h-6 w-6" fallback={<span className="text-[13px]">✦</span>} />
-              </span>
-              <span className="leading-tight">
-                <span className="block text-[13px] font-bold text-white">Mola</span>
-                <span className="block text-[11px] text-white/55">Directeur des opérations IA</span>
-              </span>
-            </span>
-            <span className="mt-3 block text-[12.5px] leading-snug text-white/75">
-              « Valide le dépôt BZ-DP-2291 », « Quel volume payé vers la Chine cette semaine ? »
-            </span>
-            <span className="mt-3 inline-flex rounded-md bg-white/10 px-2.5 py-1.5 text-[11.5px] font-semibold text-white/80">
-              Ouvrir l'assistant →
-            </span>
-          </button>
-
-          <Panel>
-            <PanelHead title="Raccourcis" />
-            <div className="grid grid-cols-2 gap-2 p-3">
-              {shortcuts.map(({ icon: Icon, label, to }) => (
-                <button
-                  key={to}
-                  type="button"
-                  onClick={() => navigate(to)}
-                  className={cn('flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors', DS.line, DS.hover)}
-                >
-                  <Holder icon={Icon} size="sm" />
-                  <span className={cn('truncate text-[12px] font-semibold', DFG.base)}>{label}</span>
-                </button>
-              ))}
             </div>
           </Panel>
         </div>

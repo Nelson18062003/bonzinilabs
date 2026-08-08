@@ -6,19 +6,29 @@
  * the batch entry point, the RMB column and the "réglés aujourd'hui" pulse in
  * the subtitle.
  *
+ * Density pass (the console's worst offender: 26 controls on one screen):
+ *  · The head keeps three elements — `Nouveau paiement` (primary), `Paiement
+ *    groupé`, and a `…` menu holding the export and the refresh. The two
+ *    widest labels were the two least-used actions.
+ *  · Sorting moved onto the table header, where the Clients screen already
+ *    puts it. One gesture, one mental model: the trailing `Segment` and the
+ *    column headers were two ways to do the same thing.
+ *  · Méthode and Période collapsed into a single `FilterPopover`, so the
+ *    toolbar carries the search, the five status buckets and one trigger.
+ *
  * Filters and status buckets come from `@/lib/paymentsList`, shared with the
  * mobile screen.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, Download, Layers, Paperclip, Plus, RefreshCw, Search, Send, X } from 'lucide-react';
+import { AlertTriangle, Download, Layers, Paperclip, Plus, RefreshCw, Search, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { PAYMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS, TO_PROCESS_STATUSES, type PaymentStatus } from '@/types/payment';
-import { METHOD_FILTERS, SORT_OPTIONS, logoMethod, type FilterKey } from '@/lib/paymentsList';
+import { METHOD_FILTERS, logoMethod, type FilterKey } from '@/lib/paymentsList';
 import { getPeriodDates, type PeriodPreset } from '@/lib/depositsList';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
@@ -28,20 +38,21 @@ import { getPaymentSlaLevel } from '@/lib/paymentSla';
 import { paymentStatusTone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
-import { DS, DT, DFG } from '@/desktop/ui/tokens';
-import { Avatar, Badge, Button, Chip, EmptyState, Figure, IconButton, Input, Ref, Segment } from '@/desktop/ui/primitives';
+import { DT, DFG } from '@/desktop/ui/tokens';
+import { Avatar, Badge, Button, Chip, EmptyState, Figure, Input, Ref, SearchField } from '@/desktop/ui/primitives';
+import { FilterPopover, MenuButton, type FilterAxis, type MenuItem } from '@/desktop/ui/Popover';
 import { SlaDot } from '@/desktop/ui/SlaDot';
-import { DataTable, type Column } from '@/desktop/ui/DataTable';
-import { FilterGroup, ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
+import { DataTable, type Column, type SortState } from '@/desktop/ui/DataTable';
+import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
 /** Same presets as the deposits queue — one period vocabulary for both. */
-const PERIOD_CHIPS: { k: PeriodPreset; l: string }[] = [
-  { k: 'all', l: 'Tout' },
-  { k: 'today', l: 'Auj.' },
+const PERIOD_OPTIONS: { k: PeriodPreset; l: string }[] = [
+  { k: 'all', l: 'Toutes périodes' },
+  { k: 'today', l: "Aujourd'hui" },
   { k: 'yesterday', l: 'Hier' },
-  { k: 'week', l: 'Semaine' },
-  { k: 'month', l: 'Mois' },
-  { k: 'custom', l: 'Période…' },
+  { k: 'week', l: 'Cette semaine' },
+  { k: 'month', l: 'Ce mois-ci' },
+  { k: 'custom', l: 'Dates personnalisées…' },
 ];
 
 const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
@@ -52,6 +63,13 @@ const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
   { k: 'rejected', l: 'Rejetés' },
 ];
 
+/**
+ * The sort the queue opens on. Column key + direction *is* the sort state now:
+ * `created_at`/desc = plus récent, `created_at`/asc = plus ancien,
+ * `amount_rmb`/desc = montant décroissant, `amount_rmb`/asc = montant croissant.
+ */
+const DEFAULT_SORT: SortState = { key: 'created_at', dir: 'desc' };
+
 export function DesktopPaymentsScreen() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
@@ -60,7 +78,7 @@ export function DesktopPaymentsScreen() {
 
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [methodFilter, setMethodFilter] = useState('all');
-  const [sortKey, setSortKey] = useState('newest');
+  const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -76,15 +94,17 @@ export function DesktopPaymentsScreen() {
   );
 
   const filters = useMemo<PaymentFilters>(() => {
-    const sort = SORT_OPTIONS.find((s) => s.key === sortKey) ?? SORT_OPTIONS[0];
-    const p: PaymentFilters = { sortField: sort.field, sortAscending: sort.ascending };
+    const p: PaymentFilters = {
+      sortField: sort.key === 'amount_rmb' ? 'amount_rmb' : 'created_at',
+      sortAscending: sort.dir === 'asc',
+    };
     if (statusFilter === 'to_process') p.statuses = TO_PROCESS_STATUSES;
     else if (statusFilter !== 'all') p.status = statusFilter as PaymentStatus;
     if (methodFilter !== 'all') p.method = methodFilter;
     if (dateFrom) p.dateFrom = dateFrom;
     if (dateTo) p.dateTo = dateTo;
     return p;
-  }, [statusFilter, methodFilter, sortKey, dateFrom, dateTo]);
+  }, [statusFilter, methodFilter, sort, dateFrom, dateTo]);
 
 
   const { data, isLoading, isError, isFetching, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -113,8 +133,13 @@ export function DesktopPaymentsScreen() {
     }
   };
 
+  /* Counts only mean something once the stats query has answered: before that
+     every bucket reads 0, and disabling five chips on a number nobody has
+     confirmed yet is worse than showing them enabled. */
+  const countsKnown = !!stats;
+
   const hasFilters =
-    statusFilter !== 'all' || methodFilter !== 'all' || periodPreset !== 'all' || sortKey !== 'newest' || !!debouncedSearch;
+    statusFilter !== 'all' || methodFilter !== 'all' || periodPreset !== 'all' || !!debouncedSearch;
   const searching = !!debouncedSearch;
 
   const resetFilters = () => {
@@ -123,7 +148,7 @@ export function DesktopPaymentsScreen() {
     setPeriodPreset('all');
     setCustomFrom('');
     setCustomTo('');
-    setSortKey('newest');
+    setSort(DEFAULT_SORT);
     setSearch('');
   };
 
@@ -153,7 +178,7 @@ export function DesktopPaymentsScreen() {
             <Avatar name={name} size="sm" />
             <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
             {p.proof_count ? (
-              <span className={cn('inline-flex shrink-0 items-center gap-0.5', DT.label, DFG.muted)} title={`${p.proof_count} justificatif(s)`}>
+              <span className={cn('inline-flex shrink-0 items-center gap-1', DT.label, DFG.muted)} title={`${p.proof_count} justificatif(s)`}>
                 <Paperclip className="h-3 w-3" aria-hidden />
                 {p.proof_count}
               </span>
@@ -167,6 +192,7 @@ export function DesktopPaymentsScreen() {
       header: 'Montant',
       align: 'right',
       width: '130px',
+      sortable: true,
       cell: (p) => <Figure value={formatCurrencyRMB(p.amount_rmb)} />,
     },
     {
@@ -175,7 +201,10 @@ export function DesktopPaymentsScreen() {
       width: '140px',
       cell: (p) => (
         <span className="flex items-center gap-2">
-          <PaymentMethodLogo method={logoMethod(p.method)} size={22} />
+          {/* 24, not 22: the Cash tile renders its ¥ mark at `size * 0.5`, so
+              22 put an 11px glyph on screen — below the console's 12px floor
+              and off its type scale. 24 lands the mark exactly on 12. */}
+          <PaymentMethodLogo method={logoMethod(p.method)} size={24} />
           <span className={cn('truncate', DFG.muted)}>{PAYMENT_METHOD_LABELS[p.method] || p.method}</span>
         </span>
       ),
@@ -184,6 +213,7 @@ export function DesktopPaymentsScreen() {
       key: 'created_at',
       header: 'Créé',
       width: '120px',
+      sortable: true,
       cell: (p) => <span className={DFG.muted}>{formatRelativeDate(p.created_at)}</span>,
     },
     {
@@ -194,7 +224,7 @@ export function DesktopPaymentsScreen() {
       cell: (p) => {
         const sla = getPaymentSlaLevel(p.created_at, p.status);
         return (
-          <span className="flex items-center justify-end gap-1.5">
+          <span className="flex items-center justify-end gap-1">
             {sla && <SlaDot level={sla} />}
             <Badge tone={paymentStatusTone(p.status)}>{PAYMENT_STATUS_LABELS[p.status] || p.status}</Badge>
           </span>
@@ -207,6 +237,56 @@ export function DesktopPaymentsScreen() {
   const total = countFor('all');
   const queued = countFor('to_process');
 
+  /* The export ignores the visible filters on purpose — it always ships the
+     work in flight — so its empty state is the only honest way to say "there
+     is nothing in flight". Keep the reason attached to the item. */
+  const nothingToExport = queued === 0 && (stats?.inProgress ?? 0) === 0;
+
+  const menuItems: MenuItem[] = [
+    {
+      label: 'Actualiser',
+      icon: RefreshCw,
+      onSelect: () => { refetch(); refetchStats(); },
+      disabled: isFetching && !isFetchingNextPage,
+      hint: 'Chargement déjà en cours…',
+    },
+    ...(hasPermission('canViewPayments')
+      ? [{
+          label: 'Export des paiements en cours',
+          icon: Download,
+          onSelect: () => { void handleExport(); },
+          disabled: nothingToExport || exporting,
+          hint: nothingToExport
+            ? "Aucun paiement en cours à exporter — l'export porte sur la file en cours, indépendamment des filtres affichés."
+            : 'Export en cours…',
+        } satisfies MenuItem]
+      : []),
+  ];
+
+  const filterAxes: FilterAxis<string>[] = [
+    {
+      id: 'method',
+      label: 'Méthode',
+      value: methodFilter,
+      neutral: 'all',
+      onChange: setMethodFilter,
+      options: METHOD_FILTERS.map((m) => ({ value: m.key, label: m.label })),
+    },
+    {
+      id: 'period',
+      label: 'Période',
+      value: periodPreset,
+      neutral: 'all',
+      onChange: (v) => setPeriodPreset(v as PeriodPreset),
+      options: PERIOD_OPTIONS.map((p) => ({ value: p.k, label: p.l })),
+    },
+  ];
+
+  /* Nothing to filter and nothing filtered: the strip would only be noise
+     above an empty state. Wait for the counts before deciding, so the toolbar
+     does not appear a beat after the screen. */
+  const showToolbar = !countsKnown || total > 0 || hasFilters;
+
   return (
     <Workbench
       head={
@@ -215,33 +295,21 @@ export function DesktopPaymentsScreen() {
           subtitle={
             statsError
               ? 'Compteurs indisponibles'
-              : `${total} paiement${total > 1 ? 's' : ''} · ${queued} à exécuter` +
-                (todaySettled > 0
-                  ? ` · ${todaySettled} réglé${todaySettled > 1 ? 's' : ''} aujourd'hui (${formatCurrencyRMB(stats?.today_amount_rmb ?? 0)})`
-                  : '')
+              : todaySettled > 0
+                ? `${todaySettled} réglé${todaySettled > 1 ? 's' : ''} aujourd'hui (${formatCurrencyRMB(stats?.today_amount_rmb ?? 0)})`
+                : undefined
           }
           actions={
             <>
-              <IconButton
-                icon={RefreshCw}
-                label="Actualiser"
-                loading={isFetching && !isFetchingNextPage}
-                onClick={() => { refetch(); refetchStats(); }}
-              />
-              {hasPermission('canViewPayments') && (
-                <Button
-                  icon={Download}
-                  loading={exporting}
-                  disabled={queued === 0 && (stats?.inProgress ?? 0) === 0}
-                  onClick={handleExport}
-                  title="Exporte les paiements en cours, indépendamment des filtres affichés"
-                >
-                  Export des paiements en cours
-                </Button>
-              )}
+              <MenuButton items={menuItems} />
               {hasPermission('canProcessPayments') && (
                 <>
-                  <Button icon={Layers} onClick={() => navigate('/m/payments/batch/new')}>
+                  <Button
+                    icon={Layers}
+                    disabled={queued === 0}
+                    title={queued === 0 ? 'Aucun paiement à exécuter dans la file' : undefined}
+                    onClick={() => navigate('/m/payments/batch/new')}
+                  >
                     Paiement groupé
                   </Button>
                   <Button variant="primary" icon={Plus} onClick={() => navigate('/m/payments/new')}>
@@ -254,66 +322,66 @@ export function DesktopPaymentsScreen() {
         />
       }
       toolbar={
-        <Toolbar
-          trailing={
-            <>
-              <Segment
-                value={sortKey}
-                onChange={setSortKey}
-                options={SORT_OPTIONS.map((s) => ({ value: s.key, label: s.label }))}
-              />
-              {hasFilters ? (
-                <Button variant="ghost" icon={X} onClick={resetFilters}>
-                  Réinitialiser
-                </Button>
-              ) : null}
-            </>
-          }
-        >
-          <div className="relative mr-1 w-64">
-            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.muted)} />
-            <Input
-              type="search"
+        showToolbar ? (
+          <Toolbar>
+            <SearchField
               aria-label="Rechercher dans les paiements chargés"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher…"
-              className="pl-8"
             />
-          </div>
 
-          {STATUS_CHIPS.map((c) => (
-            <Chip key={c.k} active={statusFilter === c.k} count={countFor(c.k)} onClick={() => setStatusFilter(c.k)}>
-              {c.l}
-            </Chip>
-          ))}
+            {STATUS_CHIPS.map((c) => {
+              const n = countFor(c.k);
+              const active = statusFilter === c.k;
+              return (
+                <Chip
+                  key={c.k}
+                  active={active}
+                  // `null` while the counters are in flight, the real number
+                  // once they land — the two are different facts (see `Chip`).
+                  count={countsKnown ? n : null}
+                  // Never disable the *active* bucket: a disabled chip is
+                  // unclickable, so doing so would strand the operator in a
+                  // filter they cannot leave through the chips.
+                  disabled={countsKnown && n === 0 && !active}
+                  onClick={() => setStatusFilter(c.k)}
+                >
+                  {c.l}
+                </Chip>
+              );
+            })}
 
-          <span className={cn('mx-1 h-4 w-px border-l', DS.line)} />
-
-          <FilterGroup label="Méthode">
-            {METHOD_FILTERS.map((m) => (
-              <Chip key={m.key} active={methodFilter === m.key} onClick={() => setMethodFilter(m.key)}>
-                {m.label}
-              </Chip>
-            ))}
-          </FilterGroup>
-
-          <FilterGroup label="Période">
-            {PERIOD_CHIPS.map((p) => (
-              <Chip key={p.k} active={periodPreset === p.k} onClick={() => setPeriodPreset(p.k)}>
-                {p.l}
-              </Chip>
-            ))}
-          </FilterGroup>
-
-          {periodPreset === 'custom' && (
-            <span className="flex items-center gap-1.5">
-              <Input type="date" aria-label="Date de début" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-[140px]" />
-              <span className={cn(DT.label, DFG.muted)} aria-hidden>→</span>
-              <Input type="date" aria-label="Date de fin" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-[140px]" />
-            </span>
-          )}
-        </Toolbar>
+            <FilterPopover
+              axes={filterAxes}
+              onClear={resetFilters}
+              extra={
+                periodPreset === 'custom' ? (
+                  <div className="space-y-2">
+                    <label className="block">
+                      <span className={cn(DT.label, DFG.muted, 'mb-1 block')}>Du</span>
+                      <Input
+                        type="date"
+                        aria-label="Date de début"
+                        value={customFrom}
+                        onChange={(e) => setCustomFrom(e.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className={cn(DT.label, DFG.muted, 'mb-1 block')}>Au</span>
+                      <Input
+                        type="date"
+                        aria-label="Date de fin"
+                        value={customTo}
+                        onChange={(e) => setCustomTo(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                ) : undefined
+              }
+            />
+          </Toolbar>
+        ) : undefined
       }
       inspector={paymentId ? <MobilePaymentDetail /> : null}
       onCloseInspector={() => navigate('/m/payments')}
@@ -325,6 +393,8 @@ export function DesktopPaymentsScreen() {
         getRowId={(p) => p.id}
         activeId={paymentId ?? null}
         onRowClick={(p) => navigate(`/m/payments/${p.id}`)}
+        sort={sort}
+        onSortChange={setSort}
         isLoading={isLoading}
         empty={
           isError ? (

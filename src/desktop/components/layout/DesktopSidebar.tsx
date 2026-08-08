@@ -109,12 +109,12 @@ export function DesktopSidebar({
       )}
     >
       {/* Brand */}
-      <div className={cn('flex h-[52px] shrink-0 items-center gap-2.5 border-b px-3', DS.line)}>
+      <div style={{ height: LAYOUT.topbar }} className={cn('flex shrink-0 items-center gap-3 border-b px-3', DS.line)}>
         <BonziniLogo size="sm" showText={false} className="shrink-0" />
         {!collapsed && (
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className={cn('truncate text-[13px] font-extrabold', DFG.strong)}>Bonzini</p>
-            <p className={cn('truncate text-[10.5px]', DFG.muted)}>Console d'opérations</p>
+          <div className="min-w-0 flex-1">
+            <p className={cn(DT.body, DFG.strong, 'truncate font-extrabold')}>Bonzini</p>
+            <p className={cn(DT.label, DFG.muted, 'truncate font-normal')}>Console d'opérations</p>
           </div>
         )}
         {!collapsed && (
@@ -149,7 +149,7 @@ export function DesktopSidebar({
                     aria-expanded={expanded}
                     aria-controls={`nav-section-${section.id}`}
                     className={cn(
-                      'mt-3 flex w-full items-center gap-1 rounded-md px-2 py-1 transition-colors',
+                      'mt-3 flex h-6 w-full items-center gap-1 rounded-md px-2 transition-colors',
                       DT.micro,
                       DFG.faint,
                       'hover:text-[#3B3750] dark:hover:text-[#C9C6D6]',
@@ -175,7 +175,7 @@ export function DesktopSidebar({
                       aria-label={item.label}
                       className={({ isActive }) =>
                         cn(
-                          'group relative mb-px flex h-8 items-center gap-2.5 rounded-lg text-[13px] font-medium transition-colors',
+                          'group relative mb-px flex h-8 items-center gap-2 rounded-md text-[13px] font-medium transition-colors',
                           collapsed ? 'justify-center px-0' : 'px-2',
                           isActive
                             ? cn('bg-[#6B5BD2]/[0.10] font-semibold text-[#5B4CC4] dark:bg-[#A99BF0]/[0.14] dark:text-[#BCB1F7]')
@@ -193,9 +193,9 @@ export function DesktopSidebar({
                       {badge > 0 && (
                         <span
                           className={cn(
-                            'flex items-center justify-center rounded-full font-bold tabular-nums',
+                            'flex items-center justify-center rounded-full font-bold leading-4 tabular-nums',
                             DBADGE,
-                            collapsed ? 'absolute right-1.5 top-1 h-1.5 w-1.5' : 'h-[17px] min-w-[17px] px-1 text-[10px]',
+                            collapsed ? 'absolute right-1 top-1 h-2 w-2' : 'h-4 min-w-4 px-1 text-[12px]',
                           )}
                         >
                           {/* Collapsed the badge is a dot — it still has to be
@@ -219,15 +219,15 @@ export function DesktopSidebar({
             type="button"
             onClick={() => navigate('/m/more/profile')}
             aria-label="Mon profil"
-            className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-lg p-1 text-left transition-colors', DS.hover, DFOCUS)}
+            className={cn('flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left transition-colors', DS.hover, DFOCUS)}
           >
             <Avatar name={`${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`} src={currentUser?.avatarUrl} />
             {!collapsed && (
-              <span className="min-w-0 flex-1 leading-tight">
-                <span className={cn('block truncate text-[12.5px] font-bold', DFG.strong)}>
+              <span className="min-w-0 flex-1">
+                <span className={cn(DT.label, DFG.strong, 'block truncate font-bold')}>
                   {currentUser?.firstName} {currentUser?.lastName}
                 </span>
-                <span className={cn('block truncate text-[10.5px]', DFG.muted)}>
+                <span className={cn(DT.label, DFG.muted, 'block truncate font-normal')}>
                   {currentUser ? ADMIN_ROLE_LABELS[currentUser.role] : ''}
                 </span>
               </span>

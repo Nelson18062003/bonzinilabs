@@ -82,7 +82,7 @@ export function DesktopNotificationsMenu() {
             aria-hidden
             className={cn(
               'pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center',
-              'rounded-full bg-[#FE560D] px-1 text-[10px] font-bold leading-none tabular-nums text-white',
+              'rounded-full bg-[#FE560D] px-1 text-[12px] font-bold leading-4 tabular-nums text-white',
               // Ringed in the topbar's own colour so the badge reads as cut out
               // of the bar rather than floating on it.
               'ring-2 ring-white dark:ring-[#15141C]',
@@ -101,7 +101,7 @@ export function DesktopNotificationsMenu() {
             aria-label="Notifications"
             className={cn('absolute right-0 top-full z-50 mt-2 w-[380px] overflow-hidden rounded-xl border', DS.panel, DS.line, DS.float)}
           >
-            <header className={cn('flex items-center justify-between gap-2 border-b px-4 py-2.5', DS.line)}>
+            <header className={cn('flex h-11 items-center justify-between gap-2 border-b px-4', DS.line)}>
               <span className={cn(DT.title, DFG.strong)}>
                 Notifications{count > 0 ? ` · ${count}` : ''}
               </span>
@@ -114,13 +114,13 @@ export function DesktopNotificationsMenu() {
               </button>
             </header>
 
-            <div className="max-h-[min(70vh,480px)] overflow-y-auto p-1.5">
+            <div className="max-h-[min(70vh,480px)] overflow-y-auto p-2">
               {isLoading ? (
-                <div className="space-y-1 p-1.5">
+                <div className="space-y-1 p-2">
                   {[0, 1, 2].map((i) => (
                     <div key={i} className="flex items-center gap-3 py-2">
                       <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
-                      <div className="flex-1 space-y-1.5">
+                      <div className="flex-1 space-y-1">
                         <Skeleton className="h-2.5 w-2/3" />
                         <Skeleton className="h-2.5 w-1/3" />
                       </div>
@@ -135,12 +135,12 @@ export function DesktopNotificationsMenu() {
                       key={n.id}
                       type="button"
                       onClick={() => go(n.targetPath)}
-                      className={cn('flex w-full items-start gap-3 rounded-lg p-2.5 text-left transition-colors', DS.hover, DFOCUS)}
+                      className={cn('flex w-full items-start gap-3 rounded-md p-2 text-left transition-colors', DS.hover, DFOCUS)}
                     >
                       <Holder icon={cfg.icon} tone={cfg.tone} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-start justify-between gap-2">
-                          <span className={cn('truncate text-[12.5px] font-semibold', DFG.strong)}>{n.title}</span>
+                          <span className={cn(DT.label, DFG.strong, 'truncate')}>{n.title}</span>
                           <Figure
                             value={n.currency === 'RMB' ? formatCurrencyRMB(n.amount) : formatXAF(n.amount)}
                             unit={n.currency === 'RMB' ? undefined : 'XAF'}
@@ -148,8 +148,8 @@ export function DesktopNotificationsMenu() {
                             className="shrink-0"
                           />
                         </span>
-                        <span className={cn('mt-0.5 block truncate text-[11.5px]', DFG.muted)}>{n.subtitle}</span>
-                        <span className={cn('mt-0.5 block text-[10.5px]', DFG.faint)}>{relTime(n.createdAt)}</span>
+                        <span className={cn(DT.label, DFG.muted, 'mt-1 block truncate font-normal')}>{n.subtitle}</span>
+                        <span className={cn(DT.label, DFG.faint, 'mt-1 block font-normal')}>{relTime(n.createdAt)}</span>
                       </span>
                     </button>
                   );

@@ -226,7 +226,12 @@ export function Chip({
       {...rest}
     >
       {children}
-      {count != null && count > 0 ? (
+      {/* `count != null`, not `count > 0`. A bucket that genuinely holds zero
+          and a bucket whose counters have not loaded are different facts, and
+          on a financial queue the operator must be able to tell them apart —
+          omitting the badge for both made them identical. Pass `null` while
+          the count is unknown; pass `0` when it is known to be empty. */}
+      {count != null ? (
         <span
           className={cn(
             'rounded px-1 text-[12px] font-bold leading-4 tabular-nums',
@@ -259,11 +264,14 @@ export function Segment<T extends string>({
   className?: string;
 } & Steppable) {
   const c = useControl(step);
-  const inner = c.h - 8; // 2px padding + 2px border-box breathing on each side
+  // The track is one grid unit taller than its buttons: 4px of inset, 2px per
+  // side, which keeps the outer edge exactly on the step so a Segment and a
+  // Chip on the same toolbar row share a silhouette.
+  const inner = c.h - 4;
   return (
     <div
-      style={{ height: c.h }}
-      className={cn('inline-flex items-center gap-0.5 rounded-lg p-0.5', DS.well, className)}
+      style={{ height: c.h, padding: 2 }}
+      className={cn('inline-flex items-center gap-1 rounded-md', DS.well, className)}
     >
       {options.map((o) => (
         <button
@@ -271,9 +279,9 @@ export function Segment<T extends string>({
           type="button"
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
-          style={{ height: inner + 4 }}
+          style={{ height: inner }}
           className={cn(
-            'rounded-md px-2.5 text-[12px] font-semibold transition-colors',
+            'rounded px-2 text-[12px] font-semibold transition-colors',
             value === o.value
               ? cn('border bg-white dark:bg-[#22212C]', DS.line, DFG.strong)
               : cn(DFG.muted, 'hover:text-[#15131F] dark:hover:text-[#F3F2F8]'),
@@ -329,7 +337,7 @@ export function Count({ value, className }: { value: number | string; className?
 /** A copyable business reference (BZ-DP-…): monospace on a recessed chip. */
 export function Ref({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex h-5 items-center rounded px-1.5 font-bold', DT.mono, DS.well, DFG.base, className)}>
+    <span className={cn('inline-flex h-5 items-center rounded px-1 font-bold', DT.mono, DS.well, DFG.base, className)}>
       {children}
     </span>
   );

@@ -274,7 +274,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       <div className="absolute inset-0 bg-[#0B0A12]/40 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
 
       <div className={cn('relative w-full max-w-[560px] overflow-hidden rounded-xl border', DS.panel, DS.line, DS.float)}>
-        <div className={cn('flex items-center gap-2.5 border-b px-3.5', DS.line)}>
+        <div className={cn('flex items-center gap-3 border-b px-4', DS.line)}>
           <Search className={cn('h-4 w-4 shrink-0', DFG.faint)} />
           {/* Desktop-only chrome — the iOS 16px auto-zoom rule doesn't apply. */}
           {/* eslint-disable-next-line no-restricted-syntax */}
@@ -290,12 +290,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             autoComplete="off"
             spellCheck={false}
             placeholder="Rechercher un écran, un client, une référence — ou poser une question à Mola…"
-            className={cn('h-12 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#767187] dark:placeholder:text-[#8B8799]', DFG.strong)}
+            className={cn('h-12 flex-1 bg-transparent text-[15px] outline-none placeholder:text-[#767187] dark:placeholder:text-[#8B8799]', DFG.strong)}
           />
           {isLoading ? <Loader2 className={cn('h-4 w-4 animate-spin motion-reduce:animate-none', DFG.faint)} /> : null}
         </div>
 
-        <div ref={listRef} id="cmdk-list" role="listbox" aria-label="Résultats" className="max-h-[52vh] overflow-y-auto p-1.5">
+        <div ref={listRef} id="cmdk-list" role="listbox" aria-label="Résultats" className="max-h-[52vh] overflow-y-auto p-2">
           {visible.length === 0 ? (
             <p role="status" className={cn('px-3 py-10 text-center', DT.body, DFG.muted)}>
               Aucun résultat pour « {term.trim()} »
@@ -303,7 +303,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           ) : (
             groups.map(([group, items]) => (
               <div key={group} className="mb-1">
-                <p className={cn(DT.micro, DFG.faint, 'px-2.5 pb-1 pt-2')}>{group}</p>
+                <p className={cn(DT.micro, DFG.faint, 'px-2 pb-1 pt-2')}>{group}</p>
                 {items.map((e) => {
                   flatIndex += 1;
                   const idx = flatIndex;
@@ -319,7 +319,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                       onMouseEnter={() => { if (pointerMoved.current) setCursor(idx); }}
                       onClick={e.run}
                       className={cn(
-                        'flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left',
+                        'flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-left',
                         active ? DS.selected : 'bg-transparent',
                       )}
                     >
@@ -338,18 +338,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           )}
         </div>
 
-        <div className={cn('flex items-center gap-4 border-t px-3.5 py-2', DS.line, DS.well)}>
+        <div className={cn('flex items-center gap-4 border-t px-4 py-2', DS.line, DS.well)}>
           {[
             ['↑↓', 'naviguer'],
             ['↵', 'ouvrir'],
             ['esc', 'fermer'],
           ].map(([k, l]) => (
-            <span key={k} className={cn('flex items-center gap-1.5', DT.label, DFG.muted)}>
-              <kbd className={cn('rounded border px-1.5 py-0.5 font-sans text-[10px] font-bold', DS.line, DS.card)}>{k}</kbd>
+            <span key={k} className={cn('flex items-center gap-1', DT.label, DFG.muted, 'font-normal')}>
+              <kbd className={cn('flex h-4 items-center rounded border px-1 font-sans text-[12px] font-bold leading-4', DS.line, DS.card)}>{k}</kbd>
               {l}
             </span>
           ))}
-          <span className={cn('ml-auto flex items-center gap-1.5', DT.label, DFG.muted)}>
+          <span className={cn('ml-auto flex items-center gap-1', DT.label, DFG.muted, 'font-normal')}>
             <Ref>BZ-…</Ref> pour ouvrir une référence
           </span>
         </div>

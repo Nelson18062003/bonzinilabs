@@ -78,6 +78,13 @@ export const DS = {
  *   24 — inline: lives inside a table row or a dense list, never alone.
  *   28 — toolbar: filters, search, view controls. The console's workhorse.
  *   32 — page: screen actions, form inputs. The only size that starts a task.
+ *
+ * These are Primer's xsmall / small / medium, and the borrowing is deliberate.
+ * A survey of nine published systems puts 24 and 32 in eight of them, so both
+ * ends are the industry default; 28 is carried only by Primer, which is also
+ * the densest of the documented enterprise systems and the closest analogue to
+ * this console. The alternative middle step everyone else uses — 40 — is a
+ * comfort size that would cost roughly a row of the queue per screen.
  */
 export const STEP = { inline: 24, toolbar: 28, page: 32 } as const;
 export type StepName = keyof typeof STEP;
@@ -108,10 +115,17 @@ export const SIZE = {
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 28, 8: 32 } as const;
 
 /**
- * Radii, concentric: a control inside a panel must curve *less* than the
- * panel, or the gap between the two curves reads as a manufacturing defect.
+ * Radii — **fixed per role, never derived from height.**
+ *
+ * The tempting rule is `radius = height / 4`. No dense system applies it: at
+ * 32px tall the real values are 4 (Radix), 6 (Primer, Atlassian, Ant, Geist)
+ * and 0 (Carbon). Every system that publishes a control default publishes 6.
+ * So every control here is 6 regardless of step, cards are 12, and the only
+ * concentric rule in play is the one Atlassian actually documents — the focus
+ * ring sits 2px outside the element's own radius, which `DFOCUS` gets for free
+ * from `ring` rather than by computing anything.
  */
-export const RADIUS = { tag: 4, inline: 6, control: 8, panel: 12 } as const;
+export const RADIUS = { tag: 4, control: 6, panel: 12 } as const;
 
 /* ── Type ────────────────────────────────────────────────────────────── */
 
@@ -127,10 +141,13 @@ export const DT = {
   /** 15/20 — card and section title. */
   title: 'text-[15px] font-bold leading-5 tracking-[-0.006em]',
   /** 13/20 — default body copy and primary table cells. */
-  body: 'text-[13px] leading-5',
-  /** 12/16 — secondary line under a title, table metadata. Semibold: 12 is
-   *  only legible at weight ≥ 600, so the weight is part of the token. */
-  label: 'text-[12px] font-semibold leading-4',
+  body: 'text-[13px] leading-5 tracking-[0.005em]',
+  /** 12/16 — secondary line under a title, table metadata. Two things are
+   *  baked in because they are not optional at this size: weight ≥ 600 (12px
+   *  is illegible below it) and positive tracking. Every system that
+   *  documents letter-spacing opens it under 14px — Carbon adds 0.32px at
+   *  12px — and tightens it only above 16px. */
+  label: 'text-[12px] font-semibold leading-4 tracking-[0.01em]',
   /** 12/16 — column headers and group headings. */
   micro: 'text-[12px] font-bold uppercase leading-4 tracking-[0.05em]',
   /** 12/16 — references, IDs, anything the operator may copy. */
@@ -187,9 +204,18 @@ export const DBADGE =
  * "same row → same height → same optical centre" a structural property
  * rather than something to remember during review.
  *
- * `padX` is chosen so the *text* is optically centred: a 28px control with
- * 10px of padding and a 12px label has 8px of ink either side of the glyph
- * box, which reads as balanced next to a 28px square icon button.
+ * Every number below is on the 4px grid and matches published practice rather
+ * than taste:
+ *   · **icon 12 at 24px tall, 16 from 28px up.** Six of six surveyed systems
+ *     put a 16px glyph in every control from 28 to 48px tall; the two that
+ *     document a 24px control both drop to 12. There is no 14px rung.
+ *   · **gap 4 below 32px, 8 at 32px.** Four of four systems that publish an
+ *     icon↔label gap split it exactly there. The previous table used 6px,
+ *     which was off this file's own spacing grid.
+ *   · **padX 8 / 12 / 12**, matching Primer's xsmall/small/medium at normal
+ *     density. Height, not padding, is what separates a toolbar control from
+ *     a page action — the previous 10px was again off-grid.
+ *   · **radius 6 everywhere**, per `RADIUS` above.
  */
 export interface ControlGeometry {
   /** Rendered height in px — one of STEP. */
@@ -214,21 +240,21 @@ export interface ControlGeometry {
 
 export const CONTROL: Record<StepName, ControlGeometry> = {
   inline: {
-    h: STEP.inline, padX: 8, radius: RADIUS.inline, font: SIZE.label, icon: 14, gap: 4,
-    box: 'h-6 gap-1 rounded-md px-2 text-[12px]',
+    h: STEP.inline, padX: SPACE[2], radius: RADIUS.control, font: SIZE.label, icon: 12, gap: SPACE[1],
+    box: 'h-6 gap-1 rounded-md px-2 text-[12px] font-semibold',
     square: 'h-6 w-6 rounded-md',
-    glyph: 'h-3.5 w-3.5',
+    glyph: 'h-3 w-3',
   },
   toolbar: {
-    h: STEP.toolbar, padX: 10, radius: RADIUS.control, font: SIZE.label, icon: 14, gap: 6,
-    box: 'h-7 gap-1.5 rounded-lg px-2.5 text-[12px]',
-    square: 'h-7 w-7 rounded-lg',
-    glyph: 'h-3.5 w-3.5',
+    h: STEP.toolbar, padX: SPACE[3], radius: RADIUS.control, font: SIZE.label, icon: 16, gap: SPACE[1],
+    box: 'h-7 gap-1 rounded-md px-3 text-[12px] font-semibold',
+    square: 'h-7 w-7 rounded-md',
+    glyph: 'h-4 w-4',
   },
   page: {
-    h: STEP.page, padX: 12, radius: RADIUS.control, font: SIZE.body, icon: 16, gap: 6,
-    box: 'h-8 gap-1.5 rounded-lg px-3 text-[13px]',
-    square: 'h-8 w-8 rounded-lg',
+    h: STEP.page, padX: SPACE[3], radius: RADIUS.control, font: SIZE.body, icon: 16, gap: SPACE[2],
+    box: 'h-8 gap-2 rounded-md px-3 text-[13px] font-semibold',
+    square: 'h-8 w-8 rounded-md',
     glyph: 'h-4 w-4',
   },
 };
@@ -249,7 +275,7 @@ export type Density = 'compact' | 'cosy';
  * need under SC 2.5.8.
  */
 export const DENSITY: Record<Density, { row: string; cell: string; head: string; rowPx: number }> = {
-  compact: { row: 'min-h-9', cell: 'px-3 py-1.5', head: 'h-8 px-3', rowPx: 36 },
+  compact: { row: 'min-h-9', cell: 'px-3 py-1', head: 'h-8 px-3', rowPx: 36 },
   cosy: { row: 'min-h-11', cell: 'px-3 py-2', head: 'h-8 px-3', rowPx: 44 },
 };
 

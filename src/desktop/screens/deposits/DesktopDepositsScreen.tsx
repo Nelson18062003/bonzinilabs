@@ -3,17 +3,26 @@
  *
  * Rebuilt as a Workbench: the list owns the viewport, the record opens in a
  * docked inspector, and nothing about the operator's position in the queue is
- * lost when they open, act on and close a deposit. Filters collapse into one
- * strip instead of three stacked rows, and the status chips carry their own
- * counts — so the queue state and the way to filter it are a single control
- * rather than a KPI row duplicating the chips underneath it.
+ * lost when they open, act on and close a deposit.
  *
- * Two honesty rules the first pass got wrong and this one enforces:
+ * The toolbar is deliberately seven controls wide — search, the five status
+ * buckets, and one `FilterPopover`. The audit measured eighteen here, of which
+ * twelve were the Méthode and Période axes spelled out as chips: axes an
+ * operator touches once a day, sitting permanently at the same visual weight as
+ * the queue view they use every minute. Folding them into the popover is a
+ * hierarchy fix, not a capability cut — every option survives.
+ *
+ * Three honesty rules this screen enforces:
  *  · a failed query renders an **error** state, never "aucun dépôt" — telling
  *    an operator the queue is empty when the backend is down is the worst
  *    possible lie in a money product;
- *  · search only covers the pages already fetched, and the screen says so
- *    instead of letting the operator believe they searched the whole history.
+ *  · search and the Méthode axis only cover the pages already fetched, and both
+ *    say so instead of letting the operator believe they filtered the whole
+ *    history (status and période *do* go to the server);
+ *  · a bucket holding zero deposits renders "0", never a blank — a blank is how
+ *    "the counters failed to load" looks, and the two must not be confusable.
+ *    `countFor` returns `null` for unknown and `0` for known-empty, which is
+ *    exactly the distinction `Chip`'s `count` prop is documented to draw.
  *
  * Data layer is unchanged and still shared with MobileDepositsScreenV2
  * (`@/lib/depositsList`), so mobile and desktop can never disagree on what
@@ -21,7 +30,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, FileText, Paperclip, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, FileText, Paperclip, Plus, RefreshCw, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
@@ -43,11 +52,12 @@ import {
 import { depositStatusTone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobileDepositDetailV2 } from '@/mobile/screens/deposits';
-import { DS, DT, DFG } from '@/desktop/ui/tokens';
-import { Avatar, Badge, Button, Chip, EmptyState, Figure, IconButton, Input, Ref } from '@/desktop/ui/primitives';
+import { DT, DFG } from '@/desktop/ui/tokens';
+import { Avatar, Badge, Button, Chip, EmptyState, Field, Figure, Input, Ref, SearchField } from '@/desktop/ui/primitives';
+import { FilterPopover, MenuButton, type FilterAxis } from '@/desktop/ui/Popover';
 import { SlaDot } from '@/desktop/ui/SlaDot';
 import { DataTable, type Column } from '@/desktop/ui/DataTable';
-import { FilterGroup, ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
+import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 
 /** Method family glyph — the same colour key as the mobile list. */
 function MethodGlyph({ family }: { family: string }) {
@@ -56,7 +66,7 @@ function MethodGlyph({ family }: { family: string }) {
   return (
     <span
       aria-hidden
-      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black ring-1 ring-inset ring-black/10 dark:ring-white/25"
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[12px] font-black ring-1 ring-inset ring-black/10 dark:ring-white/25"
       style={{ background: f.bg, color: f.dark ? '#1a1028' : '#fff' }}
     >
       {f.letter}
@@ -64,6 +74,7 @@ function MethodGlyph({ family }: { family: string }) {
   );
 }
 
+/** Status buckets — server-side, and the one filter axis that stays visible. */
 const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
   { k: 'all', l: 'Tous' },
   { k: 'to_process', l: 'À traiter' },
@@ -72,22 +83,23 @@ const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
   { k: 'rejected', l: 'Rejetés' },
 ];
 
-const METHOD_CHIPS = [
-  { k: 'all', l: 'Toutes' },
-  { k: 'BANK', l: 'Banque' },
-  { k: 'AGENCY_BONZINI', l: 'Agence' },
-  { k: 'ORANGE_MONEY', l: 'Orange' },
-  { k: 'MTN_MONEY', l: 'MTN' },
-  { k: 'WAVE', l: 'Wave' },
+/** Method families. `all` is the neutral value — the axis' default, not a filter. */
+const METHOD_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'Toutes les méthodes' },
+  { value: 'BANK', label: 'Banque' },
+  { value: 'AGENCY_BONZINI', label: 'Agence Bonzini' },
+  { value: 'ORANGE_MONEY', label: 'Orange Money' },
+  { value: 'MTN_MONEY', label: 'MTN Money' },
+  { value: 'WAVE', label: 'Wave' },
 ];
 
-const PERIOD_CHIPS: { k: PeriodPreset; l: string }[] = [
-  { k: 'all', l: 'Tout' },
-  { k: 'today', l: "Auj." },
-  { k: 'yesterday', l: 'Hier' },
-  { k: 'week', l: 'Semaine' },
-  { k: 'month', l: 'Mois' },
-  { k: 'custom', l: 'Période…' },
+const PERIOD_OPTIONS: { value: PeriodPreset; label: string }[] = [
+  { value: 'all', label: 'Toute la période' },
+  { value: 'today', label: 'Aujourd’hui' },
+  { value: 'yesterday', label: 'Hier' },
+  { value: 'week', label: 'Cette semaine' },
+  { value: 'month', label: 'Ce mois-ci' },
+  { value: 'custom', label: 'Dates personnalisées…' },
 ];
 
 export function DesktopDepositsScreen() {
@@ -144,21 +156,34 @@ export function DesktopDepositsScreen() {
     return list;
   }, [loaded, familyFilter, debouncedSearch]);
 
-  const countFor = (k: FilterKey): number => {
+  /** `null` = the counters have not answered yet (or failed) — not "zero". */
+  const countFor = (k: FilterKey): number | null => {
+    if (!stats) return null;
     switch (k) {
-      case 'all': return stats?.total ?? 0;
-      case 'to_process': return stats?.to_process ?? 0;
-      case 'pending_correction': return stats?.pending_correction ?? 0;
-      case 'validated': return stats?.validated ?? 0;
-      case 'rejected': return stats?.rejected ?? 0;
+      case 'all': return stats.total;
+      case 'to_process': return stats.to_process;
+      case 'pending_correction': return stats.pending_correction;
+      case 'validated': return stats.validated;
+      case 'rejected': return stats.rejected;
       default: return 0;
     }
   };
 
+  /* How many *loaded* rows each method family holds. The Méthode axis filters
+     client-side, so this is the only count that can honestly be shown next to
+     it — and showing it is what makes the axis' scope self-evident. */
+  const loadedByFamily = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const d of loaded) {
+      const f = getFamilyFromMethod(d.method);
+      m[f] = (m[f] ?? 0) + 1;
+    }
+    return m;
+  }, [loaded]);
+
   const hasFilters = statusFilter !== 'all' || familyFilter !== 'all' || periodPreset !== 'all' || !!debouncedSearch;
   const searching = !!debouncedSearch;
   const total = countFor('all');
-  const pending = countFor('to_process');
 
   const resetFilters = () => {
     setStatusFilter('all');
@@ -167,6 +192,45 @@ export function DesktopDepositsScreen() {
     setCustomFrom('');
     setCustomTo('');
     setSearch('');
+  };
+
+  /* A filter strip above an empty queue is eighteen dead targets. Show it only
+     once there is something to narrow — or a filter to undo. `null` means the
+     counters are still in flight, so the strip stays. */
+  const showToolbar = hasFilters || total === null || total > 0;
+
+  /* ── Filter axes (folded into one popover) ─────────────────────────── */
+
+  const methodAxis: FilterAxis<string> = {
+    id: 'method',
+    // The scope caveat is in the axis label, not a tooltip: this axis narrows
+    // the pages already fetched, while status and période go to the server.
+    // `usePaginatedAdminDeposits` filters method with `eq`, and a family maps to
+    // up to two DB methods, so it cannot carry this axis without an `in`.
+    label: 'Méthode · dépôts chargés',
+    value: familyFilter,
+    onChange: setFamilyFilter,
+    neutral: 'all',
+    options: METHOD_OPTIONS.map((o) => {
+      const n = o.value === 'all' ? loaded.length : loadedByFamily[o.value] ?? 0;
+      return {
+        value: o.value,
+        label: o.label,
+        meta: n,
+        // Nothing loaded matches → selecting it can only yield an empty list.
+        // Never disable the value currently in force, or it cannot be undone.
+        disabled: o.value !== 'all' && loaded.length > 0 && n === 0 && familyFilter !== o.value,
+      };
+    }),
+  };
+
+  const periodAxis: FilterAxis<string> = {
+    id: 'period',
+    label: 'Période',
+    value: periodPreset,
+    onChange: (v) => setPeriodPreset(v as PeriodPreset),
+    neutral: 'all',
+    options: PERIOD_OPTIONS,
   };
 
   const columns: Column<(typeof rows)[number]>[] = [
@@ -186,8 +250,8 @@ export function DesktopDepositsScreen() {
             <Avatar name={name} size="sm" />
             <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
             {d.proof_count ? (
-              <span className={cn('inline-flex shrink-0 items-center gap-0.5', DT.label, DFG.muted)} title={`${d.proof_count} justificatif(s)`}>
-                <Paperclip className="h-3 w-3" aria-hidden />
+              <span className={cn('inline-flex shrink-0 items-center gap-1', DT.label, DFG.muted)} title={`${d.proof_count} justificatif(s)`}>
+                <Paperclip className="h-3.5 w-3.5" aria-hidden />
                 {d.proof_count}
               </span>
             ) : null}
@@ -229,7 +293,7 @@ export function DesktopDepositsScreen() {
       cell: (d) => {
         const sla = getDepositSlaLevel(d.created_at, d.status);
         return (
-          <span className="flex items-center justify-end gap-1.5">
+          <span className="flex items-center justify-end gap-2">
             {sla && <SlaDot level={sla} />}
             <Badge tone={depositStatusTone(d.status)}>{DEPOSIT_STATUS_LABELS[d.status] || d.status}</Badge>
           </span>
@@ -243,18 +307,23 @@ export function DesktopDepositsScreen() {
       head={
         <ScreenHead
           title={t('deposits', { defaultValue: 'Dépôts' })}
-          subtitle={
-            statsError
-              ? 'Compteurs indisponibles'
-              : `${total} dépôt${total > 1 ? 's' : ''} · ${pending} en attente de validation`
-          }
+          // The queue totals used to be recited here *and* on the chips. They
+          // belong on the chips, which is the control that acts on them. What is
+          // left is the one thing with nowhere else to go: the fact that the
+          // chips have no counts because the counters failed.
+          subtitle={statsError ? 'Compteurs indisponibles' : undefined}
           actions={
             <>
-              <IconButton
-                icon={RefreshCw}
-                label="Actualiser"
-                loading={isFetching && !isFetchingNextPage}
-                onClick={() => { refetch(); refetchStats(); }}
+              <MenuButton
+                items={[
+                  {
+                    label: 'Actualiser',
+                    icon: RefreshCw,
+                    disabled: isFetching && !isFetchingNextPage,
+                    hint: 'Actualisation en cours…',
+                    onSelect: () => { refetch(); refetchStats(); },
+                  },
+                ]}
               />
               {hasPermission('canProcessDeposits') && (
                 <Button variant="primary" icon={Plus} onClick={() => navigate('/m/deposits/new')}>
@@ -266,59 +335,58 @@ export function DesktopDepositsScreen() {
         />
       }
       toolbar={
-        <Toolbar
-          trailing={
-            hasFilters ? (
-              <Button variant="ghost" icon={X} onClick={resetFilters}>
-                Réinitialiser
-              </Button>
-            ) : undefined
-          }
-        >
-          <div className="relative mr-1 w-64">
-            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.muted)} />
-            <Input
-              type="search"
+        showToolbar ? (
+          <Toolbar>
+            <SearchField
               aria-label="Rechercher dans les dépôts chargés"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher…"
-              className="pl-8"
             />
-          </div>
 
-          {STATUS_CHIPS.map((c) => (
-            <Chip key={c.k} active={statusFilter === c.k} count={countFor(c.k)} onClick={() => setStatusFilter(c.k)}>
-              {c.l}
-            </Chip>
-          ))}
+            {STATUS_CHIPS.map((c) => {
+              const n = countFor(c.k);
+              return (
+                <Chip
+                  key={c.k}
+                  active={statusFilter === c.k}
+                  // `null` while the counters are in flight, a real `0` once
+                  // they answer — `Chip` renders the two differently on purpose.
+                  count={n}
+                  // Empty bucket → nothing to open. Never disable the bucket
+                  // currently in force, or the operator is trapped inside it.
+                  disabled={n === 0 && statusFilter !== c.k}
+                  onClick={() => setStatusFilter(c.k)}
+                >
+                  {c.l}
+                </Chip>
+              );
+            })}
 
-          <span className={cn('mx-1 h-4 w-px border-l', DS.line)} />
-
-          <FilterGroup label="Méthode">
-            {METHOD_CHIPS.map((m) => (
-              <Chip key={m.k} active={familyFilter === m.k} onClick={() => setFamilyFilter(m.k)}>
-                {m.l}
-              </Chip>
-            ))}
-          </FilterGroup>
-
-          <FilterGroup label="Période">
-            {PERIOD_CHIPS.map((p) => (
-              <Chip key={p.k} active={periodPreset === p.k} onClick={() => setPeriodPreset(p.k)}>
-                {p.l}
-              </Chip>
-            ))}
-          </FilterGroup>
-
-          {periodPreset === 'custom' && (
-            <span className="flex items-center gap-1.5">
-              <Input type="date" aria-label="Date de début" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-[140px]" />
-              <span className={cn(DT.label, DFG.muted)} aria-hidden>→</span>
-              <Input type="date" aria-label="Date de fin" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-[140px]" />
-            </span>
-          )}
-        </Toolbar>
+            <FilterPopover
+              axes={[methodAxis, periodAxis]}
+              onClear={resetFilters}
+              // Search and the status chips narrow the list without touching
+              // these axes, so without this the popover's reset was unreachable
+              // in exactly the states an operator most wants one. Raw `search`,
+              // not the debounced value: the action must appear on the first
+              // keystroke rather than a beat later.
+              clearable={!!search || statusFilter !== 'all'}
+              extra={
+                periodPreset === 'custom' ? (
+                  <div className="space-y-2">
+                    <Field label="Du">
+                      <Input type="date" aria-label="Date de début" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                    </Field>
+                    <Field label="Au">
+                      <Input type="date" aria-label="Date de fin" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+                    </Field>
+                  </div>
+                ) : undefined
+              }
+            />
+          </Toolbar>
+        ) : undefined
       }
       inspector={depositId ? <MobileDepositDetailV2 /> : null}
       onCloseInspector={() => navigate('/m/deposits')}

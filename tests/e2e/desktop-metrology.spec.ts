@@ -110,6 +110,13 @@ test.describe('métrologie', () => {
             for (const el of Array.from(root.querySelectorAll('*')) as HTMLElement[]) {
               if (!el.firstChild || el.firstChild.nodeType !== Node.TEXT_NODE) continue;
               if (!el.textContent?.trim() || el.closest(notOurs)) continue;
+              // Visually-hidden text (`sr-only`: clipped to a 1px box) paints no
+              // glyphs, so it cannot violate a *visual* scale — the `<caption>`
+              // that names each table for screen readers is the case in point.
+              // Detected by its rendered box rather than by class name, so the
+              // exemption cannot be claimed by simply adding a utility.
+              const box = el.getBoundingClientRect();
+              if (box.width <= 1 || box.height <= 1) continue;
               const size = Math.round(parseFloat(getComputedStyle(el).fontSize));
               if (!allowedFonts.includes(size)) fontViolations.push(`${describe(el)} → ${size}px`);
             }

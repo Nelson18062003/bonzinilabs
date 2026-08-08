@@ -196,17 +196,29 @@ export function FilterPopover({
   axes,
   extra,
   onClear,
+  clearable,
   label = 'Filtres',
 }: {
   axes: FilterAxis<string>[];
   /** Rendered under the axes — date range inputs, for instance. */
   extra?: React.ReactNode;
-  /** Resets every axis. Shown only when something is active. */
+  /** Resets every axis *and* whatever `clearable` refers to. */
   onClear?: () => void;
+  /**
+   * True when something outside these axes is narrowing the list — a search
+   * term, a status chip left in the toolbar.
+   *
+   * Without it the clear action only appeared once one of *these* axes was
+   * off-neutral, so a screen filtered by search alone had no single reset at
+   * all. The badge on the trigger still counts only the axes it owns, because
+   * that is what the operator is about to open.
+   */
+  clearable?: boolean;
   label?: string;
 }) {
   const c = useControl();
   const activeCount = axes.filter((a) => a.value !== (a.neutral ?? a.options[0]?.value)).length;
+  const showClear = activeCount > 0 || !!clearable;
 
   return (
     <Anchored
@@ -266,7 +278,7 @@ export function FilterPopover({
             </div>
           ) : null}
 
-          {onClear && activeCount > 0 ? (
+          {onClear && showClear ? (
             <div className={cn('border-t pt-2', DS.line)}>
               <Button step="toolbar" variant="ghost" icon={X} onClick={onClear} className="w-full justify-start">
                 Effacer les filtres
@@ -326,7 +338,7 @@ export function MenuButton({
       )}
     >
       {(close) => (
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {items.map((item) => (
             <button
               key={item.label}

@@ -1,16 +1,20 @@
 /**
  * Clients — the customer base as a workbench.
  *
- * Adds what the old table lacked on desktop: a portfolio summary (how much of
- * our clients' money we are holding, how concentrated it is), sortable money
- * columns, and the client file opening in the inspector so an operator can walk
- * a list of accounts without losing their place.
+ * The screen an operator lives in: they arrive by name, so the toolbar is a
+ * search field first and everything else folded behind one filter trigger. The
+ * client file opens in the inspector, so walking a list of accounts never costs
+ * the scroll position.
+ *
+ * One number, one home. `rows.length` used to be printed three times on this
+ * page (subtitle, a "Clients listés" tile, the table footer); it now lives only
+ * in the footer, next to the 200-row query ceiling that explains it.
  *
  * Data layer unchanged (`useClients`), shared with MobileClientsScreen.
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, Plus, RefreshCw, Search, Users, Wallet, X } from 'lucide-react';
+import { AlertTriangle, Plus, RefreshCw, Users, Wallet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useClients } from '@/hooks/useClientManagement';
@@ -20,17 +24,21 @@ import { clientStatusTone } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { MobileClientDetail } from '@/mobile/screens/clients';
 import { DT, DFG } from '@/desktop/ui/tokens';
-import { Avatar, Badge, Button, Chip, EmptyState, Figure, IconButton, Input, Metric } from '@/desktop/ui/primitives';
+import { Avatar, Badge, Button, EmptyState, Figure, Metric, SearchField } from '@/desktop/ui/primitives';
+import { FilterPopover, MenuButton, type FilterOption } from '@/desktop/ui/Popover';
 import { DataTable, type Column, type SortState } from '@/desktop/ui/DataTable';
 import { ScreenHead, Toolbar, Workbench } from '@/desktop/ui/layout';
 import type { ClientStatus } from '@/types/admin';
 
-const STATUS_FILTERS: { value: ClientStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Tous' },
+type StatusFilter = ClientStatus | 'all';
+
+/** `all` first: `FilterPopover` treats the first option as the neutral value. */
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'Tous les statuts' },
   { value: 'ACTIVE', label: 'Actifs' },
   { value: 'INACTIVE', label: 'Inactifs' },
   { value: 'SUSPENDED', label: 'Suspendus' },
-  { value: 'PENDING_KYC', label: 'KYC' },
+  { value: 'PENDING_KYC', label: 'KYC en attente' },
 ];
 
 const STATUS_LABEL: Record<ClientStatus, string> = {
@@ -49,7 +57,7 @@ export function DesktopClientsScreen() {
   const { hasPermission } = useAdminAuth();
   const { clientId } = useParams<{ clientId: string }>();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<SortState | null>(null);
   const debouncedSearch = useDebouncedValue(search);
 
@@ -78,33 +86,57 @@ export function DesktopClientsScreen() {
     return list;
   }, [clients, statusFilter, sort]);
 
-  /* Portfolio context: what we hold and how concentrated it is. Neither number
-     existed on desktop before, and both change how you read the list. */
-  const portfolio = useMemo(() => {
-    const total = rows.reduce((s, c) => s + (c.walletBalance || 0), 0);
-    const withBalance = rows.filter((c) => (c.walletBalance || 0) > 0).length;
-    /* Below six clients the "top 5" is everyone, so the share is always 100 %
-       and says nothing — show it only when it can carry information. */
-    if (rows.length <= 5 || total <= 0) return { total, topShare: null as number | null, withBalance };
-    const top = [...rows].sort((a, b) => (b.walletBalance || 0) - (a.walletBalance || 0)).slice(0, 5);
-    const topShare = Math.round((top.reduce((s, c) => s + (c.walletBalance || 0), 0) / total) * 100);
-    return { total, topShare, withBalance };
-  }, [rows]);
+  /**
+   * Counts for the statut axis, over the set that axis selects from — `clients`
+   * (the search result), *before* the statut filter narrows it. Deliberately
+   * NOT `rows`: a count narrowed by its own axis would report the selection
+   * back to itself, so every option but the selected one would read 0.
+   *
+   * The rule this follows is written out in full in DesktopAdminsScreen, which
+   * has two axes to keep consistent. Short form: the number beside an option is
+   * a promise about what clicking it returns, in every filter state.
+   *
+   * The chips here carried no counts at all while Dépôts and Paiements carried
+   * them; folding the axis into the popover is where that information returns.
+   */
+  const statusCounts = useMemo(() => {
+    const pool = clients ?? [];
+    const map = new Map<StatusFilter, number>([['all', pool.length]]);
+    for (const c of pool) map.set(c.status, (map.get(c.status) ?? 0) + 1);
+    return map;
+  }, [clients]);
+
+  /* Portfolio context: how much of our clients' money the listed set holds.
+     The concentration ratio that used to sit beside it was analytics, not an
+     operational number, and belongs on the analytics screen. */
+  const heldTotal = useMemo(() => rows.reduce((s, c) => s + (c.walletBalance || 0), 0), [rows]);
 
   if (!hasPermission('canViewClients')) return <Navigate to="/m" replace />;
 
-  const hasFilters = statusFilter !== 'all' || !!debouncedSearch;
+  /* Raw `search`, not the debounced value: a control must not disappear from
+     under the cursor during the debounce window. */
+  const hasFilters = statusFilter !== 'all' || search.trim() !== '';
+  /* An empty roster with no filter applied has nothing to filter or summarise.
+     Held through the loading pass too, so the tile never flashes "0 XAF". */
+  const showStrip = rows.length > 0 || hasFilters;
+  /* Sorting three ways through a single row is theatre — and a live control
+     that cannot change anything. */
+  const canSort = rows.length > 1;
+  const canCreate = hasPermission('canEditClients');
+  /* The EmptyState already offers `Nouveau client`; two identical primaries on
+     one screen is the operator asking which one is the real one. */
+  const emptyOffersCreate = !isLoading && !isError && rows.length === 0 && canCreate;
 
   const columns: Column<(typeof rows)[number]>[] = [
     {
       key: 'name',
       header: 'Client',
       width: '26%',
-      sortable: true,
+      sortable: canSort,
       cell: (c) => {
         const name = `${c.firstName} ${c.lastName}`.trim();
         return (
-          <span className="flex items-center gap-2.5">
+          <span className="flex items-center gap-2">
             <Avatar name={name} />
             <span className={cn('min-w-0 truncate font-semibold', DFG.strong)}>{name || '—'}</span>
           </span>
@@ -122,7 +154,7 @@ export function DesktopClientsScreen() {
       header: 'Solde',
       align: 'right',
       width: '150px',
-      sortable: true,
+      sortable: canSort,
       cell: (c) => <Figure value={formatXAF(c.walletBalance || 0)} unit="XAF" className={c.walletBalance ? undefined : DFG.muted} />,
     },
     {
@@ -130,7 +162,7 @@ export function DesktopClientsScreen() {
       header: 'Dépôts cumulés (XAF)',
       align: 'right',
       width: '150px',
-      sortable: true,
+      sortable: canSort,
       cell: (c) => <span className={cn('tabular-nums', DFG.muted)}>{formatXAF(c.totalDeposits || 0)}</span>,
     },
     {
@@ -138,7 +170,7 @@ export function DesktopClientsScreen() {
       header: 'Paiements cumulés (XAF)',
       align: 'right',
       width: '160px',
-      sortable: true,
+      sortable: canSort,
       cell: (c) => <span className={cn('tabular-nums', DFG.muted)}>{formatXAF(c.totalPayments || 0)}</span>,
     },
     {
@@ -150,16 +182,33 @@ export function DesktopClientsScreen() {
     },
   ];
 
+  const statusOptions: FilterOption<string>[] = STATUS_FILTERS.map((f) => ({
+    value: f.value,
+    label: f.label,
+    meta: statusCounts.get(f.value) ?? 0,
+    disabled: f.value !== 'all' && f.value !== statusFilter && (statusCounts.get(f.value) ?? 0) === 0,
+  }));
+
   return (
     <Workbench
       head={
         <ScreenHead
           title={t('clients', { defaultValue: 'Clients' })}
-          subtitle={`${rows.length} client${rows.length > 1 ? 's' : ''} · ${portfolio.withBalance} avec un solde actif`}
+          subtitle="Soldes et cumuls par compte client"
           actions={
             <>
-              <IconButton icon={RefreshCw} label="Actualiser" loading={isFetching} onClick={() => refetch()} />
-              {hasPermission('canEditClients') && (
+              <MenuButton
+                items={[
+                  {
+                    label: 'Actualiser',
+                    icon: RefreshCw,
+                    onSelect: () => void refetch(),
+                    disabled: isFetching,
+                    hint: 'Actualisation déjà en cours',
+                  },
+                ]}
+              />
+              {canCreate && !emptyOffersCreate && (
                 <Button variant="primary" icon={Plus} onClick={() => navigate('/m/clients/new')}>
                   Nouveau client
                 </Button>
@@ -169,44 +218,51 @@ export function DesktopClientsScreen() {
         />
       }
       metrics={
-        <div className="grid grid-cols-3 gap-2.5">
-          <Metric icon={Wallet} tone="info" label="Encours affiché" value={formatXAF(portfolio.total)} unit="XAF" hint="Somme des soldes des clients listés (200 max par requête)" />
-          <Metric icon={Users} tone="neutral" label="Clients listés" value={rows.length} hint="Après filtres et recherche" />
+        showStrip ? (
           <Metric
-            label="Part des 5 plus gros soldes"
-            value={portfolio.topShare === null ? '—' : `${portfolio.topShare} %`}
-            tone="pending"
-            hint={portfolio.topShare === null ? 'Disponible à partir de 6 clients listés' : "Part de l'encours affiché détenue par les 5 plus gros soldes"}
+            icon={Wallet}
+            tone="info"
+            label="Encours affiché"
+            value={formatXAF(heldTotal)}
+            unit="XAF"
+            hint="Somme des soldes des clients listés"
+            className="max-w-xs"
           />
-        </div>
+        ) : undefined
       }
       toolbar={
-        <Toolbar
-          trailing={
-            hasFilters ? (
-              <Button variant="ghost" icon={X} onClick={() => { setStatusFilter('all'); setSearch(''); }}>
-                Réinitialiser
-              </Button>
-            ) : undefined
-          }
-        >
-          <div className="relative mr-1 w-72">
-            <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', DFG.faint)} />
-            <Input
-              type="search"
+        showStrip ? (
+          <Toolbar>
+            <SearchField
               aria-label="Rechercher un client"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Nom ou téléphone…"
-              className="pl-8"
+              width={288}
             />
-          </div>
-          {STATUS_FILTERS.map((f) => (
-            <Chip key={f.value} active={statusFilter === f.value} onClick={() => setStatusFilter(f.value)}>
-              {f.label}
-            </Chip>
-          ))}
-        </Toolbar>
+            <FilterPopover
+              axes={[
+                {
+                  id: 'status',
+                  label: 'Statut',
+                  value: statusFilter,
+                  onChange: (v) => setStatusFilter(v as StatusFilter),
+                  options: statusOptions,
+                  neutral: 'all',
+                },
+              ]}
+              /* Raw `search`, like `hasFilters`: the reset has to be offered on
+                 the keystroke, not one debounce later. The popover owns only the
+                 statut axis, so without this a list narrowed by name alone would
+                 have no single reset. */
+              clearable={!!search}
+              onClear={() => {
+                setStatusFilter('all');
+                setSearch('');
+              }}
+            />
+          </Toolbar>
+        ) : undefined
       }
       inspector={clientId ? <MobileClientDetail /> : null}
       onCloseInspector={() => navigate('/m/clients')}
@@ -235,7 +291,7 @@ export function DesktopClientsScreen() {
               title="Aucun client trouvé"
               hint={hasFilters ? 'Essayez de modifier ou réinitialiser vos filtres.' : 'Créez un premier client pour démarrer.'}
               action={
-                hasPermission('canEditClients') ? (
+                canCreate ? (
                   <Button variant="primary" icon={Plus} onClick={() => navigate('/m/clients/new')}>Nouveau client</Button>
                 ) : undefined
               }
