@@ -118,13 +118,13 @@ export function DesktopSidebar({
           </div>
         )}
         {!collapsed && (
-          <IconButton icon={PanelLeftClose} label="Réduire la barre latérale (⌘B)" onClick={onToggleCollapsed} size="sm" />
+          <IconButton icon={PanelLeftClose} label="Réduire la barre latérale (⌘B)" onClick={onToggleCollapsed} />
         )}
       </div>
 
       {collapsed && (
         <div className="flex justify-center py-2">
-          <IconButton icon={PanelLeftOpen} label="Déplier la barre latérale (⌘B)" onClick={onToggleCollapsed} size="sm" />
+          <IconButton icon={PanelLeftOpen} label="Déplier la barre latérale (⌘B)" onClick={onToggleCollapsed} />
         </div>
       )}
 
@@ -233,7 +233,7 @@ export function DesktopSidebar({
               </span>
             )}
           </button>
-          <IconButton icon={LogOut} label="Se déconnecter" onClick={handleLogout} size="sm" />
+          <IconButton icon={LogOut} label="Se déconnecter" onClick={handleLogout} />
         </div>
       </div>
     </aside>

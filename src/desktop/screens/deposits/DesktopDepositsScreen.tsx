@@ -186,7 +186,7 @@ export function DesktopDepositsScreen() {
             <Avatar name={name} size="sm" />
             <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
             {d.proof_count ? (
-              <span className={cn('inline-flex shrink-0 items-center gap-0.5', DT.tiny, DFG.muted)} title={`${d.proof_count} justificatif(s)`}>
+              <span className={cn('inline-flex shrink-0 items-center gap-0.5', DT.label, DFG.muted)} title={`${d.proof_count} justificatif(s)`}>
                 <Paperclip className="h-3 w-3" aria-hidden />
                 {d.proof_count}
               </span>
@@ -269,7 +269,7 @@ export function DesktopDepositsScreen() {
         <Toolbar
           trailing={
             hasFilters ? (
-              <Button size="sm" variant="ghost" icon={X} onClick={resetFilters}>
+              <Button variant="ghost" icon={X} onClick={resetFilters}>
                 Réinitialiser
               </Button>
             ) : undefined

@@ -184,7 +184,7 @@ export function DesktopClientsScreen() {
         <Toolbar
           trailing={
             hasFilters ? (
-              <Button size="sm" variant="ghost" icon={X} onClick={() => { setStatusFilter('all'); setSearch(''); }}>
+              <Button variant="ghost" icon={X} onClick={() => { setStatusFilter('all'); setSearch(''); }}>
                 Réinitialiser
               </Button>
             ) : undefined

@@ -153,7 +153,7 @@ export function DesktopPaymentsScreen() {
             <Avatar name={name} size="sm" />
             <span className={cn('truncate font-semibold', DFG.strong)}>{name}</span>
             {p.proof_count ? (
-              <span className={cn('inline-flex shrink-0 items-center gap-0.5', DT.tiny, DFG.muted)} title={`${p.proof_count} justificatif(s)`}>
+              <span className={cn('inline-flex shrink-0 items-center gap-0.5', DT.label, DFG.muted)} title={`${p.proof_count} justificatif(s)`}>
                 <Paperclip className="h-3 w-3" aria-hidden />
                 {p.proof_count}
               </span>
@@ -263,7 +263,7 @@ export function DesktopPaymentsScreen() {
                 options={SORT_OPTIONS.map((s) => ({ value: s.key, label: s.label }))}
               />
               {hasFilters ? (
-                <Button size="sm" variant="ghost" icon={X} onClick={resetFilters}>
+                <Button variant="ghost" icon={X} onClick={resetFilters}>
                   Réinitialiser
                 </Button>
               ) : null}

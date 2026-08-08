@@ -192,7 +192,7 @@ export function DesktopTreasuryHome() {
                 ))
               )}
               <div className={cn('border-t px-4 py-2', DS.line)}>
-                <Button size="sm" variant="ghost" onClick={() => navigate('/m/more/treasury/accounts')}>
+                <Button variant="ghost" onClick={() => navigate('/m/more/treasury/accounts')}>
                   Ajuster les soldes →
                 </Button>
               </div>

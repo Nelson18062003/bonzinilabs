@@ -161,7 +161,7 @@ export function DesktopAdminsScreen() {
         <Toolbar
           trailing={
             hasFilters ? (
-              <Button size="sm" variant="ghost" icon={X} onClick={() => { setRoleFilter('all'); setStatusFilter('all'); setSearch(''); }}>
+              <Button variant="ghost" icon={X} onClick={() => { setRoleFilter('all'); setStatusFilter('all'); setSearch(''); }}>
                 Réinitialiser
               </Button>
             ) : undefined

@@ -206,7 +206,7 @@ export function DesktopHistoryScreen() {
         <Toolbar
           trailing={
             hasFilters ? (
-              <Button size="sm" variant="ghost" icon={X} onClick={() => { setTypeFilter('all'); setSearch(''); }}>
+              <Button variant="ghost" icon={X} onClick={() => { setTypeFilter('all'); setSearch(''); }}>
                 Réinitialiser
               </Button>
             ) : undefined

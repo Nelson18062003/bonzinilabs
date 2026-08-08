@@ -69,7 +69,7 @@ function QueueItem({
       <Holder icon={Icon} tone={tone} size="lg" />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
-          <Figure value={count} size="xl" />
+          <Figure value={count} size="hero" />
           <span className={cn('truncate text-[14px] font-bold', DFG.strong)}>{label}</span>
         </span>
         <span className={cn('mt-0.5 block truncate text-[12px]', DFG.muted)}>{hint}</span>
@@ -265,7 +265,7 @@ export function DesktopDashboard() {
             <Panel className="overflow-hidden">
               <PanelHead
                 title="Derniers dépôts"
-                actions={<Button size="sm" variant="ghost" onClick={() => navigate('/m/deposits')}>Tout voir</Button>}
+                actions={<Button variant="ghost" onClick={() => navigate('/m/deposits')}>Tout voir</Button>}
               />
               {recentDeposits.length === 0 ? (
                 <EmptyState icon={ArrowDownToLine} title="Aucun dépôt" hint="Les dépôts déclarés apparaîtront ici." />
@@ -290,7 +290,7 @@ export function DesktopDashboard() {
             <Panel className="overflow-hidden">
               <PanelHead
                 title="Derniers paiements"
-                actions={<Button size="sm" variant="ghost" onClick={() => navigate('/m/payments')}>Tout voir</Button>}
+                actions={<Button variant="ghost" onClick={() => navigate('/m/payments')}>Tout voir</Button>}
               />
               {recentPayments.length === 0 ? (
                 <EmptyState icon={ArrowUpFromLine} title="Aucun paiement" hint="Les règlements fournisseurs apparaîtront ici." />
@@ -318,7 +318,7 @@ export function DesktopDashboard() {
             <PanelHead
               title="Taux du jour"
               hint="Pour 1 000 000 XAF réglés"
-              actions={hasPermission('canManageRates') ? <Button size="sm" variant="ghost" onClick={() => navigate('/m/more/rates')}>Gérer</Button> : undefined}
+              actions={hasPermission('canManageRates') ? <Button variant="ghost" onClick={() => navigate('/m/more/rates')}>Gérer</Button> : undefined}
             />
             <div className="px-4 py-2">
               {rateRows.length === 0 ? (

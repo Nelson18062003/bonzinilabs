@@ -326,7 +326,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                       {Icon ? <Holder icon={Icon} size="sm" /> : <Avatar name={e.label} size="sm" />}
                       <span className="min-w-0 flex-1">
                         <span className={cn('block truncate text-[13px] font-semibold', DFG.strong)}>{e.label}</span>
-                        {e.hint ? <span className={cn('block truncate', DT.tiny, DFG.muted)}>{e.hint}</span> : null}
+                        {e.hint ? <span className={cn('block truncate', DT.label, DFG.muted)}>{e.hint}</span> : null}
                       </span>
                       {e.trailing ? <span className="shrink-0 text-[12px] font-bold">{e.trailing}</span> : null}
                       {active ? <CornerDownLeft className={cn('h-3.5 w-3.5 shrink-0', DFG.faint)} /> : null}
@@ -344,12 +344,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             ['↵', 'ouvrir'],
             ['esc', 'fermer'],
           ].map(([k, l]) => (
-            <span key={k} className={cn('flex items-center gap-1.5', DT.tiny, DFG.muted)}>
+            <span key={k} className={cn('flex items-center gap-1.5', DT.label, DFG.muted)}>
               <kbd className={cn('rounded border px-1.5 py-0.5 font-sans text-[10px] font-bold', DS.line, DS.card)}>{k}</kbd>
               {l}
             </span>
           ))}
-          <span className={cn('ml-auto flex items-center gap-1.5', DT.tiny, DFG.muted)}>
+          <span className={cn('ml-auto flex items-center gap-1.5', DT.label, DFG.muted)}>
             <Ref>BZ-…</Ref> pour ouvrir une référence
           </span>
         </div>
