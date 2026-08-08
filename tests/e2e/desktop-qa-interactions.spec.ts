@@ -58,19 +58,35 @@ function watch(page: import('@playwright/test').Page) {
   return errs;
 }
 
-test('interaction: global search dropdown', async ({ page }) => {
+/**
+ * Global search used to be a dropdown owned by `DesktopGlobalSearch`. That
+ * component was removed: the console has one search affordance now, the ⌘K
+ * palette, and two boxes competing for "find me a thing" was the duplication
+ * this redesign set out to remove. The coverage moves rather than disappears.
+ */
+test('interaction: command palette finds a destination', async ({ page }) => {
   const errs = watch(page);
   await page.goto('/m', { waitUntil: 'domcontentloaded' });
   await page.getByText("Console d'opérations").first().waitFor({ timeout: 12_000 });
-  await page.getByPlaceholder('Rechercher un client').fill('BZ');
-  // "BZ-DP-1001" only appears in the search dropdown on this route.
-  await page.getByText('BZ-DP-1001').waitFor({ timeout: 8_000 });
+
+  await page.keyboard.press('Control+k');
+  const palette = page.getByRole('dialog', { name: /commande|palette/i }).or(page.getByRole('combobox'));
+  await palette.first().waitFor({ timeout: 8_000 });
+
+  await page.keyboard.type('tré');
+  // The palette is a combobox over a listbox: results are options, and Enter
+  // must open the one the keyboard is actually on (they disagreed once).
+  const first = page.getByRole('option').first();
+  await first.waitFor({ timeout: 8_000 });
   await page.waitForTimeout(300);
   mkdirSync('qa-shots', { recursive: true });
-  await page.screenshot({ path: 'qa-shots/x-search-dropdown.png' });
-  await expect(page.getByText('BZ-PM-2001').first()).toBeVisible();
-  await expect(page.getByText('Awa Traoré').first()).toBeVisible();
-  expect.soft(errs, 'console during search').toEqual([]);
+  await page.screenshot({ path: 'qa-shots/x-command-palette.png' });
+
+  await expect(page.getByRole('option').first()).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/m\/more\/treasury/, { timeout: 8_000 });
+
+  expect.soft(errs, 'console pendant la palette').toEqual([]);
 });
 
 test('interaction: notifications dropdown', async ({ page }) => {

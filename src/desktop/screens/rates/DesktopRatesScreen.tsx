@@ -1,63 +1,58 @@
 /**
- * Taux de change — publish and monitor the day's rates.
+ * Taux de change — publier le taux du jour, simuler un règlement, suivre
+ * l'historique.
  *
- * Two changes beyond the layout rework:
- *  · **Permission guard, scoped to the act that matters.** Publishing the rate
- *    the whole business prices on used to be gated only by hiding the nav
- *    entry — anyone who typed the URL got the publishing UI. Only the
- *    "Publier" column now requires `canManageRates`; reading the day's rate,
- *    simulating a settlement and browsing history stay open, because
- *    support and customer-success answer "quel est le taux du jour ?" all day.
- *  · A three-column composition (publier · simuler · historique) so the
- *    operator can set a rate and immediately check what a client would pay,
- *    without scrolling between the two.
+ * This was the last console screen still mounting the mobile component kit.
+ * The file itself was short (~144 lines) and looked harmless, but it mounted
+ * five whole phone screens, so the cost was invisible from here: the metrology
+ * spec measured **eight distinct control heights** on the page — 29, 30, 36,
+ * 38, 40, 75 — none of them on the console's 24/28/32 ladder, plus 14px body
+ * text. Those are thumb targets — 44 and 48px boxes, full pills, half-step
+ * padding — rendered inside a desktop shell.
  *
- * The five rate blocks themselves are the shared mobile components
- * (RateSetTab, RateSimulatorTab, …) — one source of truth for the pricing
- * formulas across form factors.
+ * The five blocks now have desktop siblings next to this file; the phone
+ * screens are untouched and still own their own. What changed beyond the
+ * geometry is documented in each panel, but in one line each:
+ *
+ *   · `RatePublishPanel`     — five date controls (three pills, a date field,
+ *     four ±hour/±minute steppers) became one `datetime-local`; the read-only
+ *     « taux actifs » band went away because the inputs below it already
+ *     carried the same four numbers; the head and the button now say whether
+ *     publishing *replaces* a rate that is already live today.
+ *   · `RateSimulatorPanel`   — six country chips became one `Select`, and the
+ *     whole block is replaced by one sentence when no rate is published,
+ *     instead of fourteen live controls that can only answer "aucun taux".
+ *   · `RateHistoryPanel`     — twenty disclosure buttons became twenty inert
+ *     rows that print what the disclosure used to hide.
+ *   · `RateTrendPanel` / `RateAdjustmentsPanel` — same content, console
+ *     geometry, still deferred behind a `Disclosure` (that part was right).
+ *
+ * Two things are deliberately unchanged:
+ *   · **the permission guard is still scoped to the act that matters.** Only
+ *     the « Publier » column and the adjustments require `canManageRates`;
+ *     reading the day's rate, simulating a settlement and browsing history stay
+ *     open, because support answers « quel est le taux du jour ? » all day.
+ *   · **« Flyer du jour »** is still `disabled` with an explanatory `title`
+ *     when there is no active rate — the pattern the rest of the console was
+ *     aligned to.
+ *
+ * Admin context throughout → every query and mutation goes through
+ * `supabaseAdmin` (inside `@/hooks/useDailyRates`).
  */
 import { useState } from 'react';
-import { ChevronDown, Image as ImageIcon, Lock } from 'lucide-react';
+import { Image as ImageIcon, Lock } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
 import { BottomSheet } from '@/mobile/designKit';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
-import { RateSetTab } from '@/mobile/screens/rates/tabs/RateSetTab';
-import { RateChartTab } from '@/mobile/screens/rates/tabs/RateChartTab';
-import { RateHistoryTab } from '@/mobile/screens/rates/tabs/RateHistoryTab';
-import { RateConfigTab } from '@/mobile/screens/rates/tabs/RateConfigTab';
-import { RateSimulatorTab } from '@/mobile/screens/rates/tabs/RateSimulatorTab';
-import { cn } from '@/lib/utils';
-import { DS, DT, DFG, DFOCUS } from '@/desktop/ui/tokens';
 import { Button, EmptyState, Panel } from '@/desktop/ui/primitives';
 import { ScreenHead, Workspace } from '@/desktop/ui/layout';
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h3 className={cn(DT.micro, DFG.faint, 'mb-2')}>{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function Disclosure({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className={cn('overflow-hidden rounded-xl border', DS.card, DS.line)}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className={cn('flex w-full items-center justify-between px-4 py-3 transition-colors', DS.hover, DFOCUS)}
-      >
-        <span className={cn('text-[13px] font-bold', DFG.strong)}>{title}</span>
-        <ChevronDown className={cn('h-4 w-4 transition-transform', DFG.faint, !open && '-rotate-90')} />
-      </button>
-      {open && <div className={cn('border-t p-3', DS.line)}>{children}</div>}
-    </div>
-  );
-}
+import { Disclosure } from './Disclosure';
+import { RatePublishPanel } from './RatePublishPanel';
+import { RateSimulatorPanel } from './RateSimulatorPanel';
+import { RateHistoryPanel } from './RateHistoryPanel';
+import { RateTrendPanel } from './RateTrendPanel';
+import { RateAdjustmentsPanel } from './RateAdjustmentsPanel';
 
 export function DesktopRatesScreen() {
   const { hasPermission } = useAdminAuth();
@@ -94,45 +89,39 @@ export function DesktopRatesScreen() {
       }
     >
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
-        <div className="space-y-5 xl:col-span-5">
-          <Section title="Publier">
-            {canPublish ? (
-              <RateSetTab currentRate={activeRate} />
-            ) : (
-              <Panel>
-                <EmptyState
-                  icon={Lock}
-                  title="Publication réservée"
-                  hint="Seuls les rôles disposant de la gestion des taux peuvent publier le taux du jour. Le simulateur et l'historique restent accessibles."
-                />
-              </Panel>
-            )}
-          </Section>
-        </div>
-
-        <div className="space-y-5 xl:col-span-4">
-          <Section title="Simulateur client">
-            <RateSimulatorTab
-              activeRate={activeRate}
-              adjustments={adjustments || []}
-              isLoading={rateLoading || adjLoading}
-              isError={rateError || adjError}
-            />
-          </Section>
-        </div>
-
-        <div className="space-y-3 xl:col-span-3">
-          <Section title="Historique">
-            <RateHistoryTab />
-          </Section>
-          <Disclosure title="Graphique d'évolution">
-            <RateChartTab />
-          </Disclosure>
-          {canPublish && (
-            <Disclosure title="Ajustements pays & tranches">
-              <RateConfigTab />
-            </Disclosure>
+        <div className="xl:col-span-5">
+          {canPublish ? (
+            <RatePublishPanel currentRate={activeRate} />
+          ) : (
+            <Panel>
+              <EmptyState
+                icon={Lock}
+                title="Publication réservée"
+                hint="Seuls les rôles disposant de la gestion des taux peuvent publier le taux du jour. Le simulateur et l'historique restent accessibles."
+              />
+            </Panel>
           )}
+        </div>
+
+        <div className="xl:col-span-4">
+          <RateSimulatorPanel
+            activeRate={activeRate}
+            adjustments={adjustments || []}
+            isLoading={rateLoading || adjLoading}
+            isError={rateError || adjError}
+          />
+        </div>
+
+        <div className="space-y-4 xl:col-span-3">
+          <RateHistoryPanel />
+          <Disclosure title="Graphique d'évolution">
+            <RateTrendPanel />
+          </Disclosure>
+          {canPublish ? (
+            <Disclosure title="Ajustements pays & tranches">
+              <RateAdjustmentsPanel />
+            </Disclosure>
+          ) : null}
         </div>
       </div>
 

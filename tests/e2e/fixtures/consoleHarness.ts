@@ -176,6 +176,12 @@ export function installConsole(theme: 'light' | 'dark' = 'light', scenario: Scen
       ([session, mode]) => {
         window.localStorage.setItem('bonzini-admin-auth', session as string);
         window.localStorage.setItem('theme', mode as string);
+        // Pin the language rather than letting i18next detect it. The console
+        // ships fr/en/zh and detection reads `navigator` when this key is
+        // absent, which silently produced English screen titles inside an
+        // otherwise French capture — a harness must not depend on the runner's
+        // locale to decide what it is photographing.
+        window.localStorage.setItem('bonzini-language', 'fr');
         window.localStorage.setItem('bonzini-desktop-rail-collapsed', '0');
         window.localStorage.setItem(
           'bonzini-desktop-nav-open',
