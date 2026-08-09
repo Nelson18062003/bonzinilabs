@@ -9,6 +9,11 @@ Il reste quatre gestes côté infrastructure, dans cet ordre.
 npx supabase db push --linked
 ```
 
+> **Alternative en un seul fichier** — `docs/DEPLOY_passkeys_connexion_admin.sql`
+> regroupe les deux migrations dans l'ordre, à coller dans l'éditeur SQL
+> Supabase. N'utiliser QU'UNE des deux méthodes, sinon le suivi des migrations
+> Supabase diverge.
+
 Deux migrations :
 - `20260809120000_webauthn_passkeys.sql` — `webauthn_credentials`,
   `webauthn_challenges`, `admin_revoke_passkey`, `purge_webauthn_challenges` ;
