@@ -14,11 +14,13 @@ npx supabase db push --linked
 > Supabase. N'utiliser QU'UNE des deux méthodes, sinon le suivi des migrations
 > Supabase diverge.
 
-Deux migrations :
+Trois migrations :
 - `20260809120000_webauthn_passkeys.sql` — `webauthn_credentials`,
   `webauthn_challenges`, `admin_revoke_passkey`, `purge_webauthn_challenges` ;
 - `20260809140000_webauthn_rate_limit.sql` — colonne `client_ip_hash` +
-  index, pour la limitation de débit de `login/start`.
+  index, pour la limitation de débit de `login/start` ;
+- `20260809160000_webauthn_counter_monotonic.sql` — déclencheur interdisant au
+  compteur anti-clonage de reculer.
 
 Puis régénérer les types — ils ont été complétés **à la main** dans cette branche
 (pas d'accès au projet depuis l'environnement de développement), donc la

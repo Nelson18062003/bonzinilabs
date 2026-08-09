@@ -359,6 +359,29 @@ async function loginFinish(origin: string, body: Record<string, unknown>) {
     return fail("Clé d'accès rejetée (compteur invalide). Contactez un administrateur.", 401);
   }
 
+  // Avance du compteur AVANT toute session, et sous verrou optimiste.
+  //
+  // La lecture du compteur et son écriture sont deux requêtes distinctes : sans
+  // le `.eq("counter", …)` ci-dessous, deux assertions simultanées portant le
+  // même compteur passeraient toutes les deux le contrôle anti-clonage et
+  // repartiraient chacune avec une session d'admin — exactement ce que le
+  // compteur est censé empêcher. Le `WHERE counter = <valeur lue>` fait qu'une
+  // seule des deux peut gagner ; l'autre ne met rien à jour et est refusée.
+  //
+  // Cas iOS/Android (compteur toujours 0) : l'ancienne et la nouvelle valeur
+  // valent 0, la condition reste vraie, rien n'est refusé à tort.
+  const { data: bumped } = await admin
+    .from("webauthn_credentials")
+    .update({ counter: newCounter, last_used_at: new Date().toISOString() })
+    .eq("id", stored.id)
+    .eq("counter", stored.counter)
+    .select("id")
+    .maybeSingle();
+
+  if (!bumped) {
+    return fail("Clé d'accès rejetée (utilisation concurrente détectée). Réessayez.", 401);
+  }
+
   // Le rôle fait toujours foi, même avec une signature parfaite.
   const role = await activeAdminRole(stored.user_id);
   if (!role) return fail("Compte non autorisé", 403);
@@ -393,11 +416,6 @@ async function loginFinish(origin: string, body: Record<string, unknown>) {
   });
 
   if (otpError || !verified.session) return fail("Ouverture de session impossible", 500);
-
-  await admin
-    .from("webauthn_credentials")
-    .update({ counter: newCounter, last_used_at: new Date().toISOString() })
-    .eq("id", stored.id);
 
   return json({
     success: true,

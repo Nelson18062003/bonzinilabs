@@ -1,7 +1,7 @@
 -- ==================================================================================
 -- DÉPLOIEMENT — Clés d'accès (passkeys) pour la connexion admin
 --
--- Regroupe les 2 migrations de la branche claude/bonzin-admin-login-x38wvx en UN
+-- Regroupe les 3 migrations de la branche claude/bonzin-admin-login-x38wvx en UN
 -- fichier, dans l'ordre. À exécuter une fois (éditeur SQL Supabase).
 -- Équivalent à : npx supabase db push --linked
 -- → n'utiliser QU'UNE des deux méthodes (sinon le suivi des migrations diverge).
@@ -15,6 +15,7 @@
 --   · admin_revoke_passkey  — révoquer un appareil (le sien, ou celui d'un
 --                             autre admin si super_admin)
 --   · purge_webauthn_challenges — ménage des défis périmés
+--   · trg_webauthn_counter_monotonic — le compteur anti-clonage ne recule jamais
 --
 -- CE QUE ÇA NE FAIT PAS
 --   Les deux autres chemins de connexion (code par email, Google) n'ont besoin
@@ -33,7 +34,7 @@
 -- ==================================================================================
 
 -- ┌──────────────────────────────────────────────────────────────────────────────
--- │ [1/2] 20260809120000_webauthn_passkeys.sql
+-- │ [1/3] 20260809120000_webauthn_passkeys.sql
 -- │ Tables, RLS, révocation, purge
 -- └──────────────────────────────────────────────────────────────────────────────
 -- ============================================================
@@ -209,7 +210,7 @@ grant execute on function public.purge_webauthn_challenges() to service_role;
 notify pgrst, 'reload schema';
 
 -- ┌──────────────────────────────────────────────────────────────────────────────
--- │ [2/2] 20260809140000_webauthn_rate_limit.sql
+-- │ [2/3] 20260809140000_webauthn_rate_limit.sql
 -- │ Limitation de débit de login/start
 -- └──────────────────────────────────────────────────────────────────────────────
 -- ============================================================
@@ -234,13 +235,63 @@ create index if not exists idx_webauthn_challenges_rate
 comment on column public.webauthn_challenges.client_ip_hash is
   'SHA-256 salé de l''IP appelante. Sert uniquement à la limitation de débit ; jamais l''IP en clair.';
 
+-- ┌──────────────────────────────────────────────────────────────────────────────
+-- │ [3/3] 20260809160000_webauthn_counter_monotonic.sql
+-- │ Compteur anti-clonage : jamais en recul
+-- └──────────────────────────────────────────────────────────────────────────────
+-- ============================================================
+-- Garde-fou : le compteur anti-clonage d'une clé d'accès ne recule jamais.
+--
+-- L'Edge Function `passkey` avance déjà le compteur sous verrou optimiste
+-- (UPDATE … WHERE counter = <valeur lue>), ce qui règle la course entre deux
+-- assertions simultanées. Ce déclencheur est la ceinture en plus des bretelles :
+-- même en cas d'écriture directe (service role, script de maintenance, futur
+-- code distrait), une valeur qui recule est refusée par la base.
+--
+-- ÉGALITÉ AUTORISÉE, ET C'EST NÉCESSAIRE : les authenticators iOS et Android
+-- renvoient 0 en permanence. Interdire l'égalité rendrait toute connexion par
+-- clé d'accès impossible sur téléphone.
+-- ============================================================
+
+create or replace function public.webauthn_counter_never_decreases()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.counter < old.counter then
+    raise exception
+      'Compteur de clé d''accès en recul (% → %) : clé possiblement clonée',
+      old.counter, new.counter
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_webauthn_counter_monotonic on public.webauthn_credentials;
+
+create trigger trg_webauthn_counter_monotonic
+  before update of counter on public.webauthn_credentials
+  for each row
+  execute function public.webauthn_counter_never_decreases();
+
+comment on function public.webauthn_counter_never_decreases() is
+  '@mola:{"expose":false,"kind":"write","permission":"canManageUsers","label":"Garde-fou interne : compteur WebAuthn monotone"}';
+
+notify pgrst, 'reload schema';
+
 -- ==================================================================================
--- FIN. Vérification rapide (doit renvoyer 2 tables et 2 fonctions) :
+-- FIN. Vérification rapide :
 --
 --   select table_name from information_schema.tables
---    where table_schema = 'public' and table_name like 'webauthn%';
+--    where table_schema = 'public' and table_name like 'webauthn%';        -- 2 tables
 --
 --   select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 --    where n.nspname = 'public'
---      and proname in ('admin_revoke_passkey', 'purge_webauthn_challenges');
+--      and proname in ('admin_revoke_passkey', 'purge_webauthn_challenges',
+--                      'webauthn_counter_never_decreases');                -- 3 fonctions
+--
+--   select tgname from pg_trigger
+--    where tgname = 'trg_webauthn_counter_monotonic';                      -- 1 déclencheur
 -- ==================================================================================
