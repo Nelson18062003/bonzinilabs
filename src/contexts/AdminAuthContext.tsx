@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { authenticateWithPasskey } from '@/lib/passkey';
 
 // Types based on database app_role enum
 export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
@@ -140,6 +141,8 @@ interface AdminAuthContextType {
   verifyEmailCode: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
   /** Envoie un lien de réinitialisation du mot de passe. */
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
+  /** Connexion par clé d'accès (Face ID / empreinte / déverrouillage facial). */
+  loginWithPasskey: () => Promise<{ success: boolean; error?: string }>;
   /** Démarre l'OAuth Google (retour sur /m/auth/callback). */
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   /** Termine l'OAuth : échange le ?code= puis vérifie le rôle admin. */
@@ -390,6 +393,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ── Clé d'accès (passkey) ─────────────────────────────────────────────────
+  // La signature est vérifiée côté serveur (Edge Function `passkey`), qui
+  // renvoie une session déjà installée par authenticateWithPasskey(). Il reste
+  // à appliquer ici le MÊME contrôle de rôle que les autres chemins.
+  const loginWithPasskey = async (): Promise<{ success: boolean; error?: string }> => {
+    const result = await authenticateWithPasskey();
+    if (!result.success) return result;
+
+    const { data } = await supabaseAdmin.auth.getUser();
+    if (!data.user) return { success: false, error: 'Session introuvable après la connexion.' };
+
+    return await authorize(data.user);
+  };
+
   // ── Google (OAuth) ────────────────────────────────────────────────────────
   // Le retour se fait sur /m/auth/callback, route montée UNIQUEMENT dans l'app
   // admin : le client `supabase` n'y est jamais monté, donc aucune course sur
@@ -502,6 +519,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         requestEmailCode,
         verifyEmailCode,
         requestPasswordReset,
+        loginWithPasskey,
         loginWithGoogle,
         completeGoogleLogin,
         lastEmail,

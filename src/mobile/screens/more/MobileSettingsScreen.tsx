@@ -1,13 +1,15 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
-import { Palette } from 'lucide-react';
+import { Palette, Fingerprint, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
 
 export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
   const { profile } = useAdminAuth();
   const role = profile?.role;
 
@@ -57,6 +59,31 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
                 label={role ? (ADMIN_ROLE_LABELS[role as AppRole] || role) : 'Admin'}
               />
             </div>
+          </Card>
+        </div>
+
+        {/* Sécurité */}
+        <div>
+          <SectionTitle>{t('security', { defaultValue: 'Sécurité' })}</SectionTitle>
+          <Card>
+            <button
+              type="button"
+              onClick={() => navigate('/m/more/passkeys')}
+              className="flex w-full items-center gap-3 py-1 text-left"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                <Fingerprint className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>
+                  {t('quickSignIn', { defaultValue: 'Connexion rapide' })}
+                </p>
+                <p className={cn('text-[12px]', TEXT.muted)}>
+                  {t('quickSignInRowHint', { defaultValue: 'Se connecter sans mot de passe sur vos appareils' })}
+                </p>
+              </div>
+              <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+            </button>
           </Card>
         </div>
 

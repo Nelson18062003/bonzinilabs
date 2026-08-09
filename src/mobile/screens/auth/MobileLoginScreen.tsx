@@ -5,16 +5,16 @@
 // récupération : un admin qui oubliait son mot de passe était bloqué jusqu'à
 // ce qu'un super_admin lui en génère un nouveau, à transmettre à la main.
 //
-// Quatre chemins désormais, du plus simple au plus technique :
-//   1. code à 6 chiffres reçu par email   (aucun mot de passe)
-//   2. Continuer avec Google              (un tap)
-//   3. mot de passe                       (repli)
-//   4. mot de passe oublié                (autonome — n'existait pas)
+// Quatre chemins désormais, du plus court au plus laborieux :
+//   1. clé d'accès (Face ID / empreinte)  — si enrôlée sur cet appareil
+//   2. code à 6 chiffres reçu par email   (aucun mot de passe)
+//   3. Continuer avec Google              (un tap)
+//   4. mot de passe                       (repli) + « mot de passe oublié ? »
 //
 // L'adresse est mémorisée sur l'appareil : au retour, l'écran salue
 // directement la personne et propose le code sans rien saisir.
 // ============================================================
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -24,8 +24,9 @@ import { PremiumInput } from '@/components/auth/PremiumInput';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { OtpField } from '@/components/form';
+import { isPasskeySupported, hasPasskeyOnThisDevice } from '@/lib/passkey';
 import { TEXT } from '@/mobile/designKit';
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Check, KeyRound } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Check, KeyRound, Fingerprint } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,10 @@ const emailSchema = z.string().email();
 /** Pill sombre — l'UNIQUE action principale de l'écran (designKit). */
 const CTA =
   'w-full h-12 rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24] text-[15px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed';
+
+/** Pill douce — quand la clé d'accès occupe déjà l'action principale. */
+const SECONDARY_CTA =
+  'w-full h-12 rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0] text-[15px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed';
 
 /** Secondes avant de pouvoir redemander un code. */
 const RESEND_DELAY = 30;
@@ -49,6 +54,7 @@ export function MobileLoginScreen() {
     requestEmailCode,
     verifyEmailCode,
     requestPasswordReset,
+    loginWithPasskey,
     loginWithGoogle,
     lastEmail,
     isLoading: authLoading,
@@ -66,6 +72,16 @@ export function MobileLoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  // La clé d'accès n'est proposée que si l'appareil sait la gérer ET qu'une clé
+  // y a déjà été enrôlée : inutile de mettre en avant un bouton qui ouvrirait
+  // une feuille système vide.
+  const [passkeyReady, setPasskeyReady] = useState(false);
+
+  useEffect(() => {
+    if (!hasPasskeyOnThisDevice()) return;
+    void isPasskeySupported().then(setPasskeyReady);
+  }, []);
 
   const isEmailValid = emailSchema.safeParse(email).success;
 
@@ -147,6 +163,18 @@ export function MobileLoginScreen() {
   const handleCodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     void submitCode(code);
+  };
+
+  // ── Clé d'accès ───────────────────────────────────────────────────────────
+  const handlePasskey = async () => {
+    setError('');
+    setPasskeyLoading(true);
+    const result = await loginWithPasskey();
+    setPasskeyLoading(false);
+
+    if (result.success) enterApp();
+    // Pas de message = feuille système fermée volontairement : on n'affiche rien.
+    else if (result.error) setError(result.error);
   };
 
   // ── Google ────────────────────────────────────────────────────────────────
@@ -235,7 +263,27 @@ export function MobileLoginScreen() {
                 className="space-y-3 animate-slide-up"
                 style={{ animationDelay: '160ms', animationFillMode: 'both' }}
               >
-                <button type="button" onClick={handleChoiceCode} disabled={isLoading} className={CTA}>
+                {/* Une clé d'accès enrôlée sur cet appareil prend la tête : c'est
+                    le chemin le plus court (un regard, rien à taper ni attendre). */}
+                {passkeyReady && (
+                  <button type="button" onClick={handlePasskey} disabled={passkeyLoading} className={CTA}>
+                    {passkeyLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Fingerprint className="w-[18px] h-[18px]" />
+                        {t('signInWithPasskey', { defaultValue: 'Se connecter avec cet appareil' })}
+                      </>
+                    )}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleChoiceCode}
+                  disabled={isLoading}
+                  className={passkeyReady ? SECONDARY_CTA : CTA}
+                >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (

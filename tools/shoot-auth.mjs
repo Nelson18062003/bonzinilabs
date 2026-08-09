@@ -71,6 +71,34 @@ const SCENARIOS = {
       }
     },
   },
+  // Une clé d'accès est enrôlée sur cet appareil : elle passe en tête.
+  'apres-passkey': {
+    path: '/m/login',
+    remember: EMAIL,
+    passkeyDevice: true,
+  },
+  // Écran « Connexion rapide » — rendu via le harness (/screenshot.html),
+  // qui fournit un contexte admin factice, sinon la route est protégée.
+  'apres-appareils': {
+    path: '/screenshot.html?screen=more-passkeys',
+    passkeyDevice: true,
+    credentials: [
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        device_label: 'iPhone de Papa',
+        backed_up: true,
+        created_at: '2026-08-01T09:41:00Z',
+        last_used_at: '2026-08-09T07:12:00Z',
+      },
+      {
+        id: '22222222-2222-2222-2222-222222222222',
+        device_label: 'Mac',
+        backed_up: false,
+        created_at: '2026-07-14T15:20:00Z',
+        last_used_at: null,
+      },
+    ],
+  },
   'apres-password': {
     path: '/m/login',
     remember: EMAIL,
@@ -119,6 +147,23 @@ for (const theme of THEMES) {
       }, scenario.remember);
     }
 
+    // Marqueur local « une clé est enrôlée ici » : sans lui l'écran de
+    // connexion ne met pas la clé d'accès en avant (comportement voulu).
+    if (scenario.passkeyDevice) {
+      await ctx.addInitScript(() => localStorage.setItem('bonzini-admin-passkey', '1'));
+    }
+
+    // Fixture pour la liste des appareils (l'écran interroge Supabase, coupé ici).
+    if (scenario.credentials) {
+      await ctx.route('**/rest/v1/webauthn_credentials*', (r) =>
+        r.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(scenario.credentials),
+        }),
+      );
+    }
+
     await ctx.addInitScript(() => {
       // Google Fonts is unreachable from the sandbox, which would silently swap
       // DM Sans for a fallback face. Serve the same family from public/fonts so
@@ -139,6 +184,24 @@ for (const theme of THEMES) {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
+
+    // Authenticator virtuel (CDP) : un Chromium sans capteur répond « non » à
+    // isUserVerifyingPlatformAuthenticatorAvailable(), et le bouton resterait
+    // caché. Ceci simule un téléphone avec Face ID / empreinte.
+    if (scenario.passkeyDevice) {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send('WebAuthn.enable');
+      await cdp.send('WebAuthn.addVirtualAuthenticator', {
+        options: {
+          protocol: 'ctap2',
+          transport: 'internal',
+          hasResidentKey: true,
+          hasUserVerification: true,
+          isUserVerified: true,
+          automaticPresenceSimulation: true,
+        },
+      });
+    }
 
     await page.goto(BASE + scenario.path, { waitUntil: 'networkidle' });
     if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'));
