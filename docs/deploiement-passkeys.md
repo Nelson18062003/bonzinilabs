@@ -60,6 +60,40 @@ npx supabase functions deploy passkey
 des routes `register/*` est vérifié à la main dans la fonction (`callerFromJwt`).
 Ne pas retirer ce contrôle.
 
+## 3 bis. Sans terminal — tout depuis le tableau de bord
+
+Les étapes 1 à 3 ci-dessus supposent la CLI installée. Le même résultat
+s'obtient entièrement dans le navigateur, dans **cet ordre** :
+
+**a. La base** — `SQL Editor` → coller la **partie A** de
+`docs/DEPLOY_connexion_admin.sql` → `Run`. Puis relancer la **partie B** seule
+pour vérifier ce qui a été posé.
+
+**b. Les secrets** — `Project Settings → Edge Functions → Secrets` →
+`Add new secret`, deux fois :
+
+| Name | Value |
+|---|---|
+| `WEBAUTHN_RP_ID` | `bonzinilabs.com` |
+| `WEBAUTHN_ORIGINS` | `https://www.bonzinilabs.com,http://localhost:8080` |
+
+**c. La fonction** — `Edge Functions` → `Deploy a new function` →
+`Via editor`. Nommer la fonction **exactement** `passkey` (l'écran de connexion
+appelle `/functions/v1/passkey` : un autre nom ne sera jamais atteint). Créer
+**deux** fichiers dans l'éditeur et y coller le contenu depuis GitHub :
+
+- `index.ts` ← `supabase/functions/passkey/index.ts`
+- `helpers.ts` ← `supabase/functions/passkey/helpers.ts`
+
+**d. Le réglage à ne pas oublier** — dans les paramètres de la fonction,
+**désactiver** « Verify JWT with legacy secret ». `supabase/config.toml` porte
+déjà `verify_jwt = false`, mais **ce fichier n'est lu que par la CLI** : un
+déploiement fait depuis le tableau de bord garde la valeur par défaut, qui est
+`activé`. Si la case reste cochée, `login/start` répond `401` avant même
+d'exécuter la moindre ligne, et le bouton affiche « pas encore disponible »
+alors que la fonction est bien en place. C'est le piège numéro un de cette
+méthode.
+
 ## 4. Test sur un vrai téléphone
 
 Aucune manipulation possible depuis un environnement de développement : il faut

@@ -23,6 +23,8 @@ import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealti
 import { KeyboardFocusManager } from "./components/form/KeyboardFocusManager";
 
 // ── Lazy-loaded Client Pages ───────────────────────────────────
+const PrivacyPage = lazy(() => import("./pages/legal/PrivacyPage"));
+const TermsPage = lazy(() => import("./pages/legal/TermsPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
@@ -173,6 +175,13 @@ const App = () => (
 
                 {/* Landing Page (public) */}
                 <Route path="/" element={<LandingPage />} />
+
+                {/* Pages légales (publiques, sans session).
+                    Google exige que ces deux adresses répondent pour vérifier
+                    la marque du client OAuth — les déplacer casse la
+                    vérification de l'écran de consentement. */}
+                <Route path="/confidentialite" element={<PrivacyPage />} />
+                <Route path="/conditions" element={<TermsPage />} />
 
                 {/* Protected Client Routes */}
                 <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
