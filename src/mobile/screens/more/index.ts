@@ -7,3 +7,4 @@ export { MobileSettingsScreen } from './MobileSettingsScreen';
 export { MobileAdminProfile } from './MobileAdminProfile';
 export { MobileBriefsScreen } from './MobileBriefsScreen';
 export { MobilePasskeysScreen } from './MobilePasskeysScreen';
+export { MobileChangePasswordScreen } from './MobileChangePasswordScreen';

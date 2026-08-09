@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
-import { Palette, Fingerprint, ChevronRight } from 'lucide-react';
+import { Palette, Fingerprint, ChevronRight, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
 
@@ -80,6 +80,27 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
                 </p>
                 <p className={cn('text-[12px]', TEXT.muted)}>
                   {t('quickSignInRowHint', { defaultValue: 'Se connecter sans mot de passe sur vos appareils' })}
+                </p>
+              </div>
+              <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+            </button>
+
+            <div className="my-1 h-px bg-black/5 dark:bg-white/5" />
+
+            <button
+              type="button"
+              onClick={() => navigate('/m/more/password')}
+              className="flex w-full items-center gap-3 py-1 text-left"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                <Lock className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>
+                  {t('myPassword', { defaultValue: 'Mon mot de passe' })}
+                </p>
+                <p className={cn('text-[12px]', TEXT.muted)}>
+                  {t('myPasswordRowHint', { defaultValue: 'Choisir un mot de passe dont vous vous souvenez' })}
                 </p>
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />

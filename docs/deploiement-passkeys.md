@@ -9,8 +9,11 @@ Il reste quatre gestes côté infrastructure, dans cet ordre.
 npx supabase db push --linked
 ```
 
-Crée `webauthn_credentials`, `webauthn_challenges`, la RPC `admin_revoke_passkey`
-et `purge_webauthn_challenges`.
+Deux migrations :
+- `20260809120000_webauthn_passkeys.sql` — `webauthn_credentials`,
+  `webauthn_challenges`, `admin_revoke_passkey`, `purge_webauthn_challenges` ;
+- `20260809140000_webauthn_rate_limit.sql` — colonne `client_ip_hash` +
+  index, pour la limitation de débit de `login/start`.
 
 Puis régénérer les types — ils ont été complétés **à la main** dans cette branche
 (pas d'accès au projet depuis l'environnement de développement), donc la
@@ -26,6 +29,7 @@ npx supabase gen types typescript --project-id fmhsohrgbznqmcvqktjw --schema pub
 |---|---|
 | `WEBAUTHN_RP_ID` | `bonzinilabs.com` |
 | `WEBAUTHN_ORIGINS` | `https://www.bonzinilabs.com,http://localhost:8080` |
+| `WEBAUTHN_IP_SALT` | *(optionnel)* sel du hachage d'IP — à défaut, la clé de service est utilisée |
 
 ```bash
 npx supabase secrets set WEBAUTHN_RP_ID=bonzinilabs.com
@@ -68,16 +72,17 @@ malgré tout à chaque usage de Face ID, c'est ce point qu'il faut revoir — le
 comportement dépend de la configuration SMTP du projet et n'a pas pu être
 vérifié depuis l'environnement de développement.
 
+## Limitation de débit
+
+`login/start` est publique (personne n'est connecté quand on demande un défi).
+Elle est plafonnée à **10 demandes par minute et par empreinte d'IP**, au-delà
+elle répond `429`. L'IP n'est jamais stockée en clair : seul un SHA-256 salé
+est conservé, le temps de la fenêtre.
+
 ## Ce qui n'est pas fait
 
-- **Limitation de débit sur `login/start`.** La route est publique et crée une
-  ligne de défi à chaque appel. `purge_webauthn_challenges()` nettoie au fil de
-  l'eau, mais rien n'empêche aujourd'hui quelqu'un de générer des défis en
-  boucle. À ajouter si l'app devient publiquement visible.
-- **Proposition d'enrôlement après connexion.** L'activation se fait
-  aujourd'hui depuis Paramètres. Une carte proposée juste après une connexion
-  réussie serait plus efficace pour un utilisateur qui ne fouille pas les
-  réglages.
+- **Rotation du sel d'IP.** Changer `WEBAUTHN_IP_SALT` réinitialise les
+  compteurs en cours — sans conséquence, mais à savoir.
 
 ## Rappel — ce qui est stocké
 

@@ -49,6 +49,11 @@ export const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldPro
     const id = idProp ?? reactId;
     const [visible, setVisible] = React.useState(false);
     const hasError = Boolean(error);
+    // Mêmes identifiants que ceux calculés par FormFieldWrapper.
+    const describedBy =
+      [hasError ? `${id}-error` : null, hint && !hasError ? `${id}-hint` : null]
+        .filter(Boolean)
+        .join(' ') || undefined;
     const keyboard = KEYBOARD.password;
     const leftAdornment = leftIcon ?? (showIcon ? <Lock className="h-4 w-4" /> : null);
 
@@ -66,6 +71,13 @@ export const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldPro
           {leftAdornment ? <LeftIcon>{leftAdornment}</LeftIcon> : null}
           <input
             ref={ref}
+            // Posé ici et non par FormFieldWrapper : l'<input> est enveloppé
+            // dans un div (icône + bouton œil), donc l'injection du wrapper
+            // atterrirait sur le div et le <label for> serait orphelin.
+            id={id}
+            aria-describedby={describedBy}
+            aria-invalid={hasError}
+            aria-required={required}
             type={visible ? 'text' : 'password'}
             autoComplete={autoComplete}
             enterKeyHint={enterKeyHint}

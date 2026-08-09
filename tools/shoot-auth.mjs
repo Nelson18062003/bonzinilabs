@@ -99,6 +99,13 @@ const SCENARIOS = {
       },
     ],
   },
+  'apres-mot-de-passe-choisi': {
+    path: '/screenshot.html?screen=more-password',
+    act: async (page) => {
+      await page.getByLabel(/nouveau mot de passe/i).fill('bateau-jaune-42');
+      await page.getByLabel(/confirmer le mot de passe/i).fill('bateau-jaune-42');
+    },
+  },
   'apres-password': {
     path: '/m/login',
     remember: EMAIL,

@@ -12,6 +12,14 @@ export interface FormFieldWrapperProps {
   children: React.ReactNode;
 }
 
+/** L'enfant est-il directement un contrôle de formulaire natif ? */
+function isNativeControl(child: React.ReactElement): boolean {
+  return (
+    typeof child.type === 'string' &&
+    (child.type === 'input' || child.type === 'select' || child.type === 'textarea')
+  );
+}
+
 /**
  * Shared label / hint / error shell used by every form primitive.
  * Wires up aria-describedby for a11y.
@@ -50,8 +58,12 @@ export function FormFieldWrapper({
         </label>
       ) : null}
 
-      {/* Inject id + aria onto the inner control via child props. */}
-      {React.isValidElement(children)
+      {/* Inject id + aria onto the inner control via child props.
+          UNIQUEMENT si l'enfant direct EST le contrôle. Plusieurs champs
+          enveloppent leur <input> dans un <div> (icône à gauche, bouton œil
+          à droite) : y poser l'id donnait un <label for> pointant sur un div,
+          donc une étiquette orpheline. Ces champs-là posent l'id eux-mêmes. */}
+      {React.isValidElement(children) && isNativeControl(children)
         ? React.cloneElement(children as React.ReactElement<{
             id?: string;
             'aria-describedby'?: string;

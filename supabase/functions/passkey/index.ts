@@ -60,6 +60,10 @@ const ALLOWED_ORIGINS = (Deno.env.get("WEBAUTHN_ORIGINS") ?? "https://www.bonzin
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5 min : le temps de regarder son téléphone.
 
+// Limitation de débit sur la demande de défi (route publique).
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_MAX_PER_WINDOW = 10;
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function json(body: unknown, status = 200) {
@@ -80,6 +84,34 @@ function resolveOrigin(req: Request): string | null {
 }
 
 const rpIdFor = (origin: string) => rpIdForOrigin(origin, RP_ID);
+
+/**
+ * Empreinte salée de l'IP appelante. L'IP en clair n'est jamais écrite : un
+ * SHA-256 nu se casse en quelques minutes sur l'espace IPv4, d'où le sel.
+ * À défaut de sel dédié, la clé de service fait l'affaire — elle est toujours
+ * présente dans l'environnement de la fonction et ne quitte pas le serveur.
+ */
+async function clientIpHash(req: Request): Promise<string | null> {
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim();
+  if (!ip) return null;
+
+  const salt = Deno.env.get("WEBAUTHN_IP_SALT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${ip}`));
+  return b64uEncode(new Uint8Array(digest));
+}
+
+/** true = trop de demandes depuis cette empreinte sur la dernière minute. */
+async function isRateLimited(ipHash: string | null): Promise<boolean> {
+  if (!ipHash) return false;
+
+  const { count } = await admin
+    .from("webauthn_challenges")
+    .select("id", { count: "exact", head: true })
+    .eq("client_ip_hash", ipHash)
+    .gt("created_at", new Date(Date.now() - RATE_WINDOW_MS).toISOString());
+
+  return (count ?? 0) >= RATE_MAX_PER_WINDOW;
+}
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -120,11 +152,17 @@ async function callerFromJwt(req: Request) {
 }
 
 /** Stocke un défi à usage unique. */
-async function storeChallenge(challenge: string, purpose: string, userId: string | null) {
+async function storeChallenge(
+  challenge: string,
+  purpose: string,
+  userId: string | null,
+  ipHash: string | null = null,
+) {
   const { error } = await admin.from("webauthn_challenges").insert({
     challenge,
     purpose,
     user_id: userId,
+    client_ip_hash: ipHash,
     expires_at: new Date(Date.now() + CHALLENGE_TTL_MS).toISOString(),
   });
   if (error) throw new Error(`challenge non enregistré : ${error.message}`);
@@ -253,7 +291,12 @@ async function registerFinish(req: Request, origin: string, body: Record<string,
 }
 
 /** 3. Connexion — défi. Public par nécessité : personne n'est connecté. */
-async function loginStart(origin: string) {
+async function loginStart(req: Request, origin: string) {
+  const ipHash = await clientIpHash(req);
+  if (await isRateLimited(ipHash)) {
+    return fail("Trop de tentatives. Réessayez dans une minute.", 429);
+  }
+
   const options = await generateAuthenticationOptions({
     rpID: rpIdFor(origin),
     userVerification: "required",
@@ -262,7 +305,7 @@ async function loginStart(origin: string) {
     allowCredentials: [],
   });
 
-  await storeChallenge(options.challenge, "authentication", null);
+  await storeChallenge(options.challenge, "authentication", null, ipHash);
   // Entretien opportuniste, sans cron dédié.
   void admin.rpc("purge_webauthn_challenges");
 
@@ -392,7 +435,7 @@ serve(async (req) => {
       case "register/finish":
         return await registerFinish(req, origin, body);
       case "login/start":
-        return await loginStart(origin);
+        return await loginStart(req, origin);
       case "login/finish":
         return await loginFinish(origin, body);
       default:

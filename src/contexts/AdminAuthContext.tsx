@@ -141,6 +141,8 @@ interface AdminAuthContextType {
   verifyEmailCode: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
   /** Envoie un lien de réinitialisation du mot de passe. */
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
+  /** Définit un mot de passe CHOISI par l'admin connecté. */
+  changeOwnPassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   /** Connexion par clé d'accès (Face ID / empreinte / déverrouillage facial). */
   loginWithPasskey: () => Promise<{ success: boolean; error?: string }>;
   /** Démarre l'OAuth Google (retour sur /m/auth/callback). */
@@ -393,6 +395,26 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Aucun ancien mot de passe demandé : la personne qui vient ici est
+  // justement celle qui l'a oublié. La session ouverte (code email, Google ou
+  // clé d'accès) est la preuve d'identité qui autorise le changement.
+  const changeOwnPassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await withTimeout(
+        supabaseAdmin.auth.updateUser({ password: newPassword }),
+        15000,
+        'mise à jour du mot de passe',
+      );
+      if (error) return { success: false, error: error.message };
+
+      logAction('change_own_password', 'admin_user', 'Modification de son propre mot de passe', currentUser?.id);
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: msg };
+    }
+  };
+
   // ── Clé d'accès (passkey) ─────────────────────────────────────────────────
   // La signature est vérifiée côté serveur (Edge Function `passkey`), qui
   // renvoie une session déjà installée par authenticateWithPasskey(). Il reste
@@ -519,6 +541,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         requestEmailCode,
         verifyEmailCode,
         requestPasswordReset,
+        changeOwnPassword,
         loginWithPasskey,
         loginWithGoogle,
         completeGoogleLogin,
