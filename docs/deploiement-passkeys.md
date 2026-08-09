@@ -79,11 +79,23 @@ pour vérifier ce qui a été posé.
 
 **c. La fonction** — `Edge Functions` → `Deploy a new function` →
 `Via editor`. Nommer la fonction **exactement** `passkey` (l'écran de connexion
-appelle `/functions/v1/passkey` : un autre nom ne sera jamais atteint). Créer
-**deux** fichiers dans l'éditeur et y coller le contenu depuis GitHub :
+appelle `/functions/v1/passkey` : un autre nom ne sera jamais atteint). Effacer
+l'exemple fourni et coller, **dans le seul fichier `index.ts`**, le contenu de :
 
-- `index.ts` ← `supabase/functions/passkey/index.ts`
-- `helpers.ts` ← `supabase/functions/passkey/helpers.ts`
+```
+docs/passkey-fonction-complete.ts
+```
+
+> **Ne pas coller `supabase/functions/passkey/index.ts` ici.** Ce fichier-là
+> commence par `import … from "./helpers.ts"`, et l'éditeur du tableau de bord
+> n'a rien à résoudre pour cet import relatif : la fonction se déploie mais
+> échoue au chargement. `docs/passkey-fonction-complete.ts` est exactement la
+> même fonction, helpers fondus dedans, prévue pour ce cas précis.
+>
+> Les deux fichiers séparés restent la source de vérité pour la CLI (étape 3) :
+> les helpers y sont isolés parce qu'ils sont testés hors Deno
+> (`src/tests/lib/passkeyHelpers.test.ts`). Après toute correction dans
+> `supabase/functions/passkey/`, régénérer le fichier fondu.
 
 **d. Le réglage à ne pas oublier** — dans les paramètres de la fonction,
 **désactiver** « Verify JWT with legacy secret ». `supabase/config.toml` porte
