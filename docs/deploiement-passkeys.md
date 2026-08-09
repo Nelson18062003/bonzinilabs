@@ -9,10 +9,10 @@ Il reste quatre gestes côté infrastructure, dans cet ordre.
 npx supabase db push --linked
 ```
 
-> **Alternative en un seul fichier** — `docs/DEPLOY_passkeys_connexion_admin.sql`
-> regroupe les deux migrations dans l'ordre, à coller dans l'éditeur SQL
-> Supabase. N'utiliser QU'UNE des deux méthodes, sinon le suivi des migrations
-> Supabase diverge.
+> **Alternative en un seul fichier** — `docs/DEPLOY_connexion_admin.sql` regroupe
+> les trois migrations **et** les requêtes de vérification, à coller d'un bloc
+> dans l'éditeur SQL Supabase. N'utiliser QU'UNE des deux méthodes, sinon le
+> suivi des migrations Supabase diverge.
 
 Trois migrations :
 - `20260809120000_webauthn_passkeys.sql` — `webauthn_credentials`,
@@ -93,11 +93,11 @@ est conservé, le temps de la fenêtre.
 
 ## Vérifier ce qui est réellement posé
 
-`docs/DEPLOY_verification_connexion_admin.sql` — que des `SELECT`, relançable à
-volonté. Il dit en un coup d'œil quelles tables et fonctions existent, quels
-comptes admin peuvent recevoir un code (`email_confirmed_at`), quels appareils
-sont enrôlés, et rappelle en fin de fichier les réglages du tableau de bord qui
-ne se vérifient pas en SQL.
+La **partie B** de `docs/DEPLOY_connexion_admin.sql` — que des `SELECT`,
+relançable à volonté, y compris seule. Elle dit en un coup d'œil quelles tables
+et fonctions existent, quels comptes admin peuvent recevoir un code
+(`email_confirmed_at`), quels appareils sont enrôlés, et rappelle en fin de
+fichier les réglages du tableau de bord qui ne se vérifient pas en SQL.
 
 ## Rappel — ce qui est stocké
 
