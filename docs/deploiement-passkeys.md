@@ -91,6 +91,14 @@ est conservé, le temps de la fenêtre.
 - **Rotation du sel d'IP.** Changer `WEBAUTHN_IP_SALT` réinitialise les
   compteurs en cours — sans conséquence, mais à savoir.
 
+## Vérifier ce qui est réellement posé
+
+`docs/DEPLOY_verification_connexion_admin.sql` — que des `SELECT`, relançable à
+volonté. Il dit en un coup d'œil quelles tables et fonctions existent, quels
+comptes admin peuvent recevoir un code (`email_confirmed_at`), quels appareils
+sont enrôlés, et rappelle en fin de fichier les réglages du tableau de bord qui
+ne se vérifient pas en SQL.
+
 ## Rappel — ce qui est stocké
 
 Uniquement la clé **publique**. La clé privée ne quitte jamais la puce du

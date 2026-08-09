@@ -6,7 +6,7 @@
 // ce qu'un super_admin lui en génère un nouveau, à transmettre à la main.
 //
 // Quatre chemins désormais, du plus court au plus laborieux :
-//   1. clé d'accès (Face ID / empreinte)  — si enrôlée sur cet appareil
+//   1. clé d'accès (Face ID / empreinte)  — dès que l'appareil sait la gérer
 //   2. code à 6 chiffres reçu par email   (aucun mot de passe)
 //   3. Continuer avec Google              (un tap)
 //   4. mot de passe                       (repli) + « mot de passe oublié ? »
@@ -44,6 +44,17 @@ const SECONDARY_CTA =
 /** Secondes avant de pouvoir redemander un code. */
 const RESEND_DELAY = 30;
 
+/**
+ * Nombre de chiffres du code reçu par email.
+ *
+ * DOIT correspondre au réglage Supabase « Email OTP Length »
+ * (Authentication → Providers → Email). Les deux vont ensemble : afficher
+ * 6 cases alors que Supabase émet 8 chiffres rend la connexion impossible
+ * (les deux derniers n'ont nulle part où aller), et l'inverse laisse deux
+ * cases que rien ne remplit.
+ */
+const EMAIL_OTP_LENGTH = 6;
+
 type Step = 'choice' | 'email' | 'code' | 'password' | 'reset-sent';
 
 export function MobileLoginScreen() {
@@ -73,15 +84,25 @@ export function MobileLoginScreen() {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
-  // La clé d'accès n'est proposée que si l'appareil sait la gérer ET qu'une clé
-  // y a déjà été enrôlée : inutile de mettre en avant un bouton qui ouvrirait
-  // une feuille système vide.
-  const [passkeyReady, setPasskeyReady] = useState(false);
+  // Proposée dès que l'appareil sait gérer une clé d'accès.
+  //
+  // La version précédente exigeait EN PLUS qu'une clé ait été enrôlée sur ce
+  // navigateur (marqueur local). Deux conséquences fâcheuses : le bouton
+  // restait introuvable tant qu'on n'était pas allé le chercher dans les
+  // réglages, et surtout une clé synchronisée depuis un autre appareil
+  // (trousseau iCloud, Google Password Manager) restait inutilisable — le
+  // marqueur local, lui, n'a pas suivi.
+  //
+  // Le marqueur ne sert donc plus qu'à décider de la PRIORITÉ : là où une clé
+  // a déjà été posée, elle passe en action principale.
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeyEnrolledHere] = useState(() => hasPasskeyOnThisDevice());
 
   useEffect(() => {
-    if (!hasPasskeyOnThisDevice()) return;
-    void isPasskeySupported().then(setPasskeyReady);
+    void isPasskeySupported().then(setPasskeySupported);
   }, []);
+
+  const passkeyFirst = passkeySupported && passkeyEnrolledHere;
 
   const isEmailValid = emailSchema.safeParse(email).success;
 
@@ -263,9 +284,10 @@ export function MobileLoginScreen() {
                 className="space-y-3 animate-slide-up"
                 style={{ animationDelay: '160ms', animationFillMode: 'both' }}
               >
-                {/* Une clé d'accès enrôlée sur cet appareil prend la tête : c'est
-                    le chemin le plus court (un regard, rien à taper ni attendre). */}
-                {passkeyReady && (
+                {/* Là où une clé a déjà été posée, elle prend la tête : c'est le
+                    chemin le plus court (un regard, rien à taper ni attendre).
+                    Ailleurs elle reste visible, sous le code par email. */}
+                {passkeySupported && passkeyFirst && (
                   <button type="button" onClick={handlePasskey} disabled={passkeyLoading} className={CTA}>
                     {passkeyLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -282,7 +304,7 @@ export function MobileLoginScreen() {
                   type="button"
                   onClick={handleChoiceCode}
                   disabled={isLoading}
-                  className={passkeyReady ? SECONDARY_CTA : CTA}
+                  className={passkeyFirst ? SECONDARY_CTA : CTA}
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -293,6 +315,24 @@ export function MobileLoginScreen() {
                     </>
                   )}
                 </button>
+
+                {passkeySupported && !passkeyFirst && (
+                  <button
+                    type="button"
+                    onClick={handlePasskey}
+                    disabled={passkeyLoading}
+                    className={SECONDARY_CTA}
+                  >
+                    {passkeyLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Fingerprint className="w-[18px] h-[18px]" />
+                        {t('signInWithPasskey', { defaultValue: 'Se connecter avec cet appareil' })}
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <GoogleButton
                   onClick={handleGoogle}
@@ -323,7 +363,10 @@ export function MobileLoginScreen() {
                   {t('yourEmail', { defaultValue: 'Votre adresse email' })}
                 </h1>
                 <p className="text-muted-foreground text-sm">
-                  {t('weSendYouACode', { defaultValue: 'Nous vous envoyons un code à 6 chiffres' })}
+                  {t('weSendYouACode', {
+                    defaultValue: 'Nous vous envoyons un code à {{count}} chiffres',
+                    count: EMAIL_OTP_LENGTH,
+                  })}
                 </p>
               </div>
 
@@ -372,11 +415,12 @@ export function MobileLoginScreen() {
                 </p>
               </div>
 
-              {/* OtpField : 6 cases, collage/autofill iOS gérés, avance auto.
+              {/* OtpField : collage/autofill iOS gérés, avance auto.
                   onComplete valide sans qu'il ait à viser le bouton. */}
               <OtpField
                 id="admin-otp"
-                label={t('sixDigitCode', { defaultValue: 'Code à 6 chiffres' })}
+                length={EMAIL_OTP_LENGTH}
+                label={t('otpCodeLabel', { defaultValue: 'Code à {{count}} chiffres', count: EMAIL_OTP_LENGTH })}
                 labelClassName="sr-only"
                 value={code}
                 onValueChange={(value) => {
@@ -388,7 +432,11 @@ export function MobileLoginScreen() {
                 disabled={isLoading}
               />
 
-              <button type="submit" disabled={isLoading || code.length < 6} className={cn(CTA, 'mt-4')}>
+              <button
+                type="submit"
+                disabled={isLoading || code.length < EMAIL_OTP_LENGTH}
+                className={cn(CTA, 'mt-4')}
+              >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (

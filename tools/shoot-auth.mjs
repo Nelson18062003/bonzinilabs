@@ -62,14 +62,22 @@ const SCENARIOS = {
     act: async (page) => {
       await page.getByRole('button', { name: /recevoir un code/i }).click();
       await page.waitForTimeout(900);
-      // OtpField = 6 cases distinctes, chacune étiquetée « Chiffre N sur 6 ».
-      // On s'arrête à 5 : la 6e déclencherait la validation automatique
-      // (onComplete) et l'écran basculerait pendant la capture.
+      // OtpField = une case par chiffre, chacune étiquetée « Chiffre N sur 6 »
+      // (6 = réglage Email OTP Length du projet). On laisse la dernière vide :
+      // la remplir déclencherait la validation automatique (onComplete) et
+      // l'écran basculerait pendant la capture.
       const digits = '48392';
       for (let i = 0; i < digits.length; i += 1) {
         await page.getByLabel(`Chiffre ${i + 1} sur 6`).fill(digits[i]);
       }
     },
+  },
+  // Appareil capable de gérer une clé, mais aucune encore enrôlée ici :
+  // la clé reste proposée, sous le code par email.
+  'apres-choix-passkey-dispo': {
+    path: '/m/login',
+    remember: EMAIL,
+    authenticator: true,
   },
   // Une clé d'accès est enrôlée sur cet appareil : elle passe en tête.
   'apres-passkey': {
@@ -195,7 +203,7 @@ for (const theme of THEMES) {
     // Authenticator virtuel (CDP) : un Chromium sans capteur répond « non » à
     // isUserVerifyingPlatformAuthenticatorAvailable(), et le bouton resterait
     // caché. Ceci simule un téléphone avec Face ID / empreinte.
-    if (scenario.passkeyDevice) {
+    if (scenario.passkeyDevice || scenario.authenticator) {
       const cdp = await ctx.newCDPSession(page);
       await cdp.send('WebAuthn.enable');
       await cdp.send('WebAuthn.addVirtualAuthenticator', {

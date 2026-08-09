@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { authenticateWithPasskey } from '@/lib/passkey';
+import { authCodeFromUrl, authErrorFromUrl } from '@/lib/authCallbackUrl';
 
 // Types based on database app_role enum
 export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
@@ -447,8 +448,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const completeGoogleLogin = async (url: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      // Le fournisseur a pu refuser avant même d'émettre un code.
+      const providerError = authErrorFromUrl(url);
+      if (providerError) return { success: false, error: providerError };
+
+      // exchangeCodeForSession attend le CODE, pas l'URL : lui passer l'URL
+      // entière fait chercher à GoTrue une flow state inexistante, d'où
+      // « invalid flow state, no valid flow state found ».
+      const code = authCodeFromUrl(url);
+      if (!code) {
+        return { success: false, error: 'Lien de connexion incomplet. Réessayez depuis l\'écran de connexion.' };
+      }
+
       const { data, error } = await withTimeout(
-        supabaseAdmin.auth.exchangeCodeForSession(url),
+        supabaseAdmin.auth.exchangeCodeForSession(code),
         15000,
         'connexion Google',
       );
