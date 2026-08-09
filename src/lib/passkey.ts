@@ -28,6 +28,17 @@ export interface PasskeyResult {
   error?: string;
 }
 
+/**
+ * Message unique pour « le service n'a pas répondu ».
+ *
+ * Il ne parle PAS de connexion internet : dans la quasi-totalité des cas
+ * l'appareil est parfaitement en ligne et c'est l'Edge Function `passkey` qui
+ * n'est pas déployée (voir docs/deploiement-passkeys.md, étape 3). Le texte
+ * oriente donc vers l'autre moyen de connexion, immédiatement disponible.
+ */
+const SERVICE_UNAVAILABLE =
+  "La connexion par appareil n'est pas encore disponible. Utilisez le code par email.";
+
 // Marqueur local : « une clé d'accès a été enrôlée sur CET appareil ». Sert
 // uniquement à décider si l'écran de connexion met le bouton en avant — sans
 // lui, on proposerait Face ID à quelqu'un qui n'a rien enrôlé, et la feuille
@@ -86,14 +97,23 @@ async function call<T>(
       body: JSON.stringify(body ?? {}),
     });
   } catch {
-    return { ok: false, error: 'Connexion au serveur impossible. Vérifie ta connexion internet.' };
+    // fetch ne rejette que sur réseau/CORS. Le cas de loin le plus fréquent
+    // n'est PAS une panne d'internet : c'est la fonction `passkey` pas encore
+    // déployée — le navigateur n'obtient alors pas d'en-tête CORS et jette.
+    // Accuser le réseau enverrait chercher au mauvais endroit.
+    return { ok: false, error: SERVICE_UNAVAILABLE };
   }
+
+  // 404 = la fonction n'existe pas sur le projet ; 401/403 sur une route
+  // publique = la fonction est déployée avec `verify_jwt = true`. Ces deux-là
+  // se règlent au déploiement, pas par l'utilisateur : autant le dire.
+  if (response.status === 404) return { ok: false, error: SERVICE_UNAVAILABLE };
 
   let payload: { success?: boolean; error?: string } & Record<string, unknown>;
   try {
     payload = await response.json();
   } catch {
-    return { ok: false, error: 'Réponse du serveur illisible.' };
+    return { ok: false, error: SERVICE_UNAVAILABLE };
   }
 
   if (!response.ok || payload.success === false) {

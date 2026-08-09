@@ -68,8 +68,12 @@ un appareil avec Face ID, Touch ID, empreinte ou déverrouillage facial.
 1. Se connecter normalement (code email ou Google).
 2. `Plus → Paramètres → Sécurité → Connexion rapide → Ajouter cet appareil`.
 3. Se déconnecter.
-4. L'écran de connexion doit maintenant proposer **« Se connecter avec cet
-   appareil »** en action principale.
+4. Saisir son adresse, puis **« Continuer »** : l'écran des moyens doit
+   proposer **« Utiliser cet appareil »**.
+
+> Tant que la fonction n'est pas déployée (étape 3 ci-dessus), ce bouton
+> répond « La connexion par appareil n'est pas encore disponible. Utilisez le
+> code par email. » — c'est le comportement attendu, pas une panne.
 
 ### Le point à surveiller au premier essai
 
