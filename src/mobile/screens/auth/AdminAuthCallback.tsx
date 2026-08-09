@@ -1,5 +1,10 @@
 // ============================================================
-// Retour OAuth Google de l'app ADMIN — /m/auth/callback.
+// Retour d'authentification de l'app ADMIN — /m/auth/callback.
+//
+// Deux usages, même mécanique (échanger un ?code= contre une session) :
+//   · retour Google ;
+//   · retour du lien « mot de passe oublié » — qui arrive ici avec
+//     ?next=/m/more/password, pour enchaîner sur le choix du mot de passe.
 //
 // Route montée UNIQUEMENT dans l'app admin. Le client `supabase` (app client)
 // n'y est jamais monté : aucune course possible sur le ?code= entre les deux
@@ -8,18 +13,20 @@
 // `supabaseAdmin` a detectSessionInUrl:false — l'échange est donc explicite.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { LoginBackground } from '@/components/auth/LoginBackground';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { TEXT } from '@/mobile/designKit';
+import { safeNextPath } from '@/lib/safeRedirect';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function AdminAuthCallback() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { completeGoogleLogin } = useAdminAuth();
   const [error, setError] = useState('');
   // React 18 monte deux fois en dev : le ?code= n'est utilisable qu'une seule
@@ -33,12 +40,14 @@ export function AdminAuthCallback() {
     (async () => {
       const result = await completeGoogleLogin(window.location.href);
       if (result.success) {
-        navigate('/m', { replace: true });
+        // `next` n'est accepté qu'en chemin interne : une URL absolue ferait de
+        // cette route une redirection ouverte (cf. safeNextPath).
+        navigate(safeNextPath(searchParams.get('next')), { replace: true });
       } else {
         setError(result.error || t('errorOccurred', { defaultValue: 'Une erreur est survenue' }));
       }
     })();
-  }, [completeGoogleLogin, navigate, t]);
+  }, [completeGoogleLogin, navigate, searchParams, t]);
 
   return (
     <LoginBackground>

@@ -466,8 +466,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const requestPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { error } = await withTimeout(
+        // Le lien doit atterrir sur la route qui ÉCHANGE le ?code= : sur
+        // /m/login il ne se passerait rien (detectSessionInUrl est à false côté
+        // admin), et la personne se retrouverait devant l'écran de connexion
+        // sans aucun moyen de choisir un nouveau mot de passe.
         supabaseAdmin.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-          redirectTo: `${window.location.origin}/m/login`,
+          redirectTo: `${window.location.origin}/m/auth/callback?next=${encodeURIComponent('/m/more/password')}`,
         }),
         15000,
         'envoi du lien',
