@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { MobileTabBar } from './MobileTabBar';
 import { AnimatedPage } from '@/components/transitions/AnimatedPage';
+import { PasskeyEnrollPrompt } from '@/mobile/components/PasskeyEnrollPrompt';
 import { cn } from '@/lib/utils';
 
 interface MobileAppShellProps {
@@ -33,6 +34,8 @@ export function MobileAppShell({
         <AnimatedPage>{children}</AnimatedPage>
       </main>
       {showTabBar && <MobileTabBar />}
+      {/* Se montre au plus une fois, puis se tait 14 jours (cf. composant). */}
+      <PasskeyEnrollPrompt />
     </div>
   );
 }

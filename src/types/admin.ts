@@ -370,7 +370,9 @@ export interface CreateAdminResult {
   error?: string;
 }
 
-// Result from reset-admin-password Edge Function
+// Result from the admin_reset_password RPC (réinitialisation d'un AUTRE admin).
+// L'Edge Function du même nom a été supprimée : elle interrogeait `profiles`,
+// table supprimée en février.
 export interface ResetPasswordResult {
   success: boolean;
   tempPassword?: string;

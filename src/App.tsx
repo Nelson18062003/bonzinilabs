@@ -47,6 +47,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
 const MobileLoginScreen = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.MobileLoginScreen })));
+const AdminAuthCallback = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.AdminAuthCallback })));
 const MobileDashboard = lazy(() => import("./mobile/screens/dashboard").then(m => ({ default: m.MobileDashboard })));
 const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
@@ -83,6 +84,8 @@ const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
+const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobilePasskeysScreen })));
+const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
 const MobileAdminProfile = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileAdminProfile })));
 const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
@@ -190,6 +193,7 @@ const App = () => (
 
                 {/* Mobile Admin Routes */}
                 <Route path="/m/login" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></AdminRouteWrapper>} />
+                <Route path="/m/auth/callback" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><AdminAuthCallback /></AdminRouteWrapper>} />
                 <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileNewDeposit desktop />}><MobileNewDeposit /></AdminRouteWrapper>} />
@@ -216,6 +220,8 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper desktop={<MobileCreateAdmin desktop />}><MobileCreateAdmin /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
 

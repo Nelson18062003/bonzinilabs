@@ -11,6 +11,12 @@ verify_jwt = false
 [functions.resend-events]
 verify_jwt = false
 
+# passkey sert les routes login/start et login/finish AVANT toute session :
+# c'est tout l'intérêt d'une clé d'accès. Le JWT des routes d'enrôlement
+# (register/*) est donc vérifié À LA MAIN dans la fonction — cf. callerFromJwt().
+[functions.passkey]
+verify_jwt = false
+
 # send-email is driven by pg_cron via pg_net (no Supabase user JWT).
 # Authenticity is enforced via the mandatory EMAIL_DRAINER_SECRET bearer check
 # inside the function (constant-time compare).

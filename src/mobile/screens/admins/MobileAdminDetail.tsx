@@ -296,12 +296,19 @@ export function MobileAdminDetail() {
               />
             )}
 
+            {/* Pour SOI : on choisit son mot de passe (écran dédié). L'ancien
+                comportement générait un nouvel hexadécimal illisible — c'est
+                précisément ce qui rendait les comptes impossibles à retenir.
+                Pour QUELQU'UN D'AUTRE : on ne peut pas choisir à sa place, un
+                mot de passe temporaire reste la seule option. */}
             <ActionRow
               icon={Key}
               tone="pending"
               label={isSelf ? t('changeMyPassword', { defaultValue: 'Changer mon mot de passe' }) : t('resetPasswordAction', { defaultValue: 'Réinitialiser mot de passe' })}
-              description={isSelf ? t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' }) : t('generateTempPassword', { defaultValue: 'Générer un mot de passe temporaire' })}
-              onClick={() => setResetDrawerOpen(true)}
+              description={isSelf
+                ? t('chooseNewPassword', { defaultValue: 'Choisir un nouveau mot de passe' })
+                : t('generateTempPassword', { defaultValue: 'Générer un mot de passe temporaire' })}
+              onClick={() => (isSelf ? navigate('/m/more/password') : setResetDrawerOpen(true))}
             />
           </Card>
         )}
@@ -419,11 +426,11 @@ export function MobileAdminDetail() {
           </span>
         }
       >
+        {/* Ce tiroir ne s'ouvre plus que pour un AUTRE admin : pour soi, on
+            passe désormais par l'écran « Mon mot de passe ». */}
         <p className={cn('text-[14px]', TEXT.muted)}>
-          {isSelf
-            ? t('resetPasswordSelfMessage', { defaultValue: 'Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.' })
-            : <>{t('resetPasswordOtherMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
-              <strong className={TEXT.strong}>{admin.firstName} {admin.lastName}</strong>. {t('resetPasswordOtherMessageSuffix', { defaultValue: "Vous devrez le transmettre manuellement à l'administrateur." })}</>}
+          {t('resetPasswordOtherMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
+          <strong className={TEXT.strong}>{admin.firstName} {admin.lastName}</strong>. {t('resetPasswordOtherMessageSuffix', { defaultValue: "Vous devrez le transmettre manuellement à l'administrateur." })}
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <PrimaryPill onClick={handleResetPassword} loading={resetPasswordMutation.isPending} className="w-full">
@@ -448,9 +455,7 @@ export function MobileAdminDetail() {
       >
         <div className="space-y-4">
           <p className={cn('text-[14px]', TEXT.muted)}>
-            {isSelf
-              ? t('copyPasswordSelfMessage', { defaultValue: 'Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.' })
-              : t('copyPasswordOtherMessage', { defaultValue: "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur." })}
+            {t('copyPasswordOtherMessage', { defaultValue: "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur." })}
           </p>
           <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-4', SURFACE.canvas)}>
             <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>

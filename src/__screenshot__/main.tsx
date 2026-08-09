@@ -67,6 +67,8 @@ import {
   MobileNotificationsScreen,
   MobileHistoryScreen,
   MobileProofsScreen,
+  MobilePasskeysScreen,
+  MobileChangePasswordScreen,
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
@@ -194,6 +196,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // More module (Phase 2 M1)
   more: { Comp: MobileMoreScreen, route: '/m/more' },
   'more-settings': { Comp: MobileSettingsScreen, route: '/m/more/settings' },
+  'more-passkeys': { Comp: MobilePasskeysScreen, route: '/m/more/passkeys' },
+  'more-password': { Comp: MobileChangePasswordScreen, route: '/m/more/password' },
   'more-profile': { Comp: MobileAdminProfile, route: '/m/more/profile' },
   'more-notifications': { Comp: MobileNotificationsScreen, route: '/m/more/notifications' },
   'more-history': { Comp: MobileHistoryScreen, route: '/m/more/history' },

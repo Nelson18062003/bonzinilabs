@@ -1605,6 +1605,45 @@ export type Database = {
         }
         Relationships: []
       }
+      webauthn_credentials: {
+        Row: {
+          backed_up: boolean
+          counter: number
+          created_at: string
+          credential_id: string
+          device_label: string | null
+          id: string
+          last_used_at: string | null
+          public_key: string
+          transports: string[] | null
+          user_id: string
+        }
+        Insert: {
+          backed_up?: boolean
+          counter?: number
+          created_at?: string
+          credential_id: string
+          device_label?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          transports?: string[] | null
+          user_id: string
+        }
+        Update: {
+          backed_up?: boolean
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          device_label?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          transports?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       treasury_account_balances: {
@@ -1686,6 +1725,10 @@ export type Database = {
       }
       admin_reset_password: {
         Args: { p_target_user_id: string }
+        Returns: Json
+      }
+      admin_revoke_passkey: {
+        Args: { p_credential: string }
         Returns: Json
       }
       admin_setup_client: {
