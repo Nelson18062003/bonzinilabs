@@ -1,18 +1,22 @@
 // ============================================================
-// Écran de connexion ADMIN — refonte « plus de mot de passe à retenir ».
+// Écran de connexion ADMIN.
 //
-// L'ancien écran n'offrait qu'un seul chemin (email + mot de passe) et AUCUNE
-// récupération : un admin qui oubliait son mot de passe était bloqué jusqu'à
-// ce qu'un super_admin lui en génère un nouveau, à transmettre à la main.
+// PARCOURS — l'email D'ABORD, les moyens ensuite :
+//   1. « Votre adresse email »   → on sait qui se présente, et on peut la changer
+//   2. « Comment vous connecter » → code email · cet appareil · Google
+//   3. « Entrez le code »        → 6 chiffres
 //
-// Quatre chemins désormais, du plus court au plus laborieux :
-//   1. clé d'accès (Face ID / empreinte)  — dès que l'appareil sait la gérer
-//   2. code à 6 chiffres reçu par email   (aucun mot de passe)
-//   3. Continuer avec Google              (un tap)
-//   4. mot de passe                       (repli) + « mot de passe oublié ? »
+// La version précédente affichait les moyens en premier et se contentait de
+// saluer l'adresse mémorisée : impossible d'en changer sans vider le
+// navigateur. C'était le principal reproche en test.
 //
-// L'adresse est mémorisée sur l'appareil : au retour, l'écran salue
-// directement la personne et propose le code sans rien saisir.
+// PLUS DE MOT DE PASSE ICI — retiré à la demande. Le repli d'urgence existe
+// toujours ailleurs : /a/login (agent-cash) accepte email + mot de passe et
+// ouvre la même session admin.
+//
+// LISIBILITÉ AVANT TOUT : une décision par écran, des options en grandes
+// lignes tapables avec un titre et une phrase d'explication. L'utilisateur
+// principal n'est pas un familier des interfaces.
 // ============================================================
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,25 +25,20 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { LoginBackground } from '@/components/auth/LoginBackground';
 import { PremiumInput } from '@/components/auth/PremiumInput';
-import { GoogleButton } from '@/components/auth/GoogleButton';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { OtpField } from '@/components/form';
 import { isPasskeySupported, hasPasskeyOnThisDevice } from '@/lib/passkey';
 import { TEXT } from '@/mobile/designKit';
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Check, KeyRound, Fingerprint } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, Fingerprint, ChevronRight, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 
 const emailSchema = z.string().email();
 
-/** Pill sombre — l'UNIQUE action principale de l'écran (designKit). */
+/** Pill sombre — l'unique action principale d'un écran (designKit). */
 const CTA =
-  'w-full h-12 rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24] text-[15px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed';
-
-/** Pill douce — quand la clé d'accès occupe déjà l'action principale. */
-const SECONDARY_CTA =
-  'w-full h-12 rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0] text-[15px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed';
+  'w-full h-13 min-h-[52px] rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24] text-[15.5px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed';
 
 /** Secondes avant de pouvoir redemander un code. */
 const RESEND_DELAY = 30;
@@ -49,52 +48,109 @@ const RESEND_DELAY = 30;
  *
  * DOIT correspondre au réglage Supabase « Email OTP Length »
  * (Authentication → Providers → Email). Les deux vont ensemble : afficher
- * 6 cases alors que Supabase émet 8 chiffres rend la connexion impossible
- * (les deux derniers n'ont nulle part où aller), et l'inverse laisse deux
- * cases que rien ne remplit.
+ * 6 cases alors que Supabase émet 8 chiffres rend la connexion impossible.
  */
 const EMAIL_OTP_LENGTH = 6;
 
-type Step = 'choice' | 'email' | 'code' | 'password' | 'reset-sent';
+type Step = 'email' | 'methods' | 'code';
+
+/** Grande ligne tapable : icône, titre, explication. Lisible sans effort. */
+function MethodRow({
+  icon,
+  title,
+  hint,
+  onClick,
+  loading,
+  disabled,
+  primary,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  hint: string;
+  onClick: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={cn(
+        'w-full flex items-center gap-3.5 rounded-2xl px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-50',
+        primary
+          ? 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]'
+          : 'bg-white text-[#1B1A24] shadow-[0_4px_18px_-10px_rgba(46,32,92,0.35)] dark:bg-[#211F2B] dark:text-[#F2F1F7]',
+      )}
+    >
+      <span
+        className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+          primary
+            ? 'bg-white/15 text-white dark:bg-black/10 dark:text-[#1B1A24]'
+            : 'bg-[#EDEAFA] text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]',
+        )}
+      >
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : icon}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15.5px] font-bold leading-tight">{title}</span>
+        <span
+          className={cn(
+            'mt-0.5 block text-[12.5px] leading-snug',
+            primary ? 'text-white/65 dark:text-[#1B1A24]/60' : 'text-[#8E8BA0]',
+          )}
+        >
+          {hint}
+        </span>
+      </span>
+
+      <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', primary ? 'opacity-50' : 'text-[#B9B5CC]')} />
+    </button>
+  );
+}
+
+/** Logo « G » officiel Google (mêmes couleurs que le bouton du parcours client). */
+function GoogleG({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+  );
+}
 
 export function MobileLoginScreen() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const {
-    login,
     requestEmailCode,
     verifyEmailCode,
-    requestPasswordReset,
     loginWithPasskey,
     loginWithGoogle,
     lastEmail,
     isLoading: authLoading,
   } = useAdminAuth();
 
-  const [step, setStep] = useState<Step>('choice');
+  const [step, setStep] = useState<Step>('email');
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  // Pré-remplie si on connaît déjà l'adresse, mais TOUJOURS modifiable.
   const [email, setEmail] = useState(lastEmail ?? '');
-  const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [passkeyLoading, setPasskeyLoading] = useState(false);
-  // Proposée dès que l'appareil sait gérer une clé d'accès.
-  //
-  // La version précédente exigeait EN PLUS qu'une clé ait été enrôlée sur ce
-  // navigateur (marqueur local). Deux conséquences fâcheuses : le bouton
-  // restait introuvable tant qu'on n'était pas allé le chercher dans les
-  // réglages, et surtout une clé synchronisée depuis un autre appareil
-  // (trousseau iCloud, Google Password Manager) restait inutilisable — le
-  // marqueur local, lui, n'a pas suivi.
-  //
-  // Le marqueur ne sert donc plus qu'à décider de la PRIORITÉ : là où une clé
-  // a déjà été posée, elle passe en action principale.
+
+  // Proposée dès que l'appareil sait gérer une clé d'accès — y compris une clé
+  // synchronisée depuis un autre téléphone, que le marqueur local ignore.
   const [passkeySupported, setPasskeySupported] = useState(false);
   const [passkeyEnrolledHere] = useState(() => hasPasskeyOnThisDevice());
 
@@ -102,15 +158,7 @@ export function MobileLoginScreen() {
     void isPasskeySupported().then(setPasskeySupported);
   }, []);
 
-  const passkeyFirst = passkeySupported && passkeyEnrolledHere;
-
   const isEmailValid = emailSchema.safeParse(email).success;
-
-  const maskEmail = (value: string) => {
-    const [local, domain] = value.split('@');
-    if (!domain) return value;
-    return `${local.slice(0, 3)}***@${domain}`;
-  };
 
   const go = (next: Step, dir: 'forward' | 'back' = 'forward') => {
     setDirection(dir);
@@ -137,56 +185,31 @@ export function MobileLoginScreen() {
     }, 1000);
   };
 
-  // ── Code par email ────────────────────────────────────────────────────────
-  const sendCode = async (target: string) => {
-    setIsLoading(true);
-    const result = await requestEmailCode(target);
-    setIsLoading(false);
-
-    if (!result.success) {
-      setError(result.error || t('errorOccurred', { defaultValue: 'Une erreur est survenue' }));
-      return false;
-    }
-    startCooldown();
-    return true;
-  };
-
-  const handleChoiceCode = async () => {
-    // Adresse déjà connue sur cet appareil → on saute l'étape de saisie.
-    if (lastEmail && emailSchema.safeParse(lastEmail).success) {
-      setEmail(lastEmail);
-      if (await sendCode(lastEmail)) go('code');
-      return;
-    }
-    go('email');
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  // ── Étape 1 : l'adresse ───────────────────────────────────────────────────
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError('');
     if (!isEmailValid) {
       setEmailError(t('invalidEmail', { defaultValue: 'Veuillez entrer un email valide' }));
       return;
     }
-    if (await sendCode(email)) go('code');
+    go('methods');
   };
 
-  const submitCode = async (value: string) => {
-    setError('');
+  // ── Étape 2 : les moyens ──────────────────────────────────────────────────
+  const sendCode = async () => {
     setIsLoading(true);
-    const result = await verifyEmailCode(email, value);
+    const result = await requestEmailCode(email);
     setIsLoading(false);
 
-    if (result.success) enterApp();
-    else setError(result.error || t('invalidCode', { defaultValue: 'Code incorrect ou expiré' }));
+    if (!result.success) {
+      setError(result.error || t('errorOccurred', { defaultValue: 'Une erreur est survenue' }));
+      return;
+    }
+    startCooldown();
+    go('code');
   };
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    void submitCode(code);
-  };
-
-  // ── Clé d'accès ───────────────────────────────────────────────────────────
   const handlePasskey = async () => {
     setError('');
     setPasskeyLoading(true);
@@ -198,7 +221,6 @@ export function MobileLoginScreen() {
     else if (result.error) setError(result.error);
   };
 
-  // ── Google ────────────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     setGoogleLoading(true);
     const result = await loginWithGoogle();
@@ -209,28 +231,23 @@ export function MobileLoginScreen() {
     }
   };
 
-  // ── Mot de passe (repli) ──────────────────────────────────────────────────
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── Étape 3 : le code ─────────────────────────────────────────────────────
+  const submitCode = async (value: string) => {
     setError('');
     setIsLoading(true);
-    const result = await login(email, password);
+    const result = await verifyEmailCode(email, value);
     setIsLoading(false);
 
     if (result.success) enterApp();
-    else setError(result.error || t('invalidCredentials', { defaultValue: 'Identifiants incorrects' }));
+    else setError(result.error || t('invalidCode', { defaultValue: 'Code incorrect ou expiré' }));
   };
 
-  const handleForgotPassword = async () => {
-    if (!isEmailValid) {
-      setError(t('invalidEmail', { defaultValue: 'Veuillez entrer un email valide' }));
-      return;
-    }
+  const resend = async () => {
+    setError('');
     setIsLoading(true);
-    const result = await requestPasswordReset(email);
+    const result = await requestEmailCode(email);
     setIsLoading(false);
-
-    if (result.success) go('reset-sent');
+    if (result.success) startCooldown();
     else setError(result.error || t('errorOccurred', { defaultValue: 'Une erreur est survenue' }));
   };
 
@@ -242,135 +259,46 @@ export function MobileLoginScreen() {
     );
   }
 
-  const showBack = step !== 'choice';
+  const back = () => go(step === 'code' ? 'methods' : 'email', 'back');
 
   return (
     <LoginBackground className={cn(isFadingOut && 'animate-fade-out')}>
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
-        {showBack && (
+        {step !== 'email' && (
           <button
-            onClick={() => go(step === 'reset-sent' ? 'choice' : step === 'code' ? 'email' : 'choice', 'back')}
+            onClick={back}
             aria-label={t('back', { defaultValue: 'Retour' })}
-            className="absolute top-6 left-4 z-20 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+            className="absolute top-6 left-4 z-20 w-11 h-11 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         )}
 
         <div
-          className="flex justify-center mb-6 animate-logo-entrance"
+          className="flex justify-center mb-7 animate-logo-entrance"
           style={{ animationDelay: '0ms', animationFillMode: 'both' }}
         >
           <BonziniLogo size="xl" showText={false} />
         </div>
 
         <StepTransition stepKey={step} direction={direction}>
-          {/* ─── Choix du mode de connexion ─────────────────────────────── */}
-          {step === 'choice' && (
-            <div className="max-w-sm mx-auto w-full">
+          {/* ─── 1. L'adresse ────────────────────────────────────────────── */}
+          {step === 'email' && (
+            <form onSubmit={handleEmailSubmit} className="max-w-sm mx-auto w-full">
               <div
                 className="text-center mb-8 animate-slide-up"
                 style={{ animationDelay: '80ms', animationFillMode: 'both' }}
               >
-                <h1 className="text-2xl font-bold mb-1">Administration</h1>
-                <p className="text-muted-foreground text-sm">
-                  {lastEmail
-                    ? t('welcomeBackAs', { defaultValue: 'Content de vous revoir, {{email}}', email: maskEmail(lastEmail) })
-                    : t('chooseSignInMethod', { defaultValue: 'Choisissez comment vous connecter' })}
+                <h1 className="text-[26px] font-extrabold tracking-tight mb-1.5">Administration</h1>
+                <p className="text-muted-foreground text-[14.5px] leading-snug">
+                  {t('enterEmailToContinue', { defaultValue: 'Entrez votre adresse email pour continuer' })}
                 </p>
               </div>
 
               <div
-                className="space-y-3 animate-slide-up"
+                className="mb-7 animate-slide-up"
                 style={{ animationDelay: '160ms', animationFillMode: 'both' }}
               >
-                {/* Là où une clé a déjà été posée, elle prend la tête : c'est le
-                    chemin le plus court (un regard, rien à taper ni attendre).
-                    Ailleurs elle reste visible, sous le code par email. */}
-                {passkeySupported && passkeyFirst && (
-                  <button type="button" onClick={handlePasskey} disabled={passkeyLoading} className={CTA}>
-                    {passkeyLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Fingerprint className="w-[18px] h-[18px]" />
-                        {t('signInWithPasskey', { defaultValue: 'Se connecter avec cet appareil' })}
-                      </>
-                    )}
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleChoiceCode}
-                  disabled={isLoading}
-                  className={passkeyFirst ? SECONDARY_CTA : CTA}
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Mail className="w-[18px] h-[18px]" />
-                      {t('signInWithCode', { defaultValue: 'Recevoir un code par email' })}
-                    </>
-                  )}
-                </button>
-
-                {passkeySupported && !passkeyFirst && (
-                  <button
-                    type="button"
-                    onClick={handlePasskey}
-                    disabled={passkeyLoading}
-                    className={SECONDARY_CTA}
-                  >
-                    {passkeyLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Fingerprint className="w-[18px] h-[18px]" />
-                        {t('signInWithPasskey', { defaultValue: 'Se connecter avec cet appareil' })}
-                      </>
-                    )}
-                  </button>
-                )}
-
-                <GoogleButton
-                  onClick={handleGoogle}
-                  loading={googleLoading}
-                  label={t('continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => go(email ? 'password' : 'email')}
-                className="mt-6 w-full text-center text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t('signInWithPassword', { defaultValue: 'Utiliser un mot de passe' })}
-              </button>
-
-              {error && (
-                <p className="mt-4 text-center text-sm text-[#C0504D] dark:text-[#E79A9A]">{error}</p>
-              )}
-            </div>
-          )}
-
-          {/* ─── Saisie de l'adresse email ──────────────────────────────── */}
-          {step === 'email' && (
-            <form onSubmit={handleEmailSubmit} className="max-w-sm mx-auto w-full">
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-1">
-                  {t('yourEmail', { defaultValue: 'Votre adresse email' })}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  {t('weSendYouACode', {
-                    defaultValue: 'Nous vous envoyons un code à {{count}} chiffres',
-                    count: EMAIL_OTP_LENGTH,
-                  })}
-                </p>
-              </div>
-
-              <div className="mb-6">
                 <PremiumInput
                   id="admin-email"
                   type="email"
@@ -388,35 +316,102 @@ export function MobileLoginScreen() {
                 />
               </div>
 
-              <button type="submit" disabled={isLoading || !email} className={CTA}>
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  t('sendCode', { defaultValue: 'Envoyer le code' })
-                )}
+              <button
+                type="submit"
+                disabled={!email}
+                className={cn(CTA, 'animate-slide-up')}
+                style={{ animationDelay: '240ms', animationFillMode: 'both' }}
+              >
+                {t('continue', { defaultValue: 'Continuer' })}
               </button>
-
-              {error && (
-                <p className="mt-4 text-center text-sm text-[#C0504D] dark:text-[#E79A9A]">{error}</p>
-              )}
             </form>
           )}
 
-          {/* ─── Saisie du code à 6 chiffres ────────────────────────────── */}
+          {/* ─── 2. Les moyens de connexion ──────────────────────────────── */}
+          {step === 'methods' && (
+            <div className="max-w-sm mx-auto w-full">
+              <div className="text-center mb-7">
+                {/* 23px et non 26 : « Comment vous connecter » tient alors sur
+                    une ligne jusque sur les petits téléphones. */}
+                <h1 className="text-[23px] font-extrabold tracking-tight mb-1.5">
+                  {t('howToSignIn', { defaultValue: 'Comment vous connecter' })}
+                </h1>
+                {/* L'adresse reste visible ET modifiable — c'est ce qui manquait. */}
+                <button
+                  type="button"
+                  onClick={() => go('email', 'back')}
+                  className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {email}
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <MethodRow
+                  primary
+                  icon={<Mail className="h-5 w-5" />}
+                  title={t('signInWithCode', { defaultValue: 'Recevoir un code par email' })}
+                  hint={t('signInWithCodeHint', {
+                    defaultValue: 'Un code à {{count}} chiffres, tout de suite',
+                    count: EMAIL_OTP_LENGTH,
+                  })}
+                  onClick={sendCode}
+                  loading={isLoading}
+                />
+
+                {passkeySupported && (
+                  <MethodRow
+                    icon={<Fingerprint className="h-5 w-5" />}
+                    title={t('signInWithPasskey', { defaultValue: 'Utiliser cet appareil' })}
+                    hint={
+                      passkeyEnrolledHere
+                        ? t('signInWithPasskeyHintReady', { defaultValue: 'Face ID ou empreinte — rien à taper' })
+                        : t('signInWithPasskeyHintNew', { defaultValue: 'Si vous avez déjà activé cet appareil' })
+                    }
+                    onClick={handlePasskey}
+                    loading={passkeyLoading}
+                  />
+                )}
+
+                <MethodRow
+                  icon={<GoogleG className="h-5 w-5" />}
+                  title={t('continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
+                  hint={t('continueWithGoogleHint', { defaultValue: 'Avec votre compte Google habituel' })}
+                  onClick={handleGoogle}
+                  loading={googleLoading}
+                />
+              </div>
+
+              {error && (
+                <p className="mt-5 text-center text-[13.5px] leading-snug text-[#C0504D] dark:text-[#E79A9A]">
+                  {error}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ─── 3. Le code ──────────────────────────────────────────────── */}
           {step === 'code' && (
-            <form onSubmit={handleCodeSubmit} className="max-w-sm mx-auto w-full">
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-1">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submitCode(code);
+              }}
+              className="max-w-sm mx-auto w-full"
+            >
+              <div className="text-center mb-7">
+                <h1 className="text-[26px] font-extrabold tracking-tight mb-1.5">
                   {t('enterCode', { defaultValue: 'Entrez le code' })}
                 </h1>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-[14.5px] leading-snug">
                   {t('codeSentTo', { defaultValue: 'Code envoyé à' })}{' '}
-                  <span className="font-semibold text-foreground">{maskEmail(email)}</span>
+                  <span className="font-semibold text-foreground">{email}</span>
                 </p>
               </div>
 
-              {/* OtpField : collage/autofill iOS gérés, avance auto.
-                  onComplete valide sans qu'il ait à viser le bouton. */}
+              {/* Avance automatique, collage et autofill iOS gérés ; la dernière
+                  case valide sans qu'il ait à viser le bouton. */}
               <OtpField
                 id="admin-otp"
                 length={EMAIL_OTP_LENGTH}
@@ -435,7 +430,7 @@ export function MobileLoginScreen() {
               <button
                 type="submit"
                 disabled={isLoading || code.length < EMAIL_OTP_LENGTH}
-                className={cn(CTA, 'mt-4')}
+                className={cn(CTA, 'mt-5')}
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -444,11 +439,11 @@ export function MobileLoginScreen() {
                 )}
               </button>
 
-              <p className={cn('mt-6 text-center text-[13px]', TEXT.muted)}>
+              <p className={cn('mt-6 text-center text-[13.5px]', TEXT.muted)}>
                 {t('noCodeReceived', { defaultValue: "Vous n'avez pas reçu le code ?" })}{' '}
                 <button
                   type="button"
-                  onClick={() => sendCode(email)}
+                  onClick={resend}
                   disabled={cooldown > 0 || isLoading}
                   className="font-semibold text-[#5B4CC4] hover:underline disabled:opacity-50 disabled:no-underline dark:text-[#B5AAF0]"
                 >
@@ -458,95 +453,6 @@ export function MobileLoginScreen() {
                 </button>
               </p>
             </form>
-          )}
-
-          {/* ─── Mot de passe (repli) ───────────────────────────────────── */}
-          {step === 'password' && (
-            <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto w-full">
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-1">{t('hello', { defaultValue: 'Bonjour,' })}</h1>
-                <p className="text-muted-foreground text-sm">{maskEmail(email)}</p>
-              </div>
-
-              <div className="mb-4">
-                <PremiumInput
-                  id="admin-password"
-                  type={showPassword ? 'text' : 'password'}
-                  label={t('password', { defaultValue: 'Mot de passe' })}
-                  value={password}
-                  onChange={(val) => {
-                    setPassword(val);
-                    setError('');
-                  }}
-                  icon={<Lock className="w-5 h-5" />}
-                  rightElement={
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={t('togglePassword', { defaultValue: 'Afficher le mot de passe' })}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  }
-                  error={error}
-                  autoComplete="current-password"
-                  autoFocus
-                />
-              </div>
-
-              {/* Récupération autonome — absente de l'ancien écran. */}
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                disabled={isLoading}
-                className="mb-6 w-full text-right text-[13px] font-semibold text-[#5B4CC4] hover:underline disabled:opacity-50 dark:text-[#B5AAF0]"
-              >
-                {t('forgotPassword', { defaultValue: 'Mot de passe oublié ?' })}
-              </button>
-
-              <button type="submit" disabled={isLoading || !password} className={CTA}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {t('connecting', { defaultValue: 'Connexion...' })}
-                  </>
-                ) : (
-                  t('signIn', { defaultValue: 'Se connecter' })
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => go('choice', 'back')}
-                className="mt-6 w-full text-center text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <KeyRound className="mr-1.5 inline h-[14px] w-[14px] align-[-2px]" />
-                {t('signInWithCodeInstead', { defaultValue: 'Recevoir plutôt un code par email' })}
-              </button>
-            </form>
-          )}
-
-          {/* ─── Lien de réinitialisation envoyé ────────────────────────── */}
-          {step === 'reset-sent' && (
-            <div className="max-w-sm mx-auto w-full text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
-                <Check className="h-7 w-7" strokeWidth={2.5} />
-              </div>
-              <h1 className="text-2xl font-bold mb-2">
-                {t('resetLinkSent', { defaultValue: 'Lien envoyé' })}
-              </h1>
-              <p className={cn('text-sm', TEXT.muted)}>
-                {t('resetLinkSentBody', {
-                  defaultValue: 'Ouvrez le message envoyé à {{email}} pour choisir un nouveau mot de passe.',
-                  email: maskEmail(email),
-                })}
-              </p>
-              <button type="button" onClick={() => go('choice', 'back')} className={cn(CTA, 'mt-8')}>
-                {t('backToSignIn', { defaultValue: 'Revenir à la connexion' })}
-              </button>
-            </div>
           )}
         </StepTransition>
       </div>

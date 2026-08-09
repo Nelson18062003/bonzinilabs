@@ -20,47 +20,48 @@ const THEMES = (process.env.THEMES ?? 'light').split(',');
 
 const EMAIL = 'papa@gmail.com';
 
+/** Étape 1 → 2 : renseigner l'adresse et valider. */
+async function goToMethods(page) {
+  await page.getByLabel(/adresse email/i).fill(EMAIL);
+  await page.getByRole('button', { name: /^continuer$/i }).click();
+  await page.waitForTimeout(700);
+}
+
 /**
  * Each scenario: navigate, optionally drive the UI, then screenshot.
  * `act` receives the Playwright page after the first paint.
  */
 const SCENARIOS = {
-  // ── État actuel (avant) ────────────────────────────────────────────────
-  'avant-email': {
+  // ── Nouvel écran (après) — parcours en 3 temps ─────────────────────────
+  // 1. L'adresse, seule question posée. Vide au premier passage…
+  'apres-1-email': {
     path: '/m/login',
   },
-  'avant-password': {
-    path: '/m/login',
-    act: async (page) => {
-      await page.getByLabel(/adresse email/i).fill(EMAIL);
-      await page.getByRole('button', { name: /continuer/i }).click();
-      await page.waitForTimeout(700);
-    },
-  },
-
-  // ── Nouvel écran (après) ───────────────────────────────────────────────
-  // Premier passage sur cet appareil : aucune adresse mémorisée.
-  'apres-choix': {
-    path: '/m/login',
-  },
-  // Retour sur un appareil déjà utilisé : l'adresse est connue.
-  'apres-choix-connu': {
+  // …pré-remplie au retour, et toujours modifiable.
+  'apres-1-email-connu': {
     path: '/m/login',
     remember: EMAIL,
   },
-  'apres-email': {
+  // 2. Les moyens. Sans capteur biométrique : code email + Google.
+  'apres-2-moyens': {
     path: '/m/login',
-    act: async (page) => {
-      await page.getByRole('button', { name: /recevoir un code/i }).click();
-      await page.waitForTimeout(600);
-      await page.getByLabel(/adresse email/i).fill(EMAIL);
-    },
+    remember: EMAIL,
+    act: goToMethods,
   },
-  'apres-code': {
+  // 2 bis. Sur un téléphone avec Face ID / empreinte, la clé s'ajoute.
+  'apres-2-moyens-appareil': {
+    path: '/m/login',
+    remember: EMAIL,
+    passkeyDevice: true,
+    act: goToMethods,
+  },
+  // 3. Le code à 6 chiffres.
+  'apres-3-code': {
     path: '/m/login',
     remember: EMAIL,
     act: async (page) => {
-      await page.getByRole('button', { name: /recevoir un code/i }).click();
+      await goToMethods(page);
+      await page.getByRole('button', { name: /recevoir un code par email/i }).click();
       await page.waitForTimeout(900);
       // OtpField = une case par chiffre, chacune étiquetée « Chiffre N sur 6 »
       // (6 = réglage Email OTP Length du projet). On laisse la dernière vide :
@@ -71,19 +72,6 @@ const SCENARIOS = {
         await page.getByLabel(`Chiffre ${i + 1} sur 6`).fill(digits[i]);
       }
     },
-  },
-  // Appareil capable de gérer une clé, mais aucune encore enrôlée ici :
-  // la clé reste proposée, sous le code par email.
-  'apres-choix-passkey-dispo': {
-    path: '/m/login',
-    remember: EMAIL,
-    authenticator: true,
-  },
-  // Une clé d'accès est enrôlée sur cet appareil : elle passe en tête.
-  'apres-passkey': {
-    path: '/m/login',
-    remember: EMAIL,
-    passkeyDevice: true,
   },
   // Écran « Connexion rapide » — rendu via le harness (/screenshot.html),
   // qui fournit un contexte admin factice, sinon la route est protégée.
@@ -106,22 +94,6 @@ const SCENARIOS = {
         last_used_at: null,
       },
     ],
-  },
-  'apres-mot-de-passe-choisi': {
-    path: '/screenshot.html?screen=more-password',
-    act: async (page) => {
-      await page.getByLabel(/nouveau mot de passe/i).fill('bateau-jaune-42');
-      await page.getByLabel(/confirmer le mot de passe/i).fill('bateau-jaune-42');
-    },
-  },
-  'apres-password': {
-    path: '/m/login',
-    remember: EMAIL,
-    act: async (page) => {
-      await page.getByRole('button', { name: /utiliser un mot de passe/i }).click();
-      await page.waitForTimeout(600);
-      await page.getByLabel(/mot de passe/i).first().fill('mon-mot-de-passe');
-    },
   },
 };
 

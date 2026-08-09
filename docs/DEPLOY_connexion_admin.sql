@@ -1,27 +1,30 @@
 -- ==================================================================================
--- DÉPLOIEMENT — Clés d'accès (passkeys) pour la connexion admin
+-- BONZINI — CONNEXION ADMIN : LE FICHIER UNIQUE
 --
--- Regroupe les 3 migrations de la branche claude/bonzin-admin-login-x38wvx en UN
--- fichier, dans l'ordre. À exécuter une fois (éditeur SQL Supabase).
--- Équivalent à : npx supabase db push --linked
--- → n'utiliser QU'UNE des deux méthodes (sinon le suivi des migrations diverge).
+-- Tout le SQL de ce chantier (code par email · Google · clé d'accès · mot de
+-- passe choisi) en UN seul fichier, à coller dans l'éditeur SQL Supabase.
+-- Remplace les deux fichiers précédents (DEPLOY_passkeys_… et
+-- DEPLOY_verification_…), supprimés pour qu'il n'y ait plus de doute sur
+-- lequel lancer.
 --
--- Idempotent-friendly : create [or replace] / if [not] exists / drop if exists.
--- Réexécuter ce fichier ne casse rien.
+-- ┌─ COMMENT L'UTILISER ────────────────────────────────────────────────────┐
+-- │ Tout coller, tout lancer, une fois. La PARTIE A applique, la PARTIE B   │
+-- │ vérifie dans la foulée et affiche le résultat.                          │
+-- │ Relançable sans risque : tout est en create/alter … if [not] exists.    │
+-- └─────────────────────────────────────────────────────────────────────────┘
 --
--- CE QUE ÇA CRÉE
---   · webauthn_credentials  — un appareil enrôlé par ligne (clé PUBLIQUE seule)
---   · webauthn_challenges   — défis à usage unique, TTL 5 min
---   · admin_revoke_passkey  — révoquer un appareil (le sien, ou celui d'un
---                             autre admin si super_admin)
---   · purge_webauthn_challenges — ménage des défis périmés
---   · trg_webauthn_counter_monotonic — le compteur anti-clonage ne recule jamais
+-- ⚠️ N'utiliser QU'UNE des deux méthodes : ce fichier **OU**
+--    `npx supabase db push --linked`. Les deux, et le suivi des migrations
+--    Supabase diverge.
 --
--- CE QUE ÇA NE FAIT PAS
---   Les deux autres chemins de connexion (code par email, Google) n'ont besoin
---   d'AUCUNE migration : ils reposent sur Supabase Auth. Ils demandent en
---   revanche deux réglages dans le tableau de bord — voir
---   docs/deploiement-passkeys.md.
+-- ⚠️ CE FICHIER NE COUVRE QUE CE CHANTIER — les 3 migrations webauthn_*.
+--    Ce n'est pas un rejeu de tout l'historique du projet : les migrations
+--    antérieures (paiements groupés, trésorerie, Mola…) ne sont pas ici et
+--    n'ont pas à être rejouées.
+--
+-- ⚠️ CE FICHIER NE SUFFIT PAS À TOUT ACTIVER. Le code par email et Google ne
+--    demandent AUCUN SQL : ils dépendent de réglages du tableau de bord,
+--    listés à la toute fin.
 --
 -- APRÈS exécution :
 --   1. régénérer les types
@@ -33,8 +36,15 @@
 --      npx supabase functions deploy passkey
 -- ==================================================================================
 
+
+-- ##################################################################################
+-- #                                                                                #
+-- #   PARTIE A — CE QUI S'APPLIQUE   (3 migrations, dans l'ordre)                   #
+-- #                                                                                #
+-- ##################################################################################
+
 -- ┌──────────────────────────────────────────────────────────────────────────────
--- │ [1/3] 20260809120000_webauthn_passkeys.sql
+-- │ A1/3 — 20260809120000_webauthn_passkeys.sql
 -- │ Tables, RLS, révocation, purge
 -- └──────────────────────────────────────────────────────────────────────────────
 -- ============================================================
@@ -210,7 +220,7 @@ grant execute on function public.purge_webauthn_challenges() to service_role;
 notify pgrst, 'reload schema';
 
 -- ┌──────────────────────────────────────────────────────────────────────────────
--- │ [2/3] 20260809140000_webauthn_rate_limit.sql
+-- │ A2/3 — 20260809140000_webauthn_rate_limit.sql
 -- │ Limitation de débit de login/start
 -- └──────────────────────────────────────────────────────────────────────────────
 -- ============================================================
@@ -236,7 +246,7 @@ comment on column public.webauthn_challenges.client_ip_hash is
   'SHA-256 salé de l''IP appelante. Sert uniquement à la limitation de débit ; jamais l''IP en clair.';
 
 -- ┌──────────────────────────────────────────────────────────────────────────────
--- │ [3/3] 20260809160000_webauthn_counter_monotonic.sql
+-- │ A3/3 — 20260809160000_webauthn_counter_monotonic.sql
 -- │ Compteur anti-clonage : jamais en recul
 -- └──────────────────────────────────────────────────────────────────────────────
 -- ============================================================
@@ -281,17 +291,139 @@ comment on function public.webauthn_counter_never_decreases() is
 
 notify pgrst, 'reload schema';
 
+
+
+-- ##################################################################################
+-- #                                                                                #
+-- #   PARTIE B — CE QUI VÉRIFIE   (que des SELECT, rien n'est modifié)              #
+-- #                                                                                #
+-- #   Lancée juste après la partie A, les tables existent : toutes les              #
+-- #   requêtes ci-dessous fonctionnent. Elles sont aussi relançables seules,        #
+-- #   n'importe quand, pour refaire le point.                                       #
+-- #                                                                                #
+-- ##################################################################################
+
+
+-- ── B1. Les tables sont-elles bien en place ? ────────────────────────────────
+--     Attendu : les deux lignes à `true`.
+--     `to_regclass` renvoie NULL plutôt qu'une erreur si la table manque, donc
+--     ce contrôle reste sûr même lancé seul sur une base vierge.
+select 'webauthn_credentials' as objet_attendu,
+       (to_regclass('public.webauthn_credentials') is not null) as present
+union all
+select 'webauthn_challenges',
+       (to_regclass('public.webauthn_challenges') is not null)
+order by objet_attendu;
+
+
+-- ── B2. Fonctions et déclencheur ─────────────────────────────────────────────
+--     Attendu : 3 fonctions + 1 déclencheur.
+select 'fonction' as type_objet, p.proname as nom
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in (
+    'admin_revoke_passkey',
+    'purge_webauthn_challenges',
+    'webauthn_counter_never_decreases'
+  )
+union all
+select 'declencheur', tgname
+from pg_trigger
+where tgname = 'trg_webauthn_counter_monotonic'
+order by type_objet, nom;
+
+
+-- ── B3. Les comptes admin peuvent-ils recevoir un CODE de connexion ? ────────
+--
+--     LE CONTRÔLE LE PLUS UTILE AUJOURD'HUI. Si `email_confirme` est false,
+--     Supabase envoie le gabarit « Confirm signup » (texte d'INSCRIPTION) au
+--     lieu de « Magic Link » (texte de CONNEXION) — c'est exactement le mail
+--     d'inscription reçu au premier test.
+--
+--     email_reel = false → adresse de service, non délivrable : cet admin ne
+--     pourra jamais recevoir de code.
+select
+  ur.email,
+  ur.role,
+  coalesce(ur.is_disabled, false)                       as desactive,
+  (u.email_confirmed_at is not null)                    as email_confirme,
+  (u.email not like '%@bonzini-client.local')           as email_reel,
+  u.last_sign_in_at                                     as derniere_connexion
+from public.user_roles ur
+join auth.users u on u.id = ur.user_id
+order by ur.email;
+
+
+-- ── B4. Journal des actions d'authentification (30 derniers jours) ───────────
+--     Confirme qu'un chemin a réellement été emprunté :
+--       register_passkey     → une clé a été enrôlée
+--       revoke_passkey       → un appareil a été révoqué
+--       change_own_password  → quelqu'un a choisi son propre mot de passe
+select
+  l.created_at,
+  l.action_type               as action,
+  ur.email                    as par,
+  l.details ->> 'description' as detail
+from public.admin_audit_logs l
+left join public.user_roles ur on ur.user_id = l.admin_user_id
+where l.action_type in ('register_passkey', 'revoke_passkey', 'change_own_password', 'reset_admin_password')
+  and l.created_at > now() - interval '30 days'
+order by l.created_at desc
+limit 50;
+
+
+-- ── B5. Appareils enrôlés ────────────────────────────────────────────────────
+--     Vide au départ, c'est normal : une clé s'enrôle depuis l'app
+--     (Paramètres → Sécurité → Connexion rapide), une fois connecté par un
+--     autre chemin.
+--     synchronise = true → la clé suivra sur un nouveau téléphone du même
+--     écosystème (trousseau iCloud / Google Password Manager).
+select
+  ur.email,
+  c.device_label as appareil,
+  c.backed_up    as synchronise,
+  c.counter      as compteur,
+  c.created_at   as ajoute_le,
+  c.last_used_at as derniere_utilisation
+from public.webauthn_credentials c
+join public.user_roles ur on ur.user_id = c.user_id
+order by c.created_at desc;
+
+
+-- ── B6. Défis en attente (hygiène) ───────────────────────────────────────────
+--     Beaucoup de lignes périmées et non utilisées = quelqu'un martèle
+--     login/start. La limitation de débit (10/min par empreinte d'IP) devrait
+--     déjà l'avoir freiné.
+select
+  purpose                                         as usage,
+  count(*)                                        as total,
+  count(*) filter (where consumed_at is not null) as consommes,
+  count(*) filter (where consumed_at is null
+                     and expires_at < now())      as perimes_non_utilises
+from public.webauthn_challenges
+group by purpose;
+
+
 -- ==================================================================================
--- FIN. Vérification rapide :
+-- IL RESTE CECI, QUI NE SE FAIT PAS EN SQL
+-- (le tableau de bord Supabase — sans ces réglages, la connexion par code et
+--  Google ne fonctionneront pas, quoi qu'on applique ici)
 --
---   select table_name from information_schema.tables
---    where table_schema = 'public' and table_name like 'webauthn%';        -- 2 tables
+--  □ Authentication → Providers → Email → Email OTP Length = 6
+--      L'écran admin affiche 6 cases. À 8, la connexion par code est
+--      impossible : les deux derniers chiffres n'ont nulle part où aller.
 --
---   select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
---    where n.nspname = 'public'
---      and proname in ('admin_revoke_passkey', 'purge_webauthn_challenges',
---                      'webauthn_counter_never_decreases');                -- 3 fonctions
+--  □ Authentication → Emails → Templates → Magic Link
+--      Doit contenir la variable Token (et non ConfirmationURL), avec un texte
+--      de CONNEXION. C'est ce gabarit que reçoit un admin déjà existant —
+--      celui d'inscription n'a pas lieu d'être ici.
 --
---   select tgname from pg_trigger
---    where tgname = 'trg_webauthn_counter_monotonic';                      -- 1 déclencheur
+--  □ Authentication → URL Configuration → Redirect URLs
+--      Doit inclure les chemins /m/ du site : retour Google ET lien de
+--      réinitialisation du mot de passe.
+--
+--  □ Authentication → Providers → Google : activé.
+--
+--  □ Edge Function `passkey` déployée, avec WEBAUTHN_RP_ID et WEBAUTHN_ORIGINS.
 -- ==================================================================================

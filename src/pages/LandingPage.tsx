@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import { motion, useInView, animate } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -415,8 +415,10 @@ function Footer() {
     { title: t('footer.company'), links: [
       { key: 'about', label: t('footer.links.about') },
       { key: 'contact', label: t('footer.links.contact') },
-      { key: 'legal', label: t('footer.links.legal') },
-      { key: 'terms', label: t('footer.links.terms') },
+      // Ces deux-là mènent à de vraies pages : Google vérifie qu'elles
+      // répondent avant d'afficher « Bonzini Labs » sur l'écran de consentement.
+      { key: 'privacy', label: t('footer.links.privacy'), to: '/confidentialite' },
+      { key: 'terms', label: t('footer.links.terms'), to: '/conditions' },
     ]},
     { title: t('footer.support'), links: [
       { key: 'whatsapp', label: t('footer.links.whatsapp') },
@@ -438,7 +440,12 @@ function Footer() {
           {cols.map(col => (
             <div key={col.title}>
               <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 11, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.title}</h4>
-              {col.links.map(l => <a key={l.key} href="#" style={{ display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' }}>{l.label}</a>)}
+              {col.links.map(l => {
+                const style = { display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' };
+                return 'to' in l && l.to
+                  ? <Link key={l.key} to={l.to} style={style}>{l.label}</Link>
+                  : <a key={l.key} href="#" style={style}>{l.label}</a>;
+              })}
             </div>
           ))}
         </div>
