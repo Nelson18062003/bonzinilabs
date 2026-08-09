@@ -98,7 +98,14 @@ export function OtpField({
       wrapperClassName={wrapperClassName}
       labelClassName={labelClassName}
     >
-      <div className="flex gap-2 justify-center" role="group" aria-label={typeof label === 'string' ? label : 'Code de vérification'}>
+      {/* Les cases se resserrent au lieu de déborder : à 8 chiffres, 8 cases
+          fixes de 44px + les écarts dépassaient la largeur d'un iPhone et les
+          cases des deux bords sortaient de l'écran. */}
+      <div
+        className="flex w-full items-center justify-center gap-1.5 sm:gap-2"
+        role="group"
+        aria-label={typeof label === 'string' ? label : 'Code de vérification'}
+      >
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -118,7 +125,7 @@ export function OtpField({
             onFocus={(e) => e.target.select()}
             aria-label={`Chiffre ${i + 1} sur ${length}`}
             className={cn(
-              'h-12 w-11 md:h-11 md:w-10 rounded-md border bg-background',
+              'h-12 w-full min-w-0 max-w-[44px] flex-1 md:h-11 md:max-w-[40px] rounded-md border bg-background',
               // iOS zoom guard.
               'text-xl md:text-lg font-semibold text-center tabular-nums',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

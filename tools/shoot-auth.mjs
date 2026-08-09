@@ -62,12 +62,13 @@ const SCENARIOS = {
     act: async (page) => {
       await page.getByRole('button', { name: /recevoir un code/i }).click();
       await page.waitForTimeout(900);
-      // OtpField = 6 cases distinctes, chacune étiquetée « Chiffre N sur 6 ».
-      // On s'arrête à 5 : la 6e déclencherait la validation automatique
-      // (onComplete) et l'écran basculerait pendant la capture.
-      const digits = '48392';
+      // OtpField = une case par chiffre, chacune étiquetée « Chiffre N sur 8 »
+      // (8 = réglage Email OTP Length du projet). On laisse la dernière vide :
+      // la remplir déclencherait la validation automatique (onComplete) et
+      // l'écran basculerait pendant la capture.
+      const digits = '4839207';
       for (let i = 0; i < digits.length; i += 1) {
-        await page.getByLabel(`Chiffre ${i + 1} sur 6`).fill(digits[i]);
+        await page.getByLabel(`Chiffre ${i + 1} sur 8`).fill(digits[i]);
       }
     },
   },

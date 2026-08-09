@@ -44,6 +44,17 @@ const SECONDARY_CTA =
 /** Secondes avant de pouvoir redemander un code. */
 const RESEND_DELAY = 30;
 
+/**
+ * Nombre de chiffres du code reçu par email.
+ *
+ * DOIT correspondre au réglage Supabase « Email OTP Length »
+ * (Authentication → Providers → Email). Le projet est réglé sur 8 — c'est
+ * pourquoi l'écran client accepte jusqu'à 8 caractères (AuthPage.tsx:689).
+ * Afficher 6 cases pour un code de 8 chiffres rend la connexion impossible :
+ * les deux derniers chiffres n'ont nulle part où aller.
+ */
+const EMAIL_OTP_LENGTH = 8;
+
 type Step = 'choice' | 'email' | 'code' | 'password' | 'reset-sent';
 
 export function MobileLoginScreen() {
@@ -323,7 +334,10 @@ export function MobileLoginScreen() {
                   {t('yourEmail', { defaultValue: 'Votre adresse email' })}
                 </h1>
                 <p className="text-muted-foreground text-sm">
-                  {t('weSendYouACode', { defaultValue: 'Nous vous envoyons un code à 6 chiffres' })}
+                  {t('weSendYouACode', {
+                    defaultValue: 'Nous vous envoyons un code à {{count}} chiffres',
+                    count: EMAIL_OTP_LENGTH,
+                  })}
                 </p>
               </div>
 
@@ -372,11 +386,12 @@ export function MobileLoginScreen() {
                 </p>
               </div>
 
-              {/* OtpField : 6 cases, collage/autofill iOS gérés, avance auto.
+              {/* OtpField : collage/autofill iOS gérés, avance auto.
                   onComplete valide sans qu'il ait à viser le bouton. */}
               <OtpField
                 id="admin-otp"
-                label={t('sixDigitCode', { defaultValue: 'Code à 6 chiffres' })}
+                length={EMAIL_OTP_LENGTH}
+                label={t('otpCodeLabel', { defaultValue: 'Code à {{count}} chiffres', count: EMAIL_OTP_LENGTH })}
                 labelClassName="sr-only"
                 value={code}
                 onValueChange={(value) => {
@@ -388,7 +403,11 @@ export function MobileLoginScreen() {
                 disabled={isLoading}
               />
 
-              <button type="submit" disabled={isLoading || code.length < 6} className={cn(CTA, 'mt-4')}>
+              <button
+                type="submit"
+                disabled={isLoading || code.length < EMAIL_OTP_LENGTH}
+                className={cn(CTA, 'mt-4')}
+              >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
