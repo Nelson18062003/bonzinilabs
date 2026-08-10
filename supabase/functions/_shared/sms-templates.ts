@@ -178,9 +178,15 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
     fr: (p) => `Bonzini: retrait espèces ${ref(p)} disponible. Présentez votre code en agence.`,
     en: (p) => `Bonzini: cash pickup ${ref(p)} is ready. Show your code at the branch.`,
   },
+  // ⚠️ NE PAS écrire « Répondez STOP » ici. Vérifié sur le terrain : quand
+  // l'expéditeur affiché est « Bonzini », c'est un expéditeur alphanumérique,
+  // et ceux-ci sont À SENS UNIQUE — le destinataire ne PEUT PAS répondre.
+  // Promettre un STOP impossible sur un message marketing, c'est promettre un
+  // désabonnement qui n'existe pas. Le retrait doit donc pointer vers l'app,
+  // où la préférence est réellement modifiable.
   daily_rate_alert: {
-    fr: (p) => `Bonzini: taux du jour 1 RMB = ${formatRate(p.rate)} XAF. Répondez STOP pour ne plus recevoir.`,
-    en: (p) => `Bonzini: today's rate 1 RMB = ${formatRate(p.rate)} XAF. Reply STOP to unsubscribe.`,
+    fr: (p) => `Bonzini: taux du jour 1 RMB = ${formatRate(p.rate)} XAF. Désactivez ces alertes dans l'app.`,
+    en: (p) => `Bonzini: today's rate 1 RMB = ${formatRate(p.rate)} XAF. Turn these alerts off in the app.`,
   },
 };
 

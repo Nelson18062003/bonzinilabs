@@ -10,6 +10,15 @@
 //  2. STOP entrant : obligation opérateur. Un client qui répond STOP doit
 //     être coupé pour TOUT envoi, transactionnel compris.
 //
+//     ⚠️ PORTÉE RÉELLE, vérifiée en production : quand le message part sous
+//     l'expéditeur alphanumérique « Bonzini », il est À SENS UNIQUE et le
+//     client ne PEUT PAS répondre — aucun STOP n'arrivera jamais ici pour
+//     ces envois-là. Ce traitement ne couvre donc que les messages partis
+//     d'un vrai numéro (destinations où l'alphanumérique est interdit :
+//     États-Unis, Canada). Le retrait du consentement pour tout le reste
+//     doit passer par un réglage dans l'application — ce n'est pas un
+//     confort, c'est la seule voie de sortie qui existe.
+//
 // SÉCURITÉ :
 //  - Signature Ed25519 vérifiée (fail-closed : sans clé publique
 //    configurée, on refuse tout). Sans cette vérification, n'importe qui
