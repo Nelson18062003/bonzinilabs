@@ -40,7 +40,6 @@ const TYPICAL = {
   reason: 'preuve illisible',
   when: '09/08 à 14:32',
   code: '481902',
-  rate: 88.5,
 };
 
 /**
@@ -59,7 +58,6 @@ const MAXIMAL = {
   reason: 'x'.repeat(REASON_MAX_LENGTH),
   when: '31/12/2026 à 23:59',
   code: '4819024816',
-  rate: 9999.99,
 };
 
 describe('gsm7 — table GSM 03.38', () => {
@@ -165,8 +163,8 @@ describe('formateurs de montants', () => {
 });
 
 describe('gabarits SMS — contrainte du segment unique', () => {
-  it('couvre les 17 événements dans les 2 langues', () => {
-    expect(SMS_TEMPLATE_KEYS).toHaveLength(17);
+  it('couvre les 16 événements dans les 2 langues', () => {
+    expect(SMS_TEMPLATE_KEYS).toHaveLength(16);
     for (const key of SMS_TEMPLATE_KEYS) {
       for (const locale of SMS_LOCALES) {
         expect(SMS_TEMPLATES[key][locale], `${key}.${locale} manquant`).toBeTypeOf('function');
@@ -174,7 +172,7 @@ describe('gabarits SMS — contrainte du segment unique', () => {
     }
   });
 
-  // Le cœur du test : 34 combinaisons × 2 jeux de valeurs.
+  // Le cœur du test : 32 combinaisons × 2 jeux de valeurs.
   for (const key of SMS_TEMPLATE_KEYS) {
     for (const locale of SMS_LOCALES) {
       it(`${key} [${locale}] tient en un segment GSM-7`, () => {
@@ -232,7 +230,7 @@ describe('gabarits SMS — contrainte du segment unique', () => {
     // exception : on y met le code en premier, pour le remplissage
     // automatique du téléphone.
     for (const key of SMS_TEMPLATE_KEYS) {
-      if (key === 'phone_verification' || key === 'daily_rate_alert') continue;
+      if (key === 'phone_verification') continue;
       expect(renderSms(key, 'fr', TYPICAL)!.text.startsWith('Nelson, ')).toBe(true);
       expect(renderSms(key, 'en', TYPICAL)!.text.startsWith('Hi Nelson, ')).toBe(true);
     }

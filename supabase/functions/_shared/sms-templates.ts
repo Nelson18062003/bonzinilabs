@@ -1,9 +1,9 @@
 // ============================================================
-// Gabarits SMS — 17 événements × 2 langues (FR / EN).
+// Gabarits SMS — 16 événements × 2 langues (FR / EN).
 //
 // CONTRAT : tout gabarit rendu avec des valeurs réalistes DOIT tenir en
 // UN SEUL segment GSM-7 (≤ 160 caractères). Le test
-// src/tests/lib/smsTemplates.test.ts le vérifie pour les 34 combinaisons,
+// src/tests/lib/smsTemplates.test.ts le vérifie pour les 32 combinaisons,
 // avec des valeurs maximales (référence longue, montants à 9 chiffres,
 // motif de refus à la limite de troncature).
 //
@@ -80,12 +80,6 @@ export function formatRmb(value: unknown): string {
   const abs = Math.abs(n);
   const [int, dec = "00"] = abs.toFixed(2).split(".");
   return sign + asciiSpaces(groupThousands(int)) + "." + dec;
-}
-
-export function formatRate(value: unknown): string {
-  const n = toNumber(value);
-  if (n === null) return "0.00";
-  return n.toFixed(2);
 }
 
 /**
@@ -218,12 +212,6 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
   cash_payment_ready: {
     fr: (p) => `${greetFr(p)}votre retrait Bonzini en espèces est disponible en agence. Présentez la référence: ${ref(p)}`,
     en: (p) => `${greetEn(p)}your Bonzini cash withdrawal is ready at the branch. Show this reference: ${ref(p)}`,
-  },
-  // ⚠️ NE PAS écrire « Répondez STOP » : l'expéditeur alphanumérique est à
-  // sens unique, le client ne peut pas répondre. Le retrait passe par l'app.
-  daily_rate_alert: {
-    fr: (p) => `Taux Bonzini du jour: 1 RMB = ${formatRate(p.rate)} XAF. Pour ne plus recevoir ces alertes, désactivez-les dans l'app.`,
-    en: (p) => `Bonzini rate today: 1 RMB = ${formatRate(p.rate)} XAF. To stop these alerts, turn them off in the app.`,
   },
 };
 
