@@ -21,8 +21,19 @@ The logo has 3 colors. Every section of the landing page must use all 3. Never u
 
 ## SEO Requirements
 - JSON-LD Schema.org type `FinancialService` must be present in `index.html`
-- Page title: "Bonzini — Payez vos fournisseurs chinois en XAF"
+- Page title: "Bonzini Labs — Payez vos fournisseurs chinois en XAF"
 - Do not change these without updating both the schema and the title together
+
+## Brand name — "Bonzini Labs", not "Bonzini"
+Google verifies the OAuth consent screen's app name against the name shown on
+the home page, and **rejected** the branding submission over that mismatch
+(the site said "Bonzini", the consent screen "Bonzini Labs").
+
+The full name must therefore stay identical in all four places at once:
+`index.html` (title, `og:title`, `og:site_name`, `twitter:title`, JSON-LD
+`name`), the navbar wordmark and footer wordmark in `LandingPage.tsx`, the
+`footer.copyright` key in the three locales, and the Google Cloud Console
+`App name` field. Shortening any one of them costs another review cycle.
 
 ## Key File
 - `src/pages/LandingPage.tsx` — the full landing page component

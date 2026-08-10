@@ -82,7 +82,10 @@ function Nav({ onCTA }: { onCTA: () => void }) {
       <div style={{ maxWidth: 1200, margin: '0 auto', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size={28} />
-          <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 20, color: '#fff', letterSpacing: '-0.5px' }}>Bonzini</span>
+          {/* « Bonzini Labs » et non « Bonzini » : Google refuse de vérifier
+              la marque du client OAuth si le nom de l'écran de consentement
+              ne se retrouve pas sur la page d'accueil. */}
+          <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 20, color: '#fff', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>Bonzini Labs</span>
         </div>
         {/* Desktop */}
         <div className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
@@ -433,7 +436,7 @@ function Footer() {
           <div style={{ maxWidth: 260 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <Logo size={24} />
-              <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 17, color: '#fff' }}>Bonzini</span>
+              <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 17, color: '#fff', whiteSpace: 'nowrap' }}>Bonzini Labs</span>
             </div>
             <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, opacity: 0.6 }}>{t('footer.tagline')}</p>
           </div>
