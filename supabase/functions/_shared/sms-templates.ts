@@ -149,8 +149,8 @@ export type SmsTemplateFn = (payload: SmsPayload) => string;
 export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
   // ── Palier 1 : mouvements d'argent ───────────────────────────────────────
   deposit_created: {
-    fr: (p) => `${greetFr(p)}Bonzini a bien enregistré votre versement de ${formatXaf(p.amount_xaf)} XAF. Nous le vérifions sous 24h. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}Bonzini has received your transfer of ${formatXaf(p.amount_xaf)} XAF. We are checking it within 24h. Ref: ${ref(p)}`,
+    fr: (p) => `${greetFr(p)}Bonzini a bien enregistré votre versement de ${formatXaf(p.amount_xaf)} XAF. Nous le vérifions rapidement. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}Bonzini has received your transfer of ${formatXaf(p.amount_xaf)} XAF. We will check it shortly. Ref: ${ref(p)}`,
   },
   deposit_validated: {
     fr: (p) => `${greetFr(p)}votre versement de ${formatXaf(p.amount_xaf)} XAF est validé. Nouveau solde Bonzini: ${formatXaf(p.new_balance)} XAF. Ref: ${ref(p)}`,
