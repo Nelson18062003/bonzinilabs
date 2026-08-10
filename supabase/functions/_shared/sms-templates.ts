@@ -212,7 +212,7 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
     en: (p) => `${greetEn(p)}your transfer of ${formatXaf(p.amount_xaf)} XAF is missing its proof. Add it in the Bonzini app. Ref: ${ref(p)}`,
   },
   payment_awaiting_beneficiary: {
-    fr: (p) => `${greetFr(p)}votre paiement de ${formatRmb(p.amount_rmb)} RMB attend les infos de votre fournisseur. Completez dans l'app Bonzini. Ref: ${ref(p)}`,
+    fr: (p) => `${greetFr(p)}votre paiement de ${formatRmb(p.amount_rmb)} RMB attend les infos de votre fournisseur. Complétez dans l'app Bonzini. Ref: ${ref(p)}`,
     en: (p) => `${greetEn(p)}your payment of ${formatRmb(p.amount_rmb)} RMB is waiting for your supplier details. Complete it in the Bonzini app. Ref: ${ref(p)}`,
   },
   cash_payment_ready: {
