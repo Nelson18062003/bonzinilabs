@@ -134,6 +134,11 @@ const greetEn = (p: SmsPayload): string => {
 // dire deux fois la même chose, et donnait au message son air de notification
 // automatique. La marque revient là où elle a un sens dans la phrase.
 //
+// VOCABULAIRE DE MARQUE (.claude/rules/frontend.md) : notre activité est le
+// RÈGLEMENT DE FOURNISSEURS, pas l'envoi d'argent. « envoyer », « transfert »
+// et « virement » sont proscrits ; on écrit « payer », « régler »,
+// « versement ». Côté anglais, « deposit » et non « transfer ».
+//
 // ORDRE DES INFORMATIONS : ce que le client veut savoir en premier, c'est
 // combien et où en est son argent — pas un identifiant qu'il ne connaît pas.
 // La référence sert au support ; elle passe donc en dernier.
@@ -144,19 +149,19 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
   // ── Palier 1 : mouvements d'argent ───────────────────────────────────────
   deposit_created: {
     fr: (p) => `${greetFr(p)}Bonzini a bien enregistré votre versement de ${formatXaf(p.amount_xaf)} XAF. Nous le vérifions rapidement. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}Bonzini has received your transfer of ${formatXaf(p.amount_xaf)} XAF. We will check it shortly. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}Bonzini has received your deposit of ${formatXaf(p.amount_xaf)} XAF. We will check it shortly. Ref: ${ref(p)}`,
   },
   deposit_validated: {
     fr: (p) => `${greetFr(p)}votre versement de ${formatXaf(p.amount_xaf)} XAF est validé. Nouveau solde Bonzini: ${formatXaf(p.new_balance)} XAF. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}your transfer of ${formatXaf(p.amount_xaf)} XAF is approved. New Bonzini balance: ${formatXaf(p.new_balance)} XAF. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}your deposit of ${formatXaf(p.amount_xaf)} XAF is approved. New Bonzini balance: ${formatXaf(p.new_balance)} XAF. Ref: ${ref(p)}`,
   },
   deposit_rejected: {
     fr: (p) => `${greetFr(p)}votre versement de ${formatXaf(p.amount_xaf)} XAF est refusé. Motif: ${reason(p)}. Renvoyez la preuve dans l'app Bonzini. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}your transfer of ${formatXaf(p.amount_xaf)} XAF was declined. Reason: ${reason(p)}. Send it again in the Bonzini app. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}your deposit of ${formatXaf(p.amount_xaf)} XAF was declined. Reason: ${reason(p)}. Send it again in the Bonzini app. Ref: ${ref(p)}`,
   },
   deposit_correction_needed: {
     fr: (p) => `${greetFr(p)}votre versement de ${formatXaf(p.amount_xaf)} XAF demande une correction. Ouvrez l'app Bonzini pour la faire. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}your transfer of ${formatXaf(p.amount_xaf)} XAF needs a correction. Open the Bonzini app to fix it. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}your deposit of ${formatXaf(p.amount_xaf)} XAF needs a correction. Open the Bonzini app to fix it. Ref: ${ref(p)}`,
   },
   payment_created: {
     fr: (p) => `${greetFr(p)}votre paiement de ${formatRmb(p.amount_rmb)} RMB est enregistré. Nouveau solde Bonzini: ${formatXaf(p.new_balance)} XAF. Ref: ${ref(p)}`,
@@ -164,10 +169,10 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
   },
   payment_processing: {
     fr: (p) => `${greetFr(p)}Bonzini exécute votre paiement de ${formatRmb(p.amount_rmb)} RMB vers votre fournisseur. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}Bonzini is sending your payment of ${formatRmb(p.amount_rmb)} RMB to your supplier. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}Bonzini is settling your payment of ${formatRmb(p.amount_rmb)} RMB to your supplier. Ref: ${ref(p)}`,
   },
   payment_completed: {
-    fr: (p) => `${greetFr(p)}votre fournisseur a bien été payé: ${formatRmb(p.amount_rmb)} RMB envoyés. Preuve dans l'app Bonzini. Ref: ${ref(p)}`,
+    fr: (p) => `${greetFr(p)}votre fournisseur a bien été payé: ${formatRmb(p.amount_rmb)} RMB réglés. Preuve dans l'app Bonzini. Ref: ${ref(p)}`,
     en: (p) => `${greetEn(p)}your supplier has been paid: ${formatRmb(p.amount_rmb)} RMB sent. Proof in the Bonzini app. Ref: ${ref(p)}`,
   },
   payment_rejected: {
@@ -203,7 +208,7 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
   // ── Palier 3 : relance et engagement ─────────────────────────────────────
   deposit_awaiting_proof: {
     fr: (p) => `${greetFr(p)}votre versement de ${formatXaf(p.amount_xaf)} XAF attend sa preuve. Ajoutez-la dans l'app Bonzini. Ref: ${ref(p)}`,
-    en: (p) => `${greetEn(p)}your transfer of ${formatXaf(p.amount_xaf)} XAF is missing its proof. Add it in the Bonzini app. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}your deposit of ${formatXaf(p.amount_xaf)} XAF is missing its proof. Add it in the Bonzini app. Ref: ${ref(p)}`,
   },
   payment_awaiting_beneficiary: {
     fr: (p) => `${greetFr(p)}votre paiement de ${formatRmb(p.amount_rmb)} RMB attend les infos de votre fournisseur. Complétez dans l'app Bonzini. Ref: ${ref(p)}`,

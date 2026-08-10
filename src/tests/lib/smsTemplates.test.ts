@@ -288,3 +288,27 @@ describe('rendu — cas limites', () => {
     expect(resolveLocale('EN')).toBe('en');
   });
 });
+
+describe('vocabulaire de marque', () => {
+  // .claude/rules/frontend.md : notre activité est le règlement de
+  // fournisseurs, pas l'envoi d'argent. Ces mots repositionnent Bonzini
+  // comme un service de transfert — exactement ce que la marque refuse.
+  const BANNED = [
+    /\benvoy[ée]e?s?\b/i,
+    /\btransferts?\b/i,
+    /\bvirements?\b/i,
+    /\btransfers?\b/i,
+    /\bsending\b/i,
+  ];
+
+  it('n’emploie aucun terme de transfert d’argent', () => {
+    for (const key of SMS_TEMPLATE_KEYS) {
+      for (const locale of SMS_LOCALES) {
+        const text = renderSms(key, locale, TYPICAL)!.text;
+        for (const banned of BANNED) {
+          expect(text, `${key}.${locale} emploie un terme proscrit : ${text}`).not.toMatch(banned);
+        }
+      }
+    }
+  });
+});

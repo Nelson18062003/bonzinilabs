@@ -16,7 +16,8 @@
     "type-check": "tsc --noEmit",
     "check:i18n": "node scripts/check-i18n.mjs",
     "backfill:phones": "node scripts/backfill-phone-e164.mjs",
-    "bundle:send-sms": "node scripts/bundle-send-sms.mjs"
+    "bundle:send-sms": "node scripts/bundle-send-sms.mjs",
+    "bundle:sms-migrations": "node scripts/bundle-sms-migrations.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",

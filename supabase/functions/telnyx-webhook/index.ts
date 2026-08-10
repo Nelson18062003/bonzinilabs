@@ -212,10 +212,16 @@ serve(async (req) => {
 
       // Uniquement pour un numéro structurellement invalide — pas pour un
       // combiné éteint ou un réseau momentanément indisponible.
+      //
+      // ⚠️ ignoreDuplicates : on n'ÉCRASE JAMAIS une suppression existante.
+      // Un accusé d'échec arrivant après un STOP écrasait sinon le motif
+      // 'stop' par 'invalid' — et comme un START ne lève que les lignes
+      // marquées 'stop', le client restait bloqué pour toujours, sans
+      // moyen de se réabonner autrement qu'à la main.
       if (phone && /invalid|not a valid|unallocated|unknown subscriber/i.test(detail)) {
         await supabase.from("sms_suppressions").upsert(
           { phone_e164: phone, reason: "invalid", source: `telnyx:${messageId}` },
-          { onConflict: "phone_e164" },
+          { onConflict: "phone_e164", ignoreDuplicates: true },
         );
       }
     }
