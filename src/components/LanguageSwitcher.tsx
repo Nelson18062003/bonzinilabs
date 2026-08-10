@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { supportedLanguages, languageNames, type SupportedLanguage } from '@/i18n';
+import { persistPreferredLocale } from '@/lib/persistLocale';
 import { cn } from '@/lib/utils';
 
 const languageFlags: Record<SupportedLanguage, string> = {
@@ -25,6 +26,17 @@ interface LanguageSwitcherProps {
 export function LanguageSwitcher({ variant = 'default', className }: LanguageSwitcherProps) {
   const { i18n } = useTranslation();
   const currentLang = (i18n.language?.slice(0, 2) ?? 'fr') as SupportedLanguage;
+
+  /**
+   * Change la langue de l'interface ET l'enregistre côté serveur, pour que
+   * les SMS suivent le choix du client au lieu d'être devinés d'après le
+   * pays de son numéro. L'enregistrement est au mieux et ne bloque rien :
+   * l'interface bascule immédiatement dans tous les cas.
+   */
+  const selectLanguage = (lang: SupportedLanguage) => {
+    i18n.changeLanguage(lang);
+    void persistPreferredLocale(lang);
+  };
 
   if (variant === 'landing') {
     return (
@@ -45,7 +57,7 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
           {supportedLanguages.map((lang) => (
             <DropdownMenuItem
               key={lang}
-              onClick={() => i18n.changeLanguage(lang)}
+              onClick={() => selectLanguage(lang)}
               className={cn(
                 'text-white/80 hover:text-white focus:text-white cursor-pointer',
                 currentLang === lang && 'bg-white/10 text-white'
@@ -72,7 +84,7 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
         {supportedLanguages.map((lang) => (
           <DropdownMenuItem
             key={lang}
-            onClick={() => i18n.changeLanguage(lang)}
+            onClick={() => selectLanguage(lang)}
             className={cn('cursor-pointer', currentLang === lang && 'bg-accent')}
           >
             <span className="mr-2">{languageFlags[lang]}</span>
