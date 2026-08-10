@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
+import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
 import type { AdjustmentType } from '@/types/admin';
 import {
@@ -159,6 +161,18 @@ export function MobileClientDetail() {
 
   const handleSaveEdit = async () => {
     if (!client) return;
+
+    // Un numéro invalide n'est pas seulement mal saisi : le déclencheur de
+    // synchronisation met alors phone_e164 à NULL, et le client cesse
+    // silencieusement de recevoir ses alertes. Mieux vaut le dire ici.
+    const phone = editForm.phone.trim();
+    if (phone !== '' && !normalizePhone(phone)) {
+      toast.error('Numéro invalide', {
+        description: 'Vérifiez le pays et le numéro. Sans numéro valide, ce client ne recevra aucun SMS.',
+      });
+      return;
+    }
+
     await updateClientMutation.mutateAsync({
       userId: client.id,
       firstName: editForm.firstName.trim(),
@@ -533,12 +547,24 @@ export function MobileClientDetail() {
             { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const },
           ]).map(({ label, key }) => (
             <FormField key={key} label={label} htmlFor={`edit-${key}`}>
-              <TextInput
-                id={`edit-${key}`}
-                value={editForm[key]}
-                onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
-                placeholder={label}
-              />
+              {key === 'phone' ? (
+                /* Sélecteur de pays + saisie formatée, comme à l'inscription.
+                   Un champ texte libre laissait passer des numéros sans
+                   indicatif — or sans numéro international, le client ne
+                   reçoit plus aucun SMS, et l'admin n'en sait rien. */
+                <PhoneCountryInput
+                  hideLabel
+                  value={editForm.phone}
+                  onChange={(val) => setEditForm(f => ({ ...f, phone: val }))}
+                />
+              ) : (
+                <TextInput
+                  id={`edit-${key}`}
+                  value={editForm[key]}
+                  onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                  placeholder={label}
+                />
+              )}
             </FormField>
           ))}
         </div>
