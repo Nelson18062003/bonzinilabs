@@ -18,6 +18,12 @@
 //  - Anti-rejeu : horodatage refusé au-delà de 5 minutes.
 //  - Le corps est une donnée EXTERNE non fiable : aucune valeur n'est
 //    interpolée ailleurs que dans des requêtes paramétrées.
+//
+// BUDGET DE RÉPONSE : Telnyx attend un 2xx en moins de 2000 ms, sinon il
+// retente. Le traitement se limite donc à une écriture indexée. Et comme
+// toutes les opérations sont idempotentes (upsert sur la clé du numéro,
+// UPDATE conditionnel sur telnyx_message_id), une retentative après un
+// démarrage à froid trop lent est sans conséquence.
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -28,6 +34,23 @@ const MAX_SIGNATURE_AGE_SECONDS = 300;
 
 const STOP_WORDS = /^\s*(stop|arret|arr[êe]t|unsubscribe|desabonner|d[ée]sabonner|cancel|quit|end)\b/i;
 const START_WORDS = /^\s*(start|unstop|debut|d[ée]but|subscribe)\b/i;
+
+/**
+ * Statuts de remise de `data.payload.to[].status`.
+ *
+ * TERMINAL : le sort du message est scellé, plus rien ne doit l'écraser.
+ * 'delivery_unconfirmed' en fait partie : l'opérateur n'a jamais confirmé et
+ * ne confirmera pas — ce n'est ni un succès ni un échec, mais c'est définitif.
+ */
+const TERMINAL_STATUSES = new Set([
+  "delivered",
+  "delivery_failed",
+  "sending_failed",
+  "delivery_unconfirmed",
+]);
+
+/** Statuts intermédiaires, qu'un statut terminal a le droit de remplacer. */
+const TRANSIENT_STATUSES = new Set(["queued", "sending", "sent"]);
 
 function base64ToBytes(b64: string): Uint8Array {
   const binary = atob(b64);
@@ -137,14 +160,32 @@ serve(async (req) => {
   }
 
   // ── 2. Accusé de délivrance sur un message sortant ─────────────────────
+  //
+  // Telnyx émet DEUX événements par message sortant : 'message.sent' puis
+  // 'message.finalized'. Les webhooks sont au mieux-effort et peuvent arriver
+  // DANS LE DÉSORDRE — un 'message.sent' en retard écraserait alors le
+  // 'delivered' déjà enregistré, et le tableau de bord afficherait un message
+  // « en cours » alors qu'il est arrivé depuis longtemps.
+  //
+  // On n'écrase donc jamais un statut terminal par un statut intermédiaire.
+  // Le filtre est appliqué côté SQL (et non lu-puis-écrit) pour rester correct
+  // même si deux webhooks sont traités en parallèle.
   const messageId = String(payload?.id ?? "");
   if (messageId) {
     const recipients = Array.isArray(payload?.to) ? payload.to as Array<Record<string, unknown>> : [];
     const deliveryStatus = String(recipients[0]?.status ?? eventType);
 
-    const { error } = await supabase.from("sms_outbox")
+    let query = supabase.from("sms_outbox")
       .update({ delivery_status: deliveryStatus })
       .eq("telnyx_message_id", messageId);
+
+    if (!TERMINAL_STATUSES.has(deliveryStatus)) {
+      query = query.or(
+        `delivery_status.is.null,delivery_status.in.(${[...TRANSIENT_STATUSES].join(",")})`,
+      );
+    }
+
+    const { error } = await query;
 
     if (error) {
       console.error("telnyx-webhook: mise à jour du DLR impossible:", error.message);
@@ -152,7 +193,9 @@ serve(async (req) => {
 
     // Échec définitif de remise : on note le numéro pour éviter de repayer
     // le même échec à chaque événement futur.
-    if (deliveryStatus === "delivery_failed") {
+    // 'sending_failed' (Telnyx n'a pas pu remettre à l'opérateur) compte
+    // autant que 'delivery_failed' (l'opérateur n'a pas pu remettre au combiné).
+    if (deliveryStatus === "delivery_failed" || deliveryStatus === "sending_failed") {
       const phone = String(recipients[0]?.phone_number ?? "").trim();
       const errors = Array.isArray(payload?.errors) ? payload.errors as Array<Record<string, unknown>> : [];
       const detail = String(errors[0]?.detail ?? errors[0]?.title ?? "").slice(0, 200);
