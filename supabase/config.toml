@@ -22,3 +22,16 @@ verify_jwt = false
 # inside the function (constant-time compare).
 [functions.send-email]
 verify_jwt = false
+
+# send-sms is driven by pg_cron via pg_net (no Supabase user JWT), exactly like
+# send-email. Authenticity is enforced via the mandatory SMS_DRAINER_SECRET
+# bearer check inside the function (constant-time compare, fail-closed).
+[functions.send-sms]
+verify_jwt = false
+
+# telnyx-webhook receives Telnyx webhooks (external, no Supabase JWT).
+# Authenticity is enforced via Ed25519 signature verification against
+# TELNYX_PUBLIC_KEY, with a 5-minute replay window — fail-closed if the key
+# is not configured.
+[functions.telnyx-webhook]
+verify_jwt = false
