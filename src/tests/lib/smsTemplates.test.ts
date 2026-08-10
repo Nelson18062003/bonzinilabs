@@ -32,6 +32,7 @@ import {
 
 /** Valeurs réalistes — ce que le client reçoit au quotidien. */
 const TYPICAL = {
+  first_name: 'Nelson',
   reference: 'BZ-DP-2026-0042',
   amount_xaf: 1_500_000,
   amount_rmb: 12_500,
@@ -49,6 +50,8 @@ const TYPICAL = {
  * produire — si ça tient ici, ça tient partout.
  */
 const MAXIMAL = {
+  // Prénom composé long : il doit rester tronqué sans faire déborder le message.
+  first_name: 'Jean-Baptiste Emmanuel',
   reference: 'BZ-PY-2026-999999',
   amount_xaf: 999_999_999,
   amount_rmb: 9_999_999.99,
@@ -218,15 +221,36 @@ describe('gabarits SMS — contrainte du segment unique', () => {
     });
     expect(rendered!.measure.encoding).toBe('GSM-7');
     // ô et ç repliés, é conservé : dégradation minimale, coût préservé.
-    expect(rendered!.text).toContain('dépot non conforme, recu manquant');
+    // Le motif est aussi tronqué à REASON_MAX_LENGTH, d'où les points.
+    expect(rendered!.text).toContain('dépot non conforme');
+    expect(rendered!.text).not.toMatch(/[ôç]/);
   });
 
-  it('porte le préfixe Bonzini sur tous les gabarits', () => {
-    // Sur les réseaux qui réécrivent l'expéditeur alphanumérique (Chine, US,
-    // Canada…), c'est la seule chose qui identifie l'émetteur.
+  it('ouvre par le prénom du client quand il est connu', () => {
+    // Le prénom est ce qui distingue un message écrit pour quelqu'un d'un
+    // message produit par une machine. Le code de vérification fait
+    // exception : on y met le code en premier, pour le remplissage
+    // automatique du téléphone.
+    for (const key of SMS_TEMPLATE_KEYS) {
+      if (key === 'phone_verification' || key === 'daily_rate_alert') continue;
+      expect(renderSms(key, 'fr', TYPICAL)!.text.startsWith('Nelson, ')).toBe(true);
+      expect(renderSms(key, 'en', TYPICAL)!.text.startsWith('Hi Nelson, ')).toBe(true);
+    }
+  });
+
+  it('ouvre par une salutation neutre quand le prénom manque', () => {
+    // Sans repli, le message commencerait en minuscule et aurait l'air tronqué.
+    const sansNom = { ...TYPICAL, first_name: undefined };
+    expect(renderSms('deposit_validated', 'fr', sansNom)!.text.startsWith('Bonjour, ')).toBe(true);
+    expect(renderSms('deposit_validated', 'en', sansNom)!.text.startsWith('Hello, ')).toBe(true);
+  });
+
+  it('nomme Bonzini quelque part dans chaque message', () => {
+    // Sur les réseaux où l'expéditeur alphanumérique est réécrit (Chine,
+    // États-Unis, Canada…), c'est la seule chose qui identifie l'émetteur.
     for (const key of SMS_TEMPLATE_KEYS) {
       for (const locale of SMS_LOCALES) {
-        expect(renderSms(key, locale, TYPICAL)!.text.startsWith('Bonzini: ')).toBe(true);
+        expect(renderSms(key, locale, TYPICAL)!.text, `${key}.${locale}`).toMatch(/Bonzini/);
       }
     }
   });
@@ -251,7 +275,7 @@ describe('rendu — cas limites', () => {
   it('rend un message lisible même avec un payload vide', () => {
     const rendered = renderSms('deposit_validated', 'fr', {});
     expect(rendered!.measure.segments).toBe(1);
-    expect(rendered!.text).toContain('votre operation');
+    expect(rendered!.text).toContain('non communiquee');
   });
 
   it('retombe sur le français pour une langue inconnue', () => {
