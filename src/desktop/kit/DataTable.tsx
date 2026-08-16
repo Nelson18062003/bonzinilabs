@@ -21,7 +21,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ArrowDown, ArrowUp, Check, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT } from '@/mobile/designKit';
-import { DENSITY, LAYOUT, type Density } from './tokens';
+import { DENSITY, type Density } from './tokens';
 import { useShortcuts } from './shortcuts';
 import {
   headerCheckState,
@@ -74,6 +74,16 @@ interface Props<T> {
   keyboardEnabled?: boolean;
   /** Accessible name for the table. */
   label: string;
+  /**
+   * Sticky-header offset in px, relative to THIS table's scroll box.
+   *
+   * Defaults to 0, and should stay there. The horizontal-scroll wrapper makes
+   * the table its own scroll container, so a non-zero value does not park the
+   * header under the app topbar — it pushes the header down over the first row.
+   * Floating the header against the page needs the queue to own the page scroll
+   * region, which is Phase 1 work.
+   */
+  stickyTop?: number;
 }
 
 export function DataTable<T>({
@@ -93,6 +103,7 @@ export function DataTable<T>({
   footer,
   keyboardEnabled = true,
   label,
+  stickyTop = 0,
 }: Props<T>) {
   const d = DENSITY[density];
   const orderedIds = useMemo(() => rows.map(rowId), [rows, rowId]);
@@ -170,19 +181,25 @@ export function DataTable<T>({
 
   return (
     <div className={cn('overflow-hidden rounded-[18px]', SURFACE.card, SURFACE.shadow)}>
+      {/* Horizontal scroll for wide column sets. Note this box is a scroll
+          container, so the sticky header below resolves against IT, not the
+          viewport — hence stickyTop defaults to 0. */}
       <div className="overflow-x-auto">
         <table className="w-full text-left" aria-label={label}>
-          <thead>
+          <thead className="border-b border-black/[0.06] dark:border-white/[0.06]">
             <tr>
               {selectable && (
                 <th
                   scope="col"
                   className={cn(
-                    'sticky z-10 w-10 bg-inherit',
+                    // An opaque surface is REQUIRED on a sticky header: with a
+                    // transparent one the rows scroll visibly through it.
+                    'sticky z-10 w-10',
+                    SURFACE.card,
                     d.cellXEdge,
                     'py-2.5',
                   )}
-                  style={{ top: LAYOUT.topbarHeight }}
+                  style={{ top: stickyTop }}
                 >
                   <CheckBox
                     state={checkState}
@@ -199,9 +216,10 @@ export function DataTable<T>({
                   <th
                     key={col.key}
                     scope="col"
-                    style={{ width: col.width, top: LAYOUT.topbarHeight }}
+                    style={{ width: col.width, top: stickyTop }}
                     className={cn(
-                      'sticky z-10 bg-inherit py-2.5 text-[11px] font-bold uppercase tracking-wider',
+                      'sticky z-10 py-2.5 text-[11px] font-bold uppercase tracking-wider',
+                      SURFACE.card,
                       first || last ? d.cellXEdge : d.cellX,
                       col.align === 'right' && 'text-right',
                       TEXT.muted,
