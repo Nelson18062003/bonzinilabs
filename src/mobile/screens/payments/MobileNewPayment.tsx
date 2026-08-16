@@ -10,7 +10,7 @@
 //   nouveau), lock cash+client, toggle taux personnalisé,
 //   upload QR, validations, useAdminCreatePayment + snapshot.
 // ============================================================
-import { useState, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -25,9 +25,11 @@ import {
   type Beneficiary,
 } from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
+import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import {
   AlertTriangle,
   Check,
@@ -48,6 +50,8 @@ import {
   TextInput,
 } from '@/mobile/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { PasteDropZone } from '@/components/upload/PasteDropZone';
+import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 
 // Violet d'action = marque Paiements (cohérent liste/détail/FAB).
 const VIOLET = '#8B5CF6';
@@ -181,7 +185,6 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const [skipBenef, setSkipBenef] = useState(false);
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
-  const qrRef = useRef<HTMLInputElement>(null);
   // Carnet du client (Lot 4): onglet "enregistré" vs "nouveau", + sélection.
   const [benefTab, setBenefTab] = useState<'existing' | 'new'>('existing');
   const [selectedBenef, setSelectedBenef] = useState<Beneficiary | null>(null);
@@ -236,10 +239,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
 
   const hasEnoughBalance = xaf <= clientBalance;
+  // Same 50 M ceiling the client-facing wizard enforces — the admin form had
+  // only a floor, so an extra zero passed straight through to the wallet debit.
+  const amountValid = isValidXafAmount(xaf, MIN_PAYMENT_XAF);
+  const amountOverCap = xaf > MAX_AMOUNT_XAF;
   const canNext =
     step === 1 ? !!client :
     step === 2 ? !!mode :
-    step === 3 ? (xaf >= 10_000 && hasEnoughBalance) :
+    step === 3 ? (amountValid && hasEnoughBalance) :
     step === 4 ? benef4Valid :
     true;
 
@@ -250,26 +257,42 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
     setBenef(BENEF0); setSkipBenef(false);
     setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
-    setQrFile(null); setQrPreview(null); setDone(null);
+    removeQr(); setDone(null);
   }
 
   // ── QR code ───────────────────────────────────────────────────
-  function handleQrChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  // Revokes the previous blob URL before minting the next one: pasting a
+  // second QR over a first would otherwise leak the original.
+  const setQrFromFiles = useCallback((files: File[]) => {
+    const file = files[0];
     if (!file) return;
     setQrFile(file);
-    setQrPreview(URL.createObjectURL(file));
-  }
+    setQrPreview((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(file);
+    });
+  }, []);
 
-  function removeQr() {
+  const removeQr = useCallback(() => {
     setQrFile(null);
-    setQrPreview(null);
-    if (qrRef.current) qrRef.current.value = '';
-  }
+    setQrPreview((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return null;
+    });
+  }, []);
 
   // ── Soumission ────────────────────────────────────────────────
   async function handleConfirm() {
     if (!client || !mode || !dbMode) return;
+    // Re-check at the call site: the step guard is UI, this one protects the RPC.
+    if (!amountValid || !hasEnoughBalance) {
+      toast.error(
+        amountValid
+          ? 'Solde insuffisant pour ce paiement.'
+          : `Montant invalide — entre ${MIN_PAYMENT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`,
+      );
+      return;
+    }
 
     // virement → bank_transfer pour la DB
     const dbMethod = dbMode;
@@ -734,9 +757,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             </Card>
 
             {/* Alertes montant */}
-            {xaf > 0 && xaf < 10_000 && (
+            {xaf > 0 && xaf < MIN_PAYMENT_XAF && (
               <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
-                Minimum : 10 000 XAF
+                Minimum : {MIN_PAYMENT_XAF.toLocaleString('fr-FR')} XAF
+              </div>
+            )}
+            {amountOverCap && (
+              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+                Maximum : {MAX_AMOUNT_XAF_LABEL} XAF par paiement
               </div>
             )}
             {xaf > clientBalance && xaf > 0 && (
@@ -931,13 +959,6 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   <>
                     {/* QR Code upload */}
                     <FormField label={<>QR Code {mode.name}<Opt /></>}>
-                      <input
-                        ref={qrRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleQrChange}
-                      />
                       {qrPreview ? (
                         <div className="relative overflow-hidden rounded-2xl ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
                           <img
@@ -954,21 +975,16 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => qrRef.current?.click()}
-                          className={cn(
-                            'flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-dashed border-black/10 py-5 text-center dark:border-white/10',
-                            SURFACE.card,
-                          )}
-                        >
-                          <div className={cn('text-[24px] leading-none', TEXT.muted)}>+</div>
-                          <div className={cn('text-[13px] font-bold', TEXT.strong)}>
-                            Ajouter une photo du QR code
-                          </div>
-                          <div className={cn('text-[11px]', TEXT.muted)}>
-                            Capture d'écran ou photo
-                          </div>
-                        </button>
+                        /* Live only on step 4 with no QR yet — the QR is almost
+                           always a screenshot, so Ctrl+V is the primary route. */
+                        <PasteDropZone
+                          onFiles={setQrFromFiles}
+                          enabled={step === 4}
+                          single
+                          accept={ACCEPT_IMAGE}
+                          title="Collez, glissez ou cliquez le QR code"
+                          hint="Ctrl+V colle directement votre capture d'écran"
+                        />
                       )}
                     </FormField>
 

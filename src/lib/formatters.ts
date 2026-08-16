@@ -16,27 +16,52 @@ export function formatXAF(amount: number): string {
 }
 
 export function formatRMB(amount: number): string {
-  return new Intl.NumberFormat(getCurrentLocale(), {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  return formatYuan(amount);
 }
 
-/** ¥ « propre » : pas de décimales quand le montant est entier (langage v7/v8). */
+/**
+ * ¥ amounts — the ONE format for every CNY figure the app shows.
+ *
+ * These numbers are read by Chinese suppliers, usually from a screenshot of a
+ * payment sheet. The previous format was the French locale with forced 2
+ * decimals: `¥ 38 500,00`. Two independent traps in one string —
+ *   • the trailing `,00` is pure noise on a whole amount, and
+ *   • French uses `,` as the DECIMAL mark while Chinese (like English) uses it
+ *     as the THOUSANDS mark, so `38 500,00` reads as "3 850 000" to the
+ *     recipient. That has already caused a real overpayment.
+ *
+ * So: never show decimals that carry no value, and when a fraction genuinely
+ * exists write it with a dot — the separator every CNY-reading party agrees on.
+ * Thousands are grouped with a narrow no-break space (U+202F, the same glyph
+ * `Intl` already emits for fr-FR), which cannot be mistaken for either a
+ * decimal comma or a decimal point and never wraps mid-number.
+ *
+ * `12` → `12` · `38500` → `38 500` · `38500.5` → `38 500.50`
+ */
 export function formatYuan(amount: number): string {
-  const decimals = Number.isInteger(amount) ? 0 : 2;
-  return new Intl.NumberFormat(getCurrentLocale(), {
+  if (!Number.isFinite(amount)) return '0';
+
+  // Round to the fen (2 dp) first so float noise like 38499.999999 does not
+  // masquerade as a real fraction and drag `.00` back into the display.
+  const rounded = Math.round(amount * 100) / 100;
+  const decimals = Number.isInteger(rounded) ? 0 : 2;
+
+  // Locale-independent on purpose: a ¥ figure must read identically whether the
+  // admin's UI is in French, English or Chinese.
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(amount);
+    useGrouping: true,
+  })
+    .format(rounded)
+    // en-US groups with "," — swap for a narrow no-break space, which no reader
+    // can confuse with a decimal separator.
+    .replace(/,/g, ' ');
 }
 
+/** `¥ 38 500` — the yuan symbol plus {@link formatYuan}. */
 export function formatCurrencyRMB(amountRMB: number): string {
-  return '¥ ' + new Intl.NumberFormat(getCurrentLocale(), {
-    style: 'decimal',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amountRMB);
+  return '¥ ' + formatYuan(amountRMB);
 }
 
 // ── Date formatting ─────────────────────────────────────────────────────────

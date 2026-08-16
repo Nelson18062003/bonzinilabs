@@ -39,6 +39,8 @@ import {
 import { formatXAF, formatYuan } from '@/lib/formatters';
 import { toStoredPath } from '@/lib/signedUrls';
 import { validateUploadFile, cn } from '@/lib/utils';
+import { PasteDropZone } from '@/components/upload/PasteDropZone';
+import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 import type { PaymentMethodKey } from '@/types/rates';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import {
@@ -627,18 +629,21 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                       <p className={cn('flex items-center gap-1.5 text-[13px] font-bold', TEXT.strong)}><Check className="h-4 w-4" style={{ color: GREEN }} /> {t('bulk.qrAdded', { defaultValue: 'QR code ajouté' })}</p>
                       <p className="mt-0.5 text-[11.5px] font-semibold" style={{ color: VIOLET }}>{t('bulk.qrTapZoom', { defaultValue: 'Appuyer pour agrandir' })}</p>
                     </div>
-                    <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.06]"><Pencil className={cn('h-3.5 w-3.5', TEXT.muted)} /><input type="file" accept="image/*" className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} /></label>
+                    <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.06]"><Pencil className={cn('h-3.5 w-3.5', TEXT.muted)} /><input type="file" accept={ACCEPT_IMAGE} className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} /></label>
                   </div>
                 ) : (
-                  <label className="mb-3 flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-black/12 bg-black/[0.015] px-3.5 py-3 dark:border-white/15 dark:bg-white/[0.02]">
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} />
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: `${VIOLET}1A` }}><QrCode className="h-6 w-6" style={{ color: VIOLET }} /></span>
-                    <div className="min-w-0 flex-1">
-                      <p className={cn('text-[13px] font-bold', TEXT.strong)}>{t('bulk.qrAdd', { defaultValue: 'Ajouter le QR code' })}</p>
-                      <p className={cn('text-[11.5px]', TEXT.muted)}>{t('bulk.qrHint', { defaultValue: 'Le plus fiable pour Alipay / WeChat' })}</p>
-                    </div>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full text-white" style={{ background: VIOLET }}><Plus className="h-4 w-4" /></span>
-                  </label>
+                  /* Live only while the beneficiary editor is open on a QR
+                     method — otherwise a paste meant for another sheet would
+                     land on the QR slot. */
+                  <PasteDropZone
+                    onFiles={(files) => onQrPick(files[0])}
+                    enabled={editorOpen && isQrMethod && eCh.qr && !qrZoom}
+                    single
+                    accept={ACCEPT_IMAGE}
+                    className="mb-3"
+                    title={t('bulk.qrAdd', { defaultValue: 'Ajouter le QR code' })}
+                    hint={t('bulk.qrHint', { defaultValue: 'Le plus fiable pour Alipay / WeChat' }) + ' · Ctrl+V'}
+                  />
                 )
               )}
               {eCh.id && (

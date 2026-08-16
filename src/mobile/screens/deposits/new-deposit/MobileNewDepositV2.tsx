@@ -8,11 +8,14 @@
 //   submethod→banque→agence→récap→création, useCountUp, copie
 //   coordonnées, upload preuves, écran succès, validations.
 // ============================================================
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAllClients, useAdminCreateDeposit } from '@/hooks/useAdminDeposits';
 import { useCountUp } from '@/hooks/useCountUp';
 import { formatCurrency } from '@/lib/formatters';
+import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { PasteDropZone } from '@/components/upload/PasteDropZone';
+import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -44,13 +47,11 @@ import {
   ChevronLeft,
   Clock,
   Copy,
-  FileText,
   Info,
   Loader2,
   MapPin,
   Search,
   ShieldCheck,
-  Upload,
   User,
   X,
 } from 'lucide-react';
@@ -149,13 +150,16 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [adminComment, setAdminComment] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Écran succès V2
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdDepositId, setCreatedDepositId] = useState<string | null>(null);
 
   const amountNum = parseInt(amount) || 0;
+  // The admin wizard had no ceiling at all while the client form capped at 50 M:
+  // one stray zero here credited a wallet 10x over with nothing to catch it.
+  const amountValid = isValidXafAmount(amountNum, MIN_DEPOSIT_XAF);
+  const amountOverCap = amountNum > MAX_AMOUNT_XAF;
   const animatedAmount = useCountUp(amountNum, { enabled: amountNum > 0 });
 
   const totalSteps = getTotalSteps(selectedFamily);
@@ -276,17 +280,25 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
     return 'bank_transfer' as const;
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setProofFiles((prev) => [...prev, ...files]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  /** Append — never replace: proofs arrive one screenshot at a time. */
+  const addProofFiles = useCallback(
+    (files: File[]) => setProofFiles((prev) => [...prev, ...files]),
+    [],
+  );
 
-  const removeFile = (i: number) => setProofFiles((prev) => prev.filter((_, idx) => idx !== i));
+  const removeFile = useCallback(
+    (i: number) => setProofFiles((prev) => prev.filter((_, idx) => idx !== i)),
+    [],
+  );
 
   const doCreateDeposit = async () => {
     if (!selectedClient || !amount || !selectedFamily) {
       toast.error('Informations manquantes');
+      return;
+    }
+    // Re-check at the call site: the CTA guard is UI, this one protects the RPC.
+    if (!amountValid) {
+      toast.error(`Montant invalide — entre ${MIN_DEPOSIT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`);
       return;
     }
     goTo('creating');
@@ -634,7 +646,15 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 );
               })}
             </div>
-            {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
+            {amountOverCap && (
+              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#C0504D] bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
+                <p className="text-[11px] font-semibold text-[#C0504D] dark:text-[#E79A9A]">
+                  Montant maximum : {MAX_AMOUNT_XAF_LABEL} XAF par dépôt.
+                </p>
+              </div>
+            )}
+            {!amountOverCap && amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
               <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#F3A745] bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
                 <p className="text-[11px] text-[#9A6B12] dark:text-[#E7C083]">
@@ -899,46 +919,10 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               {/* Upload preuves optionnel */}
               <Card>
                 <div className={cn('mb-2.5 text-[12px] font-bold', TEXT.strong)}>Preuves (optionnel)</div>
-                <label className="block w-full cursor-pointer">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <div className="flex flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed border-black/10 p-5 dark:border-white/10">
-                    <Upload className={cn('h-5 w-5', TEXT.muted)} />
-                    <p className={cn('text-[11px]', TEXT.muted)}>Photos ou PDFs</p>
-                  </div>
-                </label>
-                {proofFiles.length > 0 && (
-                  <div className="mt-2.5 flex flex-wrap gap-2">
-                    {proofFiles.map((file, idx) => (
-                      <div
-                        key={idx}
-                        className={cn('relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-lg ring-1 ring-black/[0.06] dark:ring-white/[0.06]', SURFACE.canvas)}
-                      >
-                        {file.type.startsWith('image/') ? (
-                          <img src={URL.createObjectURL(file)} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <FileText className={cn('h-4 w-4', TEXT.muted)} />
-                            <span className={cn('max-w-[50px] overflow-hidden text-center text-[8px]', TEXT.muted)}>{file.name}</span>
-                          </div>
-                        )}
-                        <button
-                          onClick={() => removeFile(idx)}
-                          aria-label="Retirer"
-                          className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-black/60"
-                        >
-                          <X className="h-2 w-2 text-white" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Only live on this step — the wizard's other steps must not
+                    swallow a paste, and two live zones would double-attach. */}
+                <PasteDropZone onFiles={addProofFiles} enabled={step === 'recap'} />
+                <FilePreviewGrid files={proofFiles} onRemove={removeFile} className="mt-2.5" />
               </Card>
 
               {/* Commentaire admin optionnel */}
@@ -1002,9 +986,9 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           )}
           {step === 'amount' && (
             <PrimaryPill
-              onClick={() => amountNum >= 1000 && goTo('family')}
-              disabled={amountNum < 1000}
-              className={cn('flex-[1.4]', amountNum >= 1000 && 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white')}
+              onClick={() => amountValid && goTo('family')}
+              disabled={!amountValid}
+              className={cn('flex-[1.4]', amountValid && 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white')}
             >
               Suivant
             </PrimaryPill>

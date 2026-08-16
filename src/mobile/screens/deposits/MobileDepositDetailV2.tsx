@@ -28,6 +28,7 @@ import {
 } from '@/types/deposit';
 import { buildDepositTimelineSteps, getStepColors, getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
 import { formatCurrency, formatRelativeDate } from '@/lib/formatters';
+import { MIN_DEPOSIT_XAF, isValidXafAmount, xafAmountError } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
 import {
   SURFACE,
@@ -70,6 +71,10 @@ import { DepositReceiptPDF } from '@/lib/pdf/templates/DepositReceiptPDF';
 import type { DepositReceiptData } from '@/lib/pdf/templates/DepositReceiptPDF';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { PasteDropZone } from '@/components/upload/PasteDropZone';
+import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
+import { usePasteFiles } from '@/hooks/usePasteFiles';
+import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD } from '@/lib/clipboardFiles';
 
 // ── Familles de méthode (identité de marque conservée) ───────
 const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean }> = {
@@ -192,7 +197,6 @@ export function MobileDepositDetailV2() {
   const [showDeleteProofSheet, setShowDeleteProofSheet] = useState<string | null>(null);
   const [deleteProofReason, setDeleteProofReason] = useState('');
   const [customDeleteReason, setCustomDeleteReason] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceFileRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
@@ -222,7 +226,15 @@ export function MobileDepositDetailV2() {
   const handleValidate = useCallback(() => {
     if (!depositId || !deposit) return;
     const amt = Number(confirmedAmount);
-    if (!amt || amt <= 0) return;
+    // This number is credited straight to the client's wallet, so it gets the
+    // same 50 M ceiling / safe-integer check as the creation forms. The previous
+    // guard was `!amt || amt <= 0` and returned SILENTLY — an admin who typed a
+    // bad amount saw the button do nothing and no explanation.
+    const problem = xafAmountError(amt, MIN_DEPOSIT_XAF, 'Le montant confirmé');
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
     validateDeposit.mutate(
       {
         depositId,
@@ -259,10 +271,35 @@ export function MobileDepositDetailV2() {
     startReview.mutate({ depositId });
   }, [depositId, startReview]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) setSelectedFiles(Array.from(files));
-  };
+  /**
+   * Stage more proofs for upload.
+   *
+   * Appends rather than replaces: the sheet is opened once and files trickle in
+   * (a paste, then a second paste, then a PDF from disk). The previous handler
+   * overwrote the whole selection on every pick, so choosing a second file
+   * silently dropped the first.
+   */
+  const addSelectedFiles = useCallback((files: File[]) => {
+    setSelectedFiles((prev) => [...prev, ...files]);
+  }, []);
+
+  const removeSelectedFile = useCallback((index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Ctrl+V anywhere on the fiche stages a proof — and opens the sheet if it is
+  // still closed, so a pasted screenshot is never silently swallowed.
+  const canPasteProof = !!deposit && !['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  usePasteFiles({
+    onFiles: useCallback(
+      (files: File[]) => {
+        setShowUploadSheet(true);
+        addSelectedFiles(files);
+      },
+      [addSelectedFiles],
+    ),
+    enabled: canPasteProof && !showRejectSheet && !showDeleteDepositSheet && !showDeleteProofSheet && !viewingProof,
+  });
 
   const handleUploadProofs = useCallback(() => {
     if (!depositId || !deposit || selectedFiles.length === 0) return;
@@ -277,7 +314,6 @@ export function MobileDepositDetailV2() {
         onSuccess: () => {
           setShowUploadSheet(false);
           setSelectedFiles([]);
-          if (fileInputRef.current) fileInputRef.current.value = '';
         },
       },
     );
@@ -300,11 +336,22 @@ export function MobileDepositDetailV2() {
   }, [showDeleteProofSheet, depositId, deleteProofReason, customDeleteReason, deleteProof]);
 
   const handleReplaceFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !replaceProofId || !depositId || !deposit) return;
+    const picked = e.target.files?.[0];
+    if (replaceFileRef.current) replaceFileRef.current.value = '';
+    if (!picked || !replaceProofId || !depositId || !deposit) return;
+
+    // Reject up front: a bad replacement that fails mid-flight would delete
+    // nothing and leave the admin unsure whether the swap happened.
+    const { accepted, rejected } = partitionUploadFiles([picked]);
+    const problem = rejectionMessage(rejected);
+    if (problem) {
+      toast.error(problem);
+      setReplaceProofId(null);
+      return;
+    }
+    const file = accepted[0];
     const oldProofId = replaceProofId;
     setReplaceProofId(null);
-    if (replaceFileRef.current) replaceFileRef.current.value = '';
     uploadProofs.mutate(
       { depositId, userId: deposit.user_id, files: [file], depositStatus: deposit.status },
       {
@@ -389,6 +436,7 @@ export function MobileDepositDetailV2() {
   const hasProofs = proofs && proofs.length > 0;
   const canAddProof = !isLocked;
   const confirmedAmountNum = Number(confirmedAmount) || 0;
+  const confirmedAmountValid = isValidXafAmount(confirmedAmountNum, MIN_DEPOSIT_XAF);
   const amountDiffers = confirmedAmountNum !== deposit.amount_xaf && confirmedAmountNum > 0;
   const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
   const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
@@ -480,7 +528,7 @@ export function MobileDepositDetailV2() {
           <input
             ref={replaceFileRef}
             type="file"
-            accept="image/jpeg,image/png,application/pdf"
+            accept={ACCEPT_UPLOAD}
             onChange={handleReplaceFileSelect}
             className="hidden"
           />
@@ -702,7 +750,9 @@ export function MobileDepositDetailV2() {
                 inputMode="decimal"
                 enterKeyHint="done"
                 value={confirmedAmount}
-                onChange={(e) => setConfirmedAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                /* XAF has no subunit — allowing "." let `100.5.2` through to
+                   Number() as NaN, and a fractional amount into the ledger. */
+                onChange={(e) => setConfirmedAmount(e.target.value.replace(/[^0-9]/g, ''))}
                 className="font-bold"
               />
             </FormField>
@@ -764,7 +814,7 @@ export function MobileDepositDetailV2() {
             <PrimaryPill
               onClick={handleValidate}
               loading={validateDeposit.isPending}
-              disabled={confirmedAmountNum <= 0}
+              disabled={!confirmedAmountValid}
               className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
             >
               Confirmer la validation
@@ -856,33 +906,10 @@ export function MobileDepositDetailV2() {
       {/* ── BottomSheet upload preuve ─────────────────────── */}
       <BottomSheet open={showUploadSheet} onClose={() => setShowUploadSheet(false)} title="Ajouter une preuve">
         <div className="space-y-4">
-          <div className="rounded-2xl border-2 border-dashed border-black/10 p-6 text-center dark:border-white/10">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,application/pdf"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-              id="proof-upload-v2"
-            />
-            <label htmlFor="proof-upload-v2" className="flex cursor-pointer flex-col items-center gap-2">
-              <Holder icon={Plus} />
-              <p className={cn('text-[13px]', TEXT.muted)}>Choisir des fichiers</p>
-              <p className={cn('text-[12px]', TEXT.muted)}>JPG, PNG ou PDF</p>
-            </label>
-          </div>
-          {selectedFiles.length > 0 && (
-            <div className="space-y-2">
-              {selectedFiles.map((file, i) => (
-                <div key={i} className={cn('flex items-center gap-2 rounded-xl p-2 text-[13px]', SURFACE.canvas)}>
-                  <FileText className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
-                  <span className={cn('flex-1 truncate', TEXT.strong)}>{file.name}</span>
-                  <span className={cn('shrink-0 text-[12px]', TEXT.muted)}>{(file.size / 1024).toFixed(0)} Ko</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* The fiche-level usePasteFiles already routes Ctrl+V here, so this
+              zone stays passive and only serves drag / click / "Coller". */}
+          <PasteDropZone onFiles={addSelectedFiles} enabled={false} busy={uploadProofs.isPending} />
+          <FilePreviewGrid files={selectedFiles} onRemove={removeSelectedFile} />
           <div className="flex gap-2">
             <SoftPill onClick={() => { setShowUploadSheet(false); setSelectedFiles([]); }} className="flex-1">
               Annuler

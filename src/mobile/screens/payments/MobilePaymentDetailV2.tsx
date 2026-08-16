@@ -8,7 +8,7 @@
 //   upload/delete, signature cash, reject (catégories + message client),
 //   complete, annulation, taux XAF/CNY, relevé PDF.
 // ============================================================
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -67,13 +67,15 @@ import {
   X,
   AlertTriangle,
   Download,
-  Upload,
   QrCode,
   Trash2,
   ChevronLeft,
   Copy,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
+import { PasteDropZone } from '@/components/upload/PasteDropZone';
+import { usePasteFiles } from '@/hooks/usePasteFiles';
+import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD, ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
@@ -268,6 +270,74 @@ export function MobilePaymentDetail() {
   const [signing, setSigning] = useState(false);
 
   // ─────────────────────────────────────────────────────────
+  // Coller (Ctrl+V) — routé vers la zone active
+  // ─────────────────────────────────────────────────────────
+  // A screenshot pasted on this screen can mean three different things, so a
+  // SINGLE window listener routes by what is currently open. Priority runs from
+  // the most specific surface outwards; when a destructive sheet is up, paste
+  // is off entirely rather than silently landing behind it.
+  const isAlipayOrWechat = payment?.method === 'alipay' || payment?.method === 'wechat';
+  const blockingSheetOpen =
+    isRejectOpen || isDeletePaymentOpen || !!proofToDelete || !!fullscreenProof || signing;
+
+  const pasteTarget: 'qr' | 'complete' | 'proof' | null =
+    !payment || blockingSheetOpen
+      ? null
+      : editBenef && isAlipayOrWechat
+        ? 'qr'
+        : isCompleteOpen
+          ? 'complete'
+          : hasPermission('canProcessPayments') &&
+              !['completed', 'rejected'].includes(payment.status) &&
+              payment.method !== 'cash'
+            ? 'proof'
+            : null;
+
+  const handlePastedFiles = useCallback(
+    async (files: File[]) => {
+      if (!paymentId) return;
+
+      if (pasteTarget === 'qr') {
+        const file = files[0];
+        setQrFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setQrPreview(reader.result as string);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      if (pasteTarget === 'complete') {
+        const file = files[0];
+        setCompleteProofFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setCompleteProofPreview(reader.result as string);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      if (pasteTarget === 'proof') {
+        // Upload straight away — the admin pasted it *because* it is the proof.
+        // Sequential, not parallel: the storage helper retries on flaky mobile
+        // networks and concurrent retries would fight over the same bucket.
+        for (const file of files) {
+          try {
+            await adminProofUpload.mutateAsync({ paymentId, file });
+          } catch {
+            break; // the hook already toasted; stop rather than repeat the error
+          }
+        }
+      }
+    },
+    [pasteTarget, paymentId, adminProofUpload],
+  );
+
+  usePasteFiles({
+    onFiles: handlePastedFiles,
+    enabled: pasteTarget !== null,
+    single: pasteTarget === 'qr' || pasteTarget === 'complete',
+  });
+
+  // ─────────────────────────────────────────────────────────
   // Handlers
   // ─────────────────────────────────────────────────────────
 
@@ -398,23 +468,39 @@ export function MobilePaymentDetail() {
   };
 
   const handleStandaloneProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !paymentId) return;
+    const picked = Array.from(e.target.files ?? []);
+    // Reset before the await: leaving the value set means re-picking the SAME
+    // file later fires no `change` event at all.
+    if (standaloneProofRef.current) standaloneProofRef.current.value = '';
+    if (picked.length === 0 || !paymentId) return;
+
+    const { accepted, rejected } = partitionUploadFiles(picked);
+    const problem = rejectionMessage(rejected);
+    if (problem) toast.error(problem);
+    if (accepted.length === 0) return;
+
     try {
-      await adminProofUpload.mutateAsync({ paymentId, file });
+      await adminProofUpload.mutateAsync({ paymentId, file: accepted[0] });
       toast.success('Preuve ajoutée');
     } catch { /* handled */ }
-    if (standaloneProofRef.current) standaloneProofRef.current.value = '';
   };
 
   const handleInstructionUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !paymentId) return;
-    try {
-      await instructionUpload.mutateAsync({ paymentId, files: Array.from(files) });
-      toast.success(`${files.length} instruction(s) ajoutée(s)`);
-    } catch { /* handled */ }
+    const picked = Array.from(e.target.files ?? []);
     if (instructionInputRef.current) instructionInputRef.current.value = '';
+    if (picked.length === 0 || !paymentId) return;
+
+    // The instruction hook does no validation of its own, so a 40 MB PDF would
+    // otherwise fail deep inside Storage with an opaque error.
+    const { accepted, rejected } = partitionUploadFiles(picked);
+    const problem = rejectionMessage(rejected);
+    if (problem) toast.error(problem);
+    if (accepted.length === 0) return;
+
+    try {
+      await instructionUpload.mutateAsync({ paymentId, files: accepted });
+      toast.success(`${accepted.length} instruction(s) ajoutée(s)`);
+    } catch { /* handled */ }
   };
 
   const handleCashSignature = async (signatureDataUrl: string) => {
@@ -801,7 +887,7 @@ export function MobilePaymentDetail() {
                   <input
                     ref={qrInputRef}
                     type="file"
-                    accept="image/*"
+                    accept={ACCEPT_IMAGE}
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -849,20 +935,6 @@ export function MobilePaymentDetail() {
                     />
                   </FormField>
                   <FormField label="QR Code">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setQrFile(file);
-                        const reader = new FileReader();
-                        reader.onloadend = () => setQrPreview(reader.result as string);
-                        reader.readAsDataURL(file);
-                      }}
-                      id="qr-edit-input"
-                    />
                     {qrPreview || beneficiaryForm.beneficiary_qr_code_url ? (
                       <div className={cn('relative overflow-hidden rounded-2xl', SURFACE.canvas)}>
                         <img
@@ -878,16 +950,14 @@ export function MobilePaymentDetail() {
                         </button>
                       </div>
                     ) : (
-                      <label
-                        htmlFor="qr-edit-input"
-                        className={cn(
-                          'flex w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl py-4 text-[12px] font-bold ring-1 ring-dashed ring-black/15 dark:ring-white/15',
-                          TEXT.muted,
-                        )}
-                      >
-                        <QrCode className="h-5 w-5" />
-                        Importer le QR Code
-                      </label>
+                      <PasteDropZone
+                        onFiles={handlePastedFiles}
+                        enabled={false}
+                        single
+                        accept={ACCEPT_IMAGE}
+                        title="Collez, glissez ou cliquez le QR Code"
+                        hint="Ctrl+V colle la capture du QR — JPG, PNG ou WebP"
+                      />
                     )}
                   </FormField>
                   <FormField label={<>ID {methodLabel} <span className={cn('font-normal', TEXT.muted)}>(téléphone)</span></>}>
@@ -1087,24 +1157,27 @@ export function MobilePaymentDetail() {
             <input
               ref={standaloneProofRef}
               type="file"
-              accept="image/*"
+              accept={ACCEPT_UPLOAD}
               className="hidden"
               onChange={handleStandaloneProofUpload}
             />
 
             {allProofs.length === 0 ? (
               <div>
-                <div className={cn('rounded-2xl p-3.5 text-center', SURFACE.canvas)}>
-                  <div className={cn('text-[12px]', TEXT.muted)}>Aucune preuve ajoutée</div>
-                </div>
-                {canAddProof && (
-                  <button
-                    onClick={() => standaloneProofRef.current?.click()}
-                    disabled={adminProofUpload.isPending}
-                    className="mt-2 w-full rounded-2xl py-2.5 text-[12px] font-bold text-[#6B5BD2] ring-1 ring-[#6B5BD2]/25 dark:text-[#A99BF0] dark:ring-[#A99BF0]/25"
-                  >
-                    + Ajouter une preuve
-                  </button>
+                {canAddProof ? (
+                  /* `enabled={false}`: the screen-level usePasteFiles above already
+                     owns the window listener and routes Ctrl+V here. The zone keeps
+                     drag & drop, click-to-browse and the explicit "Coller" button. */
+                  <PasteDropZone
+                    onFiles={handlePastedFiles}
+                    enabled={false}
+                    busy={adminProofUpload.isPending}
+                    title="Collez, glissez ou cliquez pour ajouter une preuve"
+                  />
+                ) : (
+                  <div className={cn('rounded-2xl p-3.5 text-center', SURFACE.canvas)}>
+                    <div className={cn('text-[12px]', TEXT.muted)}>Aucune preuve ajoutée</div>
+                  </div>
                 )}
               </div>
             ) : (
@@ -1160,6 +1233,19 @@ export function MobilePaymentDetail() {
                     </div>
                   );
                 })}
+
+                {/* Keeps Ctrl+V discoverable once the list is non-empty — the
+                    single most common case is adding a second screenshot. */}
+                {canAddProof && (
+                  <PasteDropZone
+                    onFiles={handlePastedFiles}
+                    enabled={false}
+                    compact
+                    busy={adminProofUpload.isPending}
+                    title="Coller ou ajouter une autre preuve"
+                    hint="Ctrl+V · glisser-déposer · clic"
+                  />
+                )}
               </div>
             )}
 
@@ -1169,7 +1255,7 @@ export function MobilePaymentDetail() {
                 <input
                   ref={instructionInputRef}
                   type="file"
-                  accept="image/*,application/pdf"
+                  accept={ACCEPT_UPLOAD}
                   multiple
                   className="hidden"
                   onChange={handleInstructionUpload}
@@ -1345,7 +1431,7 @@ export function MobilePaymentDetail() {
             <input
               ref={proofInputRef}
               type="file"
-              accept="image/*"
+              accept={ACCEPT_UPLOAD}
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -1367,13 +1453,15 @@ export function MobilePaymentDetail() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => proofInputRef.current?.click()}
-                className={cn('flex h-24 w-full flex-col items-center justify-center gap-2 rounded-2xl ring-1 ring-dashed ring-black/15 transition active:scale-[0.99] dark:ring-white/15', TEXT.muted)}
-              >
-                <Upload className="h-6 w-6" />
-                <span className="text-[13px]">Ajouter une preuve</span>
-              </button>
+              /* Window-level Ctrl+V is routed here while this sheet is open
+                 (pasteTarget === 'complete'), so the zone itself stays passive. */
+              <PasteDropZone
+                onFiles={handlePastedFiles}
+                enabled={false}
+                single
+                title="Collez, glissez ou cliquez"
+                hint="Ctrl+V colle directement la capture du paiement"
+              />
             )}
           </FormField>
           <div className="flex gap-2">
