@@ -6,6 +6,7 @@ import { PDFAmountBox } from '../components/PDFAmountBox';
 import { baseStyles, colors } from '../styles';
 import {
   formatXAF,
+  formatRMB,
   formatDate,
   formatRateDisplay,
   getPaymentMethodLabel,
@@ -212,7 +213,8 @@ export function PaymentReceiptPDF({ data }: { data: PaymentReceiptData }) {
   const dateDisplay = data.processed_at || data.created_at;
 
   const rateDisplay = data.exchange_rate ? formatRateDisplay(data.exchange_rate) : 'Non défini';
-  const cnyDisplay = data.amount_rmb ? `\u00a5${formatXAF(Math.round(data.amount_rmb))}` : '';
+  // formatRMB keeps the fen when there is one; formatXAF rounded them away.
+  const cnyDisplay = data.amount_rmb ? `\u00a5${formatRMB(data.amount_rmb)}` : '';
   const methodColor = getMethodColor(data.method);
 
   const hasQrCode = !!data.beneficiary_qr_code_url;

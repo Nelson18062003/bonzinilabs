@@ -13,11 +13,15 @@ import type {
 } from './types';
 
 // ──────────────────────────────────────────────────────────────────
-// Amount caps (mirror the security rule documented in
-// .claude/rules/security.md: 50M XAF max, safe integer required)
+// Amount caps — re-exported from the shared source so the admin
+// wizards and these client schemas can never drift apart.
+// (.claude/rules/security.md: 50M XAF max, safe integer required)
 // ──────────────────────────────────────────────────────────────────
-export const MIN_AMOUNT_XAF = 10_000;
-export const MAX_AMOUNT_XAF = 50_000_000;
+// Imported (not just re-exported) because the schemas below reference them —
+// a bare `export … from` would not bind the names in this module's scope.
+import { MAX_AMOUNT_XAF, MIN_PAYMENT_XAF as MIN_AMOUNT_XAF } from '@/lib/amountLimits';
+
+export { MAX_AMOUNT_XAF, MIN_AMOUNT_XAF };
 
 // ──────────────────────────────────────────────────────────────────
 // Step 1 — method

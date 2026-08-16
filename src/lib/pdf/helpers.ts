@@ -6,8 +6,25 @@ export const formatXAF = (amount: number): string => {
   return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 };
 
+/**
+ * \u00a5 on a receipt \u2014 the document a Chinese supplier actually pays against.
+ *
+ * Mirrors `formatYuan` (src/lib/formatters.ts): no decimals on a whole amount,
+ * and a DOT \u2014 never a comma \u2014 when a fen fraction genuinely exists, because a
+ * comma reads as a thousands separator to the recipient. Grouping uses U+00A0
+ * rather than the UI's U+202F: the embedded PDF fonts are only guaranteed to
+ * carry the plain no-break space.
+ *
+ * The previous version rounded to the nearest yuan, silently dropping the fen
+ * from the printed receipt while the ledger kept it.
+ */
 export const formatRMB = (amount: number): string => {
-  return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  if (!Number.isFinite(amount)) return '0';
+  const rounded = Math.round(amount * 100) / 100;
+  const [whole, fraction] = Math.abs(rounded).toFixed(2).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  const sign = rounded < 0 ? '-' : '';
+  return fraction === '00' ? `${sign}${grouped}` : `${sign}${grouped}.${fraction}`;
 };
 
 export const formatDate = (date: Date | string): string => {
