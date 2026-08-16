@@ -5,7 +5,7 @@
  * method/sort/period filters, debounced search, SLA, batch PDF export) — shown
  * as a wide table with a clickable stat strip and a toolbar.
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, Paperclip, CreditCard, FileDown, Loader2, Layers } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,7 +21,14 @@ import { formatCurrencyRMB, formatRelativeDate } from '@/lib/formatters';
 import { getPaymentSlaLevel, type SlaLevel } from '@/lib/paymentSla';
 import { cn } from '@/lib/utils';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
-import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
+import {
+  Inspector,
+  DataTable,
+  EMPTY_SELECTION,
+  pruneSelection,
+  type Column,
+  type SelectionState,
+} from '@/desktop/kit';
 import {
   SURFACE,
   TEXT,
@@ -73,6 +80,7 @@ export function DesktopPaymentsScreen() {
   const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const debouncedSearch = useDebouncedValue(searchQuery);
   const { data: stats } = usePaymentStats();
 
@@ -113,6 +121,88 @@ export function DesktopPaymentsScreen() {
     });
   }, [allPayments, debouncedSearch]);
 
+  // A colleague may process a payment we had selected, or a filter change may
+  // drop it: a bulk action must never fire against a row that is off screen.
+  const visibleIds = useMemo(() => filteredPayments.map((p) => p.id), [filteredPayments]);
+  useEffect(() => {
+    setSelection((current) => pruneSelection(current, visibleIds));
+  }, [visibleIds]);
+
+  const columns = useMemo<Column<(typeof filteredPayments)[number]>[]>(() => [
+    {
+      key: 'reference',
+      header: 'Référence',
+      width: '11rem',
+      render: (p) => (
+        <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
+          {p.reference}
+        </span>
+      ),
+    },
+    {
+      key: 'client',
+      header: 'Client',
+      render: (p) => {
+        const name = p.profiles ? `${p.profiles.first_name} ${p.profiles.last_name}` : 'Client inconnu';
+        const proofCount = p.proof_count || 0;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className={cn('font-semibold', TEXT.strong)}>{name}</span>
+            {proofCount > 0 && (
+              <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
+                <Paperclip className="h-3 w-3" />
+                {proofCount}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'amount_rmb',
+      header: 'Montant',
+      align: 'right',
+      sortable: true,
+      render: (p) => <Amount value={formatCurrencyRMB(p.amount_rmb)} size="md" />,
+    },
+    {
+      key: 'method',
+      header: 'Méthode',
+      width: '11rem',
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <PaymentMethodLogo method={logoMethod(p.method)} size={26} />
+          <span className={TEXT.muted}>{PAYMENT_METHOD_LABELS[p.method] || p.method}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Créé le',
+      width: '9rem',
+      sortable: true,
+      render: (p) => <span className={TEXT.muted}>{formatRelativeDate(p.created_at)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Statut',
+      align: 'right',
+      width: '11rem',
+      render: (p) => {
+        const sla = getPaymentSlaLevel(p.created_at, p.status);
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            {sla && <SlaDot level={sla} />}
+            <StatusPill
+              tone={paymentStatusTone(p.status)}
+              label={PAYMENT_STATUS_LABELS[p.status as PaymentStatus] || p.status}
+            />
+          </div>
+        );
+      },
+    },
+  ], []);
+
   const counts = {
     toProcess: stats?.toProcess ?? 0,
     inProgress: stats?.inProgress ?? 0,
@@ -148,7 +238,11 @@ export function DesktopPaymentsScreen() {
   }, [isExporting]);
 
   return (
-    <MasterDetailLayout detail={paymentId ? <MobilePaymentDetail /> : null}>
+    <Inspector
+      detail={paymentId ? <MobilePaymentDetail /> : null}
+      title={paymentId ? 'Fiche paiement' : undefined}
+      onClose={() => navigate('/m/payments')}
+    >
     <div className="space-y-6">
       <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
@@ -299,99 +393,82 @@ export function DesktopPaymentsScreen() {
         </div>
       </section>
 
-      {/* Table */}
-      <Card className="overflow-hidden p-0">
-        {isLoading ? (
-          <ScreenLoader />
-        ) : filteredPayments.length > 0 ? (
-          <>
-            <table className="w-full text-left">
-              <thead>
-                <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
-                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
-                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPayments.map((payment) => {
-                  const clientName = payment.profiles
-                    ? `${payment.profiles.first_name} ${payment.profiles.last_name}`
-                    : 'Client inconnu';
-                  const proofCount = payment.proof_count || 0;
-                  const slaLevel = getPaymentSlaLevel(payment.created_at, payment.status);
-                  const statusLabel = PAYMENT_STATUS_LABELS[payment.status as PaymentStatus] || payment.status;
-                  const methodLabel = PAYMENT_METHOD_LABELS[payment.method] || payment.method;
-                  return (
-                    <tr
-                      key={payment.id}
-                      onClick={() => navigate(`/m/payments/${payment.id}`)}
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/payments/${payment.id}`); } }}
-                      className={cn(
-                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
-                        paymentId === payment.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
-                      )}
-                    >
-                      <td className="px-5 py-3">
-                        <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
-                          {payment.reference}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{clientName}</span>
-                          {proofCount > 0 && (
-                            <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
-                              <Paperclip className="h-3 w-3" />
-                              {proofCount}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-right">
-                        <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-2">
-                          <PaymentMethodLogo method={logoMethod(payment.method)} size={26} />
-                          <span className={cn('text-[12px]', TEXT.muted)}>{methodLabel}</span>
-                        </div>
-                      </td>
-                      <td className={cn('px-2 py-3 text-[12px]', TEXT.muted)}>{formatRelativeDate(payment.created_at)}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {slaLevel && <SlaDot level={slaLevel} />}
-                          <StatusPill tone={paymentStatusTone(payment.status)} label={statusLabel} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {!debouncedSearch && (
-              <div className="px-5 py-3">
-                <InfiniteScrollTrigger onLoadMore={handleLoadMore} hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={CreditCard} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun paiement trouvé</p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
-              {statusFilter !== 'all' || methodFilter !== 'all' || dateFrom || dateTo
-                ? 'Essayez de modifier vos filtres'
-                : 'Les paiements apparaîtront ici'}
-            </p>
-          </div>
-        )}
-      </Card>
+      {/* Selection bar — appears only when rows are marked. Phase 0 ships the
+          selection primitive and the safe actions; the money actions (bulk
+          validate / reject) land in Phase 2 behind a preview step. */}
+      {selection.ids.size > 0 && (
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-3 rounded-[18px] px-5 py-3',
+            SURFACE.card,
+            SURFACE.shadow,
+          )}
+          style={{ boxShadow: 'inset 3px 0 0 0 #6B5BD2' }}
+          role="status"
+        >
+          <span className={cn('text-[13px] font-bold tabular-nums', TEXT.strong)}>
+            {selection.ids.size} paiement{selection.ids.size > 1 ? 's' : ''} sélectionné
+            {selection.ids.size > 1 ? 's' : ''}
+          </span>
+          <span className={cn('text-[12px]', TEXT.muted)}>
+            X pour marquer · Maj+clic pour une plage · Échap pour vider
+          </span>
+          <span className="flex-1" />
+          <button
+            onClick={() => setSelection(EMPTY_SELECTION)}
+            className={cn('px-3.5 py-1.5 text-[12px] font-bold', SOFT_PILL)}
+          >
+            Désélectionner
+          </button>
+        </div>
+      )}
+
+      {/* Queue */}
+      {isLoading ? (
+        <Card className="p-0"><ScreenLoader /></Card>
+      ) : (
+        <DataTable
+          label="Paiements"
+          rows={filteredPayments}
+          columns={columns}
+          rowId={(p) => p.id}
+          activeId={paymentId ?? null}
+          onOpen={(p) => navigate(`/m/payments/${p.id}`)}
+          selection={selection}
+          onSelectionChange={setSelection}
+          sortKey={sortOption.field}
+          sortDir={sortOption.ascending ? 'asc' : 'desc'}
+          onSort={(key) => {
+            // Toggle direction when the same column is clicked twice.
+            const same = SORT_OPTIONS.filter((o) => o.field === key);
+            if (same.length === 0) return;
+            const current = same.find((o) => o.key === sortKey);
+            const next = current ? same.find((o) => o.key !== current.key) ?? current : same[0];
+            setSortKey(next.key);
+          }}
+          empty={
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Holder icon={CreditCard} size="lg" />
+              <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun paiement trouvé</p>
+              <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+                {statusFilter !== 'all' || methodFilter !== 'all' || dateFrom || dateTo
+                  ? 'Essayez de modifier vos filtres'
+                  : 'Les paiements apparaîtront ici'}
+              </p>
+            </div>
+          }
+          footer={
+            !debouncedSearch ? (
+              <InfiniteScrollTrigger
+                onLoadMore={handleLoadMore}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+              />
+            ) : undefined
+          }
+        />
+      )}
     </div>
-    </MasterDetailLayout>
+    </Inspector>
   );
 }
