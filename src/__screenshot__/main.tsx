@@ -104,12 +104,22 @@ import {
   AgentCashSuccess,
 } from '@/mobile/screens/agent-cash';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/deposits';
+import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
 // `wrap: 'lang'` wraps the screen in LanguageProvider (agent-cash sub-app uses
 // useLanguage() — EN/ZH bridge over react-i18next's `agent` namespace).
 const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string; wrap?: 'lang' }> = {
+  // ADMIN DESKTOP REDESIGN (docs/admin-redesign) — shoot with tools/shoot-admin.mjs (1440×900)
+  'dd-workbench': { Comp: DdWorkbench, route: '/' },
+  'dd-split': { Comp: DdSplit, route: '/' },
+  'dd-validate': { Comp: DdValidate, route: '/' },
+  'dd-create': { Comp: DdCreate, route: '/' },
+  'dp-workbench': { Comp: DpWorkbench, route: '/' },
+  'dp-split': { Comp: DpSplit, route: '/' },
+  'dp-create': { Comp: DpCreate, route: '/' },
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
