@@ -106,20 +106,28 @@ import {
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/deposits';
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
+import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment } from './adminRedesign/beforeScreens';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
 // `wrap: 'lang'` wraps the screen in LanguageProvider (agent-cash sub-app uses
 // useLanguage() — EN/ZH bridge over react-i18next's `agent` namespace).
 const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?: string; wrap?: 'lang' }> = {
+  // ADMIN DESKTOP — real screens as they are today (shoot with tools/shoot-admin-before.mjs)
+  'before-dd-list': { Comp: BeforeDeposits, route: '/m/deposits' },
+  'before-dd-split': { Comp: BeforeDeposits, route: '/m/deposits/d5', path: '/m/deposits/:depositId' },
+  'before-dd-new': { Comp: BeforeNewDeposit, route: '/m/deposits/new' },
+  'before-dp-list': { Comp: BeforePayments, route: '/m/payments' },
+  'before-dp-split': { Comp: BeforePayments, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
+  'before-dp-new': { Comp: BeforeNewPayment, route: '/m/payments/new' },
   // ADMIN DESKTOP REDESIGN (docs/admin-redesign) — shoot with tools/shoot-admin.mjs (1440×900)
-  'dd-workbench': { Comp: DdWorkbench, route: '/' },
-  'dd-split': { Comp: DdSplit, route: '/' },
-  'dd-validate': { Comp: DdValidate, route: '/' },
-  'dd-create': { Comp: DdCreate, route: '/' },
-  'dp-workbench': { Comp: DpWorkbench, route: '/' },
-  'dp-split': { Comp: DpSplit, route: '/' },
-  'dp-create': { Comp: DpCreate, route: '/' },
+  'dd-workbench': { Comp: DdWorkbench, route: '/m/deposits' },
+  'dd-split': { Comp: DdSplit, route: '/m/deposits' },
+  'dd-validate': { Comp: DdValidate, route: '/m/deposits' },
+  'dd-create': { Comp: DdCreate, route: '/m/deposits/new' },
+  'dp-workbench': { Comp: DpWorkbench, route: '/m/payments' },
+  'dp-split': { Comp: DpSplit, route: '/m/payments' },
+  'dp-create': { Comp: DpCreate, route: '/m/payments/new' },
   'dir-a': { Comp: DirectionA, route: '/' },
   'dir-b': { Comp: DirectionB, route: '/' },
   'dir-c': { Comp: DirectionC, route: '/' },
