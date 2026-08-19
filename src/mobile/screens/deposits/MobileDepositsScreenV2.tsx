@@ -213,7 +213,7 @@ export function MobileDepositsScreenV2() {
           <button
             onClick={() => navigate('/m/deposits/new')}
             aria-label="Nouveau dépôt"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#10B981] text-white shadow-[0_6px_16px_-4px_rgba(16,185,129,0.55)] transition active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#10B981] text-white transition active:scale-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.6} />
           </button>

@@ -251,7 +251,7 @@ export function MobilePaymentsScreen() {
             <button
               onClick={() => navigate('/m/payments/new')}
               aria-label="Nouveau paiement"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8B5CF6] text-white shadow-[0_6px_16px_-4px_rgba(139,92,246,0.55)] transition active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8B5CF6] text-white transition active:scale-95"
             >
               <Plus className="h-5 w-5" strokeWidth={2.6} />
             </button>

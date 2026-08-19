@@ -103,7 +103,7 @@ export function PasskeyEnrollPrompt() {
         className={cn(
           'relative w-full max-w-lg rounded-t-[26px] px-5 pb-8 pt-6 animate-slide-up',
           SURFACE.card,
-          'shadow-[0_-14px_44px_-16px_rgba(30,18,72,0.4)]',
+          'ring-1 ring-black/[0.08] dark:ring-white/[0.08]',
         )}
       >
         <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#EDEAFA] text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]">

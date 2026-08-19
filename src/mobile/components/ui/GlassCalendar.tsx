@@ -83,7 +83,7 @@ export function GlassCalendar({
         // States
         selected: cn(
           '!bg-primary !text-primary-foreground',
-          'shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.4)]',
+          'ring-1 ring-black/[0.08] dark:ring-white/[0.10]',
           'font-bold',
         ),
         today: cn(

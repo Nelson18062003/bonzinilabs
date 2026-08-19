@@ -45,6 +45,8 @@ import {
   Chip,
   DropChip,
   SearchField,
+  CardHeader,
+  SecLabel,
   Th,
   Td,
   PaginationBar,
@@ -106,6 +108,10 @@ function PaymentsTable({ compact, view = 'queue' }: { compact?: boolean; view?: 
   const rows = view === 'all' ? ALL : QUEUE;
   return (
     <Card className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <CardHeader
+        title={view === 'all' ? 'Tous les paiements' : "File d'attente"}
+        meta={view === 'all' ? 'Triés du plus récent au plus ancien' : 'Triée du plus ancien au plus récent'}
+      />
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full text-left">
           <thead className={cn('sticky top-0 z-10', SURFACE.card)}>
@@ -326,7 +332,7 @@ export function PaymentPanel() {
       className={cn(
         'flex w-[560px] shrink-0 flex-col overflow-hidden rounded-[24px]',
         SURFACE.card,
-        'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]',
+        'ring-1 ring-black/[0.06] dark:ring-white/[0.06]',
       )}
     >
       <div className="flex items-center gap-2 border-b border-black/[0.06] px-4 py-2.5 dark:border-white/[0.06]">
@@ -368,12 +374,12 @@ export function PaymentPanel() {
         {/* Zone de verdict : coordonnées à transcrire, au caractère près */}
         <div className="mt-3 grid grid-cols-[1fr_112px] items-start gap-3.5">
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <span className={cn('text-[13px] font-bold', TEXT.strong)}>
-                Bénéficiaire · <span style={{ color: '#1677FF' }}>Alipay</span>
-              </span>
-              <button type="button" className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">Modifier</button>
-            </div>
+            <SecLabel
+              className="mb-2"
+              right={<button type="button" className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">Modifier</button>}
+            >
+              Bénéficiaire · <span style={{ color: '#1677FF' }}>Alipay</span>
+            </SecLabel>
             <div className="space-y-2">
               <CopyRow k="Nom" v="Zhang Wei 张伟" />
               <CopyRow k="Alipay ID" v="zw88@aliyun.com" mono accent="#1677FF" />
@@ -410,7 +416,7 @@ export function PaymentPanel() {
 
         {/* Suivi */}
         <div className="mt-2.5 border-t border-black/[0.06] pt-2.5 dark:border-white/[0.06]">
-          <span className={cn('mb-1.5 block text-[13px] font-bold', TEXT.strong)}>Suivi</span>
+          <SecLabel className="mb-1.5">Suivi</SecLabel>
           <PTimelineStep state="done" label="Paiement créé — wallet débité" meta="11:41" />
           <PTimelineStep state="done" label="Bénéficiaire complet" meta="11:41" />
           <PTimelineStep state="current" label="Prêt à payer" />
@@ -528,10 +534,9 @@ export function DpCreate() {
 
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                  <div className="flex items-center justify-between">
-                    <span className={cn('text-[13px] font-semibold', TEXT.strong)}>Carnet de Fatou · Alipay (3)</span>
-                    <button type="button" className="text-[12px] font-bold" style={{ color: VIOLET }}>+ Nouveau</button>
-                  </div>
+                  <SecLabel right={<button type="button" className="text-[12px] font-bold" style={{ color: VIOLET }}>+ Nouveau</button>}>
+                    Carnet de Fatou · Alipay (3)
+                  </SecLabel>
                   <div className="mt-2 space-y-2">
                     {[
                       { n: 'Zhang Wei 张伟', m: 'zw88@aliyun.com', sel: true },
@@ -578,7 +583,7 @@ export function DpCreate() {
 
           {/* Rail : récap vivant */}
           <Card>
-            <span className={cn('text-[13px] font-bold', TEXT.strong)}>Récapitulatif</span>
+            <SecLabel>Récapitulatif</SecLabel>
             <div className={cn('mt-3 rounded-2xl py-4 text-center', SURFACE.canvas)}>
               <Amount value="¥14 380" size="xl" />
               <div className={cn('mt-1 text-[12px] tabular-nums', TEXT.muted)}>1 250 000 XAF · Alipay</div>

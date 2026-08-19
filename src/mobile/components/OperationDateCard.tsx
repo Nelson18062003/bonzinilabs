@@ -67,7 +67,7 @@ export function OperationDateCard({ enabled, value, onToggle, onChange, accent, 
           style={{ background: enabled ? accent : 'rgba(0,0,0,0.18)' }}
         >
           <span
-            className="absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,.18)] transition-all"
+            className="absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white ring-1 ring-black/[0.10] transition-all"
             style={{ left: enabled ? 20 : 2 }}
           />
         </button>

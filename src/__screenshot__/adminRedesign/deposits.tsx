@@ -46,6 +46,8 @@ import {
   Chip,
   DropChip,
   SearchField,
+  CardHeader,
+  SecLabel,
   Th,
   Td,
   PaginationBar,
@@ -112,6 +114,10 @@ function DepositsTable({ compact, view = 'queue' }: { compact?: boolean; view?: 
   const rows = view === 'all' ? ALL : QUEUE;
   return (
     <Card className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <CardHeader
+        title={view === 'all' ? 'Tous les dépôts' : "File d'attente"}
+        meta={view === 'all' ? 'Triés du plus récent au plus ancien' : 'Triée du plus ancien au plus récent'}
+      />
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full text-left">
           <thead className={cn('sticky top-0 z-10', SURFACE.card)}>
@@ -219,7 +225,7 @@ function WorkbenchTop({ compact, view = 'queue' }: { compact?: boolean; view?: '
         <div>
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Dépôts</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            3 214 dépôts · <span className="font-bold text-[#B47A17] dark:text-[#E7C083]">7 à traiter</span> · plus ancien : 11 h
+            3 214 dépôts · <span className="font-bold text-[#B47A17] dark:text-[#E7C083]">7 à traiter</span>
           </p>
         </div>
         <button type="button" className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
@@ -302,7 +308,7 @@ export function DepositPanel() {
       className={cn(
         'flex w-[560px] shrink-0 flex-col overflow-hidden rounded-[24px]',
         SURFACE.card,
-        'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]',
+        'ring-1 ring-black/[0.06] dark:ring-white/[0.06]',
       )}
     >
       {/* En-tête épinglé : identité + LE verdict */}
@@ -322,12 +328,16 @@ export function DepositPanel() {
         {/* Zone de verdict : la preuve à côté des montants qu'elle doit prouver */}
         <div className="grid grid-cols-[244px_1fr] items-start gap-3">
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <span className={cn('text-[13px] font-bold', TEXT.strong)}>Preuves (2)</span>
-              <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', TEXT.muted)}>
-                Client · 11:26 <ChevronLeft className="ml-1 h-3 w-3" /> 1/2 <ChevronRight className="h-3 w-3" />
-              </span>
-            </div>
+            <SecLabel
+              className="mb-2"
+              right={
+                <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', TEXT.muted)}>
+                  Client · 11:26 <ChevronLeft className="ml-1 h-3 w-3" /> 1/2 <ChevronRight className="h-3 w-3" />
+                </span>
+              }
+            >
+              Preuves · 2
+            </SecLabel>
             <FakeProofSms amount="850 000" reference="BZ-DP-2026-0847" />
             <div className="mt-2 flex gap-1.5">
               <button type="button" className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold', SOFT_PILL)}>
@@ -340,7 +350,7 @@ export function DepositPanel() {
           </div>
 
           <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
-            <span className={cn('text-[13px] font-bold', TEXT.strong)}>Vérification du montant</span>
+            <SecLabel>Vérification du montant</SecLabel>
             <div className="mt-2 flex items-center justify-between text-[13px]">
               <span className={TEXT.muted}>Montant déclaré</span>
               <span className={cn('font-semibold tabular-nums', TEXT.strong)}>850 000 XAF</span>
@@ -381,7 +391,7 @@ export function DepositPanel() {
 
         {/* Suivi — ouvert, plus caché derrière un clic */}
         <div className="mt-3 border-t border-black/[0.06] pt-2.5 dark:border-white/[0.06]">
-          <span className={cn('mb-1.5 block text-[13px] font-bold', TEXT.strong)}>Suivi</span>
+          <SecLabel className="mb-1.5">Suivi</SecLabel>
           <TimelineStep state="done" label="Demande créée" meta="19 août, 11:26" />
           <TimelineStep state="done" label="Preuve envoyée par le client" meta="11:31" />
           <TimelineStep state="current" label="Vérification en cours — Nelson E." meta="12:04" />
@@ -575,10 +585,7 @@ export function DdCreate() {
           {/* Rail : coordonnées à dicter + récap + CTA */}
           <div className="space-y-4">
             <Card>
-              <div className="flex items-center justify-between">
-                <span className={cn('text-[13px] font-bold', TEXT.strong)}>Coordonnées à communiquer</span>
-                <MIcon family="ORANGE_MONEY" size={20} />
-              </div>
+              <SecLabel right={<MIcon family="ORANGE_MONEY" size={20} />}>Coordonnées à communiquer</SecLabel>
               <div className="mt-3 space-y-2">
                 <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
                   <div className={cn('text-[11px]', TEXT.muted)}>Code marchand</div>
@@ -605,7 +612,7 @@ export function DdCreate() {
             </Card>
 
             <Card>
-              <span className={cn('text-[13px] font-bold', TEXT.strong)}>Récapitulatif</span>
+              <SecLabel>Récapitulatif</SecLabel>
               <div className="mt-2.5 space-y-2 text-[13px]">
                 <div className="flex justify-between"><span className={TEXT.muted}>Client</span><span className={cn('font-semibold', TEXT.strong)}>Fatou Ndiaye</span></div>
                 <div className="flex justify-between"><span className={TEXT.muted}>Montant</span><span className={cn('font-bold tabular-nums', TEXT.strong)}>850 000 XAF</span></div>

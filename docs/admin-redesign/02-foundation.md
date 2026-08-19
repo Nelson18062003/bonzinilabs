@@ -86,10 +86,14 @@ desktop the surface hierarchy does the work; oversized type is a phone habit.
   inputs, table container inner) · `r-lg 14` (cards, panels, dialogs).
   Full-round is reserved for status pills, avatars, dots. The 22–28px radii are
   retired on desktop.
-- **Elevation**: `e-card` = `0 1px 2px rgba(46,32,92,.05), 0 8px 24px -16px
-  rgba(46,32,92,.18)` · `e-pop` (menus, dialogs) = `0 4px 12px rgba(46,32,92,.08),
-  0 24px 48px -24px rgba(46,32,92,.28)`. Dark mode replaces shadows with
-  `ring-1 white/[0.06]` (existing convention, kept).
+- **Elevation: NONE — drop shadows are banned app-wide** (founder decision,
+  2026-08-19: the diffuse blur under every surface read as disorganised).
+  Surfaces separate by **hairline rings**: `ring-1 black/[0.06]` on cards and
+  panels, `black/[0.08]` on overlays (dialogs, menus, sheets), the same in
+  white/[…] for dark mode. Implemented at the token (`SURFACE.shadow` now
+  emits the ring) so the whole admin flips at once; hardcoded shadows in the
+  desktop chrome, kit components, FABs and toggles were removed in the same
+  pass. Overlay separation comes from the dimmed backdrop, not from blur.
 - **Controls**: heights `28` (compact/inline), `32` (default: inputs, selects,
   buttons, filter controls), `36` (primary CTA only). Input text 13–14px — the
   16px iOS-zoom rule does not apply to desktop. Focus: 2px accent ring.
@@ -109,6 +113,25 @@ desktop the surface hierarchy does the work; oversized type is a phone habit.
   its status-legal actions. All dialogs: `Esc` cancel, `⌘Enter` confirm.
 - Every dialog is a **centered anchored modal** (`e-pop`, max-w 480) — the
   BottomSheet is a mobile-only component from here on.
+
+### 1.5 Structure rules — the anti-disorder contract
+
+The "disorganised" feeling comes from small inconsistencies compounding, not
+from any single screen. These rules are absolute:
+
+1. **One toolbar height.** Every control on a filter row — chips, search,
+   dropdown chips — is exactly 36px tall, on one line. Nothing wraps, nothing
+   sticks out.
+2. **One card anatomy.** Every content card = header band (13px bold title
+   left, 12px muted meta right, hairline below) + body. A table card's header
+   names the view ("File d'attente", "Tous les dépôts") and states its sort.
+3. **One section-label style.** Every section inside a panel, form or rail
+   uses the same label: 11px bold uppercase tracked muted, optional right
+   action. No mixing with bold-13 titles.
+4. **One spacing rhythm.** Sections are separated by hairline + 12px above and
+   below (`mt-3 pt-3`); cards by 16px; page gutter 32px. No improvised gaps.
+5. **One primary per surface.** Each screen/panel/dialog has exactly one dark
+   (or module-colored) primary action; everything else is a soft pill or link.
 
 ## 2. The module archetype
 

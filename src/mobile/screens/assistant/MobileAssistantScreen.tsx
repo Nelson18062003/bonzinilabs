@@ -414,7 +414,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
       {isEmpty ? (
         <div className="flex flex-col items-center pt-10 text-center">
           <MolaMascot
-            className="h-24 w-24 drop-shadow-[0_10px_22px_rgba(251,87,19,0.28)]"
+            className="h-24 w-24"
             fallback={
               <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
                 <Bot className="h-8 w-8" />

@@ -75,12 +75,12 @@ export function Age({ abs, rel, level, relOnly }: { abs: string; rel: string; le
 
 /* ── Puce-filtre à compteur — copie du rendu STATUS_CHIPS des écrans réels ─ */
 
-export function Chip({ label, count, active, onDark }: { label: React.ReactNode; count?: number | string; active?: boolean; onDark?: boolean }) {
+export function Chip({ label, count, active }: { label: React.ReactNode; count?: number | string; active?: boolean }) {
   return (
     <button
       type="button"
       className={cn(
-        'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
+        'flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-semibold transition-colors',
         active ? PRIMARY_PILL : SOFT_PILL,
       )}
     >
@@ -102,7 +102,7 @@ export function Chip({ label, count, active, onDark }: { label: React.ReactNode;
 /** Puce façon menu déroulant (Méthode / Période) — même langage. */
 export function DropChip({ label, value }: { label: string; value: string }) {
   return (
-    <button type="button" className={cn('flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold', SOFT_PILL)}>
+    <button type="button" className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-semibold', SOFT_PILL)}>
       <span className="opacity-70">{label}</span>
       <span className="font-bold">{value}</span>
       <ChevronDown className="h-3.5 w-3.5 opacity-70" />
@@ -115,8 +115,29 @@ export function DropChip({ label, value }: { label: string; value: string }) {
 export function SearchField({ placeholder, className }: { placeholder: string; className?: string }) {
   return (
     <div className={cn('relative', className)}>
-      <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-      <TextInput placeholder={placeholder} readOnly className="h-11 pl-10 text-[14px]" />
+      <Search className={cn('pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
+      <TextInput placeholder={placeholder} readOnly className="h-9 rounded-full pl-9 text-[13px]" />
+    </div>
+  );
+}
+
+/** En-tête de carte — l'anatomie unique de toutes les cartes de contenu :
+ *  titre 13px gras à gauche, méta 12px sourde à droite, liseré dessous. */
+export function CardHeader({ title, meta }: { title: React.ReactNode; meta?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-2.5 dark:border-white/[0.06]">
+      <span className={cn('text-[13px] font-bold', TEXT.strong)}>{title}</span>
+      {meta && <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>{meta}</span>}
+    </div>
+  );
+}
+
+/** Étiquette de section — LE style unique des sections de panneau/formulaire. */
+export function SecLabel({ children, right, className }: { children: React.ReactNode; right?: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn('flex items-center justify-between gap-3', className)}>
+      <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{children}</span>
+      {right}
     </div>
   );
 }
@@ -208,7 +229,7 @@ export function Dialog({ title, children, footer, width = 520 }: { title: React.
   return (
     <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
-        className={cn('overflow-hidden rounded-[28px] p-5', SURFACE.card, 'shadow-[0_24px_60px_-24px_rgba(46,32,92,0.45)] dark:shadow-none dark:ring-1 dark:ring-white/[0.08]')}
+        className={cn('overflow-hidden rounded-[28px] p-5', SURFACE.card, 'ring-1 ring-black/[0.08] dark:ring-white/[0.08]')}
         style={{ width }}
         role="dialog"
         aria-modal="true"

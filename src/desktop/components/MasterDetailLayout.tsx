@@ -26,8 +26,7 @@ export function MasterDetailLayout({
         <div
           className={cn(
             'sticky top-[84px] overflow-hidden rounded-[24px]',
-            'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05]',
-            'dark:shadow-none dark:ring-white/[0.06]',
+            'ring-1 ring-black/[0.06] dark:ring-white/[0.06]',
           )}
         >
           <div className="max-h-[calc(100vh-104px)] overflow-y-auto">{detail}</div>
