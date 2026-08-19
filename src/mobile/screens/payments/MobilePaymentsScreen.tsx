@@ -8,6 +8,7 @@
 // export PDF batch (colonnes LEGACY/EXTENDED + signature QR).
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useTranslation } from 'react-i18next';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -410,24 +411,11 @@ export function MobilePaymentsScreen() {
                 <Calendar className="h-3 w-3" />
                 Période
               </div>
-              <div className="flex items-center gap-2">
-                <TextInput
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="flex-1"
-                />
-                <span className={cn('text-[13px]', TEXT.muted)}>→</span>
-                <TextInput
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="flex-1"
-                />
-                {(dateFrom || dateTo) && (
-                  <Holder icon={X} size="sm" onClick={() => { setDateFrom(''); setDateTo(''); }} />
-                )}
-              </div>
+              <BzDateRangeField
+                value={{ from: dateFrom, to: dateTo }}
+                onChange={(r) => { setDateFrom(r.from); setDateTo(r.to); }}
+                accent="#8B5CF6"
+              />
             </div>
           </Card>
         )}

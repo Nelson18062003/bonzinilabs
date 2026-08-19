@@ -9,6 +9,8 @@ import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card } from '@/mobile/designKit';
 import { OperationDateCard } from '@/mobile/components/OperationDateCard';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
+import { Card as KitCard } from '@/mobile/designKit';
 
 const VIOLET = '#8B5CF6';
 const GREEN = '#10B981';
@@ -75,5 +77,18 @@ export function DtpDeposit() {
         accent={GREEN}
       />
     </Shell>
+  );
+}
+
+export function DtpRange() {
+  const [range, setRange] = useState({ from: '2026-08-04', to: '2026-08-14' });
+  return (
+    <div className={cn('mx-auto flex min-h-screen max-w-[420px] flex-col px-4 pt-6', SURFACE.canvas)}>
+      <div className={cn('mb-3 text-[22px] font-extrabold', TEXT.strong)}>Filtres</div>
+      <KitCard className={cn('space-y-2.5', SURFACE.shadow)}>
+        <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</div>
+        <BzDateRangeField value={range} onChange={setRange} accent={GREEN} defaultOpen />
+      </KitCard>
+    </div>
   );
 }

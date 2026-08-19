@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Loader2,
@@ -11,7 +12,6 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, Area, AreaChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { DateField } from '@/components/form';
 import { IconChip, INSET, Pill, SectionTitle, SOFT_CARD, TONE_DOT, TONE_TEXT } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
@@ -145,10 +145,12 @@ export function MobileTreasuryDashboard() {
 
         {/* Custom range pickers */}
         {preset === 'custom' && (
-          <div className={cn(INSET, 'grid grid-cols-2 gap-2 p-3')}>
-            <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-            <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
-          </div>
+          <BzDateRangeField
+            value={{ from: customFrom, to: customTo }}
+            onChange={(r) => { setCustomFrom(r.from); setCustomTo(r.to); }}
+            accent="#8B5CF6"
+            defaultOpen
+          />
         )}
 
         <div className="-mt-3 text-center text-[11px] text-muted-foreground">

@@ -15,7 +15,8 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Check, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DateField, TextField } from '@/components/form';
+import { TextField } from '@/components/form';
+import { BzDateTimeField } from '@/mobile/components/BzDateTimePicker';
 import { PAYMENT_METHODS } from '@/types/rates';
 import type { DailyRate } from '@/types/rates';
 import {
@@ -313,58 +314,22 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         </div>
 
         {dateOption === 'custom' && (
-          <div className={cn('mt-2.5 space-y-3 rounded-2xl p-3.5', SURFACE.card, SURFACE.shadow)}>
-            <DateField
-              label="Date"
-              labelClassName={cn('text-[12px] font-semibold', TEXT.muted)}
-              value={customDate}
-              onChange={(e) => setCustomDate(e.target.value)}
-              controlClassName="font-semibold"
+          <div className={cn('mt-2.5 rounded-2xl p-3.5', SURFACE.card, SURFACE.shadow)}>
+            <BzDateTimeField
+              value={`${customDate}T${String(customHour).padStart(2, '0')}:${String(customMin).padStart(2, '0')}`}
+              onChange={(v) => {
+                const [d, t] = v.split('T');
+                if (!d || !t) return;
+                const [h, m] = t.split(':').map(Number);
+                setCustomDate(d);
+                setCustomHour(Number.isNaN(h) ? 0 : h);
+                setCustomMin(Number.isNaN(m) ? 0 : m);
+              }}
+              accent="#8B5CF6"
+              disableFuture={false}
             />
-            <div>
-              <label className={cn('mb-1.5 block text-[12px] font-semibold', TEXT.muted)}>
-                Heure
-              </label>
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCustomHour((h) => Math.max(0, h - 1))}
-                  aria-label="Heure précédente"
-                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
-                >
-                  −
-                </button>
-                <div className={cn('flex h-11 w-14 items-center justify-center rounded-xl text-[22px] font-extrabold tabular-nums', SURFACE.canvas, TEXT.strong)}>
-                  {String(customHour).padStart(2, '0')}
-                </div>
-                <button
-                  onClick={() => setCustomHour((h) => Math.min(23, h + 1))}
-                  aria-label="Heure suivante"
-                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
-                >
-                  +
-                </button>
-                <span className={cn('text-[22px] font-extrabold', TEXT.strong)}>:</span>
-                <button
-                  onClick={() => setCustomMin((m) => Math.max(0, m - 1))}
-                  aria-label="Minute précédente"
-                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
-                >
-                  −
-                </button>
-                <div className={cn('flex h-11 w-14 items-center justify-center rounded-xl text-[22px] font-extrabold tabular-nums', SURFACE.canvas, TEXT.strong)}>
-                  {String(customMin).padStart(2, '0')}
-                </div>
-                <button
-                  onClick={() => setCustomMin((m) => Math.min(59, m + 1))}
-                  aria-label="Minute suivante"
-                  className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold', SURFACE.canvas, TEXT.strong)}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <div className="rounded-xl bg-[#EDEAFA] px-3 py-2 text-center text-[13px] font-semibold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
-              {customDate.split('-').reverse().join('/')} à {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
+            <div className="mt-3 rounded-xl bg-[#EDEAFA] px-3 py-2 text-center text-[13px] font-semibold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+              Prise d'effet : {customDate.split('-').reverse().join('/')} à {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
             </div>
           </div>
         )}

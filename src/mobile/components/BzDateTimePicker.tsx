@@ -14,16 +14,16 @@
 // rester plug-compatible avec les wizards existants.
 // ============================================================
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 
-const DAY_LABELS = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'];
-const MONTH_LABELS = [
+export const DAY_LABELS = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'];
+export const MONTH_LABELS = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ];
-const pad = (n: number) => String(n).padStart(2, '0');
+export const pad = (n: number) => String(n).padStart(2, '0');
 
 function parseValue(value: string): Date | null {
   if (!value) return null;
@@ -35,11 +35,11 @@ function toValue(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const sameDay = (a: Date, b: Date) =>
+export const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 /** Les 42 cases (6 semaines, lundi premier) du mois affiché. */
-function monthGrid(year: number, month: number): Date[] {
+export function monthGrid(year: number, month: number): Date[] {
   const first = new Date(year, month, 1);
   const lead = (first.getDay() + 6) % 7; // getDay(): 0 = dimanche → 0 = lundi
   const start = new Date(year, month, 1 - lead);
@@ -239,6 +239,55 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
           Maintenant
         </button>
       </div>
+    </div>
+  );
+}
+
+/** « 19/08/2026 à 03:50 » pour le déclencheur du champ replié. */
+function formatValueLabel(value: string): string | null {
+  const d = parseValue(value);
+  if (!d) return null;
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} à ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+interface BzDateTimeFieldProps {
+  /** Valeur au format datetime-local (YYYY-MM-DDTHH:mm) ou ''. */
+  value: string;
+  onChange: (value: string) => void;
+  accent: string;
+  disableFuture?: boolean;
+  placeholder?: string;
+}
+
+/**
+ * Variante « champ » compacte : un déclencheur qui affiche la date
+ * choisie et déplie le BzDateTimePicker en dessous — pour les
+ * formulaires denses (trésorerie, taux) où le calendrier ne doit pas
+ * occuper l'écran en permanence.
+ */
+export function BzDateTimeField({ value, onChange, accent, disableFuture = true, placeholder = 'Choisir une date' }: BzDateTimeFieldProps) {
+  const [open, setOpen] = useState(false);
+  const label = formatValueLabel(value);
+  return (
+    <div className={cn('rounded-2xl', SURFACE.canvas)}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-11 w-full items-center gap-2.5 px-3.5"
+      >
+        <CalendarDays className="h-4 w-4 shrink-0" style={{ color: accent }} />
+        <span className={cn('flex-1 text-left text-[14px] font-semibold', label ? TEXT.strong : TEXT.muted)}>
+          {label ?? placeholder}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', TEXT.muted, open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <div className={cn('rounded-2xl p-3', SURFACE.card)}>
+            <BzDateTimePicker value={value} onChange={onChange} accent={accent} disableFuture={disableFuture} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

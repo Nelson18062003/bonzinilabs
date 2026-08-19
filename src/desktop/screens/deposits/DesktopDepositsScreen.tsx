@@ -7,6 +7,7 @@
  * strip, a toolbar and inline filters instead of a stacked card list.
  */
 import { useState, useMemo, useCallback } from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, Paperclip, FileText } from 'lucide-react';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
@@ -309,10 +310,12 @@ export function DesktopDepositsScreen() {
             ))}
           </div>
           {periodPreset === 'custom' && (
-            <div className="flex items-center gap-2">
-              <TextInput type="date" value={customDateFrom} onChange={(e) => setCustomDateFrom(e.target.value)} className="h-10 text-[13px]" />
-              <span className={cn('text-[13px]', TEXT.muted)}>→</span>
-              <TextInput type="date" value={customDateTo} onChange={(e) => setCustomDateTo(e.target.value)} className="h-10 text-[13px]" />
+            <div className="w-[320px]">
+              <BzDateRangeField
+                value={{ from: customDateFrom, to: customDateTo }}
+                onChange={(r) => { setCustomDateFrom(r.from); setCustomDateTo(r.to); }}
+                accent="#10B981"
+              />
             </div>
           )}
         </div>

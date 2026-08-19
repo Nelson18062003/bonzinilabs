@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { CalendarDays, ChevronDown, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,7 +27,7 @@ const GRANULARITY_ORDER: Granularity[] = ['hour', 'day', 'week', 'month', 'quart
  * Renders a compact trigger that opens a popover with:
  *   - preset list grouped by horizon
  *   - "compare to previous" toggle
- *   - custom from/to inputs (native date picker — iOS-safe)
+ *   - custom from/to range via the design-kit calendar (BzDateRangeField)
  */
 export function DateRangePicker() {
   const { range, setPreset, setCustom, setGranularity, setCompareToPrevious } = useDateRange();
@@ -160,34 +161,16 @@ export function DateRangePicker() {
 }
 
 function CustomRangeInputs({ onApply }: { onApply: (from: string, to: string) => void }) {
-  const [from, setFrom] = React.useState('');
-  const [to, setTo] = React.useState('');
+  const [range, setRange] = React.useState({ from: '', to: '' });
 
   return (
-    <div className="flex items-end gap-2">
-      <label className="flex-1 text-[11px] font-medium text-muted-foreground">
-        Du
-        <input
-          type="date"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-base md:text-sm"
-        />
-      </label>
-      <label className="flex-1 text-[11px] font-medium text-muted-foreground">
-        Au
-        <input
-          type="date"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-base md:text-sm"
-        />
-      </label>
+    <div className="space-y-2">
+      <BzDateRangeField value={range} onChange={setRange} accent="#8B5CF6" defaultOpen />
       <button
         type="button"
-        disabled={!from || !to}
-        onClick={() => onApply(from, to)}
-        className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+        disabled={!range.from || !range.to}
+        onClick={() => onApply(range.from, range.to)}
+        className="w-full rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
       >
         OK
       </button>

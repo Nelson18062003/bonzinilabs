@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Clock } from 'lucide-react';
-import { DateField } from './DateField';
+import { BzDateTimeField } from '@/mobile/components/BzDateTimePicker';
 import { cn } from '@/lib/utils';
 
 interface OccurredAtFieldProps {
@@ -25,12 +25,11 @@ function localInputToIso(local: string): string {
 
 /**
  * Date + time picker for the moment an operation occurred. Defaults to now,
- * with a one-tap "Maintenant" reset and a native datetime-local picker so
- * the operator can back-date a purchase/sale to its real timestamp.
+ * with a one-tap "Maintenant" reset and the design-kit calendar so the
+ * operator can back-date a purchase/sale to its real timestamp.
  */
 export function OccurredAtField({ label = "Date / heure de l'opération", value, onChange }: OccurredAtFieldProps) {
   const localValue = isoToLocalInput(value);
-  const nowLocal = isoToLocalInput(new Date().toISOString());
   const isNow = Math.abs(new Date(value).getTime() - Date.now()) < 60_000; // within 1 min
 
   return (
@@ -51,11 +50,10 @@ export function OccurredAtField({ label = "Date / heure de l'opération", value,
           Maintenant
         </button>
       </div>
-      <DateField
-        dateType="datetime-local"
+      <BzDateTimeField
         value={localValue}
-        max={nowLocal}
-        onChange={(e) => onChange(localInputToIso(e.target.value))}
+        onChange={(v) => onChange(localInputToIso(v))}
+        accent="#8B5CF6"
       />
     </div>
   );

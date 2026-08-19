@@ -53,7 +53,7 @@ import { AuthLogin, AuthSignup, AuthOnboarding } from './clientAuthLayout';
 import { ShellHome, ShellPayments } from './clientShellLayout';
 import { BulkV2Drawer, BulkV2Flow } from './bulkBenefDrawer';
 import { MolaCards } from './molaCards';
-import { DtpPayment, DtpDeposit } from './dateTimePicker';
+import { DtpPayment, DtpDeposit, DtpRange } from './dateTimePicker';
 import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
@@ -215,6 +215,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'deposit-new': { Comp: MobileNewDepositV2, route: '/m/deposits/new' },
   'dtp-payment': { Comp: DtpPayment, route: '/' },
   'dtp-deposit': { Comp: DtpDeposit, route: '/' },
+  'dtp-range': { Comp: DtpRange, route: '/' },
   // Payments module (Phase 2 M4)
   'payment-new': { Comp: MobileNewPayment, route: '/m/payments/new' },
   'bulk-create': { Comp: BulkPaymentCreate, route: '/m/payments/batch/new' },
