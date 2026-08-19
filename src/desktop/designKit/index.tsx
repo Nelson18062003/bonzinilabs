@@ -113,7 +113,7 @@ export function Age({
           ? 'text-[#2E7D52] font-bold dark:text-[#7FCBA0]'
           : cn(TEXT.muted, 'font-medium');
   return (
-    <div className="leading-[16px]">
+    <div className="whitespace-nowrap leading-[16px]">
       <div className={cn('text-[12px] tabular-nums', color)}>{relShort(date)}</div>
       {!relOnly && <div className={cn('text-[11px] tabular-nums', TEXT.muted)}>{absShort(date)}</div>}
     </div>

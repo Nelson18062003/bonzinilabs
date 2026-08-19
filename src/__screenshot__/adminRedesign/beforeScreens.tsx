@@ -4,30 +4,25 @@
  * Ground truth for the redesign: what the operator actually sees today.
  */
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
-import { DesktopDepositsScreen } from '@/desktop/screens/deposits';
-import { DesktopPaymentsScreen } from '@/desktop/screens/payments';
-import { MobileNewDeposit } from '@/mobile/screens/deposits';
-import { MobileNewPayment } from '@/mobile/screens/payments';
+import { DesktopDepositsScreen, DesktopNewDeposit } from '@/desktop/screens/deposits';
+import { DesktopPaymentsScreen, DesktopNewPayment } from '@/desktop/screens/payments';
 
 export { DesktopDepositsScreen, DesktopPaymentsScreen };
 
-/** /m/deposits/new on desktop today: mobile wizard centred in the shell
- *  (AdminRouteWrapper fallback — the `desktop` prop it passes doesn't exist). */
+/** /m/deposits/new as routed on desktop (now the one-page form). */
 export function BeforeNewDeposit() {
   return (
     <DesktopAppShell>
-      <div className="mx-auto max-w-2xl">
-        <MobileNewDeposit />
-      </div>
+      <DesktopNewDeposit />
     </DesktopAppShell>
   );
 }
 
-/** /m/payments/new on desktop today: the 5-step wizard as a phone-sized card. */
+/** /m/payments/new as routed on desktop (now the one-page form). */
 export function BeforeNewPayment() {
   return (
     <DesktopAppShell>
-      <MobileNewPayment desktop />
+      <DesktopNewPayment />
     </DesktopAppShell>
   );
 }

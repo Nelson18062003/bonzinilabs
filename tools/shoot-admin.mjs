@@ -42,7 +42,10 @@ for (const theme of THEMES) {
     if (req.method() === 'HEAD') {
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-range': `0-0/${headCount(url)}` }, body: '' });
     }
-    const body = respond(url);
+    let body = respond(url);
+    // .single()/.maybeSingle() send Accept: vnd.pgrst.object+json and expect ONE object.
+    const accept = req.headers()['accept'] ?? '';
+    if (accept.includes('pgrst.object') && Array.isArray(body)) body = body[0] ?? null;
     return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json', 'content-range': `0-9/${Array.isArray(body) ? body.length : 1}` }, body: JSON.stringify(body) });
   });
   for (const screen of SCREENS) {

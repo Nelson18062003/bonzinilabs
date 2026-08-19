@@ -14,6 +14,103 @@ export interface PaymentFilters {
   dateTo?: string;
   sortField?: 'created_at' | 'amount_rmb';
   sortAscending?: boolean;
+  /** Server-side search: reference/beneficiary ilike OR client via clients lookup. */
+  search?: string;
+}
+
+function sanitizeTerm(s: string): string {
+  return s.replace(/[,()"\\]/g, ' ').trim();
+}
+
+async function searchClientIds(term: string): Promise<string[]> {
+  const t = sanitizeTerm(term);
+  if (!t) return [];
+  const { data, error } = await supabaseAdmin
+    .from('clients')
+    .select('user_id')
+    .or(`first_name.ilike.%${t}%,last_name.ilike.%${t}%,phone.ilike.%${t}%,company_name.ilike.%${t}%`)
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []).map((c) => c.user_id);
+}
+
+/**
+ * Desktop workbench hook: numbered pages + exact count + true server-side
+ * search (reference, beneficiary name/identifier, or client name/phone).
+ */
+export function usePagedAdminPayments(filters: PaymentFilters | undefined, page: number) {
+  return useQuery({
+    queryKey: ['admin-payments-paged', filters, page],
+    staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
+    gcTime: CACHE_CONFIG.GC_TIME,
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const sortField = filters?.sortField || 'created_at';
+      const sortAscending = filters?.sortAscending ?? false;
+      const from = (page - 1) * PAGE_SIZE;
+
+      let query = supabaseAdmin
+        .from('payments')
+        .select('*', { count: 'exact' })
+        .order(sortField, { ascending: sortAscending });
+
+      if (filters?.statuses && filters.statuses.length > 0) {
+        query = query.in('status', filters.statuses);
+      } else if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.method && filters.method !== 'all') {
+        query = query.eq('method', filters.method);
+      }
+      if (filters?.dateFrom) query = query.gte('created_at', filters.dateFrom);
+      if (filters?.dateTo) query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`);
+
+      if (filters?.search?.trim()) {
+        const term = sanitizeTerm(filters.search);
+        const userIds = await searchClientIds(term);
+        const ors = [
+          `reference.ilike.%${term}%`,
+          `beneficiary_name.ilike.%${term}%`,
+          `beneficiary_identifier.ilike.%${term}%`,
+        ];
+        if (userIds.length > 0) ors.push(`user_id.in.(${userIds.join(',')})`);
+        query = query.or(ors.join(','));
+      }
+
+      const { data: payments, error, count } = await query.range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+
+      const total = count ?? 0;
+      if (!payments || payments.length === 0) {
+        return { data: [], total, pageSize: PAGE_SIZE };
+      }
+
+      const userIds = [...new Set(payments.map((p) => p.user_id))];
+      const paymentIds = payments.map((p) => p.id);
+      const [clientsResult, proofsResult] = await Promise.all([
+        supabaseAdmin
+          .from('clients')
+          .select('user_id, first_name, last_name, phone, company_name')
+          .in('user_id', userIds),
+        supabaseAdmin.from('payment_proofs').select('payment_id').in('payment_id', paymentIds),
+      ]);
+      if (clientsResult.error) throw clientsResult.error;
+
+      const clientMap = new Map(clientsResult.data?.map((c) => [c.user_id, c]) || []);
+      const proofCountMap = new Map<string, number>();
+      proofsResult.data?.forEach((p) => {
+        proofCountMap.set(p.payment_id, (proofCountMap.get(p.payment_id) || 0) + 1);
+      });
+
+      const data = payments.map((payment) => ({
+        ...payment,
+        profiles: clientMap.get(payment.user_id) || null,
+        proof_count: proofCountMap.get(payment.id) || 0,
+      }));
+
+      return { data, total, pageSize: PAGE_SIZE };
+    },
+  });
 }
 
 /**
