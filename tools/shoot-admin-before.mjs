@@ -21,7 +21,7 @@ const CORS = {
   'access-control-expose-headers': 'content-range',
 };
 
-import { respond, headCount } from './adminFixtures.mjs';
+import { respond, headCount, qrSvg, proofSvg } from './adminFixtures.mjs';
 
 const browser = await chromium.launch({
   executablePath: process.env.PW_CHROMIUM ?? '/opt/pw-browsers/chromium',
@@ -36,6 +36,11 @@ for (const theme of THEMES) {
     // Head-count queries (stats, sidebar badges) read the content-range header.
     if (req.method() === 'HEAD') {
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-range': `0-0/${headCount(url)}` }, body: '' });
+    }
+    // Signed-URL GETs (QR codes, proof images) get a fake SVG by path.
+    if (req.method() === 'GET' && url.includes('/storage/v1/object/fake/')) {
+      const svg = url.includes('qr') ? qrSvg : proofSvg;
+      return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/svg+xml' }, body: svg });
     }
     let body = respond(url);
     // .single()/.maybeSingle() send Accept: vnd.pgrst.object+json and expect ONE object.

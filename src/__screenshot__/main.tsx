@@ -118,7 +118,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'before-dd-split': { Comp: BeforeDeposits, route: '/m/deposits/d5', path: '/m/deposits/:depositId' },
   'before-dd-new': { Comp: BeforeNewDeposit, route: '/m/deposits/new' },
   'before-dp-list': { Comp: BeforePayments, route: '/m/payments' },
-  'before-dp-split': { Comp: BeforePayments, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
+  'before-dp-split': { Comp: BeforePayments, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
   'before-dp-new': { Comp: BeforeNewPayment, route: '/m/payments/new' },
   // ADMIN DESKTOP REDESIGN (docs/admin-redesign) — shoot with tools/shoot-admin.mjs (1440×900)
   'dd-workbench': { Comp: DdWorkbench, route: '/m/deposits' },

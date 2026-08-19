@@ -1,17 +1,17 @@
 /**
  * Desktop admin — payment detail as a desktop panel (archetype §2B/§4).
  *
- * The verdict zone is the TRANSCRIPTION: the beneficiary's coordinates as
- * one-click copy rows (char-perfect, method-brand accent) with the QR beside,
- * because the operator's job is to re-type them into Alipay/WeChat/bank
- * portals. Money reads as three at-a-glance tiles (¥ received, XAF debited,
- * rate + perso tag). The admin payment-proof requirement is stated inline.
+ * The centrepiece is the FICHE DE PAIEMENT: one self-contained, always-light
+ * card (¥ amount + rate + beneficiary coordinates + QR side by side) designed
+ * to be shared with the Chinese partner as-is — one click copies or downloads
+ * it as a PNG, and the full receipt exports as PDF. Coordinates stay one-click
+ * copy rows because the operator re-types them into Alipay/WeChat/bank portals.
  *
  * Action model follows the RPC, not the old UI: « Passer en cours » is only
  * offered from `ready_for_payment` (process_payment rejects anything else —
  * the mobile fiche wrongly offered it from cash_scanned, see audit §6).
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useAdminPaymentDetail,
@@ -53,6 +53,11 @@ import {
   DANGER_SOFT_PILL,
 } from '@/desktop/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { QRCodeSVG } from 'qrcode.react';
+import { toPng } from 'html-to-image';
+import { downloadPDF } from '@/lib/pdf/downloadPDF';
+import { PaymentReceiptPDF, type PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
+import { captureQrDataUrl } from '@/components/payment-detail/paymentReceiptHelpers';
 import {
   Loader2,
   AlertTriangle,
@@ -60,7 +65,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
+  ExternalLink,
   FileText,
+  Image as ImageIcon,
   Maximize2,
   MoreHorizontal,
   Play,
@@ -88,7 +96,11 @@ const METHOD_COLOR: Record<string, string> = {
   cash: '#E0322B',
 };
 
-function CopyRow({ k, v, mono, accent }: { k: string; v: string; mono?: boolean; accent?: string }) {
+// La fiche est un DOCUMENT partagé au partenaire : palette claire fixe,
+// identique en thème sombre — comme le reçu PDF.
+const FICHE = { strong: '#17151F', muted: '#6E6A80', line: 'rgba(0,0,0,0.06)' };
+
+function FicheRow({ k, v, mono, accent }: { k: string; v: string; mono?: boolean; accent?: string }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(v);
@@ -98,14 +110,22 @@ function CopyRow({ k, v, mono, accent }: { k: string; v: string; mono?: boolean;
     }
   };
   return (
-    <button type="button" onClick={copy} className={cn('flex h-9 w-full items-center justify-between gap-2 rounded-2xl px-3 text-left', SURFACE.canvas)}>
-      <span className={cn('shrink-0 text-[11.5px]', TEXT.muted)}>{k}</span>
+    <button
+      type="button"
+      onClick={copy}
+      title="Cliquer pour copier"
+      className="group flex w-full items-center justify-between gap-3 py-[5px] text-left"
+      style={{ borderTop: `1px solid ${FICHE.line}` }}
+    >
+      <span className="shrink-0 text-[11px]" style={{ color: FICHE.muted }}>
+        {k}
+      </span>
       <span
-        className={cn('inline-flex min-w-0 items-center gap-1.5 text-[13px] font-bold tabular-nums', TEXT.strong, mono && 'font-mono text-[12.5px]')}
-        style={accent ? { color: accent } : undefined}
+        className={cn('inline-flex min-w-0 items-center gap-1.5 text-[12.5px] font-bold tabular-nums', mono && 'font-mono text-[12px]')}
+        style={{ color: accent ?? FICHE.strong }}
       >
         <span className="truncate">{v}</span>
-        <Copy className={cn('h-3 w-3 shrink-0', TEXT.muted)} />
+        <Copy className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" style={{ color: FICHE.muted }} />
       </span>
     </button>
   );
@@ -152,7 +172,6 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const cancelPayment = useCancelPayment();
   const updateBeneficiary = useAdminUpdateBeneficiaryInfo();
 
-  const [showQR, setShowQR] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [proofIndex, setProofIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -167,6 +186,10 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const [showBenefEdit, setShowBenefEdit] = useState(false);
   const [benefDraft, setBenefDraft] = useState({ name: '', identifier: '', phone: '', email: '', bank: '', account: '', extra: '' });
   const [benefQrFile, setBenefQrFile] = useState<File | null>(null);
+  const [exporting, setExporting] = useState<'copy' | 'png' | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const ficheRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setProofIndex(0), [paymentId]);
 
@@ -257,6 +280,85 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
     })().catch(() => {});
   }, [uploadFiles, uploadProof, paymentId]);
 
+  // ── Fiche → PNG (copie presse-papiers ou téléchargement) ─────────────────
+  const exportFiche = useCallback(
+    async (target: 'copy' | 'png') => {
+      if (!ficheRef.current || !payment || exporting) return;
+      setExporting(target);
+      try {
+        const dataUrl = await toPng(ficheRef.current, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true });
+        if (target === 'copy' && typeof ClipboardItem !== 'undefined') {
+          const blob = await (await fetch(dataUrl)).blob();
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          toast.success('Fiche copiée — collez-la dans WeChat / WhatsApp');
+        } else {
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `fiche_${payment.reference}.png`;
+          a.click();
+          toast.success('Fiche téléchargée');
+        }
+      } catch {
+        toast.error("Impossible d'exporter la fiche");
+      } finally {
+        setExporting(null);
+      }
+    },
+    [payment, exporting],
+  );
+
+  // ── Reçu PDF (même modèle que la fiche mobile) ───────────────────────────
+  const handleDownloadReceipt = useCallback(async () => {
+    if (!payment || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      const name = payment.profiles ? `${payment.profiles.first_name} ${payment.profiles.last_name}` : 'Client';
+      const cash = payment as {
+        cash_signature_url?: string | null;
+        cash_signed_by_name?: string | null;
+        cash_signature_timestamp?: string | null;
+      };
+      const receiptData: PaymentReceiptData = {
+        id: payment.id,
+        reference: payment.reference,
+        created_at: payment.created_at,
+        processed_at: payment.processed_at,
+        amount_xaf: payment.amount_xaf,
+        amount_rmb: payment.amount_rmb,
+        exchange_rate: payment.exchange_rate,
+        method: payment.method,
+        status: payment.status,
+        client_name: name,
+        client_phone: payment.profiles?.phone,
+        beneficiary_name: payment.beneficiary_name,
+        beneficiary_phone: payment.beneficiary_phone,
+        beneficiary_email: payment.beneficiary_email,
+        beneficiary_bank_name: payment.beneficiary_bank_name,
+        beneficiary_bank_account: payment.beneficiary_bank_account,
+        beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+        cashPaymentQrDataUrl: payment.method === 'cash' ? await captureQrDataUrl(payment.id) : null,
+        cash_signature_url: cash.cash_signature_url,
+        cash_signed_by_name: cash.cash_signed_by_name,
+        cash_signature_timestamp: cash.cash_signature_timestamp,
+        adminProofs: adminProofs.map((p) => ({
+          file_url: p.file_url,
+          file_type: p.file_type,
+          file_name: p.file_name,
+          created_at: p.created_at,
+        })),
+      };
+      await downloadPDF(
+        <PaymentReceiptPDF data={receiptData} />,
+        `recu_paiement_${payment.reference}_${name.replace(/\s+/g, '_')}.pdf`,
+      );
+      toast.success('Reçu PDF téléchargé');
+    } catch {
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setPdfBusy(false);
+    }
+  }, [payment, adminProofs, pdfBusy]);
+
   const panelClasses = cn(
     'flex w-[560px] shrink-0 flex-col overflow-hidden rounded-[24px]',
     SURFACE.card,
@@ -284,6 +386,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const statusConfig = PAYMENT_STATUS_CONFIG[payment.status as PaymentStatus] || { label: payment.status };
   const slaLevel = getPaymentSlaLevel(payment.created_at, payment.status);
   const methodColor = METHOD_COLOR[payment.method] ?? '#8B5CF6';
+  const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
   const rateInt = payment.exchange_rate
     ? payment.exchange_rate < 1
       ? Math.round(payment.exchange_rate * 1_000_000)
@@ -303,6 +406,10 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const bankExtra = (payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra;
   const hasBeneficiaryInfo = !!(payment.beneficiary_name || payment.beneficiary_bank_account || payment.beneficiary_qr_code_url || payment.beneficiary_phone || payment.beneficiary_email || identifier);
 
+  // QR de la fiche : QR bénéficiaire (Alipay/WeChat), sinon QR cash actif.
+  const showCashQr = isCash && !['completed', 'rejected', 'cancelled_by_admin'].includes(payment.status);
+  const ficheHasQr = !!payment.beneficiary_qr_code_url || showCashQr;
+
   // Timeline: built from real events, completed steps stamped with their time.
   const evt = (type: string) => timeline?.find((e) => e.event_type === type);
   const stamp = (type: string) => {
@@ -317,9 +424,10 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const stateFor = (s: PaymentStatus): 'completed' | 'current' | 'pending' =>
     payment.status === s ? 'current' : reached(s) ? 'completed' : 'pending';
 
+  // Preuves : useAdminPaymentProofs renvoie file_url DÉJÀ signé.
   const proof = allProofs[proofIndex];
   const proofIsImage = proof?.file_type?.startsWith('image/');
-  const proofUrl = (proof as { signedUrl?: string } | undefined)?.signedUrl;
+  const proofUrl = proof?.file_url;
 
   return (
     <aside className={panelClasses}>
@@ -350,6 +458,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               Rejeter
             </button>
           )}
+          <Holder icon={Download} size="sm" onClick={handleDownloadReceipt} ariaLabel="Télécharger le reçu PDF" />
           <div className="relative">
             <Holder icon={MoreHorizontal} size="sm" onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" />
             {menuOpen && (
@@ -380,98 +489,168 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3.5">
-        {/* Les trois grandeurs d'argent */}
-        <div className="grid grid-cols-3 gap-2.5">
-          <div className={cn('rounded-2xl px-3 py-2', SURFACE.canvas)}>
-            <div className={cn('text-[10.5px] font-bold uppercase tracking-wider', TEXT.muted)}>Fournisseur reçoit</div>
-            <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" className="mt-0.5 !text-[19px]" />
-          </div>
-          <div className={cn('rounded-2xl px-3 py-2', SURFACE.canvas)}>
-            <div className={cn('text-[10.5px] font-bold uppercase tracking-wider', TEXT.muted)}>Client débité</div>
-            <div className={cn('mt-1 text-[15px] font-extrabold leading-[24px] tabular-nums', TEXT.strong)}>
-              {fmt(payment.amount_xaf)} <span className={cn('text-[11px] font-bold', TEXT.muted)}>XAF</span>
-            </div>
-          </div>
-          <div className={cn('rounded-2xl px-3 py-2', SURFACE.canvas)}>
-            <div className={cn('text-[10.5px] font-bold uppercase tracking-wider', TEXT.muted)}>Taux · 1M XAF</div>
-            <div className="mt-1 flex items-center gap-1.5 leading-[24px]">
-              <span className={cn('text-[15px] font-extrabold tabular-nums', TEXT.strong)}>¥{formatNumber(rateInt)}</span>
-              {payment.rate_is_custom && (
-                <span className="rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
-                  perso
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* ── Fiche de paiement — le document à partager ─────────────────── */}
+        <SecLabel
+          className="mb-2"
+          right={
+            canEditBeneficiary ? (
+              <button type="button" onClick={openBenefEdit} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                {hasBeneficiaryInfo ? 'Modifier le bénéficiaire' : 'Ajouter le bénéficiaire'}
+              </button>
+            ) : undefined
+          }
+        >
+          Fiche de paiement
+        </SecLabel>
 
-        {/* ── Bénéficiaire — la transcription ───────────────────────────── */}
-        <div className="mt-3">
-          <SecLabel
-            className="mb-2"
-            right={
-              canEditBeneficiary ? (
-                <button type="button" onClick={openBenefEdit} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
-                  {hasBeneficiaryInfo ? 'Modifier' : 'Ajouter'}
-                </button>
-              ) : undefined
-            }
-          >
-            Bénéficiaire ·{' '}
-            <span style={{ color: methodColor }}>{PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method}</span>
-          </SecLabel>
+        <div ref={ficheRef} className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.08]">
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${FICHE.line}` }}>
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <PaymentMethodLogo method={payment.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={20} />
+              <span className="truncate text-[13px] font-extrabold" style={{ color: methodColor }}>
+                {methodLabel}
+              </span>
+            </span>
+            <span className="shrink-0 font-mono text-[11.5px] font-bold" style={{ color: FICHE.muted }}>
+              {payment.reference}
+            </span>
+          </div>
 
-          {isCash ? (
-            <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
-              <div className={cn('text-[14px] font-bold', TEXT.strong)}>{cashBeneficiaryName}</div>
-              <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
-                {isCashSelf ? 'Le client lui-même' : 'Tiers'} · retrait cash — flux géré par l'agent (scan + signature)
+          <div className="flex items-start gap-4 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: FICHE.muted }}>
+                Le fournisseur reçoit
               </div>
-            </div>
-          ) : hasBeneficiaryInfo ? (
-            <div className={cn('grid items-start gap-3', payment.beneficiary_qr_code_url && showQR ? 'grid-cols-[1fr_128px]' : 'grid-cols-1')}>
-              <div className="space-y-1.5">
-                {payment.beneficiary_name && <CopyRow k="Nom" v={payment.beneficiary_name} />}
-                {identifier && (
-                  <CopyRow k={payment.method === 'wechat' ? 'WeChat ID' : payment.method === 'alipay' ? 'Alipay ID' : 'Identifiant'} v={identifier} mono accent={methodColor} />
-                )}
-                {payment.beneficiary_bank_name && <CopyRow k="Banque" v={payment.beneficiary_bank_name} />}
-                {payment.beneficiary_bank_account && <CopyRow k="N° de compte" v={payment.beneficiary_bank_account} mono accent={methodColor} />}
-                {bankExtra && <CopyRow k="SWIFT / IBAN" v={bankExtra} mono />}
-                {payment.beneficiary_phone && <CopyRow k="Téléphone" v={payment.beneficiary_phone} mono />}
-                {payment.beneficiary_email && <CopyRow k="Email" v={payment.beneficiary_email} />}
-                {payment.beneficiary_qr_code_url && (
-                  <button type="button" onClick={() => setShowQR((v) => !v)} className={cn('rounded-full px-3 py-1.5 text-[12px] font-bold', SOFT_PILL)}>
-                    {showQR ? 'Masquer le QR' : 'Voir le QR'}
-                  </button>
+              <div className="text-[30px] font-extrabold leading-[36px] tabular-nums" style={{ color: FICHE.strong }}>
+                {formatCurrencyRMB(payment.amount_rmb)}
+              </div>
+              <div className="mt-0.5 text-[11.5px] tabular-nums" style={{ color: FICHE.muted }}>
+                {fmt(payment.amount_xaf)} XAF débités · taux{' '}
+                <b style={{ color: FICHE.strong }}>¥{formatNumber(rateInt)}</b> pour 1 000 000 XAF
+                {payment.rate_is_custom && (
+                  <span className="ml-1.5 rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4]">
+                    perso
+                  </span>
                 )}
               </div>
-              {payment.beneficiary_qr_code_url && showQR && (
-                <button type="button" onClick={() => setLightbox(payment.beneficiary_qr_code_url!)} className="overflow-hidden rounded-2xl ring-1 ring-black/[0.08]">
-                  <img src={payment.beneficiary_qr_code_url} alt="QR code bénéficiaire" className="h-[128px] w-[128px] bg-white object-contain" />
-                </button>
-              )}
+
+              <div className="mt-2.5">
+                {isCash ? (
+                  <div style={{ borderTop: `1px solid ${FICHE.line}` }} className="pt-1.5">
+                    <div className="text-[13px] font-bold" style={{ color: FICHE.strong }}>
+                      {cashBeneficiaryName}
+                    </div>
+                    <div className="text-[11px]" style={{ color: FICHE.muted }}>
+                      {isCashSelf ? 'Le client lui-même' : 'Tiers'} · retrait cash — scan + signature par l'agent
+                    </div>
+                  </div>
+                ) : hasBeneficiaryInfo ? (
+                  <div>
+                    {payment.beneficiary_name && <FicheRow k="Bénéficiaire" v={payment.beneficiary_name} />}
+                    {identifier && (
+                      <FicheRow
+                        k={payment.method === 'wechat' ? 'WeChat ID' : payment.method === 'alipay' ? 'Alipay ID' : 'Identifiant'}
+                        v={identifier}
+                        mono
+                        accent={methodColor}
+                      />
+                    )}
+                    {payment.beneficiary_bank_name && <FicheRow k="Banque" v={payment.beneficiary_bank_name} />}
+                    {payment.beneficiary_bank_account && <FicheRow k="N° de compte" v={payment.beneficiary_bank_account} mono accent={methodColor} />}
+                    {bankExtra && <FicheRow k="SWIFT / IBAN" v={bankExtra} mono />}
+                    {payment.beneficiary_phone && <FicheRow k="Téléphone" v={payment.beneficiary_phone} mono />}
+                    {payment.beneficiary_email && <FicheRow k="Email" v={payment.beneficiary_email} />}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-xl bg-[#F8EFD8] px-3 py-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12]" />
+                    <div>
+                      <div className="text-[12.5px] font-bold text-[#9A6B12]">Infos bénéficiaire manquantes</div>
+                      <div className="text-[11px] text-[#9A6B12]/80">Paiement impossible sans ces informations</div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-                <div>
-                  <div className="text-[13px] font-bold text-[#9A6B12] dark:text-[#E7C083]">Infos bénéficiaire manquantes</div>
-                  <div className="text-[11px] text-[#9A6B12]/80 dark:text-[#E7C083]/80">Paiement impossible sans ces informations</div>
+
+            {ficheHasQr && (
+              <div className="shrink-0">
+                <div className="rounded-xl bg-white p-1.5" style={{ border: `1px solid rgba(0,0,0,0.10)` }}>
+                  {payment.beneficiary_qr_code_url ? (
+                    <button type="button" onClick={() => setLightbox(payment.beneficiary_qr_code_url!)} aria-label="Agrandir le QR">
+                      <img
+                        src={payment.beneficiary_qr_code_url}
+                        crossOrigin="anonymous"
+                        alt="QR code bénéficiaire"
+                        className="block h-[132px] w-[132px] bg-white object-contain"
+                      />
+                    </button>
+                  ) : (
+                    <QRCodeSVG
+                      id={`qr-${payment.id}`}
+                      value={JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: payment.id, v: 1 })}
+                      size={132}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  )}
+                </div>
+                <div className="mt-1 text-center text-[9.5px] font-bold uppercase tracking-wider" style={{ color: FICHE.muted }}>
+                  {payment.beneficiary_qr_code_url ? 'Scanner pour payer' : 'QR agent cash'}
                 </div>
               </div>
-              {canEditBeneficiary && (
-                <button type="button" onClick={openBenefEdit} className={cn('mt-2 w-full px-3 py-2 text-[12px]', VIOLET_PILL)}>
-                  Compléter le bénéficiaire
-                </button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+
+          <div className="flex items-center justify-between px-4 py-1.5" style={{ borderTop: `1px solid ${FICHE.line}` }}>
+            <span className="text-[10px] font-extrabold tracking-[0.14em]" style={{ color: FICHE.muted }}>
+              BONZINI LABS
+            </span>
+            <span className="text-[10px] tabular-nums" style={{ color: FICHE.muted }}>
+              {format(new Date(payment.created_at), 'd MMM yyyy, HH:mm', { locale: fr })}
+            </span>
+          </div>
         </div>
 
+        {/* Actions de partage — hors capture */}
+        <div className="mt-2 flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => exportFiche('copy')}
+            disabled={!!exporting}
+            className={cn('flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg text-[11px] font-semibold disabled:opacity-50', SOFT_PILL)}
+          >
+            {exporting === 'copy' ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
+            Copier l'image
+          </button>
+          <button
+            type="button"
+            onClick={() => exportFiche('png')}
+            disabled={!!exporting}
+            className={cn('flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg text-[11px] font-semibold disabled:opacity-50', SOFT_PILL)}
+          >
+            {exporting === 'png' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+            Image .png
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadReceipt}
+            disabled={pdfBusy}
+            className={cn('flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg text-[11px] font-semibold disabled:opacity-50', SOFT_PILL)}
+          >
+            {pdfBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+            Reçu PDF
+          </button>
+        </div>
+
+        {!hasBeneficiaryInfo && !isCash && canEditBeneficiary && (
+          <button type="button" onClick={openBenefEdit} className={cn('mt-2 w-full px-3 py-2 text-[12px]', VIOLET_PILL)}>
+            Compléter le bénéficiaire
+          </button>
+        )}
+
         {/* ── Preuves ───────────────────────────────────────────────────── */}
-        <div className="mt-3">
+        <div className="mt-3.5">
           {missingAdminProof && (
             <div className="mb-2 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-black/10 px-3.5 py-2 dark:border-white/10">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -486,40 +665,109 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               </button>
             </div>
           )}
-          {allProofs.length > 0 && (
-            <div className={cn('flex items-center justify-between gap-3 rounded-2xl px-3 py-2', SURFACE.canvas)}>
-              <span className={cn('inline-flex min-w-0 items-center gap-2 text-[12.5px] font-semibold', TEXT.strong)}>
-                <FileText className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
-                <span className="truncate">{proof?.file_name}</span>
-                <span className={cn('shrink-0 text-[11px] font-bold', TEXT.muted)}>
-                  {proof?.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
-                </span>
-              </span>
-              <span className="inline-flex shrink-0 items-center gap-1">
-                <button type="button" disabled={proofIndex <= 0} onClick={() => setProofIndex((i) => i - 1)} className={cn('disabled:opacity-30', TEXT.muted)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <span className={cn('text-[11px] font-bold tabular-nums', TEXT.muted)}>
+
+          <SecLabel
+            className="mb-2"
+            right={
+              allProofs.length > 1 ? (
+                <span className={cn('inline-flex items-center gap-1 text-[11px] font-bold tabular-nums', TEXT.muted)}>
+                  <button type="button" disabled={proofIndex <= 0} onClick={() => setProofIndex((i) => i - 1)} className="disabled:opacity-30">
+                    <ChevronLeft className="h-3 w-3" />
+                  </button>
                   {proofIndex + 1}/{allProofs.length}
+                  <button
+                    type="button"
+                    disabled={proofIndex >= allProofs.length - 1}
+                    onClick={() => setProofIndex((i) => i + 1)}
+                    className="disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </button>
                 </span>
+              ) : canProcess && !isLocked && allProofs.length > 0 ? (
+                <button type="button" onClick={() => setShowUpload(true)} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                  + Ajouter
+                </button>
+              ) : undefined
+            }
+          >
+            Preuves de paiement · {allProofs.length}
+          </SecLabel>
+
+          {proof ? (
+            <>
+              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.06]">
+                {proofIsImage && proofUrl ? (
+                  <img src={proofUrl} alt={proof.file_name} className="max-h-[240px] w-full bg-black/5 object-contain dark:bg-white/5" />
+                ) : (
+                  <div className={cn('flex h-[140px] w-full flex-col items-center justify-center gap-1.5', SURFACE.canvas)}>
+                    <FileText className={cn('h-8 w-8', TEXT.muted)} />
+                    <span className={cn('max-w-full truncate px-3 text-[11px] font-bold', TEXT.muted)}>{proof.file_name}</span>
+                  </div>
+                )}
+              </div>
+              <div className={cn('mt-1.5 flex items-center gap-2 text-[11px]', TEXT.muted)}>
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-px text-[10px] font-extrabold uppercase',
+                    proof.uploaded_by_type === 'admin'
+                      ? 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]'
+                      : 'bg-black/[0.05] dark:bg-white/[0.08]',
+                  )}
+                >
+                  {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
+                </span>
+                <span className="min-w-0 truncate font-semibold">{proof.file_name}</span>
+                <span className="ml-auto shrink-0 tabular-nums">{format(new Date(proof.created_at), 'd MMM, HH:mm', { locale: fr })}</span>
+              </div>
+              <div className="mt-1.5 flex gap-1.5">
+                {proofIsImage ? (
+                  <button
+                    type="button"
+                    disabled={!proofUrl}
+                    onClick={() => proofUrl && setLightbox(proofUrl)}
+                    className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold disabled:opacity-40', SOFT_PILL)}
+                  >
+                    <Maximize2 className="h-3 w-3" /> Agrandir
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!proofUrl}
+                    onClick={() => proofUrl && window.open(proofUrl, '_blank', 'noopener')}
+                    className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold disabled:opacity-40', SOFT_PILL)}
+                  >
+                    <ExternalLink className="h-3 w-3" /> Ouvrir
+                  </button>
+                )}
+                <a
+                  href={proofUrl ?? undefined}
+                  download={proof.file_name}
+                  target="_blank"
+                  rel="noopener"
+                  className={cn(
+                    'flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold no-underline',
+                    SOFT_PILL,
+                    !proofUrl && 'pointer-events-none opacity-40',
+                  )}
+                >
+                  <Download className="h-3 w-3" /> Télécharger
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
+              <div className={cn('text-[12px] font-bold', TEXT.muted)}>Aucune preuve pour l'instant</div>
+              <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>La capture du transfert apparaîtra ici</div>
+              {canProcess && !isLocked && (
                 <button
                   type="button"
-                  disabled={proofIndex >= allProofs.length - 1}
-                  onClick={() => setProofIndex((i) => i + 1)}
-                  className={cn('disabled:opacity-30', TEXT.muted)}
+                  onClick={() => setShowUpload(true)}
+                  className="mx-auto mt-2 flex items-center gap-1 rounded-full bg-[#EAE7FA] px-3 py-1.5 text-[11px] font-bold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <Plus className="h-3 w-3" /> Ajouter (Ctrl+V)
                 </button>
-                <button
-                  type="button"
-                  disabled={!proofIsImage || !proofUrl}
-                  onClick={() => proofUrl && setLightbox(proofUrl)}
-                  className={cn('ml-1 disabled:opacity-30', TEXT.muted)}
-                  aria-label="Agrandir"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </button>
-              </span>
+              )}
             </div>
           )}
         </div>

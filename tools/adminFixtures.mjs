@@ -40,7 +40,7 @@ const payments = [
   { id: 'p2', reference: 'BZ-PY-2026-1196', user_id: 'u4', amount_rmb: 9210, amount_xaf: 798800, exchange_rate: 11530, rate_is_custom: false, method: 'wechat', status: 'ready_for_payment', created_at: ago(7), beneficiary_name: 'Lin Mei 林梅', beneficiary_identifier: 'linmei_gz88', beneficiary_identifier_type: 'id', beneficiary_bank_name: null, beneficiary_bank_account: null, beneficiary_phone: null, beneficiary_email: null, beneficiary_qr_code_url: null, beneficiary_notes: null },
   { id: 'p3', reference: 'BZ-PY-2026-1204', user_id: 'u5', amount_rmb: 14380, amount_xaf: 1250000, exchange_rate: 11504, rate_is_custom: true, method: 'alipay', status: 'ready_for_payment', created_at: ago(3), beneficiary_name: 'Zhang Wei 张伟', beneficiary_identifier: 'zw88@aliyun.com', beneficiary_identifier_type: 'email', beneficiary_phone: '+86 138 0219 4471', beneficiary_email: null, beneficiary_bank_name: null, beneficiary_bank_account: null, beneficiary_qr_code_url: null, beneficiary_notes: null },
   { id: 'p4', reference: 'BZ-PY-2026-1205', user_id: 'u6', amount_rmb: 23060, amount_xaf: 2000000, exchange_rate: 11530, rate_is_custom: false, method: 'cash', status: 'cash_scanned', created_at: ago(2), beneficiary_name: null, cash_beneficiary_type: 'self', beneficiary_identifier: null, beneficiary_bank_name: null, beneficiary_bank_account: null, beneficiary_phone: null, beneficiary_email: null, beneficiary_qr_code_url: null, beneficiary_notes: null },
-  { id: 'p5', reference: 'BZ-PY-2026-1201', user_id: 'u1', amount_rmb: 31120, amount_xaf: 2700000, exchange_rate: 11526, rate_is_custom: false, method: 'alipay', status: 'processing', created_at: ago(5), beneficiary_name: 'Shenzhen Kaida Electronics', beneficiary_identifier: '138 2244 9087', beneficiary_identifier_type: 'id', beneficiary_bank_name: null, beneficiary_bank_account: null, beneficiary_phone: null, beneficiary_email: null, beneficiary_qr_code_url: null, beneficiary_notes: null },
+  { id: 'p5', reference: 'BZ-PY-2026-1201', user_id: 'u1', amount_rmb: 31120, amount_xaf: 2700000, exchange_rate: 11526, rate_is_custom: false, method: 'alipay', status: 'processing', created_at: ago(5), beneficiary_name: 'Shenzhen Kaida Electronics', beneficiary_identifier: '138 2244 9087', beneficiary_identifier_type: 'id', beneficiary_bank_name: null, beneficiary_bank_account: null, beneficiary_phone: null, beneficiary_email: null, beneficiary_qr_code_url: 'payment-proofs/beneficiary/p5/qr.png', beneficiary_notes: null },
   { id: 'p6', reference: 'BZ-PY-2026-1199', user_id: 'u7', amount_rmb: 120400, amount_xaf: 10450000, exchange_rate: 11522, rate_is_custom: false, method: 'bank_transfer', status: 'completed', created_at: ago(6), beneficiary_name: 'Yiwu Sunrise Import-Export', beneficiary_bank_name: 'Bank of China', beneficiary_bank_account: '6217 0031 8845 0031', beneficiary_phone: null, beneficiary_email: null, beneficiary_identifier: null, beneficiary_qr_code_url: null, beneficiary_notes: null },
   { id: 'p7', reference: 'BZ-PY-2026-1188', user_id: 'u2', amount_rmb: 4610, amount_xaf: 400000, exchange_rate: 11530, rate_is_custom: false, method: 'wechat', status: 'waiting_beneficiary_info', created_at: ago(23), beneficiary_name: null, beneficiary_identifier: null, beneficiary_bank_name: null, beneficiary_bank_account: null, beneficiary_phone: null, beneficiary_email: null, beneficiary_qr_code_url: null, beneficiary_notes: null },
 ];
@@ -48,7 +48,40 @@ const payments = [
 const paymentTimeline = [
   { id: 'pt1', payment_id: 'p3', event_type: 'created', created_at: ago(3.1), metadata: {} },
   { id: 'pt2', payment_id: 'p3', event_type: 'ready_for_payment', created_at: ago(3.1), metadata: {} },
+  { id: 'pt3', payment_id: 'p5', event_type: 'created', created_at: ago(5), metadata: {} },
+  { id: 'pt4', payment_id: 'p5', event_type: 'ready_for_payment', created_at: ago(5), metadata: {} },
+  { id: 'pt5', payment_id: 'p5', event_type: 'processing', created_at: ago(1.2), metadata: {} },
 ];
+
+const paymentProofs = [
+  { id: 'pp1', payment_id: 'p5', file_url: 'payment-proofs/u1/p5/alipay-transfer.jpg', file_name: 'alipay-transfer.jpg', file_type: 'image/jpeg', uploaded_by: 'admin1', uploaded_by_type: 'admin', created_at: ago(1.1) },
+  { id: 'pp2', payment_id: 'p6', file_url: 'payment-proofs/u7/p6/virement-boc.jpg', file_name: 'virement-boc.jpg', file_type: 'image/jpeg', uploaded_by: 'admin1', uploaded_by_type: 'admin', created_at: ago(5.5) },
+  { id: 'pp3', payment_id: 'p6', file_url: 'payment-proofs/u7/p6/swift-mt103.pdf', file_name: 'swift-mt103.pdf', file_type: 'application/pdf', uploaded_by: 'admin1', uploaded_by_type: 'admin', created_at: ago(5.4) },
+];
+
+// Fake images served for storage GETs by the shoot runners (QR vs proof).
+const qrSvg = (() => {
+  let seed = 42;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  let cells = '';
+  for (let y = 0; y < 25; y++)
+    for (let x = 0; x < 25; x++) {
+      const inFinder = (x < 7 && y < 7) || (x > 17 && y < 7) || (x < 7 && y > 17);
+      if (!inFinder && rnd() > 0.52) cells += `<rect x="${x + 2}" y="${y + 2}" width="1" height="1"/>`;
+    }
+  const finder = (fx, fy) =>
+    `<rect x="${fx}" y="${fy}" width="7" height="7"/><rect x="${fx + 1}" y="${fy + 1}" width="5" height="5" fill="#fff"/><rect x="${fx + 2}" y="${fy + 2}" width="3" height="3"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29"><rect width="29" height="29" fill="#fff"/><g fill="#000">${cells}${finder(2, 2)}${finder(20, 2)}${finder(2, 20)}</g></svg>`;
+})();
+
+const proofSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" font-family="sans-serif">
+<rect width="640" height="420" fill="#F5F6FA"/><rect x="60" y="30" width="520" height="360" rx="18" fill="#fff"/>
+<circle cx="320" cy="100" r="30" fill="#DEEFE5"/><path d="M306 100l10 10 18-20" stroke="#2E7D52" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="320" y="170" text-anchor="middle" font-size="18" fill="#6E6A80">Transfert effectué</text>
+<text x="320" y="210" text-anchor="middle" font-size="34" font-weight="bold" fill="#17151F">¥31 120,00</text>
+<rect x="120" y="250" width="400" height="10" rx="5" fill="#ECEAF7"/><rect x="120" y="275" width="320" height="10" rx="5" fill="#ECEAF7"/>
+<rect x="120" y="300" width="360" height="10" rx="5" fill="#ECEAF7"/><rect x="120" y="340" width="200" height="10" rx="5" fill="#ECEAF7"/>
+</svg>`;
 
 const wallets = clients.map((c, i) => ({ user_id: c.user_id, balance_xaf: [820000, 145000, 6400000, 990000, 1213450, 2450000, 310000][i] }));
 
@@ -64,7 +97,11 @@ function byId(url, list) {
 
 function respond(url) {
   if (url.includes('/rpc/get_deposit_stats')) return stats;
-  if (url.includes('/storage/v1/object/sign')) return { signedURL: '/placeholder.svg?sig=1' };
+  if (url.includes('/storage/v1/object/sign')) {
+    // Echo the object path so the GET interception can tell QR from proof.
+    const m = url.match(/object\/sign\/([^?]+)/);
+    return { signedURL: `/object/fake/${m ? m[1] : 'unknown'}?sig=1` };
+  }
   if (url.includes('/deposit_timeline_events')) return depositTimeline;
   if (url.includes('/deposit_proofs')) {
     const m = url.match(/deposit_id=eq\.([^&]+)/);
@@ -72,8 +109,14 @@ function respond(url) {
     return depositProofs;
   }
   if (url.includes('/deposits')) return byId(url, deposits);
-  if (url.includes('/payment_timeline_events')) return paymentTimeline;
-  if (url.includes('/payment_proofs')) return [];
+  if (url.includes('/payment_timeline_events')) {
+    const m = url.match(/payment_id=eq\.([^&]+)/);
+    return m ? paymentTimeline.filter((t) => t.payment_id === decodeURIComponent(m[1])) : paymentTimeline;
+  }
+  if (url.includes('/payment_proofs')) {
+    const m = url.match(/payment_id=eq\.([^&]+)/);
+    return m ? paymentProofs.filter((p) => p.payment_id === decodeURIComponent(m[1])) : paymentProofs;
+  }
   if (url.includes('/payments')) return byId(url, payments);
   if (url.includes('/clients')) {
     const m = url.match(/user_id=eq\.([^&]+)/);
@@ -92,7 +135,7 @@ function respond(url) {
 }
 
 
-export { respond };
+export { respond, qrSvg, proofSvg };
 export function headCount(url) {
   if (url.includes('/deposits')) {
     if (url.includes('status=eq.pending_correction')) return 2;
