@@ -135,10 +135,14 @@ export function DesktopNewPayment() {
   }, [clients, clientSearch]);
 
   // ── Money math ──────────────────────────────────────────────────────────
-  const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
-  const rate = useCustomRate ? parseInt(customRateStr) || FALLBACK_RATE : baseRate;
-  const xaf = lastEdited === 'xaf' ? parseInt(rawXaf) || 0 : Math.round(((parseInt(rawCny) || 0) * 1_000_000) / rate);
-  const cny = lastEdited === 'cny' ? parseInt(rawCny) || 0 : Math.round(((parseInt(rawXaf) || 0) * rate) / 1_000_000);
+  // Aucun taux « sorti de nulle part » : tant que la destination n'est pas
+  // choisie (et sans taux perso), il n'y a PAS de taux ni de conversion.
+  const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
+  const fallbackActive = !!mode && !useCustomRate && baseRate == null;
+  const rate: number | null = useCustomRate ? parseInt(customRateStr) || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
+  const hasRate = rate != null && rate > 0;
+  const xaf = lastEdited === 'xaf' ? parseInt(rawXaf) || 0 : hasRate ? Math.round(((parseInt(rawCny) || 0) * 1_000_000) / rate!) : 0;
+  const cny = lastEdited === 'cny' ? parseInt(rawCny) || 0 : hasRate ? Math.round(((parseInt(rawXaf) || 0) * rate!) / 1_000_000) : 0;
 
   const dbMode: BeneficiaryMode | null = mode ? (mode.id === 'virement' ? 'bank_transfer' : (mode.id as BeneficiaryMode)) : null;
   const { data: clientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id, dbMode ?? undefined);
@@ -182,7 +186,7 @@ export function DesktopNewPayment() {
 
   // ── Submit (same snapshot semantics as the wizard) ──────────────────────
   const submit = useCallback(async () => {
-    if (!client || !mode || !dbMode) return;
+    if (!client || !mode || !dbMode || rate == null) return;
     if (!amountValid || !hasEnoughBalance) {
       toast.error(amountValid ? 'Solde insuffisant pour ce paiement.' : `Montant invalide — maximum ${MAX_AMOUNT_XAF_LABEL} XAF.`);
       return;
@@ -411,16 +415,30 @@ export function DesktopNewPayment() {
 
             <div className="mt-3.5 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
               <FormField label="Le client paie (XAF)">
-                <TextInput
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={xaf > 0 ? fmt(xaf) : lastEdited === 'xaf' ? '' : ''}
-                  onChange={(e) => {
-                    setLastEdited('xaf');
-                    setRawXaf(e.target.value.replace(/[^0-9]/g, ''));
-                  }}
-                  className="font-extrabold tabular-nums"
-                />
+                <div className="relative">
+                  <TextInput
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={xaf > 0 ? fmt(xaf) : lastEdited === 'xaf' ? '' : ''}
+                    onChange={(e) => {
+                      setLastEdited('xaf');
+                      setRawXaf(e.target.value.replace(/[^0-9]/g, ''));
+                    }}
+                    className="pr-16 font-extrabold tabular-nums"
+                  />
+                  {/* « Max » = tout le solde du client (équivalent du « Tout » mobile). */}
+                  <button
+                    type="button"
+                    disabled={!client || clientBalance <= 0}
+                    onClick={() => {
+                      setLastEdited('xaf');
+                      setRawXaf(String(clientBalance));
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-[#EAE7FA] px-2.5 py-1 text-[11px] font-extrabold text-[#5B4CC4] disabled:opacity-40 dark:bg-[#272252] dark:text-[#B5AAF0]"
+                  >
+                    Max
+                  </button>
+                </div>
               </FormField>
               <div className={cn('flex h-12 items-center', TEXT.muted)}>
                 <ArrowRight className="h-4 w-4" />
@@ -428,26 +446,34 @@ export function DesktopNewPayment() {
               <FormField label="Le fournisseur reçoit (¥)">
                 <TextInput
                   inputMode="numeric"
-                  placeholder="0"
+                  placeholder={hasRate ? '0' : 'Choisir la destination'}
+                  disabled={!hasRate}
                   value={cny > 0 ? fmt(cny) : ''}
                   onChange={(e) => {
                     setLastEdited('cny');
                     setRawCny(e.target.value.replace(/[^0-9]/g, ''));
                   }}
-                  className="font-extrabold tabular-nums"
+                  className="font-extrabold tabular-nums disabled:opacity-60"
                 />
               </FormField>
             </div>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              {/* La source du taux est toujours nommée : du jour / perso / secours. */}
               <p className={cn('text-[12px] tabular-nums', TEXT.muted)}>
-                Taux appliqué : <b className={TEXT.strong}>1M XAF = ¥{fmt(rate)}</b>
-                {useCustomRate && (
-                  <span className="ml-1.5 rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
-                    perso
-                  </span>
+                {!hasRate ? (
+                  <>Choisissez la destination — le taux du jour de la méthode s'appliquera.</>
+                ) : (
+                  <>
+                    {useCustomRate ? 'Taux personnalisé' : fallbackActive ? 'Taux de secours' : `Taux du jour ${mode?.name}`} :{' '}
+                    <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
+                    {useCustomRate && (
+                      <span className="ml-1.5 rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+                        perso
+                      </span>
+                    )}
+                    {useCustomRate && baseRate != null && <span className="ml-1.5">· taux du jour ¥{fmt(baseRate)}</span>}
+                  </>
                 )}
-                {useCustomRate && <span className="ml-1.5">· taux du jour ¥{fmt(baseRate)}</span>}
-                {!mode && <span className="ml-1.5">· choisissez la méthode pour le taux exact</span>}
               </p>
               <div className="flex items-center gap-2">
                 {useCustomRate && (
@@ -466,7 +492,7 @@ export function DesktopNewPayment() {
                   type="button"
                   onClick={() => {
                     setUseCustomRate((v) => {
-                      if (!v) setCustomRateStr(String(baseRate));
+                      if (!v) setCustomRateStr(String(baseRate ?? FALLBACK_RATE));
                       return !v;
                     });
                   }}
@@ -477,6 +503,14 @@ export function DesktopNewPayment() {
                 </button>
               </div>
             </div>
+            {fallbackActive && (
+              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
+                <p className="text-[12.5px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
+                  Taux du jour indisponible — taux de secours ¥{fmt(FALLBACK_RATE)} appliqué. Vérifiez avant de confirmer.
+                </p>
+              </div>
+            )}
             {xaf > 0 && !hasEnoughBalance && (
               <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
@@ -694,9 +728,15 @@ export function DesktopNewPayment() {
             </div>
             <div className="flex justify-between gap-3">
               <span className={TEXT.muted}>Taux</span>
-              <span className={cn('font-semibold tabular-nums', TEXT.strong)}>
-                ¥{fmt(rate)}{' '}
-                {useCustomRate && <span className="text-[10px] font-extrabold uppercase text-[#5B4CC4] dark:text-[#B5AAF0]">perso</span>}
+              <span className={cn('font-semibold tabular-nums', hasRate ? TEXT.strong : TEXT.muted)}>
+                {hasRate ? (
+                  <>
+                    ¥{fmt(rate!)} <span className={cn('text-[11px] font-normal', TEXT.muted)}>/ 1M XAF</span>{' '}
+                    {useCustomRate && <span className="text-[10px] font-extrabold uppercase text-[#5B4CC4] dark:text-[#B5AAF0]">perso</span>}
+                  </>
+                ) : (
+                  '—'
+                )}
               </span>
             </div>
             <div className="my-1 border-t border-black/[0.06] dark:border-white/[0.08]" />

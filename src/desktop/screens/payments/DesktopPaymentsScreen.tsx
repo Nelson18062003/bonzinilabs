@@ -240,7 +240,7 @@ export function DesktopPaymentsScreen() {
                       <Th align="right" sortable sorted={sortedMark('amount_rmb')} onSort={() => toggleSort('amount_rmb')}>
                         Montant
                       </Th>
-                      {!compact && <Th align="right">Taux</Th>}
+                      {!compact && <Th align="right">Taux ¥/1M</Th>}
                       {!compact && (
                         <Th sortable sorted={sortedMark('created_at')} onSort={() => toggleSort('created_at')}>
                           Créé
