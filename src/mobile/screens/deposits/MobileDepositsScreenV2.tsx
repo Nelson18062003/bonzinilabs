@@ -7,6 +7,7 @@
 // (famille/période/tri), chips statut, infinite scroll, SLA.
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -342,21 +343,12 @@ export function MobileDepositsScreenV2() {
             </div>
 
             {periodPreset === 'custom' && (
-              <div className="flex items-center gap-2">
-                <TextInput
-                  type="date"
-                  value={customDateFrom}
-                  onChange={(e) => setCustomDateFrom(e.target.value)}
-                  className="flex-1"
-                />
-                <span className={cn('text-[13px]', TEXT.muted)}>→</span>
-                <TextInput
-                  type="date"
-                  value={customDateTo}
-                  onChange={(e) => setCustomDateTo(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
+              <BzDateRangeField
+                value={{ from: customDateFrom, to: customDateTo }}
+                onChange={(r) => { setCustomDateFrom(r.from); setCustomDateTo(r.to); }}
+                accent="#10B981"
+                defaultOpen
+              />
             )}
           </Card>
         )}

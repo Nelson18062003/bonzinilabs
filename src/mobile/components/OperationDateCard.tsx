@@ -10,7 +10,8 @@
 // peut rester ouverte au-delà du max affiché.
 // ============================================================
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, Card } from '@/mobile/designKit';
+import { TEXT, Card } from '@/mobile/designKit';
+import { BzDateTimePicker } from '@/mobile/components/BzDateTimePicker';
 
 /** Date → valeur locale pour <input type="datetime-local"> (YYYY-MM-DDTHH:mm). */
 export function toDatetimeLocal(d: Date): string {
@@ -74,19 +75,8 @@ export function OperationDateCard({ enabled, value, onToggle, onChange, accent, 
 
       {enabled && (
         <div className="mt-2.5 border-t border-black/[0.06] pt-2.5 dark:border-white/[0.08]">
-          <input
-            type="datetime-local"
-            value={value}
-            max={nowLocal}
-            onChange={(e) => onChange(e.target.value)}
-            className={cn(
-              'h-11 w-full rounded-xl px-3 text-[14px] font-semibold outline-none',
-              SURFACE.canvas,
-              TEXT.strong,
-              'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
-            )}
-          />
-          <p className={cn('mt-1.5 text-[11px]', TEXT.muted)}>
+          <BzDateTimePicker value={value} onChange={onChange} accent={accent} />
+          <p className={cn('mt-2 text-[11px]', TEXT.muted)}>
             L&apos;opération sera enregistrée à cette date (passée uniquement).
           </p>
         </div>

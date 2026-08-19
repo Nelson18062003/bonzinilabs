@@ -6,6 +6,7 @@
  * as a wide table with a clickable stat strip and a toolbar.
  */
 import { useState, useMemo, useCallback } from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, Paperclip, CreditCard, FileDown, Loader2, Layers } from 'lucide-react';
 import { toast } from 'sonner';
@@ -290,11 +291,15 @@ export function DesktopPaymentsScreen() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</span>
-            <TextInput type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 text-[13px]" />
-            <span className={cn('text-[13px]', TEXT.muted)}>→</span>
-            <TextInput type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 text-[13px]" />
+          <div className="flex items-start gap-2">
+            <span className={cn('pt-3 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</span>
+            <div className="w-[320px]">
+              <BzDateRangeField
+                value={{ from: dateFrom, to: dateTo }}
+                onChange={(r) => { setDateFrom(r.from); setDateTo(r.to); }}
+                accent="#8B5CF6"
+              />
+            </div>
           </div>
         </div>
       </section>

@@ -8,10 +8,10 @@
  * two-column grid instead of one long mobile scroll.
  */
 import { useMemo, useState } from 'react';
+import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowDownToLine, ArrowUpFromLine, History, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { DateField } from '@/components/form';
 import { INSET, Pill, SectionTitle } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTopCounterparties, useTreasuryDashboard, useUsdtFlowEvolution, useWacEvolution } from '@/hooks/useTreasury';
@@ -113,9 +113,12 @@ export function DesktopTreasuryDashboard() {
         </span>
       </div>
       {preset === 'custom' && (
-        <div className={cn(INSET, 'grid max-w-md grid-cols-2 gap-2 p-3')}>
-          <DateField label="Du" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-          <DateField label="Au" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+        <div className="max-w-md">
+          <BzDateRangeField
+            value={{ from: customFrom, to: customTo }}
+            onChange={(r) => { setCustomFrom(r.from); setCustomTo(r.to); }}
+            accent="#8B5CF6"
+          />
         </div>
       )}
 
