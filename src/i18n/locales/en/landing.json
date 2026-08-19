@@ -82,7 +82,7 @@
     "title": "Your questions",
     "items": [
       { "q": "Are payments really instant?", "a": "Yes. Alipay and WeChat payments are processed in minutes. Bank transfers usually take a few hours. Cash is immediate." },
-      { "q": "What is the minimum amount?", "a": "10,000 XAF per transaction. No maximum, but larger amounts get a better rate." },
+      { "q": "Is there a minimum amount?", "a": "No, there is no minimum amount. No maximum either, and larger amounts get a better rate." },
       { "q": "How is the rate calculated?", "a": "The base rate depends on the payment method. An adjustment applies based on your country. The higher the amount, the better the rate." },
       { "q": "How does my supplier know they've been paid?", "a": "You receive payment proof in the app: screenshot for Alipay/WeChat, confirmation for transfers, signature for cash." },
       { "q": "Are there hidden fees?", "a": "None. The displayed rate is the final rate. Zero additional commission, zero surprises." },

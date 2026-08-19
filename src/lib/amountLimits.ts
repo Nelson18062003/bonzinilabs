@@ -13,8 +13,12 @@
 /** Hard ceiling on any single deposit or payment. */
 export const MAX_AMOUNT_XAF = 50_000_000;
 
-/** Floor for a payment — below this the ¥ conversion is not worth a transfer. */
-export const MIN_PAYMENT_XAF = 10_000;
+/**
+ * Floor for a payment. There is no business minimum any more (the historical
+ * 10 000 XAF floor was removed in Aug 2026) — 1 simply means "a positive
+ * integer amount", which `isValidXafAmount` already requires.
+ */
+export const MIN_PAYMENT_XAF = 1;
 
 /** Floor for an admin-created deposit. */
 export const MIN_DEPOSIT_XAF = 1_000;

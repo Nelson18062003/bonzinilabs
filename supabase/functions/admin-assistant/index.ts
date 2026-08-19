@@ -52,7 +52,6 @@ const MODEL_EFFORT = ASSISTANT_EFFORT ? { output_config: { effort: ASSISTANT_EFF
 // La réflexion adaptative consomme des tokens de sortie → plafond largement relevé (on streame).
 const MAX_TOKENS = 16000;
 const MAX_TOOL_ITERATIONS = 14;
-const MIN_PAYMENT_XAF = 10_000;
 
 // ─── Instrumentation coût (Lot 1) ─────────────────────────────────────────────
 // Les COMPTES de tokens sont EXACTS (issus de l'API). Les tarifs ci-dessous sont
@@ -289,7 +288,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
 // Savoir métier détaillé — indexable en mémoire sémantique (reindex_knowledge) → récupéré just-in-time.
 const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
   { scope: "depots", content: "Cycle d'un dépôt : created → proof_submitted → admin_review → validated ou rejected. Valider un dépôt CRÉDITE le solde XAF (wallet) du client du montant confirmé. Un dépôt peut être créé sans preuve (en attente) puis validé quand l'argent est reçu." },
-  { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Minimum 10 000 XAF. Méthodes : alipay, wechat, bank_transfer, cash." },
+  { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Pas de montant minimum. Méthodes : alipay, wechat, bank_transfer, cash." },
   { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Des ajustements en pourcentage par pays et par palier affinent le taux final. Un paiement utilise le taux du jour, ou un taux personnalisé si l'admin en fixe un." },
   { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
   { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
@@ -1835,7 +1834,6 @@ const WRITE_TOOLS: WriteTool[] = [
       const c = await resolveClient(admin, a.client_user_id);
       if (!c.ok) return { ok: false, error: c.error };
       if (!amt) return { ok: false, error: "Montant invalide." };
-      if (amt < MIN_PAYMENT_XAF) return { ok: false, error: `Montant minimum ${fmtXAF(MIN_PAYMENT_XAF)}.` };
       const rateMethod = PAYMENT_METHOD_TO_RATE[a.method];
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
       const countryKey = (a.country_key || "cameroun").toLowerCase();
@@ -2524,7 +2522,7 @@ function buildSystemPrompt(role: string, firstName: string): string {
     ``,
     `CONNAISSANCE MÉTIER (socle — complète toujours par tes outils pour les chiffres réels) :`,
     `- DÉPÔT : created → proof_submitted → admin_review → validated (crédite le wallet XAF du client) ou rejected.`,
-    `- PAIEMENT fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected). Débite le wallet. Minimum 10 000 XAF. Modes : alipay, wechat, bank_transfer, cash.`,
+    `- PAIEMENT fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected). Débite le wallet. Pas de montant minimum. Modes : alipay, wechat, bank_transfer, cash.`,
     `- TAUX : en CNY (¥) pour 1 000 000 XAF, par mode ; ajustements en % par pays/palier ; un paiement utilise le taux du jour OU un taux personnalisé.`,
     `- TRÉSORERIE : on achète des USDT en XAF puis on les vend en CNY pour régler les fournisseurs chinois. Coût de revient en WAC ; le bénéfice = le spread achat/vente.`,
     `- WALLET : solde XAF du client (crédité par dépôt validé, débité par paiement) ; jamais modifié à la main sauf ajustement tracé.`,

@@ -44,8 +44,12 @@ describe('makeAmountStepSchema', () => {
     expect(schema.safeParse({ amountXAF: 5_000_000 }).success).toBe(true);
   });
 
-  it('rejects an amount below MIN_AMOUNT_XAF', () => {
-    const result = schema.safeParse({ amountXAF: 5_000 });
+  it('accepts a small amount — the 10 000 XAF business floor is gone', () => {
+    expect(schema.safeParse({ amountXAF: 5_000 }).success).toBe(true);
+  });
+
+  it('still rejects a zero amount', () => {
+    const result = schema.safeParse({ amountXAF: 0 });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].message).toBe('form.amountTooHigh');

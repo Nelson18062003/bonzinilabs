@@ -183,7 +183,7 @@
     },
     "rateDependsOnMethod": "The day rate depends on the chosen method.",
     "balanceAfterPayment": "Balance after payment",
-    "minMaxCaption": "Minimum 10,000 XAF · Maximum 50,000,000 XAF"
+    "minMaxCaption": "Maximum 50,000,000 XAF"
   },
   "detail": {
     "title": "Payment detail",

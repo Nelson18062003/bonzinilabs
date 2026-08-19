@@ -59,7 +59,8 @@ export const TIERS = [
   { key: 't1' as const, label: '10 000 \u{2013} 399 999 XAF', shortLabel: '10K\u{2013}399K', min: 10_000 },
 ] as const;
 
-export const MIN_AMOUNT_XAF = 10_000;
+// No business minimum any more — 1 just means "a positive amount".
+export const MIN_AMOUNT_XAF = 1;
 
 export type InputCurrency = 'xaf' | 'cny';
 

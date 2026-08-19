@@ -68,9 +68,22 @@ describe('computePaymentValues', () => {
     expect(result.amountRMB).toBeCloseTo(11_670, 0);
   });
 
-  it('flags amounts below 10 000 XAF as invalid', () => {
+  it('accepts amounts below the former 10 000 XAF floor', () => {
     const result = computePaymentValues({
       inputAmount: '5000',
+      currency: 'XAF',
+      selectedMethod: 'alipay',
+      walletBalanceXaf: 5_000_000,
+      clientRatesData: undefined,
+      clientCountryKey: 'cameroun',
+    });
+    expect(result.isValidAmount).toBe(true);
+    expect(result.showRate).toBe(true);
+  });
+
+  it('flags a zero amount as invalid', () => {
+    const result = computePaymentValues({
+      inputAmount: '0',
       currency: 'XAF',
       selectedMethod: 'alipay',
       walletBalanceXaf: 5_000_000,

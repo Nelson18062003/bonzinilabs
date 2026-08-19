@@ -289,7 +289,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       toast.error(
         amountValid
           ? 'Solde insuffisant pour ce paiement.'
-          : `Montant invalide — entre ${MIN_PAYMENT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`,
+          : `Montant invalide — maximum ${MAX_AMOUNT_XAF_LABEL} XAF.`,
       );
       return;
     }
@@ -757,11 +757,6 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             </Card>
 
             {/* Alertes montant */}
-            {xaf > 0 && xaf < MIN_PAYMENT_XAF && (
-              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
-                Minimum : {MIN_PAYMENT_XAF.toLocaleString('fr-FR')} XAF
-              </div>
-            )}
             {amountOverCap && (
               <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
                 Maximum : {MAX_AMOUNT_XAF_LABEL} XAF par paiement

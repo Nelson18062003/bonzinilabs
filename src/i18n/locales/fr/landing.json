@@ -82,7 +82,7 @@
     "title": "Vos questions",
     "items": [
       { "q": "Les paiements sont-ils vraiment instantan\u00e9s ?", "a": "Oui. Les paiements Alipay et WeChat sont trait\u00e9s en quelques minutes. Les virements bancaires prennent g\u00e9n\u00e9ralement quelques heures. Le cash est imm\u00e9diat." },
-      { "q": "Quel est le montant minimum ?", "a": "10 000 XAF par transaction. Pas de maximum, mais les gros montants b\u00e9n\u00e9ficient d'un meilleur taux." },
+      { "q": "Y a-t-il un montant minimum ?", "a": "Non, aucun montant minimum. Pas de maximum non plus, et les gros montants b\u00e9n\u00e9ficient d'un meilleur taux." },
       { "q": "Comment le taux est-il calcul\u00e9 ?", "a": "Le taux de base d\u00e9pend du mode de paiement. Un ajustement s'applique selon votre pays. Plus le montant est \u00e9lev\u00e9, meilleur est le taux." },
       { "q": "Comment mon fournisseur sait-il qu'il a \u00e9t\u00e9 pay\u00e9 ?", "a": "Vous recevez une preuve de paiement dans l'application : capture d'\u00e9cran pour Alipay/WeChat, confirmation pour les virements, signature pour le cash." },
       { "q": "Y a-t-il des frais cach\u00e9s ?", "a": "Aucun. Le taux affich\u00e9 est le taux final. Z\u00e9ro commission suppl\u00e9mentaire, z\u00e9ro surprise." },
