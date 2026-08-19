@@ -94,8 +94,17 @@ function respond(url) {
 
 export { respond };
 export function headCount(url) {
-  if (url.includes('/deposits')) return 7;
+  if (url.includes('/deposits')) {
+    if (url.includes('status=eq.pending_correction')) return 2;
+    if (url.includes('status=in.')) return 7;
+    if (url.includes('status=eq.')) return 3;
+    return 3214;
+  }
   if (url.includes('/payments')) {
+    // usePaymentStats issues one eq-count per status — mirror each exactly.
+    if (url.includes('status=eq.ready_for_payment')) return 4;
+    if (url.includes('status=eq.cash_scanned')) return 1;
+    if (url.includes('status=eq.waiting_beneficiary_info')) return 1;
     if (url.includes('status=eq.processing')) return 3;
     if (url.includes('status=eq.completed')) return 5613;
     if (url.includes('status=in.')) return 5;

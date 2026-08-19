@@ -11,7 +11,7 @@
  * Fixes the audit's permission gap: every action is gated on
  * hasPermission('canProcessDeposits'), not on status alone.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useAdminDepositDetail,
@@ -22,9 +22,10 @@ import {
   useRejectDeposit,
   useStartDepositReview,
   useAdminUploadProofs,
+  useAdminDeleteProof,
   useCancelDeposit,
 } from '@/hooks/useAdminDeposits';
-import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS_SHORT, REJECTION_REASONS } from '@/types/deposit';
+import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS_SHORT, REJECTION_REASONS, PROOF_DELETE_REASONS } from '@/types/deposit';
 import { buildDepositTimelineSteps, getDepositSlaLevel } from '@/lib/depositTimeline';
 import { getFamilyFromMethod } from '@/lib/depositsList';
 import { formatCurrency } from '@/lib/formatters';
@@ -64,6 +65,7 @@ import {
   Download,
   MoreHorizontal,
   Plus,
+  RefreshCw,
   Trash2,
   Wallet,
   X,
@@ -77,6 +79,7 @@ import { DepositReceiptPDF, type DepositReceiptData } from '@/lib/pdf/templates/
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
 import { usePasteFiles } from '@/hooks/usePasteFiles';
+import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD } from '@/lib/clipboardFiles';
 
 function fmt(n: number) {
   return Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -138,6 +141,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
   const rejectDeposit = useRejectDeposit();
   const startReview = useStartDepositReview();
   const uploadProofs = useAdminUploadProofs();
+  const deleteProof = useAdminDeleteProof();
   const cancelDeposit = useCancelDeposit();
 
   const [proofIndex, setProofIndex] = useState(0);
@@ -155,6 +159,11 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [deleteProofId, setDeleteProofId] = useState<string | null>(null);
+  const [deleteProofReason, setDeleteProofReason] = useState('');
+  const [customDeleteReason, setCustomDeleteReason] = useState('');
+  const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
+  const replaceFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (deposit) setConfirmedAmount(deposit.amount_xaf.toString());
@@ -234,6 +243,52 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
       },
     );
   }, [depositId, rejectionCategory, clientMessage, adminNote, rejectDeposit]);
+
+  const handleDeleteProof = useCallback(() => {
+    if (!deleteProofId) return;
+    const reason = deleteProofReason === 'Autre' ? customDeleteReason : deleteProofReason;
+    if (!reason) return;
+    deleteProof.mutate(
+      { proofId: deleteProofId, depositId, reason },
+      {
+        onSuccess: () => {
+          setDeleteProofId(null);
+          setDeleteProofReason('');
+          setCustomDeleteReason('');
+          setProofIndex(0);
+        },
+      },
+    );
+  }, [deleteProofId, depositId, deleteProofReason, customDeleteReason, deleteProof]);
+
+  // Remplacement : upload de la nouvelle version PUIS suppression tracée de
+  // l'ancienne (même séquence que la fiche mobile — jamais l'inverse).
+  const handleReplaceFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const picked = e.target.files?.[0];
+      if (replaceFileRef.current) replaceFileRef.current.value = '';
+      if (!picked || !replaceProofId || !deposit) return;
+      const { accepted, rejected } = partitionUploadFiles([picked]);
+      const problem = rejectionMessage(rejected);
+      if (problem) {
+        toast.error(problem);
+        setReplaceProofId(null);
+        return;
+      }
+      const file = accepted[0];
+      const oldProofId = replaceProofId;
+      setReplaceProofId(null);
+      uploadProofs.mutate(
+        { depositId, userId: deposit.user_id, files: [file], depositStatus: deposit.status },
+        {
+          onSuccess: () => {
+            deleteProof.mutate({ proofId: oldProofId, depositId, reason: 'Remplacée par une nouvelle version' });
+          },
+        },
+      );
+    },
+    [replaceProofId, deposit, depositId, uploadProofs, deleteProof],
+  );
 
   const handleUpload = useCallback(() => {
     if (!deposit || selectedFiles.length === 0) return;
@@ -457,6 +512,29 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                     <Download className="h-3 w-3" /> Télécharger
                   </a>
                 </div>
+                {canProcess && !isLocked && (
+                  <div className="mt-1.5 flex gap-1.5">
+                    <button
+                      type="button"
+                      disabled={uploadProofs.isPending}
+                      onClick={() => {
+                        setReplaceProofId(proof.id);
+                        replaceFileRef.current?.click();
+                      }}
+                      className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold disabled:opacity-40', SOFT_PILL)}
+                    >
+                      <RefreshCw className="h-3 w-3" /> Remplacer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteProofId(proof.id)}
+                      className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-[#FBE7E7] text-[10px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                    >
+                      <Trash2 className="h-3 w-3" /> Supprimer
+                    </button>
+                  </div>
+                )}
+                <input ref={replaceFileRef} type="file" accept={ACCEPT_UPLOAD} onChange={handleReplaceFileSelect} className="hidden" />
               </>
             ) : (
               <div className="rounded-2xl border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
@@ -774,6 +852,75 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
         <p className={cn('text-[13px]', TEXT.muted)}>
           Le dépôt sera marqué comme annulé et le solde ajusté si nécessaire. {clientName} — {fmt(deposit.amount_xaf)} XAF.
         </p>
+      </CenterDialog>
+
+      {/* ── Dialogue : supprimer une preuve (motif obligatoire, tracé) ──── */}
+      <CenterDialog
+        open={!!deleteProofId}
+        onClose={() => {
+          setDeleteProofId(null);
+          setDeleteProofReason('');
+          setCustomDeleteReason('');
+        }}
+        onConfirm={
+          deleteProofReason && (deleteProofReason !== 'Autre' || customDeleteReason) && !deleteProof.isPending
+            ? handleDeleteProof
+            : undefined
+        }
+        title="Supprimer cette preuve ?"
+        footer={
+          <>
+            <SoftPill
+              onClick={() => {
+                setDeleteProofId(null);
+                setDeleteProofReason('');
+                setCustomDeleteReason('');
+              }}
+              className="flex-1"
+            >
+              Annuler
+            </SoftPill>
+            <PrimaryPill
+              onClick={handleDeleteProof}
+              loading={deleteProof.isPending}
+              disabled={!deleteProofReason || (deleteProofReason === 'Autre' && !customDeleteReason)}
+              danger
+              className="flex-[1.4]"
+            >
+              Supprimer
+            </PrimaryPill>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className={cn('text-[13px]', TEXT.muted)}>Cette action est irréversible et journalisée avec son motif.</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PROOF_DELETE_REASONS.map((reason) => (
+              <button
+                key={reason}
+                type="button"
+                onClick={() => setDeleteProofReason(reason)}
+                className={cn(
+                  'rounded-xl px-3 py-2 text-left text-[12.5px] font-semibold ring-1 transition-colors',
+                  deleteProofReason === reason
+                    ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                    : cn(SURFACE.canvas, 'ring-transparent', TEXT.strong),
+                )}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+          {deleteProofReason === 'Autre' && (
+            <textarea
+              value={customDeleteReason}
+              onChange={(e) => setCustomDeleteReason(e.target.value)}
+              rows={2}
+              placeholder="Précisez le motif…"
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+            />
+          )}
+        </div>
       </CenterDialog>
 
       {/* ── Visionneuse plein écran ─────────────────────────────────────── */}
