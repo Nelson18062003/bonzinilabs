@@ -1819,6 +1819,7 @@ export type Database = {
           p_amount_xaf: number
           p_bank_name?: string
           p_client_phone?: string
+          p_desired_date?: string
           p_method: Database["public"]["Enums"]["deposit_method"]
           p_user_id: string
         }

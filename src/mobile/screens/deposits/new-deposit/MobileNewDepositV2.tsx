@@ -15,6 +15,7 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { formatCurrency } from '@/lib/formatters';
 import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
+import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -149,6 +150,9 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
   const [selectedAgency, setSelectedAgency] = useState<AgencyOption | null>(null);
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [adminComment, setAdminComment] = useState('');
+  // Date de l'opération — « maintenant » par défaut, antidatable
+  const [useCustomDate, setUseCustomDate] = useState(false);
+  const [customDateStr, setCustomDateStr] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Écran succès V2
@@ -301,12 +305,18 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
       toast.error(`Montant invalide — entre ${MIN_DEPOSIT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`);
       return;
     }
+    const opDate = resolveOperationDate(useCustomDate, customDateStr);
+    if (opDate.error) {
+      toast.error(opDate.error);
+      return;
+    }
     goTo('creating');
     try {
       const result = await createDeposit.mutateAsync({
         user_id: selectedClient.user_id,
         amount_xaf: amountNum,
         method: getDepositMethod(),
+        desired_date: opDate.date,
         bank_name: selectedBank ? banks.find((b) => b.bank === selectedBank)?.label : undefined,
         agency_name: selectedAgency ? agencies.find((a) => a.agency === selectedAgency)?.label : undefined,
         admin_comment: adminComment || undefined,
@@ -646,6 +656,17 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 );
               })}
             </div>
+            <OperationDateCard
+              className="mt-3"
+              enabled={useCustomDate}
+              value={customDateStr}
+              onToggle={(on, nowLocal) => {
+                setUseCustomDate(on);
+                if (on && !customDateStr) setCustomDateStr(nowLocal);
+              }}
+              onChange={setCustomDateStr}
+              accent={GREEN}
+            />
             {amountOverCap && (
               <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#C0504D] bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
@@ -841,6 +862,9 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 {[
                   { l: 'Client', v: `${selectedClient?.first_name} ${selectedClient?.last_name}` },
                   { l: 'Méthode', v: info.title },
+                  useCustomDate && customDateStr
+                    ? { l: 'Date', v: new Date(customDateStr).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+                    : null,
                   selectedBank
                     ? { l: 'Banque', v: banks.find((b) => b.bank === selectedBank)?.label || selectedBank }
                     : null,
