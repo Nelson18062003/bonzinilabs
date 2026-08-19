@@ -71,7 +71,7 @@ export function DesktopNotificationsMenu() {
             className={cn(
               'absolute right-0 top-full z-50 mt-2 w-[384px] overflow-hidden rounded-[20px]',
               SURFACE.card,
-              'shadow-[0_18px_50px_-12px_rgba(46,32,92,0.35)] ring-1 ring-black/[0.06] dark:ring-white/[0.08]',
+              'ring-1 ring-black/[0.10] dark:ring-white/[0.10]',
             )}
           >
             <header className="flex items-center justify-between gap-2 border-b border-black/[0.05] px-4 py-3 dark:border-white/[0.06]">

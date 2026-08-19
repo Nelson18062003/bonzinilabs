@@ -91,7 +91,7 @@ export function DesktopGlobalSearch() {
             className={cn(
               'absolute left-0 top-full z-50 mt-2 w-[420px] overflow-hidden rounded-[20px]',
               SURFACE.card,
-              'shadow-[0_18px_50px_-12px_rgba(46,32,92,0.35)] ring-1 ring-black/[0.06] dark:ring-white/[0.08]',
+              'ring-1 ring-black/[0.10] dark:ring-white/[0.10]',
             )}
           >
             {isLoading || !data ? (

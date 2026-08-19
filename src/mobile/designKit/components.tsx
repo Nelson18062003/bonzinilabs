@@ -484,7 +484,7 @@ export function BottomSheet({
             className={cn(
               'relative max-h-[90dvh] overflow-y-auto rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
               SURFACE.card,
-              'shadow-[0_-12px_40px_-12px_rgba(46,32,92,0.30)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
+              'ring-1 ring-black/[0.08] dark:ring-white/[0.06]',
               className,
             )}
           >

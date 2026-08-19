@@ -33,7 +33,7 @@ export function DesktopSidebar() {
       className={cn(
         'fixed inset-y-0 left-0 z-20 flex w-64 flex-col',
         SURFACE.card,
-        'shadow-[1px_0_0_rgba(46,32,92,0.06)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
+        'border-r border-black/[0.06] dark:border-white/[0.06]',
       )}
     >
       {/* Brand */}
@@ -67,10 +67,7 @@ export function DesktopSidebar() {
                       cn(
                         'mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]',
                         isActive
-                          ? cn(
-                              'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]',
-                              'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.25)]',
-                            )
+                          ? 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]'
                           : cn(TEXT.strong, 'hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]'),
                       )
                     }

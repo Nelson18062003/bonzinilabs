@@ -15,8 +15,11 @@ export const SURFACE = {
   canvas: 'bg-[#ECEAF7] dark:bg-[#141320]',
   /** Primary elevated surface. */
   card: 'bg-white dark:bg-[#211F2B]',
-  /** Soft diffuse shadow (replaces hard borders). Dark mode: ring instead. */
-  shadow: 'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]',
+  /** Surface delineation: a crisp hairline ring — flat, no drop shadows.
+   *  (Was a soft diffuse shadow; removed app-wide on the founder's decision —
+   *  the diffuse blur under every surface read as disorganised. Borders give
+   *  the same separation with more structure.) */
+  shadow: 'ring-1 ring-black/[0.06] dark:ring-white/[0.06]',
   /** Neutral round holder for icons/initials. */
   holder: 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]',
 } as const;

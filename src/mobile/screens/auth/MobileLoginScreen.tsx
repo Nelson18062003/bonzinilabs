@@ -81,7 +81,7 @@ function MethodRow({
         'w-full flex items-center gap-3.5 rounded-2xl px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-50',
         primary
           ? 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]'
-          : 'bg-white text-[#1B1A24] shadow-[0_4px_18px_-10px_rgba(46,32,92,0.35)] dark:bg-[#211F2B] dark:text-[#F2F1F7]',
+          : 'bg-white text-[#1B1A24] ring-1 ring-black/[0.08] dark:bg-[#211F2B] dark:text-[#F2F1F7]',
       )}
     >
       <span
