@@ -375,6 +375,7 @@ export function useAdminCreateDeposit() {
         p_bank_name: data.bank_name || null,
         p_agency_name: data.agency_name || null,
         p_client_phone: data.client_phone || null,
+        p_desired_date: data.desired_date?.toISOString() || undefined,
       });
 
       if (error) throw error;

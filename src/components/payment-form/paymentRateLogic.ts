@@ -50,7 +50,7 @@ export interface ComputedPaymentValues {
   balanceAfter: number;
   /** True when the wallet covers the XAF amount. */
   hasEnoughBalance: boolean;
-  /** True when the amount is in [10 000 ; 50 000 000] XAF and is a safe int. */
+  /** True when the amount is a positive safe int of at most 50 000 000 XAF. */
   isValidAmount: boolean;
   /** True once the user has typed enough that we can show a rate hint. */
   showRate: boolean;
@@ -112,8 +112,8 @@ export function computePaymentValues(params: {
 
   const hasEnoughBalance = amountXAF <= walletBalanceXaf;
   const isValidAmount =
-    amountXAF >= 10_000 && amountXAF <= 50_000_000 && Number.isSafeInteger(amountXAF);
-  const showRate = amountXAF >= 10_000;
+    amountXAF > 0 && amountXAF <= 50_000_000 && Number.isSafeInteger(amountXAF);
+  const showRate = amountXAF > 0;
   const balanceAfter = walletBalanceXaf - amountXAF;
 
   return { rate, amountXAF, amountRMB, balanceAfter, hasEnoughBalance, isValidAmount, showRate };

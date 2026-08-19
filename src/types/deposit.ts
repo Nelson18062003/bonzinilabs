@@ -185,6 +185,8 @@ export interface AdminCreateDepositData {
   client_phone?: string;
   admin_comment?: string;
   proofFiles?: File[];
+  /** Date réelle de l'opération (antidatage admin) — défaut : maintenant. */
+  desired_date?: Date;
 }
 
 // ---------- Stats ----------

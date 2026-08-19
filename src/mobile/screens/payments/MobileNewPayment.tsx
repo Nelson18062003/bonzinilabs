@@ -18,6 +18,7 @@ import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
+import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { useCountUp } from '@/hooks/useCountUp';
 import {
   useAdminClientBeneficiaries,
@@ -179,6 +180,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const [rawAmount, setRawAmount] = useState('');
   const [useCustomRate, setUseCustomRate] = useState(false);
   const [customRateStr, setCustomRateStr] = useState(String(FALLBACK_RATE));
+  // Date de l'opération — « maintenant » par défaut, antidatable
+  const [useCustomDate, setUseCustomDate] = useState(false);
+  const [customDateStr, setCustomDateStr] = useState('');
 
   // Bénéficiaire
   const [benef, setBenef] = useState<Benef>(BENEF0);
@@ -255,6 +259,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     setStep(1); setSearch(''); setClient(null); setMode(null);
     setInputCurrency('xaf'); setRawAmount('');
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
+    setUseCustomDate(false); setCustomDateStr('');
     setBenef(BENEF0); setSkipBenef(false);
     setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
     removeQr(); setDone(null);
@@ -289,8 +294,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       toast.error(
         amountValid
           ? 'Solde insuffisant pour ce paiement.'
-          : `Montant invalide — entre ${MIN_PAYMENT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`,
+          : `Montant invalide — maximum ${MAX_AMOUNT_XAF_LABEL} XAF.`,
       );
+      return;
+    }
+
+    const opDate = resolveOperationDate(useCustomDate, customDateStr);
+    if (opDate.error) {
+      toast.error(opDate.error);
       return;
     }
 
@@ -396,6 +407,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         exchange_rate: rate,
         method: dbMethod,
         rate_is_custom: useCustomRate,
+        desired_date: opDate.date,
         beneficiary_id: beneficiaryId,
         beneficiary_details: snapshot,
         ...benefPayload,
@@ -756,12 +768,20 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               )}
             </Card>
 
+            {/* Bloc date de l'opération */}
+            <OperationDateCard
+              className="mt-2.5"
+              enabled={useCustomDate}
+              value={customDateStr}
+              onToggle={(on, nowLocal) => {
+                setUseCustomDate(on);
+                if (on && !customDateStr) setCustomDateStr(nowLocal);
+              }}
+              onChange={setCustomDateStr}
+              accent={VIOLET}
+            />
+
             {/* Alertes montant */}
-            {xaf > 0 && xaf < MIN_PAYMENT_XAF && (
-              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
-                Minimum : {MIN_PAYMENT_XAF.toLocaleString('fr-FR')} XAF
-              </div>
-            )}
             {amountOverCap && (
               <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
                 Maximum : {MAX_AMOUNT_XAF_LABEL} XAF par paiement
@@ -1102,6 +1122,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   ? { l: 'Email', v: selectedBenef?.email || benef.email }
                   : null,
                 { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : ''}` },
+                useCustomDate && customDateStr
+                  ? { l: 'Date', v: new Date(customDateStr).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+                  : null,
               ] as ({ l: string; v: string | undefined } | null)[])
                 .filter((r): r is { l: string; v: string } => !!r && !!r.v)
                 .map((r, i) => (

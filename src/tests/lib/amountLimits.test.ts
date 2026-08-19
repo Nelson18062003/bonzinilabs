@@ -42,8 +42,13 @@ describe('isValidXafAmount', () => {
   });
 
   it('enforces the caller-supplied floor', () => {
-    expect(isValidXafAmount(5_000, MIN_PAYMENT_XAF)).toBe(false);
+    expect(isValidXafAmount(500, MIN_DEPOSIT_XAF)).toBe(false);
     expect(isValidXafAmount(5_000, MIN_DEPOSIT_XAF)).toBe(true);
+  });
+
+  it('payments have no business minimum any more', () => {
+    expect(isValidXafAmount(500, MIN_PAYMENT_XAF)).toBe(true);
+    expect(isValidXafAmount(1, MIN_PAYMENT_XAF)).toBe(true);
   });
 });
 
@@ -59,7 +64,7 @@ describe('xafAmountError', () => {
   });
 
   it('explains an under-floor amount', () => {
-    expect(xafAmountError(500, MIN_PAYMENT_XAF)).toContain('minimum');
+    expect(xafAmountError(500, MIN_DEPOSIT_XAF)).toContain('minimum');
   });
 
   it('flags a NaN parse as invalid rather than as a range problem', () => {

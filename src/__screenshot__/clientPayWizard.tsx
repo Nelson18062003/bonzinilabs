@@ -152,7 +152,7 @@ export function WizAmount() {
         ))}
       </div>
 
-      <p className={cn('px-1 text-center text-[11px]', TEXT.muted)}>Minimum 10 000 XAF · Maximum 50 000 000 XAF</p>
+      <p className={cn('px-1 text-center text-[11px]', TEXT.muted)}>Maximum 50 000 000 XAF</p>
     </Frame>
   );
 }
