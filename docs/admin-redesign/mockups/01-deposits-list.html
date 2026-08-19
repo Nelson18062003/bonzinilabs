@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dépôts — Bonzini Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="bonzini-admin.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div>
+        <div class="brand-name">Bonzini Labs</div>
+        <div class="brand-env">Admin</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Tableau de bord</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M8 4h8"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Mola</div>
+      <div class="nav-item active"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 21h16"/></svg>Dépôts<span class="nav-badge">12</span></div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0 4 4m-4-4-4 4"/><path d="M4 3h16"/></svg>Paiements<span class="nav-badge">7</span></div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Clients</div>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Opérations</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M4 18h16M6 18V9m4 9V9m4 9V9m4 9V9M2 9l10-6 10 6z"/></svg>Trésorerie</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Taux de change</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24m5.66 0 4.24-4.24m0 14.14-4.24-4.24m-5.66 0-4.24 4.24"/></svg>Support</div>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Système</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>Administrateurs</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/></svg>Journaux</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1"/></svg>Paramètres</div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar">NA</div>
+        <div class="user-meta">
+          <div class="name">Nelson A.</div>
+          <div class="role">Super admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb"><b>Dépôts</b></div>
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Rechercher…
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="rate-chip num"><span class="dot"></span>1M XAF = ¥11 530</div>
+      <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ping"></span></div>
+    </header>
+
+    <div class="content">
+      <!-- Page head -->
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Dépôts</h1>
+          <p class="page-sub num">1 248 dépôts au total · 12 en attente de traitement</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Exporter</button>
+          <button class="btn btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Nouveau dépôt</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-label"><span class="kpi-dot" style="background:var(--amber-600)"></span>À traiter</div>
+          <div class="kpi-value num">12</div>
+          <div class="kpi-hint alert num">3 en retard SLA (&gt; 8 h)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label"><span class="kpi-dot" style="background:var(--blue-500)"></span>À corriger</div>
+          <div class="kpi-value num">4</div>
+          <div class="kpi-hint">En attente du client</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label"><span class="kpi-dot" style="background:var(--green-500)"></span>Validés aujourd'hui</div>
+          <div class="kpi-value num">32</div>
+          <div class="kpi-hint num">+8 vs hier</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label"><span class="kpi-dot" style="background:var(--violet-500)"></span>Volume aujourd'hui</div>
+          <div class="kpi-value num">18,4 M <span style="font-size:13px;font-weight:550;color:var(--text-tertiary)">XAF</span></div>
+          <div class="kpi-hint num">32 dépôts validés</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="toolbar">
+          <div class="tb-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Nom, téléphone ou référence…
+          </div>
+          <div class="seg">
+            <div class="seg-item active">Tous <span class="n num">1 248</span></div>
+            <div class="seg-item">À traiter <span class="n num">12</span></div>
+            <div class="seg-item">À corriger <span class="n num">4</span></div>
+            <div class="seg-item">Validés</div>
+            <div class="seg-item">Rejetés</div>
+          </div>
+          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+            <div class="select"><span class="lbl">Méthode</span> Toutes <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            <div class="select"><span class="lbl">Période</span> 7 derniers jours <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            <span class="link-reset">Réinitialiser</span>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:120px">Référence</th>
+              <th>Client</th>
+              <th class="r" style="width:150px">Montant</th>
+              <th style="width:160px">Méthode</th>
+              <th style="width:150px">Statut</th>
+              <th style="width:120px">Reçu</th>
+              <th style="width:44px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ref">BZ-DP-2481</span></td>
+              <td class="cell-client"><div class="cname">Clarisse Ngo Bassong</div><div class="cphone num">+237 6 94 12 45 08</div></td>
+              <td class="r"><span class="amount num">2 500 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-om">OM</span>Orange Money</div></td>
+              <td><span class="badge b-info"><span class="bdot"></span>Preuve soumise</span></td>
+              <td><span class="age num"><span class="sla sla-ok"></span>il y a 1 h</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr class="selected">
+              <td><span class="ref">BZ-DP-2480</span></td>
+              <td class="cell-client"><div class="cname">Ernest Tchoupo</div><div class="cphone num">+237 6 77 03 22 61</div></td>
+              <td class="r"><span class="amount num">7 800 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-bank">BQ</span>Afriland First Bank</div></td>
+              <td><span class="badge b-info"><span class="bdot"></span>En vérification</span></td>
+              <td><span class="age num"><span class="sla sla-warn"></span>il y a 5 h</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2479</span></td>
+              <td class="cell-client"><div class="cname">Aïcha Mbarga</div><div class="cphone num">+237 6 50 88 14 32</div></td>
+              <td class="r"><span class="amount num">1 200 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-mtn">MO</span>MTN MoMo</div></td>
+              <td><span class="badge b-info"><span class="bdot"></span>Preuve soumise</span></td>
+              <td><span class="age late num"><span class="sla sla-late"></span>il y a 11 h</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2478</span></td>
+              <td class="cell-client"><div class="cname">Société KMD Import</div><div class="cphone num">+237 6 98 45 90 17</div></td>
+              <td class="r"><span class="amount num">15 000 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-ag">AG</span>Agence Bonzini</div></td>
+              <td><span class="badge b-pending"><span class="bdot"></span>En attente de preuve</span></td>
+              <td><span class="age num"><span class="sla sla-ok"></span>il y a 2 h</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2477</span></td>
+              <td class="cell-client"><div class="cname">Franck Essomba</div><div class="cphone num">+237 6 91 27 63 44</div></td>
+              <td class="r"><span class="amount num">4 350 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-om">OM</span>Orange Money</div></td>
+              <td><span class="badge b-pending"><span class="bdot"></span>À corriger</span></td>
+              <td><span class="age num"><span class="sla sla-ok"></span>hier, 16:42</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2476</span></td>
+              <td class="cell-client"><div class="cname">Marthe Ayissi</div><div class="cphone num">+237 6 55 71 30 95</div></td>
+              <td class="r"><span class="amount num">950 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-wave">WV</span>Wave</div></td>
+              <td><span class="badge b-success"><span class="bdot"></span>Validé</span></td>
+              <td><span class="age num">hier, 14:18</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2475</span></td>
+              <td class="cell-client"><div class="cname">Ets Fotso &amp; Fils</div><div class="cphone num">+237 6 79 08 52 26</div></td>
+              <td class="r"><span class="amount num">22 000 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-bank">BQ</span>UBA Cameroun</div></td>
+              <td><span class="badge b-success"><span class="bdot"></span>Validé</span></td>
+              <td><span class="age num">hier, 11:05</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2474</span></td>
+              <td class="cell-client"><div class="cname">Rosine Kamdem</div><div class="cphone num">+237 6 96 33 78 10</div></td>
+              <td class="r"><span class="amount num">600 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-mtn">MO</span>MTN MoMo</div></td>
+              <td><span class="badge b-danger"><span class="bdot"></span>Rejeté</span></td>
+              <td><span class="age num">hier, 09:51</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2473</span></td>
+              <td class="cell-client"><div class="cname">Blaise Nkoulou</div><div class="cphone num">+237 6 52 40 96 73</div></td>
+              <td class="r"><span class="amount num">3 100 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-ag">AG</span>Agence Bonzini</div></td>
+              <td><span class="badge b-success"><span class="bdot"></span>Validé</span></td>
+              <td><span class="age num">12 août, 17:26</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+            <tr>
+              <td><span class="ref">BZ-DP-2472</span></td>
+              <td class="cell-client"><div class="cname">Diane Eyenga</div><div class="cphone num">+237 6 90 15 84 59</div></td>
+              <td class="r"><span class="amount num">8 750 000<span class="cur">XAF</span></span></td>
+              <td><div class="method"><span class="m-ic m-bank">BQ</span>SGC Cameroun</div></td>
+              <td><span class="badge b-neutral"><span class="bdot"></span>Annulé</span></td>
+              <td><span class="age num">12 août, 15:02</span></td>
+              <td><div class="row-more">⋯</div></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="table-foot">
+          <span class="num">1–25 sur 1 248</span>
+          <div class="select" style="height:28px"><span class="lbl">Afficher</span> 25 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="pager">
+            <div class="page-btn">‹</div>
+            <div class="page-btn cur">1</div>
+            <div class="page-btn">2</div>
+            <div class="page-btn">3</div>
+            <div class="page-btn">…</div>
+            <div class="page-btn">50</div>
+            <div class="page-btn">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

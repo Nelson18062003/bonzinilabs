@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Nouveau dépôt — Bonzini Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="bonzini-admin.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div>
+        <div class="brand-name">Bonzini Labs</div>
+        <div class="brand-env">Admin</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Tableau de bord</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M8 4h8"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Mola</div>
+      <div class="nav-item active"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 21h16"/></svg>Dépôts<span class="nav-badge">12</span></div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0 4 4m-4-4-4 4"/><path d="M4 3h16"/></svg>Paiements<span class="nav-badge">7</span></div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Clients</div>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Opérations</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M4 18h16M6 18V9m4 9V9m4 9V9m4 9V9M2 9l10-6 10 6z"/></svg>Trésorerie</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Taux de change</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24m5.66 0 4.24-4.24m0 14.14-4.24-4.24m-5.66 0-4.24 4.24"/></svg>Support</div>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Système</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>Administrateurs</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/></svg>Journaux</div>
+      <div class="nav-item"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1"/></svg>Paramètres</div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar">NA</div>
+        <div class="user-meta">
+          <div class="name">Nelson A.</div>
+          <div class="role">Super admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">Dépôts <span>/</span> <b>Nouveau dépôt</b></div>
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Rechercher…
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="rate-chip num"><span class="dot"></span>1M XAF = ¥11 530</div>
+      <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ping"></span></div>
+    </header>
+
+    <div class="content" style="max-width:1180px">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Nouveau dépôt</h1>
+      <p class="page-sub">Enregistrer un dépôt reçu d'un client — le portefeuille sera crédité après validation.</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-ghost">Annuler</button>
+    </div>
+  </div>
+
+  <div class="form-grid">
+    <div>
+      <!-- 1. Client -->
+      <div class="form-card">
+        <div class="fc-head">
+          <span class="fc-num done">✓</span>
+          <span class="fc-title">Client</span>
+        </div>
+        <div class="fc-body">
+          <div class="client-selected">
+            <div class="avatar" style="width:34px;height:34px;font-size:12.5px">ET</div>
+            <div>
+              <div class="cs-name">Ernest Tchoupo</div>
+              <div class="cs-meta num">+237 6 77 03 22 61 · KYC vérifié</div>
+            </div>
+            <div class="cs-balance">
+              <div class="l">Portefeuille</div>
+              <div class="v num">4 120 000 XAF</div>
+            </div>
+            <span class="cs-change">Changer</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Montant -->
+      <div class="form-card">
+        <div class="fc-head">
+          <span class="fc-num cur">2</span>
+          <span class="fc-title">Montant</span>
+        </div>
+        <div class="fc-body">
+          <div class="amount-input">
+            <span class="val num">7 800 000</span>
+            <span class="caret"></span>
+            <span class="cur">XAF</span>
+          </div>
+          <div class="presets">
+            <span class="preset">100 000</span>
+            <span class="preset">500 000</span>
+            <span class="preset">1 000 000</span>
+            <span class="preset">2 000 000</span>
+            <span class="preset">5 000 000</span>
+          </div>
+          <p class="help num">Minimum 1 000 XAF · maximum 50 000 000 XAF par dépôt.</p>
+        </div>
+      </div>
+
+      <!-- 3. Méthode -->
+      <div class="form-card">
+        <div class="fc-head">
+          <span class="fc-num cur">3</span>
+          <span class="fc-title">Méthode de dépôt</span>
+        </div>
+        <div class="fc-body">
+          <div class="methods">
+            <div class="method-card sel">
+              <span class="m-ic m-bank">BQ</span>
+              <div class="m-name">Banque</div>
+              <div class="m-sub">Virement / dépôt</div>
+            </div>
+            <div class="method-card">
+              <span class="m-ic m-ag">AG</span>
+              <div class="m-name">Agence</div>
+              <div class="m-sub">Espèces</div>
+            </div>
+            <div class="method-card">
+              <span class="m-ic m-om">OM</span>
+              <div class="m-name">Orange Money</div>
+              <div class="m-sub">Mobile</div>
+            </div>
+            <div class="method-card">
+              <span class="m-ic m-mtn">MO</span>
+              <div class="m-name">MTN MoMo</div>
+              <div class="m-sub">Mobile</div>
+            </div>
+            <div class="method-card">
+              <span class="m-ic m-wave">WV</span>
+              <div class="m-name">Wave</div>
+              <div class="m-sub">Mobile</div>
+            </div>
+          </div>
+          <div class="sub-select">
+            <label class="field-label">Banque réceptrice</label>
+            <div class="input" style="justify-content:space-between; max-width:340px;">
+              Afriland First Bank
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Détails -->
+      <div class="form-card">
+        <div class="fc-head">
+          <span class="fc-num">4</span>
+          <span class="fc-title">Détails</span>
+          <span class="fc-opt">optionnel</span>
+        </div>
+        <div class="fc-body">
+          <div style="display:flex; gap:20px; margin-bottom:16px; align-items:flex-end;">
+            <div>
+              <label class="field-label">Date de l'opération</label>
+              <div class="date-pill">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                Aujourd'hui, 19 août 2026
+                <span class="chg">Modifier</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label class="field-label">Preuves de dépôt</label>
+            <div class="dropzone">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Glisser-déposer, <b>parcourir</b>, ou coller avec Ctrl+V
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Note interne</label>
+            <div class="textarea">Visible uniquement par l'équipe…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <aside class="summary">
+      <div class="sum-head">Récapitulatif</div>
+      <div class="sum-body">
+        <div class="sum-row"><span class="k">Client</span><span class="v">Ernest Tchoupo</span></div>
+        <div class="sum-row"><span class="k">Méthode</span><span class="v">Banque · Afriland</span></div>
+        <div class="sum-row"><span class="k">Date d'opération</span><span class="v num">19 août 2026</span></div>
+        <div class="sum-row"><span class="k">Preuves</span><span class="v" style="color:var(--text-tertiary)">Aucune</span></div>
+        <div class="sum-amount">
+          <div class="l">Montant du dépôt</div>
+          <div class="v num">7 800 000 <span class="cur">XAF</span></div>
+        </div>
+        <div class="sum-balance">
+          <span>Portefeuille après validation</span>
+          <b class="num">11 920 000 XAF</b>
+        </div>
+      </div>
+      <div class="sum-foot">
+        <button class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">Créer le dépôt</button>
+        <div class="sum-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Le dépôt sera créé au statut « En attente de preuve ». Le portefeuille du client ne sera crédité qu'après validation.
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
