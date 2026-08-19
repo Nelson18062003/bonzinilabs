@@ -23,7 +23,7 @@ touches on every single transaction are still verbatim mobile screens:
 | Payments list | Real `<table>`, desktop-built | `src/desktop/screens/payments/DesktopPaymentsScreen.tsx` |
 | Deposit detail | **Mobile fiche** (`MobileDepositDetailV2`) squeezed into a 460px sticky aside | `MasterDetailLayout.tsx:25` — `w-[min(460px,40vw)]` |
 | Payment detail | **Mobile fiche** (`MobilePaymentDetailV2`, 1 572 lines) in the same 460px aside | `DesktopPaymentsScreen.tsx:152` |
-| New deposit | **Mobile wizard**, 7 sequential steps, one column. The router passes `desktop` (`App.tsx:208`) but the component **declares no props — the flag is silently ignored** | `MobileNewDeposit.tsx:70`, `:975` (`h-screen`) |
+| New deposit | **Mobile wizard**, 7 sequential steps, one column. (Correction 19/08: the route's lazy alias resolves to `MobileNewDepositV2`, which does accept `desktop` — the dead-prop claim applied to the V1 export of the same name. The structural point stands: it is a phone wizard either way.) | `App.tsx:60,208`, `MobileNewDepositV2.tsx:133` |
 | New payment | **Mobile wizard**, 5 steps, rendered as a **phone-sized card** (`max-w-xl`) floating in the middle of the screen | `MobileNewPayment.tsx:470` |
 
 So the reported pains map 1:1 to architecture, not taste:

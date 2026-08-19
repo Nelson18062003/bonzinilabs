@@ -1,201 +1,152 @@
 /**
- * Desktop admin — deposits as a real data table.
+ * Desktop admin — Dépôts workbench (archetype surface A, docs/admin-redesign).
  *
- * Same data layer and filters as MobileDepositsScreenV2 (paginated hook, status
- * buckets, method families, period presets, debounced search, SLA, infinite
- * scroll) — only the presentation differs: a wide table with a clickable stat
- * strip, a toolbar and inline filters instead of a stacked card list.
+ * Replaces the first-pass table: ONE 36px toolbar line (queue chips with live
+ * counts + server-side search + method/period menus), a named table card with
+ * sortable headers, an SLA-tinted age column, hover quick-actions on
+ * actionable rows, and numbered pagination (no infinite scroll). The queue
+ * view is sorted oldest-first — the SLA discipline the dots always implied.
+ * Selecting a row opens the desktop detail panel; the list stays live.
  */
-import { useState, useMemo, useCallback } from 'react';
-import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, X, Paperclip, FileText } from 'lucide-react';
+import { Plus, Paperclip, FileText } from 'lucide-react';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
-import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
+import { usePagedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { DEPOSIT_STATUS_LABELS, DEPOSIT_METHOD_LABELS_SHORT } from '@/types/deposit';
-import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { formatRelativeDate, formatXAF } from '@/lib/formatters';
-import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
-import {
-  FAMILIES_CONF,
-  getFamilyFromMethod,
-  FAMILY_TO_METHODS,
-  TO_PROCESS_STATUSES,
-  getPeriodDates,
-  type FilterKey,
-  type PeriodPreset,
-} from '@/lib/depositsList';
+import { DEPOSIT_STATUS_LABELS } from '@/types/deposit';
+import { formatXAF } from '@/lib/formatters';
+import { getDepositSlaLevel } from '@/lib/depositTimeline';
+import { getFamilyFromMethod, FAMILY_TO_METHODS, TO_PROCESS_STATUSES, getPeriodDates, type PeriodPreset } from '@/lib/depositsList';
+import { DEPOSIT_METHOD_LABELS_SHORT } from '@/types/deposit';
 import { cn } from '@/lib/utils';
-import { MobileDepositDetailV2 } from '@/mobile/screens/deposits';
-import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
 import {
   SURFACE,
   TEXT,
   PRIMARY_PILL,
-  SOFT_PILL,
-  type Tone,
   depositStatusTone,
   StatusPill,
+  Card,
   Amount,
   Holder,
-  TextInput,
   ScreenLoader,
-  Card,
-} from '@/mobile/designKit';
+  MIcon,
+  Age,
+  Chip,
+  DropChip,
+  SearchField,
+  CardHeader,
+  Th,
+  Td,
+  PaginationBar,
+  RefChip,
+  EMERALD_PILL,
+  DANGER_SOFT_PILL,
+} from '@/desktop/designKit';
+import { DesktopDepositPanel } from './DesktopDepositPanel';
 
-function MIcon({ family, size = 32 }: { family: string; size?: number }) {
-  const f = FAMILIES_CONF[family];
-  if (!f) return null;
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center font-black"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: Math.round(size * 0.3),
-        background: f.bg,
-        fontSize: Math.round(size * 0.38),
-        color: f.dark ? '#1a1028' : '#fff',
-      }}
-    >
-      {f.letter}
-    </div>
-  );
-}
+type Bucket = 'queue' | 'correction' | 'all';
+type SortField = 'created_at' | 'amount_xaf';
 
-function SlaDot({ level }: { level: SlaLevel }) {
-  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
-  return (
-    <span
-      className="inline-block shrink-0 rounded-full"
-      style={{ width: 6, height: 6, background: color, animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined }}
-    />
-  );
-}
+const METHOD_OPTIONS = [
+  { value: 'all', label: 'Toutes' },
+  { value: 'BANK', label: 'Banque' },
+  { value: 'AGENCY_BONZINI', label: 'Agence' },
+  { value: 'ORANGE_MONEY', label: 'Orange' },
+  { value: 'MTN_MONEY', label: 'MTN' },
+  { value: 'WAVE', label: 'Wave' },
+] as const;
 
-const STATUS_CHIPS: { k: FilterKey; l: string }[] = [
-  { k: 'all', l: 'Tous' },
-  { k: 'to_process', l: 'À traiter' },
-  { k: 'pending_correction', l: 'À corriger' },
-  { k: 'validated', l: 'Validés' },
-  { k: 'rejected', l: 'Rejetés' },
-];
+const PERIOD_OPTIONS = [
+  { value: 'all', label: 'Toutes' },
+  { value: 'today', label: "Aujourd'hui" },
+  { value: 'yesterday', label: 'Hier' },
+  { value: 'week', label: 'Cette semaine' },
+  { value: 'month', label: 'Ce mois' },
+] as const;
 
-const STAT_TILES: { key: FilterKey; label: string; tone: Tone }[] = [
-  { key: 'to_process', label: 'À traiter', tone: 'info' },
-  { key: 'pending_correction', label: 'À corriger', tone: 'pending' },
-  { key: 'validated', label: 'Validés', tone: 'success' },
-  { key: 'rejected', label: 'Rejetés', tone: 'danger' },
-];
-
-const METHOD_CHIPS = [
-  { k: 'all', l: 'Toutes' },
-  { k: 'BANK', l: 'Banque' },
-  { k: 'AGENCY_BONZINI', l: 'Agence' },
-  { k: 'ORANGE_MONEY', l: 'Orange' },
-  { k: 'MTN_MONEY', l: 'MTN' },
-  { k: 'WAVE', l: 'Wave' },
-];
-
-const PERIOD_CHIPS: { k: PeriodPreset; l: string }[] = [
-  { k: 'all', l: 'Toutes' },
-  { k: 'today', l: "Aujourd'hui" },
-  { k: 'yesterday', l: 'Hier' },
-  { k: 'week', l: 'Cette semaine' },
-  { k: 'month', l: 'Ce mois' },
-  { k: 'custom', l: 'Personnalisé' },
-];
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Tous' },
+  { value: 'validated', label: 'Validés' },
+  { value: 'rejected', label: 'Rejetés' },
+  { value: 'awaiting_proof', label: 'En attente de preuve' },
+] as const;
 
 export function DesktopDepositsScreen() {
   const navigate = useNavigate();
   const { depositId } = useParams<{ depositId: string }>();
-  const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
-  const [familyFilter, setFamilyFilter] = useState('all');
-  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
-  const [customDateFrom, setCustomDateFrom] = useState('');
-  const [customDateTo, setCustomDateTo] = useState('');
+  const compact = !!depositId;
+
+  const [bucket, setBucket] = useState<Bucket>('queue');
+  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]['value']>('all');
+  const [familyFilter, setFamilyFilter] = useState<(typeof METHOD_OPTIONS)[number]['value']>('all');
+  const [periodPreset, setPeriodPreset] = useState<(typeof PERIOD_OPTIONS)[number]['value']>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortAscending, setSortAscending] = useState<boolean | null>(null);
+  const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(searchQuery);
   const { data: stats } = useDepositStats();
 
-  const { dateFrom, dateTo } = useMemo(() => {
-    if (periodPreset === 'custom') return { dateFrom: customDateFrom, dateTo: customDateTo };
-    return getPeriodDates(periodPreset);
-  }, [periodPreset, customDateFrom, customDateTo]);
+  // Queue reads oldest-first by default; « Tous » newest-first.
+  const effectiveAscending = sortAscending ?? (bucket === 'queue' && sortField === 'created_at');
 
-  const filterParams = useMemo<DepositFilters | undefined>(() => {
-    const params: DepositFilters = {};
-    if (statusFilter === 'to_process') {
-      params.statuses = TO_PROCESS_STATUSES as string[];
-    } else if (statusFilter !== 'all') {
-      params.status = statusFilter;
+  const filters = useMemo<DepositFilters>(() => {
+    const f: DepositFilters = { sortField, sortAscending: effectiveAscending };
+    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES as string[];
+    else if (bucket === 'correction') f.status = 'pending_correction';
+    else if (statusFilter !== 'all') f.status = statusFilter;
+    if (familyFilter !== 'all') f.methods = FAMILY_TO_METHODS[familyFilter] || [];
+    if (periodPreset !== 'all') {
+      const { dateFrom, dateTo } = getPeriodDates(periodPreset as PeriodPreset);
+      if (dateFrom) f.dateFrom = dateFrom;
+      if (dateTo) f.dateTo = dateTo;
     }
-    if (dateFrom) params.dateFrom = dateFrom;
-    if (dateTo) params.dateTo = dateTo;
-    params.sortField = 'created_at';
-    params.sortAscending = false;
-    const hasFilters = params.status || params.statuses || params.dateFrom || params.dateTo;
-    return hasFilters ? params : undefined;
-  }, [statusFilter, dateFrom, dateTo]);
+    if (debouncedSearch.trim()) f.search = debouncedSearch;
+    return f;
+  }, [bucket, statusFilter, familyFilter, periodPreset, debouncedSearch, sortField, effectiveAscending]);
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedAdminDeposits(filterParams);
-  const handleLoadMore = useCallback(() => { fetchNextPage(); }, [fetchNextPage]);
+  useEffect(() => {
+    setPage(1);
+  }, [bucket, statusFilter, familyFilter, periodPreset, debouncedSearch, sortField, effectiveAscending]);
 
-  const allDeposits = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
+  const { data, isLoading } = usePagedAdminDeposits(filters, page);
+  const deposits = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const pageSize = data?.pageSize ?? 20;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const rangeLabel = total === 0 ? '0' : `${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + deposits.length}`;
 
-  const filteredDeposits = useMemo(() => {
-    let list = allDeposits;
-    if (familyFilter !== 'all') {
-      const methods = FAMILY_TO_METHODS[familyFilter] || [];
-      list = list.filter((d) => methods.includes(d.method));
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) setSortAscending(!effectiveAscending);
+    else {
+      setSortField(field);
+      setSortAscending(field === 'created_at' ? bucket !== 'queue' ? false : true : false);
     }
-    if (debouncedSearch) {
-      const search = debouncedSearch.toLowerCase();
-      list = list.filter((deposit) => {
-        const clientName = `${deposit.profiles?.first_name || ''} ${deposit.profiles?.last_name || ''}`.toLowerCase();
-        return (
-          clientName.includes(search) ||
-          deposit.reference?.toLowerCase().includes(search) ||
-          deposit.profiles?.phone?.includes(search)
-        );
-      });
-    }
-    return list;
-  }, [allDeposits, debouncedSearch, familyFilter]);
+  };
+  const sortedMark = (field: SortField) => (sortField === field ? (effectiveAscending ? 'asc' : 'desc') : null);
 
   const counts = {
     toProcess: stats?.to_process ?? 0,
     correction: stats?.pending_correction ?? 0,
-    validated: stats?.validated ?? 0,
-    rejected: stats?.rejected ?? 0,
     total: stats?.total ?? 0,
   };
-  const countFor = (k: FilterKey): number | null => {
-    switch (k) {
-      case 'all': return counts.total;
-      case 'to_process': return counts.toProcess;
-      case 'pending_correction': return counts.correction;
-      case 'validated': return counts.validated;
-      case 'rejected': return counts.rejected;
-      default: return null;
-    }
-  };
+
+  const hasFiltersActive = bucket !== 'queue' || familyFilter !== 'all' || periodPreset !== 'all' || !!debouncedSearch;
 
   return (
-    <MasterDetailLayout detail={depositId ? <MobileDepositDetailV2 /> : null}>
-    <div className="space-y-6">
-      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
-
-      {/* Header */}
+    <div className={cn('flex flex-col', compact ? 'h-[calc(100vh-120px)] min-h-[560px]' : 'min-h-[calc(100vh-120px)]')}>
+      {/* ── En-tête de page ─────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Dépôts</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            {counts.total} dépôt{counts.total > 1 ? 's' : ''} · {counts.toProcess} à traiter
+            {counts.total} dépôt{counts.total > 1 ? 's' : ''} ·{' '}
+            <span className="font-bold text-[#B47A17] dark:text-[#E7C083]">{counts.toProcess} à traiter</span>
           </p>
         </div>
         <button
+          type="button"
           onClick={() => navigate('/m/deposits/new')}
           className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
         >
@@ -203,222 +154,188 @@ export function DesktopDepositsScreen() {
         </button>
       </header>
 
-      {/* Stat strip (clickable filters) */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STAT_TILES.map((tile) => {
-          const active = statusFilter === tile.key;
-          return (
-            <button
-              key={tile.key}
-              onClick={() => setStatusFilter(active ? 'all' : tile.key)}
-              className={cn(
-                'rounded-[22px] p-4 text-left transition active:scale-[0.99]',
-                SURFACE.card,
-                SURFACE.shadow,
-                active && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
-              )}
-            >
-              <p className={cn('text-[12px] font-medium', TEXT.muted)}>{tile.label}</p>
-              <p className={cn('mt-1 text-[24px] font-extrabold leading-none tabular-nums', TEXT.strong)}>
-                {countFor(tile.key) ?? 0}
-              </p>
-            </button>
-          );
-        })}
+      {/* ── Barre d'outils — UNE ligne, hauteur 36px ────────────────────── */}
+      <section className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Chip label="À traiter" count={counts.toProcess} active={bucket === 'queue'} onClick={() => setBucket('queue')} />
+          <Chip label="À corriger" count={counts.correction || null} active={bucket === 'correction'} onClick={() => setBucket('correction')} />
+          <Chip label="Tous" count={counts.total} active={bucket === 'all'} onClick={() => setBucket('all')} />
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <SearchField
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={compact ? 'Rechercher…' : 'Nom, téléphone ou référence…'}
+            className={compact ? 'w-[200px]' : 'w-[280px]'}
+          />
+          {bucket === 'all' && (
+            <DropChip label="Statut" value={statusFilter} options={STATUS_OPTIONS} onChange={setStatusFilter} />
+          )}
+          <DropChip label="Méthode" value={familyFilter} options={METHOD_OPTIONS} onChange={setFamilyFilter} />
+          <DropChip label="Période" value={periodPreset} options={PERIOD_OPTIONS} onChange={setPeriodPreset} />
+        </div>
       </section>
 
-      {/* Toolbar */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative w-full max-w-sm">
-            <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-            <TextInput
-              placeholder="Nom, téléphone ou référence…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 text-[14px]"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                aria-label="Effacer"
-                className={cn('absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1', TEXT.muted)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            {STATUS_CHIPS.map((ch) => {
-              const active = statusFilter === ch.k;
-              const c = countFor(ch.k);
-              return (
-                <button
-                  key={ch.k}
-                  onClick={() => setStatusFilter(ch.k)}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
-                    active ? PRIMARY_PILL : SOFT_PILL,
-                  )}
-                >
-                  {ch.l}
-                  {c != null && c > 0 && (
-                    <span
-                      className={cn(
-                        'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
-                        active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
-                      )}
-                    >
-                      {c}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn('mr-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</span>
-            {METHOD_CHIPS.map((m) => (
-              <button
-                key={m.k}
-                onClick={() => setFamilyFilter(m.k)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  familyFilter === m.k ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
-                {m.l}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn('mr-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</span>
-            {PERIOD_CHIPS.map((p) => (
-              <button
-                key={p.k}
-                onClick={() => setPeriodPreset(p.k)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  periodPreset === p.k ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
-                {p.l}
-              </button>
-            ))}
-          </div>
-          {periodPreset === 'custom' && (
-            <div className="w-[320px]">
-              <BzDateRangeField
-                value={{ from: customDateFrom, to: customDateTo }}
-                onChange={(r) => { setCustomDateFrom(r.from); setCustomDateTo(r.to); }}
-                accent="#10B981"
-              />
+      {/* ── Table + panneau ─────────────────────────────────────────────── */}
+      <div className="mt-4 flex min-h-0 flex-1 items-stretch gap-5">
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+          <CardHeader
+            title={bucket === 'queue' ? "File d'attente" : bucket === 'correction' ? 'À corriger' : 'Tous les dépôts'}
+            meta={
+              sortField === 'created_at'
+                ? effectiveAscending
+                  ? 'Triés du plus ancien au plus récent'
+                  : 'Triés du plus récent au plus ancien'
+                : `Triés par montant ${effectiveAscending ? 'croissant' : 'décroissant'}`
+            }
+          />
+          {isLoading ? (
+            <ScreenLoader />
+          ) : deposits.length > 0 ? (
+            <>
+              <div className="min-h-0 flex-1 overflow-auto">
+                <table className="w-full text-left">
+                  <thead className={cn('sticky top-0 z-10', SURFACE.card)}>
+                    <tr>
+                      {!compact && <Th first>Référence</Th>}
+                      <Th first={compact}>Client</Th>
+                      <Th align="right" sortable sorted={sortedMark('amount_xaf')} onSort={() => toggleSort('amount_xaf')}>
+                        Montant XAF
+                      </Th>
+                      {!compact && <Th>Méthode</Th>}
+                      <Th sortable sorted={sortedMark('created_at')} onSort={() => toggleSort('created_at')}>
+                        Reçu
+                      </Th>
+                      <Th last={compact}>Statut</Th>
+                      {!compact && <Th last className="w-[176px]" />}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deposits.map((deposit) => {
+                      const clientName = deposit.profiles
+                        ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
+                        : 'Client inconnu';
+                      const proofCount = deposit.proof_count || 0;
+                      const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
+                      const family = getFamilyFromMethod(deposit.method);
+                      const actionable = TO_PROCESS_STATUSES.includes(deposit.status as (typeof TO_PROCESS_STATUSES)[number]);
+                      const open = () => navigate(`/m/deposits/${deposit.id}`);
+                      return (
+                        <tr
+                          key={deposit.id}
+                          onClick={open}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              open();
+                            }
+                          }}
+                          className={cn(
+                            'group cursor-pointer outline-none transition',
+                            depositId === deposit.id
+                              ? 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]'
+                              : 'hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
+                          )}
+                        >
+                          {!compact && (
+                            <Td first>
+                              <span className="inline-flex items-center gap-1.5">
+                                <RefChip>{deposit.reference}</RefChip>
+                                {proofCount > 0 && (
+                                  <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
+                                    <Paperclip className="h-3 w-3" />
+                                    {proofCount}
+                                  </span>
+                                )}
+                              </span>
+                            </Td>
+                          )}
+                          <Td first={compact}>
+                            <div className="leading-[16px]">
+                              <div className={cn('flex items-center gap-1.5 text-[13px] font-semibold', TEXT.strong)}>
+                                <span className={cn(compact && 'inline-block max-w-[140px] truncate')}>{clientName}</span>
+                                {compact && proofCount > 0 && (
+                                  <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
+                                    <Paperclip className="h-3 w-3" />
+                                    {proofCount}
+                                  </span>
+                                )}
+                              </div>
+                              {!compact && (
+                                <div className={cn('text-[11px] tabular-nums', TEXT.muted)}>{deposit.profiles?.phone ?? '—'}</div>
+                              )}
+                            </div>
+                          </Td>
+                          <Td align="right">
+                            <Amount value={formatXAF(deposit.amount_xaf)} size="md" className="!text-[15px]" />
+                          </Td>
+                          {!compact && (
+                            <Td>
+                              <div className="flex items-center gap-2">
+                                <MIcon family={family} size={28} />
+                                <span className={cn('text-[12px]', TEXT.muted)}>
+                                  {DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method}
+                                </span>
+                              </div>
+                            </Td>
+                          )}
+                          <Td>
+                            <Age date={deposit.created_at} level={slaLevel} relOnly={compact} />
+                          </Td>
+                          <Td last={compact}>
+                            <StatusPill tone={depositStatusTone(deposit.status)} label={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status} />
+                          </Td>
+                          {!compact && (
+                            <Td last align="right">
+                              {actionable ? (
+                                <span
+                                  className="inline-flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(`/m/deposits/${deposit.id}?action=validate`)}
+                                    className={cn('px-3 py-1.5 text-[12px]', EMERALD_PILL)}
+                                  >
+                                    Valider
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(`/m/deposits/${deposit.id}?action=reject`)}
+                                    className={cn('px-3 py-1.5 text-[12px]', DANGER_SOFT_PILL)}
+                                  >
+                                    Rejeter
+                                  </button>
+                                </span>
+                              ) : (
+                                <span className="inline-flex h-8 items-center opacity-0" aria-hidden>
+                                  ·
+                                </span>
+                              )}
+                            </Td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationBar page={page} pages={pages} rangeLabel={rangeLabel} total={String(total)} onPage={setPage} />
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
+              <Holder icon={FileText} size="lg" />
+              <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun dépôt trouvé</p>
+              <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+                {hasFiltersActive ? 'Essayez de modifier vos filtres' : 'La file est vide — tout est traité'}
+              </p>
             </div>
           )}
-        </div>
-      </section>
+        </Card>
 
-      {/* Table */}
-      <Card className="overflow-hidden p-0">
-        {isLoading ? (
-          <ScreenLoader />
-        ) : filteredDeposits.length > 0 ? (
-          <>
-            <table className="w-full text-left">
-              <thead>
-                <tr className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  <th scope="col" className="px-5 py-3 font-bold">Référence</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Client</th>
-                  <th scope="col" className="px-2 py-3 text-right font-bold">Montant XAF</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Méthode</th>
-                  <th scope="col" className="px-2 py-3 font-bold">Créé le</th>
-                  <th scope="col" className="px-5 py-3 text-right font-bold">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDeposits.map((deposit) => {
-                  const clientName = deposit.profiles
-                    ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
-                    : 'Client inconnu';
-                  const proofCount = deposit.proof_count || 0;
-                  const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
-                  const family = getFamilyFromMethod(deposit.method);
-                  const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
-                  const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
-                  return (
-                    <tr
-                      key={deposit.id}
-                      onClick={() => navigate(`/m/deposits/${deposit.id}`)}
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
-                      className={cn(
-                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
-                        depositId === deposit.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
-                      )}
-                    >
-                      <td className="px-5 py-3">
-                        <span className={cn('rounded-lg px-2 py-1 font-mono text-[12px] font-bold', SURFACE.holder)}>
-                          {deposit.reference}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{clientName}</span>
-                          {proofCount > 0 && (
-                            <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
-                              <Paperclip className="h-3 w-3" />
-                              {proofCount}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-right">
-                        <Amount value={formatXAF(deposit.amount_xaf)} size="md" />
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-2">
-                          <MIcon family={family} size={28} />
-                          <span className={cn('text-[12px]', TEXT.muted)}>{methodShort}</span>
-                        </div>
-                      </td>
-                      <td className={cn('px-2 py-3 text-[12px]', TEXT.muted)}>{formatRelativeDate(deposit.created_at)}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {slaLevel && <SlaDot level={slaLevel} />}
-                          <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {!debouncedSearch && (
-              <div className="px-5 py-3">
-                <InfiniteScrollTrigger
-                  onLoadMore={handleLoadMore}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={FileText} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun dépôt trouvé</p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
-              {statusFilter !== 'all' || familyFilter !== 'all' || periodPreset !== 'all'
-                ? 'Essayez de modifier vos filtres'
-                : 'Les dépôts apparaîtront ici'}
-            </p>
-          </div>
-        )}
-      </Card>
+        {depositId && <DesktopDepositPanel key={depositId} depositId={depositId} />}
+      </div>
     </div>
-    </MasterDetailLayout>
   );
 }
