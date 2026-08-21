@@ -385,12 +385,31 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       : 0;
     setCorr({
       xaf: String(payment.amount_xaf ?? ''),
-      rmb: String(payment.amount_rmb ?? ''),
+      rmb: String(Math.round(payment.amount_rmb ?? 0) || ''),
       rate: rateInt0 ? String(rateInt0) : '',
       reason: '',
     });
     setShowCorrect(true);
   }, [payment]);
+
+  // Champs liés — le ¥ est la référence (c'est ce que le fournisseur reçoit) :
+  //   · XAF modifié  → ¥ recalculé au taux courant ;
+  //   · ¥ modifié    → XAF recalculé au taux courant ;
+  //   · taux modifié → XAF recalculé pour conserver le ¥.
+  const setCorrField = useCallback((field: 'xaf' | 'rmb' | 'rate', raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, '');
+    setCorr((prev) => {
+      const next = { ...prev, [field]: digits };
+      const xaf = parseInt(next.xaf, 10) || 0;
+      const rmb = parseInt(next.rmb, 10) || 0;
+      const rate = parseInt(next.rate, 10) || 0;
+      if (rate > 0) {
+        if (field === 'xaf' && xaf > 0) next.rmb = String(Math.round((xaf * rate) / 1_000_000));
+        if ((field === 'rmb' || field === 'rate') && rmb > 0) next.xaf = String(Math.round((rmb * 1_000_000) / rate));
+      }
+      return next;
+    });
+  }, []);
 
   const submitCorrection = useCallback(() => {
     if (!payment) return;
@@ -602,12 +621,8 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
 
   // Aperçu vivant du dialogue de correction
   const corrXafNum = parseInt(corr.xaf || '0', 10) || 0;
-  const corrRmbNum = Number(corr.rmb || '0') || 0;
-  const corrRateNum = parseInt(corr.rate || '0', 10) || 0;
   const corrDelta = corrXafNum > 0 ? corrXafNum - payment.amount_xaf : 0;
   const corrWalletTouched = !['rejected', 'cancelled_by_admin'].includes(payment.status);
-  const corrExpectedRmb = corrRateNum > 0 && corrXafNum > 0 ? (corrXafNum * corrRateNum) / 1_000_000 : 0;
-  const corrIncoherent = corrRmbNum > 0 && corrExpectedRmb > 0 && Math.abs(corrRmbNum - corrExpectedRmb) / corrExpectedRmb > 0.02;
 
   // Preuves : useAdminPaymentProofs renvoie file_url DÉJÀ signé.
   const proof = allProofs[proofIndex];
@@ -676,7 +691,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                     <Pencil className="h-3.5 w-3.5" /> Corriger montants / taux
                   </button>
                 )}
-                {isSuperAdmin && !isLocked && (
+                {/* Annulable tant que le débit est détenu — y compris « Effectué »
+                    (rejected/cancelled : déjà remboursés, un 2e remboursement créerait de l'argent). */}
+                {isSuperAdmin && !['rejected', 'cancelled_by_admin'].includes(payment.status) && (
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); setShowCancel(true); }}
@@ -1143,31 +1160,35 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <FormField label="Client débité (XAF)">
-              <TextInput
-                inputMode="numeric"
-                value={corr.xaf}
-                onChange={(e) => setCorr({ ...corr, xaf: e.target.value.replace(/[^0-9]/g, '') })}
-                className="h-10 font-bold tabular-nums"
-              />
-            </FormField>
             <FormField label="Fournisseur reçoit (¥)">
               <TextInput
-                inputMode="decimal"
-                value={corr.rmb}
-                onChange={(e) => setCorr({ ...corr, rmb: e.target.value.replace(/[^0-9.]/g, '') })}
+                inputMode="numeric"
+                value={corr.rmb ? fmt(parseInt(corr.rmb, 10)) : ''}
+                onChange={(e) => setCorrField('rmb', e.target.value)}
                 className="h-10 font-bold tabular-nums"
               />
             </FormField>
             <FormField label="Taux (¥ / 1M XAF)">
               <TextInput
                 inputMode="numeric"
-                value={corr.rate}
-                onChange={(e) => setCorr({ ...corr, rate: e.target.value.replace(/[^0-9]/g, '') })}
+                value={corr.rate ? fmt(parseInt(corr.rate, 10)) : ''}
+                onChange={(e) => setCorrField('rate', e.target.value)}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+            <FormField label="Client débité (XAF)">
+              <TextInput
+                inputMode="numeric"
+                value={corr.xaf ? fmt(parseInt(corr.xaf, 10)) : ''}
+                onChange={(e) => setCorrField('xaf', e.target.value)}
                 className="h-10 font-bold tabular-nums"
               />
             </FormField>
           </div>
+          <p className={cn('text-[11.5px]', TEXT.muted)}>
+            Les trois champs sont liés — le ¥ est la référence : modifier le taux ou le ¥ recalcule le XAF ; modifier le XAF recalcule
+            le ¥.
+          </p>
 
           {corrDelta !== 0 && (
             <div
@@ -1190,13 +1211,6 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                 <>Paiement déjà remboursé ({statusConfig.label}) — la correction ne touche pas le wallet, seulement la fiche.</>
               )}
             </div>
-          )}
-
-          {corrIncoherent && (
-            <p className={cn('text-[12px]', TEXT.muted)}>
-              ⚠ Incohérence : {fmt(corrXafNum)} XAF × ¥{fmt(corrRateNum)}/1M ≈ ¥{fmt(Math.round(corrExpectedRmb))}, mais vous saisissez ¥
-              {fmt(Math.round(corrRmbNum))}. Vérifiez avant d'appliquer (non bloquant).
-            </p>
           )}
 
           <FormField label="Motif de la correction (obligatoire — journal d'audit)">
