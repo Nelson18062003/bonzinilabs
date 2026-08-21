@@ -1776,6 +1776,17 @@ export type Database = {
         Args: { p_id: string }
         Returns: Json
       }
+      admin_correct_payment: {
+        Args: {
+          p_payment_id: string
+          p_reason: string
+          p_amount_xaf?: number
+          p_amount_rmb?: number
+          p_exchange_rate?: number
+          p_rate_is_custom?: boolean
+        }
+        Returns: Json
+      }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_payment: { Args: { p_payment_id: string }; Returns: Json }

@@ -21,7 +21,7 @@ import {
   useProcessPayment,
   useAdminUploadPaymentProof,
 } from '@/hooks/usePayments';
-import { useCancelPayment, useAdminUpdateBeneficiaryInfo, useDeletePaymentProof } from '@/hooks/useAdminPayments';
+import { useCancelPayment, useAdminUpdateBeneficiaryInfo, useDeletePaymentProof, useAdminCorrectPayment } from '@/hooks/useAdminPayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
 import { useAgentConfirmCashPayment } from '@/hooks/useAgentCashActions';
 import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
@@ -76,6 +76,7 @@ import {
   Image as ImageIcon,
   Maximize2,
   MoreHorizontal,
+  Pencil,
   PenLine,
   Play,
   Plus,
@@ -182,6 +183,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const deleteProof = useDeletePaymentProof();
   const instructionUpload = useAdminUploadPaymentInstruction();
   const confirmCash = useAgentConfirmCashPayment();
+  const correctPayment = useAdminCorrectPayment();
 
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [proofIndex, setProofIndex] = useState(0);
@@ -200,6 +202,8 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const [exporting, setExporting] = useState<'copy' | 'png' | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [deleteProofId, setDeleteProofId] = useState<string | null>(null);
+  const [showCorrect, setShowCorrect] = useState(false);
+  const [corr, setCorr] = useState({ xaf: '', rmb: '', rate: '', reason: '' });
   const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
   const [showSign, setShowSign] = useState(false);
   const [completeFile, setCompleteFile] = useState<File | null>(null);
@@ -226,8 +230,13 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const canComplete = canProcess && status === 'processing';
   const canReject = canProcess && !isLocked && status !== 'cash_pending';
   const isCash = payment?.method === 'cash';
+  // Un admin corrige le bénéficiaire tant que le paiement n'est pas parti ;
+  // le super admin peut le corriger à tout moment, même sur un paiement effectué.
   const canEditBeneficiary =
-    canProcess && !isLocked && !isCash && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment?.status ?? '');
+    canProcess &&
+    !isCash &&
+    !!payment &&
+    (isSuperAdmin || (!isLocked && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status)));
 
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
   const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type !== 'admin');
@@ -256,7 +265,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       setShowUpload(true);
       setUploadFiles((prev) => [...prev, ...files]);
     }, []),
-    enabled: canProcess && !isLocked && !showReject && !showComplete && !showCancel && !showBenefEdit && !lightbox && !deleteProofId && !showSign,
+    enabled: canProcess && !isLocked && !showReject && !showComplete && !showCancel && !showBenefEdit && !lightbox && !deleteProofId && !showSign && !showCorrect,
   });
 
   const openBenefEdit = useCallback(() => {
@@ -366,6 +375,63 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       setCompletePreview(null);
     })().catch(() => {});
   }, [completeFile, completeComment, uploadProof, processPayment, paymentId]);
+
+  const openCorrect = useCallback(() => {
+    if (!payment) return;
+    const rateInt0 = payment.exchange_rate
+      ? payment.exchange_rate < 1
+        ? Math.round(payment.exchange_rate * 1_000_000)
+        : Math.round(payment.exchange_rate)
+      : 0;
+    setCorr({
+      xaf: String(payment.amount_xaf ?? ''),
+      rmb: String(payment.amount_rmb ?? ''),
+      rate: rateInt0 ? String(rateInt0) : '',
+      reason: '',
+    });
+    setShowCorrect(true);
+  }, [payment]);
+
+  const submitCorrection = useCallback(() => {
+    if (!payment) return;
+    const newXaf = corr.xaf ? parseInt(corr.xaf, 10) : NaN;
+    const newRmb = corr.rmb ? Number(corr.rmb) : NaN;
+    const newRate = corr.rate ? parseInt(corr.rate, 10) : NaN;
+    if (!corr.reason.trim()) {
+      toast.error('Le motif de correction est obligatoire');
+      return;
+    }
+    if (!Number.isSafeInteger(newXaf) || newXaf <= 0 || newXaf > 50_000_000) {
+      toast.error('Montant XAF invalide (1 à 50 000 000)');
+      return;
+    }
+    if (!Number.isFinite(newRmb) || newRmb <= 0 || !Number.isSafeInteger(Math.round(newRmb))) {
+      toast.error('Montant ¥ invalide');
+      return;
+    }
+    if (!Number.isSafeInteger(newRate) || newRate <= 0) {
+      toast.error('Taux invalide');
+      return;
+    }
+    const oldRateInt = payment.exchange_rate
+      ? payment.exchange_rate < 1
+        ? Math.round(payment.exchange_rate * 1_000_000)
+        : Math.round(payment.exchange_rate)
+      : 0;
+    const patch = {
+      amountXaf: newXaf !== payment.amount_xaf ? newXaf : undefined,
+      amountRmb: newRmb !== payment.amount_rmb ? newRmb : undefined,
+      exchangeRate: newRate !== oldRateInt ? newRate : undefined,
+    };
+    if (patch.amountXaf === undefined && patch.amountRmb === undefined && patch.exchangeRate === undefined) {
+      toast.error('Aucune valeur ne change');
+      return;
+    }
+    correctPayment.mutate(
+      { paymentId, reason: corr.reason.trim(), ...patch },
+      { onSuccess: () => setShowCorrect(false) },
+    );
+  }, [payment, corr, correctPayment, paymentId]);
 
   const handleCashSignature = useCallback(
     async (signatureDataUrl: string) => {
@@ -534,6 +600,15 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const stateFor = (s: PaymentStatus): 'completed' | 'current' | 'pending' =>
     payment.status === s ? 'current' : reached(s) ? 'completed' : 'pending';
 
+  // Aperçu vivant du dialogue de correction
+  const corrXafNum = parseInt(corr.xaf || '0', 10) || 0;
+  const corrRmbNum = Number(corr.rmb || '0') || 0;
+  const corrRateNum = parseInt(corr.rate || '0', 10) || 0;
+  const corrDelta = corrXafNum > 0 ? corrXafNum - payment.amount_xaf : 0;
+  const corrWalletTouched = !['rejected', 'cancelled_by_admin'].includes(payment.status);
+  const corrExpectedRmb = corrRateNum > 0 && corrXafNum > 0 ? (corrXafNum * corrRateNum) / 1_000_000 : 0;
+  const corrIncoherent = corrRmbNum > 0 && corrExpectedRmb > 0 && Math.abs(corrRmbNum - corrExpectedRmb) / corrExpectedRmb > 0.02;
+
   // Preuves : useAdminPaymentProofs renvoie file_url DÉJÀ signé.
   const proof = allProofs[proofIndex];
   const proofIsImage = proof?.file_type?.startsWith('image/');
@@ -591,6 +666,15 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                       <FileText className="h-3.5 w-3.5" /> Ajouter une instruction
                     </button>
                   </>
+                )}
+                {isSuperAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpen(false); openCorrect(); }}
+                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Corriger montants / taux
+                  </button>
                 )}
                 {isSuperAdmin && !isLocked && (
                   <button
@@ -1025,6 +1109,107 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       {/* Inputs cachés : remplacement de preuve + instructions */}
       <input ref={replaceFileRef} type="file" accept={ACCEPT_UPLOAD} className="hidden" onChange={handleReplaceFileSelect} />
       <input ref={instructionInputRef} type="file" accept={ACCEPT_UPLOAD} multiple className="hidden" onChange={handleInstructionUpload} />
+
+      {/* ── Dialogue : corriger montants / taux (super admin) ───────────── */}
+      <CenterDialog
+        open={showCorrect}
+        onClose={() => setShowCorrect(false)}
+        onConfirm={!correctPayment.isPending ? submitCorrection : undefined}
+        title={`Corriger le paiement ${payment.reference}`}
+        width={560}
+        footer={
+          <>
+            <SoftPill onClick={() => setShowCorrect(false)} className="flex-1">
+              Annuler
+            </SoftPill>
+            <PrimaryPill
+              onClick={submitCorrection}
+              loading={correctPayment.isPending}
+              disabled={!corr.reason.trim()}
+              className="flex-[1.4] bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white"
+            >
+              Appliquer la correction
+            </PrimaryPill>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
+            <p className="text-[12.5px] leading-[17px] text-[#9A6B12] dark:text-[#E7C083]">
+              Correction a posteriori ({statusConfig.label}). Le client verra les nouveaux montants ; le reçu PDF et la fiche se
+              régénèrent avec ces valeurs. Tout est tracé (journal d'audit + suivi du paiement).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <FormField label="Client débité (XAF)">
+              <TextInput
+                inputMode="numeric"
+                value={corr.xaf}
+                onChange={(e) => setCorr({ ...corr, xaf: e.target.value.replace(/[^0-9]/g, '') })}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+            <FormField label="Fournisseur reçoit (¥)">
+              <TextInput
+                inputMode="decimal"
+                value={corr.rmb}
+                onChange={(e) => setCorr({ ...corr, rmb: e.target.value.replace(/[^0-9.]/g, '') })}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+            <FormField label="Taux (¥ / 1M XAF)">
+              <TextInput
+                inputMode="numeric"
+                value={corr.rate}
+                onChange={(e) => setCorr({ ...corr, rate: e.target.value.replace(/[^0-9]/g, '') })}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+          </div>
+
+          {corrDelta !== 0 && (
+            <div
+              className={cn(
+                'rounded-2xl p-3 text-[12.5px] font-semibold',
+                corrWalletTouched
+                  ? corrDelta > 0
+                    ? 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                    : 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
+                  : cn(SURFACE.canvas, TEXT.muted),
+              )}
+            >
+              {corrWalletTouched ? (
+                corrDelta > 0 ? (
+                  <>Le wallet de {clientName} sera débité de {fmt(corrDelta)} XAF supplémentaires (écriture comptable ADMIN_DEBIT).</>
+                ) : (
+                  <>Le wallet de {clientName} sera recrédité de {fmt(-corrDelta)} XAF (écriture comptable ADMIN_CREDIT).</>
+                )
+              ) : (
+                <>Paiement déjà remboursé ({statusConfig.label}) — la correction ne touche pas le wallet, seulement la fiche.</>
+              )}
+            </div>
+          )}
+
+          {corrIncoherent && (
+            <p className={cn('text-[12px]', TEXT.muted)}>
+              ⚠ Incohérence : {fmt(corrXafNum)} XAF × ¥{fmt(corrRateNum)}/1M ≈ ¥{fmt(Math.round(corrExpectedRmb))}, mais vous saisissez ¥
+              {fmt(Math.round(corrRmbNum))}. Vérifiez avant d'appliquer (non bloquant).
+            </p>
+          )}
+
+          <FormField label="Motif de la correction (obligatoire — journal d'audit)">
+            <textarea
+              value={corr.reason}
+              onChange={(e) => setCorr({ ...corr, reason: e.target.value })}
+              rows={2}
+              placeholder="Ex. : erreur de saisie du taux à la création…"
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+            />
+          </FormField>
+        </div>
+      </CenterDialog>
 
       {/* ── Dialogue : supprimer une preuve ─────────────────────────────── */}
       <CenterDialog
