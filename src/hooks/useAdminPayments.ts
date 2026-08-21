@@ -227,6 +227,61 @@ export function useDeletePaymentProof() {
   });
 }
 
+// Correct a payment's amounts/rate after the fact (super admin only — the RPC
+// enforces it). Any status, including completed. When the payment still holds
+// its debit, the RPC adjusts the wallet and writes an ADMIN_DEBIT/ADMIN_CREDIT
+// ledger entry so reconciliation stays exact.
+export function useAdminCorrectPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      reason,
+      amountXaf,
+      amountRmb,
+      exchangeRate,
+      rateIsCustom,
+    }: {
+      paymentId: string;
+      reason: string;
+      amountXaf?: number;
+      amountRmb?: number;
+      exchangeRate?: number;
+      rateIsCustom?: boolean;
+    }) => {
+      const { data, error } = await supabaseAdmin.rpc('admin_correct_payment', {
+        p_payment_id: paymentId,
+        p_reason: reason,
+        p_amount_xaf: amountXaf,
+        p_amount_rmb: amountRmb,
+        p_exchange_rate: exchangeRate,
+        p_rate_is_custom: rateIsCustom,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string; wallet_delta_xaf?: number };
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la correction');
+      }
+      return result;
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
+      toast.success('Paiement corrigé');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
 // Update beneficiary info for a payment (admin)
 export function useAdminUpdateBeneficiaryInfo() {
   const queryClient = useQueryClient();

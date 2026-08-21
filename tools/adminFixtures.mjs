@@ -55,6 +55,7 @@ const paymentTimeline = [
 
 const paymentProofs = [
   { id: 'pp1', payment_id: 'p5', file_url: 'payment-proofs/u1/p5/alipay-transfer.jpg', file_name: 'alipay-transfer.jpg', file_type: 'image/jpeg', uploaded_by: 'admin1', uploaded_by_type: 'admin', created_at: ago(1.1) },
+  { id: 'pp4', payment_id: 'p5', file_url: 'payment-proofs/instructions/p5/facture-fournisseur.jpg', file_name: 'facture-fournisseur.jpg', file_type: 'image/jpeg', uploaded_by: 'admin1', uploaded_by_type: 'admin_instruction', created_at: ago(4.8) },
   { id: 'pp2', payment_id: 'p6', file_url: 'payment-proofs/u7/p6/virement-boc.jpg', file_name: 'virement-boc.jpg', file_type: 'image/jpeg', uploaded_by: 'admin1', uploaded_by_type: 'admin', created_at: ago(5.5) },
   { id: 'pp3', payment_id: 'p6', file_url: 'payment-proofs/u7/p6/swift-mt103.pdf', file_name: 'swift-mt103.pdf', file_type: 'application/pdf', uploaded_by: 'admin1', uploaded_by_type: 'admin', created_at: ago(5.4) },
 ];

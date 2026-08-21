@@ -13,6 +13,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useAdminPaymentDetail,
   useAdminPaymentProofs,
@@ -20,7 +21,11 @@ import {
   useProcessPayment,
   useAdminUploadPaymentProof,
 } from '@/hooks/usePayments';
-import { useCancelPayment, useAdminUpdateBeneficiaryInfo } from '@/hooks/useAdminPayments';
+import { useCancelPayment, useAdminUpdateBeneficiaryInfo, useDeletePaymentProof, useAdminCorrectPayment } from '@/hooks/useAdminPayments';
+import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
+import { useAgentConfirmCashPayment } from '@/hooks/useAgentCashActions';
+import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
+import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD } from '@/lib/clipboardFiles';
 import {
   PAYMENT_STATUS_CONFIG,
   PAYMENT_METHOD_LABELS,
@@ -71,8 +76,11 @@ import {
   Image as ImageIcon,
   Maximize2,
   MoreHorizontal,
+  Pencil,
+  PenLine,
   Play,
   Plus,
+  RefreshCw,
   Trash2,
   Upload,
   X,
@@ -167,10 +175,15 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const { data: proofs } = useAdminPaymentProofs(paymentId);
   const { data: timeline } = useAdminPaymentTimeline(paymentId);
 
+  const queryClient = useQueryClient();
   const processPayment = useProcessPayment();
   const uploadProof = useAdminUploadPaymentProof();
   const cancelPayment = useCancelPayment();
   const updateBeneficiary = useAdminUpdateBeneficiaryInfo();
+  const deleteProof = useDeletePaymentProof();
+  const instructionUpload = useAdminUploadPaymentInstruction();
+  const confirmCash = useAgentConfirmCashPayment();
+  const correctPayment = useAdminCorrectPayment();
 
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [proofIndex, setProofIndex] = useState(0);
@@ -184,14 +197,28 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [showBenefEdit, setShowBenefEdit] = useState(false);
-  const [benefDraft, setBenefDraft] = useState({ name: '', identifier: '', phone: '', email: '', bank: '', account: '', extra: '' });
+  const [benefDraft, setBenefDraft] = useState({ name: '', identifier: '', phone: '', email: '', bank: '', account: '', extra: '', notes: '' });
   const [benefQrFile, setBenefQrFile] = useState<File | null>(null);
   const [exporting, setExporting] = useState<'copy' | 'png' | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [deleteProofId, setDeleteProofId] = useState<string | null>(null);
+  const [showCorrect, setShowCorrect] = useState(false);
+  const [corr, setCorr] = useState({ xaf: '', rmb: '', rate: '', reason: '' });
+  const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
+  const [showSign, setShowSign] = useState(false);
+  const [completeFile, setCompleteFile] = useState<File | null>(null);
+  const [completePreview, setCompletePreview] = useState<string | null>(null);
 
   const ficheRef = useRef<HTMLDivElement>(null);
+  const replaceFileRef = useRef<HTMLInputElement>(null);
+  const instructionInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setProofIndex(0), [paymentId]);
+  // Après une suppression, l'index peut dépasser la liste — on le ramène.
+  const proofCount = proofs?.length ?? 0;
+  useEffect(() => {
+    setProofIndex((i) => (i > 0 && i >= proofCount ? Math.max(0, proofCount - 1) : i));
+  }, [proofCount]);
 
   const close = useCallback(() => navigate('/m/payments'), [navigate]);
 
@@ -203,13 +230,22 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const canComplete = canProcess && status === 'processing';
   const canReject = canProcess && !isLocked && status !== 'cash_pending';
   const isCash = payment?.method === 'cash';
+  // Un admin corrige le bénéficiaire tant que le paiement n'est pas parti ;
+  // le super admin peut le corriger à tout moment, même sur un paiement effectué.
   const canEditBeneficiary =
-    canProcess && !isLocked && !isCash && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment?.status ?? '');
+    canProcess &&
+    !isCash &&
+    !!payment &&
+    (isSuperAdmin || (!isLocked && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status)));
 
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
   const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type !== 'admin');
   const allProofs = [...clientProofs, ...adminProofs];
   const missingAdminProof = status === 'processing' && !isCash && adminProofs.length === 0;
+  // Règle mobile : un admin corrige ses propres preuves tant que le paiement
+  // n'est pas verrouillé ; le super admin peut tout supprimer, même après.
+  const canDeleteProof = (p: { uploaded_by_type: string }) =>
+    canProcess && (p.uploaded_by_type === 'admin' || isSuperAdmin) && (!isLocked || isSuperAdmin);
 
   // Deep-link actions from table hover buttons.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -229,7 +265,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       setShowUpload(true);
       setUploadFiles((prev) => [...prev, ...files]);
     }, []),
-    enabled: canProcess && !isLocked && !showReject && !showComplete && !showCancel && !showBenefEdit && !lightbox,
+    enabled: canProcess && !isLocked && !showReject && !showComplete && !showCancel && !showBenefEdit && !lightbox && !deleteProofId && !showSign && !showCorrect,
   });
 
   const openBenefEdit = useCallback(() => {
@@ -242,6 +278,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       bank: payment.beneficiary_bank_name ?? '',
       account: payment.beneficiary_bank_account ?? '',
       extra: (payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra ?? '',
+      notes: (payment as { beneficiary_notes?: string | null }).beneficiary_notes ?? '',
     });
     setBenefQrFile(null);
     setShowBenefEdit(true);
@@ -260,6 +297,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           beneficiary_bank_name: benefDraft.bank || undefined,
           beneficiary_bank_account: benefDraft.account || undefined,
           beneficiary_bank_extra: benefDraft.extra || undefined,
+          beneficiary_notes: benefDraft.notes || undefined,
         },
         qrCodeFile: benefQrFile ?? undefined,
       },
@@ -279,6 +317,144 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       setUploadFiles([]);
     })().catch(() => {});
   }, [uploadFiles, uploadProof, paymentId]);
+
+  // Remplacer = téléverser la nouvelle preuve PUIS supprimer l'ancienne, pour
+  // ne jamais laisser le paiement sans justificatif si l'upload échoue.
+  const handleReplaceFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const picked = Array.from(e.target.files ?? []);
+      if (replaceFileRef.current) replaceFileRef.current.value = '';
+      const oldId = replaceProofId;
+      setReplaceProofId(null);
+      if (picked.length === 0 || !oldId) return;
+      const { accepted, rejected } = partitionUploadFiles(picked);
+      const problem = rejectionMessage(rejected);
+      if (problem) toast.error(problem);
+      if (accepted.length === 0) return;
+      (async () => {
+        await uploadProof.mutateAsync({ paymentId, file: accepted[0] });
+        await deleteProof.mutateAsync(oldId);
+        toast.success('Preuve remplacée');
+      })().catch(() => {});
+    },
+    [replaceProofId, uploadProof, deleteProof, paymentId],
+  );
+
+  const handleInstructionUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const picked = Array.from(e.target.files ?? []);
+      if (instructionInputRef.current) instructionInputRef.current.value = '';
+      if (picked.length === 0) return;
+      const { accepted, rejected } = partitionUploadFiles(picked);
+      const problem = rejectionMessage(rejected);
+      if (problem) toast.error(problem);
+      if (accepted.length === 0) return;
+      instructionUpload
+        .mutateAsync({ paymentId, files: accepted })
+        .then(() => toast.success(`${accepted.length} instruction(s) ajoutée(s)`))
+        .catch(() => {});
+    },
+    [instructionUpload, paymentId],
+  );
+
+  const setCompleteFromFiles = useCallback((files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    setCompleteFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setCompletePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const confirmComplete = useCallback(() => {
+    (async () => {
+      if (completeFile) await uploadProof.mutateAsync({ paymentId, file: completeFile });
+      await processPayment.mutateAsync({ paymentId, action: 'complete', comment: completeComment || undefined });
+      setShowComplete(false);
+      setCompleteFile(null);
+      setCompletePreview(null);
+    })().catch(() => {});
+  }, [completeFile, completeComment, uploadProof, processPayment, paymentId]);
+
+  const openCorrect = useCallback(() => {
+    if (!payment) return;
+    const rateInt0 = payment.exchange_rate
+      ? payment.exchange_rate < 1
+        ? Math.round(payment.exchange_rate * 1_000_000)
+        : Math.round(payment.exchange_rate)
+      : 0;
+    setCorr({
+      xaf: String(payment.amount_xaf ?? ''),
+      rmb: String(payment.amount_rmb ?? ''),
+      rate: rateInt0 ? String(rateInt0) : '',
+      reason: '',
+    });
+    setShowCorrect(true);
+  }, [payment]);
+
+  const submitCorrection = useCallback(() => {
+    if (!payment) return;
+    const newXaf = corr.xaf ? parseInt(corr.xaf, 10) : NaN;
+    const newRmb = corr.rmb ? Number(corr.rmb) : NaN;
+    const newRate = corr.rate ? parseInt(corr.rate, 10) : NaN;
+    if (!corr.reason.trim()) {
+      toast.error('Le motif de correction est obligatoire');
+      return;
+    }
+    if (!Number.isSafeInteger(newXaf) || newXaf <= 0 || newXaf > 50_000_000) {
+      toast.error('Montant XAF invalide (1 à 50 000 000)');
+      return;
+    }
+    if (!Number.isFinite(newRmb) || newRmb <= 0 || !Number.isSafeInteger(Math.round(newRmb))) {
+      toast.error('Montant ¥ invalide');
+      return;
+    }
+    if (!Number.isSafeInteger(newRate) || newRate <= 0) {
+      toast.error('Taux invalide');
+      return;
+    }
+    const oldRateInt = payment.exchange_rate
+      ? payment.exchange_rate < 1
+        ? Math.round(payment.exchange_rate * 1_000_000)
+        : Math.round(payment.exchange_rate)
+      : 0;
+    const patch = {
+      amountXaf: newXaf !== payment.amount_xaf ? newXaf : undefined,
+      amountRmb: newRmb !== payment.amount_rmb ? newRmb : undefined,
+      exchangeRate: newRate !== oldRateInt ? newRate : undefined,
+    };
+    if (patch.amountXaf === undefined && patch.amountRmb === undefined && patch.exchangeRate === undefined) {
+      toast.error('Aucune valeur ne change');
+      return;
+    }
+    correctPayment.mutate(
+      { paymentId, reason: corr.reason.trim(), ...patch },
+      { onSuccess: () => setShowCorrect(false) },
+    );
+  }, [payment, corr, correctPayment, paymentId]);
+
+  const handleCashSignature = useCallback(
+    async (signatureDataUrl: string) => {
+      const signedByName = currentUser
+        ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
+      try {
+        const result = await confirmCash.mutateAsync({ paymentId, signatureDataUrl, signedByName });
+        if (result?.success) {
+          setShowSign(false);
+          toast.success('Signature enregistrée — paiement confirmé');
+          queryClient.invalidateQueries({ queryKey: ['admin-payment', paymentId] });
+          queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', paymentId] });
+        } else {
+          toast.error((result as { error?: string })?.error || 'Erreur lors de la confirmation');
+        }
+      } catch {
+        /* handled by mutation */
+      }
+    },
+    [confirmCash, paymentId, currentUser, queryClient],
+  );
 
   // ── Fiche → PNG (copie presse-papiers ou téléchargement) ─────────────────
   const exportFiche = useCallback(
@@ -424,6 +600,15 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const stateFor = (s: PaymentStatus): 'completed' | 'current' | 'pending' =>
     payment.status === s ? 'current' : reached(s) ? 'completed' : 'pending';
 
+  // Aperçu vivant du dialogue de correction
+  const corrXafNum = parseInt(corr.xaf || '0', 10) || 0;
+  const corrRmbNum = Number(corr.rmb || '0') || 0;
+  const corrRateNum = parseInt(corr.rate || '0', 10) || 0;
+  const corrDelta = corrXafNum > 0 ? corrXafNum - payment.amount_xaf : 0;
+  const corrWalletTouched = !['rejected', 'cancelled_by_admin'].includes(payment.status);
+  const corrExpectedRmb = corrRateNum > 0 && corrXafNum > 0 ? (corrXafNum * corrRateNum) / 1_000_000 : 0;
+  const corrIncoherent = corrRmbNum > 0 && corrExpectedRmb > 0 && Math.abs(corrRmbNum - corrExpectedRmb) / corrExpectedRmb > 0.02;
+
   // Preuves : useAdminPaymentProofs renvoie file_url DÉJÀ signé.
   const proof = allProofs[proofIndex];
   const proofIsImage = proof?.file_type?.startsWith('image/');
@@ -464,12 +649,31 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             {menuOpen && (
               <div className={cn('absolute right-0 top-[calc(100%+6px)] z-40 min-w-[210px] overflow-hidden rounded-2xl p-1.5', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
                 {canProcess && !isLocked && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { setMenuOpen(false); setShowUpload(true); }}
+                      className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Ajouter une preuve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setMenuOpen(false); instructionInputRef.current?.click(); }}
+                      disabled={instructionUpload.isPending}
+                      className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold disabled:opacity-50', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                    >
+                      <FileText className="h-3.5 w-3.5" /> Ajouter une instruction
+                    </button>
+                  </>
+                )}
+                {isSuperAdmin && (
                   <button
                     type="button"
-                    onClick={() => { setMenuOpen(false); setShowUpload(true); }}
+                    onClick={() => { setMenuOpen(false); openCorrect(); }}
                     className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
                   >
-                    <Plus className="h-3.5 w-3.5" /> Ajouter une preuve
+                    <Pencil className="h-3.5 w-3.5" /> Corriger montants / taux
                   </button>
                 )}
                 {isSuperAdmin && !isLocked && (
@@ -560,6 +764,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                     {bankExtra && <FicheRow k="SWIFT / IBAN" v={bankExtra} mono />}
                     {payment.beneficiary_phone && <FicheRow k="Téléphone" v={payment.beneficiary_phone} mono />}
                     {payment.beneficiary_email && <FicheRow k="Email" v={payment.beneficiary_email} />}
+                    {(payment as { beneficiary_notes?: string | null }).beneficiary_notes && (
+                      <FicheRow k="Notes" v={(payment as { beneficiary_notes?: string | null }).beneficiary_notes!} />
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 rounded-xl bg-[#F8EFD8] px-3 py-2">
@@ -649,6 +856,47 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           </button>
         )}
 
+        {/* ── Signature (cash) ──────────────────────────────────────────── */}
+        {isCash && (
+          <div className="mt-3.5">
+            <SecLabel className="mb-2">Signature du bénéficiaire</SecLabel>
+            {(payment as { cash_signature_url?: string | null }).cash_signature_url ? (
+              <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
+                <img
+                  src={(payment as { cash_signature_url?: string | null }).cash_signature_url!}
+                  alt="Signature du bénéficiaire"
+                  className="max-h-[90px] w-full rounded-xl bg-white object-contain"
+                />
+                <div className={cn('mt-1.5 text-[11px]', TEXT.muted)}>
+                  {(payment as { cash_paid_at?: string | null }).cash_paid_at
+                    ? `Signé le ${format(new Date((payment as { cash_paid_at?: string | null }).cash_paid_at!), 'd MMM yyyy, HH:mm', { locale: fr })}`
+                    : 'Signature capturée'}
+                  {(payment as { cash_signed_by_name?: string | null }).cash_signed_by_name && (
+                    <> · {(payment as { cash_signed_by_name?: string | null }).cash_signed_by_name}</>
+                  )}
+                </div>
+              </div>
+            ) : canProcess && !isLocked ? (
+              <div className={cn('flex items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5', SURFACE.canvas)}>
+                <span className={cn('min-w-0 text-[12px]', TEXT.muted)}>
+                  Le bénéficiaire doit signer avant la remise des fonds
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSign(true)}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#E0322B] px-3.5 py-2 text-[12px] font-bold text-white"
+                >
+                  <PenLine className="h-3.5 w-3.5" /> Faire signer
+                </button>
+              </div>
+            ) : (
+              <div className={cn('rounded-2xl px-3.5 py-2.5 text-[12px]', SURFACE.canvas, TEXT.muted)}>
+                Aucune signature capturée
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Preuves ───────────────────────────────────────────────────── */}
         <div className="mt-3.5">
           {missingAdminProof && (
@@ -715,7 +963,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                       : 'bg-black/[0.05] dark:bg-white/[0.08]',
                   )}
                 >
-                  {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
+                  {proof.uploaded_by_type === 'admin' ? 'Admin' : proof.uploaded_by_type === 'admin_instruction' ? 'Instruction' : 'Client'}
                 </span>
                 <span className="min-w-0 truncate font-semibold">{proof.file_name}</span>
                 <span className="ml-auto shrink-0 tabular-nums">{format(new Date(proof.created_at), 'd MMM, HH:mm', { locale: fr })}</span>
@@ -754,6 +1002,29 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   <Download className="h-3 w-3" /> Télécharger
                 </a>
               </div>
+              {canDeleteProof(proof) && (
+                <div className="mt-1.5 flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={uploadProof.isPending || deleteProof.isPending}
+                    onClick={() => {
+                      setReplaceProofId(proof.id);
+                      replaceFileRef.current?.click();
+                    }}
+                    className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold disabled:opacity-40', SOFT_PILL)}
+                  >
+                    <RefreshCw className="h-3 w-3" /> Remplacer
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteProof.isPending}
+                    onClick={() => setDeleteProofId(proof.id)}
+                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-[#FBE7E7] text-[10px] font-semibold text-[#C0504D] disabled:opacity-40 dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                  >
+                    <Trash2 className="h-3 w-3" /> Supprimer
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="rounded-2xl border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
@@ -788,6 +1059,15 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           <KV k="Lot" v={(payment as { batch_id?: string | null }).batch_id ? 'Paiement groupé' : '—'} />
           <KV k="Traité par" v={payment.processed_at ? format(new Date(payment.processed_at), 'd MMM, HH:mm', { locale: fr }) : '—'} />
         </div>
+
+        {(payment as { rejection_reason?: string | null }).rejection_reason && (
+          <div className="mt-3 flex items-baseline gap-2.5 rounded-2xl bg-[#FBE7E7] px-3 py-2 dark:bg-[#3A2526]">
+            <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-[#C0504D] dark:text-[#E79A9A]">Motif refus</span>
+            <p className="text-[12.5px] text-[#C0504D] dark:text-[#E79A9A]">
+              {(payment as { rejection_reason?: string | null }).rejection_reason}
+            </p>
+          </div>
+        )}
 
         {payment.admin_comment && (
           <div className={cn('mt-3 flex items-baseline gap-2.5 rounded-2xl px-3 py-2', SURFACE.canvas)}>
@@ -826,20 +1106,181 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         </div>
       </div>
 
-      {/* ── Dialogue : valider (compléter) ──────────────────────────────── */}
+      {/* Inputs cachés : remplacement de preuve + instructions */}
+      <input ref={replaceFileRef} type="file" accept={ACCEPT_UPLOAD} className="hidden" onChange={handleReplaceFileSelect} />
+      <input ref={instructionInputRef} type="file" accept={ACCEPT_UPLOAD} multiple className="hidden" onChange={handleInstructionUpload} />
+
+      {/* ── Dialogue : corriger montants / taux (super admin) ───────────── */}
       <CenterDialog
-        open={showComplete}
-        onClose={() => setShowComplete(false)}
-        onConfirm={!processPayment.isPending ? () => processPayment.mutate({ paymentId, action: 'complete', comment: completeComment || undefined }, { onSuccess: () => setShowComplete(false) }) : undefined}
-        title={`Valider le paiement ${payment.reference}`}
+        open={showCorrect}
+        onClose={() => setShowCorrect(false)}
+        onConfirm={!correctPayment.isPending ? submitCorrection : undefined}
+        title={`Corriger le paiement ${payment.reference}`}
+        width={560}
         footer={
           <>
-            <SoftPill onClick={() => setShowComplete(false)} className="flex-1">
+            <SoftPill onClick={() => setShowCorrect(false)} className="flex-1">
               Annuler
             </SoftPill>
             <PrimaryPill
-              onClick={() => processPayment.mutate({ paymentId, action: 'complete', comment: completeComment || undefined }, { onSuccess: () => setShowComplete(false) })}
-              loading={processPayment.isPending}
+              onClick={submitCorrection}
+              loading={correctPayment.isPending}
+              disabled={!corr.reason.trim()}
+              className="flex-[1.4] bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white"
+            >
+              Appliquer la correction
+            </PrimaryPill>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
+            <p className="text-[12.5px] leading-[17px] text-[#9A6B12] dark:text-[#E7C083]">
+              Correction a posteriori ({statusConfig.label}). Le client verra les nouveaux montants ; le reçu PDF et la fiche se
+              régénèrent avec ces valeurs. Tout est tracé (journal d'audit + suivi du paiement).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <FormField label="Client débité (XAF)">
+              <TextInput
+                inputMode="numeric"
+                value={corr.xaf}
+                onChange={(e) => setCorr({ ...corr, xaf: e.target.value.replace(/[^0-9]/g, '') })}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+            <FormField label="Fournisseur reçoit (¥)">
+              <TextInput
+                inputMode="decimal"
+                value={corr.rmb}
+                onChange={(e) => setCorr({ ...corr, rmb: e.target.value.replace(/[^0-9.]/g, '') })}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+            <FormField label="Taux (¥ / 1M XAF)">
+              <TextInput
+                inputMode="numeric"
+                value={corr.rate}
+                onChange={(e) => setCorr({ ...corr, rate: e.target.value.replace(/[^0-9]/g, '') })}
+                className="h-10 font-bold tabular-nums"
+              />
+            </FormField>
+          </div>
+
+          {corrDelta !== 0 && (
+            <div
+              className={cn(
+                'rounded-2xl p-3 text-[12.5px] font-semibold',
+                corrWalletTouched
+                  ? corrDelta > 0
+                    ? 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                    : 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
+                  : cn(SURFACE.canvas, TEXT.muted),
+              )}
+            >
+              {corrWalletTouched ? (
+                corrDelta > 0 ? (
+                  <>Le wallet de {clientName} sera débité de {fmt(corrDelta)} XAF supplémentaires (écriture comptable ADMIN_DEBIT).</>
+                ) : (
+                  <>Le wallet de {clientName} sera recrédité de {fmt(-corrDelta)} XAF (écriture comptable ADMIN_CREDIT).</>
+                )
+              ) : (
+                <>Paiement déjà remboursé ({statusConfig.label}) — la correction ne touche pas le wallet, seulement la fiche.</>
+              )}
+            </div>
+          )}
+
+          {corrIncoherent && (
+            <p className={cn('text-[12px]', TEXT.muted)}>
+              ⚠ Incohérence : {fmt(corrXafNum)} XAF × ¥{fmt(corrRateNum)}/1M ≈ ¥{fmt(Math.round(corrExpectedRmb))}, mais vous saisissez ¥
+              {fmt(Math.round(corrRmbNum))}. Vérifiez avant d'appliquer (non bloquant).
+            </p>
+          )}
+
+          <FormField label="Motif de la correction (obligatoire — journal d'audit)">
+            <textarea
+              value={corr.reason}
+              onChange={(e) => setCorr({ ...corr, reason: e.target.value })}
+              rows={2}
+              placeholder="Ex. : erreur de saisie du taux à la création…"
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+            />
+          </FormField>
+        </div>
+      </CenterDialog>
+
+      {/* ── Dialogue : supprimer une preuve ─────────────────────────────── */}
+      <CenterDialog
+        open={!!deleteProofId}
+        onClose={() => setDeleteProofId(null)}
+        onConfirm={
+          !deleteProof.isPending && deleteProofId
+            ? () => deleteProof.mutate(deleteProofId, { onSuccess: () => setDeleteProofId(null) })
+            : undefined
+        }
+        title="Supprimer cette preuve ?"
+        footer={
+          <>
+            <SoftPill onClick={() => setDeleteProofId(null)} className="flex-1">
+              Annuler
+            </SoftPill>
+            <PrimaryPill
+              onClick={() => deleteProofId && deleteProof.mutate(deleteProofId, { onSuccess: () => setDeleteProofId(null) })}
+              loading={deleteProof.isPending}
+              danger
+              className="flex-[1.4]"
+            >
+              Supprimer
+            </PrimaryPill>
+          </>
+        }
+      >
+        <p className={cn('text-[13px]', TEXT.muted)}>
+          La preuve sera définitivement supprimée du paiement {payment.reference}. Cette action est irréversible — vous pourrez en ajouter
+          une nouvelle à tout moment.
+        </p>
+      </CenterDialog>
+
+      {/* ── Dialogue : signature cash ───────────────────────────────────── */}
+      <CenterDialog open={showSign} onClose={() => setShowSign(false)} title="Signature du bénéficiaire" width={560}>
+        <div className="space-y-3">
+          <div className={cn('rounded-2xl p-3 text-center', SURFACE.canvas)}>
+            <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
+            <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>
+              {cashBeneficiaryName} · la signature confirme la remise des fonds
+            </div>
+          </div>
+          <SignatureCanvas onSave={handleCashSignature} onCancel={() => setShowSign(false)} isLoading={confirmCash.isPending} />
+        </div>
+      </CenterDialog>
+
+      {/* ── Dialogue : valider (compléter) ──────────────────────────────── */}
+      <CenterDialog
+        open={showComplete}
+        onClose={() => {
+          setShowComplete(false);
+          setCompleteFile(null);
+          setCompletePreview(null);
+        }}
+        onConfirm={!processPayment.isPending && !uploadProof.isPending ? confirmComplete : undefined}
+        title={`Valider le paiement ${payment.reference}`}
+        footer={
+          <>
+            <SoftPill
+              onClick={() => {
+                setShowComplete(false);
+                setCompleteFile(null);
+                setCompletePreview(null);
+              }}
+              className="flex-1"
+            >
+              Annuler
+            </SoftPill>
+            <PrimaryPill
+              onClick={confirmComplete}
+              loading={processPayment.isPending || uploadProof.isPending}
               className="flex-[1.4] bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
             >
               Marquer effectué
@@ -862,6 +1303,32 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               </p>
             </div>
           )}
+          <FormField label="Preuve de paiement (optionnel)">
+            {completePreview ? (
+              <div className="relative">
+                <img src={completePreview} alt="Preuve" className="h-36 w-full rounded-2xl object-cover" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompleteFile(null);
+                    setCompletePreview(null);
+                  }}
+                  aria-label="Retirer la preuve"
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <PasteDropZone
+                onFiles={setCompleteFromFiles}
+                enabled
+                single
+                title="Collez, glissez ou cliquez"
+                hint="Ctrl+V colle directement la capture du paiement"
+              />
+            )}
+          </FormField>
           <FormField label="Commentaire visible par le client (optionnel)">
             <textarea
               value={completeComment}
@@ -1004,6 +1471,15 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           <FormField label="Email">
             <TextInput value={benefDraft.email} onChange={(e) => setBenefDraft({ ...benefDraft, email: e.target.value })} type="email" />
           </FormField>
+          <FormField label="Notes (optionnel)" className="col-span-2">
+            <textarea
+              value={benefDraft.notes}
+              onChange={(e) => setBenefDraft({ ...benefDraft, notes: e.target.value })}
+              rows={2}
+              placeholder="Ex. : contact du fournisseur, précisions de livraison…"
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+            />
+          </FormField>
         </div>
       </CenterDialog>
 
@@ -1063,6 +1539,17 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       {/* ── Visionneuse ─────────────────────────────────────────────────── */}
       {lightbox && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black" onClick={() => setLightbox(null)}>
+          <a
+            href={lightbox}
+            download
+            target="_blank"
+            rel="noopener"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-16 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20"
+            aria-label="Télécharger"
+          >
+            <Download className="h-5 w-5 text-white" />
+          </a>
           <button
             type="button"
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20"
