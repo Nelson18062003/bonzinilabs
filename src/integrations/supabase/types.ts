@@ -941,6 +941,8 @@ export type Database = {
           legal_name: string | null
           notes: string | null
           phone: string | null
+          settlement_rate: number | null
+          settlement_rate_updated_at: string | null
           short_id: string
           type: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at: string
@@ -956,6 +958,8 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          settlement_rate?: number | null
+          settlement_rate_updated_at?: string | null
           short_id?: string
           type: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at?: string
@@ -971,6 +975,8 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          settlement_rate?: number | null
+          settlement_rate_updated_at?: string | null
           short_id?: string
           type?: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at?: string
@@ -1200,6 +1206,7 @@ export type Database = {
           implicit_rate: number
           notes: string | null
           occurred_at: string
+          payment_id: string | null
           usdt_amount: number
           void_contra_entry_id: string | null
           void_reason: string | null
@@ -1217,6 +1224,7 @@ export type Database = {
           id?: string
           notes?: string | null
           occurred_at: string
+          payment_id?: string | null
           usdt_amount: number
           void_contra_entry_id?: string | null
           void_reason?: string | null
@@ -1234,6 +1242,7 @@ export type Database = {
           id?: string
           notes?: string | null
           occurred_at?: string
+          payment_id?: string | null
           usdt_amount?: number
           void_contra_entry_id?: string | null
           void_reason?: string | null
@@ -1242,6 +1251,13 @@ export type Database = {
           wac_at_sale?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "usdt_sales_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "usdt_sales_buyer_id_fkey"
             columns: ["buyer_id"]
@@ -1951,6 +1967,14 @@ export type Database = {
         Args: { p_from_date: string; p_to_date: string }
         Returns: Json
       }
+      get_unsettled_payments: {
+        Args: { p_from_date?: string; p_to_date?: string }
+        Returns: Json
+      }
+      get_usdt_sales_monthly: {
+        Args: { p_months?: number }
+        Returns: Json
+      }
       get_usdt_stock: {
         Args: { p_at?: string }
         Returns: number
@@ -2029,6 +2053,19 @@ export type Database = {
         Returns: Json
       }
       scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
+      set_counterparty_settlement_rate: {
+        Args: { p_counterparty_id: string; p_rate: number }
+        Returns: Json
+      }
+      settle_payments_usdt: {
+        Args: {
+          p_buyer_id: string
+          p_occurred_at?: string
+          p_payment_ids: string[]
+          p_rate?: number
+        }
+        Returns: Json
+      }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
       submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
       toggle_admin_status: {

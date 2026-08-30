@@ -124,6 +124,8 @@ const MobileTreasurySaleDetail = lazy(() => import("./mobile/screens/treasury").
 const MobileTreasuryPurchasesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchasesList })));
 const MobileTreasurySalesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSalesList })));
 const MobileTreasuryBalanceDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileBalanceDashboard })));
+const MobileTreasurySettlements = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSettlements })));
+const MobileTreasuryMonthlyReport = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileMonthlyReport })));
 
 // ── Lazy-loaded Agent Cash Screens ──────────────────────────
 import { AgentCashRouteWrapper } from "./mobile/components/agent-cash/AgentCashRouteWrapper";
@@ -258,6 +260,8 @@ const App = () => (
                 <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper desktop={<DesktopSalesList />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper desktop={<DesktopBalanceDashboard />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileTreasurySaleDetail desktop />}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/settlements" element={<AdminRouteWrapper desktop={<MobileTreasurySettlements desktop />}><MobileTreasurySettlements /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/monthly" element={<AdminRouteWrapper desktop={<MobileTreasuryMonthlyReport desktop />}><MobileTreasuryMonthlyReport /></AdminRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />

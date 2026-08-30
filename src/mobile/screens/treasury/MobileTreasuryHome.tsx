@@ -8,6 +8,8 @@ import {
   TrendingUp,
   AlertTriangle,
   BarChart3,
+  CalendarRange,
+  Handshake,
   History,
   Image as ImageIcon,
 } from 'lucide-react';
@@ -117,6 +119,7 @@ export function MobileTreasuryHome() {
           <SectionTitle>Analyse</SectionTitle>
           <div className="space-y-2.5">
             <ActionTile icon={BarChart3} label="Dashboard analytique" description="Volumes, taux moyens, bénéfice, top contreparties" onClick={() => navigate('/m/more/treasury/dashboard')} tone="violet" />
+            <ActionTile icon={CalendarRange} label="Bilan mensuel USDT" description="USDT vendus, CNY reçus, taux moyen par mois" onClick={() => navigate('/m/more/treasury/monthly')} tone="amber" />
             <ActionTile icon={History} label="Historique opérations" description="Toutes les opérations + annulation" onClick={() => navigate('/m/more/treasury/operations')} tone="neutral" />
             <ActionTile icon={ImageIcon} label="Dashboard soldes (PNG/PDF)" description="Générer le visuel des soldes par compte" onClick={() => navigate('/m/more/treasury/balance-dashboard')} tone="orange" />
           </div>
@@ -126,6 +129,7 @@ export function MobileTreasuryHome() {
         <section>
           <SectionTitle>Actions</SectionTitle>
           <div className="space-y-2.5">
+            <ActionTile icon={Handshake} label="Règlements Chine" description="Régler les paiements clients en USDT au partenaire" onClick={() => navigate('/m/more/treasury/settlements')} tone="violet" />
             <ActionTile icon={ArrowDownToLine} label="Nouvel achat USDT" description="Saisir un achat XAF → USDT" onClick={() => navigate('/m/more/treasury/purchase')} tone="violet" />
             <ActionTile icon={ArrowDownToLine} label="Mes achats USDT" description="Liste, total, suppression" onClick={() => navigate('/m/more/treasury/purchases')} tone="neutral" />
             <ActionTile icon={ArrowUpFromLine} label="Nouvelle vente USDT" description="Saisir une vente USDT → CNY" onClick={() => navigate('/m/more/treasury/sale')} tone="amber" />

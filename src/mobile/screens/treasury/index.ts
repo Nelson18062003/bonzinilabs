@@ -10,4 +10,6 @@ export { MobileOperationsHistory } from './MobileOperationsHistory';
 export { MobilePurchaseDetail, MobileSaleDetail } from './MobileOperationDetail';
 export { MobilePurchasesList } from './MobilePurchasesList';
 export { MobileSalesList } from './MobileSalesList';
+export { MobileSettlements } from './MobileSettlements';
+export { MobileMonthlyReport } from './MobileMonthlyReport';
 export { MobileBalanceDashboard } from './balance-dashboard/MobileBalanceDashboard';

@@ -306,6 +306,149 @@ export function useRecordUsdtSale() {
   });
 }
 
+// ─── Règlements partenaire Chine ────────────────────────────
+// Nouveau flux : chaque paiement client complété est réglé par le
+// partenaire (acheteur CNY) au taux du moment → une vente USDT liée
+// (usdt_sales.payment_id) par paiement, sans double saisie.
+
+export interface UnsettledPayment {
+  id: string;
+  reference: string;
+  method: Database['public']['Enums']['payment_method'];
+  amount_rmb: number;
+  amount_xaf: number;
+  exchange_rate: number | null;
+  created_at: string;
+  processed_at: string | null;
+  client_name: string;
+  company_name: string | null;
+}
+
+export interface UnsettledPaymentsResult {
+  success: boolean;
+  error?: string;
+  count: number;
+  total_cny: number;
+  total_xaf: number;
+  payments: UnsettledPayment[];
+}
+
+export function useUnsettledPayments(fromIso?: string, toIso?: string) {
+  return useQuery({
+    queryKey: ['treasury', 'unsettled-payments', fromIso ?? 'all', toIso ?? 'all'],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.rpc('get_unsettled_payments', {
+        p_from_date: fromIso,
+        p_to_date: toIso,
+      });
+      if (error) throw error;
+      const result = data as unknown as UnsettledPaymentsResult;
+      if (!result.success) throw new Error(result.error ?? 'Erreur chargement paiements à régler');
+      return result;
+    },
+    staleTime: 15_000,
+  });
+}
+
+export function useSetSettlementRate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { counterparty_id: string; rate: number }) => {
+      const { data, error } = await supabaseAdmin.rpc('set_counterparty_settlement_rate', {
+        p_counterparty_id: args.counterparty_id,
+        p_rate: args.rate,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; settlement_rate?: number };
+      if (!result.success) throw new Error(result.error ?? 'Erreur mise à jour du taux');
+      return result;
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['treasury', 'counterparties'] });
+      toast.success(`Taux de règlement mis à jour : ${r.settlement_rate?.toFixed(4)} CNY/USDT`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+interface SettlePaymentsArgs {
+  payment_ids: string[];
+  buyer_id: string;
+  /** Optionnel : sinon le taux courant de l'acheteur est appliqué. */
+  rate?: number;
+  occurred_at?: string;
+}
+
+export interface SettlePaymentsResult {
+  success: boolean;
+  error?: string;
+  rate?: number;
+  settled_count?: number;
+  skipped_count?: number;
+  total_usdt?: number;
+  total_cny?: number;
+  settled?: Array<{ payment_id: string; reference: string; sale_id: string; cny_amount: number; usdt_amount: number }>;
+  skipped?: Array<{ payment_id: string; reference?: string; reason: string }>;
+  stock_usdt_after?: number;
+  warning_negative_stock?: boolean;
+}
+
+export function useSettlePayments() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: SettlePaymentsArgs) => {
+      const { data, error } = await supabaseAdmin.rpc('settle_payments_usdt', {
+        p_payment_ids: args.payment_ids,
+        p_buyer_id: args.buyer_id,
+        p_rate: args.rate,
+        p_occurred_at: args.occurred_at,
+      });
+      if (error) throw error;
+      const result = data as SettlePaymentsResult;
+      if (!result.success) throw new Error(result.error ?? 'Erreur règlement USDT');
+      return result;
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['treasury'] });
+      const usdt = (r.total_usdt ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+      if (r.warning_negative_stock) {
+        toast.warning(`${r.settled_count} paiement(s) réglé(s) · ${usdt} USDT vendus. ATTENTION: stock USDT négatif (${r.stock_usdt_after?.toFixed(2)})`);
+      } else if ((r.settled_count ?? 0) > 0) {
+        toast.success(`${r.settled_count} paiement(s) réglé(s) · ${usdt} USDT vendus au taux ${r.rate?.toFixed(4)}`);
+      }
+      if ((r.skipped_count ?? 0) > 0) {
+        toast.warning(`${r.skipped_count} paiement(s) ignoré(s) : ${(r.skipped ?? []).map((s) => s.reason)[0] ?? ''}`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export interface MonthlySalesRow {
+  month: string; // 'YYYY-MM'
+  sale_count: number;
+  settlement_count: number;
+  manual_count: number;
+  total_usdt: number;
+  total_cny: number;
+  weighted_avg_rate_cny_per_usdt: number;
+  cost_basis_xaf: number;
+}
+
+export function useUsdtSalesMonthly(months = 12) {
+  return useQuery({
+    queryKey: ['treasury', 'sales-monthly', months],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.rpc('get_usdt_sales_monthly', { p_months: months });
+      if (error) throw error;
+      const result = data as unknown as { success: boolean; error?: string; months: MonthlySalesRow[] };
+      if (!result.success) throw new Error(result.error ?? 'Erreur bilan mensuel');
+      return result.months;
+    },
+    staleTime: 30_000,
+  });
+}
+
 // ─── Inventory ──────────────────────────────────────────────
 
 interface InventoryArgs {
