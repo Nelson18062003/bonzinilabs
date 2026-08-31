@@ -86,6 +86,11 @@ export default {
         sans: ['"DM Sans"', "Inter", "system-ui", "sans-serif"],
         display: ['"Syne"', "sans-serif"],
         body: ['"DM Sans"', "sans-serif"],
+        // Direction « salle des marchés » (Trésorerie d'abord, puis le reste
+        // de l'admin) : Inter pour le texte, JetBrains Mono pour TOUS les
+        // chiffres — une colonne de montants doit se lire d'un coup d'œil.
+        ui: ['"Inter"', "system-ui", "sans-serif"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
       },
       fontSize: {
         balance: ["3rem", { lineHeight: "1", fontWeight: "700" }],

@@ -1,9 +1,9 @@
 /**
- * Desktop admin — Nouvel achat USDT (archétype C : page de création).
+ * Desktop admin — Nouvel achat USDT (archétype C : page de création),
+ * habillage « salle des marchés ».
  *
- * Remplace le montage du wizard téléphone sur la route desktop
- * (`MobileNewPurchase desktop`). Deux zones : les décisions à gauche, un
- * RÉCAPITULATIF VIVANT collé à droite.
+ * Remplace le montage du wizard téléphone sur la route desktop. Deux zones :
+ * les décisions à gauche, un RÉCAPITULATIF VIVANT collé à droite.
  *
  * Ce récapitulatif est ce qui manquait : on saisissait un montant sans voir
  * son effet. Il montre le taux effectif obtenu et surtout le **WAC avant →
@@ -18,21 +18,6 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  Card,
-  CardHeader,
-  Chip,
-  SecLabel,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  PrimaryPill,
-  SoftPill,
-  FormField,
-  TextInput,
-  CenterDialog,
-} from '@/desktop/designKit';
 import { OccurredAtField, PhoneInputWithCountry } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
@@ -44,6 +29,7 @@ import {
   useUsdtWac,
   type AccountSplit,
 } from '@/hooks/useTreasury';
+import { M, T, NUM, TONE, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, M_PAGE } from './marketKit';
 import { fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 import { TreasurySelect } from './TreasurySelect';
@@ -69,10 +55,10 @@ const newSplit = (): SplitRow => ({ key: `s${splitKeyCounter++}`, accountId: '',
 function RecapRow({ label, value, unit, strong }: { label: string; value: string; unit?: string; strong?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className={cn('text-[12px]', TEXT.muted)}>{label}</span>
-      <span className={cn('tabular-nums', strong ? cn('text-[15px] font-extrabold', TEXT.strong) : cn('text-[13px] font-semibold', TEXT.body))}>
+      <span className={cn('text-[11.5px]', T.muted)}>{label}</span>
+      <span className={cn(NUM, strong ? cn('text-[14px] font-bold', T.ink) : cn('text-[12.5px] font-semibold', T.body))}>
         {value}
-        {unit && <span className={cn('ml-1 text-[10.5px] font-normal', TEXT.muted)}>{unit}</span>}
+        {unit && <span className={cn('ml-1 text-[10px] font-normal', T.faint)}>{unit}</span>}
       </span>
     </div>
   );
@@ -183,71 +169,67 @@ export function DesktopNewPurchase() {
   const accountOptions = (xafAccounts ?? []).map((a) => ({ value: a.id, label: a.label }));
 
   return (
-    <div className="mx-auto max-w-[1080px] space-y-4">
+    <div className={cn(M_PAGE, T.ink)}>
+      <div className="mx-auto max-w-[1080px] space-y-4">
       <header className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => navigate('/m/more/treasury')}
           aria-label="Retour à la trésorerie"
-          className={cn('flex h-9 w-9 items-center justify-center rounded-full', SOFT_PILL)}
+          className={cn('flex h-8 w-8 items-center justify-center rounded-[6px] border', M.border, T.body)}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
         </button>
         <div>
-          <h2 className={cn('text-[20px] font-bold tracking-tight', TEXT.strong)}>Nouvel achat USDT</h2>
-          <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>Entrée de stock : XAF payé → USDT reçu</p>
+          <h2 className={cn('text-[19px] font-bold tracking-[-0.02em]', T.ink)}>Nouvel achat USDT</h2>
+          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>Entrée de stock : XAF payé → USDT reçu</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
         {/* ── Décisions ── */}
-        <div className="space-y-4">
-          <Card className="p-0">
-            <CardHeader title="Fournisseur" />
-            <div className="space-y-3 p-5">
-              <div className="flex items-end gap-2">
-                <FormField label="Fournisseur USDT" htmlFor="supplier" className="flex-1">
-                  <TreasurySelect
-                    id="supplier"
-                    value={supplierId}
-                    onChange={setSupplierId}
-                    options={(suppliers ?? []).map((s) => ({ value: s.id, label: `${s.short_id} · ${s.display_name}` }))}
-                  />
-                </FormField>
-                <button type="button" onClick={() => setNewOpen(true)} className={cn('inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-[12px] font-bold', SOFT_PILL)}>
-                  <Plus className="h-3.5 w-3.5" /> Nouveau
-                </button>
-              </div>
+        <div className="space-y-3">
+          <MCard>
+            <MCardHeader title="Fournisseur" />
+            <div className="flex items-end gap-2 p-4">
+              <MField label="Fournisseur USDT" htmlFor="supplier" className="flex-1">
+                <TreasurySelect
+                  id="supplier"
+                  value={supplierId}
+                  onChange={setSupplierId}
+                  options={(suppliers ?? []).map((s) => ({ value: s.id, label: `${s.short_id} · ${s.display_name}` }))}
+                />
+              </MField>
+              <MButton onClick={() => setNewOpen(true)}>
+                <Plus className="h-3.5 w-3.5" /> Nouveau
+              </MButton>
             </div>
-          </Card>
+          </MCard>
 
-          <Card className="p-0">
-            <CardHeader
-              title="Compte XAF débité"
-              meta={multi ? `${splits.length} compte${splits.length > 1 ? 's' : ''}` : undefined}
-            />
-            <div className="space-y-3 p-5">
+          <MCard>
+            <MCardHeader title="Compte XAF débité" meta={multi ? `${splits.length} compte${splits.length > 1 ? 's' : ''}` : undefined} />
+            <div className="space-y-3 p-4">
               {!multi ? (
                 <>
-                  <FormField label="Compte" htmlFor="account">
+                  <MField label="Compte" htmlFor="account">
                     <TreasurySelect id="account" value={singleAccountId} onChange={setSingleAccountId} options={accountOptions} />
-                  </FormField>
-                  <button type="button" onClick={() => setMulti(true)} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
-                    <Plus className="h-3.5 w-3.5" /> Répartir sur plusieurs comptes
+                  </MField>
+                  <button type="button" onClick={() => setMulti(true)} className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#4F46E5] dark:text-[#818CF8]">
+                    <Plus className="h-3 w-3" /> Répartir sur plusieurs comptes
                   </button>
                 </>
               ) : (
                 <>
                   {splits.map((row, idx) => (
-                    <div key={row.key} className={cn('space-y-2.5 rounded-[10px] p-3', SURFACE.inset)}>
-                      <SecLabel
+                    <div key={row.key} className={cn('space-y-2 rounded-[6px] border p-3', M.border, M.inset)}>
+                      <MSection
                         right={
                           splits.length > 1 ? (
                             <button
                               type="button"
                               onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))}
                               aria-label={`Retirer le compte ${idx + 1}`}
-                              className="text-[#C0504D] dark:text-[#E79A9A]"
+                              className={TONE.negative}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -255,7 +237,7 @@ export function DesktopNewPurchase() {
                         }
                       >
                         Compte {idx + 1}
-                      </SecLabel>
+                      </MSection>
                       <TreasurySelect
                         value={row.accountId}
                         onChange={(v) => updateSplit(row.key, { accountId: v })}
@@ -266,116 +248,92 @@ export function DesktopNewPurchase() {
                     </div>
                   ))}
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setSplits((rows) => [...rows, newSplit()])} className={cn('inline-flex h-9 items-center gap-1.5 px-3 text-[12px] font-bold', SOFT_PILL)}>
+                    <MButton onClick={() => setSplits((rows) => [...rows, newSplit()])}>
                       <Plus className="h-3.5 w-3.5" /> Ajouter un compte
-                    </button>
-                    <button type="button" onClick={() => setMulti(false)} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                    </MButton>
+                    <button type="button" onClick={() => setMulti(false)} className="text-[11.5px] font-semibold text-[#4F46E5] dark:text-[#818CF8]">
                       ← Un seul compte
                     </button>
                   </div>
                 </>
               )}
             </div>
-          </Card>
+          </MCard>
 
-          <Card className="p-0">
-            <CardHeader title="Montant" meta={multi ? 'Le total XAF vient des comptes' : undefined} />
-            <div className="space-y-3 p-5">
-              {!multi ? (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Je saisis</span>
-                    {SINGLE_MODES.map((m) => (
-                      <Chip key={m.value} label={m.label} active={singleMode === m.value} onClick={() => setSingleMode(m.value)} />
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(singleMode === 'xaf_usdt' || singleMode === 'xaf_rate') && (
-                      <FormField label="XAF payé" htmlFor="xaf">
-                        <TreasuryMoneyInput id="xaf" currency="XAF" value={xafAmount} onValueChange={setXafAmount} decimals={0} />
-                      </FormField>
-                    )}
-                    {(singleMode === 'xaf_usdt' || singleMode === 'usdt_rate') && (
-                      <FormField label="USDT reçu" htmlFor="usdt">
-                        <TreasuryMoneyInput id="usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
-                      </FormField>
-                    )}
-                    {(singleMode === 'xaf_rate' || singleMode === 'usdt_rate') && (
-                      <FormField label="Taux" htmlFor="rate">
-                        <TreasuryMoneyInput id="rate" currency="XAF/USDT" value={rate} onValueChange={setRate} decimals={2} />
-                      </FormField>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Je saisis</span>
-                    <Chip label="USDT reçu" active={multiInput === 'usdt'} onClick={() => setMultiInput('usdt')} />
-                    <Chip label="Taux" active={multiInput === 'rate'} onClick={() => setMultiInput('rate')} />
-                  </div>
-                  {multiInput === 'usdt' ? (
-                    <FormField label="USDT reçu" htmlFor="usdt-m">
-                      <TreasuryMoneyInput id="usdt-m" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
-                    </FormField>
-                  ) : (
-                    <FormField label="Taux" htmlFor="rate-m">
-                      <TreasuryMoneyInput id="rate-m" currency="XAF/USDT" value={rate} onValueChange={setRate} decimals={2} />
-                    </FormField>
+          <MCard>
+            <MCardHeader title="Montant" meta={multi ? 'Le total XAF vient des comptes' : undefined} />
+            <div className="space-y-3 p-4">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className={cn('text-[10px] font-semibold uppercase tracking-[0.08em]', T.muted)}>Je saisis</span>
+                {!multi
+                  ? SINGLE_MODES.map((m) => (
+                      <MChip key={m.value} label={m.label} active={singleMode === m.value} onClick={() => setSingleMode(m.value)} />
+                    ))
+                  : (
+                    <>
+                      <MChip label="USDT reçu" active={multiInput === 'usdt'} onClick={() => setMultiInput('usdt')} />
+                      <MChip label="Taux" active={multiInput === 'rate'} onClick={() => setMultiInput('rate')} />
+                    </>
                   )}
-                </>
-              )}
-            </div>
-          </Card>
-
-          <Card className="p-0">
-            <CardHeader title="Détails" meta="Date · référence · note" />
-            <div className="space-y-3 p-5">
-              {/* OccurredAtField porte déjà son propre libellé — pas de FormField
-                  autour, sinon la ligne « Date » s'affiche deux fois. */}
-              <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
-              <p className={cn('text-[12px]', TEXT.muted)}>
-                Antidatable — saisissez la date réelle de l'achat, pas celle de la saisie.
-              </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Référence externe" hint="Binance, hash…">
-                  <TextInput value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
-                </FormField>
-                <FormField label="Note">
-                  <TextInput value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </FormField>
+                {!multi && (singleMode === 'xaf_usdt' || singleMode === 'xaf_rate') && (
+                  <MField label="XAF payé" htmlFor="xaf">
+                    <TreasuryMoneyInput id="xaf" currency="XAF" value={xafAmount} onValueChange={setXafAmount} decimals={0} />
+                  </MField>
+                )}
+                {((!multi && (singleMode === 'xaf_usdt' || singleMode === 'usdt_rate')) || (multi && multiInput === 'usdt')) && (
+                  <MField label="USDT reçu" htmlFor="usdt">
+                    <TreasuryMoneyInput id="usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
+                  </MField>
+                )}
+                {((!multi && (singleMode === 'xaf_rate' || singleMode === 'usdt_rate')) || (multi && multiInput === 'rate')) && (
+                  <MField label="Taux" htmlFor="rate">
+                    <TreasuryMoneyInput id="rate" currency="XAF/USDT" value={rate} onValueChange={setRate} decimals={2} />
+                  </MField>
+                )}
               </div>
             </div>
-          </Card>
+          </MCard>
+
+          <MCard>
+            <MCardHeader title="Détails" meta="Date · référence · note" />
+            <div className="space-y-3 p-4">
+              {/* OccurredAtField porte déjà son propre libellé. */}
+              <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
+              <p className={cn('text-[11.5px]', T.muted)}>Antidatable — saisissez la date réelle de l'achat, pas celle de la saisie.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <MField label="Référence externe" hint="Binance, hash…">
+                  <MInput value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
+                </MField>
+                <MField label="Note">
+                  <MInput value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </MField>
+              </div>
+            </div>
+          </MCard>
         </div>
 
         {/* ── Récapitulatif vivant ── */}
         <div className="lg:sticky lg:top-4">
-          <Card className="p-0">
-            <CardHeader title="Récapitulatif" />
-            <div className="space-y-3 p-5">
+          <MCard>
+            <MCardHeader title="Récapitulatif" />
+            <div className="space-y-2.5 p-4">
               <RecapRow label="XAF payé" value={fmtNum(resolved.xaf, 0)} unit="XAF" strong />
               <RecapRow label="USDT reçu" value={fmtNum(resolved.usdt, 2)} unit="USDT" strong />
-              <div className="border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+              <div className={cn('border-t pt-2.5', M.border)}>
                 <RecapRow label="Taux effectif" value={fmtNum(resolved.rate, RATE_DECIMALS.xafPerUsdt)} unit="XAF/USDT" />
               </div>
 
-              <div className="border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
-                <SecLabel>Effet sur le stock</SecLabel>
+              <div className={cn('border-t pt-2.5', M.border)}>
+                <MSection>Effet sur le stock</MSection>
                 <div className="mt-2 space-y-2">
                   <RecapRow label="WAC actuel" value={fmtNum(wac, RATE_DECIMALS.xafPerUsdt)} unit="XAF/USDT" />
                   <RecapRow label="WAC après achat" value={fmtNum(wacAfter, RATE_DECIMALS.xafPerUsdt)} unit="XAF/USDT" />
                   {wacDelta !== null && (
-                    <div
-                      className={cn(
-                        'flex items-center justify-between rounded-[10px] px-3 py-2 text-[12px] font-bold',
-                        wacDelta > 0
-                          ? 'bg-[#F8EFD8] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]'
-                          : 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]',
-                      )}
-                    >
-                      <span>{wacDelta > 0 ? 'Renchérit le stock' : 'Abaisse le coût du stock'}</span>
-                      <span className="tabular-nums">
+                    <div className={cn('flex items-center justify-between rounded-[4px] px-2.5 py-1.5 text-[11.5px] font-semibold', M.inset)}>
+                      <span className={T.muted}>{wacDelta > 0 ? 'Renchérit le stock' : 'Abaisse le coût du stock'}</span>
+                      <span className={cn(NUM, 'font-bold', wacDelta > 0 ? TONE.sale : TONE.positive)}>
                         {wacDelta > 0 ? '+' : ''}
                         {fmtNum(wacDelta, RATE_DECIMALS.xafPerUsdt)}
                       </span>
@@ -389,37 +347,37 @@ export function DesktopNewPurchase() {
                 </div>
               </div>
 
-              <PrimaryPill onClick={handleSubmit} disabled={!valid} loading={submit.isPending} className="w-full">
+              <MButton variant="primary" onClick={handleSubmit} disabled={!valid} loading={submit.isPending} className="w-full">
                 Enregistrer l'achat
-              </PrimaryPill>
+              </MButton>
             </div>
-          </Card>
+          </MCard>
         </div>
       </div>
 
       {/* Créer un fournisseur sans quitter la saisie */}
-      <CenterDialog
+      <MDialog
         open={newOpen}
         onClose={() => setNewOpen(false)}
         onConfirm={handleCreateSupplier}
         title="Nouveau fournisseur USDT"
-        width={440}
         footer={
           <>
-            <PrimaryPill onClick={handleCreateSupplier} disabled={!newName.trim()} loading={create.isPending} className="flex-1">
+            <MButton variant="primary" onClick={handleCreateSupplier} disabled={!newName.trim()} loading={create.isPending} className="flex-1">
               Créer
-            </PrimaryPill>
-            <SoftPill onClick={() => setNewOpen(false)} className="flex-1">Annuler</SoftPill>
+            </MButton>
+            <MButton onClick={() => setNewOpen(false)} className="flex-1">Annuler</MButton>
           </>
         }
       >
         <div className="space-y-3">
-          <FormField label="Nom du fournisseur" htmlFor="new-supplier">
-            <TextInput id="new-supplier" value={newName} onChange={(e) => setNewName(e.target.value)} />
-          </FormField>
+          <MField label="Nom du fournisseur" htmlFor="new-supplier">
+            <MInput id="new-supplier" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          </MField>
           <PhoneInputWithCountry label="Téléphone (optionnel)" value={newPhone} onValueChange={setNewPhone} defaultDialCode="+237" />
         </div>
-      </CenterDialog>
+      </MDialog>
+      </div>
     </div>
   );
 }

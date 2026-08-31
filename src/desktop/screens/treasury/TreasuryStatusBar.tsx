@@ -1,50 +1,24 @@
 /**
- * Trésorerie — barre d'état (docs/admin-redesign/07 §3.2).
+ * Trésorerie — barre d'état (docs/admin-redesign/07 §3.2), habillage
+ * « salle des marchés ».
  *
  * Les chiffres qui pilotent la journée, visibles quelle que soit la vue :
- * stock USDT, WAC, et les soldes agrégés par devise. Rien d'autre — l'ancien
- * accueil répétait ces mêmes valeurs sur trois écrans sans qu'aucun ne soit
- * la référence.
+ * stock USDT, WAC, et les soldes agrégés par devise. Chiffres en mono, un
+ * filet vertical entre les colonnes plutôt que quatre cartes flottantes.
  *
  * Un stock USDT négatif signifie mécaniquement un achat non saisi : il est
  * traité comme une alerte, pas comme une valeur parmi d'autres.
  */
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT } from '@/desktop/designKit';
+import { M, T, NUM, LABEL, TONE } from './marketKit';
 import { fmtCompact, fmtNum, type TreasuryCurrency } from './treasuryFormat';
 
 interface Figure {
   label: string;
   value: string;
-  unit: string;
-  hint?: string;
+  hint: string;
   danger?: boolean;
-}
-
-function FigureCell({ f, last }: { f: Figure; last: boolean }) {
-  return (
-    <div
-      className={cn(
-        'min-w-0 flex-1 px-5 py-3.5',
-        !last && 'border-r border-black/[0.06] dark:border-white/[0.06]',
-      )}
-    >
-      <div className="flex items-center gap-1.5">
-        <span className={cn('text-[11px] font-bold uppercase tracking-wider', f.danger ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.muted)}>
-          {f.label}
-        </span>
-        {f.danger && <AlertTriangle className="h-3.5 w-3.5 text-[#C0504D] dark:text-[#E79A9A]" />}
-      </div>
-      <div className="mt-1 flex items-baseline gap-1.5">
-        <span className={cn('text-[22px] font-extrabold leading-none tracking-tight tabular-nums', f.danger ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
-          {f.value}
-        </span>
-        <span className={cn('text-[11px] font-semibold', TEXT.muted)}>{f.unit}</span>
-      </div>
-      {f.hint && <div className={cn('mt-1 truncate text-[11px]', TEXT.muted)}>{f.hint}</div>}
-    </div>
-  );
 }
 
 export function TreasuryStatusBar({
@@ -57,8 +31,7 @@ export function TreasuryStatusBar({
   totals: Partial<Record<TreasuryCurrency, { total: number; count: number }>>;
 }) {
   const stockNegative = (stockUsdt ?? 0) < 0;
-
-  const accountsHint = (cur: TreasuryCurrency) => {
+  const accounts = (cur: TreasuryCurrency) => {
     const n = totals[cur]?.count ?? 0;
     return `${n} compte${n > 1 ? 's' : ''}`;
   };
@@ -67,27 +40,36 @@ export function TreasuryStatusBar({
     {
       label: 'Stock USDT',
       value: fmtNum(stockUsdt, 2),
-      unit: 'USDT',
-      hint: stockNegative ? 'Achat manquant à saisir' : 'Disponible à la vente',
+      hint: stockNegative ? 'USDT · achat manquant à saisir' : 'USDT · disponible à la vente',
       danger: stockNegative,
     },
-    { label: 'WAC', value: fmtNum(wac, 2), unit: 'XAF/USDT', hint: "Coût moyen du stock" },
-    { label: 'XAF', value: fmtCompact(totals.XAF?.total ?? 0, 'XAF'), unit: 'XAF', hint: accountsHint('XAF') },
-    { label: 'CNY', value: fmtCompact(totals.CNY?.total ?? 0, 'CNY'), unit: 'CNY', hint: accountsHint('CNY') },
+    { label: 'WAC', value: fmtNum(wac, 2), hint: 'XAF/USDT · coût moyen du stock' },
+    { label: 'XAF', value: fmtCompact(totals.XAF?.total ?? 0, 'XAF'), hint: `XAF · ${accounts('XAF')}` },
+    { label: 'CNY', value: fmtCompact(totals.CNY?.total ?? 0, 'CNY'), hint: `CNY · ${accounts('CNY')}` },
   ];
 
   return (
-    <div className={cn('overflow-hidden rounded-[14px]', SURFACE.card, SURFACE.shadow)}>
-      <div className="flex divide-y-0">
+    <div className={cn('overflow-hidden rounded-[6px] border', M.border, M.card)}>
+      <div className="grid grid-cols-4">
         {figures.map((f, i) => (
-          <FigureCell key={f.label} f={f} last={i === figures.length - 1} />
+          <div key={f.label} className={cn('px-4 py-3', i > 0 && cn('border-l', M.border))}>
+            <div className="flex items-center gap-1.5">
+              <span className={cn(LABEL, f.danger ? TONE.negative : T.muted)}>{f.label}</span>
+              {f.danger && <AlertTriangle className={cn('h-3 w-3', TONE.negative)} />}
+            </div>
+            <div className={cn('mt-1 text-[21px] font-bold leading-none tracking-[-0.02em]', NUM, f.danger ? TONE.negative : T.ink)}>
+              {f.value}
+            </div>
+            <div className={cn('mt-1.5 text-[10.5px]', T.faint)}>{f.hint}</div>
+          </div>
         ))}
       </div>
       {stockNegative && (
-        <div className="flex items-center gap-2 border-t border-black/[0.06] bg-[#FBE7E7] px-5 py-2.5 dark:border-white/[0.06] dark:bg-[#3A2526]">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
-          <span className="text-[12px] font-medium text-[#C0504D] dark:text-[#E79A9A]">
-            Stock USDT négatif ({fmtNum(stockUsdt, 2)}) — il manque un achat au journal. Le WAC et le bénéfice sont faux tant que ce n'est pas corrigé.
+        <div className={cn('flex items-center gap-2 border-t px-4 py-2', M.border, 'bg-[#FEF2F2] dark:bg-[#3F1D1D]')}>
+          <AlertTriangle className={cn('h-3.5 w-3.5 shrink-0', TONE.negative)} />
+          <span className={cn('text-[11.5px] font-medium', TONE.negative)}>
+            Stock USDT négatif (<span className={NUM}>{fmtNum(stockUsdt, 2)}</span>) — il manque un achat au journal. Le WAC et le
+            bénéfice sont faux tant que ce n'est pas corrigé.
           </span>
         </div>
       )}

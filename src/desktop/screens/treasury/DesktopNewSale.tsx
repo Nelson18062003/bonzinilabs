@@ -1,9 +1,9 @@
 /**
- * Desktop admin — Nouvelle vente USDT (archétype C).
+ * Desktop admin — Nouvelle vente USDT (archétype C), habillage « salle des
+ * marchés ».
  *
- * Remplace le montage du wizard téléphone sur la route desktop.
  * Le récapitulatif de droite porte l'information qui décide : le **stock
- * après la vente**. Aujourd'hui l'opérateur ne découvre le stock négatif
+ * après la vente**. Avant, l'opérateur ne découvrait le stock négatif
  * qu'APRÈS l'enregistrement, dans un toast d'avertissement — ici il le voit
  * pendant la saisie, avant de valider.
  *
@@ -15,19 +15,6 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  TEXT,
-  Card,
-  CardHeader,
-  Chip,
-  SecLabel,
-  SOFT_PILL,
-  PrimaryPill,
-  SoftPill,
-  FormField,
-  TextInput,
-  CenterDialog,
-} from '@/desktop/designKit';
 import { OccurredAtField, PhoneInputWithCountry } from '@/components/form';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
@@ -38,6 +25,7 @@ import {
   useUsdtStock,
   useUsdtWac,
 } from '@/hooks/useTreasury';
+import { M, T, NUM, TONE, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, M_PAGE } from './marketKit';
 import { fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 import { TreasurySelect } from './TreasurySelect';
@@ -56,10 +44,10 @@ const NO_ACCOUNT = '__none__';
 function RecapRow({ label, value, unit, strong }: { label: string; value: string; unit?: string; strong?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className={cn('text-[12px]', TEXT.muted)}>{label}</span>
-      <span className={cn('tabular-nums', strong ? cn('text-[15px] font-extrabold', TEXT.strong) : cn('text-[13px] font-semibold', TEXT.body))}>
+      <span className={cn('text-[11.5px]', T.muted)}>{label}</span>
+      <span className={cn(NUM, strong ? cn('text-[14px] font-bold', T.ink) : cn('text-[12.5px] font-semibold', T.body))}>
         {value}
-        {unit && <span className={cn('ml-1 text-[10.5px] font-normal', TEXT.muted)}>{unit}</span>}
+        {unit && <span className={cn('ml-1 text-[10px] font-normal', T.faint)}>{unit}</span>}
       </span>
     </div>
   );
@@ -148,29 +136,30 @@ export function DesktopNewSale() {
   };
 
   return (
-    <div className="mx-auto max-w-[1080px] space-y-4">
+    <div className={cn(M_PAGE, T.ink)}>
+      <div className="mx-auto max-w-[1080px] space-y-4">
       <header className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => navigate('/m/more/treasury')}
           aria-label="Retour à la trésorerie"
-          className={cn('flex h-9 w-9 items-center justify-center rounded-full', SOFT_PILL)}
+          className={cn('flex h-8 w-8 items-center justify-center rounded-[6px] border', M.border, T.body)}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
         </button>
         <div>
-          <h2 className={cn('text-[20px] font-bold tracking-tight', TEXT.strong)}>Nouvelle vente USDT</h2>
-          <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>Sortie de stock : USDT vendu → CNY reçu</p>
+          <h2 className={cn('text-[19px] font-bold tracking-[-0.02em]', T.ink)}>Nouvelle vente USDT</h2>
+          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>Sortie de stock : USDT vendu → CNY reçu</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-4">
-          <Card className="p-0">
-            <CardHeader title="Acheteur" />
-            <div className="space-y-3 p-5">
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="space-y-3">
+          <MCard>
+            <MCardHeader title="Acheteur" />
+            <div className="space-y-3 p-4">
               <div className="flex items-end gap-2">
-                <FormField label="Acheteur CNY" htmlFor="buyer" className="flex-1">
+                <MField label="Acheteur CNY" htmlFor="buyer" className="flex-1">
                   <TreasurySelect
                     id="buyer"
                     value={buyerId}
@@ -180,13 +169,13 @@ export function DesktopNewSale() {
                       label: `${b.display_name}${b.wechat_id ? ` · ${b.wechat_id}` : b.phone ? ` · ${b.phone}` : ''}`,
                     }))}
                   />
-                </FormField>
-                <button type="button" onClick={() => setNewOpen(true)} className={cn('inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-[12px] font-bold', SOFT_PILL)}>
+                </MField>
+                <MButton onClick={() => setNewOpen(true)}>
                   <Plus className="h-3.5 w-3.5" /> Nouveau
-                </button>
+                </MButton>
               </div>
 
-              <FormField
+              <MField
                 label="Compte CNY crédité"
                 htmlFor="cny-account"
                 hint="À renseigner seulement si le CNY a atterri sur un compte Bonzini (cash Guangzhou, Alipay/WeChat…). Sinon laissez « aucun »."
@@ -200,71 +189,69 @@ export function DesktopNewSale() {
                     ...(cnyAccounts ?? []).map((a) => ({ value: a.id, label: a.label })),
                   ]}
                 />
-              </FormField>
+              </MField>
             </div>
-          </Card>
+          </MCard>
 
-          <Card className="p-0">
-            <CardHeader title="Montant" />
-            <div className="space-y-3 p-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Je saisis</span>
+          <MCard>
+            <MCardHeader title="Montant" />
+            <div className="space-y-3 p-4">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className={cn('text-[10px] font-semibold uppercase tracking-[0.08em]', T.muted)}>Je saisis</span>
                 {MODES.map((m) => (
-                  <Chip key={m.value} label={m.label} active={mode === m.value} onClick={() => setMode(m.value)} />
+                  <MChip key={m.value} label={m.label} active={mode === m.value} onClick={() => setMode(m.value)} />
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {(mode === 'usdt_cny' || mode === 'usdt_rate') && (
-                  <FormField label="USDT vendu" htmlFor="s-usdt">
+                  <MField label="USDT vendu" htmlFor="s-usdt">
                     <TreasuryMoneyInput id="s-usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
-                  </FormField>
+                  </MField>
                 )}
                 {(mode === 'usdt_cny' || mode === 'cny_rate') && (
-                  <FormField label="CNY reçu" htmlFor="s-cny">
+                  <MField label="CNY reçu" htmlFor="s-cny">
                     <TreasuryMoneyInput id="s-cny" currency="CNY" value={cnyAmount} onValueChange={setCnyAmount} decimals={2} />
-                  </FormField>
+                  </MField>
                 )}
                 {(mode === 'usdt_rate' || mode === 'cny_rate') && (
-                  <FormField label="Taux" htmlFor="s-rate">
+                  <MField label="Taux" htmlFor="s-rate">
                     <TreasuryMoneyInput id="s-rate" currency="CNY/USDT" value={rate} onValueChange={setRate} decimals={4} />
-                  </FormField>
+                  </MField>
                 )}
               </div>
             </div>
-          </Card>
+          </MCard>
 
-          <Card className="p-0">
-            <CardHeader title="Détails" meta="Date · référence · note" />
-            <div className="space-y-3 p-5">
+          <MCard>
+            <MCardHeader title="Détails" meta="Date · référence · note" />
+            <div className="space-y-3 p-4">
               {/* OccurredAtField porte déjà son propre libellé. */}
               <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
-              <p className={cn('text-[12px]', TEXT.muted)}>
-                Antidatable — saisissez la date réelle de la vente.
-              </p>
+              <p className={cn('text-[11.5px]', T.muted)}>Antidatable — saisissez la date réelle de la vente.</p>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Référence externe">
-                  <TextInput value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
-                </FormField>
-                <FormField label="Note">
-                  <TextInput value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </FormField>
+                <MField label="Référence externe">
+                  <MInput value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
+                </MField>
+                <MField label="Note">
+                  <MInput value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </MField>
               </div>
             </div>
-          </Card>
+          </MCard>
         </div>
 
         <div className="lg:sticky lg:top-4">
-          <Card className="p-0">
-            <CardHeader title="Récapitulatif" />
-            <div className="space-y-3 p-5">
+          <MCard>
+            <MCardHeader title="Récapitulatif" />
+            <div className="space-y-2.5 p-4">
               <RecapRow label="USDT vendu" value={fmtNum(resolved.usdt, 2)} unit="USDT" strong />
               <RecapRow label="CNY reçu" value={fmtNum(resolved.cny, 2)} unit="CNY" strong />
-              <div className="border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+              <div className={cn('border-t pt-2.5', M.border)}>
                 <RecapRow label="Taux effectif" value={fmtNum(resolved.rate, RATE_DECIMALS.cnyPerUsdt)} unit="CNY/USDT" />
               </div>
 
-              <div className="border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
-                <SecLabel>Effet sur le stock</SecLabel>
+              <div className={cn('border-t pt-2.5', M.border)}>
+                <MSection>Effet sur le stock</MSection>
                 <div className="mt-2 space-y-2">
                   <RecapRow label="Coût des USDT vendus" value={fmtNum(costBasis, 0)} unit="XAF" />
                   <RecapRow label="Stock actuel" value={fmtNum(stock, 2)} unit="USDT" />
@@ -273,51 +260,51 @@ export function DesktopNewSale() {
               </div>
 
               {willGoNegative && (
-                <div className="flex items-start gap-2 rounded-[10px] bg-[#FBE7E7] px-3 py-2.5 dark:bg-[#3A2526]">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
-                  <span className="text-[12px] font-medium text-[#C0504D] dark:text-[#E79A9A]">
-                    Cette vente rendrait le stock négatif ({fmtNum(stockAfter, 2)} USDT). Il manque probablement un achat au
-                    journal — saisissez-le d'abord, sinon le WAC et le bénéfice seront faux.
+                <div className="flex items-start gap-2 rounded-[4px] bg-[#FEF2F2] px-2.5 py-2 dark:bg-[#3F1D1D]">
+                  <AlertTriangle className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', TONE.negative)} />
+                  <span className={cn('text-[11.5px] font-medium leading-snug', TONE.negative)}>
+                    Cette vente rendrait le stock négatif (<span className={NUM}>{fmtNum(stockAfter, 2)}</span> USDT). Il manque
+                    probablement un achat au journal — saisissez-le d'abord, sinon le WAC et le bénéfice seront faux.
                   </span>
                 </div>
               )}
 
-              <PrimaryPill onClick={handleSubmit} disabled={!valid} loading={submit.isPending} className="w-full">
+              <MButton variant="primary" onClick={handleSubmit} disabled={!valid} loading={submit.isPending} className="w-full">
                 Enregistrer la vente
-              </PrimaryPill>
+              </MButton>
             </div>
-          </Card>
+          </MCard>
         </div>
       </div>
 
-      <CenterDialog
+      <MDialog
         open={newOpen}
         onClose={() => setNewOpen(false)}
         onConfirm={handleCreateBuyer}
         title="Nouvel acheteur CNY"
-        width={440}
         footer={
           <>
-            <PrimaryPill onClick={handleCreateBuyer} disabled={!newName.trim()} loading={create.isPending} className="flex-1">
+            <MButton variant="primary" onClick={handleCreateBuyer} disabled={!newName.trim()} loading={create.isPending} className="flex-1">
               Créer
-            </PrimaryPill>
-            <SoftPill onClick={() => setNewOpen(false)} className="flex-1">Annuler</SoftPill>
+            </MButton>
+            <MButton onClick={() => setNewOpen(false)} className="flex-1">Annuler</MButton>
           </>
         }
       >
         <div className="space-y-3">
-          <FormField label="Nom" htmlFor="new-buyer">
-            <TextInput id="new-buyer" value={newName} onChange={(e) => setNewName(e.target.value)} />
-          </FormField>
-          <FormField label="Entreprise (optionnel)">
-            <TextInput value={newCompany} onChange={(e) => setNewCompany(e.target.value)} />
-          </FormField>
+          <MField label="Nom" htmlFor="new-buyer">
+            <MInput id="new-buyer" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          </MField>
+          <MField label="Entreprise (optionnel)">
+            <MInput value={newCompany} onChange={(e) => setNewCompany(e.target.value)} />
+          </MField>
           <PhoneInputWithCountry label="Téléphone (optionnel)" value={newPhone} onValueChange={setNewPhone} defaultDialCode="+86" />
-          <FormField label="WeChat ID (optionnel)">
-            <TextInput value={newWechat} onChange={(e) => setNewWechat(e.target.value)} />
-          </FormField>
+          <MField label="WeChat ID (optionnel)">
+            <MInput value={newWechat} onChange={(e) => setNewWechat(e.target.value)} />
+          </MField>
         </div>
-      </CenterDialog>
+      </MDialog>
+      </div>
     </div>
   );
 }

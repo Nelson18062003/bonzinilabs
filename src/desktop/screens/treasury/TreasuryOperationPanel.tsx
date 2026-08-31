@@ -1,36 +1,34 @@
 /**
- * Trésorerie — panneau de détail d'une opération (archétype B).
+ * Trésorerie — panneau de détail d'une opération (archétype B), habillage
+ * « salle des marchés ».
  *
  * Remplace la navigation vers un écran téléphone : la liste reste vivante à
  * gauche. Deux choses n'étaient visibles nulle part sur desktop et le sont
  * ici : la VENTILATION par compte d'un achat multi-comptes
  * (`usePurchaseSplits`) et le motif d'annulation d'une opération annulée.
  *
- * « Annuler l'opération » vit dans l'en-tête épinglé, avec confirmation
- * centrée et motif obligatoire — l'annulation écrit une contre-écriture, elle
- * n'efface jamais la ligne.
+ * « Annuler » vit dans l'en-tête épinglé, avec confirmation et motif
+ * obligatoire — l'annulation écrit une contre-écriture, elle n'efface jamais.
  */
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { X, Ban, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { X, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  KV,
-  SecLabel,
-  StatusPill,
-  CenterDialog,
-  PrimaryPill,
-  SoftPill,
-  FormField,
-  TextInput,
-} from '@/desktop/designKit';
 import { usePurchaseSplits, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
+import { M, T, NUM, LABEL, TONE, MCard, MButton, MSection, MTag, MDialog, MField, MInput } from './marketKit';
 import { fmtAmount, fmtNum, RATE_DECIMALS } from './treasuryFormat';
 
 const VOID_REASON_MIN = 10;
+
+function Fact({ k, v }: { k: string; v: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <div className={cn(LABEL, T.muted)}>{k}</div>
+      <div className={cn('mt-0.5 truncate text-[12.5px] font-medium', T.ink)}>{v}</div>
+    </div>
+  );
+}
 
 export function TreasuryOperationPanel({
   op,
@@ -56,11 +54,7 @@ export function TreasuryOperationPanel({
   const confirmVoid = () => {
     if (!reasonValid || voidOp.isPending) return;
     voidOp.mutate(
-      {
-        source_table: isPurchase ? 'usdt_purchase' : 'usdt_sale',
-        source_id: op.id,
-        void_reason: reason.trim(),
-      },
+      { source_table: isPurchase ? 'usdt_purchase' : 'usdt_sale', source_id: op.id, void_reason: reason.trim() },
       {
         onSuccess: () => {
           setConfirmOpen(false);
@@ -72,98 +66,80 @@ export function TreasuryOperationPanel({
   };
 
   const counterparty = isPurchase ? op.supplier : op.buyer;
-  const Icon = isPurchase ? ArrowDownToLine : ArrowUpFromLine;
 
   return (
-    <aside className={cn('flex min-h-0 flex-col overflow-hidden rounded-[14px]', SURFACE.card, SURFACE.shadow)}>
+    <MCard className="flex min-h-0 flex-col overflow-hidden">
       {/* En-tête épinglé — actions toujours atteignables */}
-      <header className="flex items-center gap-3 border-b border-black/[0.06] px-5 py-3 dark:border-white/[0.06]">
+      <header className={cn('flex items-center gap-3 border-b px-4 py-2.5', M.border)}>
         <span
           className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-            isPurchase
-              ? 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]'
-              : 'bg-[#F8EFD8] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]',
+            'border-l-2 pl-2 text-[10px] font-bold uppercase tracking-[0.06em]',
+            isPurchase ? cn(TONE.purchase, TONE.purchaseBar) : cn(TONE.sale, TONE.saleBar),
           )}
         >
-          <Icon className="h-4 w-4" />
+          {isPurchase ? 'Achat USDT' : 'Vente USDT'}
         </span>
-        <div className="min-w-0 flex-1">
-          <div className={cn('truncate text-[14px] font-bold', TEXT.strong)}>
-            {isPurchase ? 'Achat USDT' : 'Vente USDT'}
-          </div>
-          <div className={cn('truncate text-[12px]', TEXT.muted)}>
-            {op.occurred_at ? format(parseISO(op.occurred_at), "dd MMMM yyyy 'à' HH:mm", { locale: fr }) : '—'}
-          </div>
-        </div>
-        {voided && <StatusPill tone="danger" label="Annulée" />}
-        {canManage && !voided && (
+        <span className={cn('text-[11.5px]', T.muted)}>
+          {op.occurred_at ? format(parseISO(op.occurred_at), "dd MMMM yyyy 'à' HH:mm", { locale: fr }) : '—'}
+        </span>
+        {voided && <MTag tone="danger">Annulée</MTag>}
+        <div className="ml-auto flex items-center gap-1.5">
+          {canManage && !voided && (
+            <MButton variant="secondary" onClick={() => setConfirmOpen(true)} className={TONE.negative}>
+              <Ban className="h-3.5 w-3.5" /> Annuler
+            </MButton>
+          )}
           <button
             type="button"
-            onClick={() => setConfirmOpen(true)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#FBE7E7] px-3 text-[12px] font-bold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]"
+            onClick={onClose}
+            aria-label="Fermer le détail"
+            className={cn('flex h-8 w-8 items-center justify-center rounded-[6px] border', M.border, T.body)}
           >
-            <Ban className="h-3.5 w-3.5" /> Annuler
+            <X className="h-3.5 w-3.5" />
           </button>
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Fermer le détail"
-          className={cn('flex h-8 w-8 items-center justify-center rounded-full', SURFACE.holder)}
-        >
-          <X className="h-4 w-4" />
-        </button>
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
-        {/* Zone « verdict » : les deux montants échangés et le taux obtenu */}
-        <div className={cn('rounded-[10px] p-4', SURFACE.inset)}>
-          <div className="flex items-center justify-between gap-4">
+      <div className="min-h-0 flex-1 overflow-auto px-4 py-3.5">
+        {/* Les deux montants échangés et le taux obtenu */}
+        <div className={cn('rounded-[6px] border p-3.5', M.border, M.inset)}>
+          <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                {isPurchase ? 'Payé' : 'Reçu'}
-              </div>
-              <div className={cn('mt-0.5 text-[20px] font-extrabold tabular-nums', TEXT.strong)}>
-                {isPurchase
-                  ? `${fmtAmount(Number(op.xaf_amount), 'XAF')} XAF`
-                  : `${fmtAmount(Number(op.cny_amount), 'CNY')} CNY`}
+              <div className={cn(LABEL, T.muted)}>{isPurchase ? 'Payé' : 'Reçu'}</div>
+              <div className={cn('mt-1 text-[19px] font-bold leading-none', NUM, T.ink)}>
+                {isPurchase ? fmtAmount(Number(op.xaf_amount), 'XAF') : fmtAmount(Number(op.cny_amount), 'CNY')}
+                <span className={cn('ml-1 text-[11px] font-semibold', T.faint)}>{isPurchase ? 'XAF' : 'CNY'}</span>
               </div>
             </div>
             <div className="min-w-0 text-right">
-              <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                {isPurchase ? 'Reçu' : 'Vendu'}
-              </div>
-              <div className={cn('mt-0.5 text-[20px] font-extrabold tabular-nums', TEXT.strong)}>
-                {fmtAmount(Number(op.usdt_amount), 'USDT')} USDT
+              <div className={cn(LABEL, T.muted)}>{isPurchase ? 'Reçu' : 'Vendu'}</div>
+              <div className={cn('mt-1 text-[19px] font-bold leading-none', NUM, T.ink)}>
+                {fmtAmount(Number(op.usdt_amount), 'USDT')}
+                <span className={cn('ml-1 text-[11px] font-semibold', T.faint)}>USDT</span>
               </div>
             </div>
           </div>
-          <div className="mt-3 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
-            <div className="flex items-center justify-between">
-              <span className={cn('text-[12px]', TEXT.muted)}>Taux effectif de l'opération</span>
-              <span className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
-                {fmtNum(Number(op.implicit_rate), isPurchase ? RATE_DECIMALS.xafPerUsdt : RATE_DECIMALS.cnyPerUsdt)}{' '}
-                <span className={cn('text-[11px] font-semibold', TEXT.muted)}>
-                  {isPurchase ? 'XAF/USDT' : 'CNY/USDT'}
-                </span>
-              </span>
-            </div>
+          <div className={cn('mt-3 flex items-center justify-between border-t pt-2.5', M.border)}>
+            <span className={cn('text-[11.5px]', T.muted)}>Taux effectif</span>
+            <span className={cn('text-[13px] font-bold', NUM, T.ink)}>
+              {fmtNum(Number(op.implicit_rate), isPurchase ? RATE_DECIMALS.xafPerUsdt : RATE_DECIMALS.cnyPerUsdt)}
+              <span className={cn('ml-1 text-[10.5px] font-medium', T.faint)}>{isPurchase ? 'XAF/USDT' : 'CNY/USDT'}</span>
+            </span>
           </div>
         </div>
 
-        {/* Ventilation multi-comptes — invisible sur desktop jusqu'ici */}
+        {/* Ventilation multi-comptes */}
         {isPurchase && splits && splits.length > 0 && (
-          <section className="mt-4 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
-            <SecLabel right={<span className={cn('text-[11px] tabular-nums', TEXT.muted)}>{splits.length} compte{splits.length > 1 ? 's' : ''}</span>}>
+          <section className={cn('mt-3.5 border-t pt-3', M.border)}>
+            <MSection right={<span className={cn('text-[11px]', NUM, T.muted)}>{splits.length} compte{splits.length > 1 ? 's' : ''}</span>}>
               Comptes débités
-            </SecLabel>
-            <div className="mt-2 space-y-1.5">
+            </MSection>
+            <div className="mt-2 space-y-1">
               {splits.map((s) => (
-                <div key={s.id} className={cn('flex items-center justify-between rounded-[10px] px-3 py-2', SURFACE.inset)}>
-                  <span className={cn('truncate text-[13px] font-medium', TEXT.body)}>{s.account?.label ?? '—'}</span>
-                  <span className={cn('shrink-0 text-[13px] font-bold tabular-nums', TEXT.strong)}>
-                    {fmtAmount(Math.abs(Number(s.amount)), 'XAF')} XAF
+                <div key={s.id} className={cn('flex items-center justify-between rounded-[4px] px-2.5 py-1.5', M.inset)}>
+                  <span className={cn('truncate text-[12.5px]', T.body)}>{s.account?.label ?? '—'}</span>
+                  <span className={cn('shrink-0 text-[12.5px] font-semibold', NUM, T.ink)}>
+                    {fmtAmount(Math.abs(Number(s.amount)), 'XAF')}
                   </span>
                 </div>
               ))}
@@ -171,70 +147,63 @@ export function TreasuryOperationPanel({
           </section>
         )}
 
-        {/* Faits */}
-        <section className="mt-4 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
-          <SecLabel>Détail</SecLabel>
+        <section className={cn('mt-3.5 border-t pt-3', M.border)}>
+          <MSection>Détail</MSection>
           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3">
-            <KV k={isPurchase ? 'Fournisseur' : 'Acheteur'} v={counterparty?.display_name ?? '—'} />
-            <KV
+            <Fact k={isPurchase ? 'Fournisseur' : 'Acheteur'} v={counterparty?.display_name ?? '—'} />
+            <Fact
               k={isPurchase ? 'Compte débité' : 'Compte crédité'}
               v={isPurchase ? (op.xaf_account?.label ?? (splits && splits.length > 1 ? 'Plusieurs comptes' : '—')) : (op.cny_account?.label ?? 'Aucun compte Bonzini')}
             />
-            {!isPurchase && <KV k="WAC à la vente" v={`${fmtNum(Number(op.wac_at_sale), RATE_DECIMALS.xafPerUsdt)} XAF/USDT`} />}
-            {counterparty?.wechat_id && <KV k="WeChat" v={counterparty.wechat_id} />}
-            {counterparty?.phone && <KV k="Téléphone" v={counterparty.phone} />}
-            {op.external_ref && <KV k="Référence externe" v={op.external_ref} />}
+            {!isPurchase && <Fact k="WAC à la vente" v={<span className={NUM}>{fmtNum(Number(op.wac_at_sale), RATE_DECIMALS.xafPerUsdt)} XAF/USDT</span>} />}
+            {counterparty?.wechat_id && <Fact k="WeChat" v={counterparty.wechat_id} />}
+            {counterparty?.phone && <Fact k="Téléphone" v={<span className={NUM}>{counterparty.phone}</span>} />}
+            {op.external_ref && <Fact k="Référence externe" v={<span className={NUM}>{op.external_ref}</span>} />}
           </div>
-          {op.notes && (
-            <div className={cn('mt-3 rounded-[10px] p-3 text-[13px]', SURFACE.inset, TEXT.body)}>{op.notes}</div>
-          )}
+          {op.notes && <div className={cn('mt-3 rounded-[4px] p-2.5 text-[12.5px]', M.inset, T.body)}>{op.notes}</div>}
         </section>
 
-        {/* Motif d'annulation — l'information la plus utile sur une ligne annulée */}
         {voided && (
-          <section className="mt-4 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
-            <SecLabel>Annulation</SecLabel>
-            <div className="mt-2 rounded-[10px] bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
-              <div className="text-[12px] font-bold text-[#C0504D] dark:text-[#E79A9A]">
+          <section className={cn('mt-3.5 border-t pt-3', M.border)}>
+            <MSection>Annulation</MSection>
+            <div className="mt-2 rounded-[4px] bg-[#FEF2F2] p-2.5 dark:bg-[#3F1D1D]">
+              <div className={cn('text-[11px] font-bold', NUM, TONE.negative)}>
                 {op.voided_at ? format(parseISO(op.voided_at), "dd MMM yyyy 'à' HH:mm", { locale: fr }) : ''}
               </div>
-              <div className="mt-1 text-[13px] text-[#C0504D] dark:text-[#E79A9A]">{op.void_reason ?? 'Sans motif'}</div>
+              <div className={cn('mt-1 text-[12.5px]', TONE.negative)}>{op.void_reason ?? 'Sans motif'}</div>
             </div>
           </section>
         )}
       </div>
 
-      <CenterDialog
+      <MDialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={confirmVoid}
         title="Annuler l'opération"
-        width={460}
         footer={
           <>
-            <PrimaryPill danger onClick={confirmVoid} disabled={!reasonValid} loading={voidOp.isPending} className="flex-1">
+            <MButton variant="danger" onClick={confirmVoid} disabled={!reasonValid} loading={voidOp.isPending} className="flex-1">
               Annuler l'opération
-            </PrimaryPill>
-            <SoftPill onClick={() => setConfirmOpen(false)} className="flex-1">
-              Retour
-            </SoftPill>
+            </MButton>
+            <MButton onClick={() => setConfirmOpen(false)} className="flex-1">Retour</MButton>
           </>
         }
       >
         <div className="space-y-3">
-          <p className={cn('text-[13px]', TEXT.body)}>
-            Une contre-écriture est enregistrée : les soldes et le stock USDT reviennent à leur état d'avant.
-            L'opération reste visible dans l'historique, marquée annulée — rien n'est effacé.
+          <p className={cn('text-[12.5px] leading-relaxed', T.body)}>
+            Une contre-écriture est enregistrée : les soldes et le stock USDT reviennent à leur état d'avant. L'opération reste
+            visible dans l'historique, marquée annulée — rien n'est effacé.
           </p>
-          <FormField
+          <MField
             label="Motif de l'annulation"
             hint={`Obligatoire, ${VOID_REASON_MIN} caractères minimum — il apparaît dans l'historique.`}
             error={reason.length > 0 && !reasonValid ? `Encore ${VOID_REASON_MIN - reason.trim().length} caractère(s).` : undefined}
           >
-            <TextInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. saisie en double du 12/08" />
-          </FormField>
+            <MInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. saisie en double du 12/08" />
+          </MField>
         </div>
-      </CenterDialog>
-    </aside>
+      </MDialog>
+    </MCard>
   );
 }

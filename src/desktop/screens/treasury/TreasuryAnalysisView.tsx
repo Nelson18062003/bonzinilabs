@@ -1,35 +1,19 @@
 /**
- * Trésorerie — vue « Analyse » (docs/admin-redesign/07 §3.3).
+ * Trésorerie — vue « Analyse » (docs/admin-redesign/07 §3.3), habillage
+ * « salle des marchés ».
  *
- * L'ancien dashboard disait tout en même temps : héros bénéfice + 8 KPI +
- * 2 encarts + jusqu'à 5 graphes + 2 tops + 3 raccourcis, d'un seul scroll.
- * C'est le défaut déjà rejeté sur le module Taux.
- *
- * Ici la hiérarchie est explicite :
+ * Hiérarchie explicite au lieu d'un mur de chiffres :
  *   1. LES QUATRE CHIFFRES du métier — bénéfice, marge par CNY livré, taux de
  *      revient, taux client. Rien d'autre à ce niveau.
- *   2. Les volumes achetés / vendus, deux cartes symétriques.
+ *   2. Les volumes achetés / vendus, deux blocs symétriques.
  *   3. UN graphique, avec un sélecteur de courbe (WAC / achats / ventes) —
  *      les trois n'ont pas la même échelle, les empiler écraserait l'une.
  *   4. Les tops contreparties, où l'écart au taux moyen est l'information
- *      actionnable (« ce fournisseur me vend 3 % plus cher que la moyenne »).
+ *      actionnable (« ce fournisseur me vend 2,7 % plus cher que la moyenne »).
  */
 import { useMemo, useState } from 'react';
-import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  Card,
-  CardHeader,
-  Chip,
-  DropChip,
-  Th,
-  Td,
-  Holder,
-  ScreenLoader,
-  ScreenError,
-} from '@/desktop/designKit';
 import { BarChart3, TrendingUp, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   useTopCounterparties,
   useTreasuryDashboard,
@@ -37,28 +21,44 @@ import {
   useWacEvolution,
   type TopCounterpartyRow,
 } from '@/hooks/useTreasury';
+import {
+  M,
+  T,
+  NUM,
+  LABEL,
+  TONE,
+  MCard,
+  MCardHeader,
+  MChip,
+  MDropdown,
+  MTh,
+  MTd,
+  MEmpty,
+  MLoading,
+} from './marketKit';
 import { fmtNum, withSign, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryRateChart, type ChartPoint } from './TreasuryRateChart';
 
 type Period = '7d' | '30d' | '90d' | '365d';
 type Curve = 'wac' | 'purchases' | 'sales';
 
-const PERIODS: ReadonlyArray<{ value: Period; label: string }> = [
-  { value: '7d', label: '7 jours' },
-  { value: '30d', label: '30 jours' },
-  { value: '90d', label: '3 mois' },
-  { value: '365d', label: '1 an' },
+const PERIODS = [
+  { value: '7d' as const, label: '7 jours' },
+  { value: '30d' as const, label: '30 jours' },
+  { value: '90d' as const, label: '3 mois' },
+  { value: '365d' as const, label: '1 an' },
 ];
 
-const CURVES: ReadonlyArray<{ key: Curve; label: string }> = [
-  { key: 'wac', label: 'Coût du stock (WAC)' },
-  { key: 'purchases', label: "Coût d'achat" },
-  { key: 'sales', label: 'Prix de vente' },
+const CURVES = [
+  { key: 'wac' as const, label: 'Coût du stock (WAC)' },
+  { key: 'purchases' as const, label: "Coût d'achat" },
+  { key: 'sales' as const, label: 'Prix de vente' },
 ];
 
-const VIOLET = '#8B5CF6';
-const AMBER = '#F59E0B';
-const EMERALD = '#10B981';
+/** Accents du graphe : indigo (accent du kit), ambre (vente), vert (stock). */
+const C_WAC = '#15803D';
+const C_BUY = '#4F46E5';
+const C_SELL = '#B45309';
 
 function rangeOf(period: Period): { from: Date; to: Date } {
   const to = new Date();
@@ -67,8 +67,7 @@ function rangeOf(period: Period): { from: Date; to: Date } {
   return { from, to };
 }
 
-/** Chiffre focal : grand, signé, coloré seulement quand le signe a un sens. */
-function HeadlineFigure({
+function Headline({
   label,
   value,
   unit,
@@ -81,21 +80,23 @@ function HeadlineFigure({
   hint: string;
   tone?: 'neutral' | 'positive' | 'negative';
 }) {
-  const color =
-    tone === 'positive'
-      ? 'text-[#2E7D52] dark:text-[#7FCBA0]'
-      : tone === 'negative'
-        ? 'text-[#C0504D] dark:text-[#E79A9A]'
-        : TEXT.strong;
   return (
-    <div className={cn('rounded-[14px] p-4', SURFACE.card, SURFACE.shadow)}>
-      <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{label}</div>
+    <MCard className="p-4">
+      <div className={cn(LABEL, T.muted)}>{label}</div>
       <div className="mt-1.5 flex items-baseline gap-1.5">
-        <span className={cn('text-[28px] font-extrabold leading-none tracking-tight tabular-nums', color)}>{value}</span>
-        <span className={cn('text-[12px] font-semibold', TEXT.muted)}>{unit}</span>
+        <span
+          className={cn(
+            'text-[26px] font-bold leading-none tracking-[-0.02em]',
+            NUM,
+            tone === 'positive' ? TONE.positive : tone === 'negative' ? TONE.negative : T.ink,
+          )}
+        >
+          {value}
+        </span>
+        <span className={cn('text-[11px] font-semibold', T.faint)}>{unit}</span>
       </div>
-      <div className={cn('mt-1.5 text-[11px] leading-snug', TEXT.muted)}>{hint}</div>
-    </div>
+      <div className={cn('mt-2 text-[10.5px] leading-snug', T.muted)}>{hint}</div>
+    </MCard>
   );
 }
 
@@ -107,7 +108,6 @@ function VolumeCard({
   counterValue,
   rateLabel,
   rateValue,
-  accent,
 }: {
   title: string;
   count: number;
@@ -116,30 +116,25 @@ function VolumeCard({
   counterValue: string;
   rateLabel: string;
   rateValue: string;
-  accent: string;
 }) {
+  const cells = [
+    { k: 'Volume', v: fmtNum(volumeUsdt, 2), u: 'USDT' },
+    { k: counterLabel, v: counterValue, u: '' },
+    { k: rateLabel, v: rateValue, u: 'moyenne pondérée' },
+  ];
   return (
-    <Card className="p-0">
-      <CardHeader title={title} meta={`${count} opération${count > 1 ? 's' : ''}`} />
-      <div className="grid grid-cols-3 divide-x divide-black/[0.06] dark:divide-white/[0.06]">
-        <div className="px-4 py-3.5">
-          <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Volume</div>
-          <div className={cn('mt-1 text-[16px] font-extrabold tabular-nums', TEXT.strong)}>{fmtNum(volumeUsdt, 2)}</div>
-          <div className={cn('text-[10.5px]', TEXT.muted)}>USDT</div>
-        </div>
-        <div className="px-4 py-3.5">
-          <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{counterLabel}</div>
-          <div className={cn('mt-1 text-[16px] font-extrabold tabular-nums', TEXT.strong)}>{counterValue}</div>
-        </div>
-        <div className="px-4 py-3.5">
-          <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: accent }}>
-            {rateLabel}
+    <MCard>
+      <MCardHeader title={title} meta={`${count} opération${count > 1 ? 's' : ''}`} />
+      <div className="grid grid-cols-3">
+        {cells.map((c, i) => (
+          <div key={c.k} className={cn('px-4 py-3', i > 0 && cn('border-l', M.border))}>
+            <div className={cn(LABEL, T.muted)}>{c.k}</div>
+            <div className={cn('mt-1 text-[15px] font-bold', NUM, T.ink)}>{c.v}</div>
+            {c.u && <div className={cn('mt-0.5 text-[10px]', T.faint)}>{c.u}</div>}
           </div>
-          <div className={cn('mt-1 text-[16px] font-extrabold tabular-nums', TEXT.strong)}>{rateValue}</div>
-          <div className={cn('text-[10.5px]', TEXT.muted)}>moyenne pondérée</div>
-        </div>
+        ))}
       </div>
-    </Card>
+    </MCard>
   );
 }
 
@@ -157,63 +152,51 @@ function TopTable({
   emptyText: string;
 }) {
   return (
-    <Card className="overflow-hidden p-0">
-      <CardHeader title={title} meta={rows.length > 0 ? `${rows.length} sur la période` : undefined} />
+    <MCard className="overflow-hidden">
+      <MCardHeader title={title} meta={rows.length > 0 ? `${rows.length} sur la période` : undefined} />
       {rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <Holder icon={Users} size="lg" />
-          <p className={cn('mt-3 text-[13px]', TEXT.muted)}>{emptyText}</p>
-        </div>
+        <MEmpty icon={Users}>{emptyText}</MEmpty>
       ) : (
         <table className="w-full text-left">
-          <thead className={SURFACE.inset}>
+          <thead className={cn('border-b', M.inset, M.border)}>
             <tr>
-              <Th first>Contrepartie</Th>
-              <Th align="right">Volume</Th>
-              <Th align="right">Taux moyen</Th>
-              <Th last align="right">Écart</Th>
+              <MTh>Contrepartie</MTh>
+              <MTh align="right">Volume</MTh>
+              <MTh align="right">Taux moyen</MTh>
+              <MTh align="right">Écart</MTh>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => {
-              // deviation_pct : positif = plus cher que la moyenne du marché
-              // interne. Pour un ACHAT c'est mauvais, pour une VENTE c'est bon —
-              // on ne colore donc que l'amplitude, la lecture reste au métier.
+              // deviation_pct : positif = plus cher que la moyenne interne.
+              // Pour un ACHAT c'est mauvais, pour une VENTE c'est bon — on ne
+              // colore donc que l'amplitude, la lecture reste au métier.
               const notable = Math.abs(r.deviation_pct) >= 1;
               return (
                 <tr key={r.id}>
-                  <Td first>
-                    <div className={cn('truncate text-[13px] font-semibold', TEXT.strong)}>{r.display_name}</div>
-                    <div className={cn('text-[11px]', TEXT.muted)}>
-                      {r.operation_count} op · {r.wechat_id ?? r.phone ?? '—'}
+                  <MTd>
+                    <div className={cn('truncate text-[12.5px] font-semibold', T.ink)}>{r.display_name}</div>
+                    <div className={cn('text-[10.5px]', T.faint)}>
+                      <span className={NUM}>{r.operation_count}</span> op · {r.wechat_id ?? r.phone ?? '—'}
                     </div>
-                  </Td>
-                  <Td align="right" className={cn('text-[13px] tabular-nums', TEXT.body)}>{fmtNum(r.total_usdt, 2)}</Td>
-                  <Td align="right" className={cn('text-[13px] font-semibold tabular-nums', TEXT.strong)}>
+                  </MTd>
+                  <MTd align="right" className={cn('text-[12.5px]', NUM, T.body)}>{fmtNum(r.total_usdt, 2)}</MTd>
+                  <MTd align="right" className={cn('text-[12.5px] font-semibold', NUM, T.ink)}>
                     {fmtNum(r.weighted_avg_rate, rateDecimals)}
-                    <div className={cn('text-[10px] font-normal', TEXT.muted)}>{rateUnit}</div>
-                  </Td>
-                  <Td last align="right">
-                    <span
-                      className={cn(
-                        'inline-flex rounded-full px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums',
-                        !notable
-                          ? cn(SURFACE.inset, TEXT.muted)
-                          : r.deviation_pct > 0
-                            ? 'bg-[#F8EFD8] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]'
-                            : 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]',
-                      )}
-                    >
+                    <div className={cn('text-[9.5px] font-normal', T.faint)}>{rateUnit}</div>
+                  </MTd>
+                  <MTd align="right">
+                    <span className={cn('text-[11.5px] font-bold', NUM, !notable ? T.faint : r.deviation_pct > 0 ? TONE.sale : TONE.positive)}>
                       {withSign(r.deviation_pct, 1)} %
                     </span>
-                  </Td>
+                  </MTd>
                 </tr>
               );
             })}
           </tbody>
         </table>
       )}
-    </Card>
+    </MCard>
   );
 }
 
@@ -233,33 +216,16 @@ export function TreasuryAnalysisView() {
 
   const chart = useMemo<{ points: ChartPoint[]; color: string; decimals: number; unit: string }>(() => {
     if (curve === 'wac') {
-      return {
-        points: (wacSeries ?? []).map((p) => ({ at: p.at, value: p.wac })),
-        color: EMERALD,
-        decimals: RATE_DECIMALS.xafPerUsdt,
-        unit: 'XAF/USDT',
-      };
+      return { points: (wacSeries ?? []).map((p) => ({ at: p.at, value: p.wac })), color: C_WAC, decimals: RATE_DECIMALS.xafPerUsdt, unit: 'XAF/USDT' };
     }
     if (curve === 'purchases') {
-      return {
-        points: (flowSeries?.purchases ?? []).map((p) => ({ at: p.at, value: p.rate })),
-        color: VIOLET,
-        decimals: RATE_DECIMALS.xafPerUsdt,
-        unit: 'XAF/USDT',
-      };
+      return { points: (flowSeries?.purchases ?? []).map((p) => ({ at: p.at, value: p.rate })), color: C_BUY, decimals: RATE_DECIMALS.xafPerUsdt, unit: 'XAF/USDT' };
     }
-    return {
-      points: (flowSeries?.sales ?? []).map((p) => ({ at: p.at, value: p.rate })),
-      color: AMBER,
-      decimals: RATE_DECIMALS.cnyPerUsdt,
-      unit: 'CNY/USDT',
-    };
+    return { points: (flowSeries?.sales ?? []).map((p) => ({ at: p.at, value: p.rate })), color: C_SELL, decimals: RATE_DECIMALS.cnyPerUsdt, unit: 'CNY/USDT' };
   }, [curve, wacSeries, flowSeries]);
 
-  if (isLoading) return <ScreenLoader />;
-  if (isError || !dash) {
-    return <ScreenError title="Erreur de chargement" description="Impossible de charger l'analyse de trésorerie." />;
-  }
+  if (isLoading) return <MLoading />;
+  if (isError || !dash) return <MEmpty icon={BarChart3}>Impossible de charger l'analyse de trésorerie.</MEmpty>;
 
   const clientRate = dash.client_rate.weighted_avg_rate_xaf_per_cny ?? null;
   const revient = dash.taux_de_revient_xaf_per_cny ?? null;
@@ -267,42 +233,32 @@ export function TreasuryAnalysisView() {
   const benefit = dash.benefit_total_xaf;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>
+        <span className={cn('text-[11.5px]', NUM, T.muted)}>
           {range.from.toLocaleDateString('fr-FR')} → {range.to.toLocaleDateString('fr-FR')}
         </span>
-        <DropChip label="Période" value={period} options={PERIODS} onChange={setPeriod} />
+        <MDropdown label="Période" value={period} options={PERIODS} onChange={setPeriod} />
       </div>
 
       {/* 1. Les quatre chiffres du métier */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <HeadlineFigure
+        <Headline
           label="Bénéfice période"
           value={withSign(benefit, 0)}
           unit="XAF"
           hint="XAF reçu des clients − coût XAF des USDT vendus pour les livrer"
           tone={benefit >= 0 ? 'positive' : 'negative'}
         />
-        <HeadlineFigure
+        <Headline
           label="Marge par CNY livré"
           value={marge === null ? '—' : withSign(marge, 2)}
           unit="XAF / CNY"
           hint="Taux client − taux de revient"
           tone={marge === null ? 'neutral' : marge >= 0 ? 'positive' : 'negative'}
         />
-        <HeadlineFigure
-          label="Taux de revient"
-          value={fmtNum(revient, RATE_DECIMALS.xafPerCny)}
-          unit="XAF / CNY"
-          hint="Ce que me coûte réellement 1 CNY livré en Chine"
-        />
-        <HeadlineFigure
-          label="Taux client"
-          value={fmtNum(clientRate, RATE_DECIMALS.xafPerCny)}
-          unit="XAF / CNY"
-          hint="Ce que les clients ont payé en moyenne sur la période"
-        />
+        <Headline label="Taux de revient" value={fmtNum(revient, RATE_DECIMALS.xafPerCny)} unit="XAF / CNY" hint="Ce que me coûte réellement 1 CNY livré en Chine" />
+        <Headline label="Taux client" value={fmtNum(clientRate, RATE_DECIMALS.xafPerCny)} unit="XAF / CNY" hint="Ce que les clients ont payé en moyenne sur la période" />
       </div>
 
       {/* 2. Volumes */}
@@ -315,7 +271,6 @@ export function TreasuryAnalysisView() {
           counterValue={`${fmtNum(dash.purchases.total_xaf, 0)} XAF`}
           rateLabel="Taux d'achat"
           rateValue={fmtNum(dash.purchases.weighted_avg_rate_xaf_per_usdt, RATE_DECIMALS.xafPerUsdt)}
-          accent={VIOLET}
         />
         <VolumeCard
           title="Ventes USDT"
@@ -325,63 +280,48 @@ export function TreasuryAnalysisView() {
           counterValue={`${fmtNum(dash.sales.total_cny, 2)} CNY`}
           rateLabel="Taux de vente"
           rateValue={fmtNum(dash.sales.weighted_avg_rate_cny_per_usdt, RATE_DECIMALS.cnyPerUsdt)}
-          accent={AMBER}
         />
       </div>
 
       {/* 3. Un graphique, une courbe à la fois */}
-      <Card className="p-0">
-        <CardHeader
+      <MCard>
+        <MCardHeader
           title="Évolution des taux"
-          meta={chart.points.length > 0 ? `${chart.points.length} point${chart.points.length > 1 ? 's' : ''} · ${chart.unit}` : undefined}
+          meta={chart.points.length > 0 ? `${chart.points.length} pts · ${chart.unit}` : undefined}
         />
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-5 py-3 dark:border-white/[0.06]">
+        <div className={cn('flex flex-wrap items-center gap-1.5 border-b px-4 py-2.5', M.border)}>
           {CURVES.map((c) => (
-            <Chip key={c.key} label={c.label} active={curve === c.key} onClick={() => setCurve(c.key)} />
+            <MChip key={c.key} label={c.label} active={curve === c.key} onClick={() => setCurve(c.key)} />
           ))}
         </div>
         {chart.points.length < 2 ? (
-          <div className="flex flex-col items-center justify-center py-14 text-center">
-            <Holder icon={curve === 'wac' ? TrendingUp : BarChart3} size="lg" />
-            <p className={cn('mt-3 text-[13px]', TEXT.muted)}>
-              Pas assez d'opérations sur la période pour tracer cette courbe.
-            </p>
-          </div>
+          <MEmpty icon={curve === 'wac' ? TrendingUp : BarChart3}>
+            Pas assez d'opérations sur la période pour tracer cette courbe.
+          </MEmpty>
         ) : (
-          <div className="px-3 py-3">
+          <div className="px-2 py-3">
             <TreasuryRateChart points={chart.points} color={chart.color} decimals={chart.decimals} />
           </div>
         )}
-      </Card>
+      </MCard>
 
-      {/* 4. Tops — l'écart au taux moyen est l'information actionnable */}
+      {/* 4. Tops */}
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <TopTable
-          title="Top fournisseurs USDT"
-          rows={topSuppliers?.top ?? []}
-          rateUnit="XAF/USDT"
-          rateDecimals={RATE_DECIMALS.xafPerUsdt}
-          emptyText="Aucun achat sur la période."
-        />
-        <TopTable
-          title="Top acheteurs CNY"
-          rows={topBuyers?.top ?? []}
-          rateUnit="CNY/USDT"
-          rateDecimals={RATE_DECIMALS.cnyPerUsdt}
-          emptyText="Aucune vente sur la période."
-        />
+        <TopTable title="Top fournisseurs USDT" rows={topSuppliers?.top ?? []} rateUnit="XAF/USDT" rateDecimals={RATE_DECIMALS.xafPerUsdt} emptyText="Aucun achat sur la période." />
+        <TopTable title="Top acheteurs CNY" rows={topBuyers?.top ?? []} rateUnit="CNY/USDT" rateDecimals={RATE_DECIMALS.cnyPerUsdt} emptyText="Aucune vente sur la période." />
       </div>
 
-      {/* Capital immobilisé — un chiffre de contexte, pas une décision */}
-      <div className={cn('flex items-center justify-between rounded-[14px] px-5 py-3.5', SURFACE.card, SURFACE.shadow)}>
+      {/* Capital immobilisé — chiffre de contexte, pas une décision */}
+      <MCard className="flex items-center justify-between px-4 py-3">
         <div>
-          <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Capital immobilisé</div>
-          <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>Stock USDT × WAC + soldes CNY convertis</div>
+          <div className={cn(LABEL, T.muted)}>Capital immobilisé</div>
+          <div className={cn('mt-0.5 text-[10.5px]', T.faint)}>Stock USDT × WAC + soldes CNY convertis</div>
         </div>
-        <div className={cn('text-[18px] font-extrabold tabular-nums', TEXT.strong)}>
-          {fmtNum(dash.capital_immobilized_current_xaf, 0)} <span className={cn('text-[12px] font-semibold', TEXT.muted)}>XAF</span>
+        <div className={cn('text-[17px] font-bold', NUM, T.ink)}>
+          {fmtNum(dash.capital_immobilized_current_xaf, 0)}
+          <span className={cn('ml-1 text-[11px] font-semibold', T.faint)}>XAF</span>
         </div>
-      </div>
+      </MCard>
     </div>
   );
 }

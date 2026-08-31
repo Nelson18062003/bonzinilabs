@@ -31,15 +31,15 @@ export function TreasurySelect({
       <SelectTrigger
         id={id}
         className={cn(
-          'h-9 rounded-[10px] border-0 bg-[#F6F5FB] px-3 text-[13px] font-medium ring-1 ring-black/[0.06] ring-offset-0 focus:ring-2 focus:ring-[#6B5BD2] data-[placeholder]:font-normal data-[placeholder]:text-[#8E8BA0] dark:bg-[#2A2836] dark:ring-white/[0.06] dark:focus:ring-[#A99BF0] [&>svg]:h-4 [&>svg]:w-4 [&>svg]:opacity-50',
+          'h-8 rounded-[6px] border border-[#E4E4E7] bg-white px-2.5 text-[12.5px] font-medium ring-offset-0 focus:ring-2 focus:ring-[#4F46E5] data-[placeholder]:font-normal data-[placeholder]:text-[#A1A1AA] dark:border-[#27272A] dark:bg-[#18181B] dark:focus:ring-[#818CF8] [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-55',
           className,
         )}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="rounded-[10px]">
+      <SelectContent className="rounded-[6px]">
         {options.map((o) => (
-          <SelectItem key={o.value} value={o.value} className="rounded-[6px] py-2 text-[13px]">
+          <SelectItem key={o.value} value={o.value} className="rounded-[4px] py-1.5 text-[12.5px]">
             {o.label}
           </SelectItem>
         ))}

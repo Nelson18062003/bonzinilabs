@@ -1,46 +1,45 @@
 /**
- * Trésorerie — vue « Comptes » (docs/admin-redesign/07 §3.4).
+ * Trésorerie — vue « Comptes » (docs/admin-redesign/07 §3.4), habillage
+ * « salle des marchés ».
  *
  * Fusionne deux écrans qui agissaient sur LE MÊME objet : « Comptes & soldes »
  * (ajuster) et « Inventaire des comptes » (réconcilier). Un compte a deux
- * gestes possibles, ils vivent maintenant sur sa ligne.
+ * gestes possibles, ils vivent sur sa ligne et restent VISIBLES : ce sont eux
+ * la raison d'être de la vue.
  *
- * Une table par devise, avec le total du groupe dans l'en-tête — le total est
- * ce qu'on vient vérifier en premier.
- *
- * Deux garde-fous du métier sont conservés à l'identique :
- *   · Ajuster : le motif est obligatoire (il part au journal d'audit) ;
- *   · Inventorier : le motif devient obligatoire DÈS QU'IL Y A UN ÉCART entre
- *     le solde réel constaté et le solde théorique (10 caractères minimum).
+ * Deux garde-fous du métier conservés à l'identique :
+ *   · Ajuster : motif obligatoire (il part au journal d'audit) ;
+ *   · Inventorier : motif obligatoire DÈS QU'IL Y A UN ÉCART (10 car. min).
  * Seuls les comptes cash / Alipay / WeChat s'inventorient : les comptes
  * bancaires se réconcilient par relevé.
  */
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Image as ImageIcon, Plus, Minus, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardCheck, Image as ImageIcon, Minus, Plus, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  Card,
-  CardHeader,
-  Th,
-  Td,
-  Holder,
-  ScreenLoader,
-  CenterDialog,
-  PrimaryPill,
-  SoftPill,
-  SOFT_PILL,
-  FormField,
-  TextInput,
-} from '@/desktop/designKit';
 import {
   useAdjustAccount,
   useRecordInventorySnapshot,
   useTreasuryAccountBalances,
   type TreasuryAccountBalance,
 } from '@/hooks/useTreasury';
+import {
+  M,
+  T,
+  NUM,
+  LABEL,
+  TONE,
+  MCard,
+  MCardHeader,
+  MButton,
+  MTh,
+  MTd,
+  MDialog,
+  MField,
+  MInput,
+  MEmpty,
+  MLoading,
+} from './marketKit';
 import { fmtAmount, fmtNum, accountKindLabel, CURRENCY_DECIMALS, type TreasuryCurrency } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 
@@ -54,10 +53,7 @@ const GROUPS: ReadonlyArray<{ currency: TreasuryCurrency; label: string }> = [
 const INVENTORY_KINDS = ['cash', 'alipay', 'wechat'];
 const REASON_MIN = 10;
 
-type Dialog =
-  | { mode: 'adjust'; account: TreasuryAccountBalance }
-  | { mode: 'inventory'; account: TreasuryAccountBalance }
-  | null;
+type Dialog = { mode: 'adjust' | 'inventory'; account: TreasuryAccountBalance } | null;
 
 export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
   const navigate = useNavigate();
@@ -71,7 +67,7 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
   const [reason, setReason] = useState('');
 
   const open = (mode: 'adjust' | 'inventory', account: TreasuryAccountBalance) => {
-    setDialog({ mode, account } as Dialog);
+    setDialog({ mode, account });
     setAmount(null);
     setDirection('credit');
     setReason('');
@@ -112,64 +108,57 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
     );
   };
 
-  if (isLoading) return <ScreenLoader />;
-
+  if (isLoading) return <MLoading />;
   const accounts = data ?? [];
+  if (accounts.length === 0) return <MEmpty icon={Wallet}>Aucun compte de trésorerie.</MEmpty>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => navigate('/m/more/treasury/balance-dashboard')}
-          className={cn('inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-semibold', SOFT_PILL)}
-        >
-          <ImageIcon className="h-4 w-4" /> Visuel des soldes (PNG / PDF)
-        </button>
+        <MButton onClick={() => navigate('/m/more/treasury/balance-dashboard')}>
+          <ImageIcon className="h-3.5 w-3.5" /> Visuel des soldes (PNG / PDF)
+        </MButton>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-3">
         {GROUPS.map((g) => {
           const rows = accounts.filter((a) => a.currency === g.currency);
           if (rows.length === 0) return null;
           const total = rows.reduce((s, a) => s + Number(a.balance ?? 0), 0);
           return (
-            <Card key={g.currency} className="overflow-hidden p-0">
-              <CardHeader title={g.label} meta={`${fmtAmount(total, g.currency)} ${g.currency}`} />
+            <MCard key={g.currency} className="overflow-hidden">
+              <MCardHeader title={g.label} meta={`${fmtAmount(total, g.currency)} ${g.currency}`} />
               <table className="w-full text-left">
-                <thead className={SURFACE.inset}>
+                <thead className={cn('border-b', M.inset, M.border)}>
                   <tr>
-                    <Th first>Compte</Th>
-                    <Th align="right">Solde</Th>
-                    <Th last className="w-[92px]" />
+                    <MTh>Compte</MTh>
+                    <MTh align="right">Solde</MTh>
+                    <MTh className="w-[80px]" />
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((a) => {
                     const canInventory = !!a.kind && INVENTORY_KINDS.includes(a.kind);
                     return (
-                      <tr key={a.id} className="group">
-                        <Td first>
-                          <div className={cn('truncate text-[13px] font-semibold', TEXT.strong)}>{a.label}</div>
-                          {a.kind && <div className={cn('text-[11px]', TEXT.muted)}>{accountKindLabel(a.kind)}</div>}
-                        </Td>
-                        <Td align="right" className={cn('text-[13px] font-bold tabular-nums', TEXT.strong)}>
+                      <tr key={a.id}>
+                        <MTd>
+                          <div className={cn('truncate text-[12.5px] font-semibold', T.ink)}>{a.label}</div>
+                          {a.kind && <div className={cn('text-[10.5px]', T.faint)}>{accountKindLabel(a.kind)}</div>}
+                        </MTd>
+                        <MTd align="right" className={cn('text-[12.5px] font-bold', NUM, T.ink)}>
                           {fmtAmount(Number(a.balance ?? 0), g.currency)}
-                        </Td>
-                        <Td last align="right">
-                          {/* Ces deux gestes SONT la raison d'être de la vue :
-                              ils restent visibles (atténués) au lieu d'être
-                              cachés au survol comme une action secondaire. */}
+                        </MTd>
+                        <MTd align="right">
                           {canManage ? (
-                            <span className="inline-flex items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                            <span className="inline-flex items-center gap-1">
                               <button
                                 type="button"
                                 onClick={() => open('adjust', a)}
                                 title="Ajuster le solde"
                                 aria-label={`Ajuster ${a.label}`}
-                                className={cn('flex h-7 w-7 items-center justify-center rounded-full', SURFACE.holder)}
+                                className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}
                               >
-                                <Wallet className="h-3.5 w-3.5" />
+                                <Wallet className="h-3 w-3" />
                               </button>
                               {canInventory && (
                                 <button
@@ -177,53 +166,45 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
                                   onClick={() => open('inventory', a)}
                                   title="Inventorier"
                                   aria-label={`Inventorier ${a.label}`}
-                                  className={cn('flex h-7 w-7 items-center justify-center rounded-full', SURFACE.holder)}
+                                  className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}
                                 >
-                                  <ClipboardCheck className="h-3.5 w-3.5" />
+                                  <ClipboardCheck className="h-3 w-3" />
                                 </button>
                               )}
                             </span>
                           ) : (
                             <span aria-hidden />
                           )}
-                        </Td>
+                        </MTd>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-            </Card>
+            </MCard>
           );
         })}
       </div>
 
-      {accounts.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Holder icon={Wallet} size="lg" />
-          <p className={cn('mt-3 text-[13px]', TEXT.muted)}>Aucun compte de trésorerie.</p>
-        </div>
-      )}
-
-      {/* ── Ajuster un solde ── */}
-      <CenterDialog
+      {/* ── Ajuster ── */}
+      <MDialog
         open={dialog?.mode === 'adjust'}
         onClose={close}
         onConfirm={submitAdjust}
         title={`Ajuster — ${dialog?.account.label ?? ''}`}
-        width={460}
         footer={
           <>
-            <PrimaryPill onClick={submitAdjust} disabled={!adjustValid} loading={adjust.isPending} className="flex-1">
+            <MButton variant="primary" onClick={submitAdjust} disabled={!adjustValid} loading={adjust.isPending} className="flex-1">
               {direction === 'credit' ? 'Approvisionner' : 'Débiter'}
-            </PrimaryPill>
-            <SoftPill onClick={close} className="flex-1">Annuler</SoftPill>
+            </MButton>
+            <MButton onClick={close} className="flex-1">Annuler</MButton>
           </>
         }
       >
         <div className="space-y-3">
-          <div className={cn('flex items-center justify-between rounded-[10px] px-3 py-2.5', SURFACE.inset)}>
-            <span className={cn('text-[12px]', TEXT.muted)}>Solde actuel</span>
-            <span className={cn('text-[13px] font-bold tabular-nums', TEXT.strong)}>
+          <div className={cn('flex items-center justify-between rounded-[4px] px-2.5 py-2', M.inset)}>
+            <span className={cn('text-[11.5px]', T.muted)}>Solde actuel</span>
+            <span className={cn('text-[12.5px] font-bold', NUM, T.ink)}>
               {fmtAmount(theoretical, currency)} {currency}
             </span>
           </div>
@@ -235,12 +216,9 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
                 type="button"
                 onClick={() => setDirection(d)}
                 className={cn(
-                  'inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-bold transition-colors',
-                  direction === d
-                    ? d === 'credit'
-                      ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
-                      : 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]'
-                    : SOFT_PILL,
+                  'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[6px] border text-[12.5px] font-semibold transition-colors',
+                  M.border,
+                  direction === d ? (d === 'credit' ? cn('bg-[#F0FDF4] dark:bg-[#14301F]', TONE.positive) : cn('bg-[#FEF2F2] dark:bg-[#3F1D1D]', TONE.negative)) : cn('bg-white dark:bg-[#18181B]', T.body),
                 )}
               >
                 {d === 'credit' ? <Plus className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
@@ -249,100 +227,83 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
             ))}
           </div>
 
-          <FormField label="Montant" htmlFor="adjust-amount">
+          <MField label="Montant" htmlFor="adjust-amount">
             <TreasuryMoneyInput id="adjust-amount" currency={currency} value={amount} onValueChange={setAmount} decimals={decimals} autoFocus />
-          </FormField>
+          </MField>
 
           {amount !== null && amount > 0 && (
-            <div className={cn('flex items-center justify-between rounded-[10px] px-3 py-2.5', SURFACE.inset)}>
-              <span className={cn('text-[12px]', TEXT.muted)}>Solde après</span>
-              <span className={cn('text-[13px] font-bold tabular-nums', TEXT.strong)}>
+            <div className={cn('flex items-center justify-between rounded-[4px] px-2.5 py-2', M.inset)}>
+              <span className={cn('text-[11.5px]', T.muted)}>Solde après</span>
+              <span className={cn('text-[12.5px] font-bold', NUM, T.ink)}>
                 {fmtAmount(direction === 'credit' ? theoretical + amount : theoretical - amount, currency)} {currency}
               </span>
             </div>
           )}
 
-          <FormField
+          <MField
             label="Motif"
             hint={`Obligatoire, ${REASON_MIN} caractères minimum — enregistré au journal d'audit.`}
             error={reason.length > 0 && !reasonValid ? `Encore ${REASON_MIN - reason.trim().length} caractère(s).` : undefined}
           >
-            <TextInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. apport de caisse du 12/08" />
-          </FormField>
+            <MInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. apport de caisse du 12/08" />
+          </MField>
         </div>
-      </CenterDialog>
+      </MDialog>
 
-      {/* ── Inventorier un compte ── */}
-      <CenterDialog
+      {/* ── Inventorier ── */}
+      <MDialog
         open={dialog?.mode === 'inventory'}
         onClose={close}
         onConfirm={submitInventory}
         title={`Inventaire — ${dialog?.account.label ?? ''}`}
-        width={460}
         footer={
           <>
-            <PrimaryPill onClick={submitInventory} disabled={!inventoryValid} loading={inventory.isPending} className="flex-1">
+            <MButton variant="primary" onClick={submitInventory} disabled={!inventoryValid} loading={inventory.isPending} className="flex-1">
               Enregistrer l'inventaire
-            </PrimaryPill>
-            <SoftPill onClick={close} className="flex-1">Annuler</SoftPill>
+            </MButton>
+            <MButton onClick={close} className="flex-1">Annuler</MButton>
           </>
         }
       >
         <div className="space-y-3">
-          <p className={cn('text-[13px]', TEXT.body)}>
+          <p className={cn('text-[12.5px] leading-relaxed', T.body)}>
             Comptez ce qu'il y a réellement sur le compte, puis saisissez-le. L'écart avec le solde théorique est calculé
             automatiquement.
           </p>
 
-          <FormField label="Solde réel constaté" htmlFor="inv-amount">
+          <MField label="Solde réel constaté" htmlFor="inv-amount">
             <TreasuryMoneyInput id="inv-amount" currency={currency} value={amount} onValueChange={setAmount} decimals={decimals} autoFocus />
-          </FormField>
+          </MField>
 
           <div className="grid grid-cols-2 gap-2">
-            <div className={cn('rounded-[10px] px-3 py-2.5', SURFACE.inset)}>
-              <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Théorique</div>
-              <div className={cn('mt-0.5 text-[14px] font-bold tabular-nums', TEXT.strong)}>{fmtAmount(theoretical, currency)}</div>
+            <div className={cn('rounded-[4px] px-2.5 py-2', M.inset)}>
+              <div className={cn(LABEL, T.muted)}>Théorique</div>
+              <div className={cn('mt-0.5 text-[13px] font-bold', NUM, T.ink)}>{fmtAmount(theoretical, currency)}</div>
             </div>
             <div
               className={cn(
-                'rounded-[10px] px-3 py-2.5',
-                amount === null
-                  ? SURFACE.inset
-                  : variance === 0
-                    ? 'bg-[#DEEFE5] dark:bg-[#1E3A2C]'
-                    : 'bg-[#FBE7E7] dark:bg-[#3A2526]',
+                'rounded-[4px] px-2.5 py-2',
+                amount === null ? M.inset : variance === 0 ? 'bg-[#F0FDF4] dark:bg-[#14301F]' : 'bg-[#FEF2F2] dark:bg-[#3F1D1D]',
               )}
             >
-              <div
-                className={cn(
-                  'text-[11px] font-bold uppercase tracking-wider',
-                  amount === null ? TEXT.muted : variance === 0 ? 'text-[#2E7D52] dark:text-[#7FCBA0]' : 'text-[#C0504D] dark:text-[#E79A9A]',
-                )}
-              >
-                Écart
-              </div>
-              <div
-                className={cn(
-                  'mt-0.5 text-[14px] font-bold tabular-nums',
-                  amount === null ? TEXT.strong : variance === 0 ? 'text-[#2E7D52] dark:text-[#7FCBA0]' : 'text-[#C0504D] dark:text-[#E79A9A]',
-                )}
-              >
+              <div className={cn(LABEL, amount === null ? T.muted : variance === 0 ? TONE.positive : TONE.negative)}>Écart</div>
+              <div className={cn('mt-0.5 text-[13px] font-bold', NUM, amount === null ? T.ink : variance === 0 ? TONE.positive : TONE.negative)}>
                 {amount === null ? '—' : `${variance > 0 ? '+' : ''}${fmtNum(variance, decimals)}`}
               </div>
             </div>
           </div>
 
           {variance !== 0 && amount !== null && (
-            <FormField
+            <MField
               label="Motif de l'écart"
               hint={`Obligatoire dès qu'il y a un écart, ${REASON_MIN} caractères minimum.`}
               error={reason.length > 0 && !reasonValid ? `Encore ${REASON_MIN - reason.trim().length} caractère(s).` : undefined}
             >
-              <TextInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. billet manquant, erreur de rendu" />
-            </FormField>
+              <MInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. billet manquant, erreur de rendu" />
+            </MField>
           )}
         </div>
-      </CenterDialog>
+      </MDialog>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 /**
  * Desktop admin — Trésorerie : UN MÉTIER PAR VUE
- * (docs/admin-redesign/07-treasury-module.md).
+ * (docs/admin-redesign/07-treasury-module.md), habillage « salle des
+ * marchés » (marketKit.tsx) retenu sur maquette.
  *
  * Remplace l'ancien accueil, qui était un lanceur de 10 tuiles vers 10 pages —
  * le menu du téléphone posé sur un écran large. Ici le module est UN écran :
- * la barre d'état (stock, WAC, soldes) reste visible, et le sélecteur montre
- * une seule vue à la fois.
+ * la barre d'état (stock, WAC, soldes) reste visible, et des onglets
+ * SOULIGNÉS montrent une seule vue à la fois.
  *
  *   · Opérations (défaut) — le poste de travail : table triable + détail latéral.
  *   · Analyse   — les quatre chiffres du métier + l'historique des taux.
@@ -18,9 +19,9 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TEXT, PRIMARY_PILL, SOFT_PILL } from '@/desktop/designKit';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryAccountBalances, useUsdtStock, useUsdtWac } from '@/hooks/useTreasury';
+import { T, MTabs, MButton, M_PAGE } from './marketKit';
 import { TreasuryStatusBar } from './TreasuryStatusBar';
 import { TreasuryOperationsWorkbench } from './TreasuryOperationsWorkbench';
 import { TreasuryAccountsView } from './TreasuryAccountsView';
@@ -30,11 +31,11 @@ import type { TreasuryCurrency } from './treasuryFormat';
 
 export type TreasuryView = 'operations' | 'analysis' | 'accounts' | 'counterparties';
 
-const VIEWS: ReadonlyArray<{ key: TreasuryView; label: string }> = [
-  { key: 'operations', label: 'Opérations' },
-  { key: 'analysis', label: 'Analyse' },
-  { key: 'accounts', label: 'Comptes' },
-  { key: 'counterparties', label: 'Contreparties' },
+const VIEWS = [
+  { key: 'operations' as const, label: 'Opérations' },
+  { key: 'analysis' as const, label: 'Analyse' },
+  { key: 'accounts' as const, label: 'Comptes' },
+  { key: 'counterparties' as const, label: 'Contreparties' },
 ];
 
 export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialView?: TreasuryView } = {}) {
@@ -64,49 +65,30 @@ export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialV
   );
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    // `font-ui` = Inter : le module bascule sur la typo de la direction
+    // retenue sans toucher aux autres écrans de l'admin (portée décidée :
+    // Trésorerie d'abord, extension ensuite).
+    <div className={cn(M_PAGE, 'space-y-4', T.ink)}>
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className={cn('text-[20px] font-bold tracking-tight', TEXT.strong)}>Trésorerie</h2>
-          <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>
-            Le pont USDT : XAF → USDT → CNY. Coût du stock, marge et opérations.
-          </p>
+          <h2 className={cn('text-[19px] font-bold tracking-[-0.02em]', T.ink)}>Trésorerie</h2>
+          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>Pont USDT · XAF → USDT → CNY</p>
         </div>
         {canManage && (
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/m/more/treasury/purchase')}
-              className={cn('inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-bold', SOFT_PILL)}
-            >
-              <ArrowDownToLine className="h-4 w-4" /> Achat USDT
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/m/more/treasury/sale')}
-              className={cn('inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-bold', PRIMARY_PILL)}
-            >
-              <ArrowUpFromLine className="h-4 w-4" /> Vente USDT
-            </button>
+            <MButton onClick={() => navigate('/m/more/treasury/purchase')}>
+              <ArrowDownToLine className="h-3.5 w-3.5" /> Achat
+            </MButton>
+            <MButton variant="primary" onClick={() => navigate('/m/more/treasury/sale')}>
+              <ArrowUpFromLine className="h-3.5 w-3.5" /> Vente USDT
+            </MButton>
           </div>
         )}
       </header>
 
       <TreasuryStatusBar stockUsdt={stockUsdt} wac={wac} totals={totals} />
 
-      <nav className="flex items-center gap-1.5" aria-label="Vues du module Trésorerie">
-        {VIEWS.map((v) => (
-          <button
-            key={v.key}
-            type="button"
-            onClick={() => setView(v.key)}
-            aria-current={view === v.key ? 'page' : undefined}
-            className={cn('h-9 rounded-full px-4 text-[13px] font-bold transition-colors', view === v.key ? PRIMARY_PILL : SOFT_PILL)}
-          >
-            {v.label}
-          </button>
-        ))}
-      </nav>
+      <MTabs tabs={VIEWS} value={view} onChange={setView} ariaLabel="Vues du module Trésorerie" />
 
       {view === 'operations' && <TreasuryOperationsWorkbench canManage={canManage} />}
       {view === 'analysis' && <TreasuryAnalysisView />}

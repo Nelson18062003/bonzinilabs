@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 const OUT = process.argv[2] ?? '/tmp/treasury-shots';
 const DARK = process.argv.includes('--dark');
-const BASE = 'http://127.0.0.1:8081/treasury-preview.html';
+const BASE = 'http://127.0.0.1:8083/treasury-preview.html';
 
 const VIEWS = ['operations', 'analysis', 'accounts', 'counterparties', 'purchase', 'sale'];
 
@@ -40,6 +40,7 @@ for (const view of VIEWS) {
   const url = `${BASE}?view=${view}${DARK ? '&theme=dark' : ''}`;
   await page.goto(url, { waitUntil: 'networkidle' });
   // Laisse le graphique (lightweight-charts) se dessiner.
+  await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(700);
   const file = join(OUT, `${view}${DARK ? '-dark' : ''}.png`);
   await page.screenshot({ path: file, fullPage: true });

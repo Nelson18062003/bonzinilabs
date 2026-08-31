@@ -1,11 +1,11 @@
 /**
- * Trésorerie — vue « Opérations » (archétype A + B, docs/admin-redesign/07 §3.2).
+ * Trésorerie — vue « Opérations » (docs/admin-redesign/07 §3.2), habillage
+ * « salle des marchés ».
  *
- * Remplace la grille de cartes en 2 colonnes par une vraie table : colonnes
- * comparables, triables, montants alignés à droite en tabular-nums, pagination.
- * Le taux effectif de chaque opération devient une COLONNE — c'est le chiffre
- * qu'on vient comparer (« quel achat m'a coûté le plus cher ? »), il ne peut
- * pas rester caché dans un détail.
+ * Une vraie table : colonnes comparables, triables, chiffres en mono aligné à
+ * droite, pagination. Le taux effectif de chaque opération est une COLONNE —
+ * c'est le chiffre qu'on vient comparer (« quel achat m'a coûté le plus
+ * cher ? »), il ne peut pas rester caché dans un détail.
  *
  * Les opérations annulées restent visibles, barrées : une écriture annulée
  * fait partie de l'histoire comptable.
@@ -13,26 +13,27 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownToLine, ArrowUpFromLine, Inbox } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  Card,
-  CardHeader,
-  Chip,
-  DropChip,
-  SearchField,
-  Th,
-  Td,
-  PaginationBar,
-  Holder,
-  ScreenLoader,
-  ScreenError,
-  StatusPill,
-} from '@/desktop/designKit';
 import { useTreasuryOperations, type OperationRow } from '@/hooks/useTreasury';
 import { normalizeText } from '@/lib/clientSearch';
+import {
+  M,
+  T,
+  NUM,
+  MCard,
+  MCardHeader,
+  MChip,
+  MDropdown,
+  MSearch,
+  MTh,
+  MTd,
+  MTypeTag,
+  MTag,
+  MPagination,
+  MEmpty,
+  MLoading,
+} from './marketKit';
 import { fmtAmount, fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryOperationPanel } from './TreasuryOperationPanel';
 
@@ -40,11 +41,11 @@ type Bucket = 'all' | 'purchase' | 'sale' | 'voided';
 type SortKey = 'date' | 'usdt' | 'rate';
 type Period = '7d' | '30d' | '90d' | '365d';
 
-const PERIODS: ReadonlyArray<{ value: Period; label: string }> = [
-  { value: '7d', label: '7 jours' },
-  { value: '30d', label: '30 jours' },
-  { value: '90d', label: '3 mois' },
-  { value: '365d', label: '1 an' },
+const PERIODS = [
+  { value: '7d' as const, label: '7 jours' },
+  { value: '30d' as const, label: '30 jours' },
+  { value: '90d' as const, label: '3 mois' },
+  { value: '365d' as const, label: '1 an' },
 ];
 
 const PAGE_SIZE = 25;
@@ -127,52 +128,49 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
   const sortedOf = (key: SortKey) => (sort === key ? (asc ? 'asc' : 'desc') : null);
 
   return (
-    <div className={cn('grid min-h-0 items-start gap-4', selected ? 'xl:grid-cols-[minmax(0,1fr)_minmax(560px,42%)]' : 'grid-cols-1')}>
-      <Card className="flex min-h-0 flex-col overflow-hidden p-0">
-        <CardHeader
+    <div className={cn('grid min-h-0 items-start gap-4', selected ? 'xl:grid-cols-[minmax(0,1fr)_minmax(540px,40%)]' : 'grid-cols-1')}>
+      <MCard className="flex min-h-0 flex-col overflow-hidden">
+        <MCardHeader
           title="Opérations"
-          meta={`${rows.length} opération${rows.length > 1 ? 's' : ''} · tri ${sort === 'date' ? 'par date' : sort === 'usdt' ? 'par volume' : 'par taux'} ${asc ? '↑' : '↓'}`}
+          meta={`${rows.length} · tri ${sort === 'date' ? 'date' : sort === 'usdt' ? 'volume' : 'taux'} ${asc ? '↑' : '↓'}`}
         />
 
-        {/* Filtres — une seule ligne, contrôles 36px (règle §1.5-1) */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-5 py-3 dark:border-white/[0.06]">
-          <Chip label="Tout" count={counts.all} active={bucket === 'all'} onClick={() => { setBucket('all'); setPage(1); }} />
-          <Chip label="Achats" count={counts.purchase} active={bucket === 'purchase'} onClick={() => { setBucket('purchase'); setPage(1); }} />
-          <Chip label="Ventes" count={counts.sale} active={bucket === 'sale'} onClick={() => { setBucket('sale'); setPage(1); }} />
-          <Chip label="Annulées" count={counts.voided} active={bucket === 'voided'} onClick={() => { setBucket('voided'); setPage(1); }} />
-          <SearchField
+        {/* Filtres — une ligne, contrôles 26px */}
+        <div className={cn('flex flex-wrap items-center gap-1.5 border-b px-4 py-2.5', M.border)}>
+          <MChip label="Tout" count={counts.all} active={bucket === 'all'} onClick={() => { setBucket('all'); setPage(1); }} />
+          <MChip label="Achats" count={counts.purchase} active={bucket === 'purchase'} onClick={() => { setBucket('purchase'); setPage(1); }} />
+          <MChip label="Ventes" count={counts.sale} active={bucket === 'sale'} onClick={() => { setBucket('sale'); setPage(1); }} />
+          <MChip label="Annulées" count={counts.voided} active={bucket === 'voided'} onClick={() => { setBucket('voided'); setPage(1); }} />
+          <MSearch
             value={search}
             onChange={(v) => { setSearch(v); setPage(1); }}
-            placeholder="Contrepartie, référence, note…"
-            className="ml-auto w-[260px]"
+            placeholder="Rechercher…"
+            className="ml-auto w-[210px]"
           />
-          <DropChip label="Période" value={period} options={PERIODS} onChange={(v) => { setPeriod(v); setPage(1); }} />
+          <MDropdown value={period} options={PERIODS} onChange={(v) => { setPeriod(v); setPage(1); }} />
         </div>
 
         {isLoading ? (
-          <ScreenLoader />
+          <MLoading />
         ) : isError ? (
-          <ScreenError title="Erreur de chargement" description="Impossible de charger les opérations." />
+          <MEmpty icon={Inbox}>Impossible de charger les opérations.</MEmpty>
         ) : rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={Inbox} size="lg" />
-            <p className={cn('mt-3 text-[13px]', TEXT.muted)}>
-              {search || bucket !== 'all' ? 'Aucune opération pour ce filtre.' : 'Aucune opération sur cette période.'}
-            </p>
-          </div>
+          <MEmpty icon={Inbox}>
+            {search || bucket !== 'all' ? 'Aucune opération pour ce filtre.' : 'Aucune opération sur cette période.'}
+          </MEmpty>
         ) : (
           <>
             <div className="min-h-0 flex-1 overflow-auto">
               <table className="w-full text-left">
-                <thead className={cn('sticky top-0 z-10', SURFACE.inset)}>
+                <thead className={cn('sticky top-0 z-10 border-b', M.inset, M.border)}>
                   <tr>
-                    <Th first sortable sorted={sortedOf('date')} onSort={() => toggleSort('date')}>Date</Th>
-                    <Th>Type</Th>
-                    <Th>Contrepartie</Th>
-                    <Th align="right" sortable sorted={sortedOf('usdt')} onSort={() => toggleSort('usdt')}>USDT</Th>
-                    <Th align="right">Contre-valeur</Th>
-                    <Th align="right" sortable sorted={sortedOf('rate')} onSort={() => toggleSort('rate')}>Taux</Th>
-                    <Th last>Compte</Th>
+                    <MTh sortable sorted={sortedOf('date')} onSort={() => toggleSort('date')}>Date</MTh>
+                    <MTh>Type</MTh>
+                    <MTh>Contrepartie</MTh>
+                    <MTh align="right" sortable sorted={sortedOf('usdt')} onSort={() => toggleSort('usdt')}>USDT</MTh>
+                    <MTh align="right">Contre-valeur</MTh>
+                    <MTh align="right" sortable sorted={sortedOf('rate')} onSort={() => toggleSort('rate')}>Taux</MTh>
+                    <MTh>Compte</MTh>
                   </tr>
                 </thead>
                 <tbody>
@@ -188,51 +186,38 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
                         onClick={() => setSelectedId(op.id === selectedId ? null : op.id)}
                         className={cn(
                           'cursor-pointer transition-colors',
-                          op.id === selectedId ? 'bg-[#EDEAFA]/60 dark:bg-white/[0.05]' : 'hover:bg-[#F6F5FB] dark:hover:bg-white/[0.03]',
-                          voided && 'opacity-60',
+                          op.id === selectedId ? cn(M.inset, 'shadow-[inset_2px_0_0_#4F46E5]') : M.hover,
+                          voided && 'opacity-45',
                         )}
                       >
-                        <Td first>
-                          <div className={cn('text-[12.5px] font-semibold', TEXT.strong)}>
+                        <MTd className="text-[12.5px]">
+                          <span className={cn('font-medium', T.ink)}>
                             {op.occurred_at ? format(parseISO(op.occurred_at), 'dd MMM yyyy', { locale: fr }) : '—'}
-                          </div>
-                          <div className={cn('text-[10.5px] tabular-nums', TEXT.muted)}>
-                            {op.occurred_at ? format(parseISO(op.occurred_at), 'HH:mm') : ''}
-                          </div>
-                        </Td>
-                        <Td>
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold',
-                              isPurchase
-                                ? 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]'
-                                : 'bg-[#F8EFD8] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]',
-                            )}
-                          >
-                            {isPurchase ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}
-                            {isPurchase ? 'Achat' : 'Vente'}
                           </span>
-                        </Td>
-                        <Td>
-                          <div className={cn('max-w-[190px] truncate text-[13px] font-semibold', voided && 'line-through', TEXT.strong)}>
+                          <span className={cn('ml-1.5 text-[11px]', NUM, T.faint)}>
+                            {op.occurred_at ? format(parseISO(op.occurred_at), 'HH:mm') : ''}
+                          </span>
+                        </MTd>
+                        <MTd><MTypeTag kind={op.kind} /></MTd>
+                        <MTd>
+                          <span className={cn('block max-w-[190px] truncate text-[12.5px] font-semibold', voided && 'line-through', T.ink)}>
                             {cp?.display_name ?? '—'}
-                          </div>
-                          {voided && <StatusPill tone="danger" label="Annulée" className="mt-0.5" />}
-                        </Td>
-                        <Td align="right" className={cn('text-[13px] font-bold tabular-nums', TEXT.strong)}>
+                          </span>
+                          {voided && <MTag tone="danger">Annulée</MTag>}
+                        </MTd>
+                        <MTd align="right" className={cn('text-[12.5px] font-bold', NUM, T.ink)}>
                           {fmtAmount(Number(op.usdt_amount), 'USDT')}
-                        </Td>
-                        <Td align="right" className={cn('text-[13px] tabular-nums', TEXT.body)}>
+                        </MTd>
+                        <MTd align="right" className={cn('text-[12.5px]', NUM, T.body)}>
                           {fmtAmount(cv.amount, cv.currency)}
-                          <span className={cn('ml-1 text-[10.5px]', TEXT.muted)}>{cv.currency}</span>
-                        </Td>
-                        <Td align="right" className={cn('text-[13px] font-semibold tabular-nums', TEXT.strong)}>
+                          <span className={cn('ml-1 text-[10.5px]', T.faint)}>{cv.currency}</span>
+                        </MTd>
+                        <MTd align="right" className={cn('text-[12.5px] font-semibold', NUM, T.ink)}>
                           {fmtNum(Number(op.implicit_rate), isPurchase ? RATE_DECIMALS.xafPerUsdt : RATE_DECIMALS.cnyPerUsdt)}
-                          <div className={cn('text-[10px] font-normal', TEXT.muted)}>{isPurchase ? 'XAF/USDT' : 'CNY/USDT'}</div>
-                        </Td>
-                        <Td last className={cn('max-w-[150px] truncate text-[12px]', TEXT.muted)}>
+                        </MTd>
+                        <MTd className={cn('max-w-[150px] truncate text-[11.5px]', T.muted)}>
                           {account ?? (isPurchase ? 'Plusieurs' : 'Aucun')}
-                        </Td>
+                        </MTd>
                       </tr>
                     );
                   })}
@@ -240,7 +225,7 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
               </table>
             </div>
             {pages > 1 && (
-              <PaginationBar
+              <MPagination
                 page={safePage}
                 pages={pages}
                 rangeLabel={`${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, rows.length)}`}
@@ -250,7 +235,7 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
             )}
           </>
         )}
-      </Card>
+      </MCard>
 
       {selected && (
         <TreasuryOperationPanel

@@ -1,9 +1,10 @@
 /**
- * Trésorerie — vue « Contreparties » (docs/admin-redesign/07 §3.5).
+ * Trésorerie — vue « Contreparties » (docs/admin-redesign/07 §3.5), habillage
+ * « salle des marchés ».
  *
- * Deux populations distinctes derrière un même objet : les fournisseurs USDT
- * (Cameroun, +237) et les acheteurs CNY (Chine, +86, WeChat). L'onglet choisit
- * la population ET l'indicatif par défaut du formulaire.
+ * Deux populations derrière un même objet : les fournisseurs USDT (Cameroun,
+ * +237) et les acheteurs CNY (Chine, +86, WeChat). L'onglet choisit la
+ * population ET l'indicatif par défaut du formulaire.
  *
  * La suppression est refusée côté serveur quand des opérations existent —
  * l'archivage est la vraie sortie. Le dialogue le dit AVANT de tenter, au lieu
@@ -12,25 +13,6 @@
 import { useMemo, useState } from 'react';
 import { Archive, ArchiveRestore, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  Card,
-  CardHeader,
-  Chip,
-  SearchField,
-  Th,
-  Td,
-  Holder,
-  ScreenLoader,
-  StatusPill,
-  CenterDialog,
-  PrimaryPill,
-  SoftPill,
-  PRIMARY_PILL,
-  FormField,
-  TextInput,
-} from '@/desktop/designKit';
 import { PhoneInputWithCountry } from '@/components/form';
 import {
   useCounterparties,
@@ -41,11 +23,27 @@ import {
 } from '@/hooks/useTreasury';
 import { normalizeText } from '@/lib/clientSearch';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  M,
+  T,
+  NUM,
+  MCard,
+  MCardHeader,
+  MChip,
+  MSearch,
+  MButton,
+  MTh,
+  MTd,
+  MTag,
+  MDialog,
+  MField,
+  MInput,
+  MEmpty,
+  MLoading,
+} from './marketKit';
 
 type CounterpartyType = Database['public']['Enums']['treasury_counterparty_type'];
 
-// Libellés courts : l'en-tête de carte porte déjà le nom complet de la
-// population affichée, le répéter dans la puce active faisait doublon.
 const TABS: ReadonlyArray<{ value: CounterpartyType; label: string }> = [
   { value: 'usdt_supplier', label: 'Fournisseurs' },
   { value: 'cny_buyer', label: 'Acheteurs' },
@@ -134,8 +132,7 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
     }
   };
 
-  const toggleArchive = (c: TreasuryCounterparty) =>
-    update.mutate({ id: c.id, is_active: !c.is_active });
+  const toggleArchive = (c: TreasuryCounterparty) => update.mutate({ id: c.id, is_active: !c.is_active });
 
   const confirmDelete = () => {
     if (!deleting || remove.isPending) return;
@@ -143,76 +140,74 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
   };
 
   return (
-    <Card className="flex min-h-0 flex-col overflow-hidden p-0">
-      <CardHeader title={isSupplier ? 'Fournisseurs USDT' : 'Acheteurs CNY'} meta={`${rows.length} contrepartie${rows.length > 1 ? 's' : ''}`} />
+    <MCard className="flex min-h-0 flex-col overflow-hidden">
+      <MCardHeader
+        title={isSupplier ? 'Fournisseurs USDT' : 'Acheteurs CNY'}
+        meta={`${rows.length} contrepartie${rows.length > 1 ? 's' : ''}`}
+      />
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] px-5 py-3 dark:border-white/[0.06]">
+      <div className={cn('flex flex-wrap items-center gap-1.5 border-b px-4 py-2.5', M.border)}>
         {TABS.map((t) => (
-          <Chip key={t.value} label={t.label} active={tab === t.value} onClick={() => setTab(t.value)} />
+          <MChip key={t.value} label={t.label} active={tab === t.value} onClick={() => setTab(t.value)} />
         ))}
-        <Chip label="Avec archivées" active={showArchived} onClick={() => setShowArchived((v) => !v)} />
-        <SearchField value={search} onChange={setSearch} placeholder="Rechercher…" className="ml-auto w-[200px]" />
+        <MChip label="Avec archivées" active={showArchived} onClick={() => setShowArchived((v) => !v)} />
+        <MSearch value={search} onChange={setSearch} placeholder="Rechercher…" className="ml-auto w-[190px]" />
         {canManage && (
-          <button type="button" onClick={openNew} className={cn('inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-bold', PRIMARY_PILL)}>
-            <Plus className="h-4 w-4" /> Nouvelle
-          </button>
+          <MButton variant="primary" onClick={openNew}>
+            <Plus className="h-3.5 w-3.5" /> Nouvelle
+          </MButton>
         )}
       </div>
 
       {isLoading ? (
-        <ScreenLoader />
+        <MLoading />
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Holder icon={Users} size="lg" />
-          <p className={cn('mt-3 text-[13px]', TEXT.muted)}>
-            {search ? 'Aucune contrepartie pour cette recherche.' : 'Aucune contrepartie enregistrée.'}
-          </p>
-        </div>
+        <MEmpty icon={Users}>{search ? 'Aucune contrepartie pour cette recherche.' : 'Aucune contrepartie enregistrée.'}</MEmpty>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full text-left">
-            <thead className={cn('sticky top-0 z-10', SURFACE.inset)}>
+            <thead className={cn('sticky top-0 z-10 border-b', M.inset, M.border)}>
               <tr>
-                <Th first>Nom</Th>
-                <Th>Réf.</Th>
-                <Th>{isSupplier ? 'Téléphone' : 'WeChat / Téléphone'}</Th>
-                <Th>Note</Th>
-                <Th last className="w-[112px]" />
+                <MTh>Nom</MTh>
+                <MTh>Réf.</MTh>
+                <MTh>{isSupplier ? 'Téléphone' : 'WeChat / Téléphone'}</MTh>
+                <MTh>Note</MTh>
+                <MTh className="w-[104px]" />
               </tr>
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id} className="group">
-                  <Td first>
+                <tr key={c.id} className={M.hover}>
+                  <MTd>
                     <div className="flex items-center gap-2">
-                      <span className={cn('truncate text-[13px] font-semibold', TEXT.strong)}>{c.display_name}</span>
-                      {!c.is_active && <StatusPill tone="neutral" label="Archivée" />}
+                      <span className={cn('truncate text-[12.5px] font-semibold', T.ink)}>{c.display_name}</span>
+                      {!c.is_active && <MTag>Archivée</MTag>}
                     </div>
-                    {c.legal_name && <div className={cn('truncate text-[11px]', TEXT.muted)}>{c.legal_name}</div>}
-                  </Td>
-                  <Td className={cn('text-[12px] tabular-nums', TEXT.muted)}>{c.short_id ?? '—'}</Td>
-                  <Td className={cn('text-[12.5px]', TEXT.body)}>
-                    {c.wechat_id ? c.wechat_id : c.phone ? c.phone : '—'}
-                    {c.wechat_id && c.phone && <div className={cn('text-[11px]', TEXT.muted)}>{c.phone}</div>}
-                  </Td>
-                  <Td className={cn('max-w-[220px] truncate text-[12px]', TEXT.muted)}>{c.notes ?? '—'}</Td>
-                  <Td last align="right">
+                    {c.legal_name && <div className={cn('truncate text-[10.5px]', T.faint)}>{c.legal_name}</div>}
+                  </MTd>
+                  <MTd className={cn('text-[11.5px]', NUM, T.muted)}>{c.short_id ?? '—'}</MTd>
+                  <MTd className={cn('text-[12px]', T.body)}>
+                    {c.wechat_id ? c.wechat_id : c.phone ? <span className={NUM}>{c.phone}</span> : '—'}
+                    {c.wechat_id && c.phone && <div className={cn('text-[10.5px]', NUM, T.faint)}>{c.phone}</div>}
+                  </MTd>
+                  <MTd className={cn('max-w-[220px] truncate text-[11.5px]', T.muted)}>{c.notes ?? '—'}</MTd>
+                  <MTd align="right">
                     {canManage ? (
-                      <span className="inline-flex items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                        <button type="button" onClick={() => openEdit(c)} title="Modifier" aria-label={`Modifier ${c.display_name}`} className={cn('flex h-7 w-7 items-center justify-center rounded-full', SURFACE.holder)}>
-                          <Pencil className="h-3.5 w-3.5" />
+                      <span className="inline-flex items-center gap-1">
+                        <button type="button" onClick={() => openEdit(c)} title="Modifier" aria-label={`Modifier ${c.display_name}`} className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}>
+                          <Pencil className="h-3 w-3" />
                         </button>
-                        <button type="button" onClick={() => toggleArchive(c)} title={c.is_active ? 'Archiver' : 'Réactiver'} aria-label={c.is_active ? `Archiver ${c.display_name}` : `Réactiver ${c.display_name}`} className={cn('flex h-7 w-7 items-center justify-center rounded-full', SURFACE.holder)}>
-                          {c.is_active ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
+                        <button type="button" onClick={() => toggleArchive(c)} title={c.is_active ? 'Archiver' : 'Réactiver'} aria-label={c.is_active ? `Archiver ${c.display_name}` : `Réactiver ${c.display_name}`} className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}>
+                          {c.is_active ? <Archive className="h-3 w-3" /> : <ArchiveRestore className="h-3 w-3" />}
                         </button>
-                        <button type="button" onClick={() => setDeleting(c)} title="Supprimer" aria-label={`Supprimer ${c.display_name}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <button type="button" onClick={() => setDeleting(c)} title="Supprimer" aria-label={`Supprimer ${c.display_name}`} className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border border-[#FECACA] text-[#B91C1C] dark:border-[#5B2121] dark:text-[#F87171]')}>
+                          <Trash2 className="h-3 w-3" />
                         </button>
                       </span>
                     ) : (
                       <span aria-hidden />
                     )}
-                  </Td>
+                  </MTd>
                 </tr>
               ))}
             </tbody>
@@ -221,28 +216,28 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
       )}
 
       {/* ── Créer / modifier ── */}
-      <CenterDialog
+      <MDialog
         open={editing !== null}
         onClose={() => setEditing(null)}
         onConfirm={save}
         title={editing === 'new' ? (isSupplier ? 'Nouveau fournisseur USDT' : 'Nouvel acheteur CNY') : 'Modifier la contrepartie'}
-        width={480}
+        width={470}
         footer={
           <>
-            <PrimaryPill onClick={save} disabled={!nameValid} loading={saving} className="flex-1">
+            <MButton variant="primary" onClick={save} disabled={!nameValid} loading={saving} className="flex-1">
               {editing === 'new' ? 'Créer' : 'Enregistrer'}
-            </PrimaryPill>
-            <SoftPill onClick={() => setEditing(null)} className="flex-1">Annuler</SoftPill>
+            </MButton>
+            <MButton onClick={() => setEditing(null)} className="flex-1">Annuler</MButton>
           </>
         }
       >
         <div className="space-y-3">
-          <FormField label="Nom" htmlFor="cp-name">
-            <TextInput id="cp-name" value={form.display_name} onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))} placeholder="Nom affiché" />
-          </FormField>
-          <FormField label="Entreprise" hint="Optionnel">
-            <TextInput value={form.legal_name} onChange={(e) => setForm((f) => ({ ...f, legal_name: e.target.value }))} />
-          </FormField>
+          <MField label="Nom" htmlFor="cp-name">
+            <MInput id="cp-name" value={form.display_name} onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))} placeholder="Nom affiché" />
+          </MField>
+          <MField label="Entreprise" hint="Optionnel">
+            <MInput value={form.legal_name} onChange={(e) => setForm((f) => ({ ...f, legal_name: e.target.value }))} />
+          </MField>
           <PhoneInputWithCountry
             label="Téléphone (optionnel)"
             value={form.phone}
@@ -250,37 +245,36 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
             defaultDialCode={defaultDialCode}
           />
           {!isSupplier && (
-            <FormField label="WeChat ID" hint="Optionnel — c'est souvent le seul contact d'un acheteur">
-              <TextInput value={form.wechat_id} onChange={(e) => setForm((f) => ({ ...f, wechat_id: e.target.value }))} />
-            </FormField>
+            <MField label="WeChat ID" hint="Optionnel — c'est souvent le seul contact d'un acheteur">
+              <MInput value={form.wechat_id} onChange={(e) => setForm((f) => ({ ...f, wechat_id: e.target.value }))} />
+            </MField>
           )}
-          <FormField label="Note" hint="Optionnel">
-            <TextInput value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </FormField>
+          <MField label="Note" hint="Optionnel">
+            <MInput value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          </MField>
         </div>
-      </CenterDialog>
+      </MDialog>
 
       {/* ── Supprimer ── */}
-      <CenterDialog
+      <MDialog
         open={!!deleting}
         onClose={() => setDeleting(null)}
         title="Supprimer la contrepartie"
-        width={440}
         footer={
           <>
-            <PrimaryPill danger onClick={confirmDelete} loading={remove.isPending} className="flex-1">Supprimer</PrimaryPill>
-            <SoftPill onClick={() => setDeleting(null)} className="flex-1">Annuler</SoftPill>
+            <MButton variant="danger" onClick={confirmDelete} loading={remove.isPending} className="flex-1">Supprimer</MButton>
+            <MButton onClick={() => setDeleting(null)} className="flex-1">Annuler</MButton>
           </>
         }
       >
-        <p className={cn('text-[13px]', TEXT.body)}>
-          Supprimer <b className={TEXT.strong}>{deleting?.display_name}</b> ?
+        <p className={cn('text-[12.5px]', T.body)}>
+          Supprimer <b className={T.ink}>{deleting?.display_name}</b> ?
         </p>
-        <p className={cn('mt-2 text-[12px]', TEXT.muted)}>
+        <p className={cn('mt-2 text-[11.5px] leading-relaxed', T.muted)}>
           La suppression n'est possible que si aucune opération n'est rattachée à cette contrepartie. Si elle a déjà servi,
           utilisez plutôt <b>Archiver</b> : l'historique reste lisible et elle disparaît des listes de saisie.
         </p>
-      </CenterDialog>
-    </Card>
+      </MDialog>
+    </MCard>
   );
 }

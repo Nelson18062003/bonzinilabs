@@ -13,7 +13,7 @@
 import * as React from 'react';
 import { parseAmount } from '@/components/form/AmountField';
 import { cn } from '@/lib/utils';
-import { TEXT } from '@/desktop/designKit';
+import { M, T, NUM } from './marketKit';
 
 export function TreasuryMoneyInput({
   currency,
@@ -54,7 +54,8 @@ export function TreasuryMoneyInput({
   return (
     <div
       className={cn(
-        'flex h-9 items-center rounded-[10px] bg-[#F6F5FB] px-3 ring-1 ring-black/[0.06] transition focus-within:ring-2 focus-within:ring-[#6B5BD2] dark:bg-[#2A2836] dark:ring-white/[0.06] dark:focus-within:ring-[#A99BF0]',
+        'flex h-8 items-center rounded-[6px] border bg-white px-2.5 transition focus-within:ring-2 focus-within:ring-[#4F46E5] dark:bg-[#18181B] dark:focus-within:ring-[#818CF8]',
+        M.border,
         className,
       )}
     >
@@ -77,9 +78,9 @@ export function TreasuryMoneyInput({
           onValueChange(parseAmount(cleaned, isDecimal));
         }}
         placeholder={placeholder}
-        className={cn('min-w-0 flex-1 bg-transparent text-right text-[13px] font-bold tabular-nums outline-none placeholder:font-normal', TEXT.strong)}
+        className={cn('min-w-0 flex-1 bg-transparent text-right text-[12.5px] font-bold outline-none placeholder:font-normal', NUM, T.ink)}
       />
-      <span className={cn('ml-2 shrink-0 text-[11px] font-semibold', TEXT.muted)}>{currency}</span>
+      <span className={cn('ml-2 shrink-0 text-[10.5px] font-semibold', T.faint)}>{currency}</span>
     </div>
   );
 }

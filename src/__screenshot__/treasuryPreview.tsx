@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider attribute="class" defaultTheme={dark ? 'dark' : 'light'} forcedTheme={dark ? 'dark' : 'light'}>
       <MemoryRouter>
         {/* Même fond et même gouttière que la chrome admin desktop (px-8). */}
-        <div className={`min-h-screen ${SURFACE.canvas} px-8 py-6`}>
+        <div className={`min-h-screen ${SURFACE.canvas} px-8 py-7`}>
           <Screen />
         </div>
       </MemoryRouter>
