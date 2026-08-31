@@ -32,6 +32,7 @@ import {
   MCard,
   MCardHeader,
   MButton,
+  MIconButton,
   MTh,
   MTd,
   MDialog,
@@ -151,25 +152,9 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
                         <MTd align="right">
                           {canManage ? (
                             <span className="inline-flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => open('adjust', a)}
-                                title="Ajuster le solde"
-                                aria-label={`Ajuster ${a.label}`}
-                                className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}
-                              >
-                                <Wallet className="h-3 w-3" />
-                              </button>
+                              <MIconButton icon={Wallet} onClick={() => open('adjust', a)} label={`Ajuster ${a.label}`} />
                               {canInventory && (
-                                <button
-                                  type="button"
-                                  onClick={() => open('inventory', a)}
-                                  title="Inventorier"
-                                  aria-label={`Inventorier ${a.label}`}
-                                  className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}
-                                >
-                                  <ClipboardCheck className="h-3 w-3" />
-                                </button>
+                                <MIconButton icon={ClipboardCheck} onClick={() => open('inventory', a)} label={`Inventorier ${a.label}`} />
                               )}
                             </span>
                           ) : (

@@ -32,6 +32,7 @@ import {
   MChip,
   MSearch,
   MButton,
+  MIconButton,
   MTh,
   MTd,
   MTag,
@@ -194,15 +195,13 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
                   <MTd align="right">
                     {canManage ? (
                       <span className="inline-flex items-center gap-1">
-                        <button type="button" onClick={() => openEdit(c)} title="Modifier" aria-label={`Modifier ${c.display_name}`} className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}>
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                        <button type="button" onClick={() => toggleArchive(c)} title={c.is_active ? 'Archiver' : 'Réactiver'} aria-label={c.is_active ? `Archiver ${c.display_name}` : `Réactiver ${c.display_name}`} className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border', M.border, T.body)}>
-                          {c.is_active ? <Archive className="h-3 w-3" /> : <ArchiveRestore className="h-3 w-3" />}
-                        </button>
-                        <button type="button" onClick={() => setDeleting(c)} title="Supprimer" aria-label={`Supprimer ${c.display_name}`} className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border border-[#FECACA] text-[#B91C1C] dark:border-[#5B2121] dark:text-[#F87171]')}>
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        <MIconButton icon={Pencil} onClick={() => openEdit(c)} label={`Modifier ${c.display_name}`} />
+                        <MIconButton
+                          icon={c.is_active ? Archive : ArchiveRestore}
+                          onClick={() => toggleArchive(c)}
+                          label={c.is_active ? `Archiver ${c.display_name}` : `Réactiver ${c.display_name}`}
+                        />
+                        <MIconButton icon={Trash2} onClick={() => setDeleting(c)} label={`Supprimer ${c.display_name}`} danger />
                       </span>
                     ) : (
                       <span aria-hidden />

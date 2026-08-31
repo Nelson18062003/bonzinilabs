@@ -31,7 +31,7 @@ export function TreasurySelect({
       <SelectTrigger
         id={id}
         className={cn(
-          'h-8 rounded-[6px] border border-[#E4E4E7] bg-white px-2.5 text-[12.5px] font-medium ring-offset-0 focus:ring-2 focus:ring-[#4F46E5] data-[placeholder]:font-normal data-[placeholder]:text-[#A1A1AA] dark:border-[#27272A] dark:bg-[#18181B] dark:focus:ring-[#818CF8] [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-55',
+          'h-8 rounded-[6px] border-0 bg-[#FAFAFA] px-3 text-[12.5px] font-medium ring-offset-0 focus:ring-2 focus:ring-[#4F46E5] data-[placeholder]:font-normal data-[placeholder]:text-[#A1A1AA] dark:bg-[#212124] dark:focus:ring-[#818CF8] [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-55',
           className,
         )}
       >

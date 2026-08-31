@@ -54,8 +54,8 @@ export function TreasuryMoneyInput({
   return (
     <div
       className={cn(
-        'flex h-8 items-center rounded-[6px] border bg-white px-2.5 transition focus-within:ring-2 focus-within:ring-[#4F46E5] dark:bg-[#18181B] dark:focus-within:ring-[#818CF8]',
-        M.border,
+        'flex h-8 items-center rounded-[6px] px-3 transition focus-within:ring-2 focus-within:ring-[#4F46E5] dark:focus-within:ring-[#818CF8]',
+        M.inset,
         className,
       )}
     >

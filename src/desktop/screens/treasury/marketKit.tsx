@@ -81,6 +81,13 @@ export const M_PAGE = cn('font-ui -mx-8 -my-7 min-h-screen px-8 py-7', M.canvas)
 
 /* ── Boutons ─────────────────────────────────────────────────────── */
 
+/**
+ * Traitement « PLEIN » retenu sur planche : les contrôles existent par leur
+ * FOND, pas par une bordure. Une seule hauteur — 32px — sur toute la barre
+ * d'outils (le mélange 26/32 du premier jet violait 02-foundation.md §1.5).
+ */
+const FILL = 'bg-[#E4E4E7] dark:bg-[#2E2E33]';
+
 export function MButton({
   children,
   onClick,
@@ -108,14 +115,45 @@ export function MButton({
         'inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] px-3.5 text-[12.5px] font-semibold transition-colors',
         FOCUS,
         dead && 'cursor-not-allowed opacity-45',
-        variant === 'primary' && 'bg-[#18181B] text-white dark:bg-[#FAFAFA] dark:text-[#18181B]',
-        variant === 'secondary' && cn('border bg-white dark:bg-[#18181B]', M.border, T.ink),
-        variant === 'danger' && 'bg-[#B91C1C] text-white',
-        variant === 'ghost' && cn('bg-transparent', T.body),
+        variant === 'primary' && 'bg-[#18181B] text-white hover:bg-[#27272A] dark:bg-[#FAFAFA] dark:text-[#18181B] dark:hover:bg-[#E4E4E7]',
+        variant === 'secondary' && cn(FILL, T.ink, 'hover:bg-[#D4D4D8] dark:hover:bg-[#3A3A40]'),
+        variant === 'danger' && 'bg-[#B91C1C] text-white hover:bg-[#991B1B]',
+        variant === 'ghost' && cn('bg-transparent', T.body, 'hover:bg-[#E4E4E7] dark:hover:bg-[#2E2E33]'),
         className,
       )}
     >
       {children}
+    </button>
+  );
+}
+
+/** Action de ligne : 28px (24 était trop petit et fragile), plein, sans cadre. */
+export function MIconButton({
+  icon: Icon,
+  onClick,
+  label,
+  danger,
+}: {
+  icon: React.ElementType;
+  onClick?: () => void;
+  label: string;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={cn(
+        'inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-colors',
+        FOCUS,
+        danger
+          ? 'bg-[#FEE2E2] text-[#B91C1C] hover:bg-[#FECACA] dark:bg-[#3F1D1D] dark:text-[#F87171]'
+          : cn(M.inset, T.body, 'hover:bg-[#E4E4E7] dark:hover:bg-[#2E2E33]'),
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
     </button>
   );
 }
@@ -177,15 +215,26 @@ export function MChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex h-[26px] shrink-0 items-center gap-1.5 rounded-[4px] px-2.5 text-[11.5px] font-semibold transition-colors',
+        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-semibold transition-colors',
         FOCUS,
         active
           ? 'bg-[#18181B] text-white dark:bg-[#FAFAFA] dark:text-[#18181B]'
-          : cn('border bg-white dark:bg-[#18181B]', M.border, T.body),
+          : cn(FILL, T.body, 'hover:bg-[#D4D4D8] dark:hover:bg-[#3A3A40]'),
       )}
     >
       {label}
-      {count != null && <span className={cn(NUM, 'text-[10.5px] opacity-55')}>{count}</span>}
+      {/* Le compteur est un ÉLÉMENT (pastille), plus du texte grisé. */}
+      {count != null && (
+        <span
+          className={cn(
+            NUM,
+            'rounded-full px-1.5 py-px text-[10.5px] font-bold',
+            active ? 'bg-white/25 text-white dark:bg-black/15 dark:text-[#18181B]' : 'bg-black/10 text-[#09090B] dark:bg-white/15 dark:text-[#FAFAFA]',
+          )}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
@@ -226,7 +275,7 @@ export function MDropdown<V extends string>({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={cn('inline-flex h-[26px] items-center gap-1.5 rounded-[4px] border px-2.5 text-[11.5px] font-semibold', FOCUS, M.border, 'bg-white dark:bg-[#18181B]', T.body)}
+        className={cn('inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-semibold transition-colors', FOCUS, FILL, T.body, 'hover:bg-[#D4D4D8] dark:hover:bg-[#3A3A40]')}
       >
         {label && <span className={T.faint}>{label}</span>}
         {current?.label ?? ''}
@@ -270,16 +319,15 @@ export function MSearch({
 }) {
   return (
     <div className={cn('relative', className)}>
-      <Search className={cn('pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', T.faint)} />
+      <Search className={cn('pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2', T.faint)} />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'h-[26px] w-full rounded-[4px] border pl-7 pr-7 text-[11.5px]',
+          'h-8 w-full rounded-[6px] border-0 pl-8 pr-7 text-[12px]',
           FOCUS,
-          M.border,
-          'bg-white dark:bg-[#18181B]',
+          M.inset,
           T.ink,
           'placeholder:text-[#A1A1AA] dark:placeholder:text-[#6B6B73]',
         )}
@@ -372,14 +420,19 @@ export function MTd({
   );
 }
 
-/** Badge Achat / Vente : barre de couleur + mot, pas de pastille pleine. */
+/**
+ * Badge Achat / Vente — pastille PLEINE (traitement retenu). La barre
+ * latérale seule du premier jet pouvait se lire comme un défaut d'affichage.
+ */
 export function MTypeTag({ kind }: { kind: 'purchase' | 'sale' }) {
   const purchase = kind === 'purchase';
   return (
     <span
       className={cn(
-        'border-l-2 pl-1.5 text-[10px] font-bold uppercase tracking-[0.06em]',
-        purchase ? cn(TONE.purchase, TONE.purchaseBar) : cn(TONE.sale, TONE.saleBar),
+        'inline-flex h-[22px] items-center rounded-[4px] px-2 text-[10.5px] font-bold uppercase tracking-[0.05em]',
+        purchase
+          ? 'bg-[#EEF2FF] text-[#4F46E5] dark:bg-[#232046] dark:text-[#A5B4FC]'
+          : 'bg-[#FEF3C7] text-[#B45309] dark:bg-[#3A2C10] dark:text-[#FBBF24]',
       )}
     >
       {purchase ? 'Achat' : 'Vente'}
@@ -392,10 +445,10 @@ export function MTag({ children, tone = 'neutral' }: { children: React.ReactNode
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-[3px] px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em]',
+        'inline-flex h-[22px] items-center rounded-[4px] px-2 text-[10.5px] font-bold uppercase tracking-[0.05em]',
         tone === 'danger'
-          ? 'bg-[#FEF2F2] text-[#B91C1C] dark:bg-[#3F1D1D] dark:text-[#F87171]'
-          : cn(M.inset, T.muted),
+          ? 'bg-[#FEE2E2] text-[#B91C1C] dark:bg-[#3F1D1D] dark:text-[#F87171]'
+          : cn(FILL, T.body),
       )}
     >
       {children}
@@ -429,9 +482,9 @@ export function MPagination({
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
           aria-label="Page précédente"
-          className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border disabled:opacity-35', M.border, T.body)}
+          className={cn('flex h-7 w-7 items-center justify-center rounded-[6px] disabled:opacity-35', FILL, T.body)}
         >
-          <ChevronLeft className="h-3 w-3" />
+          <ChevronLeft className="h-3.5 w-3.5" />
         </button>
         <span className={cn('px-2 text-[11.5px]', NUM, T.body)}>
           {page} / {pages}
@@ -441,9 +494,9 @@ export function MPagination({
           disabled={page >= pages}
           onClick={() => onPage(page + 1)}
           aria-label="Page suivante"
-          className={cn('flex h-6 w-6 items-center justify-center rounded-[4px] border disabled:opacity-35', M.border, T.body)}
+          className={cn('flex h-7 w-7 items-center justify-center rounded-[6px] disabled:opacity-35', FILL, T.body)}
         >
-          <ChevronRight className="h-3 w-3" />
+          <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>
@@ -483,10 +536,9 @@ export function MField({
 }
 
 export const M_INPUT = cn(
-  'h-8 w-full rounded-[6px] border px-2.5 text-[12.5px]',
+  'h-8 w-full rounded-[6px] border-0 px-3 text-[12.5px]',
   FOCUS,
-  M.border,
-  'bg-white dark:bg-[#18181B]',
+  M.inset,
   T.ink,
   'placeholder:text-[#A1A1AA] dark:placeholder:text-[#6B6B73]',
 );
