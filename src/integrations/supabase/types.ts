@@ -2641,6 +2641,7 @@ export type Database = {
         Returns: Json
       }
       can_access_treasury: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_rates: { Args: { p_user_id: string }; Returns: boolean }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_payment: { Args: { p_payment_id: string }; Returns: Json }

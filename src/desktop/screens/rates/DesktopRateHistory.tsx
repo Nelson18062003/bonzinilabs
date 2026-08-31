@@ -67,7 +67,9 @@ export function DesktopRateHistory() {
     setEditing(rate);
   };
 
-  const editParsed = PAYMENT_METHODS.map((pm) => Math.round(parseDecimal(editValues[pm.key])));
+  // Colonnes NUMERIC(10,4) : on n'arrondit PAS — même précision que la
+  // création (une correction ne doit pas tronquer un taux décimal).
+  const editParsed = PAYMENT_METHODS.map((pm) => parseDecimal(editValues[pm.key]));
   const editValid = editParsed.every((v) => Number.isFinite(v) && v > 0);
 
   const saveEdit = () => {
@@ -79,10 +81,10 @@ export function DesktopRateHistory() {
     updateRate.mutate(
       {
         rateId: editing.id,
-        rate_cash: Math.round(parseDecimal(editValues.cash)),
-        rate_alipay: Math.round(parseDecimal(editValues.alipay)),
-        rate_wechat: Math.round(parseDecimal(editValues.wechat)),
-        rate_virement: Math.round(parseDecimal(editValues.virement)),
+        rate_cash: parseDecimal(editValues.cash),
+        rate_alipay: parseDecimal(editValues.alipay),
+        rate_wechat: parseDecimal(editValues.wechat),
+        rate_virement: parseDecimal(editValues.virement),
         effective_at: Number.isNaN(local.getTime()) ? undefined : local.toISOString(),
       },
       { onSuccess: () => setEditing(null) },
