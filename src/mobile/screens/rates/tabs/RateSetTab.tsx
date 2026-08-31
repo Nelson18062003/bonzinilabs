@@ -32,6 +32,14 @@ interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
 }
 
+// Bascule d'unité : R CNY / 1M XAF ⇔ (1 000 000 / R) XAF / 1 CNY.
+// La fonction est sa propre inverse.
+function invertRate(v: string): string {
+  const n = parseFloat(v);
+  if (!Number.isFinite(n) || n <= 0) return v;
+  return String(Math.round((1_000_000 / n) * 100) / 100);
+}
+
 export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [direction, setDirection] = useState<'xaf_cny' | 'cny_xaf'>('xaf_cny');
   const [rates, setRates] = useState<Record<string, string>>({
@@ -46,16 +54,44 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [customMin, setCustomMin] = useState(0);
 
   // Pré-remplit les champs quand le taux actif arrive APRÈS le montage
-  // (chargement réseau) — sans jamais écraser une saisie en cours.
+  // (chargement réseau) — sans jamais écraser une saisie en cours. Les
+  // valeurs stockées sont canoniques (CNY/1M) : converties si l'admin est
+  // déjà passé en « Pour 1 CNY ».
   useEffect(() => {
     if (!currentRate) return;
+    const fill = (v: number | undefined) => {
+      const s = v?.toString() || '';
+      return s && direction === 'cny_xaf' ? invertRate(s) : s;
+    };
     setRates((prev) => ({
-      cash: prev.cash || currentRate.rate_cash?.toString() || '',
-      alipay: prev.alipay || currentRate.rate_alipay?.toString() || '',
-      wechat: prev.wechat || currentRate.rate_wechat?.toString() || '',
-      virement: prev.virement || currentRate.rate_virement?.toString() || '',
+      cash: prev.cash || fill(currentRate.rate_cash),
+      alipay: prev.alipay || fill(currentRate.rate_alipay),
+      wechat: prev.wechat || fill(currentRate.rate_wechat),
+      virement: prev.virement || fill(currentRate.rate_virement),
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRate]);
+
+  // Basculer l'unité CONVERTIT les valeurs affichées — l'ancien segment ne
+  // changeait que le libellé, et publier en « Pour 1 CNY » enregistrait la
+  // valeur brute (ex. 86,7) comme taux CNY/1M : bug financier corrigé.
+  const switchDirection = (d: 'xaf_cny' | 'cny_xaf') => {
+    if (d === direction) return;
+    setRates((prev) => ({
+      cash: invertRate(prev.cash),
+      alipay: invertRate(prev.alipay),
+      wechat: invertRate(prev.wechat),
+      virement: invertRate(prev.virement),
+    }));
+    setDirection(d);
+  };
+
+  /** Valeur saisie → taux canonique CNY / 1M XAF, quel que soit l'affichage. */
+  const toCanonical = (v: string): number => {
+    const n = parseFloat(v) || 0;
+    if (n <= 0) return 0;
+    return direction === 'xaf_cny' ? n : Math.round((1_000_000 / n) * 100) / 100;
+  };
 
   const createRates = useCreateDailyRates();
   const { data: latestSuggestion } = useLatestSuggestion();
@@ -64,7 +100,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
   const handleUseSuggestion = () => {
     if (!latestSuggestion) return;
-    const v = latestSuggestion.suggested_rate.toString();
+    // La suggestion est canonique (CNY/1M) — convertie si l'affichage est en
+    // « Pour 1 CNY ».
+    const raw = latestSuggestion.suggested_rate.toString();
+    const v = direction === 'cny_xaf' ? invertRate(raw) : raw;
     setRates({ cash: v, alipay: v, wechat: v, virement: v });
   };
 
@@ -89,10 +128,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
     const suggestionId = latestSuggestion && !latestSuggestion.applied ? latestSuggestion.id : null;
     createRates.mutate(
       {
-        rate_cash: parseFloat(rates.cash) || 0,
-        rate_alipay: parseFloat(rates.alipay) || 0,
-        rate_wechat: parseFloat(rates.wechat) || 0,
-        rate_virement: parseFloat(rates.virement) || 0,
+        rate_cash: toCanonical(rates.cash),
+        rate_alipay: toCanonical(rates.alipay),
+        rate_wechat: toCanonical(rates.wechat),
+        rate_virement: toCanonical(rates.virement),
         effective_at: getEffectiveAt(),
       },
       {
@@ -241,7 +280,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
             return (
               <button
                 key={d.key}
-                onClick={() => setDirection(d.key)}
+                onClick={() => switchDirection(d.key)}
                 className={cn(
                   'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
                   active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
