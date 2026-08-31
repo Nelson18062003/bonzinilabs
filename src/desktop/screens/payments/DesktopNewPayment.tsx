@@ -21,6 +21,7 @@ import { getBaseRate } from '@/lib/rateCalculation';
 import { MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
+import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Info, Wallet, X } from 'lucide-react';
@@ -146,6 +147,18 @@ export function DesktopNewPayment() {
 
   const dbMode: BeneficiaryMode | null = mode ? (mode.id === 'virement' ? 'bank_transfer' : (mode.id as BeneficiaryMode)) : null;
   const { data: clientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id, dbMode ?? undefined);
+  // Tous modes confondus — numérote le nom par défaut « Supplier NN » sans
+  // dupliquer un numéro déjà pris sur un autre mode.
+  const { data: allClientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id);
+
+  // Sur « Nouveau » en Alipay/WeChat, le nom (requis) est prérempli
+  // « Supplier NN » — l'admin peut le remplacer librement.
+  const openBenefTab = (tab: 'existing' | 'new') => {
+    setBenefTab(tab);
+    if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !benef.name.trim()) {
+      setBenef((b) => ({ ...b, name: nextSupplierName(allClientBeneficiaries) }));
+    }
+  };
 
   const setQrFromFiles = useCallback((files: File[]) => {
     const file = files[0];
@@ -168,7 +181,11 @@ export function DesktopNewPayment() {
   const pickMode = (m: Mode) => {
     setMode(m);
     setSelectedBenef(null);
-    setBenef(BENEF0);
+    setBenef(
+      benefTab === 'new' && (m.id === 'alipay' || m.id === 'wechat')
+        ? { ...BENEF0, name: nextSupplierName(allClientBeneficiaries) }
+        : BENEF0,
+    );
     removeQr();
   };
 
@@ -563,7 +580,7 @@ export function DesktopNewPayment() {
                     <div>
                       <SecLabel
                         right={
-                          <button type="button" onClick={() => setBenefTab(benefTab === 'existing' ? 'new' : 'existing')} className="text-[12px] font-bold" style={{ color: VIOLET }}>
+                          <button type="button" onClick={() => openBenefTab(benefTab === 'existing' ? 'new' : 'existing')} className="text-[12px] font-bold" style={{ color: VIOLET }}>
                             {benefTab === 'existing' ? '+ Nouveau' : '← Carnet'}
                           </button>
                         }
@@ -580,7 +597,7 @@ export function DesktopNewPayment() {
                           ) : !clientBeneficiaries || clientBeneficiaries.length === 0 ? (
                             <div className="py-3">
                               <p className={cn('text-[12px]', TEXT.muted)}>Aucun bénéficiaire {mode.name} enregistré pour ce client.</p>
-                              <button type="button" onClick={() => setBenefTab('new')} className="mt-1 text-[12.5px] font-bold" style={{ color: VIOLET }}>
+                              <button type="button" onClick={() => openBenefTab('new')} className="mt-1 text-[12.5px] font-bold" style={{ color: VIOLET }}>
                                 + Créer un bénéficiaire
                               </button>
                             </div>

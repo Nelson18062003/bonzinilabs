@@ -29,6 +29,7 @@ import { getBaseRate } from '@/lib/rateCalculation';
 import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
+import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -206,6 +207,18 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     client?.user_id,
     dbMode ?? undefined,
   );
+  // Tous modes confondus — sert à numéroter le nom par défaut « Supplier NN »
+  // sans dupliquer un numéro déjà pris sur un autre mode.
+  const { data: allClientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id);
+
+  // Ouverture de l'onglet bénéficiaire : sur « Nouveau » en Alipay/WeChat,
+  // le nom (requis) est prérempli « Supplier NN » — l'admin peut le modifier.
+  function openBenefTab(tab: 'existing' | 'new') {
+    setBenefTab(tab);
+    if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !benef.name.trim()) {
+      setBenef((b) => ({ ...b, name: nextSupplierName(allClientBeneficiaries) }));
+    }
+  }
 
   // Succès
   const [done, setDone] = useState<{ paymentId: string; cny: number; xaf: number } | null>(null);
@@ -825,7 +838,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     return (
                       <button
                         key={tab}
-                        onClick={() => setBenefTab(tab)}
+                        onClick={() => openBenefTab(tab)}
                         className={cn(
                           'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
                           active ? 'text-white' : TEXT.muted,
@@ -848,7 +861,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                           Aucun bénéficiaire {mode?.name} enregistré pour ce client
                         </div>
                         <button
-                          onClick={() => setBenefTab('new')}
+                          onClick={() => openBenefTab('new')}
                           className="mt-2 text-[13px] font-bold"
                           style={{ color: VIOLET }}
                         >
