@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NORTON GAUSS BONZINI SARL — Company Profile</title>
+<style>
+  :root {
+    --violet: #7433ff;
+    --violet-deep: #1c0f45;
+    --violet-ink: #2a1b5e;
+    --amber: #ffa119;
+    --orange: #ff5b1a;
+    --ink: #221a3d;
+    --muted: #5a5470;
+    --zh: #4a4160;
+    --line: #e8e4f5;
+    --bg-soft: #f7f5fd;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Liberation Sans", "DejaVu Sans", "WenQuanYi Zen Hei", sans-serif;
+    color: var(--ink);
+    font-size: 10.2pt;
+    line-height: 1.5;
+  }
+  .zh { font-family: "WenQuanYi Zen Hei", sans-serif; color: var(--zh); }
+  .cover .zh, .stat .zh, .hero-band .zh { color: rgba(255,255,255,0.92); }
+  @page { size: A4; margin: 0; }
+  .page {
+    width: 210mm;
+    min-height: 296mm;
+    padding: 15mm 16mm 14mm;
+    break-after: page;
+    position: relative;
+    background: #ffffff;
+  }
+  .page:last-child { break-after: auto; }
+
+  /* ============ COVER ============ */
+  .cover {
+    background: linear-gradient(158deg, #150b38 0%, #241058 42%, #3b1a8f 78%, #5326c9 100%);
+    color: #fff;
+    padding: 0;
+    height: 296mm;
+    overflow: hidden;
+  }
+  .cover-inner { position: relative; z-index: 2; padding: 22mm 20mm; height: 100%; display: flex; flex-direction: column; }
+  .cover .orb1 { position: absolute; width: 120mm; height: 120mm; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,161,25,0.32), transparent 70%); top: -30mm; right: -35mm; }
+  .cover .orb2 { position: absolute; width: 100mm; height: 100mm; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,91,26,0.25), transparent 70%); bottom: 30mm; left: -30mm; }
+  .cover-badge {
+    display: inline-block; border: 1px solid rgba(255,255,255,0.35); border-radius: 30px;
+    padding: 2.2mm 6mm; font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: #ffd9a3;
+    align-self: flex-start;
+  }
+  .cover h1 { font-size: 30pt; line-height: 1.14; margin-top: 26mm; letter-spacing: 0.5px; }
+  .cover h1 .thin { font-weight: normal; opacity: 0.85; }
+  .cover .subtitle { margin-top: 7mm; font-size: 14.5pt; color: #ffc46b; font-weight: bold; }
+  .cover .subtitle-zh { margin-top: 2.5mm; font-size: 13pt; color: rgba(255,255,255,0.92); }
+  .cover .tagline { margin-top: 12mm; font-size: 11pt; color: rgba(255,255,255,0.85); max-width: 130mm; line-height: 1.65; }
+  .cover-pills { margin-top: 12mm; display: flex; gap: 4mm; }
+  .cover-pill { border-radius: 10px; padding: 4.5mm 6mm; font-size: 9.5pt; font-weight: bold; color: #fff; }
+  .cover-pill small { display: block; font-weight: normal; font-size: 8.5pt; opacity: 0.9; margin-top: 1mm; }
+  .cp-v { background: rgba(116,51,255,0.55); border: 1px solid rgba(163,120,255,0.7); }
+  .cp-a { background: rgba(255,161,25,0.28); border: 1px solid rgba(255,161,25,0.65); }
+  .cp-o { background: rgba(255,91,26,0.28); border: 1px solid rgba(255,91,26,0.65); }
+  .cover-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.25); padding-top: 6mm;
+    display: flex; justify-content: space-between; font-size: 9.5pt; color: rgba(255,255,255,0.85); }
+
+  /* ============ SHARED ============ */
+  .kicker { display: flex; align-items: center; gap: 4mm; margin-bottom: 6mm; }
+  .kicker .num {
+    width: 11mm; height: 11mm; border-radius: 4mm; color: #fff; font-weight: bold; font-size: 12pt;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .kicker h2 { font-size: 17pt; line-height: 1.2; }
+  .kicker h2 .zh-h { font-size: 12.5pt; font-weight: normal; color: var(--muted); margin-left: 3mm; }
+  .kicker .rule { flex: 1; height: 2px; border-radius: 2px; opacity: 0.35; }
+  .lead { font-size: 10.8pt; line-height: 1.6; margin-bottom: 3mm; }
+  .lead-zh { font-size: 10.2pt; line-height: 1.7; margin-bottom: 6mm; }
+  .pair { margin-bottom: 4.5mm; }
+  .pair .en { margin-bottom: 1.2mm; }
+  .pair .zh { font-size: 9.6pt; }
+
+  ul.duo { list-style: none; }
+  ul.duo li { padding-left: 7mm; position: relative; margin-bottom: 4mm; }
+  ul.duo li::before {
+    content: ""; position: absolute; left: 0; top: 2.1mm; width: 3.2mm; height: 3.2mm; border-radius: 1mm;
+  }
+  ul.duo li .en { display: block; font-weight: bold; }
+  ul.duo li .zh { display: block; font-size: 9.5pt; margin-top: 0.6mm; }
+  .accent-v li::before { background: var(--violet); }
+  .accent-a li::before { background: var(--amber); }
+  .accent-o li::before { background: var(--orange); }
+
+  .cardgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .card {
+    border: 1px solid var(--line); border-radius: 10px; padding: 5.5mm 6mm; background: #fff;
+    border-top-width: 3px;
+  }
+  .card h4 { font-size: 10.8pt; margin-bottom: 1.6mm; }
+  .card h4 .zh-h { font-weight: normal; color: var(--muted); font-size: 9.8pt; }
+  .card p { font-size: 9.3pt; color: var(--muted); }
+  .card p.zh { margin-top: 1.4mm; }
+
+  .statstrip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; margin: 7mm 0; }
+  .stat { border-radius: 10px; padding: 5mm 4mm; text-align: center; color: #fff; }
+  .stat .big { font-size: 17pt; font-weight: bold; line-height: 1.1; }
+  .stat .lbl { font-size: 8.6pt; margin-top: 1.4mm; opacity: 0.95; }
+  .st-v { background: linear-gradient(150deg, #6a2bf2, #4718b8); }
+  .st-a { background: linear-gradient(150deg, #ffa119, #f07c00); }
+  .st-o { background: linear-gradient(150deg, #ff5b1a, #e03d00); }
+  .st-d { background: linear-gradient(150deg, #2a1b5e, #1c0f45); }
+
+  .panel { border-radius: 10px; padding: 6mm 7mm; margin-top: 6mm; }
+  .panel h3 { font-size: 11.5pt; margin-bottom: 3mm; }
+  .p-soft { background: var(--bg-soft); border: 1px solid var(--line); }
+
+  .footer {
+    position: absolute; bottom: 7mm; left: 16mm; right: 16mm;
+    display: flex; justify-content: space-between; font-size: 8pt; color: #9a93b5;
+    border-top: 1px solid var(--line); padding-top: 2.5mm;
+  }
+  .steps { counter-reset: step; }
+  .steps li { list-style: none; position: relative; padding-left: 10mm; margin-bottom: 4mm; }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 0.4mm; width: 6.4mm; height: 6.4mm; border-radius: 50%;
+    color: #fff; font-weight: bold; font-size: 9pt; display: flex; align-items: center; justify-content: center;
+  }
+  .steps-a li::before { background: var(--amber); }
+  .steps-o li::before { background: var(--orange); }
+  .steps li .en { display: block; font-weight: bold; }
+  .steps li .zh { display: block; font-size: 9.5pt; margin-top: 0.5mm; }
+
+  .case {
+    border-left: 3.5px solid var(--violet); background: var(--bg-soft);
+    border-radius: 0 10px 10px 0; padding: 4mm 5.5mm; margin-bottom: 4mm;
+  }
+  .case h4 { font-size: 10.6pt; margin-bottom: 1.8mm; }
+  .case p { font-size: 9.4pt; color: var(--ink); }
+  .case p.zh { margin-top: 1.6mm; }
+  .case .tag { display: inline-block; font-size: 7.8pt; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 1px; color: #fff; border-radius: 20px; padding: 0.8mm 3.5mm; margin-bottom: 2mm; }
+
+  .valgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4.5mm; margin-top: 4mm; }
+  .val { border: 1px solid var(--line); border-radius: 10px; padding: 4.5mm 5mm; }
+  .val .dot { width: 4mm; height: 4mm; border-radius: 50%; margin-bottom: 2.5mm; }
+  .val h5 { font-size: 9.8pt; margin-bottom: 0.8mm; }
+  .val h5 .zh-h { font-weight: normal; color: var(--muted); }
+  .val p { font-size: 8.6pt; color: var(--muted); }
+
+  .hero-band {
+    border-radius: 12px; padding: 7mm 8mm; color: #fff; margin-bottom: 7mm;
+    background: linear-gradient(140deg, #241058, #4718b8);
+  }
+  .hero-band h3 { font-size: 13pt; margin-bottom: 2.5mm; }
+  .hero-band p { font-size: 10pt; opacity: 0.95; }
+  .hero-band p.zh { color: #e8dfff; margin-top: 2mm; }
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1 — COVER ================= -->
+<div class="page cover">
+  <div class="orb1"></div><div class="orb2"></div>
+  <div class="cover-inner">
+    <span class="cover-badge">Company Profile · 公司介绍 · 2026</span>
+    <h1>NORTON GAUSS<br>BONZINI <span class="thin">SARL</span></h1>
+    <div class="subtitle">Your trusted bridge between Africa &amp; China</div>
+    <div class="subtitle-zh zh">非洲与中国之间值得信赖的贸易桥梁</div>
+    <p class="tagline">
+      Sourcing, freight &amp; logistics, and international payments for trade between China and Africa —
+      legally established in Cameroon and in China.
+      <span class="zh" style="display:block; margin-top:3mm; color:rgba(255,255,255,0.85);">
+      专注中非贸易的采购、货运物流与国际支付服务 —— 在喀麦隆与中国均合法注册经营。</span>
+    </p>
+    <div class="cover-pills">
+      <div class="cover-pill cp-v">Sourcing<small class="zh">采购中心</small></div>
+      <div class="cover-pill cp-a">Freight &amp; Logistics<small class="zh">货运物流</small></div>
+      <div class="cover-pill cp-o">International Payments<small class="zh">国际支付</small></div>
+    </div>
+    <div class="cover-footer">
+      <span>Cameroon · Central Africa &nbsp;|&nbsp; Yiwu · Guangzhou, China</span>
+      <span class="zh">喀麦隆 · 中部非洲 ｜ 中国义乌 · 广州</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PAGE 2 — ABOUT ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--violet)">01</div>
+    <h2>Who We Are <span class="zh-h zh">关于我们</span></h2>
+    <div class="rule" style="background:var(--violet)"></div>
+  </div>
+
+  <p class="lead">
+    NORTON GAUSS BONZINI SARL is a Cameroonian international trade services group. Our core mission is to build
+    economic, human and cultural bridges between Africa and Asia — with a deep focus on the
+    <b>Cameroon–China trade corridor</b>. We do more than facilitate transactions: we connect markets and cultures,
+    combining African entrepreneurial energy with Chinese industrial ingenuity.
+  </p>
+  <p class="lead-zh zh">
+    诺顿·高斯·邦齐尼有限公司（NORTON GAUSS BONZINI SARL）是一家来自喀麦隆的国际贸易服务集团。我们的核心使命是在非洲与亚洲之间
+    搭建经济、人文与文化的桥梁，尤其深耕<b>喀麦隆—中国贸易走廊</b>。我们不只是促成交易，更连接市场与文化，
+    将非洲的创业活力与中国的产业实力结合起来。
+  </p>
+
+  <p class="lead">
+    We are <b>legally established on both sides of the corridor</b>: in Cameroon, where we serve importers across the
+    country and the wider Central African market, and in China, where our own registered company operates an
+    <b>office and warehouse in Yiwu (Zhejiang)</b>, supported by a partner warehouse network in <b>Guangzhou</b>.
+    For our clients, we act as their operations team in China: we find the right suppliers, secure and inspect the goods,
+    move them by sea or air, and settle payments — end to end.
+  </p>
+  <p class="lead-zh zh">
+    我们在贸易走廊的<b>两端均设有合法注册的公司实体</b>：在喀麦隆，我们服务全国及整个中部非洲市场的进口商；在中国，我们注册成立了自己的公司，
+    在<b>浙江义乌设有办公室和仓库</b>，并在<b>广州</b>拥有合作仓储网络。对客户而言，我们就是他们在中国的运营团队：
+    寻找合适的供应商、验货保障品质、通过海运或空运发货、并完成货款支付——提供端到端的一站式服务。
+  </p>
+
+  <div class="statstrip">
+    <div class="stat st-v"><div class="big">300+</div><div class="lbl">Active clients<br><span class="zh">活跃客户</span></div></div>
+    <div class="stat st-a"><div class="big">2</div><div class="lbl">Countries, legally registered<br><span class="zh">两国合法注册</span></div></div>
+    <div class="stat st-o"><div class="big">3</div><div class="lbl">Integrated service lines<br><span class="zh">三大核心业务</span></div></div>
+    <div class="stat st-d"><div class="big">≈5 min</div><div class="lbl">Supplier payment speed<br><span class="zh">供应商付款速度</span></div></div>
+  </div>
+
+  <div class="cardgrid">
+    <div class="card" style="border-top-color: var(--violet)">
+      <h4>Cameroon — Operations &amp; Distribution <span class="zh-h zh">喀麦隆 · 运营与配送</span></h4>
+      <p>Client service, local collections (bank &amp; mobile money), customs clearance in Douala, and pickup
+      points such as our Bonamoussadi depot — serving Douala, Yaoundé and beyond.</p>
+      <p class="zh">客户服务、本地收款（银行与移动支付）、杜阿拉清关，以及 Bonamoussadi 提货点等自有网点，
+      覆盖杜阿拉、雅温得及更多城市。</p>
+    </div>
+    <div class="card" style="border-top-color: var(--orange)">
+      <h4>China — Sourcing &amp; Export Base <span class="zh-h zh">中国 · 采购与出口基地</span></h4>
+      <p>Our registered Chinese company runs an office and warehouse in Yiwu, with a partner warehouse network
+      in Guangzhou — receiving, inspecting and consolidating goods for export.</p>
+      <p class="zh">我们在中国注册的公司在义乌设有办公室和仓库，并在广州拥有合作仓储网络——负责收货、验货、集货与出口。</p>
+    </div>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>02</span></div>
+</div>
+
+<!-- ================= PAGE 3 — SOURCING ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--violet)">02</div>
+    <h2>Bonzini Buy — Sourcing &amp; Procurement <span class="zh-h zh">采购中心</span></h2>
+    <div class="rule" style="background:var(--violet)"></div>
+  </div>
+
+  <p class="lead">
+    Many African buyers know exactly what they want to sell — but not how to find it in China. Bonzini Buy is our
+    <b>purchasing center</b>: we act as your buying representative in China, helping you find the best suppliers and the
+    best products at the best price, even if you have never set foot in China.
+  </p>
+  <p class="lead-zh zh">
+    许多非洲买家清楚自己想卖什么，却不知道如何在中国找到货源。Bonzini Buy 是我们的<b>采购中心</b>：
+    我们作为您在中国的采购代表，帮您以最优价格找到最好的供应商和最合适的产品——即使您从未来过中国。
+  </p>
+
+  <div class="cardgrid" style="margin-bottom:6mm">
+    <div class="card" style="border-top-color:var(--violet)">
+      <h4>Who it serves <span class="zh-h zh">服务对象</span></h4>
+      <p>Merchants unfamiliar with 1688, Taobao or Alibaba; buyers facing language and trust barriers with Chinese
+      suppliers; anyone who wants to minimize fraud and quality risks.</p>
+      <p class="zh">不熟悉 1688、淘宝或阿里巴巴的商户；因语言与信任障碍难以与中国供应商沟通的买家；以及希望规避欺诈和质量风险的所有客户。</p>
+    </div>
+    <div class="card" style="border-top-color:var(--violet)">
+      <h4>How it connects <span class="zh-h zh">业务衔接</span></h4>
+      <p>Once your order is produced and inspected, it flows directly into Bonzini Cargo for shipping, and Bonzini
+      Trading for supplier payment — one partner across the whole chain.</p>
+      <p class="zh">订单完成生产和验货后，直接衔接 Bonzini Cargo 发货运输，并由 Bonzini Trading 完成货款支付——全链条一个合作伙伴搞定。</p>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:3.5mm">What we do concretely <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">我们的具体服务</span></h3>
+  <ul class="duo accent-v">
+    <li><span class="en">Identify and vet the best suppliers against your specifications and budget</span>
+        <span class="zh">根据您的产品要求和预算，寻找并审核最合适的供应商</span></li>
+    <li><span class="en">Negotiate prices, terms and lead times directly in Chinese</span>
+        <span class="zh">用中文直接与供应商谈判价格、条款和交期</span></li>
+    <li><span class="en">Place orders on your behalf — always with your final approval</span>
+        <span class="zh">代您下单——每一步都以您的最终确认为准</span></li>
+    <li><span class="en">Check samples and control product quality before shipment, at our warehouse</span>
+        <span class="zh">在我们的仓库核对样品、发货前严格把控产品质量</span></li>
+    <li><span class="en">Manage the whole supply chain through to delivery, via Bonzini Cargo</span>
+        <span class="zh">通过 Bonzini Cargo 管理整条供应链，直至货物送达</span></li>
+  </ul>
+
+  <div class="panel p-soft">
+    <h3>Why it matters <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">价值所在</span></h3>
+    <div class="pair">
+      <p class="en">For customers who don't know China well, we remove the three biggest risks of sourcing:
+      wrong supplier, wrong quality, wrong price. You focus on selling — we handle China.</p>
+      <p class="zh zh">对于不熟悉中国市场的客户，我们消除采购中最大的三个风险：选错供应商、货不对板、价格虚高。
+      您专注销售，中国的事交给我们。</p>
+    </div>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>03</span></div>
+</div>
+
+<!-- ================= PAGE 4 — CARGO ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--amber)">03</div>
+    <h2>Bonzini Cargo — Freight &amp; Logistics <span class="zh-h zh">货运物流</span></h2>
+    <div class="rule" style="background:var(--amber)"></div>
+  </div>
+
+  <p class="lead">
+    Goods transportation is the <b>heart of our business</b>. Bonzini Cargo moves merchandise from China to Cameroon
+    by sea or by air — safely, with clear tracking and no stress. From a single parcel to industrial equipment and
+    full supply chains, we handle the entire import logistics chain.
+  </p>
+  <p class="lead-zh zh">
+    货物运输是我们的<b>核心业务</b>。Bonzini Cargo 通过海运或空运将货物从中国运往喀麦隆——安全可靠、全程可追踪、省心省力。
+    从单件包裹到工业设备和整条供应链，我们承接全流程进口物流。
+  </p>
+
+  <h3 style="margin-bottom:3.5mm">The journey of your goods <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">货物运输全流程</span></h3>
+  <ol class="steps steps-a">
+    <li><span class="en">Reception at our warehouse in Yiwu or our partner warehouse in Guangzhou after your purchase</span>
+        <span class="zh">您采购完成后，货物送达我们的义乌仓库或广州合作仓库</span></li>
+    <li><span class="en">Inspection, verification and consolidation (groupage) of your parcels</span>
+        <span class="zh">对货物进行检查、核对，并与其他客户货物拼箱集运</span></li>
+    <li><span class="en">Secure shipping by sea freight (economical) or air freight (fast) — your choice</span>
+        <span class="zh">安全发运：海运（经济实惠）或空运（快速高效），由您选择</span></li>
+    <li><span class="en">Regular tracking updates via WhatsApp, WeChat or our application</span>
+        <span class="zh">通过 WhatsApp、微信或我们的应用程序实时跟踪货物动态</span></li>
+    <li><span class="en">Customs clearance in Douala, handled by our team</span>
+        <span class="zh">由我们的团队在杜阿拉办理清关手续</span></li>
+    <li><span class="en">Delivery to one of our agencies or directly to your door</span>
+        <span class="zh">货物送达我们的网点自提，或直接配送上门</span></li>
+  </ol>
+
+  <div class="cardgrid" style="margin-top:5mm">
+    <div class="card" style="border-top-color:var(--amber)">
+      <h4>Cargo insurance <span class="zh-h zh">货运保险</span></h4>
+      <p>Optional insurance to protect sensitive or high-value shipments from warehouse to delivery.</p>
+      <p class="zh">可为贵重或敏感货物投保，从入仓到交付全程保障。</p>
+    </div>
+    <div class="card" style="border-top-color:var(--amber)">
+      <h4>For companies <span class="zh-h zh">企业客户</span></h4>
+      <p>Reliable, compliant import solutions for industrial equipment, stock and supply chains of structured
+      companies and SMEs.</p>
+      <p class="zh">为规范企业和中小企业的工业设备、库存备货及供应链提供可靠合规的进口方案。</p>
+    </div>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>04</span></div>
+</div>
+
+<!-- ================= PAGE 5 — PAYMENTS ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--orange)">04</div>
+    <h2>Bonzini Trading — International Payments <span class="zh-h zh">国际支付</span></h2>
+    <div class="rule" style="background:var(--orange)"></div>
+  </div>
+
+  <p class="lead">
+    Bonzini Trading is a reliable gateway between African local currencies — notably the <b>CFA Franc (XAF)</b> —
+    and Chinese payment channels: <b>Alipay, WeChat Pay and Chinese bank transfers</b>. Importers pay us locally;
+    we pay their suppliers in RMB, in minutes.
+  </p>
+  <p class="lead-zh zh">
+    Bonzini Trading 是非洲本地货币（尤其是<b>中非法郎 XAF</b>）与中国收款渠道之间的可靠桥梁，支持<b>支付宝、微信支付和中国银行转账</b>。
+    进口商在本地向我们付款，我们在几分钟内以人民币付给他们的供应商。
+  </p>
+
+  <h3 style="margin-bottom:3.5mm">How a payment works <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">付款流程</span></h3>
+  <ol class="steps steps-o">
+    <li><span class="en">The client contacts us with the supplier's invoice; we agree on the day's exchange rate</span>
+        <span class="zh">客户将供应商发票发给我们，双方确认当日汇率</span></li>
+    <li><span class="en">The client pays locally — bank deposit or mobile money (MTN MoMo, Orange Money…)</span>
+        <span class="zh">客户在本地付款——银行存款或移动支付（MTN MoMo、Orange Money 等）</span></li>
+    <li><span class="en">After verification, we pay the Chinese supplier immediately via Alipay, WeChat Pay or bank transfer</span>
+        <span class="zh">核实后，我们立即通过支付宝、微信支付或银行转账付款给中国供应商</span></li>
+    <li><span class="en">The client receives a PDF payment receipt to share with the supplier — often in under 5 minutes</span>
+        <span class="zh">客户收到 PDF 付款凭证，可直接转发给供应商——通常全程不超过 5 分钟</span></li>
+  </ol>
+
+  <div class="cardgrid" style="margin-top:5mm; margin-bottom:6mm">
+    <div class="card" style="border-top-color:var(--orange)">
+      <h4>Competitive &amp; transparent <span class="zh-h zh">汇率优、更透明</span></h4>
+      <p>Exchange rates better than banks and typical exchange bureaus, with total transparency on fees and rates.</p>
+      <p class="zh">汇率优于银行和一般兑换机构，费用与汇率完全公开透明。</p>
+    </div>
+    <div class="card" style="border-top-color:var(--orange)">
+      <h4>Personal follow-up <span class="zh-h zh">专人跟进</span></h4>
+      <p>A dedicated team follows every operation end to end, with years of experience in Africa–Asia financial flows.</p>
+      <p class="zh">专属团队全程跟进每笔业务，在非亚资金往来领域拥有多年经验。</p>
+    </div>
+  </div>
+
+  <div class="hero-band">
+    <h3>Also serving Chinese companies in Africa · <span class="zh" style="color:#fff">同样服务在非中资企业</span></h3>
+    <p>Chinese companies established in Africa face the reverse problem: moving money home. We manage their local
+    payment operations and settlements back to China — paying suppliers, partners or headquarters in RMB, quickly
+    and reliably, from African local currencies.</p>
+    <p class="zh">在非洲经营的中资企业面临相反的难题：资金如何顺畅回国。我们为其管理本地收付款业务及对华结算——
+    将非洲本地货币快速、可靠地兑付为人民币，支付给国内供应商、合作伙伴或总部。</p>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>05</span></div>
+</div>
+
+<!-- ================= PAGE 6 — CUSTOMERS ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--violet)">05</div>
+    <h2>Our Customers <span class="zh-h zh">我们的客户</span></h2>
+    <div class="rule" style="background:var(--violet)"></div>
+  </div>
+
+  <p class="lead">
+    We serve more than 300 active clients — from small traders to large wholesalers and structured companies —
+    across five main customer families.
+  </p>
+  <p class="lead-zh zh">
+    我们服务超过 300 家活跃客户——从小商户到大型批发商和规范企业——主要分为五大客户群体。
+  </p>
+
+  <div class="cardgrid" style="margin-top:2mm">
+    <div class="card" style="border-top-color:var(--violet)">
+      <h4>Merchants &amp; retailers <span class="zh-h zh">商户与零售商</span></h4>
+      <p>Traders who source regularly in China — fashion, electronics, accessories — restocking via 1688, Alibaba
+      or direct suppliers.</p>
+      <p class="zh">定期从中国进货的商户——服装、电子产品、配饰等——通过 1688、阿里巴巴或直接对接供应商补货。</p>
+    </div>
+    <div class="card" style="border-top-color:var(--amber)">
+      <h4>Entrepreneurs &amp; startups <span class="zh-h zh">创业者与初创企业</span></h4>
+      <p>Founders launching an import/export activity or building their own product brand with Chinese manufacturing.</p>
+      <p class="zh">开展进出口业务、或依托中国制造打造自有品牌的创业者。</p>
+    </div>
+    <div class="card" style="border-top-color:var(--orange)">
+      <h4>Established companies &amp; SMEs <span class="zh-h zh">成熟企业与中小企业</span></h4>
+      <p>Businesses outsourcing procurement, logistics and international payments for speed, security and compliance —
+      including industrial equipment imports.</p>
+      <p class="zh">将采购、物流和国际付款外包给我们的企业，追求高效、安全与合规——包括工业设备进口。</p>
+    </div>
+    <div class="card" style="border-top-color:var(--violet)">
+      <h4>Individuals <span class="zh-h zh">个人客户</span></h4>
+      <p>People making personal or professional payments to China, or receiving personal parcels and equipment
+      from China.</p>
+      <p class="zh">需要向中国进行个人或商务付款、或从中国接收个人包裹和设备的客户。</p>
+    </div>
+  </div>
+
+  <div class="panel" style="background:linear-gradient(140deg,#fff7ec,#fff1e8); border:1px solid #ffd9b8; margin-top:5.5mm">
+    <h3 style="color:#c2410c">Chinese companies established in Africa <span class="zh-h zh" style="font-weight:normal">在非洲的中资企业</span></h3>
+    <div class="pair" style="margin-bottom:0">
+      <p class="en">A fast-growing customer family: Chinese companies operating in Cameroon and across Africa.
+      We manage their payment flows to China — supplier payments, settlements to headquarters — and support them
+      with local logistics and market knowledge. We work on WeChat every day, and our team bridges both business cultures.</p>
+      <p class="zh zh" style="margin-top:2mm">这是增长最快的客户群体：在喀麦隆及整个非洲经营的中资企业。我们为其管理对华付款业务——
+      供应商货款、总部结算等——并提供本地物流支持与市场经验。我们每天都在微信上办公，团队深谙中非两种商业文化。</p>
+    </div>
+  </div>
+
+  <div class="panel p-soft" style="margin-top:5mm">
+    <div class="pair" style="margin-bottom:0">
+      <p class="en"><b>Geographic reach.</b> We started with Cameroon and Central Africa, and we are built to serve
+      importers and partners across the whole African continent.</p>
+      <p class="zh zh" style="margin-top:1.5mm"><b>服务范围：</b>我们从喀麦隆和中部非洲起步，业务体系可服务全非洲的进口商与合作伙伴。</p>
+    </div>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>06</span></div>
+</div>
+
+<!-- ================= PAGE 7 — CASE STUDIES ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--amber)">06</div>
+    <h2>Real Client Stories <span class="zh-h zh">真实客户案例</span></h2>
+    <div class="rule" style="background:var(--amber)"></div>
+  </div>
+
+  <div class="case" style="border-left-color:var(--orange)">
+    <span class="tag" style="background:var(--orange)">Payment · 支付</span>
+    <h4>A supplier paid in under 5 minutes <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">5 分钟内付清供应商货款</span></h4>
+    <p>Mr. Mballa, a trader in Douala, ordered 1,200 cartons of sports shoes from China against an invoice of
+    80,950 RMB. We agreed on the day's rate on WhatsApp; he paid in XAF by bank deposit or mobile money, and upon
+    verification we paid his supplier instantly by Alipay — under 5 minutes in total, with a PDF receipt he
+    forwarded to the supplier.</p>
+    <p class="zh">杜阿拉商人 Mballa 先生从中国订购 1,200 箱运动鞋，发票金额 80,950 元人民币。双方在 WhatsApp 上确认当日汇率后，
+    他以银行存款或移动支付方式付入中非法郎，我们核实到账后立即通过支付宝付款给供应商——全程不到 5 分钟，并提供可转发的 PDF 付款凭证。</p>
+  </div>
+
+  <div class="case" style="border-left-color:var(--amber)">
+    <span class="tag" style="background:var(--amber)">Logistics · 物流</span>
+    <h4>300 handbags, door to depot <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">300 个手袋，从工厂到提货点</span></h4>
+    <p>Josiane, a handbag seller in Yaoundé, ordered 300 pieces from her Chinese supplier and had them delivered to
+    our warehouse in China. We received and inspected the bags, consolidated them into a shared container, and
+    shipped them by sea. She followed every step through our tracking updates, then picked up her goods at our
+    Bonamoussadi depot.</p>
+    <p class="zh">雅温得的手袋卖家 Josiane 向中国供应商订购 300 个手袋，并送到我们在中国的仓库。我们收货验货后与其他客户货物拼入
+    整柜海运发出。她通过我们的跟踪通知掌握每个环节，最终在 Bonamoussadi 提货点顺利提货。</p>
+  </div>
+
+  <div class="case" style="border-left-color:var(--amber)">
+    <span class="tag" style="background:var(--amber)">Industrial · 工业设备</span>
+    <h4>Industrial printers from Shenzhen <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">深圳采购的工业打印机</span></h4>
+    <p>AFRIKA TECH, a company based in Yaoundé, imported industrial printers purchased in Shenzhen. Their supplier
+    delivered the machines to our warehouse; we handled consolidation, secure packing, sea shipment and customs
+    formalities in Douala. A few days later, the machines were delivered to their premises.</p>
+    <p class="zh">雅温得企业 AFRIKA TECH 从深圳采购工业打印机。供应商将设备送至我们的仓库，我们负责集货、加固包装、海运及杜阿拉的
+    清关手续。几天后，设备便送达他们的公司。</p>
+  </div>
+
+  <div class="case" style="border-left-color:var(--violet)">
+    <span class="tag" style="background:var(--violet)">Sourcing · 采购</span>
+    <h4>From idea to a watch brand <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">从创意到手表品牌</span></h4>
+    <p>Alain, an entrepreneur from Bafoussam, wanted to launch a custom watch brand. From his budget and quality
+    requirements, our China team shortlisted 4 reliable suppliers, negotiated prices, verified samples, placed the
+    order after his approval and delivered via Bonzini Cargo — watches ready to sell.</p>
+    <p class="zh">巴富萨姆创业者 Alain 想创立定制手表品牌。我们的中国团队根据其预算和质量要求筛选出 4 家可靠供应商，
+    代为议价、核验样品，经确认后下单，并由 Bonzini Cargo 送货——收到即可上架销售。</p>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>07</span></div>
+</div>
+
+<!-- ================= PAGE 8 — VISION / MISSION / VALUES ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--orange)">07</div>
+    <h2>Vision, Mission &amp; Values <span class="zh-h zh">愿景、使命与价值观</span></h2>
+    <div class="rule" style="background:var(--orange)"></div>
+  </div>
+
+  <div class="hero-band">
+    <h3>Our Vision · <span class="zh" style="color:#fff">我们的愿景</span></h3>
+    <p>We believe in an interconnected world where barriers between continents become opportunities. Our vision is to
+    connect Africa's emerging economies to Asia's industrial powerhouses — China first — through a fluid, secure and
+    modern ecosystem where every African merchant can access global resources and tools to grow their business.</p>
+    <p class="zh">我们相信一个互联互通的世界——大洲之间的壁垒终将化为机遇。我们的愿景是把非洲的新兴经济体与以中国为首的亚洲工业强国
+    连接起来，构建一个流畅、安全、现代的生态系统，让每一位非洲商人都能获取全球资源与工具，发展自己的事业。</p>
+  </div>
+
+  <div class="panel p-soft" style="margin-top:0; margin-bottom:6mm">
+    <h3>Our Mission · <span class="zh-h zh" style="font-weight:normal">我们的使命</span></h3>
+    <div class="pair" style="margin-bottom:0">
+      <p class="en">To make trade between Africa and China simple, fast and safe — acting as one trusted partner from
+      the first idea to final delivery: sourcing, quality control, freight, customs and payment.</p>
+      <p class="zh zh" style="margin-top:1.5mm">让中非贸易变得简单、快捷、安全——从最初的想法到最终交付，做客户唯一信赖的合作伙伴：
+      采购、质检、货运、清关与支付，一站到底。</p>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:1mm">Our Values <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">我们的价值观</span></h3>
+  <div class="valgrid">
+    <div class="val"><div class="dot" style="background:var(--violet)"></div>
+      <h5>Transparency <span class="zh-h zh">透明</span></h5>
+      <p>Clear, direct and honest communication with every client.<br><span class="zh">与每位客户清晰、坦诚地沟通。</span></p></div>
+    <div class="val"><div class="dot" style="background:var(--orange)"></div>
+      <h5>Integrity <span class="zh-h zh">诚信</span></h5>
+      <p>Every operation respects our ethical principles.<br><span class="zh">每一笔业务都恪守职业道德。</span></p></div>
+    <div class="val"><div class="dot" style="background:#22b573"></div>
+      <h5>Dynamism <span class="zh-h zh">活力</span></h5>
+      <p>Young, fast, responsive and always listening.<br><span class="zh">年轻、高效、响应迅速、善于倾听。</span></p></div>
+    <div class="val"><div class="dot" style="background:var(--amber)"></div>
+      <h5>Innovation <span class="zh-h zh">创新</span></h5>
+      <p>Technology that simplifies trade and improves client experience.<br><span class="zh">用技术简化贸易、提升客户体验。</span></p></div>
+    <div class="val"><div class="dot" style="background:#8b5cf6"></div>
+      <h5>Security <span class="zh-h zh">安全</span></h5>
+      <p>Every payment and every shipment 100% secured.<br><span class="zh">每笔付款、每票货物都 100% 有保障。</span></p></div>
+    <div class="val"><div class="dot" style="background:#e11d48"></div>
+      <h5>Connecting cultures <span class="zh-h zh">文化连接</span></h5>
+      <p>Bridging Africa and China with respect, efficiency and passion.<br><span class="zh">以尊重、高效与热情连接非洲与中国。</span></p></div>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile</span><span>08</span></div>
+</div>
+
+<!-- ================= PAGE 9 — AMBITIONS + CONTACT ================= -->
+<div class="page">
+  <div class="kicker">
+    <div class="num" style="background:var(--violet)">08</div>
+    <h2>Our Ambitions <span class="zh-h zh">我们的目标</span></h2>
+    <div class="rule" style="background:var(--violet)"></div>
+  </div>
+
+  <ul class="duo accent-v">
+    <li><span class="en">Become the leader in Africa–China payments in Central Africa</span>
+        <span class="zh">成为中部非洲中非支付领域的领导者</span></li>
+    <li><span class="en">Build the all-in-one platform for merchants and SMEs sourcing from Asia</span>
+        <span class="zh">打造服务于从亚洲采购的商户和中小企业的一站式平台</span></li>
+    <li><span class="en">Support clients from the idea to the delivery, simplifying every step</span>
+        <span class="zh">陪伴客户从想法到交付，简化每一个环节</span></li>
+    <li><span class="en">Expand our services to more African countries — Côte d'Ivoire, Senegal, DR Congo and beyond</span>
+        <span class="zh">将服务拓展至更多非洲国家——科特迪瓦、塞内加尔、刚果（金）等</span></li>
+    <li><span class="en">Make Bonzini a continental reference in international trade facilitation</span>
+        <span class="zh">让 Bonzini 成为国际贸易服务领域的非洲标杆</span></li>
+  </ul>
+
+  <div class="panel p-soft" style="margin-top:7mm">
+    <h3>Partnering with us <span class="zh-h zh" style="font-weight:normal;color:var(--muted)">与我们合作</span></h3>
+    <div class="pair" style="margin-bottom:0">
+      <p class="en">We actively collaborate with Chinese partners — platforms, suppliers, logistics operators and
+      marketing specialists — who want to reach African importers and businesses. With registered companies in both
+      Cameroon and China, an office and warehouse in Yiwu, and a team that works on WeChat daily, cooperation with
+      us is direct and simple.</p>
+      <p class="zh zh" style="margin-top:2mm">我们积极与中国合作伙伴开展合作——包括平台、供应商、物流服务商和营销服务机构——
+      共同触达非洲的进口商与企业。我们在喀麦隆和中国均有注册公司，在义乌设有办公室和仓库，团队每天使用微信办公，
+      与我们合作直接而简单。</p>
+    </div>
+  </div>
+
+  <div class="hero-band" style="margin-top:8mm; text-align:center; padding:10mm 8mm">
+    <h3 style="font-size:15pt">Let's build the Africa–China bridge together</h3>
+    <p class="zh" style="font-size:12pt; margin-top:2mm">让我们携手共建中非贸易之桥</p>
+    <p style="margin-top:5mm; font-size:9.5pt; opacity:0.9">Reach us any day on WeChat or WhatsApp — our team replies in English, French and Chinese.</p>
+    <p class="zh" style="font-size:9.5pt; margin-top:1mm">欢迎随时通过微信或 WhatsApp 联系我们——团队可用英文、法文和中文沟通。</p>
+  </div>
+
+  <div class="footer"><span>NORTON GAUSS BONZINI SARL — Company Profile · 公司介绍</span><span>09</span></div>
+</div>
+
+</body>
+</html>
