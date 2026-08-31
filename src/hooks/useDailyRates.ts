@@ -123,6 +123,66 @@ export function useCreateDailyRates() {
   });
 }
 
+/** Corriger une publication de taux (valeurs et/ou date d'effet). */
+export function useUpdateDailyRate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      rateId: string;
+      rate_cash: number;
+      rate_alipay: number;
+      rate_wechat: number;
+      rate_virement: number;
+      effective_at?: string;
+    }) => {
+      const { data, error } = await supabaseAdmin.rpc('update_daily_rate', {
+        p_rate_id: params.rateId,
+        p_rate_cash: params.rate_cash,
+        p_rate_alipay: params.rate_alipay,
+        p_rate_wechat: params.rate_wechat,
+        p_rate_virement: params.rate_virement,
+        p_effective_at: params.effective_at,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Erreur inconnue');
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
+      queryClient.invalidateQueries({ queryKey: ['client-rates'] });
+      toast.success('Publication corrigée');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la correction');
+    },
+  });
+}
+
+/** Supprimer une publication de taux (si active, la plus récente restante est réactivée). */
+export function useDeleteDailyRate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (rateId: string) => {
+      const { data, error } = await supabaseAdmin.rpc('delete_daily_rate', { p_rate_id: rateId });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Erreur inconnue');
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
+      queryClient.invalidateQueries({ queryKey: ['client-rates'] });
+      toast.success('Publication supprimée');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la suppression');
+    },
+  });
+}
+
 /** Fetch all rate adjustments (countries + tiers) */
 export function useRateAdjustments() {
   return useQuery({

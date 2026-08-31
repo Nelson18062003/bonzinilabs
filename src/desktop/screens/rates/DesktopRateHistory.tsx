@@ -1,18 +1,40 @@
 /**
  * Taux — carte C « Historique » (docs/admin-redesign/06).
  *
- * Sur mobile chaque jour est une ligne dépliable ; sur desktop c'est une
- * vraie table : une colonne par mode, la variation (cash vs précédent) en
- * pastille, la ligne active surlignée. Tout est lisible sans un seul clic.
+ * Table par mode + GESTION des publications : chaque ligne se corrige
+ * (valeurs, date d'effet) ou se supprime — une faute de frappe publiée
+ * n'est plus gravée. Actions au survol, gardées par canManageRates, via
+ * les RPC auditées update_daily_rate / delete_daily_rate. Supprimer la
+ * publication active réactive la plus récente restante (côté RPC).
  */
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Clock } from 'lucide-react';
+import { Clock, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TextField } from '@/components/form';
+import { BzDateTimeField } from '@/mobile/components/BzDateTimePicker';
+import { parseDecimal } from '@/lib/decimalInput';
 import { PAYMENT_METHODS } from '@/types/rates';
-import type { DailyRate } from '@/types/rates';
-import { useDailyRatesHistory } from '@/hooks/useDailyRates';
-import { SURFACE, TEXT, Card, CardHeader, Holder, ScreenLoader, ScreenError, StatusPill, Th, Td } from '@/desktop/designKit';
+import type { DailyRate, PaymentMethodKey } from '@/types/rates';
+import { useDailyRatesHistory, useUpdateDailyRate, useDeleteDailyRate } from '@/hooks/useDailyRates';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import {
+  SURFACE,
+  TEXT,
+  Card,
+  CardHeader,
+  Holder,
+  ScreenLoader,
+  ScreenError,
+  StatusPill,
+  Th,
+  Td,
+  CenterDialog,
+  PrimaryPill,
+  SoftPill,
+  FormField,
+} from '@/desktop/designKit';
 import { MethodLogo } from '@/mobile/screens/rates/components/MethodLogo';
 
 function variationOf(rate: DailyRate, previous?: DailyRate): number | null {
@@ -20,8 +42,59 @@ function variationOf(rate: DailyRate, previous?: DailyRate): number | null {
   return ((rate.rate_cash - previous.rate_cash) / previous.rate_cash) * 100;
 }
 
+const toLocalInput = (iso: string) => format(parseISO(iso), "yyyy-MM-dd'T'HH:mm");
+
 export function DesktopRateHistory() {
   const { data: history, isLoading, isError } = useDailyRatesHistory(20);
+  const { hasPermission } = useAdminAuth();
+  const canManage = hasPermission('canManageRates');
+  const updateRate = useUpdateDailyRate();
+  const deleteRate = useDeleteDailyRate();
+
+  const [editing, setEditing] = useState<DailyRate | null>(null);
+  const [editValues, setEditValues] = useState<Record<PaymentMethodKey, string>>({ cash: '', alipay: '', wechat: '', virement: '' });
+  const [editDate, setEditDate] = useState('');
+  const [deleting, setDeleting] = useState<DailyRate | null>(null);
+
+  const openEdit = (rate: DailyRate) => {
+    setEditValues({
+      cash: String(rate.rate_cash),
+      alipay: String(rate.rate_alipay),
+      wechat: String(rate.rate_wechat),
+      virement: String(rate.rate_virement),
+    });
+    setEditDate(toLocalInput(rate.effective_at));
+    setEditing(rate);
+  };
+
+  // Colonnes NUMERIC(10,4) : on n'arrondit PAS — même précision que la
+  // création (une correction ne doit pas tronquer un taux décimal).
+  const editParsed = PAYMENT_METHODS.map((pm) => parseDecimal(editValues[pm.key]));
+  const editValid = editParsed.every((v) => Number.isFinite(v) && v > 0);
+
+  const saveEdit = () => {
+    if (!editing || !editValid || updateRate.isPending) return;
+    const [d, t] = editDate.split('T');
+    const [y, mo, da] = (d ?? '').split('-').map(Number);
+    const [h, mi] = (t ?? '').split(':').map(Number);
+    const local = new Date(y || 0, (mo || 1) - 1, da || 1, h || 0, mi || 0, 0, 0);
+    updateRate.mutate(
+      {
+        rateId: editing.id,
+        rate_cash: parseDecimal(editValues.cash),
+        rate_alipay: parseDecimal(editValues.alipay),
+        rate_wechat: parseDecimal(editValues.wechat),
+        rate_virement: parseDecimal(editValues.virement),
+        effective_at: Number.isNaN(local.getTime()) ? undefined : local.toISOString(),
+      },
+      { onSuccess: () => setEditing(null) },
+    );
+  };
+
+  const confirmDelete = () => {
+    if (!deleting || deleteRate.isPending) return;
+    deleteRate.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+  };
 
   return (
     <Card className="flex min-h-0 flex-col overflow-hidden p-0">
@@ -49,7 +122,8 @@ export function DesktopRateHistory() {
                     </span>
                   </Th>
                 ))}
-                <Th last align="right">Δ cash</Th>
+                <Th align="right">Δ cash</Th>
+                <Th last className="w-[72px]" />
               </tr>
             </thead>
             <tbody>
@@ -57,7 +131,7 @@ export function DesktopRateHistory() {
                 const variation = variationOf(rate, history[i + 1]);
                 const up = variation !== null && variation >= 0;
                 return (
-                  <tr key={rate.id} className={cn(rate.is_active && 'bg-[#EDEAFA]/50 dark:bg-white/[0.05]')}>
+                  <tr key={rate.id} className={cn('group', rate.is_active && 'bg-[#EDEAFA]/50 dark:bg-white/[0.05]')}>
                     <Td first>
                       <div className="leading-[15px]">
                         <div className={cn('flex items-center gap-1.5 text-[12px] font-bold', TEXT.strong)}>
@@ -83,7 +157,7 @@ export function DesktopRateHistory() {
                         {(rate[`rate_${pm.key}` as keyof DailyRate] as number).toLocaleString('fr-FR')}
                       </Td>
                     ))}
-                    <Td last align="right">
+                    <Td align="right">
                       {variation !== null ? (
                         <span
                           className={cn(
@@ -100,6 +174,32 @@ export function DesktopRateHistory() {
                         <span className={cn('text-[11px]', TEXT.muted)}>—</span>
                       )}
                     </Td>
+                    <Td last align="right">
+                      {canManage ? (
+                        <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(rate)}
+                            aria-label="Corriger cette publication"
+                            title="Corriger"
+                            className={cn('flex h-7 w-7 items-center justify-center rounded-full', SURFACE.holder)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting(rate)}
+                            aria-label="Supprimer cette publication"
+                            title="Supprimer"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ) : (
+                        <span aria-hidden />
+                      )}
+                    </Td>
                   </tr>
                 );
               })}
@@ -107,6 +207,74 @@ export function DesktopRateHistory() {
           </table>
         </div>
       )}
+
+      {/* ── Corriger une publication ── */}
+      <CenterDialog
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        onConfirm={saveEdit}
+        title="Corriger la publication"
+        width={460}
+        footer={
+          <>
+            <PrimaryPill onClick={saveEdit} disabled={!editValid} loading={updateRate.isPending} className="flex-1">
+              Enregistrer
+            </PrimaryPill>
+            <SoftPill onClick={() => setEditing(null)} className="flex-1">
+              Annuler
+            </SoftPill>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            {PAYMENT_METHODS.map((pm) => (
+              <FormField key={pm.key} label={pm.label} htmlFor={`edit-rate-${pm.key}`}>
+                <TextField
+                  id={`edit-rate-${pm.key}`}
+                  variant="decimal"
+                  value={editValues[pm.key]}
+                  onChange={(e) => setEditValues((prev) => ({ ...prev, [pm.key]: e.target.value }))}
+                  controlClassName="text-right font-bold tabular-nums"
+                />
+              </FormField>
+            ))}
+          </div>
+          <FormField label="Date d'effet">
+            <BzDateTimeField value={editDate} onChange={setEditDate} accent="#8B5CF6" disableFuture={false} />
+          </FormField>
+          <p className={cn('text-[12px]', TEXT.muted)}>
+            La correction est journalisée (avant/après) dans le journal d'audit.
+          </p>
+        </div>
+      </CenterDialog>
+
+      {/* ── Supprimer une publication ── */}
+      <CenterDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Supprimer la publication"
+        width={440}
+        footer={
+          <>
+            <PrimaryPill danger onClick={confirmDelete} loading={deleteRate.isPending} className="flex-1">
+              Supprimer
+            </PrimaryPill>
+            <SoftPill onClick={() => setDeleting(null)} className="flex-1">
+              Annuler
+            </SoftPill>
+          </>
+        }
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>
+          Supprimer la publication du{' '}
+          <b className={TEXT.strong}>
+            {deleting ? format(parseISO(deleting.effective_at), "dd MMMM yyyy 'à' HH:mm", { locale: fr }) : ''}
+          </b>{' '}
+          ? {deleting?.is_active && 'Elle est ACTIVE : la publication la plus récente restante sera réactivée. '}
+          Cette action est journalisée et irréversible.
+        </p>
+      </CenterDialog>
     </Card>
   );
 }

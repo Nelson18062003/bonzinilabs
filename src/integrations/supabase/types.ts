@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -68,6 +68,115 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_conversations: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          rolling_summary: string | null
+          summary_through: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          rolling_summary?: string | null
+          summary_through?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          rolling_summary?: string | null
+          summary_through?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      assistant_messages: {
+        Row: {
+          content: Json
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content?: Json
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: Json
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_pending_actions: {
+        Row: {
+          admin_user_id: string
+          args: Json
+          conversation_id: string | null
+          created_at: string
+          id: string
+          resolved_at: string | null
+          result: Json | null
+          status: string
+          summary: Json
+          tool: string
+        }
+        Insert: {
+          admin_user_id: string
+          args?: Json
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          result?: Json | null
+          status?: string
+          summary?: Json
+          tool: string
+        }
+        Update: {
+          admin_user_id?: string
+          args?: Json
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          result?: Json | null
+          status?: string
+          summary?: Json
+          tool?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_pending_actions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beneficiaries: {
         Row: {
           alias: string
@@ -92,7 +201,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          alias?: string
+          alias: string
           bank_account?: string | null
           bank_extra?: string | null
           bank_name?: string | null
@@ -155,6 +264,324 @@ export type Database = {
         }
         Relationships: []
       }
+      briefs_log: {
+        Row: {
+          brief_type: string
+          id: string
+          message_text: string
+          payload: Json
+          sent_at: string
+          telegram_error: string | null
+          telegram_sent: boolean
+        }
+        Insert: {
+          brief_type: string
+          id?: string
+          message_text: string
+          payload: Json
+          sent_at?: string
+          telegram_error?: string | null
+          telegram_sent?: boolean
+        }
+        Update: {
+          brief_type?: string
+          id?: string
+          message_text?: string
+          payload?: Json
+          sent_at?: string
+          telegram_error?: string | null
+          telegram_sent?: boolean
+        }
+        Relationships: []
+      }
+      chat_assignment_events: {
+        Row: {
+          changed_by_admin_id: string | null
+          conversation_id: string
+          created_at: string
+          event_type: string
+          id: string
+          new_admin_id: string | null
+          previous_admin_id: string | null
+        }
+        Insert: {
+          changed_by_admin_id?: string | null
+          conversation_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          new_admin_id?: string | null
+          previous_admin_id?: string | null
+        }
+        Update: {
+          changed_by_admin_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          new_admin_id?: string | null
+          previous_admin_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_assignment_events_changed_by_admin_id_fkey"
+            columns: ["changed_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_assignment_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_assignment_events_new_admin_id_fkey"
+            columns: ["new_admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_assignment_events_previous_admin_id_fkey"
+            columns: ["previous_admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_canned_responses: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_canned_responses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_client_quick_replies: {
+        Row: {
+          active: boolean
+          content: string
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          content: string
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          assigned_admin_id: string | null
+          client_id: string
+          created_at: string
+          id: string
+          last_admin_message_at: string | null
+          last_client_message_at: string | null
+          last_message_at: string | null
+          status: string
+          subject: string | null
+          unread_count_admin: number
+          unread_count_client: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          last_admin_message_at?: string | null
+          last_client_message_at?: string | null
+          last_message_at?: string | null
+          status?: string
+          subject?: string | null
+          unread_count_admin?: number
+          unread_count_client?: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          last_admin_message_at?: string | null
+          last_client_message_at?: string | null
+          last_message_at?: string | null
+          status?: string
+          subject?: string | null
+          unread_count_admin?: number
+          unread_count_client?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          sender_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          sender_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          sender_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          media_duration_seconds: number | null
+          media_filename: string | null
+          media_size_bytes: number | null
+          media_type: string | null
+          media_url: string | null
+          media_waveform_peaks: number[] | null
+          read_at: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          media_duration_seconds?: number | null
+          media_filename?: string | null
+          media_size_bytes?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          media_waveform_peaks?: number[] | null
+          read_at?: string | null
+          reply_to_message_id?: string | null
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          media_duration_seconds?: number | null
+          media_filename?: string | null
+          media_size_bytes?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          media_waveform_peaks?: number[] | null
+          read_at?: string | null
+          reply_to_message_id?: string | null
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           activity_sector: string | null
@@ -173,6 +600,11 @@ export type Database = {
           neighborhood: string | null
           notes: string | null
           phone: string | null
+          phone_country: string | null
+          phone_e164: string | null
+          phone_verified_at: string | null
+          preferred_locale: string | null
+          sms_marketing_opt_in: boolean
           status: string | null
           updated_at: string
           user_id: string
@@ -199,6 +631,11 @@ export type Database = {
           neighborhood?: string | null
           notes?: string | null
           phone?: string | null
+          phone_country?: string | null
+          phone_e164?: string | null
+          phone_verified_at?: string | null
+          preferred_locale?: string | null
+          sms_marketing_opt_in?: boolean
           status?: string | null
           updated_at?: string
           user_id: string
@@ -225,6 +662,11 @@ export type Database = {
           neighborhood?: string | null
           notes?: string | null
           phone?: string | null
+          phone_country?: string | null
+          phone_e164?: string | null
+          phone_verified_at?: string | null
+          preferred_locale?: string | null
+          sms_marketing_opt_in?: boolean
           status?: string | null
           updated_at?: string
           user_id?: string
@@ -423,30 +865,105 @@ export type Database = {
         }
         Relationships: []
       }
-      exchange_rates: {
+      email_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          delivery_status: string | null
+          entity_id: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          max_attempts: number
+          next_attempt_at: string
+          payload: Json
+          recipient_email: string | null
+          recipient_user_id: string | null
+          resend_message_id: string | null
+          sent_at: string | null
+          status: string
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          delivery_status?: string | null
+          entity_id?: string | null
+          event_type: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          payload?: Json
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          delivery_status?: string | null
+          entity_id?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          payload?: Json
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template?: string
+        }
+        Relationships: []
+      }
+      email_suppressions: {
         Row: {
           created_at: string
-          created_by: string | null
-          effective_at: string | null
-          effective_date: string
-          id: string
-          rate_xaf_to_rmb: number
+          email: string
+          reason: string
+          source: string | null
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
-          effective_at?: string | null
-          effective_date: string
-          id?: string
-          rate_xaf_to_rmb: number
+          email: string
+          reason: string
+          source?: string | null
         }
         Update: {
           created_at?: string
-          created_by?: string | null
-          effective_at?: string | null
-          effective_date?: string
-          id?: string
-          rate_xaf_to_rmb?: number
+          email?: string
+          reason?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      email_template_map: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          notification_type: string
+          template: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          notification_type: string
+          template: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          notification_type?: string
+          template?: string
         }
         Relationships: []
       }
@@ -505,6 +1022,117 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      macro_snapshots: {
+        Row: {
+          btc_usd: number | null
+          captured_at: string
+          cny_usd: number | null
+          dxy: number | null
+          errors: Json | null
+          eth_usd: number | null
+          eur_usd: number | null
+          expert_mentions: Json | null
+          id: number
+          news_by_source: Json | null
+          news_headlines: Json | null
+          oil_brent: number | null
+          oil_wti: number | null
+          trump_posts_recent: Json | null
+          xaf_per_eur: number | null
+        }
+        Insert: {
+          btc_usd?: number | null
+          captured_at?: string
+          cny_usd?: number | null
+          dxy?: number | null
+          errors?: Json | null
+          eth_usd?: number | null
+          eur_usd?: number | null
+          expert_mentions?: Json | null
+          id?: never
+          news_by_source?: Json | null
+          news_headlines?: Json | null
+          oil_brent?: number | null
+          oil_wti?: number | null
+          trump_posts_recent?: Json | null
+          xaf_per_eur?: number | null
+        }
+        Update: {
+          btc_usd?: number | null
+          captured_at?: string
+          cny_usd?: number | null
+          dxy?: number | null
+          errors?: Json | null
+          eth_usd?: number | null
+          eur_usd?: number | null
+          expert_mentions?: Json | null
+          id?: never
+          news_by_source?: Json | null
+          news_headlines?: Json | null
+          oil_brent?: number | null
+          oil_wti?: number | null
+          trump_posts_recent?: Json | null
+          xaf_per_eur?: number | null
+        }
+        Relationships: []
+      }
+      mola_memory: {
+        Row: {
+          admin_user_id: string | null
+          content: string
+          created_at: string
+          embedding: string | null
+          expires_at: string | null
+          id: string
+          kind: string
+          scope: string | null
+          source: string | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          content: string
+          created_at?: string
+          embedding?: string | null
+          expires_at?: string | null
+          id?: string
+          kind: string
+          scope?: string | null
+          source?: string | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          scope?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
+      mola_user_memory: {
+        Row: {
+          admin_user_id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          admin_user_id: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          admin_user_id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -795,20 +1423,59 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "payments_beneficiary_id_fkey"
-            columns: ["beneficiary_id"]
-            isOneToOne: false
-            referencedRelation: "beneficiaries"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "payments_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "payment_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payments_beneficiary_id_fkey"
+            columns: ["beneficiary_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaries"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      phone_verifications: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          max_attempts: number
+          phone_country: string | null
+          phone_e164: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          max_attempts?: number
+          phone_country?: string | null
+          phone_e164: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          max_attempts?: number
+          phone_country?: string | null
+          phone_e164?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       rate_adjustments: {
         Row: {
@@ -845,6 +1512,65 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      rate_predictions: {
+        Row: {
+          action_recommended: string | null
+          actual_rate: number | null
+          based_on_rate_id: string | null
+          confidence: number | null
+          created_at: string
+          current_rate: number
+          direction: string | null
+          error_abs: number | null
+          id: string
+          key_drivers: Json | null
+          predicted_rate: number
+          reasoning: string | null
+          scenarios: Json | null
+          was_correct_direction: boolean | null
+        }
+        Insert: {
+          action_recommended?: string | null
+          actual_rate?: number | null
+          based_on_rate_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          current_rate: number
+          direction?: string | null
+          error_abs?: number | null
+          id?: string
+          key_drivers?: Json | null
+          predicted_rate: number
+          reasoning?: string | null
+          scenarios?: Json | null
+          was_correct_direction?: boolean | null
+        }
+        Update: {
+          action_recommended?: string | null
+          actual_rate?: number | null
+          based_on_rate_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          current_rate?: number
+          direction?: string | null
+          error_abs?: number | null
+          id?: string
+          key_drivers?: Json | null
+          predicted_rate?: number
+          reasoning?: string | null
+          scenarios?: Json | null
+          was_correct_direction?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_predictions_based_on_rate_id_fkey"
+            columns: ["based_on_rate_id"]
+            isOneToOne: false
+            referencedRelation: "rate_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_snapshots: {
         Row: {
@@ -891,6 +1617,218 @@ export type Database = {
           usdt_per_1m_xaf?: number
           xaf_ask?: number
           xaf_merchants_count?: number
+        }
+        Relationships: []
+      }
+      rate_suggestions: {
+        Row: {
+          applied: boolean
+          applied_at: string | null
+          applied_by: string | null
+          applied_rate_id: string | null
+          chn_orders: Json
+          chn_rate_avg: number
+          cmr_margin_xaf: number
+          cmr_orders: Json
+          cmr_rate_max: number
+          computed_at: string
+          id: string
+          method: string
+          suggested_rate: number
+        }
+        Insert: {
+          applied?: boolean
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_rate_id?: string | null
+          chn_orders: Json
+          chn_rate_avg: number
+          cmr_margin_xaf: number
+          cmr_orders: Json
+          cmr_rate_max: number
+          computed_at?: string
+          id?: string
+          method?: string
+          suggested_rate: number
+        }
+        Update: {
+          applied?: boolean
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_rate_id?: string | null
+          chn_orders?: Json
+          chn_rate_avg?: number
+          cmr_margin_xaf?: number
+          cmr_orders?: Json
+          cmr_rate_max?: number
+          computed_at?: string
+          id?: string
+          method?: string
+          suggested_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_suggestions_applied_rate_id_fkey"
+            columns: ["applied_rate_id"]
+            isOneToOne: false
+            referencedRelation: "daily_rates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_outbox: {
+        Row: {
+          attempts: number
+          category: string
+          channel: string
+          created_at: string
+          delivery_status: string | null
+          entity_id: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locale: string
+          max_attempts: number
+          next_attempt_at: string
+          payload: Json
+          recipient_country: string | null
+          recipient_phone: string | null
+          recipient_user_id: string | null
+          recipient_verified: boolean | null
+          segments: number | null
+          sender_used: string | null
+          sent_at: string | null
+          status: string
+          telnyx_message_id: string | null
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          category?: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string | null
+          entity_id?: string | null
+          event_type: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          locale?: string
+          max_attempts?: number
+          next_attempt_at?: string
+          payload?: Json
+          recipient_country?: string | null
+          recipient_phone?: string | null
+          recipient_user_id?: string | null
+          recipient_verified?: boolean | null
+          segments?: number | null
+          sender_used?: string | null
+          sent_at?: string | null
+          status?: string
+          telnyx_message_id?: string | null
+          template: string
+        }
+        Update: {
+          attempts?: number
+          category?: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string | null
+          entity_id?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          locale?: string
+          max_attempts?: number
+          next_attempt_at?: string
+          payload?: Json
+          recipient_country?: string | null
+          recipient_phone?: string | null
+          recipient_user_id?: string | null
+          recipient_verified?: boolean | null
+          segments?: number | null
+          sender_used?: string | null
+          sent_at?: string | null
+          status?: string
+          telnyx_message_id?: string | null
+          template?: string
+        }
+        Relationships: []
+      }
+      sms_sender_routes: {
+        Row: {
+          country_iso: string
+          note: string | null
+          registered: boolean
+          sender_id: string | null
+          sender_type: string
+          updated_at: string
+        }
+        Insert: {
+          country_iso: string
+          note?: string | null
+          registered?: boolean
+          sender_id?: string | null
+          sender_type?: string
+          updated_at?: string
+        }
+        Update: {
+          country_iso?: string
+          note?: string | null
+          registered?: boolean
+          sender_id?: string | null
+          sender_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sms_suppressions: {
+        Row: {
+          created_at: string
+          phone_e164: string
+          reason: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          phone_e164: string
+          reason: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          phone_e164?: string
+          reason?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      sms_template_map: {
+        Row: {
+          category: string
+          created_at: string
+          enabled: boolean
+          notification_type: string
+          requires_verified_phone: boolean
+          template: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          notification_type: string
+          requires_verified_phone?: boolean
+          template: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          notification_type?: string
+          requires_verified_phone?: boolean
+          template?: string
         }
         Relationships: []
       }
@@ -941,6 +1879,8 @@ export type Database = {
           legal_name: string | null
           notes: string | null
           phone: string | null
+          settlement_rate: number | null
+          settlement_rate_updated_at: string | null
           short_id: string
           type: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at: string
@@ -956,7 +1896,9 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
-          short_id?: string
+          settlement_rate?: number | null
+          settlement_rate_updated_at?: string | null
+          short_id: string
           type: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at?: string
           wechat_id?: string | null
@@ -971,6 +1913,8 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          settlement_rate?: number | null
+          settlement_rate_updated_at?: string | null
           short_id?: string
           type?: Database["public"]["Enums"]["treasury_counterparty_type"]
           updated_at?: string
@@ -988,7 +1932,7 @@ export type Database = {
           id: string
           snapshot_at: string
           theoretical_balance: number
-          variance: number
+          variance: number | null
           variance_reason: string | null
         }
         Insert: {
@@ -1000,6 +1944,7 @@ export type Database = {
           id?: string
           snapshot_at: string
           theoretical_balance: number
+          variance?: number | null
           variance_reason?: string | null
         }
         Update: {
@@ -1011,14 +1956,15 @@ export type Database = {
           id?: string
           snapshot_at?: string
           theoretical_balance?: number
+          variance?: number | null
           variance_reason?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "treasury_inventory_snapshots_account_id_fkey"
-            columns: ["account_id"]
+            foreignKeyName: "inventory_adjustment_entry_fk"
+            columns: ["adjustment_entry_id"]
             isOneToOne: false
-            referencedRelation: "treasury_accounts"
+            referencedRelation: "treasury_ledger_entries"
             referencedColumns: ["id"]
           },
           {
@@ -1029,10 +1975,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "inventory_adjustment_entry_fk"
-            columns: ["adjustment_entry_id"]
+            foreignKeyName: "treasury_inventory_snapshots_account_id_fkey"
+            columns: ["account_id"]
             isOneToOne: false
-            referencedRelation: "treasury_ledger_entries"
+            referencedRelation: "treasury_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -1085,14 +2031,14 @@ export type Database = {
             foreignKeyName: "treasury_ledger_entries_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
-            referencedRelation: "treasury_accounts"
+            referencedRelation: "treasury_account_balances"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "treasury_ledger_entries_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
-            referencedRelation: "treasury_account_balances"
+            referencedRelation: "treasury_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -1104,6 +2050,36 @@ export type Database = {
           },
         ]
       }
+      trump_posts: {
+        Row: {
+          content: string
+          external_id: string | null
+          fetched_at: string
+          id: number
+          is_iran_related: boolean
+          posted_at: string
+          raw_link: string | null
+        }
+        Insert: {
+          content: string
+          external_id?: string | null
+          fetched_at?: string
+          id?: never
+          is_iran_related?: boolean
+          posted_at: string
+          raw_link?: string | null
+        }
+        Update: {
+          content?: string
+          external_id?: string | null
+          fetched_at?: string
+          id?: never
+          is_iran_related?: boolean
+          posted_at?: string
+          raw_link?: string | null
+        }
+        Relationships: []
+      }
       usdt_purchases: {
         Row: {
           channel: Database["public"]["Enums"]["treasury_channel_xaf"] | null
@@ -1111,7 +2087,7 @@ export type Database = {
           created_by: string
           external_ref: string | null
           id: string
-          implicit_rate: number
+          implicit_rate: number | null
           notes: string | null
           occurred_at: string
           supplier_id: string
@@ -1129,6 +2105,7 @@ export type Database = {
           created_by: string
           external_ref?: string | null
           id?: string
+          implicit_rate?: number | null
           notes?: string | null
           occurred_at: string
           supplier_id: string
@@ -1146,6 +2123,7 @@ export type Database = {
           created_by?: string
           external_ref?: string | null
           id?: string
+          implicit_rate?: number | null
           notes?: string | null
           occurred_at?: string
           supplier_id?: string
@@ -1166,10 +2144,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "usdt_purchases_xaf_account_id_fkey"
-            columns: ["xaf_account_id"]
+            foreignKeyName: "usdt_purchases_void_contra_entry_fk"
+            columns: ["void_contra_entry_id"]
             isOneToOne: false
-            referencedRelation: "treasury_accounts"
+            referencedRelation: "treasury_ledger_entries"
             referencedColumns: ["id"]
           },
           {
@@ -1180,10 +2158,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "usdt_purchases_void_contra_entry_fk"
-            columns: ["void_contra_entry_id"]
+            foreignKeyName: "usdt_purchases_xaf_account_id_fkey"
+            columns: ["xaf_account_id"]
             isOneToOne: false
-            referencedRelation: "treasury_ledger_entries"
+            referencedRelation: "treasury_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -1197,9 +2175,10 @@ export type Database = {
           created_by: string
           external_ref: string | null
           id: string
-          implicit_rate: number
+          implicit_rate: number | null
           notes: string | null
           occurred_at: string
+          payment_id: string | null
           usdt_amount: number
           void_contra_entry_id: string | null
           void_reason: string | null
@@ -1215,8 +2194,10 @@ export type Database = {
           created_by: string
           external_ref?: string | null
           id?: string
+          implicit_rate?: number | null
           notes?: string | null
           occurred_at: string
+          payment_id?: string | null
           usdt_amount: number
           void_contra_entry_id?: string | null
           void_reason?: string | null
@@ -1232,8 +2213,10 @@ export type Database = {
           created_by?: string
           external_ref?: string | null
           id?: string
+          implicit_rate?: number | null
           notes?: string | null
           occurred_at?: string
+          payment_id?: string | null
           usdt_amount?: number
           void_contra_entry_id?: string | null
           void_reason?: string | null
@@ -1253,14 +2236,21 @@ export type Database = {
             foreignKeyName: "usdt_sales_cny_account_id_fkey"
             columns: ["cny_account_id"]
             isOneToOne: false
-            referencedRelation: "treasury_accounts"
+            referencedRelation: "treasury_account_balances"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "usdt_sales_cny_account_id_fkey"
             columns: ["cny_account_id"]
             isOneToOne: false
-            referencedRelation: "treasury_account_balances"
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usdt_sales_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {
@@ -1274,6 +2264,7 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           email: string | null
           first_name: string | null
@@ -1285,6 +2276,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
@@ -1296,6 +2288,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
@@ -1386,222 +2379,36 @@ export type Database = {
         }
         Relationships: []
       }
-      rate_suggestions: {
+      webauthn_challenges: {
         Row: {
-          applied: boolean
-          applied_at: string | null
-          applied_by: string | null
-          applied_rate_id: string | null
-          chn_orders: Json
-          chn_rate_avg: number
-          cmr_margin_xaf: number
-          cmr_orders: Json
-          cmr_rate_max: number
-          computed_at: string
-          id: string
-          method: string
-          suggested_rate: number
-        }
-        Insert: {
-          applied?: boolean
-          applied_at?: string | null
-          applied_by?: string | null
-          applied_rate_id?: string | null
-          chn_orders: Json
-          chn_rate_avg: number
-          cmr_margin_xaf: number
-          cmr_orders: Json
-          cmr_rate_max: number
-          computed_at?: string
-          id?: string
-          method?: string
-          suggested_rate: number
-        }
-        Update: {
-          applied?: boolean
-          applied_at?: string | null
-          applied_by?: string | null
-          applied_rate_id?: string | null
-          chn_orders?: Json
-          chn_rate_avg?: number
-          cmr_margin_xaf?: number
-          cmr_orders?: Json
-          cmr_rate_max?: number
-          computed_at?: string
-          id?: string
-          method?: string
-          suggested_rate?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rate_suggestions_applied_rate_id_fkey"
-            columns: ["applied_rate_id"]
-            isOneToOne: false
-            referencedRelation: "daily_rates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      macro_snapshots: {
-        Row: {
-          id: number
-          captured_at: string
-          oil_brent: number | null
-          oil_wti: number | null
-          dxy: number | null
-          eur_usd: number | null
-          cny_usd: number | null
-          xaf_per_eur: number | null
-          btc_usd: number | null
-          eth_usd: number | null
-          news_headlines: Json | null
-          news_by_source: Json | null
-          trump_posts_recent: Json | null
-          expert_mentions: Json | null
-          errors: Json | null
-        }
-        Insert: {
-          id?: never
-          captured_at?: string
-          oil_brent?: number | null
-          oil_wti?: number | null
-          dxy?: number | null
-          eur_usd?: number | null
-          cny_usd?: number | null
-          xaf_per_eur?: number | null
-          btc_usd?: number | null
-          eth_usd?: number | null
-          news_headlines?: Json | null
-          news_by_source?: Json | null
-          trump_posts_recent?: Json | null
-          expert_mentions?: Json | null
-          errors?: Json | null
-        }
-        Update: {
-          id?: never
-          captured_at?: string
-          oil_brent?: number | null
-          oil_wti?: number | null
-          dxy?: number | null
-          eur_usd?: number | null
-          cny_usd?: number | null
-          xaf_per_eur?: number | null
-          btc_usd?: number | null
-          eth_usd?: number | null
-          news_headlines?: Json | null
-          news_by_source?: Json | null
-          trump_posts_recent?: Json | null
-          expert_mentions?: Json | null
-          errors?: Json | null
-        }
-        Relationships: []
-      }
-      briefs_log: {
-        Row: {
-          id: string
-          sent_at: string
-          brief_type: string
-          payload: Json
-          message_text: string
-          telegram_sent: boolean
-          telegram_error: string | null
-        }
-        Insert: {
-          id?: string
-          sent_at?: string
-          brief_type: string
-          payload: Json
-          message_text: string
-          telegram_sent?: boolean
-          telegram_error?: string | null
-        }
-        Update: {
-          id?: string
-          sent_at?: string
-          brief_type?: string
-          payload?: Json
-          message_text?: string
-          telegram_sent?: boolean
-          telegram_error?: string | null
-        }
-        Relationships: []
-      }
-      trump_posts: {
-        Row: {
-          id: number
-          posted_at: string
-          fetched_at: string
-          content: string
-          external_id: string | null
-          is_iran_related: boolean
-          raw_link: string | null
-        }
-        Insert: {
-          id?: never
-          posted_at: string
-          fetched_at?: string
-          content: string
-          external_id?: string | null
-          is_iran_related?: boolean
-          raw_link?: string | null
-        }
-        Update: {
-          id?: never
-          posted_at?: string
-          fetched_at?: string
-          content?: string
-          external_id?: string | null
-          is_iran_related?: boolean
-          raw_link?: string | null
-        }
-        Relationships: []
-      }
-      rate_predictions: {
-        Row: {
-          id: string
+          challenge: string
+          client_ip_hash: string | null
+          consumed_at: string | null
           created_at: string
-          based_on_rate_id: string | null
-          current_rate: number
-          predicted_rate: number
-          direction: string | null
-          confidence: number | null
-          key_drivers: Json | null
-          reasoning: string | null
-          scenarios: Json | null
-          action_recommended: string | null
-          actual_rate: number | null
-          error_abs: number | null
-          was_correct_direction: boolean | null
+          expires_at: string
+          id: string
+          purpose: string
+          user_id: string | null
         }
         Insert: {
-          id?: string
+          challenge: string
+          client_ip_hash?: string | null
+          consumed_at?: string | null
           created_at?: string
-          based_on_rate_id?: string | null
-          current_rate: number
-          predicted_rate: number
-          direction?: string | null
-          confidence?: number | null
-          key_drivers?: Json | null
-          reasoning?: string | null
-          scenarios?: Json | null
-          action_recommended?: string | null
-          actual_rate?: number | null
-          was_correct_direction?: boolean | null
+          expires_at: string
+          id?: string
+          purpose: string
+          user_id?: string | null
         }
         Update: {
-          id?: string
+          challenge?: string
+          client_ip_hash?: string | null
+          consumed_at?: string | null
           created_at?: string
-          based_on_rate_id?: string | null
-          current_rate?: number
-          predicted_rate?: number
-          direction?: string | null
-          confidence?: number | null
-          key_drivers?: Json | null
-          reasoning?: string | null
-          scenarios?: Json | null
-          action_recommended?: string | null
-          actual_rate?: number | null
-          was_correct_direction?: boolean | null
+          expires_at?: string
+          id?: string
+          purpose?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1663,6 +2470,14 @@ export type Database = {
       }
     }
     Functions: {
+      _create_client_and_wallet: {
+        Args: { p_email: string; p_id: string; p_meta: Json }
+        Returns: undefined
+      }
+      _enqueue_welcome: {
+        Args: { p_first: string; p_user_id: string }
+        Returns: undefined
+      }
       adjust_treasury_account: {
         Args: {
           p_account_id: string
@@ -1672,29 +2487,26 @@ export type Database = {
         }
         Returns: Json
       }
-      add_exchange_rate: {
-        Args: { p_effective_at?: string; p_rate_xaf_to_rmb: number }
+      admin_adjust_wallet: {
+        Args: {
+          p_adjustment_type: string
+          p_amount: number
+          p_reason: string
+          p_user_id: string
+        }
         Returns: Json
       }
-      admin_adjust_wallet:
-        | {
-            Args: {
-              p_adjustment_type: string
-              p_amount: number
-              p_reason: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_adjustment_type: string
-              p_amount: number
-              p_reason: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
+      admin_correct_payment: {
+        Args: {
+          p_amount_rmb?: number
+          p_amount_xaf?: number
+          p_exchange_rate?: number
+          p_payment_id: string
+          p_rate_is_custom?: boolean
+          p_reason: string
+        }
+        Returns: Json
+      }
       admin_create_admin: {
         Args: {
           p_email: string
@@ -1702,6 +2514,10 @@ export type Database = {
           p_last_name: string
           p_role: string
         }
+        Returns: Json
+      }
+      admin_create_canned_response: {
+        Args: { p_content: string; p_label: string; p_sort_order?: number }
         Returns: Json
       }
       admin_create_client: {
@@ -1718,7 +2534,19 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_create_quick_reply: {
+        Args: {
+          p_active?: boolean
+          p_content: string
+          p_label: string
+          p_sort_order?: number
+        }
+        Returns: Json
+      }
+      admin_delete_canned_response: { Args: { p_id: string }; Returns: Json }
       admin_delete_client: { Args: { p_user_id: string }; Returns: Json }
+      admin_delete_quick_reply: { Args: { p_id: string }; Returns: Json }
+      admin_resend_sms: { Args: { p_outbox_id: string }; Returns: Json }
       admin_reset_client_password: {
         Args: { p_target_user_id: string }
         Returns: Json
@@ -1727,8 +2555,9 @@ export type Database = {
         Args: { p_target_user_id: string }
         Returns: Json
       }
-      admin_revoke_passkey: {
-        Args: { p_credential: string }
+      admin_revoke_passkey: { Args: { p_credential: string }; Returns: Json }
+      admin_set_client_locale: {
+        Args: { p_locale: string; p_user_id: string }
         Returns: Json
       }
       admin_setup_client: {
@@ -1741,6 +2570,31 @@ export type Database = {
           p_last_name: string
           p_phone: string
           p_user_id: string
+        }
+        Returns: Json
+      }
+      admin_sms_delivery_stats: {
+        Args: { p_days?: number }
+        Returns: {
+          country: string
+          delivered: number
+          failed: number
+          multi_segment: number
+          sent: number
+          skipped: number
+          total: number
+        }[]
+      }
+      admin_suppress_phone: {
+        Args: { p_phone: string; p_reason?: string }
+        Returns: Json
+      }
+      admin_update_canned_response: {
+        Args: {
+          p_content?: string
+          p_id: string
+          p_label?: string
+          p_sort_order?: number
         }
         Returns: Json
       }
@@ -1760,6 +2614,24 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_update_quick_reply: {
+        Args: {
+          p_active?: boolean
+          p_content?: string
+          p_id: string
+          p_label?: string
+          p_sort_order?: number
+        }
+        Returns: Json
+      }
+      assign_chat_conversation: {
+        Args: { p_admin_user_role_id: string; p_conversation_id: string }
+        Returns: undefined
+      }
+      assistant_readonly_query: {
+        Args: { p_allowed_tables?: string[]; p_sql: string }
+        Returns: Json
+      }
       calculate_final_rate: {
         Args: {
           p_amount_xaf: number
@@ -1768,30 +2640,94 @@ export type Database = {
         }
         Returns: Json
       }
-      can_access_treasury: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      delete_treasury_counterparty: {
-        Args: { p_id: string }
-        Returns: Json
-      }
-      admin_correct_payment: {
-        Args: {
-          p_payment_id: string
-          p_reason: string
-          p_amount_xaf?: number
-          p_amount_rmb?: number
-          p_exchange_rate?: number
-          p_rate_is_custom?: boolean
-        }
-        Returns: Json
-      }
+      can_access_treasury: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_rates: { Args: { p_user_id: string }; Returns: boolean }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_payment: { Args: { p_payment_id: string }; Returns: Json }
+      chat_avg_response_seconds_today: { Args: never; Returns: number }
       check_wallet_reconciliation: {
         Args: { p_user_id: string }
+        Returns: Json
+      }
+      claim_chat_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+      claim_email_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          delivery_status: string | null
+          entity_id: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          max_attempts: number
+          next_attempt_at: string
+          payload: Json
+          recipient_email: string | null
+          recipient_user_id: string | null
+          resend_message_id: string | null
+          sent_at: string | null
+          status: string
+          template: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_sms_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          category: string
+          channel: string
+          created_at: string
+          delivery_status: string | null
+          entity_id: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locale: string
+          max_attempts: number
+          next_attempt_at: string
+          payload: Json
+          recipient_country: string | null
+          recipient_phone: string | null
+          recipient_user_id: string | null
+          recipient_verified: boolean | null
+          segments: number | null
+          sender_used: string | null
+          sent_at: string | null
+          status: string
+          telnyx_message_id: string | null
+          template: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sms_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      close_chat_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+      complete_client_onboarding: {
+        Args: {
+          p_company?: string
+          p_country: string
+          p_phone: string
+          p_sector?: string
+        }
         Returns: Json
       }
       confirm_cash_payment: {
@@ -1802,6 +2738,7 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_phone_verification: { Args: { p_code: string }; Returns: Json }
       create_admin_payment: {
         Args: {
           p_amount_rmb: number
@@ -1833,29 +2770,6 @@ export type Database = {
           p_desired_date?: string
           p_method: Database["public"]["Enums"]["deposit_method"]
           p_user_id: string
-        }
-        Returns: Json
-      }
-      create_treasury_counterparty: {
-        Args: {
-          p_display_name: string
-          p_legal_name?: string
-          p_notes?: string
-          p_phone?: string
-          p_type: Database["public"]["Enums"]["treasury_counterparty_type"]
-          p_wechat_id?: string
-        }
-        Returns: Json
-      }
-      update_treasury_counterparty: {
-        Args: {
-          p_display_name?: string
-          p_id: string
-          p_is_active?: boolean
-          p_legal_name?: string
-          p_notes?: string
-          p_phone?: string
-          p_wechat_id?: string
         }
         Returns: Json
       }
@@ -1896,6 +2810,17 @@ export type Database = {
         Args: { p_lines: Json; p_note?: string; p_user_id: string }
         Returns: Json
       }
+      create_treasury_counterparty: {
+        Args: {
+          p_display_name: string
+          p_legal_name?: string
+          p_notes?: string
+          p_phone?: string
+          p_type: Database["public"]["Enums"]["treasury_counterparty_type"]
+          p_wechat_id?: string
+        }
+        Returns: Json
+      }
       create_wallet_adjustment: {
         Args: {
           p_adjustment_type: string
@@ -1906,11 +2831,15 @@ export type Database = {
         }
         Returns: Json
       }
-      delete_exchange_rate: { Args: { p_rate_id: string }; Returns: Json }
+      delete_daily_rate: { Args: { p_rate_id: string }; Returns: Json }
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
+      delete_treasury_counterparty: { Args: { p_id: string }; Returns: Json }
+      enqueue_password_changed_email: { Args: never; Returns: undefined }
+      enqueue_welcome_email: { Args: never; Returns: undefined }
       generate_deposit_reference: { Args: never; Returns: string }
-      generate_payment_reference: { Args: never; Returns: string }
       generate_payment_batch_reference: { Args: never; Returns: string }
+      generate_payment_reference: { Args: never; Returns: string }
+      get_chat_admin_stats: { Args: { p_period_days?: number }; Returns: Json }
       get_client_ledger: {
         Args: {
           p_entry_type?: Database["public"]["Enums"]["ledger_entry_type"]
@@ -1937,7 +2866,6 @@ export type Database = {
       }
       get_dashboard_stats: { Args: never; Returns: Json }
       get_deposit_stats: { Args: never; Returns: Json }
-      get_rate_usage_count: { Args: { p_rate_id: string }; Returns: number }
       get_top_counterparties: {
         Args: {
           p_from_date: string
@@ -1951,14 +2879,13 @@ export type Database = {
         Args: { p_from_date: string; p_to_date: string }
         Returns: Json
       }
-      get_usdt_stock: {
-        Args: { p_at?: string }
-        Returns: number
+      get_unsettled_payments: {
+        Args: { p_from_date?: string; p_to_date?: string }
+        Returns: Json
       }
-      get_wac_usdt: {
-        Args: { p_at?: string }
-        Returns: number
-      }
+      get_usdt_sales_monthly: { Args: { p_months?: number }; Returns: Json }
+      get_usdt_stock: { Args: { p_at?: string }; Returns: number }
+      get_wac_usdt: { Args: { p_at?: string }; Returns: number }
       get_xaf_per_cny_at: {
         Args: {
           p_at: string
@@ -1975,12 +2902,52 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_cash_agent: { Args: { _user_id: string }; Returns: boolean }
+      is_support_admin: { Args: { _user_id: string }; Returns: boolean }
       is_treasurer: { Args: { _user_id: string }; Returns: boolean }
-      is_rate_used: { Args: { p_rate_id: string }; Returns: boolean }
+      mark_conversation_read_admin: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+      mark_conversation_read_client: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+      mark_message_read: { Args: { p_message_id: string }; Returns: undefined }
+      mark_suggestion_applied: {
+        Args: { p_rate_id: string; p_suggestion_id: string }
+        Returns: Json
+      }
+      mola_discover_capabilities: { Args: { p_search?: string }; Returns: Json }
+      mola_operations_radar: {
+        Args: {
+          p_custom_rate_days?: number
+          p_deposit_age_hours?: number
+          p_dormant_min_xaf?: number
+          p_payment_age_hours?: number
+        }
+        Returns: Json
+      }
+      mola_purge_old_conversations: { Args: { p_days?: number }; Returns: Json }
+      mola_search_memory: {
+        Args: {
+          p_admin: string
+          p_embedding: string
+          p_kinds?: string[]
+          p_limit?: number
+        }
+        Returns: {
+          content: string
+          distance: number
+          kind: string
+          scope: string
+        }[]
+      }
+      phone_country_from_e164: { Args: { p_phone: string }; Returns: string }
       process_payment: {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
         Returns: Json
       }
+      purge_webauthn_challenges: { Args: never; Returns: undefined }
       record_inventory_snapshot: {
         Args: {
           p_account_id: string
@@ -2013,22 +2980,79 @@ export type Database = {
         }
         Returns: Json
       }
-      reject_deposit:
-        | { Args: { p_deposit_id: string; p_reason: string }; Returns: Json }
-        | {
-            Args: {
-              p_admin_note?: string
-              p_deposit_id: string
-              p_reason: string
-              p_rejection_category?: string
-            }
-            Returns: Json
-          }
+      reject_deposit: {
+        Args: { p_deposit_id: string; p_reason: string }
+        Returns: Json
+      }
+      reopen_chat_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+      reorder_canned_responses: {
+        Args: { p_ids: string[] }
+        Returns: undefined
+      }
+      reorder_quick_replies: { Args: { p_ids: string[] }; Returns: undefined }
+      request_phone_verification: {
+        Args: { p_country?: string; p_phone_e164: string }
+        Returns: Json
+      }
+      resolve_sms_sender: {
+        Args: { p_country: string }
+        Returns: {
+          sender_id: string
+          sender_type: string
+        }[]
+      }
       revert_deposit_to_created: {
         Args: { p_deposit_id: string }
         Returns: Json
       }
+      run_deposit_reminders: { Args: never; Returns: undefined }
+      run_email_drainer: { Args: never; Returns: undefined }
+      run_mola_daily_digest: { Args: never; Returns: undefined }
+      run_profile_reminders: { Args: never; Returns: undefined }
+      run_sms_deposit_reminders: { Args: never; Returns: undefined }
+      run_sms_drainer: { Args: never; Returns: undefined }
       scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
+      search_chat_conversations: {
+        Args: { p_query: string }
+        Returns: {
+          client_first_name: string
+          client_id: string
+          client_last_name: string
+          conversation_id: string
+          last_match_at: string
+          match_count: number
+          snippet: string
+        }[]
+      }
+      set_counterparty_settlement_rate: {
+        Args: { p_counterparty_id: string; p_rate: number }
+        Returns: Json
+      }
+      set_my_preferred_locale: { Args: { p_locale: string }; Returns: Json }
+      settle_payments_usdt: {
+        Args: {
+          p_buyer_id: string
+          p_occurred_at?: string
+          p_payment_ids: string[]
+          p_rate?: number
+        }
+        Returns: Json
+      }
+      sms_locale_for_country: { Args: { p_country: string }; Returns: string }
+      sms_recipient: {
+        Args: { p_notification_type: string; p_user_id: string }
+        Returns: {
+          country: string
+          first_name: string
+          locale: string
+          phone: string
+          status: string
+          verified: boolean
+        }[]
+      }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
       submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
       toggle_admin_status: {
@@ -2051,11 +3075,22 @@ export type Database = {
         }
         Returns: Json
       }
-      update_exchange_rate: {
+      update_daily_rate: {
         Args: {
           p_effective_at?: string
+          p_rate_alipay: number
+          p_rate_cash: number
           p_rate_id: string
-          p_rate_xaf_to_rmb: number
+          p_rate_virement: number
+          p_rate_wechat: number
+        }
+        Returns: Json
+      }
+      update_my_admin_profile: {
+        Args: {
+          p_avatar_url?: string
+          p_first_name: string
+          p_last_name: string
         }
         Returns: Json
       }
@@ -2072,12 +3107,20 @@ export type Database = {
         }
         Returns: Json
       }
-      mark_suggestion_applied: {
-        Args: { p_suggestion_id: string; p_rate_id: string }
-        Returns: Json
-      }
       update_rate_adjustment: {
         Args: { p_adjustment_id: string; p_percentage: number }
+        Returns: Json
+      }
+      update_treasury_counterparty: {
+        Args: {
+          p_display_name?: string
+          p_id: string
+          p_is_active?: boolean
+          p_legal_name?: string
+          p_notes?: string
+          p_phone?: string
+          p_wechat_id?: string
+        }
         Returns: Json
       }
       validate_deposit: {
@@ -2152,11 +3195,7 @@ export type Database = {
         | "alipay"
         | "wechat"
         | "other"
-      treasury_channel_xaf:
-        | "bank_transfer"
-        | "mobile_money"
-        | "cash"
-        | "other"
+      treasury_channel_xaf: "bank_transfer" | "mobile_money" | "cash" | "other"
       treasury_counterparty_type: "usdt_supplier" | "cny_buyer"
       treasury_currency: "XAF" | "USDT" | "CNY"
       treasury_ledger_entry_kind:
@@ -2306,6 +3345,7 @@ export const Constants = {
         "support",
         "customer_success",
         "cash_agent",
+        "treasurer",
       ],
       deposit_method: [
         "bank_transfer",
@@ -2348,6 +3388,33 @@ export const Constants = {
         "cash_pending",
         "cash_scanned",
         "cancelled_by_admin",
+      ],
+      treasury_account_kind: [
+        "bank",
+        "mobile_money",
+        "crypto_pool",
+        "cash",
+        "alipay",
+        "wechat",
+        "other",
+      ],
+      treasury_channel_xaf: ["bank_transfer", "mobile_money", "cash", "other"],
+      treasury_counterparty_type: ["usdt_supplier", "cny_buyer"],
+      treasury_currency: ["XAF", "USDT", "CNY"],
+      treasury_ledger_entry_kind: [
+        "usdt_purchase_debit_xaf",
+        "usdt_purchase_credit_usdt",
+        "usdt_sale_debit_usdt",
+        "usdt_sale_credit_cny",
+        "inventory_adjustment",
+        "void",
+      ],
+      treasury_ledger_source_table: [
+        "usdt_purchase",
+        "usdt_sale",
+        "inventory_snapshot",
+        "manual_adjustment",
+        "void",
       ],
       wallet_operation_type: ["deposit", "payment", "adjustment"],
     },
