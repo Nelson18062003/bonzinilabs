@@ -40,7 +40,7 @@
 -- IDEMPOTENCE
 --   · CREATE OR REPLACE FUNCTION, REVOKE, ALTER FUNCTION ... SET, et les
 --     CREATE ... IF NOT EXISTS sont rejouables tels quels.
---   · Les blocs DO $mig$ qui réécrivent un corps existant testent d'abord
+--   · Les blocs DO ... END qui réécrivent un corps existant testent d'abord
 --     si le correctif est déjà présent (`CONTINUE`) : les rejouer ne fait
 --     rien. En revanche ils échouent VOLONTAIREMENT et bruyamment
 --     (RAISE EXCEPTION) si la fonction visée est absente ou si son corps a
