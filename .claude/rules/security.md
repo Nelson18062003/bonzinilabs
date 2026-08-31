@@ -10,6 +10,39 @@
 - Always verify `Number.isSafeInteger(amount)` before any financial calculation
 - Applied in: `NewPaymentPage`, `NewDepositPage`
 
+## Autorisation serveur — RÈGLE ABSOLUE (ne jamais garder une RPC avec `is_admin` seul)
+
+`is_admin(uid)` ne teste **aucun rôle** : il renvoie vrai pour toute ligne
+non désactivée de `user_roles`. Il signifie « membre du staff », pas
+« autorisé ». Une RPC gardée par `is_admin()` est donc exécutable par
+**tous** les rôles (cash_agent, treasurer, support…) via un appel direct à
+PostgREST, même si l'UI cache le bouton.
+
+**Toute RPC sensible doit être gardée par `admin_has_permission(uid, '<canX>')`** —
+miroir SQL de `ROLE_PERMISSIONS` (`src/contexts/AdminAuthContext.tsx`), qui
+filtre aussi `is_disabled`. Exemple :
+
+```sql
+IF NOT public.admin_has_permission(v_admin_id, 'canProcessPayments') THEN
+  RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+END IF;
+```
+
+Correspondances : dépôts → `canProcessDeposits` · paiements →
+`canProcessPayments` · ajustements de portefeuille → `canAdjustWallets` ·
+clients/admins → `canManageUsers` · taux → `canManageRates` · trésorerie →
+`canManageTreasury`.
+
+Si vous ajoutez un rôle ou une permission, mettez à jour **les deux**
+matrices : le test `src/tests/security/rolePermissionParity.test.ts` échoue
+en cas de dérive.
+
+**Admin désactivé** : désactiver une ligne `user_roles` **ne révoque pas** le
+JWT Supabase. Toute lecture de rôle doit donc filtrer
+`(is_disabled = false OR is_disabled IS NULL)` — sinon un admin révoqué
+garde ses pouvoirs tant que sa session vit. Ne relisez jamais le rôle « à la
+main » : passez par `admin_has_permission()`.
+
 ## SQL / RPC Patterns
 - Payments: use `SELECT FOR UPDATE` on the wallet row before any balance deduction — prevents double-spend race conditions
 - Admin auth check: `is_admin()` RPC MUST exclude `is_disabled = true` — disabled admins must be blocked immediately
