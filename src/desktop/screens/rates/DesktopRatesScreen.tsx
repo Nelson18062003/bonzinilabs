@@ -1,33 +1,42 @@
 /**
- * Desktop admin — Taux de change, salle de contrôle
- * (docs/admin-redesign/06-rates-module.md).
+ * Desktop admin — Taux de change : UN MÉTIER PAR VUE
+ * (docs/admin-redesign/06-rates-module.md, v2 après retour utilisateur :
+ * « trop d'informations d'un coup »).
  *
- * Remplace l'empilement des blocs mobiles en deux colonnes. Composition
- * hiérarchisée par fréquence d'usage :
- *   A. Publier (gauche, 480px) — actif → nouveau + Δ, suggestion Binance,
- *      prise d'effet, publication confirmée en dialogue.
- *   B. Simulateur (droite, haut) — détail du calcul toujours visible.
- *   C. Historique (droite, bas) — vraie table par mode.
- *   D. Tendance (bas, large) — graphique sorti de l'accordéon, période 1A.
- *   E. Ajustements (bas, droite) — visibles, sauvegarde si modifié.
- * Le flyer WhatsApp s'ouvre en dialogue centré (plus de BottomSheet).
- * Données/RPC inchangées : useDailyRates.ts, lib/rateCalculation.ts.
+ * Le sélecteur de vue suit la fréquence réelle d'usage :
+ *   · Simulateur (défaut) — coter un client WhatsApp : champs XAF⇅CNY liés
+ *     + cotation de marque à partager (PNG / texte).
+ *   · Publier — la saisie du jour, seule, centrée.
+ *   · Historique — tendance + table, la surveillance.
+ *   · Réglages — ajustements pays & tranches.
+ * Rien d'autre n'est affiché que la vue choisie. Le flyer reste accessible
+ * depuis l'en-tête, en dialogue centré.
  */
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { TEXT, SOFT_PILL, CenterDialog } from '@/desktop/designKit';
+import { TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog } from '@/desktop/designKit';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
 import { RatePublishCard } from './RatePublishCard';
-import { RateSimulatorCard } from './RateSimulatorCard';
+import { RateQuoteSimulator } from './RateQuoteSimulator';
 import { DesktopRateHistory } from './DesktopRateHistory';
 import { RateTrendCard } from './RateTrendCard';
 import { RateAdjustmentsCard } from './RateAdjustmentsCard';
 
-export function DesktopRatesScreen() {
+export type RatesView = 'simulator' | 'publish' | 'history' | 'settings';
+
+const VIEWS: { key: RatesView; label: string }[] = [
+  { key: 'simulator', label: 'Simulateur' },
+  { key: 'publish', label: 'Publier' },
+  { key: 'history', label: 'Historique' },
+  { key: 'settings', label: 'Réglages' },
+];
+
+export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?: RatesView } = {}) {
   const { data: activeRate } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
+  const [view, setView] = useState<RatesView>(initialView);
   const [flyerOpen, setFlyerOpen] = useState(false);
 
   // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les clients.
@@ -38,9 +47,6 @@ export function DesktopRatesScreen() {
     cash: activeRate?.rate_cash || 0,
   };
 
-  // Pas de portail bloquant : chaque carte gère son propre état — un échec
-  // du fetch des ajustements ne doit pas empêcher de VOIR ni de PUBLIER les
-  // taux (l'action la plus sensible du module).
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -61,27 +67,53 @@ export function DesktopRatesScreen() {
         </button>
       </header>
 
-      {/* ── A | B + C ── */}
-      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[480px_minmax(0,1fr)]">
-        <RatePublishCard activeRate={activeRate} />
-        <div className="min-w-0 space-y-5">
-          <RateSimulatorCard
-            activeRate={activeRate}
-            adjustments={adjustments ?? []}
-            adjustmentsLoading={adjLoading}
-            adjustmentsError={adjError}
-          />
+      {/* ── Sélecteur de vue — un seul métier à l'écran à la fois ───────── */}
+      <nav className="flex items-center gap-1.5" aria-label="Vues du module Taux">
+        {VIEWS.map((v) => (
+          <button
+            key={v.key}
+            type="button"
+            onClick={() => setView(v.key)}
+            aria-current={view === v.key ? 'page' : undefined}
+            className={cn(
+              'h-9 rounded-full px-4 text-[13px] font-bold transition-colors',
+              view === v.key ? PRIMARY_PILL : SOFT_PILL,
+            )}
+          >
+            {v.label}
+          </button>
+        ))}
+      </nav>
+
+      {view === 'simulator' && (
+        <RateQuoteSimulator
+          activeRate={activeRate}
+          adjustments={adjustments ?? []}
+          adjustmentsLoading={adjLoading}
+          adjustmentsError={adjError}
+        />
+      )}
+
+      {view === 'publish' && (
+        <div className="mx-auto max-w-[560px]">
+          <RatePublishCard activeRate={activeRate} />
+        </div>
+      )}
+
+      {view === 'history' && (
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_560px]">
+          <RateTrendCard />
           <DesktopRateHistory />
         </div>
-      </div>
+      )}
 
-      {/* ── D | E ── */}
-      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <RateTrendCard />
-        <RateAdjustmentsCard />
-      </div>
+      {view === 'settings' && (
+        <div className="mx-auto max-w-[560px]">
+          <RateAdjustmentsCard />
+        </div>
+      )}
 
-      {/* ── Flyer WhatsApp ── */}
+      {/* ── Flyer WhatsApp ──────────────────────────────────────────────── */}
       <CenterDialog open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour" width={560}>
         <RateFlyerSheet rates={flyerRates} />
       </CenterDialog>

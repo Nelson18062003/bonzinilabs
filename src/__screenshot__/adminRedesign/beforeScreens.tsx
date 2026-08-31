@@ -62,3 +62,27 @@ export function ShippedRates() {
     </DesktopAppShell>
   );
 }
+
+export function ShippedRatesPublish() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen initialView="publish" />
+    </DesktopAppShell>
+  );
+}
+
+export function ShippedRatesHistory() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen initialView="history" />
+    </DesktopAppShell>
+  );
+}
+
+export function ShippedRatesSettings() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen initialView="settings" />
+    </DesktopAppShell>
+  );
+}
