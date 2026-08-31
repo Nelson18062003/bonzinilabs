@@ -30,54 +30,74 @@ const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
  * virgule dans la saisie cassait le filtre PostgREST. Un seul fetch caché
  * par react-query rend la recherche instantanée.
  */
+// Les requêtes `.in('user_id', …)` passent les UUID dans l'URL : au-delà de
+// ~200 ids on dépasse les limites d'URL des proxys. On découpe donc en lots,
+// et on PROPAGE les erreurs — l'ancien code les jetait silencieusement, et un
+// lot échoué affichait « solde 0 XAF » pour tout le monde.
+const IN_CHUNK = 200;
+async function fetchByUserIdChunks<T>(
+  userIds: string[],
+  fetchChunk: (ids: string[]) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < userIds.length; i += IN_CHUNK) {
+    const { data, error } = await fetchChunk(userIds.slice(i, i + IN_CHUNK));
+    if (error) throw error;
+    out.push(...(data ?? []));
+  }
+  return out;
+}
+
 export function useClients() {
   return useQuery({
     queryKey: ['clients'],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
-      // Query clients table directly (no admin filtering needed)
-      const query = supabaseAdmin
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1000);
-
-      const { data: clients, error } = await query;
-      if (error) throw error;
-      if (!clients || clients.length === 0) return [];
+      // Roster complet, paginé : PostgREST plafonne à 1000 lignes par requête,
+      // et un simple .limit() rendrait les clients les plus anciens
+      // introuvables une fois le plafond atteint.
+      const PAGE = 1000;
+      async function fetchClientsPage(from: number) {
+        const { data, error } = await supabaseAdmin
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        return data ?? [];
+      }
+      const clients: Awaited<ReturnType<typeof fetchClientsPage>> = [];
+      for (let from = 0; ; from += PAGE) {
+        const page = await fetchClientsPage(from);
+        clients.push(...page);
+        if (page.length < PAGE) break;
+      }
+      if (clients.length === 0) return [];
 
       const userIds = clients.map(c => c.user_id);
 
       // Fetch wallets
-      const { data: wallets } = await supabaseAdmin
-        .from('wallets')
-        .select('*')
-        .in('user_id', userIds);
-
-      const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
+      const wallets = await fetchByUserIdChunks(userIds, (ids) =>
+        supabaseAdmin.from('wallets').select('*').in('user_id', ids),
+      );
+      const walletMap = new Map(wallets.map(w => [w.user_id, w]));
 
       // Fetch deposit totals
-      const { data: deposits } = await supabaseAdmin
-        .from('deposits')
-        .select('user_id, amount_xaf, status')
-        .eq('status', 'validated')
-        .in('user_id', userIds);
-
+      const deposits = await fetchByUserIdChunks(userIds, (ids) =>
+        supabaseAdmin.from('deposits').select('user_id, amount_xaf, status').eq('status', 'validated').in('user_id', ids),
+      );
       const depositSums = new Map<string, number>();
-      deposits?.forEach(d => {
+      deposits.forEach(d => {
         depositSums.set(d.user_id, (depositSums.get(d.user_id) || 0) + d.amount_xaf);
       });
 
       // Fetch payment totals (completed payments)
-      const { data: payments } = await supabaseAdmin
-        .from('payments')
-        .select('user_id, amount_xaf, status')
-        .eq('status', 'completed')
-        .in('user_id', userIds);
-
+      const payments = await fetchByUserIdChunks(userIds, (ids) =>
+        supabaseAdmin.from('payments').select('user_id, amount_xaf, status').eq('status', 'completed').in('user_id', ids),
+      );
       const paymentSums = new Map<string, number>();
-      payments?.forEach(p => {
+      payments.forEach(p => {
         paymentSums.set(p.user_id, (paymentSums.get(p.user_id) || 0) + p.amount_xaf);
       });
 

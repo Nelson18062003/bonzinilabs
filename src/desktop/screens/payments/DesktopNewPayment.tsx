@@ -16,7 +16,7 @@ import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
-import { useAdminClientBeneficiaries, useAdminCreateBeneficiary, type Beneficiary } from '@/hooks/useBeneficiaries';
+import { useAdminClientBeneficiaries, useAdminClientBeneficiaryNames, useAdminCreateBeneficiary, type Beneficiary } from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
 import { MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
@@ -147,18 +147,39 @@ export function DesktopNewPayment() {
 
   const dbMode: BeneficiaryMode | null = mode ? (mode.id === 'virement' ? 'bank_transfer' : (mode.id as BeneficiaryMode)) : null;
   const { data: clientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id, dbMode ?? undefined);
-  // Tous modes confondus — numérote le nom par défaut « Supplier NN » sans
-  // dupliquer un numéro déjà pris sur un autre mode.
-  const { data: allClientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id);
+  // Noms/alias tous modes confondus — numérote le nom par défaut
+  // « Supplier NN » sans dupliquer un numéro déjà pris sur un autre mode.
+  const { data: beneficiaryNames } = useAdminClientBeneficiaryNames(client?.user_id);
+  // Dernier nom posé automatiquement — recalé à l'arrivée des données tant
+  // que l'admin n'y a pas touché.
+  const autoNameRef = useRef<string | null>(null);
+  const prefillSupplierName = () => {
+    const auto = nextSupplierName(beneficiaryNames);
+    autoNameRef.current = auto;
+    return auto;
+  };
 
   // Sur « Nouveau » en Alipay/WeChat, le nom (requis) est prérempli
   // « Supplier NN » — l'admin peut le remplacer librement.
   const openBenefTab = (tab: 'existing' | 'new') => {
     setBenefTab(tab);
     if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !benef.name.trim()) {
-      setBenef((b) => ({ ...b, name: nextSupplierName(allClientBeneficiaries) }));
+      setBenef((b) => ({ ...b, name: prefillSupplierName() }));
     }
   };
+
+  // Nom auto posé avant le chargement de la liste → renuméroté après coup,
+  // uniquement s'il est resté intact.
+  useEffect(() => {
+    if (!autoNameRef.current) return;
+    setBenef((b) => {
+      if (b.name !== autoNameRef.current) return b;
+      const next = nextSupplierName(beneficiaryNames);
+      if (next === b.name) return b;
+      autoNameRef.current = next;
+      return { ...b, name: next };
+    });
+  }, [beneficiaryNames]);
 
   const setQrFromFiles = useCallback((files: File[]) => {
     const file = files[0];
@@ -183,7 +204,7 @@ export function DesktopNewPayment() {
     setSelectedBenef(null);
     setBenef(
       benefTab === 'new' && (m.id === 'alipay' || m.id === 'wechat')
-        ? { ...BENEF0, name: nextSupplierName(allClientBeneficiaries) }
+        ? { ...BENEF0, name: prefillSupplierName() }
         : BENEF0,
     );
     removeQr();

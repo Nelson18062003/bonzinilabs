@@ -201,12 +201,18 @@ export function MobileClientDetail() {
         toast.error(t('cannotDeleteClientPositiveBalance', { defaultValue: `Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)` }));
         return;
       }
-      const { data: pending } = await supabaseAdmin
+      const { data: pending, error } = await supabaseAdmin
         .from('payments')
         .select('id')
         .eq('user_id', client.id)
         .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned'])
         .limit(1);
+      // Une requête échouée ne doit pas se confondre avec « aucun paiement
+      // en cours » — sinon la confirmation de suppression s'ouvre quand même.
+      if (error) {
+        toast.error('Vérification des paiements impossible — réessayez.');
+        return;
+      }
       if (pending && pending.length > 0) {
         toast.error(t('cannotDeleteClientPendingPayments', { defaultValue: 'Impossible de supprimer un client ayant des paiements en cours' }));
         return;

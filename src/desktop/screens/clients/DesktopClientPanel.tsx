@@ -8,7 +8,7 @@
  * couche de données et mêmes mutations que MobileClientDetail ; les
  * BottomSheets deviennent des dialogues centrés (CenterDialog).
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useClient,
@@ -202,6 +202,25 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const deleteClient = useAdminDeleteClient();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Le menu « ⋯ » se ferme au clic extérieur et à Échap (même contrat que
+  // DropChip) — sinon « Supprimer le client » reste suspendu sous le curseur.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -231,7 +250,9 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   };
 
   const saveEdit = async () => {
-    if (!client) return;
+    // Le garde isPending compte : ⌘⏎ (onConfirm du CenterDialog) peut
+    // relancer la mutation pendant qu'elle est en vol.
+    if (!client || updateClient.isPending) return;
     // Un numéro invalide met phone_e164 à NULL côté DB : le client cesse
     // silencieusement de recevoir ses SMS. On bloque ici.
     const phone = editForm.phone.trim();
@@ -241,26 +262,36 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
       });
       return;
     }
-    await updateClient.mutateAsync({
-      userId: client.id,
-      firstName: editForm.firstName.trim(),
-      lastName: editForm.lastName.trim(),
-      phone: editForm.phone.trim(),
-      email: editForm.email.trim(),
-      companyName: editForm.companyName.trim(),
-      country: editForm.country.trim(),
-      city: editForm.city.trim(),
-    });
-    setEditOpen(false);
-    refetch();
+    try {
+      await updateClient.mutateAsync({
+        userId: client.id,
+        firstName: editForm.firstName.trim(),
+        lastName: editForm.lastName.trim(),
+        phone: editForm.phone.trim(),
+        email: editForm.email.trim(),
+        companyName: editForm.companyName.trim(),
+        country: editForm.country.trim(),
+        city: editForm.city.trim(),
+      });
+      setEditOpen(false);
+      refetch();
+    } catch {
+      /* toast handled by the hook */
+    }
   };
 
   const handleResetPassword = async () => {
-    if (!client) return;
-    const result = await resetPassword.mutateAsync(client.id);
-    if (result.tempPassword) {
-      setNewPassword(result.tempPassword);
-      setResetOpen(false);
+    // Deux appels concurrents généreraient deux mots de passe : celui affiché
+    // pourrait ne pas être celui appliqué en base.
+    if (!client || resetPassword.isPending) return;
+    try {
+      const result = await resetPassword.mutateAsync(client.id);
+      if (result.tempPassword) {
+        setNewPassword(result.tempPassword);
+        setResetOpen(false);
+      }
+    } catch {
+      /* toast handled by the hook */
     }
   };
 
@@ -278,12 +309,18 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         toast.error(`Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)`);
         return;
       }
-      const { data: pending } = await supabaseAdmin
+      const { data: pending, error } = await supabaseAdmin
         .from('payments')
         .select('id')
         .eq('user_id', client.id)
         .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned'])
         .limit(1);
+      // Une requête échouée ne doit pas se confondre avec « aucun paiement
+      // en cours » — sinon la confirmation de suppression s'ouvre quand même.
+      if (error) {
+        toast.error('Vérification des paiements impossible — réessayez.');
+        return;
+      }
       if (pending && pending.length > 0) {
         toast.error('Impossible de supprimer un client ayant des paiements en cours');
         return;
@@ -416,7 +453,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           Dépôt
         </button>
         {canManageUsers && (
-          <div className="relative shrink-0">
+          <div ref={menuRef} className="relative shrink-0">
             <Holder icon={MoreHorizontal} size="sm" onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" />
             {menuOpen && (
               <div
