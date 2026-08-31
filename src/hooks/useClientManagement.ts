@@ -10,7 +10,7 @@ import type {
   LedgerEntry,
   LedgerEntryType,
   LedgerFilters,
-  ClientFilters,
+  ClientStatus,
 } from '@/types/admin';
 
 // Cache configuration
@@ -22,27 +22,26 @@ const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 // ============================================
 
 /**
- * Fetch clients with optional filters
+ * Fetch the full client roster (balances + totals included).
+ *
+ * La recherche/le filtre/le tri se font côté client (src/lib/clientSearch.ts) :
+ * l'ancien filtre serveur `.or(ilike…)` ne trouvait ni « Jean Dupont »
+ * (prénom+nom), ni « Hervé » sans accent, ni un téléphone formaté — et une
+ * virgule dans la saisie cassait le filtre PostgREST. Un seul fetch caché
+ * par react-query rend la recherche instantanée.
  */
-export function useClients(filters?: ClientFilters) {
+export function useClients() {
   return useQuery({
-    queryKey: ['clients', filters],
+    queryKey: ['clients'],
     staleTime: STALE_TIME,
     gcTime: CACHE_TIME,
     queryFn: async () => {
       // Query clients table directly (no admin filtering needed)
-      let query = supabaseAdmin
+      const query = supabaseAdmin
         .from('clients')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
-
-      // Apply search filter server-side
-      if (filters?.search) {
-        query = query.or(
-          `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`
-        );
-      }
+        .limit(1000);
 
       const { data: clients, error } = await query;
       if (error) throw error;
@@ -87,6 +86,8 @@ export function useClients(filters?: ClientFilters) {
         firstName: client.first_name || '',
         lastName: client.last_name || '',
         phone: client.phone || '',
+        email: client.email || '',
+        companyName: client.company_name || '',
         avatarUrl: client.avatar_url,
         createdAt: client.created_at,
         updatedAt: client.updated_at,
@@ -94,7 +95,7 @@ export function useClients(filters?: ClientFilters) {
         walletBalance: walletMap.get(client.user_id)?.balance_xaf || 0,
         totalDeposits: depositSums.get(client.user_id) || 0,
         totalPayments: paymentSums.get(client.user_id) || 0,
-        status: (client.status as 'ACTIVE') || 'ACTIVE',
+        status: (client.status as ClientStatus) || 'ACTIVE',
       }));
     },
   });
@@ -169,7 +170,9 @@ export function useClient(userId: string) {
         walletBalance: wallet?.balance_xaf || 0,
         totalDeposits,
         totalPayments,
-        status: 'ACTIVE' as const,
+        // Le statut réel du client — l'ancien 'ACTIVE' codé en dur affichait
+        // « Actif » sur la fiche même pour un client suspendu.
+        status: (client.status as ClientStatus) || 'ACTIVE',
         utmSource:   client.utm_source   || null,
         utmMedium:   client.utm_medium   || null,
         utmCampaign: client.utm_campaign || null,
@@ -431,43 +434,6 @@ export function useResetClientPassword() {
   });
 }
 
-/**
- * Search clients by name or phone (for deposit creation)
- */
-export function useSearchClients(searchTerm: string) {
-  return useQuery({
-    queryKey: ['search-clients', searchTerm],
-    staleTime: 10 * 1000, // 10 seconds
-    gcTime: CACHE_TIME,
-    enabled: searchTerm.length >= 2,
-    queryFn: async () => {
-      // Search clients table directly (no admin filtering needed)
-      const { data: clients, error } = await supabaseAdmin
-        .from('clients')
-        .select('user_id, first_name, last_name, phone')
-        .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
-        .limit(20);
-
-      if (error) throw error;
-      if (!clients || clients.length === 0) return [];
-
-      // Fetch wallets
-      const userIds = clients.map(c => c.user_id);
-      const { data: wallets } = await supabaseAdmin
-        .from('wallets')
-        .select('user_id, id, balance_xaf')
-        .in('user_id', userIds);
-
-      const walletMap = new Map(wallets?.map(w => [w.user_id, w]) || []);
-
-      return clients.map(c => ({
-        id: c.user_id,
-        firstName: c.first_name || '',
-        lastName: c.last_name || '',
-        phone: c.phone || '',
-        walletId: walletMap.get(c.user_id)?.id || null,
-        walletBalance: walletMap.get(c.user_id)?.balance_xaf || 0,
-      }));
-    },
-  });
-}
+// NOTE: l'ancien useSearchClients (recherche serveur .or(ilike…)) a été
+// supprimé : aucun appelant, et le même filtre fragile que useClients corrigé
+// ci-dessus. La recherche passe par src/lib/clientSearch.ts.

@@ -25,11 +25,16 @@ export function useAdminDeleteClient() {
       return result;
     },
     onSuccess: () => {
+      // ['clients'] est la liste du module Clients — sans cette invalidation le
+      // client supprimé restait affiché jusqu'à expiration du cache.
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       queryClient.invalidateQueries({ queryKey: ['admin-wallets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(i18n.t('hooks.deleteClient.success', { ns: 'common', defaultValue: 'Client supprimé avec succès' }));
-      navigate('/admin/clients', { replace: true });
+      // '/admin/clients' n'existe pas (toutes les routes sont sous /m/…) :
+      // la suppression envoyait l'admin sur la page 404.
+      navigate('/m/clients', { replace: true });
     },
     onError: (error) => {
       toast.error(i18n.t('hooks.deleteClient.errorPrefix', { ns: 'common', defaultValue: `Erreur: ${error.message}`, message: error.message }));
