@@ -12,6 +12,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { parseDecimal } from '@/lib/decimalInput';
+import { rateEffectiveAt, RATE_DATE_OPTIONS, type RateDateOption } from '@/lib/rateEffectiveDate';
 import { AlertTriangle, ArrowRight, ChevronDown, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
@@ -37,15 +39,6 @@ import {
   CenterDialog,
 } from '@/desktop/designKit';
 import { MethodLogo } from '@/mobile/screens/rates/components/MethodLogo';
-
-type DateOption = 'now' | 'today' | 'yesterday' | 'custom';
-
-const DATE_OPTIONS: { key: DateOption; label: string }[] = [
-  { key: 'now', label: 'Maintenant' },
-  { key: 'today', label: "Aujourd'hui" },
-  { key: 'yesterday', label: 'Hier' },
-  { key: 'custom', label: 'Autre…' },
-];
 
 const fmtRate = (n: number) => n.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 
@@ -79,7 +72,7 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
   const [rates, setRates] = useState<Record<PaymentMethodKey, string>>({
     cash: '', alipay: '', wechat: '', virement: '',
   });
-  const [dateOption, setDateOption] = useState<DateOption>('now');
+  const [dateOption, setDateOption] = useState<RateDateOption>('now');
   const [customDate, setCustomDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [customHour, setCustomHour] = useState(new Date().getHours());
   const [customMin, setCustomMin] = useState(0);
@@ -107,12 +100,13 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
     () =>
       PAYMENT_METHODS.map((pm) => {
         const active = activeRate ? (activeRate[`rate_${pm.key}` as keyof DailyRate] as number) : null;
-        const parsed = parseFloat(rates[pm.key]);
+        const parsed = parseDecimal(rates[pm.key]);
         const value = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
         return {
           pm,
           active,
           value,
+          changed: value !== null && (active === null || value !== active),
           delta: value !== null && active !== null ? Math.round((value - active) * 100) / 100 : null,
           // Ce que coûte 1 CNY au nouveau taux — le repère mental des admins.
           perCny: value !== null ? 1_000_000 / value : null,
@@ -122,24 +116,9 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
   );
 
   const allValid = rows.every((r) => r.value !== null);
-  const anyChange = !activeRate || rows.some((r) => r.delta === null || r.delta !== 0);
-
-  const getEffectiveAt = (): string => {
-    const now = new Date();
-    if (dateOption === 'now') return now.toISOString();
-    if (dateOption === 'today') {
-      now.setHours(0, 0, 0, 0);
-      return now.toISOString();
-    }
-    if (dateOption === 'yesterday') {
-      now.setDate(now.getDate() - 1);
-      now.setHours(0, 0, 0, 0);
-      return now.toISOString();
-    }
-    const d = new Date(customDate);
-    d.setHours(customHour, customMin, 0, 0);
-    return d.toISOString();
-  };
+  // Republier les mêmes valeurs avec une AUTRE prise d'effet est un usage
+  // légitime (dater le jeu du jour) — seul le no-op strict est bloqué.
+  const anyChange = !activeRate || dateOption !== 'now' || rows.some((r) => r.changed);
 
   const effectiveLabel =
     dateOption === 'now'
@@ -155,11 +134,11 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
     const suggestionId = suggestion && !suggestion.applied ? suggestion.id : null;
     createRates.mutate(
       {
-        rate_cash: parseFloat(rates.cash),
-        rate_alipay: parseFloat(rates.alipay),
-        rate_wechat: parseFloat(rates.wechat),
-        rate_virement: parseFloat(rates.virement),
-        effective_at: getEffectiveAt(),
+        rate_cash: parseDecimal(rates.cash),
+        rate_alipay: parseDecimal(rates.alipay),
+        rate_wechat: parseDecimal(rates.wechat),
+        rate_virement: parseDecimal(rates.virement),
+        effective_at: rateEffectiveAt(dateOption, customDate, customHour, customMin),
       },
       {
         onSuccess: (result) => {
@@ -343,7 +322,7 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
         <div>
           <SecLabel>Prise d'effet</SecLabel>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {DATE_OPTIONS.map((d) => (
+            {RATE_DATE_OPTIONS.map((d) => (
               <Chip key={d.key} label={d.label} active={dateOption === d.key} onClick={() => setDateOption(d.key)} />
             ))}
           </div>
@@ -376,7 +355,7 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
         </PrimaryPill>
         {allValid && !anyChange && (
           <p className={cn('!mt-2 text-center text-[11px]', TEXT.muted)}>
-            Les valeurs saisies sont identiques aux taux actifs.
+            Valeurs identiques aux taux actifs — modifiez un taux ou choisissez une autre prise d'effet.
           </p>
         )}
       </div>

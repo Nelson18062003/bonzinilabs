@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { TEXT, SOFT_PILL, ScreenLoader, ScreenError, CenterDialog } from '@/desktop/designKit';
+import { TEXT, SOFT_PILL, CenterDialog } from '@/desktop/designKit';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
 import { RatePublishCard } from './RatePublishCard';
 import { RateSimulatorCard } from './RateSimulatorCard';
@@ -26,7 +26,7 @@ import { RateTrendCard } from './RateTrendCard';
 import { RateAdjustmentsCard } from './RateAdjustmentsCard';
 
 export function DesktopRatesScreen() {
-  const { data: activeRate, isLoading: rateLoading, isError: rateError } = useActiveDailyRate();
+  const { data: activeRate } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
   const [flyerOpen, setFlyerOpen] = useState(false);
 
@@ -38,16 +38,9 @@ export function DesktopRatesScreen() {
     cash: activeRate?.rate_cash || 0,
   };
 
-  if (rateLoading || adjLoading) return <ScreenLoader />;
-  if (rateError || adjError) {
-    return (
-      <ScreenError
-        title="Erreur de chargement"
-        description="Impossible de charger les taux. Vérifiez que la migration SQL a été exécutée."
-      />
-    );
-  }
-
+  // Pas de portail bloquant : chaque carte gère son propre état — un échec
+  // du fetch des ajustements ne doit pas empêcher de VOIR ni de PUBLIER les
+  // taux (l'action la plus sensible du module).
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -72,7 +65,12 @@ export function DesktopRatesScreen() {
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[480px_minmax(0,1fr)]">
         <RatePublishCard activeRate={activeRate} />
         <div className="min-w-0 space-y-5">
-          <RateSimulatorCard activeRate={activeRate} adjustments={adjustments ?? []} />
+          <RateSimulatorCard
+            activeRate={activeRate}
+            adjustments={adjustments ?? []}
+            adjustmentsLoading={adjLoading}
+            adjustmentsError={adjError}
+          />
           <DesktopRateHistory />
         </div>
       </div>

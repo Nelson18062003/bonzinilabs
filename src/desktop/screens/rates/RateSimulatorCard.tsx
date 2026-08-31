@@ -19,9 +19,11 @@ import { MethodLogo } from '@/mobile/screens/rates/components/MethodLogo';
 interface Props {
   activeRate: DailyRate | null | undefined;
   adjustments: RateAdjustment[];
+  adjustmentsLoading?: boolean;
+  adjustmentsError?: boolean;
 }
 
-export function RateSimulatorCard({ activeRate, adjustments }: Props) {
+export function RateSimulatorCard({ activeRate, adjustments, adjustmentsLoading, adjustmentsError }: Props) {
   const [amount, setAmount] = useState('500000');
   const [method, setMethod] = useState<PaymentMethodKey>('cash');
   const [country, setCountry] = useState('cameroun');
@@ -78,7 +80,25 @@ export function RateSimulatorCard({ activeRate, adjustments }: Props) {
 
   return (
     <Card className="p-0">
-      <CardHeader title="Simulateur" meta={activeRate ? 'sur les taux actifs' : 'aucun taux actif'} />
+      <CardHeader
+        title="Simulateur"
+        meta={
+          adjustmentsLoading
+            ? 'chargement des ajustements…'
+            : adjustmentsError
+              ? undefined
+              : activeRate
+                ? 'sur les taux actifs'
+                : 'aucun taux actif'
+        }
+      />
+      {/* Sans les ajustements, pays et tranches vaudraient silencieusement
+          0 % — un devis faux. On le dit plutôt que de calculer à côté. */}
+      {adjustmentsError && (
+        <div className="mx-4 mt-3 rounded-xl bg-[#F8EFD8] px-3 py-2 text-[12px] font-semibold text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          Ajustements pays/tranches indisponibles — la simulation est calculée sans eux.
+        </div>
+      )}
       <div className="grid grid-cols-[1fr_260px] items-stretch gap-4 p-4">
         {/* ── Saisie ── */}
         <div className="min-w-0">

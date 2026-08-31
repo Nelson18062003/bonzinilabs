@@ -69,18 +69,20 @@ export function DesktopRateHistory() {
                         </div>
                       </div>
                     </Td>
-                    <Td align="right" className={cn('text-[12.5px] font-semibold tabular-nums', TEXT.strong)}>
-                      {rate.rate_cash.toLocaleString('fr-FR')}
-                    </Td>
-                    <Td align="right" className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>
-                      {rate.rate_alipay.toLocaleString('fr-FR')}
-                    </Td>
-                    <Td align="right" className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>
-                      {rate.rate_wechat.toLocaleString('fr-FR')}
-                    </Td>
-                    <Td align="right" className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>
-                      {rate.rate_virement.toLocaleString('fr-FR')}
-                    </Td>
+                    {/* Cellules pilotées par PAYMENT_METHODS — même source que
+                        l'en-tête, l'ordre ne peut pas diverger. */}
+                    {PAYMENT_METHODS.map((pm) => (
+                      <Td
+                        key={pm.key}
+                        align="right"
+                        className={cn(
+                          'text-[12.5px] tabular-nums',
+                          pm.key === 'cash' ? cn('font-semibold', TEXT.strong) : TEXT.muted,
+                        )}
+                      >
+                        {(rate[`rate_${pm.key}` as keyof DailyRate] as number).toLocaleString('fr-FR')}
+                      </Td>
+                    ))}
                     <Td last align="right">
                       {variation !== null ? (
                         <span
