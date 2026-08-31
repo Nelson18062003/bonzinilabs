@@ -42,6 +42,8 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
   const [quoteTheme, setQuoteTheme] = useState<'dark' | 'light'>('dark');
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Champ dont le montant vient d'être copié (retour visuel ✓).
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Taux personnalisé (négocié avec le client) — vide = taux automatique.
   const [customRateStr, setCustomRateStr] = useState('');
@@ -162,6 +164,8 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
     active: boolean,
     placeholder: string,
     id: string,
+    /** Texte copié tel quel (« ¥11 000 ») — répondre au client sans retaper. */
+    copyText: string | null,
   ) => (
     <label
       htmlFor={id}
@@ -188,6 +192,30 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
           )}
         />
         {unit}
+        {copyText && (
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                await navigator.clipboard.writeText(copyText);
+                setCopiedField(id);
+                setTimeout(() => setCopiedField((cur) => (cur === id ? null : cur)), 1600);
+              } catch {
+                toast.error('Copie impossible dans ce navigateur');
+              }
+            }}
+            aria-label={`Copier ${copyText}`}
+            title={`Copier ${copyText}`}
+            className={cn(
+              'flex h-8 w-8 shrink-0 -translate-y-0.5 items-center justify-center self-center rounded-full transition',
+              copiedField === id ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]' : cn(SURFACE.holder, TEXT.muted),
+            )}
+          >
+            {copiedField === id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </span>
     </label>
   );
@@ -212,6 +240,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
             side === 'xaf',
             '1 000 000',
             'quote-xaf',
+            result ? `${result.amountXAF.toLocaleString('fr-FR')} XAF` : null,
           )}
 
           <div className="flex items-center justify-center">
@@ -228,6 +257,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
             side === 'cny',
             '11 500',
             'quote-cny',
+            result ? `¥${Math.round(result.amountCNY).toLocaleString('fr-FR')}` : null,
           )}
 
           <p className={cn('px-1 text-[11px]', TEXT.muted)}>
