@@ -95,7 +95,7 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
       )}
 
       {view === 'publish' && (
-        <div className="mx-auto max-w-[560px]">
+        <div className="mx-auto max-w-[680px]">
           <RatePublishCard activeRate={activeRate} />
         </div>
       )}

@@ -9,15 +9,17 @@
  * (même pipeline html-to-image que le flyer) ou copiée en texte WhatsApp.
  */
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownUp, Check, Copy, Download, Loader2 } from 'lucide-react';
+import { ArrowDownUp, Check, Copy, Download, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { TextField } from '@/components/form';
+import { parseDecimal } from '@/lib/decimalInput';
 import { PAYMENT_METHODS, COUNTRIES } from '@/types/rates';
 import type { PaymentMethodKey, RateAdjustment, DailyRate } from '@/types/rates';
 import { calculateFinalRate, getBaseRate, convertCNYtoXAF } from '@/lib/rateCalculation';
 import { formatNumber } from '@/lib/formatters';
 import { downloadNodePNG } from '@/lib/exportFlyer';
-import { SURFACE, TEXT, Card, CardHeader, Chip, SecLabel, ScreenError, ScreenLoader } from '@/desktop/designKit';
+import { SURFACE, TEXT, Card, CardHeader, Chip, SecLabel, StatusPill, ScreenError, ScreenLoader } from '@/desktop/designKit';
 import { MethodLogo } from '@/mobile/screens/rates/components/MethodLogo';
 import { RateQuoteCard, QUOTE_W, QUOTE_H } from './RateQuoteCard';
 
@@ -41,12 +43,19 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Taux personnalisé (négocié avec le client) — vide = taux automatique.
+  const [customRateStr, setCustomRateStr] = useState('');
+
   const countryAdjs = useMemo(() => adjustments.filter((a) => a.type === 'country'), [adjustments]);
   const tierAdjs = useMemo(() => adjustments.filter((a) => a.type === 'tier'), [adjustments]);
 
   const amount = parseInt(amountStr.replace(/\D/g, '')) || 0;
+  const customRate = parseDecimal(customRateStr);
+  const hasCustomRate = Number.isFinite(customRate) && customRate > 0;
 
-  const result = useMemo(() => {
+  // Le taux « du jour » (auto) — calculé même quand un taux personnalisé est
+  // appliqué, pour afficher l'écart à l'admin.
+  const autoCalc = useMemo(() => {
     if (!activeRate || amount <= 0) return null;
     const baseRate = getBaseRate(activeRate, method);
     const countryPct = countryAdjs.find((c) => c.key === country)?.percentage ?? 0;
@@ -62,6 +71,19 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
       finalRate: calc.finalRate,
     };
   }, [activeRate, amount, side, method, country, countryAdjs, tierAdjs]);
+
+  const result = useMemo(() => {
+    if (amount <= 0) return null;
+    // Taux personnalisé : conversion directe — les ajustements pays/tranche
+    // ne s'appliquent pas, l'admin fixe le taux final lui-même.
+    if (hasCustomRate) {
+      const perUnit = customRate / 1_000_000;
+      const amountXAF = side === 'xaf' ? amount : Math.round(amount / perUnit);
+      const amountCNY = side === 'cny' ? amount : Math.round(amountXAF * perUnit * 100) / 100;
+      return { ...(autoCalc ?? { baseRate: null, countryPct: null, tierPct: null }), amountXAF, amountCNY, finalRate: customRate, custom: true as const };
+    }
+    return autoCalc ? { ...autoCalc, custom: false as const } : null;
+  }, [amount, side, hasCustomRate, customRate, autoCalc]);
 
   // Champ édité = la saisie ; champ opposé = la valeur dérivée, formatée.
   const xafDisplay = side === 'xaf' ? (amount > 0 ? formatNumber(amount) : '') : result ? formatNumber(result.amountXAF) : '';
@@ -239,30 +261,68 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
             ))}
           </div>
 
-          {/* Détail du calcul — pour l'admin, jamais dans l'image partagée */}
-          {result && (
-            <div className="space-y-1.5 border-t border-black/[0.06] pt-3 text-[12px] dark:border-white/[0.08]">
-              <SecLabel>Détail du calcul</SecLabel>
+          {/* Détail du calcul — pour l'admin, jamais dans l'image partagée.
+              Le taux appliqué est ÉDITABLE : taux négocié avec le client. */}
+          <div className="space-y-1.5 border-t border-black/[0.06] pt-3 text-[12px] dark:border-white/[0.08]">
+            <SecLabel>Détail du calcul</SecLabel>
+            {/* Dérivation automatique — grisée quand un taux personnalisé la remplace */}
+            <div className={cn('space-y-1.5', hasCustomRate && 'opacity-50')}>
               <div className="flex justify-between gap-2">
                 <span className={TEXT.muted}>Taux base ({methodLabel})</span>
-                <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{result.baseRate.toLocaleString('fr-FR')}</span>
+                <span className={cn('font-semibold tabular-nums', TEXT.strong)}>
+                  {result?.baseRate != null ? result.baseRate.toLocaleString('fr-FR') : '—'}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className={TEXT.muted}>Pays ({countryLabel})</span>
-                <span className={cn('font-semibold tabular-nums', adjClass(result.countryPct))}>{result.countryPct}%</span>
+                <span className={cn('font-semibold tabular-nums', adjClass(result?.countryPct ?? 0))}>
+                  {result?.countryPct != null ? `${result.countryPct}%` : '—'}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className={TEXT.muted}>Tranche</span>
-                <span className={cn('font-semibold tabular-nums', adjClass(result.tierPct))}>{result.tierPct}%</span>
-              </div>
-              <div className="flex justify-between gap-2 border-t border-black/[0.06] pt-1.5 dark:border-white/[0.08]">
-                <span className={cn('font-bold', TEXT.strong)}>Taux final</span>
-                <span className="font-black tabular-nums text-[#5B4CC4] dark:text-[#B5AAF0]">
-                  {result.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
+                <span className={cn('font-semibold tabular-nums', adjClass(result?.tierPct ?? 0))}>
+                  {result?.tierPct != null ? `${result.tierPct}%` : '—'}
                 </span>
               </div>
             </div>
-          )}
+            <div className="flex items-center justify-between gap-2 border-t border-black/[0.06] pt-1.5 dark:border-white/[0.08]">
+              <span className={cn('flex items-center gap-1.5 font-bold', TEXT.strong)}>
+                Taux appliqué
+                {hasCustomRate && <StatusPill tone="pending" label="Personnalisé" />}
+              </span>
+              <span className="flex items-center gap-1">
+                <TextField
+                  variant="decimal"
+                  size="sm"
+                  value={customRateStr}
+                  onChange={(e) => setCustomRateStr(e.target.value)}
+                  placeholder={autoCalc ? autoCalc.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '—'}
+                  wrapperClassName="w-[96px]"
+                  controlClassName="h-8 text-right text-[13px] font-black tabular-nums text-[#5B4CC4] dark:text-[#B5AAF0]"
+                  aria-label="Taux appliqué (modifiable)"
+                />
+                {customRateStr !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomRateStr('')}
+                    aria-label="Revenir au taux automatique"
+                    title="Revenir au taux automatique"
+                    className={cn('flex h-6 w-6 items-center justify-center rounded-full', SURFACE.holder)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </span>
+            </div>
+            {hasCustomRate && autoCalc && (
+              <p className={cn('text-[11px]', customRate < autoCalc.finalRate ? 'text-[#C0504D] dark:text-[#E79A9A]' : 'text-[#2E7D52] dark:text-[#7FCBA0]')}>
+                Écart vs taux du jour ({autoCalc.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}) :{' '}
+                {customRate >= autoCalc.finalRate ? '+' : ''}
+                {(customRate - autoCalc.finalRate).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ¥ / 1M
+              </p>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -278,8 +338,8 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
           }
         />
         <div className="p-4">
-          {!activeRate ? (
-            <ScreenError title="Aucun taux actif" description="Publiez les taux du jour pour coter un client." />
+          {!activeRate && !hasCustomRate ? (
+            <ScreenError title="Aucun taux actif" description="Publiez les taux du jour — ou saisissez un taux personnalisé — pour coter un client." />
           ) : result ? (
             <>
               <div ref={setPreviewEl} className="mx-auto max-w-[520px]">
