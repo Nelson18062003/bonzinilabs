@@ -37,6 +37,31 @@ Si vous ajoutez un rôle ou une permission, mettez à jour **les deux**
 matrices : le test `src/tests/security/rolePermissionParity.test.ts` échoue
 en cas de dérive.
 
+**Une RPC SECURITY DEFINER sans garde N'EST PAS protégée par l'UI.** Le
+défaut n'est pas seulement `is_admin` seul : certaines RPC n'avaient
+**aucun** contrôle (`scan_cash_payment`, `confirm_cash_payment`). Comme
+`anon` et `authenticated` ont l'EXECUTE par défaut, n'importe quel client
+de l'app pouvait marquer un paiement cash « remis en espèces » avec une
+signature arbitraire. Avant de livrer une RPC, poser la question dans cet
+ordre : *qui* peut l'appeler (rôle), *sur quelle ligne* (propriétaire), et
+*depuis quel statut* (transition).
+
+**Statuts terminaux** : refuser `completed` ne suffit pas. `rejected` et
+`cancelled_by_admin` ont **déjà recrédité** le portefeuille — les rouvrir
+laisse le client garder le remboursement ET l'opération « exécutée ».
+Énumérer TOUS les statuts terminaux dans le garde-fou.
+
+**Montants** : exiger explicitement `> 0`. Un montant négatif inverse
+l'opération sans que le libellé le montre (`admin_adjust_wallet` en
+`debit` avec `-1 000 000` **créditait** en journalisant `ADMIN_DEBIT`).
+En revanche, **pas de plafond serveur arbitraire** : le plafond de 50 M
+des formulaires est un garde-fou de saisie, et un dépôt réel de
+133 500 000 XAF existe en base.
+
+**Paramètre `p_user_id`** : un identifiant passé en paramètre n'est pas une
+autorisation. Le lier à `auth.uid()`, sauf si l'appelant a la permission
+staff correspondante (`create_client_deposit`).
+
 **Admin désactivé** : désactiver une ligne `user_roles` **ne révoque pas** le
 JWT Supabase. Toute lecture de rôle doit donc filtrer
 `(is_disabled = false OR is_disabled IS NULL)` — sinon un admin révoqué
