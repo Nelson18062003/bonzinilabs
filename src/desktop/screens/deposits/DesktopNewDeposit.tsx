@@ -42,6 +42,8 @@ import {
 } from '@/data/depositMethodsData';
 import { MIN_DEPOSIT_XAF, MAX_AMOUNT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { formatCurrency } from '@/lib/formatters';
+import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
+import { matchesClientSearch } from '@/lib/clientSearch';
 import { cn } from '@/lib/utils';
 import {
   SURFACE,
@@ -261,6 +263,10 @@ export function DesktopNewDeposit() {
   const [agency, setAgency] = useState<string | null>(null);
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [adminComment, setAdminComment] = useState('');
+  // Date de l'opération — « maintenant » par défaut, antidatable (parité
+  // avec le wizard mobile MobileNewDepositV2 et le paiement desktop).
+  const [useCustomDate, setUseCustomDate] = useState(false);
+  const [customDateStr, setCustomDateStr] = useState('');
   const clientRef = useRef<HTMLDivElement>(null);
 
   const client = useMemo(() => clients?.find((c) => c.user_id === clientId) ?? null, [clients, clientId]);
@@ -278,9 +284,11 @@ export function DesktopNewDeposit() {
 
   const filteredClients = useMemo(() => {
     if (!clients) return [];
-    const s = clientSearch.trim().toLowerCase();
+    const s = clientSearch.trim();
     const list = s
-      ? clients.filter((c) => `${c.first_name} ${c.last_name}`.toLowerCase().includes(s) || c.phone?.includes(s))
+      ? clients.filter((c) =>
+          matchesClientSearch({ firstName: c.first_name ?? '', lastName: c.last_name ?? '', phone: c.phone ?? '' }, s),
+        )
       : clients;
     return list.slice(0, 8);
   }, [clients, clientSearch]);
@@ -323,11 +331,19 @@ export function DesktopNewDeposit() {
       toast.error(`Montant invalide — entre ${fmt(MIN_DEPOSIT_XAF)} et ${fmt(MAX_AMOUNT_XAF)} XAF`);
       return;
     }
+    // Re-vérifié ici (pas seulement dans le champ) : la page peut rester
+    // ouverte au-delà du max affiché par le picker.
+    const opDate = resolveOperationDate(useCustomDate, customDateStr);
+    if (opDate.error) {
+      toast.error(opDate.error);
+      return;
+    }
     try {
       const result = await createDeposit.mutateAsync({
         user_id: client.user_id,
         amount_xaf: amountNum,
         method: getDbMethod(),
+        desired_date: opDate.date,
         bank_name: bank ? banks.find((b) => b.bank === bank)?.label : undefined,
         agency_name: agency ? agencies.find((a) => a.agency === agency)?.label : undefined,
         admin_comment: adminComment || undefined,
@@ -338,7 +354,7 @@ export function DesktopNewDeposit() {
       /* toast handled by the hook */
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, family, amountNum, amountValid, bank, agency, adminComment, proofFiles, createDeposit, navigate]);
+  }, [client, family, amountNum, amountValid, useCustomDate, customDateStr, bank, agency, adminComment, proofFiles, createDeposit, navigate]);
 
   // ⌘⏎ submits from anywhere on the page.
   useEffect(() => {
@@ -460,6 +476,17 @@ export function DesktopNewDeposit() {
                 </span>
               )}
             </div>
+            <OperationDateCard
+              className="mt-3"
+              enabled={useCustomDate}
+              value={customDateStr}
+              onToggle={(on, nowLocal) => {
+                setUseCustomDate(on);
+                if (on && !customDateStr) setCustomDateStr(nowLocal);
+              }}
+              onChange={setCustomDateStr}
+              accent="#10B981"
+            />
           </Card>
 
           <Card>
@@ -587,6 +614,14 @@ export function DesktopNewDeposit() {
                 <span className={TEXT.muted}>Méthode</span>
                 <span className={cn('truncate font-semibold', family ? TEXT.strong : TEXT.muted)}>
                   {family ? [familyLabel, subLabel].filter(Boolean).join(' · ') : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className={TEXT.muted}>Date de l'opération</span>
+                <span className={cn('font-semibold tabular-nums', TEXT.strong)}>
+                  {useCustomDate && customDateStr
+                    ? new Date(customDateStr).toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'Maintenant'}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">

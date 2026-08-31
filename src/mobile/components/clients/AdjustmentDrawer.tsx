@@ -48,7 +48,8 @@ export function AdjustmentDrawer({
   const isValid = amount > 0 && reason.trim().length > 0 && !isInsufficientBalance;
 
   const handleSubmit = async () => {
-    if (!isValid) return;
+    // isPending : un double-tap pendant la mutation créerait deux ajustements.
+    if (!isValid || createAdjustmentMutation.isPending) return;
 
     try {
       await createAdjustmentMutation.mutateAsync({

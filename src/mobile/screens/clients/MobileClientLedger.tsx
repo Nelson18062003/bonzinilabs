@@ -5,16 +5,9 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClient, useClientLedger } from '@/hooks/useClientManagement';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import {
-  ArrowDownCircle,
-  ArrowUpCircle,
-  XCircle,
-  RefreshCw,
-  PlusCircle,
-  MinusCircle,
-  Clock,
-} from 'lucide-react';
+import { Clock } from 'lucide-react';
 import type { LedgerEntryType } from '@/types/admin';
+import { ENTRY_TYPE_CONFIG, AMOUNT_TONE } from '@/lib/ledgerDisplay';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import {
@@ -22,7 +15,6 @@ import {
   TEXT,
   PRIMARY_PILL,
   SOFT_PILL,
-  type Tone,
   Card,
   Holder,
 } from '@/mobile/designKit';
@@ -34,33 +26,6 @@ const FILTER_OPTIONS: { value: LedgerEntryType | 'all'; label: string }[] = [
   { value: 'ADMIN_CREDIT', label: 'Crédits' },
   { value: 'ADMIN_DEBIT', label: 'Débits' },
 ];
-
-// Entry type → tone (color carries meaning), icon, sign and label. Informational
-// entries (no balance impact) are neutral.
-const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, {
-  icon: typeof ArrowDownCircle;
-  tone: Tone;
-  prefix: string;
-  label: string;
-  isInformational?: boolean;
-}> = {
-  DEPOSIT_VALIDATED: { icon: ArrowDownCircle, tone: 'success', prefix: '+', label: 'Dépôt validé' },
-  DEPOSIT_REFUSED: { icon: XCircle, tone: 'neutral', prefix: '', label: 'Dépôt refusé', isInformational: true },
-  PAYMENT_RESERVED: { icon: Clock, tone: 'pending', prefix: '-', label: 'Paiement réservé' },
-  PAYMENT_EXECUTED: { icon: ArrowUpCircle, tone: 'neutral', prefix: '-', label: 'Paiement exécuté', isInformational: true },
-  PAYMENT_CANCELLED_REFUNDED: { icon: RefreshCw, tone: 'success', prefix: '+', label: 'Paiement remboursé' },
-  ADMIN_CREDIT: { icon: PlusCircle, tone: 'success', prefix: '+', label: 'Crédit admin' },
-  ADMIN_DEBIT: { icon: MinusCircle, tone: 'danger', prefix: '-', label: 'Débit admin' },
-};
-
-// Tone → amount text colour (matches the pill palette).
-const AMOUNT_TONE: Record<Tone, string> = {
-  success: 'text-[#2E7D52] dark:text-[#7FCBA0]',
-  pending: 'text-[#9A6B12] dark:text-[#E7C083]',
-  danger: 'text-[#C0504D] dark:text-[#E79A9A]',
-  info: 'text-[#5B4CC4] dark:text-[#B5AAF0]',
-  neutral: 'text-[#8E8BA0] dark:text-[#9B98AD]',
-};
 
 export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');

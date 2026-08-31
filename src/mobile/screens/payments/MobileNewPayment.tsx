@@ -10,7 +10,7 @@
 //   nouveau), lock cash+client, toggle taux personnalisé,
 //   upload QR, validations, useAdminCreatePayment + snapshot.
 // ============================================================
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -22,6 +22,7 @@ import { OperationDateCard, resolveOperationDate } from '@/mobile/components/Ope
 import { useCountUp } from '@/hooks/useCountUp';
 import {
   useAdminClientBeneficiaries,
+  useAdminClientBeneficiaryNames,
   useAdminCreateBeneficiary,
   type Beneficiary,
 } from '@/hooks/useBeneficiaries';
@@ -29,6 +30,7 @@ import { getBaseRate } from '@/lib/rateCalculation';
 import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
+import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -206,6 +208,36 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     client?.user_id,
     dbMode ?? undefined,
   );
+  // Noms/alias tous modes confondus — numérote le nom par défaut
+  // « Supplier NN » sans dupliquer un numéro déjà pris sur un autre mode.
+  const { data: beneficiaryNames } = useAdminClientBeneficiaryNames(client?.user_id);
+  // Dernier nom posé automatiquement — permet de le recaler quand la liste
+  // arrive après coup (sans jamais écraser une saisie de l'admin).
+  const autoNameRef = useRef<string | null>(null);
+
+  // Ouverture de l'onglet bénéficiaire : sur « Nouveau » en Alipay/WeChat,
+  // le nom (requis) est prérempli « Supplier NN » — l'admin peut le modifier.
+  function openBenefTab(tab: 'existing' | 'new') {
+    setBenefTab(tab);
+    if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !benef.name.trim()) {
+      const auto = nextSupplierName(beneficiaryNames);
+      autoNameRef.current = auto;
+      setBenef((b) => ({ ...b, name: auto }));
+    }
+  }
+
+  // Si le nom auto a été posé avant que la liste ne soit chargée, on le
+  // renumérote à l'arrivée des données — uniquement s'il est resté intact.
+  useEffect(() => {
+    if (!autoNameRef.current) return;
+    setBenef((b) => {
+      if (b.name !== autoNameRef.current) return b;
+      const next = nextSupplierName(beneficiaryNames);
+      if (next === b.name) return b;
+      autoNameRef.current = next;
+      return { ...b, name: next };
+    });
+  }, [beneficiaryNames]);
 
   // Succès
   const [done, setDone] = useState<{ paymentId: string; cny: number; xaf: number } | null>(null);
@@ -825,7 +857,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     return (
                       <button
                         key={tab}
-                        onClick={() => setBenefTab(tab)}
+                        onClick={() => openBenefTab(tab)}
                         className={cn(
                           'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
                           active ? 'text-white' : TEXT.muted,
@@ -848,7 +880,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                           Aucun bénéficiaire {mode?.name} enregistré pour ce client
                         </div>
                         <button
-                          onClick={() => setBenefTab('new')}
+                          onClick={() => openBenefTab('new')}
                           className="mt-2 text-[13px] font-bold"
                           style={{ color: VIOLET }}
                         >

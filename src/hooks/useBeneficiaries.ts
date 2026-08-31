@@ -296,6 +296,31 @@ export function useAdminClientBeneficiaries(
   });
 }
 
+/**
+ * Admin: noms + alias des bénéficiaires actifs d'un client, tous modes.
+ * Ne sert qu'à numéroter le nom par défaut « Supplier NN » — pas de `*`,
+ * pas d'URL de QR signées (la liste complète en générait une par QR).
+ * La clé partage le préfixe 'admin-client-beneficiaries' pour être
+ * invalidée par les mêmes mutations.
+ */
+export function useAdminClientBeneficiaryNames(clientId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin-client-beneficiaries', clientId, 'names-only'],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('beneficiaries')
+        .select('name, alias')
+        .eq('client_id', clientId!)
+        .eq('is_active', true);
+      if (error) throw error;
+      return (data ?? []) as { name: string | null; alias: string | null }[];
+    },
+    enabled: !!clientId,
+    staleTime: 30_000,
+    retry: 1,
+  });
+}
+
 export function useAdminCreateBeneficiary() {
   const queryClient = useQueryClient();
   const { user } = useAdminAuth();
