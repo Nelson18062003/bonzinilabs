@@ -116,3 +116,37 @@ export function useCalculateRate() {
     rate_id: 'rate-active',
   });
 }
+
+// Hooks de suggestion (Binance P2P) — mêmes noms que le vrai module, pour que
+// les écrans Taux (mobile + desktop) montent aussi sous SCREENSHOT_MOCK=1.
+export function useLatestSuggestion() {
+  return query<import('@/types/rates').RateSuggestion | null>({
+    id: 's1',
+    computed_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
+    cmr_rate_max: 655.2,
+    cmr_margin_xaf: 5,
+    cmr_orders: [
+      { name: 'CryptoKing237', price: 655.2, tradable: 1450, orders: 812, finishRate: 0.98 },
+      { name: 'MboaExchange', price: 654.8, tradable: 3200, orders: 1904, finishRate: 0.99 },
+    ],
+    chn_rate_avg: 7.244,
+    chn_orders: [
+      { name: '广州鑫达', price: 7.25, tradable: 52000, orders: 8812, finishRate: 0.99 },
+      { name: 'ShenzhenOTC', price: 7.243, tradable: 88000, orders: 12040, finishRate: 0.99 },
+    ],
+    suggested_rate: 11540,
+    method: 'nelson-v2',
+    applied: false,
+    applied_at: null,
+    applied_rate_id: null,
+    applied_by: null,
+  });
+}
+
+export function useComputeSuggestion() {
+  return mutation<import('@/types/rates').RateSuggestion>(undefined as never);
+}
+
+export function useMarkSuggestionApplied() {
+  return mutation<unknown>({});
+}

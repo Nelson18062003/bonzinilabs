@@ -52,7 +52,7 @@ for (const theme of THEMES) {
     try {
       await page.goto(`${BASE}?screen=${screen}&theme=${theme}&font=dm`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(3500);
-      await page.screenshot({ path: `shots/admin-redesign/${screen}-${theme}.png` });
+      await page.screenshot({ path: `shots/admin-redesign/${screen}-${theme}.png`, fullPage: process.env.FULLPAGE === "1" });
       console.log(`OK  ${screen}-${theme}`);
     } catch (e) {
       console.log(`ERR ${screen}-${theme}: ${e.message}`);

@@ -4,13 +4,68 @@ const now = Date.now();
 const ago = (h) => new Date(now - h * 3600_000).toISOString();
 
 const clients = [
-  { user_id: 'u1', first_name: 'Clarisse', last_name: 'Ngo Bell', phone: '+237 699 21 40 88', company_name: 'CNB Import' },
-  { user_id: 'u2', first_name: 'Moussa', last_name: 'Bah', phone: '+237 677 02 33 19', company_name: null },
-  { user_id: 'u3', first_name: 'Jean-Paul', last_name: 'Mbarga', phone: '+237 655 71 90 02', company_name: 'Mbarga & Fils' },
-  { user_id: 'u4', first_name: 'Aïcha', last_name: 'Diallo', phone: '+237 690 44 12 07', company_name: null },
-  { user_id: 'u5', first_name: 'Fatou', last_name: 'Ndiaye', phone: '+237 696 88 45 31', company_name: 'FN Import Sarl' },
-  { user_id: 'u6', first_name: 'Ibrahim', last_name: 'Touré', phone: '+237 671 55 08 64', company_name: null },
-  { user_id: 'u7', first_name: 'Mariam', last_name: 'Koné', phone: '+237 698 30 77 25', company_name: null },
+  { user_id: 'u1', first_name: 'Clarisse', last_name: 'Ngo Bell', phone: '+237 699 21 40 88', company_name: 'CNB Import', email: 'clarisse@cnbimport.cm', status: 'ACTIVE', city: 'Douala', country: 'Cameroun', utm_source: 'whatsapp', utm_medium: null, utm_campaign: 'flyer-aout', avatar_url: null, created_at: ago(24 * 220), updated_at: ago(5) },
+  { user_id: 'u2', first_name: 'Moussa', last_name: 'Bah', phone: '+237 677 02 33 19', company_name: null, email: null, status: 'INACTIVE', city: 'Garoua', country: 'Cameroun', utm_source: null, utm_medium: null, utm_campaign: null, avatar_url: null, created_at: ago(24 * 400), updated_at: ago(24 * 30) },
+  { user_id: 'u3', first_name: 'Jean-Paul', last_name: 'Mbarga', phone: '+237 655 71 90 02', company_name: 'Mbarga & Fils', email: 'jp.mbarga@gmail.com', status: 'ACTIVE', city: 'Yaoundé', country: 'Cameroun', utm_source: null, utm_medium: null, utm_campaign: null, avatar_url: null, created_at: ago(24 * 90), updated_at: ago(12) },
+  { user_id: 'u4', first_name: 'Aïcha', last_name: 'Diallo', phone: '+237 690 44 12 07', company_name: null, email: 'aicha.d@yahoo.fr', status: 'PENDING_KYC', city: 'N’Djamena', country: 'Tchad', utm_source: 'facebook', utm_medium: null, utm_campaign: null, avatar_url: null, created_at: ago(24 * 6), updated_at: ago(20) },
+  { user_id: 'u5', first_name: 'Fatou', last_name: 'Ndiaye', phone: '+237 696 88 45 31', company_name: 'FN Import Sarl', email: 'fatou@fnimport.com', status: 'ACTIVE', city: 'Douala', country: 'Cameroun', utm_source: null, utm_medium: null, utm_campaign: null, avatar_url: null, created_at: ago(24 * 150), updated_at: ago(2) },
+  { user_id: 'u6', first_name: 'Ibrahim', last_name: 'Touré', phone: '+237 671 55 08 64', company_name: null, email: null, status: 'SUSPENDED', city: 'Libreville', country: 'Gabon', utm_source: null, utm_medium: null, utm_campaign: null, avatar_url: null, created_at: ago(24 * 310), updated_at: ago(24 * 8) },
+  { user_id: 'u7', first_name: 'Mariam', last_name: 'Koné', phone: '+237 698 30 77 25', company_name: null, email: 'mariamk@outlook.com', status: 'ACTIVE', city: 'Douala', country: 'Cameroun', utm_source: null, utm_medium: null, utm_campaign: null, avatar_url: null, created_at: ago(24 * 45), updated_at: ago(1) },
+];
+
+// Grand livre (fiche client desktop — derniers mouvements). Filtré par user_id.
+const ledgerEntries = [
+  { id: 'le1', wallet_id: 'w5', user_id: 'u5', entry_type: 'DEPOSIT_VALIDATED', amount_xaf: 850000, balance_before: 363450, balance_after: 1213450, reference_type: 'deposit', reference_id: 'd5', description: 'Dépôt BZ-DP-2026-0847 validé', metadata: {}, created_by_admin_id: null, created_at: ago(2.5) },
+  { id: 'le2', wallet_id: 'w5', user_id: 'u5', entry_type: 'PAYMENT_RESERVED', amount_xaf: 1250000, balance_before: 1613450, balance_after: 363450, reference_type: 'payment', reference_id: 'p3', description: 'Paiement BZ-PY-2026-1204 (Alipay)', metadata: {}, created_by_admin_id: null, created_at: ago(26) },
+  { id: 'le3', wallet_id: 'w5', user_id: 'u5', entry_type: 'ADMIN_CREDIT', amount_xaf: 50000, balance_before: 1563450, balance_after: 1613450, reference_type: null, reference_id: null, description: 'Geste commercial — retard traitement', metadata: {}, created_by_admin_id: 'admin1', created_at: ago(50) },
+  { id: 'le4', wallet_id: 'w5', user_id: 'u5', entry_type: 'DEPOSIT_VALIDATED', amount_xaf: 1500000, balance_before: 63450, balance_after: 1563450, reference_type: 'deposit', reference_id: 'd9', description: 'Dépôt BZ-DP-2026-0791 validé', metadata: {}, created_by_admin_id: null, created_at: ago(24 * 4) },
+  { id: 'le5', wallet_id: 'w5', user_id: 'u5', entry_type: 'ADMIN_DEBIT', amount_xaf: 20000, balance_before: 83450, balance_after: 63450, reference_type: null, reference_id: null, description: 'Correction double crédit', metadata: {}, created_by_admin_id: 'admin1', created_at: ago(24 * 6) },
+];
+
+// Historique des taux (module Taux desktop) — décroissant par effective_at.
+const dailyRates = [
+  { id: 'r1', rate_cash: 11600, rate_alipay: 11530, rate_wechat: 11530, rate_virement: 11480, effective_at: ago(6), created_at: ago(6), created_by: 'admin1', is_active: true },
+  { id: 'r2', rate_cash: 11560, rate_alipay: 11500, rate_wechat: 11500, rate_virement: 11450, effective_at: ago(30), created_at: ago(30), created_by: 'admin1', is_active: false },
+  { id: 'r3', rate_cash: 11620, rate_alipay: 11550, rate_wechat: 11540, rate_virement: 11490, effective_at: ago(54), created_at: ago(54), created_by: 'admin1', is_active: false },
+  { id: 'r4', rate_cash: 11580, rate_alipay: 11510, rate_wechat: 11510, rate_virement: 11460, effective_at: ago(78), created_at: ago(78), created_by: 'admin1', is_active: false },
+  { id: 'r5', rate_cash: 11540, rate_alipay: 11470, rate_wechat: 11470, rate_virement: 11420, effective_at: ago(102), created_at: ago(102), created_by: 'admin1', is_active: false },
+  { id: 'r6', rate_cash: 11650, rate_alipay: 11580, rate_wechat: 11570, rate_virement: 11520, effective_at: ago(126), created_at: ago(126), created_by: 'admin1', is_active: false },
+  { id: 'r7', rate_cash: 11610, rate_alipay: 11540, rate_wechat: 11530, rate_virement: 11480, effective_at: ago(150), created_at: ago(150), created_by: 'admin1', is_active: false },
+  { id: 'r8', rate_cash: 11570, rate_alipay: 11500, rate_wechat: 11490, rate_virement: 11440, effective_at: ago(174), created_at: ago(174), created_by: 'admin1', is_active: false },
+  { id: 'r9', rate_cash: 11530, rate_alipay: 11460, rate_wechat: 11450, rate_virement: 11400, effective_at: ago(198), created_at: ago(198), created_by: 'admin1', is_active: false },
+  { id: 'r10', rate_cash: 11590, rate_alipay: 11520, rate_wechat: 11510, rate_virement: 11470, effective_at: ago(222), created_at: ago(222), created_by: 'admin1', is_active: false },
+];
+
+const rateAdjustments = [
+  { id: 'a1', type: 'country', key: 'cameroun', label: 'Cameroun', percentage: 0, is_reference: true, sort_order: 1, updated_at: ago(24), updated_by: null },
+  { id: 'a2', type: 'country', key: 'gabon', label: 'Gabon', percentage: -1.5, is_reference: false, sort_order: 2, updated_at: ago(24), updated_by: null },
+  { id: 'a3', type: 'country', key: 'tchad', label: 'Tchad', percentage: -2, is_reference: false, sort_order: 3, updated_at: ago(24), updated_by: null },
+  { id: 'a4', type: 'country', key: 'rca', label: 'Centrafrique', percentage: -2.5, is_reference: false, sort_order: 4, updated_at: ago(24), updated_by: null },
+  { id: 'a5', type: 'country', key: 'congo', label: 'Congo', percentage: -1.5, is_reference: false, sort_order: 5, updated_at: ago(24), updated_by: null },
+  { id: 'a6', type: 'country', key: 'guinee', label: 'Guinée Équatoriale', percentage: -3, is_reference: false, sort_order: 6, updated_at: ago(24), updated_by: null },
+  { id: 'a7', type: 'tier', key: 't3', label: '≥ 1M XAF', percentage: 0, is_reference: true, sort_order: 1, updated_at: ago(24), updated_by: null },
+  { id: 'a8', type: 'tier', key: 't2', label: '400K–999K', percentage: -1, is_reference: false, sort_order: 2, updated_at: ago(24), updated_by: null },
+  { id: 'a9', type: 'tier', key: 't1', label: '10K–399K', percentage: -2, is_reference: false, sort_order: 3, updated_at: ago(24), updated_by: null },
+];
+
+const rateSuggestions = [
+  {
+    id: 's1', computed_at: ago(2), cmr_rate_max: 655.2, cmr_margin_xaf: 5,
+    cmr_orders: [
+      { name: 'CryptoKing237', price: 655.2, tradable: 1450, orders: 812, finishRate: 0.98 },
+      { name: 'MboaExchange', price: 654.8, tradable: 3200, orders: 1904, finishRate: 0.99 },
+      { name: 'SafeTrade CM', price: 654.1, tradable: 980, orders: 455, finishRate: 0.97 },
+      { name: 'DlaCoins', price: 653.9, tradable: 2100, orders: 1210, finishRate: 0.99 },
+      { name: 'KmerP2P', price: 653.2, tradable: 760, orders: 340, finishRate: 0.96 },
+    ],
+    chn_rate_avg: 7.244,
+    chn_orders: [
+      { name: '广州鑫达', price: 7.25, tradable: 52000, orders: 8812, finishRate: 0.99 },
+      { name: 'ShenzhenOTC', price: 7.243, tradable: 88000, orders: 12040, finishRate: 0.99 },
+      { name: '义乌汇通', price: 7.239, tradable: 34000, orders: 5230, finishRate: 0.98 },
+    ],
+    suggested_rate: 11540, method: 'nelson-v2', applied: false, applied_at: null, applied_rate_id: null, applied_by: null,
+  },
 ];
 
 const deposits = [
@@ -92,8 +147,13 @@ const stats = {
 };
 
 function byId(url, list) {
-  const m = url.match(/id=eq\.([^&]+)/);
-  return m ? (list.filter((x) => x.id === decodeURIComponent(m[1]))) : list;
+  // [?&]id=eq. — sans l'ancre, « user_id=eq.u5 » matchait aussi et filtrait
+  // par id ('u5') → listes vides et totaux à 0 sur la fiche client.
+  const m = url.match(/[?&]id=eq\.([^&]+)/);
+  if (m) return list.filter((x) => x.id === decodeURIComponent(m[1]));
+  const mu = url.match(/[?&]user_id=eq\.([^&]+)/);
+  if (mu) return list.filter((x) => x.user_id === decodeURIComponent(mu[1]));
+  return list;
 }
 
 function respond(url) {
@@ -130,8 +190,19 @@ function respond(url) {
     return wallets;
   }
   if (url.includes('/beneficiaries')) return [];
-  if (url.includes('/daily_rates'))
-    return [{ id: 'r1', rate_alipay: 11530, rate_wechat: 11530, rate_virement: 11480, rate_cash: 11600, effective_at: ago(6), created_at: ago(6), is_active: true }];
+  if (url.includes('/ledger_entries')) {
+    const m = url.match(/user_id=eq\.([^&]+)/);
+    return m ? ledgerEntries.filter((e) => e.user_id === decodeURIComponent(m[1])) : ledgerEntries;
+  }
+  if (url.includes('/user_roles')) return [];
+  if (url.includes('/rate_adjustments')) return rateAdjustments;
+  if (url.includes('/rate_suggestions')) return rateSuggestions;
+  if (url.includes('/daily_rates')) {
+    if (url.includes('is_active=eq.true')) return dailyRates.filter((r) => r.is_active);
+    // Le graphique demande l'ordre croissant ; l'historique le décroissant.
+    if (url.includes('order=effective_at.asc')) return [...dailyRates].reverse();
+    return dailyRates;
+  }
   return [];
 }
 
