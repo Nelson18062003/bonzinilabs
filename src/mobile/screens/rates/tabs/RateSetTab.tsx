@@ -10,15 +10,17 @@
 // Logique 100% préservée : useCreateDailyRates (RPC), direction,
 // getEffectiveAt (now/today/yesterday/custom + heure/minute), états.
 // ============================================================
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Check, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
 import { BzDateTimeField } from '@/mobile/components/BzDateTimePicker';
+import { parseDecimal } from '@/lib/decimalInput';
+import { rateEffectiveAt, type RateDateOption } from '@/lib/rateEffectiveDate';
 import { PAYMENT_METHODS } from '@/types/rates';
-import type { DailyRate } from '@/types/rates';
+import type { DailyRate, PaymentMethodKey } from '@/types/rates';
 import {
   useCreateDailyRates,
   useLatestSuggestion,
@@ -32,6 +34,18 @@ interface RateSetTabProps {
   currentRate: DailyRate | null | undefined;
 }
 
+const RATE_KEYS: PaymentMethodKey[] = ['cash', 'alipay', 'wechat', 'virement'];
+
+// Bascule d'unité : R CNY / 1M XAF → (1 000 000 / R) XAF / 1 CNY, arrondi à
+// 2 décimales pour l'AFFICHAGE. L'arrondi n'étant pas exactement inversible,
+// la valeur canonique est mémorisée à part (canonicalRef) : un champ non
+// modifié re-publie sa valeur exacte, sans dérive d'aller-retour.
+function invertRate(v: string): string {
+  const n = parseDecimal(v);
+  if (!Number.isFinite(n) || n <= 0) return v;
+  return String(Math.round((1_000_000 / n) * 100) / 100);
+}
+
 export function RateSetTab({ currentRate }: RateSetTabProps) {
   const [direction, setDirection] = useState<'xaf_cny' | 'cny_xaf'>('xaf_cny');
   const [rates, setRates] = useState<Record<string, string>>({
@@ -40,22 +54,78 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
     wechat: currentRate?.rate_wechat?.toString() || '',
     virement: currentRate?.rate_virement?.toString() || '',
   });
-  const [dateOption, setDateOption] = useState<'now' | 'today' | 'yesterday' | 'custom'>('now');
+  const [dateOption, setDateOption] = useState<RateDateOption>('now');
   const [customDate, setCustomDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [customHour, setCustomHour] = useState(new Date().getHours());
   const [customMin, setCustomMin] = useState(0);
 
+  // En mode « Pour 1 CNY » : valeur canonique exacte derrière chaque champ,
+  // et ce que nous avons affiché pour elle (pour détecter une édition).
+  const canonicalRef = useRef<Record<string, string>>({});
+  const displayedRef = useRef<Record<string, string>>({});
+
+  const showInverted = (key: string, canonical: string): string => {
+    canonicalRef.current[key] = canonical;
+    const inv = invertRate(canonical);
+    displayedRef.current[key] = inv;
+    return inv;
+  };
+
   // Pré-remplit les champs quand le taux actif arrive APRÈS le montage
-  // (chargement réseau) — sans jamais écraser une saisie en cours.
+  // (chargement réseau) — sans jamais écraser une saisie en cours. Les
+  // valeurs stockées sont canoniques (CNY/1M) : converties si l'admin est
+  // déjà passé en « Pour 1 CNY ».
   useEffect(() => {
     if (!currentRate) return;
-    setRates((prev) => ({
-      cash: prev.cash || currentRate.rate_cash?.toString() || '',
-      alipay: prev.alipay || currentRate.rate_alipay?.toString() || '',
-      wechat: prev.wechat || currentRate.rate_wechat?.toString() || '',
-      virement: prev.virement || currentRate.rate_virement?.toString() || '',
-    }));
+    setRates((prev) => {
+      const next = { ...prev };
+      RATE_KEYS.forEach((k) => {
+        if (prev[k]) return;
+        const s = (currentRate[`rate_${k}` as keyof DailyRate] as number | undefined)?.toString() || '';
+        if (!s) return;
+        next[k] = direction === 'cny_xaf' ? showInverted(k, s) : s;
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRate]);
+
+  // Basculer l'unité CONVERTIT les valeurs affichées — l'ancien segment ne
+  // changeait que le libellé, et publier en « Pour 1 CNY » enregistrait la
+  // valeur brute (ex. 86,7) comme taux CNY/1M : bug financier corrigé.
+  const switchDirection = (d: 'xaf_cny' | 'cny_xaf') => {
+    if (d === direction) return;
+    setRates((prev) => {
+      const next = { ...prev };
+      RATE_KEYS.forEach((k) => {
+        next[k] =
+          d === 'cny_xaf'
+            ? showInverted(k, prev[k])
+            : // Retour au canonique : restitution EXACTE si le champ n'a pas
+              // été touché, conversion sinon.
+              prev[k] === displayedRef.current[k] && canonicalRef.current[k] !== undefined
+              ? canonicalRef.current[k]
+              : invertRate(prev[k]);
+      });
+      return next;
+    });
+    setDirection(d);
+  };
+
+  /** Valeur saisie → taux canonique CNY / 1M XAF, quel que soit l'affichage. */
+  const toCanonical = (key: string): number => {
+    const v = rates[key];
+    if (direction === 'cny_xaf') {
+      if (v === displayedRef.current[key] && canonicalRef.current[key] !== undefined) {
+        const exact = parseDecimal(canonicalRef.current[key]);
+        return Number.isFinite(exact) && exact > 0 ? exact : 0;
+      }
+      const n = parseDecimal(v);
+      return Number.isFinite(n) && n > 0 ? Math.round((1_000_000 / n) * 100) / 100 : 0;
+    }
+    const n = parseDecimal(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
 
   const createRates = useCreateDailyRates();
   const { data: latestSuggestion } = useLatestSuggestion();
@@ -64,36 +134,25 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
   const handleUseSuggestion = () => {
     if (!latestSuggestion) return;
-    const v = latestSuggestion.suggested_rate.toString();
-    setRates({ cash: v, alipay: v, wechat: v, virement: v });
-  };
-
-  const getEffectiveAt = (): string => {
-    const now = new Date();
-    if (dateOption === 'now') return now.toISOString();
-    if (dateOption === 'today') {
-      now.setHours(0, 0, 0, 0);
-      return now.toISOString();
-    }
-    if (dateOption === 'yesterday') {
-      now.setDate(now.getDate() - 1);
-      now.setHours(0, 0, 0, 0);
-      return now.toISOString();
-    }
-    const d = new Date(customDate);
-    d.setHours(customHour, customMin, 0, 0);
-    return d.toISOString();
+    // La suggestion est canonique (CNY/1M) — convertie si l'affichage est en
+    // « Pour 1 CNY », en mémorisant la valeur exacte.
+    const raw = latestSuggestion.suggested_rate.toString();
+    setRates(
+      Object.fromEntries(
+        RATE_KEYS.map((k) => [k, direction === 'cny_xaf' ? showInverted(k, raw) : raw]),
+      ) as Record<string, string>,
+    );
   };
 
   const handleApply = () => {
     const suggestionId = latestSuggestion && !latestSuggestion.applied ? latestSuggestion.id : null;
     createRates.mutate(
       {
-        rate_cash: parseFloat(rates.cash) || 0,
-        rate_alipay: parseFloat(rates.alipay) || 0,
-        rate_wechat: parseFloat(rates.wechat) || 0,
-        rate_virement: parseFloat(rates.virement) || 0,
-        effective_at: getEffectiveAt(),
+        rate_cash: toCanonical('cash'),
+        rate_alipay: toCanonical('alipay'),
+        rate_wechat: toCanonical('wechat'),
+        rate_virement: toCanonical('virement'),
+        effective_at: rateEffectiveAt(dateOption, customDate, customHour, customMin),
       },
       {
         onSuccess: (result) => {
@@ -241,7 +300,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
             return (
               <button
                 key={d.key}
-                onClick={() => setDirection(d.key)}
+                onClick={() => switchDirection(d.key)}
                 className={cn(
                   'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
                   active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,

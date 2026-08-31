@@ -64,6 +64,20 @@ export async function downloadFlyerPNG(node: HTMLElement): Promise<void> {
   triggerDownload(await capturePng(node), fileName('png'));
 }
 
+// Capture générique d'un nœud NON transformé en taille naturelle — même
+// pipeline (fonts prêtes, toPng) que le flyer. Utilisé par la cotation du
+// simulateur (RateQuoteCard).
+export async function downloadNodePNG(
+  node: HTMLElement,
+  width: number,
+  height: number,
+  name: string,
+): Promise<void> {
+  await ensureFontsReady();
+  const dataUrl = await toPng(node, { width, height, pixelRatio: 1, cacheBust: true });
+  triggerDownload(dataUrl, name);
+}
+
 export async function downloadFlyerPDF(node: HTMLElement): Promise<void> {
   const dataUrl = await capturePng(node);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [FLYER_W, FLYER_H] });

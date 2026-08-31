@@ -1,50 +1,45 @@
 /**
- * Desktop admin — exchange rates.
+ * Desktop admin — Taux de change : UN MÉTIER PAR VUE
+ * (docs/admin-redesign/06-rates-module.md, v2 après retour utilisateur :
+ * « trop d'informations d'un coup »).
  *
- * Reuses the exact rate building blocks (RateSetTab, RateSimulatorTab,
- * RateHistoryTab, RateChartTab, RateConfigTab, RateFlyerSheet) and data hooks as
- * MobileRatesScreen — only the layout differs: a two-column composition instead
- * of one long scroll, so everything is visible at once on a wide screen.
+ * Le sélecteur de vue suit la fréquence réelle d'usage :
+ *   · Simulateur (défaut) — coter un client WhatsApp : champs XAF⇅CNY liés
+ *     + cotation de marque à partager (PNG / texte).
+ *   · Publier — la saisie du jour, seule, centrée.
+ *   · Historique — tendance + table, la surveillance.
+ *   · Réglages — ajustements pays & tranches.
+ * Rien d'autre n'est affiché que la vue choisie. Le flyer reste accessible
+ * depuis l'en-tête, en dialogue centré.
  */
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { SURFACE, TEXT, SOFT_PILL, BottomSheet } from '@/mobile/designKit';
+import { TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog } from '@/desktop/designKit';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
-import { RateSetTab } from '@/mobile/screens/rates/tabs/RateSetTab';
-import { RateChartTab } from '@/mobile/screens/rates/tabs/RateChartTab';
-import { RateHistoryTab } from '@/mobile/screens/rates/tabs/RateHistoryTab';
-import { RateConfigTab } from '@/mobile/screens/rates/tabs/RateConfigTab';
-import { RateSimulatorTab } from '@/mobile/screens/rates/tabs/RateSimulatorTab';
+import { RatePublishCard } from './RatePublishCard';
+import { RateQuoteSimulator } from './RateQuoteSimulator';
+import { DesktopRateHistory } from './DesktopRateHistory';
+import { RateTrendCard } from './RateTrendCard';
+import { RateAdjustmentsCard } from './RateAdjustmentsCard';
 
-function Caption({ children }: { children: React.ReactNode }) {
-  return <h2 className={cn('mb-3 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{children}</h2>;
-}
+export type RatesView = 'simulator' | 'publish' | 'history' | 'settings';
 
-function Collapsible({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className={cn('flex w-full items-center justify-between rounded-2xl px-4 py-3.5 outline-none transition hover:brightness-[0.98] focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:hover:brightness-110 dark:focus-visible:ring-[#4A4660]', SURFACE.card, SURFACE.shadow)}
-      >
-        <span className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</span>
-        <ChevronDown className={cn('h-5 w-5 transition-transform', TEXT.muted, !open && '-rotate-90')} />
-      </button>
-      {open && <div className="mt-3">{children}</div>}
-    </div>
-  );
-}
+const VIEWS: { key: RatesView; label: string }[] = [
+  { key: 'simulator', label: 'Simulateur' },
+  { key: 'publish', label: 'Publier' },
+  { key: 'history', label: 'Historique' },
+  { key: 'settings', label: 'Réglages' },
+];
 
-export function DesktopRatesScreen() {
-  const { data: activeRate, isLoading: rateLoading, isError: rateError } = useActiveDailyRate();
+export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?: RatesView } = {}) {
+  const { data: activeRate } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
+  const [view, setView] = useState<RatesView>(initialView);
   const [flyerOpen, setFlyerOpen] = useState(false);
 
+  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les clients.
   const flyerRates = {
     alipay: activeRate?.rate_alipay || 0,
     wechat: activeRate?.rate_wechat || 0,
@@ -53,59 +48,75 @@ export function DesktopRatesScreen() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Taux de change</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Définir, simuler et suivre les taux du jour</p>
+          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
+            {activeRate
+              ? `Taux actifs depuis le ${new Date(activeRate.effective_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`
+              : 'Aucun taux actif — publiez les taux du jour'}
+          </p>
         </div>
         <button
+          type="button"
           onClick={() => setFlyerOpen(true)}
-          className={cn('inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-semibold', SOFT_PILL)}
+          className={cn('inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold', SOFT_PILL)}
         >
-          Voir le flyer du jour <ChevronRight className="h-4 w-4" />
+          Flyer du jour <ChevronRight className="h-4 w-4" />
         </button>
       </header>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-        {/* Left — set + simulate */}
-        <div className="space-y-7">
-          <section>
-            <Caption>Définir les taux du jour</Caption>
-            <RateSetTab currentRate={activeRate} />
-          </section>
-          <section>
-            <Caption>Simulateur</Caption>
-            <RateSimulatorTab
-              activeRate={activeRate}
-              adjustments={adjustments || []}
-              isLoading={rateLoading || adjLoading}
-              isError={rateError || adjError}
-            />
-          </section>
-        </div>
+      {/* ── Sélecteur de vue — un seul métier à l'écran à la fois ───────── */}
+      <nav className="flex items-center gap-1.5" aria-label="Vues du module Taux">
+        {VIEWS.map((v) => (
+          <button
+            key={v.key}
+            type="button"
+            onClick={() => setView(v.key)}
+            aria-current={view === v.key ? 'page' : undefined}
+            className={cn(
+              'h-9 rounded-full px-4 text-[13px] font-bold transition-colors',
+              view === v.key ? PRIMARY_PILL : SOFT_PILL,
+            )}
+          >
+            {v.label}
+          </button>
+        ))}
+      </nav>
 
-        {/* Right — history + settings */}
-        <div className="space-y-7">
-          <section className="space-y-3">
-            <Caption>Historique</Caption>
-            <RateHistoryTab />
-            <Collapsible title="Graphique d'évolution">
-              <RateChartTab />
-            </Collapsible>
-          </section>
-          <section>
-            <Caption>Réglages</Caption>
-            <Collapsible title="Ajustements pays &amp; tranches">
-              <RateConfigTab />
-            </Collapsible>
-          </section>
-        </div>
-      </div>
+      {view === 'simulator' && (
+        <RateQuoteSimulator
+          activeRate={activeRate}
+          adjustments={adjustments ?? []}
+          adjustmentsLoading={adjLoading}
+          adjustmentsError={adjError}
+        />
+      )}
 
-      <BottomSheet open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour">
+      {view === 'publish' && (
+        <div className="mx-auto max-w-[560px]">
+          <RatePublishCard activeRate={activeRate} />
+        </div>
+      )}
+
+      {view === 'history' && (
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_560px]">
+          <RateTrendCard />
+          <DesktopRateHistory />
+        </div>
+      )}
+
+      {view === 'settings' && (
+        <div className="mx-auto max-w-[560px]">
+          <RateAdjustmentsCard />
+        </div>
+      )}
+
+      {/* ── Flyer WhatsApp ──────────────────────────────────────────────── */}
+      <CenterDialog open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour" width={560}>
         <RateFlyerSheet rates={flyerRates} />
-      </BottomSheet>
+      </CenterDialog>
     </div>
   );
 }

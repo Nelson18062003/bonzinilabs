@@ -6,6 +6,8 @@
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { DesktopDepositsScreen, DesktopNewDeposit } from '@/desktop/screens/deposits';
 import { DesktopPaymentsScreen, DesktopNewPayment } from '@/desktop/screens/payments';
+import { DesktopClientsScreen } from '@/desktop/screens/clients';
+import { DesktopRatesScreen } from '@/desktop/screens/rates';
 
 export { DesktopDepositsScreen, DesktopPaymentsScreen };
 
@@ -40,6 +42,47 @@ export function BeforePayments() {
   return (
     <DesktopAppShell>
       <DesktopPaymentsScreen />
+    </DesktopAppShell>
+  );
+}
+
+/** Écrans LIVRÉS (refonte clients + taux) — pour vérification visuelle. */
+export function ShippedClients() {
+  return (
+    <DesktopAppShell>
+      <DesktopClientsScreen />
+    </DesktopAppShell>
+  );
+}
+
+export function ShippedRates() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen />
+    </DesktopAppShell>
+  );
+}
+
+export function ShippedRatesPublish() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen initialView="publish" />
+    </DesktopAppShell>
+  );
+}
+
+export function ShippedRatesHistory() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen initialView="history" />
+    </DesktopAppShell>
+  );
+}
+
+export function ShippedRatesSettings() {
+  return (
+    <DesktopAppShell>
+      <DesktopRatesScreen initialView="settings" />
     </DesktopAppShell>
   );
 }

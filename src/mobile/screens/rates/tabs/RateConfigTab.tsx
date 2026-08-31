@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Globe, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
+import { parseDecimal } from '@/lib/decimalInput';
 import { useRateAdjustments, useUpdateRateAdjustment } from '@/hooks/useDailyRates';
 import { COUNTRIES, TIERS } from '@/types/rates';
 import type { RateAdjustment } from '@/types/rates';
@@ -69,7 +70,8 @@ export function RateConfigTab() {
       );
 
       for (const adj of modified) {
-        const pct = parseFloat(localValues[adj.id]);
+        // parseDecimal : « 1,5 » (virgule fr) doit valoir 1.5, pas 1.
+        const pct = parseDecimal(localValues[adj.id]);
         if (isNaN(pct)) continue;
         await updateAdjustment.mutateAsync({
           adjustmentId: adj.id,
