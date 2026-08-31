@@ -45,6 +45,15 @@ main » : passez par `admin_has_permission()`.
 
 ## SQL / RPC Patterns
 - Payments: use `SELECT FOR UPDATE` on the wallet row before any balance deduction — prevents double-spend race conditions
+- **Verrouiller la ligne AVANT de la lire, dès qu'on la mute** (règle élargie
+  après incident) : toute fonction qui lit un solde ou un statut *puis* écrit
+  en fonction de ce qu'elle a lu doit faire `SELECT … FOR UPDATE`. Sans
+  verrou, deux appels concurrents passent tous deux le contrôle (TOCTOU) :
+  double remboursement (`process_payment`), double confirmation
+  (`confirm_cash_payment`), ou solde faux (`create_wallet_adjustment`, qui
+  écrivait une valeur **absolue** calculée sur une lecture périmée).
+  Préférer aussi les écritures **relatives** (`balance_xaf = balance_xaf ± x`)
+  aux écritures absolues.
 - Admin auth check: `is_admin()` RPC MUST exclude `is_disabled = true` — disabled admins must be blocked immediately
 - Wallet mutations: SELECT-only RLS on `wallets` — all writes must go through SECURITY DEFINER RPCs
 
