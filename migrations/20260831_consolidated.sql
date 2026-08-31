@@ -1,3 +1,26 @@
+-- ############################################################################
+-- ##                                                                        ##
+-- ##   NE PAS EXÉCUTER CE FICHIER. Il n'y a RIEN à lancer.                  ##
+-- ##                                                                        ##
+-- ##   Les 8 migrations ci-dessous sont DÉJÀ APPLIQUÉES au projet de        ##
+-- ##   production BonziniLabs : fmhsohrgbznqmcvqktjw                        ##
+-- ##   (vérifiable dans supabase_migrations.schema_migrations).             ##
+-- ##                                                                        ##
+-- ##   Ce fichier est un DOCUMENT DE RELECTURE, pas une migration.          ##
+-- ##                                                                        ##
+-- ##   · Le lancer sur BonziniLabs : inutile (rejeu sans effet).            ##
+-- ##   · Le lancer sur un AUTRE projet : échoue immédiatement — il          ##
+-- ##     DURCIT un schéma Bonzini existant, il ne le CRÉE pas. Sur une      ##
+-- ##     base sans les tables Bonzini, l'erreur attendue est                ##
+-- ##     « relation "public.daily_rates" does not exist ». L'éditeur SQL    ##
+-- ##     Supabase exécutant le script dans une transaction, tout est        ##
+-- ##     annulé et rien n'est laissé derrière.                              ##
+-- ##                                                                        ##
+-- ##   Pour appliquer de VRAIES migrations, utiliser la CLI sur les 8       ##
+-- ##   fichiers de supabase/migrations/ : npx supabase db push --linked     ##
+-- ##                                                                        ##
+-- ############################################################################
+--
 -- ============================================================================
 -- BONZINI LABS — MIGRATION CONSOLIDÉE
 -- Généré le 2026-08-31 · branche claude/payment-beneficiary-default-name-f7bee1
@@ -5,10 +28,6 @@
 -- Regroupe, DANS L'ORDRE D'EXÉCUTION, les 8 migrations que cette branche
 -- ajoute par rapport à `main`. Chaque section reprend le fichier d'origine
 -- tel quel (`supabase/migrations/<nom>`), en-tête et commentaires compris.
---
--- ÉTAT : les 8 migrations ont DÉJÀ ÉTÉ APPLIQUÉES au projet de production
--- (fmhsohrgbznqmcvqktjw). Ce fichier est fourni pour relecture, pour
--- reconstituer un environnement, ou pour rejouer l'ensemble ailleurs.
 --
 -- POURQUOI CE FICHIER N'EST PAS DANS supabase/migrations/
 -- Il y serait détecté comme une NOUVELLE migration et `supabase db push`
