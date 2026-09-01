@@ -1,8 +1,6 @@
 import * as React from 'react';
 import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { CalendarDays, ChevronDown, Check } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import {
   Popover,
   PopoverContent,
@@ -15,6 +13,9 @@ import {
   PRESET_LABELS,
   GRANULARITY_LABELS,
   granularityIsCompatible,
+  formatRangeLabel,
+  toBusinessDayString,
+  type DateRange,
   type PresetId,
   type Granularity,
 } from '@/lib/analytics/dateRange';
@@ -22,34 +23,52 @@ import { useDateRange } from '@/lib/analytics/DateRangeContext';
 
 const GRANULARITY_ORDER: Granularity[] = ['hour', 'day', 'week', 'month', 'quarter', 'year'];
 
+interface DateRangePickerProps {
+  /**
+   * Le réglage de granularité n'a de sens que pour des graphiques en SEAUX
+   * (tableau de bord). Les courbes de trésorerie sont des séries
+   * d'événements : on le cache là où il ne signifie rien.
+   */
+  showGranularity?: boolean;
+  /** « Comparer à la période précédente » — idem, propre au tableau de bord. */
+  showCompare?: boolean;
+}
+
 /**
  * Unique source of truth for the dashboard's time filter.
  * Renders a compact trigger that opens a popover with:
  *   - preset list grouped by horizon
  *   - "compare to previous" toggle
  *   - custom from/to range via the design-kit calendar (BzDateRangeField)
+ *
+ * Partagé par le tableau de bord ET la Trésorerie : deux sélecteurs, deux
+ * calculs de bornes, c'est ainsi que l'un a régressé sans que l'autre ne le
+ * voie.
  */
-export function DateRangePicker() {
+export function DateRangePicker({ showGranularity = true, showCompare = true }: DateRangePickerProps = {}) {
   const { range, setPreset, setCustom, setGranularity, setCompareToPrevious } = useDateRange();
   const [open, setOpen] = React.useState(false);
 
-  const label =
-    range.preset === 'custom'
-      ? `${format(range.from, 'd MMM yyyy', { locale: fr })} → ${format(range.to, 'd MMM yyyy', { locale: fr })}`
-      : PRESET_LABELS[range.preset];
+  // Formaté en jour civil de DOUALA. `format(range.from, …)` de date-fns
+  // lisait les composants locaux : sur un navigateur à UTC, une plage qui
+  // commence « minuit Douala » (23:00 UTC la veille) s'affichait à la veille.
+  const label = formatRangeLabel(range);
 
   const handlePreset = (p: PresetId) => {
     setPreset(p);
     setOpen(false);
   };
 
+  const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const handleCustom = (from: string, to: string) => {
-    if (!from || !to) return;
-    const f = new Date(from);
-    const t = new Date(to);
-    if (Number.isNaN(f.getTime()) || Number.isNaN(t.getTime())) return;
-    if (t < f) return;
-    setCustom(f, t);
+    // Les chaînes 'YYYY-MM-DD' du calendrier partent TELLES QUELLES : c'est
+    // `buildCustomRange` qui les lit comme des jours civils. Le détour par
+    // `new Date(from)` (= minuit UTC, relu en composants locaux) faisait
+    // reculer toute la plage d'un jour à l'ouest de UTC.
+    if (!DAY.test(from) || !DAY.test(to)) return;
+    if (to < from) return;
+    setCustom(from, to);
+    setOpen(false);
   };
 
   return (
@@ -100,9 +119,10 @@ export function DateRangePicker() {
             <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Personnalisé
             </div>
-            <CustomRangeInputs onApply={handleCustom} />
+            <CustomRangeInputs onApply={handleCustom} current={range} />
           </div>
 
+          {showGranularity && (
           <div>
             <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Granularité (défaut)
@@ -140,7 +160,9 @@ export function DateRangePicker() {
               Chaque rapport peut overrider cette granularité par défaut via son propre sélecteur.
             </p>
           </div>
+          )}
 
+          {showCompare && (
           <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
             <div>
               <div className="text-sm font-medium">Comparer à la période précédente</div>
@@ -154,14 +176,22 @@ export function DateRangePicker() {
               aria-label="Activer la comparaison à la période précédente"
             />
           </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
   );
 }
 
-function CustomRangeInputs({ onApply }: { onApply: (from: string, to: string) => void }) {
-  const [range, setRange] = React.useState({ from: '', to: '' });
+function CustomRangeInputs({ onApply, current }: { onApply: (from: string, to: string) => void; current: DateRange }) {
+  // Le popover démonte son contenu à la fermeture : sans amorçage, une plage
+  // personnalisée active se rouvrait sur un calendrier VIDE, et l'utilisateur
+  // devait la reposer pour l'ajuster d'un jour.
+  const [range, setRange] = React.useState(() =>
+    current.preset === 'custom'
+      ? { from: toBusinessDayString(current.from), to: toBusinessDayString(current.to) }
+      : { from: '', to: '' },
+  );
 
   return (
     <div className="space-y-2">

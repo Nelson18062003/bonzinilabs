@@ -10,7 +10,7 @@
  * Les opérations annulées restent visibles, barrées : une écriture annulée
  * fait partie de l'histoire comptable.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tray as Inbox } from '@phosphor-icons/react';
@@ -24,7 +24,6 @@ import {
   MCard,
   MCardHeader,
   MChip,
-  MDropdown,
   MSearch,
   MTh,
   MTd,
@@ -40,26 +39,17 @@ import {
 } from './marketKit';
 import { fmtAmount, fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryOperationPanel } from './TreasuryOperationPanel';
+import { TreasuryPeriodScope } from './treasuryPeriodScope';
+import { useTreasuryBounds } from './treasuryPeriod';
+import { DateRangePicker } from '@/components/analytics/DateRangePicker';
 
 type Bucket = 'all' | 'purchase' | 'sale' | 'voided';
 type SortKey = 'date' | 'usdt' | 'rate';
-type Period = '7d' | '30d' | '90d' | '365d';
-
-const PERIODS = [
-  { value: '7d' as const, label: '7 jours' },
-  { value: '30d' as const, label: '30 jours' },
-  { value: '90d' as const, label: '3 mois' },
-  { value: '365d' as const, label: '1 an' },
-];
+// `Period` / `PERIODS` / `rangeOf` — la même copie que dans l'Analyse — ont
+// disparu : la période vient du socle partagé (`treasuryPeriod.tsx`), et
+// elle est la MÊME dans les deux onglets.
 
 const PAGE_SIZE = 25;
-
-function rangeOf(period: Period): { from: Date; to: Date } {
-  const to = new Date();
-  const from = new Date(to);
-  from.setDate(to.getDate() - Number(period.replace('d', '')));
-  return { from, to };
-}
 
 /** Contre-valeur de l'opération dans sa devise « autre que USDT ». */
 function counterValue(op: OperationRow): { amount: number; currency: 'XAF' | 'CNY' } {
@@ -69,7 +59,14 @@ function counterValue(op: OperationRow): { amount: number; currency: 'XAF' | 'CN
 }
 
 export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean }) {
-  const [period, setPeriod] = useState<Period>('30d');
+  return (
+    <TreasuryPeriodScope>
+      <WorkbenchBody canManage={canManage} />
+    </TreasuryPeriodScope>
+  );
+}
+
+function WorkbenchBody({ canManage }: { canManage: boolean }) {
   const [bucket, setBucket] = useState<Bucket>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('date');
@@ -77,8 +74,14 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const range = useMemo(() => rangeOf(period), [period]);
-  const { data, isLoading, isError } = useTreasuryOperations(range.from.toISOString(), range.to.toISOString());
+  const { fromIso, toIso } = useTreasuryBounds();
+  const { data, isLoading, isError } = useTreasuryOperations(fromIso, toIso);
+
+  // Nouvelle période → première page, sinon on peut rester sur une page 4
+  // d'une liste qui n'en a plus que deux.
+  useEffect(() => {
+    setPage(1);
+  }, [fromIso, toIso]);
 
   const all = data ?? [];
   const counts = useMemo(
@@ -151,7 +154,7 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
             placeholder="Rechercher…"
             className="ml-auto w-[210px]"
           />
-          <MDropdown value={period} options={PERIODS} onChange={(v) => { setPeriod(v); setPage(1); }} />
+          <DateRangePicker showGranularity={false} showCompare={false} />
         </div>
 
         {isLoading ? (
