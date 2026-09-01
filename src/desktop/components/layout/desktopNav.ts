@@ -21,6 +21,7 @@ import {
   ScrollText,
   Settings,
   LayoutGrid,
+  LineChart as ChartLine,
 } from 'lucide-react';
 import type { RolePermission } from '@/contexts/AdminAuthContext';
 
@@ -47,7 +48,11 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
   {
     label: 'Principal',
     items: [
-      { to: '/m', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+      // « Accueil » et non « Tableau de bord » : ce nom est désormais celui du
+      // module analytique, dans Opérations. Deux entrées homonymes dans la même
+      // barre, l'une vers l'écran d'arrivée et l'autre vers les chiffres,
+      // n'auraient rien voulu dire.
+      { to: '/m', label: 'Accueil', icon: LayoutDashboard, end: true },
       { to: '/m/assistant', label: 'Mola', icon: Bot, mascot: true },
       { to: '/m/deposits', label: 'Dépôts', icon: ArrowDownToLine, perm: 'canViewDeposits', badge: 'deposits' },
       { to: '/m/payments', label: 'Paiements', icon: ArrowUpFromLine, perm: 'canViewPayments', badge: 'payments' },
@@ -58,6 +63,14 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
     label: 'Opérations',
     items: [
       { to: '/m/more/treasury', label: 'Trésorerie', icon: Landmark, perm: 'canViewTreasury' },
+      // Le tableau de bord analytique vivait derrière « Tous les outils » :
+      // les chiffres qui pilotent l'activité demandaient trois clics. Il rejoint
+      // la barre, juste après la Trésorerie.
+      // Pas de `perm` : la route `/m/dashboard` n'en a pas non plus aujourd'hui.
+      // Mettre une permission ici SANS en poser une sur la route donnerait une
+      // fausse sécurité — l'entrée disparaîtrait du menu alors que l'URL
+      // resterait ouverte.
+      { to: '/m/dashboard', label: 'Tableau de bord', icon: ChartLine },
       { to: '/m/more/rates', label: 'Taux de change', icon: Percent, perm: 'canManageRates' },
       { to: '/m/support', label: 'Support', icon: LifeBuoy, perm: 'canAccessSupportChat' },
     ],

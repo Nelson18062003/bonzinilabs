@@ -8,7 +8,12 @@ import { mkdirSync } from 'node:fs';
 
 mkdirSync('shots/admin-redesign', { recursive: true });
 
-const BASE = 'http://localhost:8080/screenshot.html';
+// Port surchargeable : plusieurs serveurs de capture tournent parfois en
+// parallèle. `127.0.0.1` et non `localhost` — la résolution de `localhost`
+// peut partir sur ::1 alors que Vite n'écoute qu'en IPv4 dans cet
+// environnement, et la connexion est alors refusée.
+const PORT = process.env.PORT ?? '8080';
+const BASE = `http://127.0.0.1:${PORT}/screenshot.html`;
 const SCREENS = process.env.ONLY
   ? process.env.ONLY.split(',')
   : ['before-dd-list', 'before-dd-split', 'before-dd-new', 'before-dp-list', 'before-dp-split', 'before-dp-new'];

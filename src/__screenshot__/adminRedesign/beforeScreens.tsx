@@ -8,6 +8,8 @@ import { DesktopDepositsScreen, DesktopNewDeposit } from '@/desktop/screens/depo
 import { DesktopPaymentsScreen, DesktopNewPayment } from '@/desktop/screens/payments';
 import { DesktopClientsScreen } from '@/desktop/screens/clients';
 import { DesktopRatesScreen } from '@/desktop/screens/rates';
+import { DesktopAnalyticsDashboard } from '@/desktop/screens/analytics';
+import { DateRangeProvider } from '@/lib/analytics/DateRangeContext';
 
 export { DesktopDepositsScreen, DesktopPaymentsScreen };
 
@@ -83,6 +85,19 @@ export function ShippedRatesSettings() {
   return (
     <DesktopAppShell>
       <DesktopRatesScreen initialView="settings" />
+    </DesktopAppShell>
+  );
+}
+
+/** Tableau de bord desktop — reconstruit (docs/admin-redesign/09). */
+export function ShippedAnalytics() {
+  return (
+    <DesktopAppShell>
+      {/* L'écran lit la plage depuis le contexte : le harnais doit donc le
+          fournir, comme la vraie application. */}
+      <DateRangeProvider>
+        <DesktopAnalyticsDashboard />
+      </DateRangeProvider>
     </DesktopAppShell>
   );
 }
