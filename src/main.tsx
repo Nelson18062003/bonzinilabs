@@ -18,7 +18,7 @@ function showFatal(message: string, isChunkError: boolean) {
     return;
   }
   rootEl.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0e0e12;color:#fff;text-align:center">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0e0e12;color:#fff;text-align:center">
       <div style="max-width:420px">
         <div style="font-size:40px;margin-bottom:12px">⚠️</div>
         <h1 style="font-size:18px;margin:0 0 8px">Un problème est survenu au chargement</h1>

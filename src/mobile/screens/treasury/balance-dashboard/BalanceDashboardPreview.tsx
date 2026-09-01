@@ -17,7 +17,7 @@ interface Props {
   generatedAt: Date;
 }
 
-const FONT = "'Libre Baskerville', Georgia, serif";
+const FONT = "'DM Sans', system-ui, sans-serif";
 
 function GradientLine({ width }: { width: number }) {
   return (

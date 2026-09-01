@@ -54,8 +54,9 @@ const styles = StyleSheet.create({
   },
   reference: {
     fontSize: 10,
-    fontFamily: 'Courier',
+    fontFamily: 'DM Sans',
     fontWeight: 700,
+    letterSpacing: 0.6,
     color: 'rgba(255,255,255,0.5)',
   },
   stripe: {

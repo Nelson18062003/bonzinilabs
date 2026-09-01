@@ -65,9 +65,9 @@ const FILTERS = [
    ════════════════════════════════════════════════════════════════════ */
 
 function StyleA() {
-  const mono = { fontFamily: '"JetBrains Mono", ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' as const };
+  const mono = { fontFamily: '"DM Sans", system-ui, sans-serif', fontVariantNumeric: 'tabular-nums' as const };
   return (
-    <div style={{ fontFamily: '"Inter", system-ui, sans-serif', background: '#F4F4F5', minHeight: '100vh', padding: '24px 28px', color: '#09090B' }}>
+    <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: '#F4F4F5', minHeight: '100vh', padding: '24px 28px', color: '#09090B' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
           <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.02em' }}>Trésorerie</div>
@@ -157,7 +157,7 @@ const ORA = '#EA580C';
 function StyleB() {
   const head = { fontFamily: '"Space Grotesk", system-ui, sans-serif' };
   return (
-    <div style={{ fontFamily: '"Inter", system-ui, sans-serif', background: '#FBFAFF', minHeight: '100vh', color: '#1A1035' }}>
+    <div style={{ fontFamily: '"DM Sans", system-ui, sans-serif', background: '#FBFAFF', minHeight: '100vh', color: '#1A1035' }}>
       {/* Bandeau de marque */}
       <div style={{ background: `linear-gradient(100deg, ${VIO} 0%, #7C3AED 45%, ${ORA} 130%)`, padding: '22px 30px 30px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>

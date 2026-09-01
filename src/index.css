@@ -1,25 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+SC:wght@400;700;900&display=swap');
+/* DM Sans, et rien d'autre — sauf Noto Sans SC, qui n'est PAS un choix de
+   style : DM Sans ne couvre aucun idéogramme, et les cotations comme les reçus
+   affichent du chinois (« 报价单 », le nom du bénéficiaire). Sans elle, ces
+   caractères sortent en tofu. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+SC:wght@400;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Libre Baskerville — used by the Treasury balance-dashboard generator. */
-@font-face {
-  font-family: 'Libre Baskerville';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/treasury-dashboard/fonts/LibreBaskerville-Regular.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Libre Baskerville';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/treasury-dashboard/fonts/LibreBaskerville-Bold.ttf') format('truetype');
-}
 
 @layer base {
   :root {
@@ -174,7 +161,7 @@
   }
 
   html {
-    font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

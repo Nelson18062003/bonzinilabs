@@ -15,14 +15,14 @@ function triggerDownload(dataUrl: string, name: string): void {
   document.body.removeChild(a);
 }
 
-// Ensure Libre Baskerville is loaded before capture, otherwise the
+// Ensure DM Sans is loaded before capture, otherwise the
 // PNG renders with a fallback serif (classic html-to-image pitfall).
 async function ensureFontsReady(): Promise<void> {
   if (typeof document !== 'undefined' && 'fonts' in document) {
     try {
       await Promise.all([
-        document.fonts.load('400 16px "Libre Baskerville"'),
-        document.fonts.load('700 16px "Libre Baskerville"'),
+        document.fonts.load('400 16px "DM Sans"'),
+        document.fonts.load('700 16px "DM Sans"'),
       ]);
       await document.fonts.ready;
     } catch {

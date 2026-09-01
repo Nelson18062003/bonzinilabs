@@ -292,7 +292,7 @@ export function PayDirC() {
         {/* En-tête éditorial */}
         <div className="px-1">
           <div className={cn('text-[11px] font-bold uppercase tracking-[0.18em]', C.muted)}>Bonzini · Compte client</div>
-          <h1 className={cn('mt-1 text-[32px] font-extrabold leading-none', C.strong)} style={{ fontFamily: 'Syne, sans-serif' }}>
+          <h1 className={cn('mt-1 text-[32px] font-extrabold leading-none', C.strong)}>
             Paiements
           </h1>
         </div>

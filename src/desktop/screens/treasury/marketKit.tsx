@@ -54,7 +54,7 @@ export const T = {
 } as const;
 
 /** Chiffres : toujours en mono tabulaire. */
-export const NUM = 'font-mono tabular-nums';
+export const NUM = 'tabular-nums';
 
 /** Étiquette de section / en-tête de colonne. */
 export const LABEL = 'text-[10px] font-semibold uppercase tracking-[0.08em]';

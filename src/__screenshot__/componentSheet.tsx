@@ -29,8 +29,8 @@ const INSET = '#F4F4F5';
 const INDIGO = '#4F46E5';
 const AMBER = '#B45309';
 
-const sans = { fontFamily: '"Inter", system-ui, sans-serif' };
-const mono = { fontFamily: '"JetBrains Mono", ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' as const };
+const sans = { fontFamily: '"DM Sans", system-ui, sans-serif' };
+const mono = { fontFamily: '"DM Sans", system-ui, sans-serif', fontVariantNumeric: 'tabular-nums' as const };
 
 /* ══ Variante 1 — PLEIN : pas de bordure, des fonds. ══════════════ */
 
