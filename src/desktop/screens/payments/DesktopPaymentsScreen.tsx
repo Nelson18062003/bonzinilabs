@@ -92,7 +92,7 @@ export function DesktopPaymentsScreen() {
 
   const filters = useMemo<PaymentFilters>(() => {
     const f: PaymentFilters = { sortField, sortAscending: effectiveAscending };
-    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES as string[];
+    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES;
     else if (bucket === 'blocked') f.status = 'waiting_beneficiary_info';
     else if (bucket === 'processing') f.status = 'processing';
     else if (statusFilter !== 'all') f.status = statusFilter;
@@ -154,7 +154,7 @@ export function DesktopPaymentsScreen() {
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Paiements</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
             {counts.total} paiement{counts.total > 1 ? 's' : ''} ·{' '}
-            <span className="font-bold text-[#B47A17] dark:text-[#E7C083]">{counts.toProcess} à traiter</span>
+            <span className="font-bold text-amber-700 dark:text-amber-400">{counts.toProcess} à traiter</span>
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -299,8 +299,8 @@ export function DesktopPaymentsScreen() {
                           className={cn(
                             'group cursor-pointer outline-none transition',
                             paymentId === payment.id
-                              ? 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]'
-                              : 'hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
+                              ? 'bg-accent'
+                              : 'hover:bg-muted/40 focus-visible:bg-muted/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                           )}
                         >
                           {!compact && (
@@ -332,7 +332,7 @@ export function DesktopPaymentsScreen() {
                                   className={cn(
                                     'truncate text-[11px]',
                                     compact ? 'max-w-[150px]' : 'max-w-[190px]',
-                                    missingBenef ? 'font-semibold text-[#C0504D] dark:text-[#E79A9A]' : TEXT.muted,
+                                    missingBenef ? 'font-semibold text-destructive' : TEXT.muted,
                                   )}
                                 >
                                   {missingBenef ? 'Infos bénéficiaire manquantes' : benefMeta ?? PAYMENT_METHOD_LABELS[payment.method as PaymentMethod]}
@@ -355,7 +355,7 @@ export function DesktopPaymentsScreen() {
                               <span className={cn('inline-flex items-center gap-1 text-[12px] tabular-nums', TEXT.muted)}>
                                 {rateInt ? rateInt.toLocaleString('fr-FR') : '—'}
                                 {payment.rate_is_custom && (
-                                  <span className="rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+                                  <span className="rounded-md bg-indigo-50 px-1.5 py-px text-[9px] font-extrabold uppercase text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
                                     perso
                                   </span>
                                 )}

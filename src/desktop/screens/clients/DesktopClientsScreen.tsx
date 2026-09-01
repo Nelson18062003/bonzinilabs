@@ -154,7 +154,7 @@ export function DesktopClientsScreen() {
             {clients ? (
               <>
                 {clients.length} client{clients.length > 1 ? 's' : ''} ·{' '}
-                <span className="font-bold text-[#2E7D52] dark:text-[#7FCBA0]">{statusCounts.ACTIVE} actifs</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">{statusCounts.ACTIVE} actifs</span>
               </>
             ) : (
               '—'
@@ -255,8 +255,8 @@ export function DesktopClientsScreen() {
                           className={cn(
                             'cursor-pointer outline-none transition',
                             clientId === client.id
-                              ? 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]'
-                              : 'hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
+                              ? 'bg-accent'
+                              : 'hover:bg-muted/40 focus-visible:bg-muted/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                           )}
                         >
                           <Td first>

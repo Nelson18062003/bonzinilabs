@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useQueryClient } from '@tanstack/react-query';
@@ -73,12 +74,12 @@ export default function OnboardingPage() {
     setSubmitting(true);
     // RPC robuste : crée la fiche si absente (compte orphelin) PUIS met à jour
     // les champs métier (liste blanche). Évite la boucle d'onboarding sans fin.
-    const { data, error } = await supabase.rpc('complete_client_onboarding', {
+    const { data, error } = await supabase.rpc('complete_client_onboarding', rpcArgs<'complete_client_onboarding'>({
       p_phone: phone,
       p_country: country,
       p_company: companyName || null,
       p_sector: activitySector || null,
-    });
+    }));
     setSubmitting(false);
 
     if (error || (data && (data as { success?: boolean }).success === false)) {
@@ -166,12 +167,14 @@ export default function OnboardingPage() {
 
           {/* Optionnels */}
           <PremiumInput
+            id="onboarding-company"
             label={t('onboarding.companyLabel')}
             value={companyName}
             onChange={setCompanyName}
             icon={<Building className="h-4 w-4" />}
           />
           <PremiumInput
+            id="onboarding-sector"
             label={t('onboarding.sectorLabel')}
             value={activitySector}
             onChange={setActivitySector}

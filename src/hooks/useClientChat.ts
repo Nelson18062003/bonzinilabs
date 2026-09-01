@@ -26,8 +26,6 @@ const ALLOWED_CHAT_FILE_MIME = [
 
 // Helpers pour caster les tables non encore présentes dans les types générés.
 // Sera retiré une fois `npx supabase gen types` rerun.
-type AnyTable = never;
-
 async function getCurrentClientId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -52,7 +50,7 @@ export function useMyChatConversations() {
       if (!clientId) return [];
 
       const { data, error } = await supabase
-        .from('chat_conversations' as AnyTable)
+        .from('chat_conversations')
         .select('*')
         .eq('client_id', clientId)
         .order('last_message_at', { ascending: false, nullsFirst: false });
@@ -63,7 +61,7 @@ export function useMyChatConversations() {
       // Si aucune conversation, en créer une par défaut (subject null)
       if (list.length === 0) {
         const { data: created, error: createErr } = await supabase
-          .from('chat_conversations' as AnyTable)
+          .from('chat_conversations')
           .insert({ client_id: clientId })
           .select('*')
           .single();
@@ -105,7 +103,7 @@ export function useMyChatConversation(conversationId: string | null | undefined)
     queryFn: async (): Promise<ChatConversation | null> => {
       if (!conversationId) return null;
       const { data, error } = await supabase
-        .from('chat_conversations' as AnyTable)
+        .from('chat_conversations')
         .select('*')
         .eq('id', conversationId)
         .maybeSingle();
@@ -127,7 +125,7 @@ export function useCreateChatConversation() {
       if (!trimmed) throw new Error('Subject required');
 
       const { data, error } = await supabase
-        .from('chat_conversations' as AnyTable)
+        .from('chat_conversations')
         .insert({ client_id: clientId, subject: trimmed })
         .select('*')
         .single();
@@ -153,7 +151,7 @@ export function useChatMessages(conversationId: string | null | undefined) {
     queryFn: async (): Promise<ChatMessage[]> => {
       if (!conversationId) return [];
       const { data, error } = await supabase
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
@@ -229,7 +227,7 @@ export function useSendClientMessage() {
       if (trimmed.length > 2000) throw new Error('Message too long');
 
       const { data, error } = await supabase
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'client',
@@ -279,7 +277,7 @@ export function useSendClientImage() {
       if (uploadError) throw uploadError;
 
       const { data, error } = await supabase
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'client',
@@ -330,7 +328,7 @@ export function useSendClientVoice() {
       if (uploadError) throw uploadError;
 
       const { data, error } = await supabase
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'client',
@@ -405,7 +403,7 @@ export function useSendClientVideo() {
       }
 
       const { data, error } = await supabase
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'client',
@@ -458,7 +456,7 @@ export function useSendClientFile() {
       if (uploadError) throw uploadError;
 
       const { data, error } = await supabase
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'client',

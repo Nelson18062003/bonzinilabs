@@ -60,8 +60,8 @@ export function PDFInfoRow({ label, value, bold, color }: PDFInfoRowProps) {
       <Text
         style={[
           valueStyle,
-          !isCjk && bold ? styles.valueBold : undefined,
-          color ? { color } : undefined,
+          ...(!isCjk && bold ? [styles.valueBold] : []),
+          ...(color ? [{ color }] : []),
         ]}
       >
         {value || '—'}

@@ -42,7 +42,7 @@ import {
   isBeneficiaryFormValid,
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
-import { getBeneficiaryNaturalKey, type IdentifierType } from '@/lib/beneficiaries/spec';
+import { getBeneficiaryNaturalKey} from '@/lib/beneficiaries/spec';
 import { useMyWallet } from '@/hooks/useWallet';
 import { useClientRates } from '@/hooks/useDailyRates';
 import { useMyProfile } from '@/hooks/useProfile';
@@ -496,7 +496,7 @@ const NewPaymentPage = () => {
         {step === 'beneficiary' && selectedMethod && (
           <NewPaymentBeneficiaryStep
             selectedMethod={selectedMethod}
-            profile={profile}
+            profile={profile ?? undefined}
             existingBeneficiaries={existingBeneficiaries}
             beneficiaryTab={beneficiaryTab}
             onBeneficiaryTabChange={setBeneficiaryTab}

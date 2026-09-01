@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, ClipboardCheck, AlertTriangle } from 'lucide-react';
+import { ClipboardCheck, AlertTriangle } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { TextField } from '@/components/form';
 import { MoneyField } from '@/components/treasury/MoneyField';

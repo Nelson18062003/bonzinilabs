@@ -17,7 +17,7 @@ import {
   PAYMENT_METHOD_LABELS,
   TO_PROCESS_STATUSES,
 } from '@/types/payment';
-import type { PaymentStatus } from '@/types/payment';
+import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 import { type FilterKey, METHOD_FILTERS, SORT_OPTIONS, logoMethod } from '@/lib/paymentsList';
 import {
   SURFACE,
@@ -79,7 +79,7 @@ const KPI_TILES: { label: string; key: FilterKey; tone: Tone; figure: string; ri
 export function MobilePaymentsScreen() {
   const { t } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
-  const [methodFilter, setMethodFilter] = useState('all');
+  const [methodFilter, setMethodFilter] = useState<PaymentMethod | 'all'>('all');
   const [sortKey, setSortKey] = useState('newest');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -98,7 +98,7 @@ export function MobilePaymentsScreen() {
     const params: PaymentFilters = {};
 
     if (statusFilter === 'to_process') {
-      params.statuses = TO_PROCESS_STATUSES as string[];
+      params.statuses = TO_PROCESS_STATUSES;
     } else if (statusFilter !== 'all') {
       params.status = statusFilter;
     }

@@ -72,6 +72,7 @@ export function useViewportContainerHeight(): string {
 
     // ─── Method 3 : crude fallback ───
     setHeight('100dvh');
+    return undefined;
   }, []);
 
   return height;

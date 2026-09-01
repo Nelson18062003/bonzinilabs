@@ -22,11 +22,19 @@ export const SURFACE = {
   shadow: 'ring-1 ring-black/[0.06] dark:ring-white/[0.06]',
   /** Neutral round holder for icons/initials. */
   holder: 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]',
+  /** « surface-2 » : encart posé SUR une carte (valeur calculée, récapitulatif,
+   *  en-tête de table). Spécifiée par 02-foundation.md §1.1 ; les écrans la
+   *  bricolaient jusqu'ici en `bg-muted/60`, qui dérive d'un écran à l'autre. */
+  inset: 'bg-[#F6F5FB] dark:bg-[#2A2836]',
 } as const;
 
 /** Foreground text tokens (neutral-first). */
 export const TEXT = {
   strong: 'text-[#1B1A24] dark:text-[#F2F1F7]',
+  /** Gris intermédiaire — 02-foundation.md §1.1 : « une table où chaque
+   *  cellule est soit noir-gras soit gris-pâle produit un damier ». Le corps
+   *  de texte porte le gros des cellules. */
+  body: 'text-[#4A475C] dark:text-[#C9C6D6]',
   muted: 'text-[#8E8BA0] dark:text-[#9B98AD]',
 } as const;
 

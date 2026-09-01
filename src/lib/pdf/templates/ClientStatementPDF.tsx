@@ -634,7 +634,9 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
                   <Text style={[s.typeBadgeText, { color: typeColor }]}>{typeLabel}</Text>
                 </View>
               </View>
-              <Text style={s.cellMotif} numberOfLines={1}>{san(m.motif)}</Text>
+              {/* `numberOfLines` est une prop React Native : react-pdf l'ignore.
+                  La troncature à une ligne passe par le style (`maxLines`). */}
+              <Text style={{ ...s.cellMotif, maxLines: 1, textOverflow: 'ellipsis' }}>{san(m.motif)}</Text>
               <Text style={s.cellDebit}>
                 {m.debit > 0 ? `-${fmtNum(m.debit)}` : ''}
               </Text>

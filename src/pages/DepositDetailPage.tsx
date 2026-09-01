@@ -146,8 +146,8 @@ const DepositDetailPage = () => {
   const canUploadProof = deposit.status === 'created' || deposit.status === 'awaiting_proof';
   const canDeleteProofs = !['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
   const canCancel = ['created', 'awaiting_proof', 'proof_submitted'].includes(deposit.status);
-  const isTerminal = ['validated', 'wallet_credited', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
-  const isValidated = deposit.status === 'validated' || deposit.status === 'wallet_credited';
+  const isTerminal = ['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
+  const isValidated = deposit.status === 'validated';
   const showCountdown = deposit.status === 'created' || deposit.status === 'awaiting_proof';
   const creditedAmount = deposit.confirmed_amount_xaf ?? deposit.amount_xaf;
   const amountDiffers = deposit.confirmed_amount_xaf != null && deposit.confirmed_amount_xaf !== deposit.amount_xaf;

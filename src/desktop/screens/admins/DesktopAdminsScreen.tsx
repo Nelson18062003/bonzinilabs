@@ -15,7 +15,6 @@ import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole, type AdminStatus } from 
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { cn } from '@/lib/utils';
 import {
-  SURFACE,
   TEXT,
   PRIMARY_PILL,
   SOFT_PILL,
@@ -26,7 +25,7 @@ import {
   Holder,
   ScreenLoader,
   Card,
-} from '@/mobile/designKit';
+} from '@/desktop/designKit';
 import { MobileAdminDetail } from '@/mobile/screens/admins';
 import { MasterDetailLayout } from '@/desktop/components/MasterDetailLayout';
 
@@ -110,7 +109,7 @@ export function DesktopAdminsScreen() {
               <button
                 key={f.value}
                 onClick={() => setRoleFilter(f.value)}
-                className={cn('rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors', roleFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}
+                className={cn('rounded-md px-3.5 py-2 text-[12px] font-semibold transition-colors', roleFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}
               >
                 {f.label}
               </button>
@@ -120,7 +119,7 @@ export function DesktopAdminsScreen() {
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={cn('rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors', statusFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}
+                className={cn('rounded-md px-3.5 py-2 text-[12px] font-semibold transition-colors', statusFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}
               >
                 {f.label}
               </button>
@@ -152,8 +151,8 @@ export function DesktopAdminsScreen() {
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/more/admins/${admin.id}`); } }}
                       className={cn(
-                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
-                        adminId === admin.id && 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]',
+                        'cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-muted/40 focus-visible:bg-muted/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
+                        adminId === admin.id && 'bg-accent',
                       )}
                     >
                       <td className="px-5 py-3">
@@ -162,8 +161,8 @@ export function DesktopAdminsScreen() {
                             <Avatar name={name} size="sm" />
                             <span
                               className={cn(
-                                'absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-[#211F2B]',
-                                admin.status === 'ACTIVE' ? 'bg-[#2E7D52] dark:bg-[#7FCBA0]' : 'bg-[#C0504D] dark:bg-[#E79A9A]',
+                                'absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-card',
+                                admin.status === 'ACTIVE' ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-destructive',
                               )}
                             />
                           </div>

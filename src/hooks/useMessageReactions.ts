@@ -6,8 +6,6 @@ import { useEffect, useMemo } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatMessageReaction, ChatReactionEmoji } from '@/types/chat';
 
-type AnyTable = never;
-
 /**
  * Récupère TOUTES les réactions pour les messages d'une conversation.
  * Subscribe Realtime à INSERT/DELETE pour mises à jour live.
@@ -30,7 +28,7 @@ export function useReactionsForMessages(
     queryFn: async (): Promise<ChatMessageReaction[]> => {
       if (messageIds.length === 0) return [];
       const { data, error } = await sb
-        .from('chat_message_reactions' as AnyTable)
+        .from('chat_message_reactions')
         .select('*')
         .in('message_id', messageIds);
       if (error) throw error;
@@ -88,7 +86,7 @@ export function useToggleReaction(sb: SupabaseClient) {
     }) => {
       // Cherche si la réaction existe déjà
       const { data: existing } = await sb
-        .from('chat_message_reactions' as AnyTable)
+        .from('chat_message_reactions')
         .select('id')
         .eq('message_id', params.messageId)
         .eq('user_id', params.userId)
@@ -97,14 +95,14 @@ export function useToggleReaction(sb: SupabaseClient) {
 
       if (existing) {
         const { error } = await sb
-          .from('chat_message_reactions' as AnyTable)
+          .from('chat_message_reactions')
           .delete()
           .eq('id', (existing as { id: string }).id);
         if (error) throw error;
         return { removed: true };
       }
 
-      const { error } = await sb.from('chat_message_reactions' as AnyTable).insert({
+      const { error } = await sb.from('chat_message_reactions').insert({
         message_id: params.messageId,
         user_id: params.userId,
         sender_type: params.senderType,

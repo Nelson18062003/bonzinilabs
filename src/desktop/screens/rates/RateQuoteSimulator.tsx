@@ -152,7 +152,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
   };
 
   const adjClass = (v: number) =>
-    v < 0 ? 'text-[#C0504D] dark:text-[#E79A9A]' : 'text-[#2E7D52] dark:text-[#7FCBA0]';
+    v < 0 ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400';
 
   if (adjustmentsLoading) return <ScreenLoader />;
 
@@ -172,7 +172,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
       className={cn(
         'block cursor-text rounded-2xl px-4 py-3 transition',
         SURFACE.canvas,
-        active && 'ring-2 ring-[#8B5CF6]',
+        active && 'ring-2 ring-ring',
       )}
     >
       <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{label}</span>
@@ -187,7 +187,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
           placeholder={placeholder}
           className={cn(
             'min-w-0 flex-1 bg-transparent text-[30px] font-black leading-none tabular-nums outline-none',
-            'placeholder:text-[#C7C2D6] dark:placeholder:text-[#4A4658]',
+            'placeholder:text-muted-foreground',
             TEXT.strong,
           )}
         />
@@ -210,7 +210,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
             title={`Copier ${copyText}`}
             className={cn(
               'flex h-8 w-8 shrink-0 -translate-y-0.5 items-center justify-center self-center rounded-full transition',
-              copiedField === id ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]' : cn(SURFACE.holder, TEXT.muted),
+              copiedField === id ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' : cn(SURFACE.holder, TEXT.muted),
             )}
           >
             {copiedField === id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -227,14 +227,14 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
         <CardHeader title="Simulateur" meta={activeRate ? 'taux actifs' : 'aucun taux actif'} />
         <div className="space-y-3 p-4">
           {adjustmentsError && (
-            <div className="rounded-xl bg-[#F8EFD8] px-3 py-2 text-[12px] font-semibold text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            <div className="rounded-xl bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
               Ajustements pays/tranches indisponibles — calcul sans eux.
             </div>
           )}
 
           {bigField(
             'Le client paie',
-            <span className="shrink-0 text-[15px] font-extrabold text-[#E8932A]">XAF</span>,
+            <span className="shrink-0 text-[15px] font-extrabold text-amber-600 dark:text-amber-400">XAF</span>,
             xafDisplay,
             editSide('xaf'),
             side === 'xaf',
@@ -275,7 +275,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
                   aria-pressed={active}
                   className={cn(
                     'flex flex-col items-center gap-1 rounded-xl py-2 transition',
-                    active ? 'bg-[#EDEAFA] dark:bg-[#2A2738]' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
+                    active ? 'bg-muted' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
                   )}
                 >
                   <MethodLogo method={pm.key} size={28} />
@@ -329,7 +329,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
                   onChange={(e) => setCustomRateStr(e.target.value)}
                   placeholder={autoCalc ? autoCalc.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '—'}
                   wrapperClassName="w-[96px]"
-                  controlClassName="h-8 text-right text-[13px] font-black tabular-nums text-[#5B4CC4] dark:text-[#B5AAF0]"
+                  controlClassName="h-8 text-right text-[13px] font-black tabular-nums text-indigo-700 dark:text-indigo-400"
                   aria-label="Taux appliqué (modifiable)"
                 />
                 {customRateStr !== '' && (
@@ -346,7 +346,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
               </span>
             </div>
             {hasCustomRate && autoCalc && (
-              <p className={cn('text-[11px]', customRate < autoCalc.finalRate ? 'text-[#C0504D] dark:text-[#E79A9A]' : 'text-[#2E7D52] dark:text-[#7FCBA0]')}>
+              <p className={cn('text-[11px]', customRate < autoCalc.finalRate ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400')}>
                 Écart vs taux du jour ({autoCalc.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}) :{' '}
                 {customRate >= autoCalc.finalRate ? '+' : ''}
                 {(customRate - autoCalc.finalRate).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ¥ / 1M
@@ -395,7 +395,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
                   type="button"
                   onClick={downloadQuote}
                   disabled={exporting}
-                  className="flex flex-[1.5] items-center justify-center gap-2 rounded-full bg-[#1C1B22] py-3 text-[13.5px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+                  className="flex flex-[1.5] items-center justify-center gap-2 rounded-md bg-primary py-3 text-[13.5px] font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
                 >
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Télécharger l'image
@@ -404,8 +404,8 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
                   type="button"
                   onClick={copyQuoteText}
                   className={cn(
-                    'flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-[13.5px] font-bold transition active:scale-[0.98]',
-                    copied ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]' : cn(SURFACE.card, 'ring-1 ring-black/[0.08] dark:ring-white/[0.10]', TEXT.strong),
+                    'flex flex-1 items-center justify-center gap-2 rounded-md py-3 text-[13.5px] font-bold transition active:scale-[0.98]',
+                    copied ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' : cn(SURFACE.card, 'ring-1 ring-black/[0.08] dark:ring-white/[0.10]', TEXT.strong),
                   )}
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

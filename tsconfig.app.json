@@ -24,6 +24,11 @@
     "noImplicitReturns": true,
     "strictNullChecks": true,
 
+    /* Vitest tourne en `globals: true` et le setup charge jest-dom : sans ces
+       types, `describe`/`beforeEach` et `toBeInTheDocument` n'existent pas pour
+       tsc — les fichiers de test ne compilaient pas. */
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

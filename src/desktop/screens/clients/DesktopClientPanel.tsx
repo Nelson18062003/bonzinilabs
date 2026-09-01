@@ -179,9 +179,9 @@ function AdjustmentDialog({
           controlClassName="min-h-[90px]"
           hint="Le motif sera enregistré dans l'historique et visible par le client."
         />
-        <div className="flex gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-          <p className="text-[13px] text-[#9A6B12] dark:text-[#E7C083]">
+        <div className="flex gap-2 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+          <p className="text-[13px] text-amber-700 dark:text-amber-400">
             Cette action sera enregistrée avec votre nom et ne peut pas être annulée.
           </p>
         </div>
@@ -422,8 +422,8 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
       className={cn(
         'flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold',
         danger
-          ? 'text-[#C0504D] hover:bg-[#FBE7E7]/60 dark:text-[#E79A9A] dark:hover:bg-[#3A2526]/60'
-          : cn(TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]'),
+          ? 'text-destructive hover:bg-destructive/10 dark:text-destructive dark:hover:bg-destructive/10'
+          : cn(TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]'),
       )}
     >
       {icon} {label}
@@ -482,7 +482,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               <button
                 type="button"
                 onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-                className="text-[12px] font-bold text-[#6B5BD2] dark:text-[#A99BF0]"
+                className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400"
               >
                 Historique complet →
               </button>
@@ -496,14 +496,14 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               <button
                 type="button"
                 onClick={() => setAdjustmentType('CREDIT')}
-                className={cn('flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold', TONE_HOLDER.success)}
+                className={cn('flex items-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', TONE_HOLDER.success)}
               >
                 <Plus className="h-3.5 w-3.5" /> Crédit
               </button>
               <button
                 type="button"
                 onClick={() => setAdjustmentType('DEBIT')}
-                className={cn('flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold', TONE_HOLDER.danger)}
+                className={cn('flex items-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', TONE_HOLDER.danger)}
               >
                 <Minus className="h-3.5 w-3.5" /> Débit
               </button>
@@ -543,7 +543,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           <SecLabel
             right={
               canManageUsers ? (
-                <button type="button" onClick={openEdit} className="text-[12px] font-bold text-[#6B5BD2] dark:text-[#A99BF0]">
+                <button type="button" onClick={openEdit} className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400">
                   Modifier
                 </button>
               ) : undefined
@@ -581,7 +581,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               <button
                 type="button"
                 onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-                className="text-[12px] font-bold text-[#6B5BD2] dark:text-[#A99BF0]"
+                className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400"
               >
                 Voir tout ({ledgerEntries?.length ?? 0})
               </button>
@@ -622,7 +622,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           <button
             type="button"
             onClick={() => navigate(`/m/clients/${client.id}/beneficiaries`)}
-            className={cn('flex items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-semibold', SURFACE.card, 'ring-1 ring-black/[0.07] dark:ring-white/[0.08]', TEXT.strong)}
+            className={cn('flex items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-semibold', SURFACE.card, 'ring-1 ring-black/[0.07] dark:ring-white/[0.08]', TEXT.strong)}
           >
             <Users className="h-4 w-4" /> Bénéficiaires
           </button>
@@ -630,7 +630,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             type="button"
             onClick={downloadStatement}
             disabled={isGeneratingPDF}
-            className={cn('flex items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-semibold disabled:opacity-60', SURFACE.card, 'ring-1 ring-black/[0.07] dark:ring-white/[0.08]', TEXT.strong)}
+            className={cn('flex items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-semibold disabled:opacity-60', SURFACE.card, 'ring-1 ring-black/[0.07] dark:ring-white/[0.08]', TEXT.strong)}
           >
             {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
             Relevé PDF
@@ -740,7 +740,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>
             <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={copyPassword} />
           </div>
-          <p className="rounded-2xl bg-[#F8EFD8] p-3 text-[13px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <p className="rounded-2xl bg-amber-50 p-3 text-[13px] text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
             Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.
           </p>
         </div>

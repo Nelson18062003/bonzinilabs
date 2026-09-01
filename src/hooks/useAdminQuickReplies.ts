@@ -5,15 +5,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import type { ChatClientQuickReply } from '@/types/chat';
 
-type AnyTable = never;
-
 export function useAdminAllQuickReplies() {
   return useQuery({
     queryKey: ['admin-client-quick-replies'],
     staleTime: 60_000,
     queryFn: async (): Promise<ChatClientQuickReply[]> => {
       const { data, error } = await supabaseAdmin
-        .from('chat_client_quick_replies' as AnyTable)
+        .from('chat_client_quick_replies')
         .select('*')
         .order('sort_order', { ascending: true });
       if (error) throw error;
@@ -27,7 +25,7 @@ export function useCreateQuickReply() {
   return useMutation({
     mutationFn: async (input: { label: string; content: string; sort_order?: number; active?: boolean }) => {
       const { data, error } = await supabaseAdmin
-        .from('chat_client_quick_replies' as AnyTable)
+        .from('chat_client_quick_replies')
         .insert({
           label: input.label.trim(),
           content: input.content.trim(),
@@ -63,7 +61,7 @@ export function useUpdateQuickReply() {
       if (input.active !== undefined) patch.active = input.active;
 
       const { data, error } = await supabaseAdmin
-        .from('chat_client_quick_replies' as AnyTable)
+        .from('chat_client_quick_replies')
         .update(patch)
         .eq('id', input.id)
         .select('*')
@@ -83,7 +81,7 @@ export function useDeleteQuickReply() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabaseAdmin
-        .from('chat_client_quick_replies' as AnyTable)
+        .from('chat_client_quick_replies')
         .delete()
         .eq('id', id);
       if (error) throw error;

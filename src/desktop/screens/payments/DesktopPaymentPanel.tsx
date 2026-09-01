@@ -147,9 +147,9 @@ function StepRow({ label, meta, state, last }: { label: string; meta?: string; s
           className={cn(
             'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
             state === 'completed'
-              ? 'border-[#34d399] bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
               : state === 'current'
-                ? 'border-[#8B5CF6] text-[#8B5CF6]'
+                ? 'border-primary text-primary'
                 : cn('border-black/[0.12] dark:border-white/[0.15]', TEXT.muted),
           )}
         >
@@ -436,7 +436,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const handleCashSignature = useCallback(
     async (signatureDataUrl: string) => {
       const signedByName = currentUser
-        ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Admin'
+        ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Admin'
         : 'Admin';
       try {
         const result = await confirmCash.mutateAsync({ paymentId, signatureDataUrl, signedByName });
@@ -653,7 +653,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                     <button
                       type="button"
                       onClick={() => { setMenuOpen(false); setShowUpload(true); }}
-                      className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                      className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                     >
                       <Plus className="h-3.5 w-3.5" /> Ajouter une preuve
                     </button>
@@ -661,7 +661,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                       type="button"
                       onClick={() => { setMenuOpen(false); instructionInputRef.current?.click(); }}
                       disabled={instructionUpload.isPending}
-                      className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold disabled:opacity-50', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                      className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold disabled:opacity-50', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                     >
                       <FileText className="h-3.5 w-3.5" /> Ajouter une instruction
                     </button>
@@ -671,7 +671,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); openCorrect(); }}
-                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                   >
                     <Pencil className="h-3.5 w-3.5" /> Corriger montants / taux
                   </button>
@@ -680,7 +680,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); setShowCancel(true); }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#C0504D] hover:bg-[#FBE7E7]/60 dark:text-[#E79A9A] dark:hover:bg-[#3A2526]/60"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-destructive hover:bg-destructive/10 dark:text-destructive dark:hover:bg-destructive/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Annuler le paiement
                   </button>
@@ -698,7 +698,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           className="mb-2"
           right={
             canEditBeneficiary ? (
-              <button type="button" onClick={openBenefEdit} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+              <button type="button" onClick={openBenefEdit} className="text-[12px] font-semibold text-indigo-700 dark:text-indigo-400">
                 {hasBeneficiaryInfo ? 'Modifier le bénéficiaire' : 'Ajouter le bénéficiaire'}
               </button>
             ) : undefined
@@ -732,7 +732,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                 {fmt(payment.amount_xaf)} XAF débités · taux{' '}
                 <b style={{ color: FICHE.strong }}>¥{formatNumber(rateInt)}</b> pour 1 000 000 XAF
                 {payment.rate_is_custom && (
-                  <span className="ml-1.5 rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4]">
+                  <span className="ml-1.5 rounded-md bg-indigo-50 px-1.5 py-px text-[9px] font-extrabold uppercase text-indigo-700">
                     perso
                   </span>
                 )}
@@ -769,11 +769,11 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 rounded-xl bg-[#F8EFD8] px-3 py-2">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12]" />
+                  <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700" />
                     <div>
-                      <div className="text-[12.5px] font-bold text-[#9A6B12]">Infos bénéficiaire manquantes</div>
-                      <div className="text-[11px] text-[#9A6B12]/80">Paiement impossible sans ces informations</div>
+                      <div className="text-[12.5px] font-bold text-amber-700">Infos bénéficiaire manquantes</div>
+                      <div className="text-[11px] text-amber-700/80">Paiement impossible sans ces informations</div>
                     </div>
                   </div>
                 )}
@@ -884,7 +884,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                 <button
                   type="button"
                   onClick={() => setShowSign(true)}
-                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#E0322B] px-3.5 py-2 text-[12px] font-bold text-white"
+                  className="flex shrink-0 items-center gap-1.5 rounded-md bg-destructive px-3.5 py-2 text-[12px] font-bold text-destructive-foreground"
                 >
                   <PenLine className="h-3.5 w-3.5" /> Faire signer
                 </button>
@@ -908,7 +908,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   <p className={cn('truncate text-[11px]', TEXT.muted)}>Attendue avant « Valider » — Ctrl+V colle une capture</p>
                 </div>
               </div>
-              <button type="button" onClick={() => setShowUpload(true)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-[12px] font-bold', SOFT_PILL)}>
+              <button type="button" onClick={() => setShowUpload(true)} className={cn('shrink-0 rounded-md px-3 py-1.5 text-[12px] font-bold', SOFT_PILL)}>
                 Ajouter
               </button>
             </div>
@@ -933,7 +933,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   </button>
                 </span>
               ) : canProcess && !isLocked && allProofs.length > 0 ? (
-                <button type="button" onClick={() => setShowUpload(true)} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                <button type="button" onClick={() => setShowUpload(true)} className="text-[12px] font-semibold text-indigo-700 dark:text-indigo-400">
                   + Ajouter
                 </button>
               ) : undefined
@@ -957,9 +957,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               <div className={cn('mt-1.5 flex items-center gap-2 text-[11px]', TEXT.muted)}>
                 <span
                   className={cn(
-                    'rounded-full px-2 py-px text-[10px] font-extrabold uppercase',
+                    'rounded-md px-2 py-px text-[10px] font-extrabold uppercase',
                     proof.uploaded_by_type === 'admin'
-                      ? 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]'
+                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400'
                       : 'bg-black/[0.05] dark:bg-white/[0.08]',
                   )}
                 >
@@ -1019,7 +1019,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                     type="button"
                     disabled={deleteProof.isPending}
                     onClick={() => setDeleteProofId(proof.id)}
-                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-[#FBE7E7] text-[10px] font-semibold text-[#C0504D] disabled:opacity-40 dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-destructive/10 text-[10px] font-semibold text-destructive disabled:opacity-40 dark:bg-destructive/10 dark:text-destructive"
                   >
                     <Trash2 className="h-3 w-3" /> Supprimer
                   </button>
@@ -1034,7 +1034,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                 <button
                   type="button"
                   onClick={() => setShowUpload(true)}
-                  className="mx-auto mt-2 flex items-center gap-1 rounded-full bg-[#EAE7FA] px-3 py-1.5 text-[11px] font-bold text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]"
+                  className="mx-auto mt-2 flex items-center gap-1 rounded-md bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400"
                 >
                   <Plus className="h-3 w-3" /> Ajouter (Ctrl+V)
                 </button>
@@ -1048,7 +1048,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           <KV
             k="Client"
             v={
-              <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className="text-[#6B5BD2] dark:text-[#A99BF0]">
+              <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className="text-indigo-700 dark:text-indigo-400">
                 {clientName}
               </button>
             }
@@ -1061,9 +1061,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         </div>
 
         {(payment as { rejection_reason?: string | null }).rejection_reason && (
-          <div className="mt-3 flex items-baseline gap-2.5 rounded-2xl bg-[#FBE7E7] px-3 py-2 dark:bg-[#3A2526]">
-            <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-[#C0504D] dark:text-[#E79A9A]">Motif refus</span>
-            <p className="text-[12.5px] text-[#C0504D] dark:text-[#E79A9A]">
+          <div className="mt-3 flex items-baseline gap-2.5 rounded-2xl bg-destructive/10 px-3 py-2 dark:bg-destructive/10">
+            <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-destructive">Motif refus</span>
+            <p className="text-[12.5px] text-destructive">
               {(payment as { rejection_reason?: string | null }).rejection_reason}
             </p>
           </div>
@@ -1126,7 +1126,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               onClick={submitCorrection}
               loading={correctPayment.isPending}
               disabled={!corr.reason.trim()}
-              className="flex-[1.4] bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white"
+              className="flex-[1.4] bg-primary text-primary-foreground"
             >
               Appliquer la correction
             </PrimaryPill>
@@ -1134,9 +1134,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         }
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-            <p className="text-[12.5px] leading-[17px] text-[#9A6B12] dark:text-[#E7C083]">
+          <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+            <p className="text-[12.5px] leading-[17px] text-amber-700 dark:text-amber-400">
               Correction a posteriori ({statusConfig.label}). Le client verra les nouveaux montants ; le reçu PDF et la fiche se
               régénèrent avec ces valeurs. Tout est tracé (journal d'audit + suivi du paiement).
             </p>
@@ -1175,8 +1175,8 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                 'rounded-2xl p-3 text-[12.5px] font-semibold',
                 corrWalletTouched
                   ? corrDelta > 0
-                    ? 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]'
-                    : 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
                   : cn(SURFACE.canvas, TEXT.muted),
               )}
             >
@@ -1205,7 +1205,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               onChange={(e) => setCorr({ ...corr, reason: e.target.value })}
               rows={2}
               placeholder="Ex. : erreur de saisie du taux à la création…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
         </div>
@@ -1281,7 +1281,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             <PrimaryPill
               onClick={confirmComplete}
               loading={processPayment.isPending || uploadProof.isPending}
-              className="flex-[1.4] bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+              className="flex-[1.4] bg-emerald-600 text-white hover:bg-emerald-600/90"
             >
               Marquer effectué
             </PrimaryPill>
@@ -1296,9 +1296,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             </div>
           </div>
           {missingAdminProof && (
-            <div className="flex items-start gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-              <p className="text-[12.5px] text-[#9A6B12] dark:text-[#E7C083]">
+            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+              <p className="text-[12.5px] text-amber-700 dark:text-amber-400">
                 Aucune preuve de paiement admin n'a été jointe. Recommandé : ajoutez la capture du virement/transfert avant de valider.
               </p>
             </div>
@@ -1335,7 +1335,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               onChange={(e) => setCompleteComment(e.target.value)}
               rows={2}
               placeholder="Ex. : Payé via Alipay, référence du transfert…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
           <p className={cn('text-center text-[11px]', TEXT.muted)}>⌘⏎ pour confirmer · Esc pour annuler</p>
@@ -1379,9 +1379,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         }
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-2 rounded-2xl bg-[#DEEFE5] p-3 dark:bg-[#1E3A2C]">
-            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#2E7D52] dark:text-[#7FCBA0]" />
-            <p className="text-[12.5px] text-[#2E7D52] dark:text-[#7FCBA0]">
+          <div className="flex items-start gap-2 rounded-2xl bg-emerald-50 p-3 dark:bg-emerald-950/50">
+            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
+            <p className="text-[12.5px] text-emerald-700 dark:text-emerald-400">
               Le wallet de {clientName} sera automatiquement remboursé de {fmt(payment.amount_xaf)} XAF.
             </p>
           </div>
@@ -1396,7 +1396,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   className={cn(
                     'rounded-xl px-3 py-2 text-left text-[12.5px] font-semibold ring-1 transition-colors',
                     rejectReason === reason
-                      ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                      ? 'bg-destructive/10 text-destructive ring-destructive/40 dark:bg-destructive/10 dark:text-destructive'
                       : cn(SURFACE.canvas, 'ring-transparent', TEXT.strong),
                   )}
                 >
@@ -1411,7 +1411,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               onChange={(e) => setRejectComment(e.target.value)}
               rows={2}
               placeholder="Détail du motif…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
         </div>
@@ -1428,7 +1428,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             <SoftPill onClick={() => setShowBenefEdit(false)} className="flex-1">
               Annuler
             </SoftPill>
-            <PrimaryPill onClick={saveBeneficiary} loading={updateBeneficiary.isPending} className="flex-[1.4] bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white">
+            <PrimaryPill onClick={saveBeneficiary} loading={updateBeneficiary.isPending} className="flex-[1.4] bg-primary text-primary-foreground">
               Enregistrer
             </PrimaryPill>
           </>
@@ -1477,7 +1477,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
               onChange={(e) => setBenefDraft({ ...benefDraft, notes: e.target.value })}
               rows={2}
               placeholder="Ex. : contact du fournisseur, précisions de livraison…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
         </div>
@@ -1525,7 +1525,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             <SoftPill onClick={() => setShowCancel(false)} className="flex-1">
               Retour
             </SoftPill>
-            <PrimaryPill onClick={() => cancelPayment.mutate({ paymentId }, { onSuccess: close })} loading={cancelPayment.isPending} danger className="flex-[1.4]">
+            <PrimaryPill onClick={() => cancelPayment.mutate(paymentId, { onSuccess: close })} loading={cancelPayment.isPending} danger className="flex-[1.4]">
               Confirmer l'annulation
             </PrimaryPill>
           </>

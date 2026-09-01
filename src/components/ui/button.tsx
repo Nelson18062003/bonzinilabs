@@ -16,11 +16,26 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
+      /*
+       * DEUX DENSITÉS, une seule échelle.
+       *
+       * `default` (40px) reste la géométrie TACTILE de l'app client et du
+       * mobile : la réduire ferait passer les cibles sous le seuil
+       * recommandé — ce n'est pas un détail cosmétique sur un écran tactile.
+       *
+       * `compact` (32px), `sm` (28px) et `xs` (24px) sont l'échelle de la
+       * bibliothèque shadcn/ui de référence (Figma, août 2026), utilisée par
+       * l'admin DESKTOP où le pointeur est précis et la densité recherchée.
+       */
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        compact: "h-8 px-2.5 py-1",
+        sm: "h-7 rounded-md px-2.5 text-xs",
+        xs: "h-6 rounded-md px-2 text-xs",
+        lg: "h-11 px-8",
         icon: "h-10 w-10",
+        "icon-compact": "h-8 w-8",
+        "icon-sm": "h-7 w-7 rounded-md",
       },
     },
     defaultVariants: {

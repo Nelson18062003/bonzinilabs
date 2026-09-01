@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       // env var → never active in production or normal dev.
       ...(process.env.SCREENSHOT_MOCK === "1"
         ? {
-            "@/hooks/analytics/useAnalytics": path.resolve(__dirname, "./src/__screenshot__/mockAnalytics.ts"),
-            "@/hooks/useDailyRates": path.resolve(__dirname, "./src/__screenshot__/mockDailyRates.ts"),
+            "@/hooks/useTreasury": path.resolve(__dirname, "./src/__screenshot__/mockTreasury.ts"),
+            "@/contexts/AdminAuthContext": path.resolve(__dirname, "./src/__screenshot__/mockAdminAuth.ts"),
           }
         : {}),
       "@": path.resolve(__dirname, "./src"),

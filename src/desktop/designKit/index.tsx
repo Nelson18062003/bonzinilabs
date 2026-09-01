@@ -26,24 +26,122 @@ import {
 import { format, isToday, isYesterday, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  TextInput,
-  Holder,
-} from '@/mobile/designKit';
+// SURFACE / TEXT / PRIMARY_PILL / SOFT_PILL ne sont PAS importés du mobile :
+// ils sont redéfinis plus bas pour le desktop (voir « Jetons DESKTOP »), et les
+// composants de ce fichier consomment ces versions-là.
+import { TextInput, type Tone } from '@/mobile/designKit';
 
 /* Tokens & atoms shared with mobile — one import site for desktop screens. */
 export * from '@/mobile/designKit';
 
+/* ── Jetons DESKTOP — recouvrent ceux du mobile ────────────────────────────
+ *
+ * Le kit mobile porte une palette lilas écrite en dur (`#ECEAF7` de fond,
+ * `#EDEAFA` pour les pastilles, pilules `rounded-full`). Le mobile est validé
+ * et ne bouge pas ; l'admin desktop, lui, passe sur la bibliothèque de
+ * composants (shadcn/Figma) posée par la classe `.admin-theme` de la coquille.
+ *
+ * Les déclarations locales ci-dessous l'emportent sur le `export *` au-dessus
+ * (règle ESM : un export explicite masque un export étoile de même nom). Les
+ * écrans desktop qui importent `@/desktop/designKit` basculent donc sur le
+ * design system SANS changer une seule ligne d'appel — et le mobile, qui
+ * importe `@/mobile/designKit`, garde exactement son rendu actuel.
+ *
+ * Toutes les valeurs sont des jetons sémantiques (`bg-card`, `text-foreground`,
+ * `border-border`…) : elles suivent automatiquement le thème clair/sombre. */
+
+export const SURFACE = {
+  canvas: 'bg-background',
+  card: 'bg-card',
+  /** Séparation par bordure, comme les cartes shadcn (pas d'ombre portée). */
+  shadow: 'ring-1 ring-border',
+  holder: 'bg-muted text-foreground',
+  /** « surface-2 » : encart posé sur une carte. */
+  inset: 'bg-muted/50',
+} as const;
+
+export const TEXT = {
+  strong: 'text-foreground',
+  body: 'text-foreground/85',
+  muted: 'text-muted-foreground',
+} as const;
+
+/** Action principale — le bouton plein du design system (choix « 1 / Plein »). */
+export const PRIMARY_PILL =
+  'rounded-md bg-primary text-primary-foreground outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+/** Action secondaire. */
+export const SOFT_PILL =
+  'rounded-md border border-input bg-background text-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+/** Pastilles de statut — angles adoucis (rayon du thème), plus `rounded-full`. */
+export const TONE_PILL: Record<Tone, string> = {
+  success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
+  pending: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
+  danger: 'bg-destructive/10 text-destructive',
+  info: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
+  neutral: 'bg-muted text-muted-foreground',
+};
+
+export const TONE_HOLDER: Record<Tone, string> = {
+  success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
+  pending: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
+  danger: 'bg-destructive/10 text-destructive',
+  info: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
+  neutral: 'bg-muted text-foreground',
+};
+
+/**
+ * Porte-icône DESKTOP — recouvre celui du mobile.
+ *
+ * Le composant mobile est un rond de 36/44/48px peint avec la palette lilas
+ * (il lit `TONE_HOLDER` de SON module, donc la redéfinition de jeton ci-dessus
+ * ne l'atteint pas : il faut recouvrir le composant lui-même). Ici : angles du
+ * thème, densité desktop, et les tonalités du design system.
+ */
+export function Holder({
+  icon: Icon,
+  tone = 'neutral',
+  size = 'md',
+  className,
+  onClick,
+  ariaLabel,
+  children,
+}: {
+  icon?: React.ElementType;
+  tone?: Tone;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
+  children?: React.ReactNode;
+}) {
+  const box = size === 'sm' ? 'h-8 w-8' : size === 'lg' ? 'h-11 w-11' : 'h-9 w-9';
+  const ic = size === 'sm' ? 'h-4 w-4' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
+  const inner = Icon ? <Icon className={ic} /> : children;
+  const classes = cn(
+    'flex shrink-0 items-center justify-center rounded-md',
+    box,
+    TONE_HOLDER[tone],
+    onClick && 'transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+    className,
+  );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} aria-label={ariaLabel} className={classes}>
+        {inner}
+      </button>
+    );
+  }
+  return <div className={classes}>{inner}</div>;
+}
+
+
 /* ── Action pill recipes (same as the mobile fiches — kept as constants) ── */
 
-export const EMERALD_PILL = 'rounded-full bg-[#10B981] text-white font-bold';
-export const VIOLET_PILL = 'rounded-full bg-[#8B5CF6] text-white font-bold';
+export const EMERALD_PILL = 'rounded-md bg-emerald-600 text-white font-bold';
+export const VIOLET_PILL = 'rounded-md bg-indigo-600 text-white font-bold';
 export const DANGER_SOFT_PILL =
-  'rounded-full bg-[#FBE7E7] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]';
+  'rounded-md bg-destructive/10 font-semibold text-destructive hover:bg-destructive/15';
 
 /* ── Méthodes de dépôt — vignette de marque (source unique desktop) ─────── */
 
@@ -106,11 +204,11 @@ export function Age({
 }) {
   const color =
     level === 'overdue'
-      ? 'text-[#ef4444] font-bold'
+      ? 'text-destructive font-bold'
       : level === 'aging'
-        ? 'text-[#B47A17] font-bold dark:text-[#E7C083]'
+        ? 'text-amber-700 font-bold dark:text-amber-400'
         : level === 'fresh'
-          ? 'text-[#2E7D52] font-bold dark:text-[#7FCBA0]'
+          ? 'text-emerald-700 font-bold dark:text-emerald-400'
           : cn(TEXT.muted, 'font-medium');
   return (
     <div className="whitespace-nowrap leading-[16px]">
@@ -138,7 +236,7 @@ export function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-semibold transition-colors',
+        'flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-semibold transition-colors',
         active ? PRIMARY_PILL : SOFT_PILL,
       )}
     >
@@ -146,9 +244,9 @@ export function Chip({
       {count != null && count !== 0 && (
         <span
           className={cn(
-            'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
+            'rounded-md px-1.5 py-px text-[9px] font-extrabold tabular-nums',
             active
-              ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]'
+              ? 'bg-white/20 text-white dark:bg-black/15 dark:text-foreground'
               : 'bg-black/[0.06] dark:bg-white/10',
           )}
         >
@@ -196,7 +294,7 @@ export function DropChip<T extends string>({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-semibold', SOFT_PILL)}
+        className={cn('flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-semibold', SOFT_PILL)}
       >
         <span className="opacity-70">{label}</span>
         <span className="font-bold">{current?.label ?? value}</span>
@@ -223,11 +321,11 @@ export function DropChip<T extends string>({
               }}
               className={cn(
                 'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-semibold transition-colors',
-                o.value === value ? cn('bg-[#EDEAFA]/70 dark:bg-white/[0.06]', TEXT.strong) : cn(TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]'),
+                o.value === value ? cn('bg-accent', TEXT.strong) : cn(TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]'),
               )}
             >
               {o.label}
-              {o.value === value && <Check className="h-3.5 w-3.5 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+              {o.value === value && <Check className="h-3.5 w-3.5 text-indigo-700 dark:text-indigo-400" />}
             </button>
           ))}
         </div>
@@ -351,7 +449,7 @@ export function Th({
       )}
     >
       {sortable && onSort ? (
-        <button type="button" onClick={onSort} className="outline-none focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]">
+        <button type="button" onClick={onSort} className="outline-none focus-visible:ring-2 focus-visible:ring-ring ">
           {inner}
         </button>
       ) : (
@@ -426,7 +524,7 @@ export function PaginationBar({
             <button
               type="button"
               onClick={() => onPage(n)}
-              className={cn('h-7 min-w-7 rounded-full px-2 text-[12px] font-bold tabular-nums', n === page ? PRIMARY_PILL : SOFT_PILL)}
+              className={cn('h-7 min-w-7 rounded-md px-2 text-[12px] font-bold tabular-nums', n === page ? PRIMARY_PILL : SOFT_PILL)}
             >
               {n}
             </button>
@@ -435,7 +533,7 @@ export function PaginationBar({
         {pages > (nums[nums.length - 1] ?? 1) && (
           <>
             {pages - (nums[nums.length - 1] ?? 1) > 1 && <span className={cn('px-0.5 text-[12px]', TEXT.muted)}>…</span>}
-            <button type="button" onClick={() => onPage(pages)} className={cn('h-7 rounded-full px-2 text-[12px] font-bold tabular-nums', SOFT_PILL)}>
+            <button type="button" onClick={() => onPage(pages)} className={cn('h-7 rounded-md px-2 text-[12px] font-bold tabular-nums', SOFT_PILL)}>
               {pages}
             </button>
           </>

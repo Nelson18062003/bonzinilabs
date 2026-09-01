@@ -12,7 +12,7 @@ import { Search, X, ArrowDownToLine, ArrowUpFromLine, Loader2 } from 'lucide-rea
 import { useGlobalAdminSearch } from '@/hooks/useGlobalAdminSearch';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatXAF, formatCurrencyRMB } from '@/lib/formatters';
-import { SURFACE, TEXT, Avatar } from '@/mobile/designKit';
+import { SURFACE, TEXT, Avatar } from '@/desktop/designKit';
 import { cn } from '@/lib/utils';
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
@@ -64,7 +64,7 @@ export function DesktopGlobalSearch() {
         }}
         placeholder="Rechercher un client, une référence…"
         className={cn(
-          'h-10 w-72 rounded-full pl-9 pr-9 text-[13px] outline-none placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+          'h-10 w-72 rounded-full pl-9 pr-9 text-[13px] outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring',
           SURFACE.card,
           SURFACE.shadow,
           TEXT.strong,
@@ -124,7 +124,7 @@ export function DesktopGlobalSearch() {
                     <GroupLabel>Dépôts</GroupLabel>
                     {data.deposits.map((d) => (
                       <button key={d.id} type="button" onClick={() => go(`/m/deposits/${d.id}`)} className={ROW}>
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#6B5BD2] dark:bg-[#272252] dark:text-[#A99BF0]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
                           <ArrowDownToLine className="h-4 w-4" />
                         </span>
                         <span className={REF}>{d.reference}</span>
@@ -139,7 +139,7 @@ export function DesktopGlobalSearch() {
                     <GroupLabel>Paiements</GroupLabel>
                     {data.payments.map((p) => (
                       <button key={p.id} type="button" onClick={() => go(`/m/payments/${p.id}`)} className={ROW}>
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FCEFE0] text-[#C9700F] dark:bg-[#3A2A14] dark:text-[#E7B27A]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
                           <ArrowUpFromLine className="h-4 w-4" />
                         </span>
                         <span className={REF}>{p.reference}</span>

@@ -5,6 +5,7 @@ import { Camera, Loader2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { validateUploadFile, cn } from '@/lib/utils';
 import { SURFACE, TEXT, FormField, TextInput, PrimaryPill } from '@/mobile/designKit';
 
@@ -64,11 +65,11 @@ export function MobileAdminProfile({ desktop = false }: { desktop?: boolean } = 
       return;
     }
     setSaving(true);
-    const { data, error } = await supabaseAdmin.rpc('update_my_admin_profile', {
+    const { data, error } = await supabaseAdmin.rpc('update_my_admin_profile', rpcArgs<'update_my_admin_profile'>({
       p_first_name: firstName.trim(),
       p_last_name: lastName.trim(),
       p_avatar_url: avatarUrl || null,
-    });
+    }));
     setSaving(false);
 
     if (error || (data && (data as { success?: boolean }).success === false)) {

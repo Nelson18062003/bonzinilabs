@@ -4,13 +4,13 @@
  * filters, sort options and the method→logo mapping never drift.
  */
 import { PAYMENT_METHOD_LABELS } from '@/types/payment';
-import type { PaymentStatus } from '@/types/payment';
+import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 
 export type FilterKey = PaymentStatus | 'all' | 'to_process';
 
-export const METHOD_FILTERS: { key: string; label: string }[] = [
+export const METHOD_FILTERS: { key: PaymentMethod | 'all'; label: string }[] = [
   { key: 'all', label: 'Toutes méthodes' },
-  ...Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => ({ key, label })),
+  ...Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => ({ key: key as PaymentMethod, label })),
 ];
 
 export const SORT_OPTIONS: { key: string; label: string; field: 'created_at' | 'amount_rmb'; ascending: boolean }[] = [

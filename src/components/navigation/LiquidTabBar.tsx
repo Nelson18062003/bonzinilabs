@@ -66,6 +66,7 @@ export function LiquidTabBar({ items, className }: LiquidTabBarProps) {
     }
 
     prevActiveRef.current = activeIndex;
+    return undefined;
   }, [activeIndex, measure]);
 
   // ── Debounced resize handler ─────────────────────────────────

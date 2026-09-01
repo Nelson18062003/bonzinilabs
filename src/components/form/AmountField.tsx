@@ -8,7 +8,7 @@ import {
 import { FormFieldWrapper } from './FormFieldWrapper';
 import { RightAddon } from './Adornments';
 
-type NativeInputProps = Omit<React.ComponentPropsWithoutRef<'input'>, 'size' | 'type' | 'value' | 'onChange'>;
+type NativeInputProps = Omit<React.ComponentPropsWithoutRef<'input'>, 'size' | 'type' | 'value' | 'onChange' | 'max' | 'min'>;
 
 export interface AmountFieldProps extends BaseFieldProps, NativeInputProps {
   /** Currency / unit shown as a right addon. Defaults to XAF. */

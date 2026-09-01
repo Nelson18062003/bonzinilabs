@@ -207,7 +207,7 @@ export function useClient(userId: string) {
           referenceType: lastLedgerEntry.reference_type,
           referenceId: lastLedgerEntry.reference_id,
           description: lastLedgerEntry.description,
-          createdAt: new Date(lastLedgerEntry.created_at),
+          createdAt: new Date(lastLedgerEntry.created_at!),
         } : null,
       };
     },
@@ -249,7 +249,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
       if (!entries) return [];
 
       // Fetch admin names from user_roles for entries created by admins
-      const adminIds = [...new Set(entries.map(e => e.created_by_admin_id).filter(Boolean))];
+      const adminIds = [...new Set(entries.map(e => e.created_by_admin_id).filter((id): id is string => !!id))];
 
       const adminNameMap = new Map<string, string>();
       if (adminIds.length > 0) {
@@ -279,7 +279,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
         createdByAdminName: entry.created_by_admin_id
           ? adminNameMap.get(entry.created_by_admin_id)
           : undefined,
-        createdAt: new Date(entry.created_at),
+        createdAt: new Date(entry.created_at!),
       })) as LedgerEntry[];
     },
   });
@@ -399,14 +399,14 @@ export function useCreateAdjustment() {
         throw new Error(error.message);
       }
 
-      const rpcResult = result as AdjustmentResult;
+      const rpcResult = result as unknown as AdjustmentResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || i18n.t('hooks.createAdjustment.error', { ns: 'common', defaultValue: "Erreur lors de l'ajustement" }));
       }
 
       return rpcResult;
     },
-    onSuccess: (result, variables) => {
+    onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['client-ledger', variables.userId] });

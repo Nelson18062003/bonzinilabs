@@ -43,9 +43,9 @@ const STATUS_FILTERS: { key: FilterKey; label: string }[] = [
 
 const TO_PROCESS_STATUSES: DepositStatus[] = ['proof_submitted', 'admin_review'];
 
-const METHOD_FILTERS: { key: string; label: string }[] = [
+const METHOD_FILTERS: { key: DepositMethod | 'all'; label: string }[] = [
   { key: 'all', label: 'Toutes méthodes' },
-  ...Object.entries(DEPOSIT_METHOD_LABELS).map(([key, label]) => ({ key, label })),
+  ...Object.entries(DEPOSIT_METHOD_LABELS).map(([key, label]) => ({ key: key as DepositMethod, label })),
 ];
 
 const SORT_OPTIONS: { key: string; label: string; field: 'created_at' | 'amount_xaf'; ascending: boolean }[] = [
@@ -78,7 +78,7 @@ function SlaDot({ level }: { level: SlaLevel }) {
 export function MobileDepositsScreen() {
   const { t } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
-  const [methodFilter, setMethodFilter] = useState('all');
+  const [methodFilter, setMethodFilter] = useState<DepositMethod | 'all'>('all');
   const [sortKey, setSortKey] = useState('newest');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -96,7 +96,7 @@ export function MobileDepositsScreen() {
     const params: DepositFilters = {};
 
     if (statusFilter === 'to_process') {
-      params.statuses = TO_PROCESS_STATUSES as string[];
+      params.statuses = TO_PROCESS_STATUSES;
     } else if (statusFilter !== 'all') {
       params.status = statusFilter;
     }

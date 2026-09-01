@@ -4,6 +4,7 @@
 //   Si une migration ajoute un param et qu'on oublie l'outil → ce test CASSE.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { extractRpcArgs, checkParity, WRITE_TOOL_PARITY } from "./parity.manifest";
 
 const FIXTURE = `
@@ -46,7 +47,10 @@ describe("checkParity", () => {
 });
 
 describe("PARITÉ LIVE (types.ts réel) — anti-dérive", () => {
-  const src = readFileSync(new URL("../../src/integrations/supabase/types.ts", import.meta.url), "utf8");
+  // `import.meta.url` n'est pas garanti d'être une URL `file:` sous Vitest
+  // (transformé par Vite) : `readFileSync` échouait alors avec « The URL must
+  // be of scheme file » et TOUTE la suite de parité était sautée en silence.
+  const src = readFileSync(resolve(process.cwd(), "src/integrations/supabase/types.ts"), "utf8");
   for (const e of WRITE_TOOL_PARITY) {
     it(`${e.tool} ↔ ${e.rpc} : aucun param RPC oublié`, () => {
       const r = checkParity(src, e);

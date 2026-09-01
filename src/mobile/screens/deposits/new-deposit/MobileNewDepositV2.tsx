@@ -56,7 +56,6 @@ import {
   User,
   X,
 } from 'lucide-react';
-import * as Icons from 'lucide-react';
 import {
   SURFACE,
   TEXT,
@@ -140,7 +139,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
 
   // Flow state
   const [step, setStep] = useState<Step>(preselectedClientId ? 'amount' : 'client');
-  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const [_direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [clientSearch, setClientSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState<NonNullable<typeof clients>[0] | null>(null);
   const [amount, setAmount] = useState('');

@@ -5,15 +5,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import type { ChatCannedResponse } from '@/types/chat';
 
-type AnyTable = never;
-
 export function useCannedResponses() {
   return useQuery({
     queryKey: ['chat-canned-responses'],
     staleTime: 60_000,
     queryFn: async (): Promise<ChatCannedResponse[]> => {
       const { data, error } = await supabaseAdmin
-        .from('chat_canned_responses' as AnyTable)
+        .from('chat_canned_responses')
         .select('*')
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
@@ -28,7 +26,7 @@ export function useCreateCannedResponse() {
   return useMutation({
     mutationFn: async (input: { label: string; content: string; sort_order?: number }) => {
       const { data, error } = await supabaseAdmin
-        .from('chat_canned_responses' as AnyTable)
+        .from('chat_canned_responses')
         .insert({
           label: input.label.trim(),
           content: input.content.trim(),
@@ -58,7 +56,7 @@ export function useUpdateCannedResponse() {
       if (input.sort_order !== undefined) patch.sort_order = input.sort_order;
 
       const { data, error } = await supabaseAdmin
-        .from('chat_canned_responses' as AnyTable)
+        .from('chat_canned_responses')
         .update(patch)
         .eq('id', input.id)
         .select('*')
@@ -75,7 +73,7 @@ export function useDeleteCannedResponse() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabaseAdmin
-        .from('chat_canned_responses' as AnyTable)
+        .from('chat_canned_responses')
         .delete()
         .eq('id', id);
       if (error) throw error;

@@ -30,7 +30,7 @@ export function EmptyChatState({ onQuickReply }: EmptyChatStateProps) {
           x="32"
           y="32"
           textAnchor="middle"
-          fontFamily="-apple-system, BlinkMacSystemFont, sans-serif"
+          fontFamily="'DM Sans', system-ui, sans-serif"
           fontSize="18"
           fontWeight="700"
           fill="currentColor"

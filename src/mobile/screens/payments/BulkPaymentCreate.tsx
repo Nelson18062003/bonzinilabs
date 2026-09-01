@@ -46,7 +46,7 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import {
   ChevronLeft, Plus, Search, Trash2, Pencil, Copy, Wallet, AlertTriangle, Users,
   QrCode, Check, Phone, Mail, Hash, Maximize2, RotateCcw, Landmark, Banknote, BookUser,
-  ChevronRight, Lock, Info, X,
+  ChevronRight, Lock, Info,
 } from 'lucide-react';
 import {
   SURFACE, TEXT, PAYMENT_METHOD, Card, Holder, Avatar, PrimaryPill, SoftPill,

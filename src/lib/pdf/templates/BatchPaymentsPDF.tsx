@@ -475,7 +475,7 @@ export function BatchPaymentsPDF({ payments, generatedAt }: BatchPaymentsPDFProp
         {payments.map((payment, index) => (
           <View
             key={payment.id}
-            style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : undefined]}
+            style={[styles.tableRow, ...(index % 2 === 1 ? [styles.tableRowAlt] : [])]}
           >
             <Text style={[styles.tableCell, styles.colRef]}>{payment.reference}</Text>
             <Text style={[styles.tableCell, styles.colMethod]}>{methodLabel(payment.method)}</Text>

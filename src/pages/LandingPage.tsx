@@ -15,7 +15,7 @@ const C = {
   surface: '#0f0b18', surfaceLight: '#1a1428',
   alipay: '#1677ff', wechat: '#07c160',
 };
-const F = { display: "'Syne', sans-serif", body: "'DM Sans', sans-serif" };
+const F = { display: "'DM Sans', sans-serif", body: "'DM Sans', sans-serif" };
 
 // ─── Logo SVG ─────────────────────────────────────────────────────────────────
 function Logo({ size = 36 }: { size?: number }) {

@@ -130,7 +130,7 @@ export function DesktopRateChart({ data, height = 320 }: Props) {
               onClick={() => toggle(pm.key)}
               aria-pressed={on}
               className={cn(
-                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition',
+                'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold transition',
                 on ? SURFACE.card : SURFACE.canvas,
                 !on && 'opacity-60',
               )}

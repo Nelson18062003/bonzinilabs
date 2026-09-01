@@ -1,16 +1,21 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG, QUERY_LIMITS } from '@/lib/constants';
+import type { Database } from '@/integrations/supabase/types';
 import type { DepositWithProfile } from '@/types/deposit';
 
 const PAGE_SIZE = QUERY_LIMITS.ITEMS_PER_PAGE;
 
+/** Voir `usePaginatedPayments` : les filtres portent les ENUMS de la base. */
+type DepositStatusEnum = Database['public']['Enums']['deposit_status'];
+type DepositMethodEnum = Database['public']['Enums']['deposit_method'];
+
 export interface DepositFilters {
-  status?: string;
-  statuses?: string[];
-  method?: string;
+  status?: DepositStatusEnum | 'all';
+  statuses?: DepositStatusEnum[];
+  method?: DepositMethodEnum | 'all';
   /** Server-side method-family filter (several DB methods at once). */
-  methods?: string[];
+  methods?: DepositMethodEnum[];
   /** Server-side search: reference ilike OR client name/phone (resolved via clients). */
   search?: string;
   dateFrom?: string;

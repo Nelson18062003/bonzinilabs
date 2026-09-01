@@ -31,8 +31,6 @@ import {
   Check,
   Loader2,
   Pencil,
-  Building2,
-  MapPin,
   Trash2,
   Link2,
   Users,

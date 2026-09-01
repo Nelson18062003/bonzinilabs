@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery} from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import i18n from '@/i18n';
 import { getProofSignedUrl } from '@/hooks/useAdminDeposits';
 
@@ -54,7 +53,9 @@ export function useAdminAuditLogs() {
       if (!logs) return [];
       
       // Get admin user IDs
-      const adminUserIds = [...new Set(logs.map(l => l.admin_user_id))];
+      // `admin_user_id` est nullable (action système) : on écarte les nulls,
+      // qui produiraient un filtre `.in()` malformé côté PostgREST.
+      const adminUserIds = [...new Set(logs.map(l => l.admin_user_id).filter((id): id is string => !!id))];
 
       // Fetch admin names from user_roles (source of truth for admins)
       const { data: adminRoles } = await supabaseAdmin
@@ -64,16 +65,19 @@ export function useAdminAuditLogs() {
 
       const adminMap = new Map(adminRoles?.map(r => [r.user_id, r]) || []);
 
-      return logs.map(log => ({
+      return logs.map(log => {
+        const role = log.admin_user_id ? adminMap.get(log.admin_user_id) : undefined;
+        return {
         ...log,
-        adminProfile: adminMap.get(log.admin_user_id)
+        adminProfile: role && log.admin_user_id
           ? {
-              first_name: adminMap.get(log.admin_user_id)!.first_name || 'Admin',
-              last_name: adminMap.get(log.admin_user_id)!.last_name || '',
+              first_name: role.first_name || 'Admin',
+              last_name: role.last_name || '',
               user_id: log.admin_user_id,
             }
           : null,
-      }));
+        };
+      });
     },
   });
 }

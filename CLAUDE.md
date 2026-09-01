@@ -21,6 +21,11 @@ After making code changes: **always run `npm run type-check` to verify no TypeSc
 After DB changes or before shipping: run `npm run build` to verify no build failures.
 Use the `/verify` skill to run both at once.
 
+`type-check` vise **`tsconfig.app.json`**, pas le `tsconfig.json` racine. Le
+config racine est `{"files": [], "references": [...]}` : `tsc --noEmit` sans
+`--build` y compile **zéro fichier** et sort 0 — la commande a longtemps
+renvoyé « OK » sans rien vérifier. Ne retirez pas le `-p`.
+
 ## Critical Rules
 @.claude/rules/database.md — schema, dropped tables, RLS patterns
 @.claude/rules/supabase-clients.md — two-client isolation (the most common source of bugs)

@@ -8,7 +8,7 @@
  * Exemple : paiement Alipay TERMINÉ. Harness: ?screen=cpay-detail-v5
  */
 import { LOGO_PATH } from '@/mobile/designKit/methods';
-import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit/tokens';
+import { SURFACE, TEXT, PRIMARY_PILL} from '@/mobile/designKit/tokens';
 import { ArrowLeft, Copy, ChevronRight, Download, QrCode, ImageIcon, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

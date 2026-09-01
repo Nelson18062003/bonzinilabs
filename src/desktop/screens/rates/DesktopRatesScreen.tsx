@@ -76,7 +76,7 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
             onClick={() => setView(v.key)}
             aria-current={view === v.key ? 'page' : undefined}
             className={cn(
-              'h-9 rounded-full px-4 text-[13px] font-bold transition-colors',
+              'h-9 rounded-md px-4 text-[13px] font-bold transition-colors',
               view === v.key ? PRIMARY_PILL : SOFT_PILL,
             )}
           >

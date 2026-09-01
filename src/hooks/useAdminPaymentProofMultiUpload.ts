@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { createSignedUrl } from '@/lib/signedUrls';
 import { compressImage } from '@/lib/imageCompression';
 import { uploadWithRetry } from '@/lib/storageUpload';
 import i18n from '@/i18n';

@@ -219,7 +219,7 @@ export function useRecordUsdtPurchase() {
         p_notes: args.notes,
       });
       if (error) throw error;
-      const result = data as PurchaseResult;
+      const result = data as unknown as PurchaseResult;
       if (!result.success) throw new Error(result.error ?? 'Erreur achat USDT');
       return result;
     },
@@ -290,7 +290,7 @@ export function useRecordUsdtSale() {
         p_notes: args.notes,
       });
       if (error) throw error;
-      const result = data as SaleResult;
+      const result = data as unknown as SaleResult;
       if (!result.success) throw new Error(result.error ?? 'Erreur vente USDT');
       return result;
     },

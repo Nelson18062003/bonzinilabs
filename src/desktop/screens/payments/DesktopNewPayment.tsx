@@ -375,7 +375,7 @@ export function DesktopNewPayment() {
                 hint={
                   client ? (
                     <>
-                      Solde : <b className={cn('tabular-nums', clientBalance > 0 ? TEXT.strong : 'text-[#C0504D] dark:text-[#E79A9A]')}>{fmt(clientBalance)} XAF</b>
+                      Solde : <b className={cn('tabular-nums', clientBalance > 0 ? TEXT.strong : 'text-destructive')}>{fmt(clientBalance)} XAF</b>
                     </>
                   ) : undefined
                 }
@@ -414,7 +414,7 @@ export function DesktopNewPayment() {
                                 setClientSearch('');
                                 setSelectedBenef(null);
                               }}
-                              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]"
+                              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-muted/50 dark:hover:bg-white/[0.05]"
                             >
                               <Avatar name={`${c.first_name} ${c.last_name}`} size="sm" />
                               <span className="min-w-0 flex-1 leading-[16px]">
@@ -472,7 +472,7 @@ export function DesktopNewPayment() {
                       setLastEdited('xaf');
                       setRawXaf(String(clientBalance));
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-[#EAE7FA] px-2.5 py-1 text-[11px] font-extrabold text-[#5B4CC4] disabled:opacity-40 dark:bg-[#272252] dark:text-[#B5AAF0]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-extrabold text-indigo-700 disabled:opacity-40 dark:bg-indigo-950/50 dark:text-indigo-400"
                   >
                     Max
                   </button>
@@ -505,7 +505,7 @@ export function DesktopNewPayment() {
                     {useCustomRate ? 'Taux personnalisé' : fallbackActive ? 'Taux de secours' : `Taux du jour ${mode?.name}`} :{' '}
                     <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
                     {useCustomRate && (
-                      <span className="ml-1.5 rounded-full bg-[#EAE7FA] px-1.5 py-px text-[9px] font-extrabold uppercase text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+                      <span className="ml-1.5 rounded-md bg-indigo-50 px-1.5 py-px text-[9px] font-extrabold uppercase text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
                         perso
                       </span>
                     )}
@@ -542,17 +542,17 @@ export function DesktopNewPayment() {
               </div>
             </div>
             {fallbackActive && (
-              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-                <p className="text-[12.5px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
+              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+                <p className="text-[12.5px] font-semibold text-amber-700 dark:text-amber-400">
                   Taux du jour indisponible — taux de secours ¥{fmt(FALLBACK_RATE)} appliqué. Vérifiez avant de confirmer.
                 </p>
               </div>
             )}
             {xaf > 0 && !hasEnoughBalance && (
-              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
-                <p className="text-[12.5px] font-semibold text-[#C0504D] dark:text-[#E79A9A]">
+              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-destructive/10 p-3 dark:bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+                <p className="text-[12.5px] font-semibold text-destructive">
                   Solde insuffisant — disponible : {fmt(clientBalance)} XAF
                 </p>
               </div>
@@ -568,7 +568,7 @@ export function DesktopNewPayment() {
                   key={m.id}
                   type="button"
                   onClick={() => pickMode(m)}
-                  className={cn('inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12px] font-semibold', mode?.id === m.id ? PRIMARY_PILL : SOFT_PILL)}
+                  className={cn('inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-[12px] font-semibold', mode?.id === m.id ? PRIMARY_PILL : SOFT_PILL)}
                 >
                   <PaymentMethodLogo method={logoMethod(m.id)} size={18} />
                   {m.name}
@@ -657,14 +657,14 @@ export function DesktopNewPayment() {
                                 onClick={() =>
                                   setBenef({ ...benef, isClient: true, name: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim(), phone: '' })
                                 }
-                                className={cn('flex-1 rounded-full px-3 py-2 text-[12px] font-bold', benef.isClient ? PRIMARY_PILL : SOFT_PILL)}
+                                className={cn('flex-1 rounded-md px-3 py-2 text-[12px] font-bold', benef.isClient ? PRIMARY_PILL : SOFT_PILL)}
                               >
                                 Le client lui-même
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setBenef({ ...benef, isClient: false, name: '', phone: '' })}
-                                className={cn('flex-1 rounded-full px-3 py-2 text-[12px] font-bold', !benef.isClient ? PRIMARY_PILL : SOFT_PILL)}
+                                className={cn('flex-1 rounded-md px-3 py-2 text-[12px] font-bold', !benef.isClient ? PRIMARY_PILL : SOFT_PILL)}
                               >
                                 Quelqu'un d'autre
                               </button>
@@ -770,7 +770,7 @@ export function DesktopNewPayment() {
                 {hasRate ? (
                   <>
                     ¥{fmt(rate!)} <span className={cn('text-[11px] font-normal', TEXT.muted)}>/ 1M XAF</span>{' '}
-                    {useCustomRate && <span className="text-[10px] font-extrabold uppercase text-[#5B4CC4] dark:text-[#B5AAF0]">perso</span>}
+                    {useCustomRate && <span className="text-[10px] font-extrabold uppercase text-indigo-700 dark:text-indigo-400">perso</span>}
                   </>
                 ) : (
                   '—'
@@ -786,18 +786,18 @@ export function DesktopNewPayment() {
             </div>
             <div className="flex justify-between gap-3">
               <span className={TEXT.muted}>Après débit</span>
-              <span className={cn('font-bold tabular-nums', xaf > 0 && hasEnoughBalance ? 'text-[#2E7D52] dark:text-[#7FCBA0]' : TEXT.muted)}>
+              <span className={cn('font-bold tabular-nums', xaf > 0 && hasEnoughBalance ? 'text-emerald-700 dark:text-emerald-400' : TEXT.muted)}>
                 {client && xaf > 0 && hasEnoughBalance ? `${fmt(clientBalance - xaf)} XAF` : '—'}
               </span>
             </div>
           </div>
-          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[#EAE7FA] p-3 dark:bg-[#272252]">
-            <Info className="mt-px h-3.5 w-3.5 shrink-0 text-[#5B4CC4] dark:text-[#B5AAF0]" />
-            <p className="text-[12px] leading-[16px] text-[#5B4CC4] dark:text-[#B5AAF0]">
+          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-indigo-50 p-3 dark:bg-indigo-950/50">
+            <Info className="mt-px h-3.5 w-3.5 shrink-0 text-indigo-700 dark:text-indigo-400" />
+            <p className="text-[12px] leading-[16px] text-indigo-700 dark:text-indigo-400">
               Le wallet est débité immédiatement. Un rejet rembourse automatiquement.
             </p>
           </div>
-          <PrimaryPill onClick={submit} loading={createPayment.isPending} disabled={!canSubmit} className="mt-4 w-full bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white">
+          <PrimaryPill onClick={submit} loading={createPayment.isPending} disabled={!canSubmit} className="mt-4 w-full bg-primary text-primary-foreground">
             Confirmer le paiement
           </PrimaryPill>
           <SoftPill onClick={() => navigate('/m/payments')} className="mt-2 w-full">

@@ -323,7 +323,7 @@ export function useAdminClientBeneficiaryNames(clientId: string | undefined) {
 
 export function useAdminCreateBeneficiary() {
   const queryClient = useQueryClient();
-  const { user } = useAdminAuth();
+  const { currentUser } = useAdminAuth();
 
   return useMutation({
     mutationFn: async (data: CreateBeneficiaryData & { client_id: string }) => {
@@ -332,7 +332,7 @@ export function useAdminCreateBeneficiary() {
         : null;
       const { data: result, error } = await supabaseAdmin
         .from('beneficiaries')
-        .insert(buildInsertRow(data, data.client_id, qrCodeUrl, user?.id ?? null, 'admin'))
+        .insert(buildInsertRow(data, data.client_id, qrCodeUrl, currentUser?.id ?? null, 'admin'))
         .select()
         .single();
       if (error) throw error;

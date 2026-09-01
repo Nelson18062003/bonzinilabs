@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { parseAmount } from '@/components/form/AmountField';
-import { cn } from '@/lib/utils';
 
 /**
  * Soft money input — the SAME shell as SelectField (filled bg-muted, rounded-2xl,

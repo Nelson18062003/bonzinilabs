@@ -14,7 +14,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAdminNotifications, type AdminNotificationType } from '@/hooks/useAdminNotifications';
 import { formatXAF } from '@/lib/formatters';
-import { SURFACE, TEXT, type Tone, Holder } from '@/mobile/designKit';
+import { SURFACE, TEXT, type Tone, Holder } from '@/desktop/designKit';
 import { cn } from '@/lib/utils';
 
 const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone: Tone }> = {
@@ -58,7 +58,7 @@ export function DesktopNotificationsMenu() {
       >
         <Bell className="h-[18px] w-[18px]" />
         {hasAlerts && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FE560D] px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-[#ECEAF7] dark:ring-[#141320]">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-md bg-destructive px-1 text-[10px] font-bold tabular-nums text-destructive-foreground ring-2 ring-background">
             {count > 9 ? '9+' : count}
           </span>
         )}
@@ -84,7 +84,7 @@ export function DesktopNotificationsMenu() {
                   setOpen(false);
                   navigate('/m/more/notifications');
                 }}
-                className="text-[12px] font-semibold text-[#6B5BD2] hover:underline dark:text-[#A99BF0]"
+                className="text-[12px] font-semibold text-primary hover:underline"
               >
                 Voir tout
               </button>

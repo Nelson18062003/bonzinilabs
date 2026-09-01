@@ -82,10 +82,20 @@ export default {
         "2xl": "1rem",
         "3xl": "1.5rem",
       },
+      // UNE SEULE FAMILLE : DM Sans. Les clés restent distinctes pour ne pas
+      // casser les classes existantes (`font-display`, `font-ui`, `font-mono`),
+      // mais elles pointent toutes au même endroit.
+      //
+      // `font-mono` n'est plus une police à chasse fixe : l'alignement des
+      // colonnes de montants passe par `tabular-nums`, que DM Sans gère
+      // nativement (fonctionnalité OpenType `tnum`). C'est le chiffre à
+      // largeur fixe qui aligne une colonne, pas la police monospace.
       fontFamily: {
-        sans: ['"DM Sans"', "Inter", "system-ui", "sans-serif"],
-        display: ['"Syne"', "sans-serif"],
-        body: ['"DM Sans"', "sans-serif"],
+        sans: ['"DM Sans"', "system-ui", "sans-serif"],
+        display: ['"DM Sans"', "system-ui", "sans-serif"],
+        body: ['"DM Sans"', "system-ui", "sans-serif"],
+        ui: ['"DM Sans"', "system-ui", "sans-serif"],
+        mono: ['"DM Sans"', "system-ui", "sans-serif"],
       },
       fontSize: {
         balance: ["3rem", { lineHeight: "1", fontWeight: "700" }],

@@ -248,7 +248,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabaseAdmin.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
         
         if (session?.user) {

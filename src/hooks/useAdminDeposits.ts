@@ -4,13 +4,13 @@
 // ============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
 import { validateUploadFile } from '@/lib/utils';
 import i18n from '@/i18n';
 import type {
   DepositWithProfile,
-  DepositProof,
   DepositProofWithUrl,
   DepositTimelineEvent,
   DepositStats,
@@ -148,7 +148,7 @@ export function useDepositStats() {
     queryFn: async () => {
       const { data, error } = await supabaseAdmin.rpc('get_deposit_stats');
       if (error) throw error;
-      return data as DepositStats;
+      return data as unknown as DepositStats;
     },
   });
 }
@@ -194,16 +194,25 @@ export function useValidateDeposit() {
       depositId,
       adminComment,
       sendNotification,
+      confirmedAmount,
     }: {
       depositId: string;
       adminComment?: string;
       sendNotification?: boolean;
+      /**
+       * Montant réellement reçu, quand il diffère du montant annoncé.
+       * `validate_deposit` accepte `p_confirmed_amount` depuis toujours, mais ce
+       * hook ne le transmettait pas : la fiche desktop laissait l'administrateur
+       * corriger le montant, puis créditait quand même le montant d'origine.
+       */
+      confirmedAmount?: number;
     }) => {
-      const { data, error } = await supabaseAdmin.rpc('validate_deposit', {
+      const { data, error } = await supabaseAdmin.rpc('validate_deposit', rpcArgs<'validate_deposit'>({
         p_deposit_id: depositId,
         p_admin_comment: adminComment || null,
         p_send_notification: sendNotification ?? true,
-      });
+        p_confirmed_amount: confirmedAmount ?? null,
+      }));
 
       if (error) throw error;
 
@@ -368,7 +377,7 @@ export function useAdminCreateDeposit() {
       const admin = await getAdminUser();
       if (!admin) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
-      const { data: result, error } = await supabaseAdmin.rpc('create_client_deposit', {
+      const { data: result, error } = await supabaseAdmin.rpc('create_client_deposit', rpcArgs<'create_client_deposit'>({
         p_user_id: data.user_id,
         p_amount_xaf: data.amount_xaf,
         p_method: data.method,
@@ -376,7 +385,7 @@ export function useAdminCreateDeposit() {
         p_agency_name: data.agency_name || null,
         p_client_phone: data.client_phone || null,
         p_desired_date: data.desired_date?.toISOString() || undefined,
-      });
+      }));
 
       if (error) throw error;
 
@@ -468,10 +477,11 @@ export function useAdminUploadProofs() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ depositId, userId, files, depositStatus }: {
+    mutationFn: async ({ depositId, userId, files }: {
       depositId: string;
       userId: string;
       files: File[];
+      /** Accepté pour compatibilité d'appel ; non utilisé ici. */
       depositStatus?: string;
     }) => {
       const admin = await getAdminUser();

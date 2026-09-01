@@ -9,8 +9,7 @@
 import { SURFACE, TEXT } from '@/mobile/designKit/tokens';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import {
-  ArrowDownToLine, Send, Users, Clock, Eye, EyeOff, ChevronRight,
-  ArrowDownLeft, ArrowUpRight, Bell,
+  ArrowDownToLine, Send, Users, Clock, Eye, EyeOff, ArrowDownLeft, ArrowUpRight, Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

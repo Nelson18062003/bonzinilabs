@@ -103,9 +103,9 @@ function TimelineStep({
           className={cn(
             'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
             state === 'completed'
-              ? 'border-[#34d399] bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
               : state === 'current'
-                ? 'border-[#7C3AED] text-[#7C3AED]'
+                ? 'border-primary text-primary'
                 : cn('border-black/[0.12] dark:border-white/[0.15]', TEXT.muted),
           )}
         >
@@ -379,7 +379,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               type="button"
               onClick={() => startReview.mutate({ depositId })}
               disabled={startReview.isPending}
-              className="flex items-center gap-1 rounded-full bg-[#7C3AED] px-3.5 py-2 text-[12px] font-bold text-white disabled:opacity-60"
+              className="flex items-center gap-1 rounded-md bg-primary px-3.5 py-2 text-[12px] font-bold text-primary-foreground disabled:opacity-60"
             >
               {startReview.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
               Vérifier
@@ -414,7 +414,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); setShowValidate(true); }}
-                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                   >
                     <CheckCircle className="h-3.5 w-3.5" /> Valider sans vérification
                   </button>
@@ -422,7 +422,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); handleReceipt(); }}
-                  className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                  className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                 >
                   {isGeneratingPDF ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
                   Relevé PDF
@@ -431,7 +431,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); setShowUpload(true); }}
-                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                    className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                   >
                     <Plus className="h-3.5 w-3.5" /> Ajouter une preuve
                   </button>
@@ -440,7 +440,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); setShowCancel(true); }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#C0504D] hover:bg-[#FBE7E7]/60 dark:text-[#E79A9A] dark:hover:bg-[#3A2526]/60"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-destructive hover:bg-destructive/10 dark:text-destructive dark:hover:bg-destructive/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Annuler le dépôt
                   </button>
@@ -528,7 +528,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                     <button
                       type="button"
                       onClick={() => setDeleteProofId(proof.id)}
-                      className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-[#FBE7E7] text-[10px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                      className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-destructive/10 text-[10px] font-semibold text-destructive dark:bg-destructive/10 dark:text-destructive"
                     >
                       <Trash2 className="h-3 w-3" /> Supprimer
                     </button>
@@ -544,7 +544,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                   <button
                     type="button"
                     onClick={() => setShowUpload(true)}
-                    className="mx-auto mt-2 flex items-center gap-1 rounded-full bg-[#DEEFE5] px-3 py-1.5 text-[11px] font-bold text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]"
+                    className="mx-auto mt-2 flex items-center gap-1 rounded-md bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
                   >
                     <Plus className="h-3 w-3" /> Ajouter (Ctrl+V)
                   </button>
@@ -562,7 +562,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
             {deposit.confirmed_amount_xaf && deposit.confirmed_amount_xaf !== deposit.amount_xaf && (
               <div className="mt-1 flex items-center justify-between text-[13px]">
                 <span className={TEXT.muted}>Montant crédité</span>
-                <span className="font-bold tabular-nums text-[#2E7D52] dark:text-[#7FCBA0]">
+                <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                   {formatCurrency(deposit.confirmed_amount_xaf)}
                 </span>
               </div>
@@ -588,16 +588,16 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               {canValidate && wallet && (
                 <div className="mt-1 flex items-center justify-between text-[12px]">
                   <span className={TEXT.muted}>Après validation</span>
-                  <span className="font-bold tabular-nums text-[#2E7D52] dark:text-[#7FCBA0]">
+                  <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                     {fmt(wallet.balance_xaf + (confirmedAmountNum || deposit.amount_xaf))}
                   </span>
                 </div>
               )}
             </div>
             {amountDiffers && (
-              <div className="mt-2 flex items-start gap-1.5 rounded-xl bg-[#F8EFD8] p-2 dark:bg-[#372D14]">
-                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-                <p className="text-[11px] leading-[15px] text-[#9A6B12] dark:text-[#E7C083]">
+              <div className="mt-2 flex items-start gap-1.5 rounded-xl bg-amber-50 p-2 dark:bg-amber-950/50">
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-700 dark:text-amber-400" />
+                <p className="text-[11px] leading-[15px] text-amber-700 dark:text-amber-400">
                   Diffère du montant déclaré — le wallet sera crédité de {formatCurrency(confirmedAmountNum)}.
                 </p>
               </div>
@@ -610,7 +610,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
           <KV
             k="Client"
             v={
-              <button type="button" onClick={() => navigate(`/m/clients/${deposit.user_id}`)} className="text-[#6B5BD2] dark:text-[#A99BF0]">
+              <button type="button" onClick={() => navigate(`/m/clients/${deposit.user_id}`)} className="text-indigo-700 dark:text-indigo-400">
                 {clientName}
               </button>
             }
@@ -669,7 +669,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               onClick={handleValidate}
               loading={validateDeposit.isPending}
               disabled={!confirmedAmountValid}
-              className="flex-[1.4] bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+              className="flex-[1.4] bg-emerald-600 text-white hover:bg-emerald-600/90"
             >
               Créditer {formatCurrency(confirmedAmountNum || deposit.amount_xaf)}
             </PrimaryPill>
@@ -692,12 +692,12 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               />
             </FormField>
           </div>
-          <div className="rounded-2xl bg-[#DEEFE5] p-4 dark:bg-[#1E3A2C]">
-            <p className="text-[13px] text-[#2E7D52] dark:text-[#7FCBA0]">
+          <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/50">
+            <p className="text-[13px] text-emerald-700 dark:text-emerald-400">
               Le wallet sera crédité de <strong>{formatCurrency(confirmedAmountNum || deposit.amount_xaf)}</strong>
             </p>
             {wallet && (
-              <p className="mt-1 text-[12px] text-[#2E7D52] dark:text-[#7FCBA0]">
+              <p className="mt-1 text-[12px] text-emerald-700 dark:text-emerald-400">
                 Nouveau solde estimé : {formatCurrency(wallet.balance_xaf + (confirmedAmountNum || deposit.amount_xaf))}
               </p>
             )}
@@ -708,7 +708,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               onChange={(e) => setAdminComment(e.target.value)}
               rows={2}
               placeholder="Commentaire visible uniquement par les admins…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
           <button
@@ -717,10 +717,10 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
             className={cn('flex w-full items-center justify-between rounded-2xl p-3', SURFACE.canvas)}
           >
             <span className={cn('inline-flex items-center gap-2 text-[13px]', TEXT.strong)}>
-              {sendNotification ? <Bell className="h-4 w-4 text-[#5B4CC4] dark:text-[#B5AAF0]" /> : <BellOff className={cn('h-4 w-4', TEXT.muted)} />}
+              {sendNotification ? <Bell className="h-4 w-4 text-indigo-700 dark:text-indigo-400" /> : <BellOff className={cn('h-4 w-4', TEXT.muted)} />}
               Notifier le client
             </span>
-            <span className={cn('relative h-6 w-10 rounded-full transition-colors', sendNotification ? 'bg-[#10B981]' : 'bg-black/15 dark:bg-white/15')}>
+            <span className={cn('relative h-6 w-10 rounded-full transition-colors', sendNotification ? 'bg-emerald-600' : 'bg-black/15 dark:bg-white/15')}>
               <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white ring-1 ring-black/[0.10] transition-all', sendNotification ? 'left-[18px]' : 'left-0.5')} />
             </span>
           </button>
@@ -766,7 +766,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                   className={cn(
                     'rounded-xl px-3 py-2 text-left text-[12.5px] font-semibold ring-1 transition-colors',
                     rejectionCategory === reason
-                      ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                      ? 'bg-destructive/10 text-destructive ring-destructive/40 dark:bg-destructive/10 dark:text-destructive'
                       : cn(SURFACE.canvas, 'ring-transparent', TEXT.strong),
                   )}
                 >
@@ -775,13 +775,13 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               ))}
             </div>
           </div>
-          <FormField label={<>Message client <span className="text-[#C0504D]">*</span></>} hint="Ce message sera visible par le client">
+          <FormField label={<>Message client <span className="text-destructive">*</span></>} hint="Ce message sera visible par le client">
             <textarea
               value={clientMessage}
               onChange={(e) => setClientMessage(e.target.value)}
               rows={2}
               placeholder="Expliquez au client pourquoi son dépôt est refusé…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
           <FormField label="Note interne (optionnel)">
@@ -790,7 +790,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               onChange={(e) => setAdminNote(e.target.value)}
               rows={2}
               placeholder="Note visible uniquement par les admins…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
         </div>
@@ -903,7 +903,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                 className={cn(
                   'rounded-xl px-3 py-2 text-left text-[12.5px] font-semibold ring-1 transition-colors',
                   deleteProofReason === reason
-                    ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                    ? 'bg-destructive/10 text-destructive ring-destructive/40 dark:bg-destructive/10 dark:text-destructive'
                     : cn(SURFACE.canvas, 'ring-transparent', TEXT.strong),
                 )}
               >
@@ -917,7 +917,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
               onChange={(e) => setCustomDeleteReason(e.target.value)}
               rows={2}
               placeholder="Précisez le motif…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           )}
         </div>

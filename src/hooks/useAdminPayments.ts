@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
 import i18n from '@/i18n';
@@ -100,7 +102,7 @@ export function useAdminCreatePayment() {
           .from('payments')
           .update({
             beneficiary_id: data.beneficiary_id || null,
-            beneficiary_details: data.beneficiary_details || null,
+            beneficiary_details: (data.beneficiary_details ?? null) as Json,
             rate_is_custom: data.rate_is_custom ?? false,
             beneficiary_identifier: data.beneficiary_identifier || null,
             beneficiary_identifier_type: data.beneficiary_identifier_type || null,
@@ -340,7 +342,7 @@ export function useAdminUpdateBeneficiaryInfo() {
       // the status transition and the timeline entries stay server-side and
       // atomic. If the extended RPC (20260421000002) isn't deployed yet we
       // fall back to a direct UPDATE so the admin edit keeps working.
-      const rpcParams: Record<string, unknown> = {
+      const rpcParams = rpcArgs<'admin_update_payment_beneficiary'>({
         p_payment_id: paymentId,
         p_beneficiary_name:            beneficiaryInfo.beneficiary_name || undefined,
         p_beneficiary_phone:           beneficiaryInfo.beneficiary_phone || undefined,
@@ -352,7 +354,7 @@ export function useAdminUpdateBeneficiaryInfo() {
         p_beneficiary_identifier:      beneficiaryInfo.beneficiary_identifier || undefined,
         p_beneficiary_identifier_type: beneficiaryInfo.beneficiary_identifier_type || undefined,
         p_beneficiary_bank_extra:      beneficiaryInfo.beneficiary_bank_extra || undefined,
-      };
+      });
 
       const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
         'admin_update_payment_beneficiary',

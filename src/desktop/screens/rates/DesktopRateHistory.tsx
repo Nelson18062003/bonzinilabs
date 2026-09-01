@@ -131,7 +131,7 @@ export function DesktopRateHistory() {
                 const variation = variationOf(rate, history[i + 1]);
                 const up = variation !== null && variation >= 0;
                 return (
-                  <tr key={rate.id} className={cn('group', rate.is_active && 'bg-[#EDEAFA]/50 dark:bg-white/[0.05]')}>
+                  <tr key={rate.id} className={cn('group', rate.is_active && 'bg-muted/50 dark:bg-white/[0.05]')}>
                     <Td first>
                       <div className="leading-[15px]">
                         <div className={cn('flex items-center gap-1.5 text-[12px] font-bold', TEXT.strong)}>
@@ -161,10 +161,10 @@ export function DesktopRateHistory() {
                       {variation !== null ? (
                         <span
                           className={cn(
-                            'inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
+                            'inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
                             up
-                              ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
-                              : 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]',
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                              : 'bg-destructive/10 text-destructive',
                           )}
                         >
                           {up ? '+' : ''}
@@ -191,7 +191,7 @@ export function DesktopRateHistory() {
                             onClick={() => setDeleting(rate)}
                             aria-label="Supprimer cette publication"
                             title="Supprimer"
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/10 text-destructive"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>

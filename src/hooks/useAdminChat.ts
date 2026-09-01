@@ -29,8 +29,6 @@ const ALLOWED_CHAT_FILE_MIME = [
   'application/vnd.ms-excel',
 ];
 
-type AnyTable = never;
-
 // ── Liste des conversations (admin) avec infos client ───────
 
 export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 'open') {
@@ -41,7 +39,7 @@ export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 
     staleTime: 10_000,
     queryFn: async (): Promise<ChatConversationWithClient[]> => {
       let q = supabaseAdmin
-        .from('chat_conversations' as AnyTable)
+        .from('chat_conversations')
         .select('*')
         .order('unread_count_admin', { ascending: false })
         .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -75,7 +73,7 @@ export function useAdminConversations(statusFilter: 'open' | 'closed' | 'all' = 
 
       // 3. Récupère le dernier message de chaque conversation (preview)
       const { data: lastMsgs } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .select('conversation_id, content, media_type, created_at')
         .in('conversation_id', list.map((c) => c.id))
         .order('created_at', { ascending: false });
@@ -150,7 +148,7 @@ export function useAdminConversation(conversationId: string | null | undefined) 
       if (!conversationId) return null;
 
       const { data: conv } = await supabaseAdmin
-        .from('chat_conversations' as AnyTable)
+        .from('chat_conversations')
         .select('*')
         .eq('id', conversationId)
         .maybeSingle();
@@ -186,7 +184,7 @@ export function useAdminChatMessages(conversationId: string | null | undefined) 
     queryFn: async (): Promise<ChatMessage[]> => {
       if (!conversationId) return [];
       const { data, error } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
@@ -261,7 +259,7 @@ export function useSendAdminMessage() {
       if (trimmed.length > 2000) throw new Error('Message too long');
 
       const { data, error } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'admin',
@@ -314,7 +312,7 @@ export function useSendAdminImage() {
       if (uploadError) throw uploadError;
 
       const { data, error } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'admin',
@@ -368,7 +366,7 @@ export function useSendAdminVoice() {
       if (uploadError) throw uploadError;
 
       const { data, error } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'admin',
@@ -444,7 +442,7 @@ export function useSendAdminVideo() {
       }
 
       const { data, error } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'admin',
@@ -500,7 +498,7 @@ export function useSendAdminFile() {
       if (uploadError) throw uploadError;
 
       const { data, error } = await supabaseAdmin
-        .from('chat_messages' as AnyTable)
+        .from('chat_messages')
         .insert({
           conversation_id: params.conversationId,
           sender_type: 'admin',
