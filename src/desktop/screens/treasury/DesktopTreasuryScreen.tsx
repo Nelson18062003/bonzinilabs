@@ -15,8 +15,7 @@
  *
  * Les deux saisies restent des pages dédiées (profondément liables).
  */
-import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLineDown as ArrowDownToLine, ArrowLineUp as ArrowUpFromLine } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -28,20 +27,19 @@ import { TreasuryAccountsView } from './TreasuryAccountsView';
 import { TreasuryCounterpartiesView } from './TreasuryCounterpartiesView';
 import { TreasuryAnalysisView } from './TreasuryAnalysisView';
 import type { TreasuryCurrency } from './treasuryFormat';
+import { TREASURY_VIEWS, viewFromPath, treasuryPaths, type TreasuryView } from './treasuryNav';
+import { TreasuryInventoryView } from './TreasuryInventoryView';
+import { TreasuryLedgerView } from './TreasuryLedgerView';
 
-export type TreasuryView = 'operations' | 'analysis' | 'accounts' | 'counterparties';
-
-const VIEWS = [
-  { key: 'operations' as const, label: 'Opérations' },
-  { key: 'analysis' as const, label: 'Analyse' },
-  { key: 'accounts' as const, label: 'Comptes' },
-  { key: 'counterparties' as const, label: 'Contreparties' },
-];
-
-export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialView?: TreasuryView } = {}) {
+export function DesktopTreasuryScreen() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { hasPermission } = useAdminAuth();
-  const [view, setView] = useState<TreasuryView>(initialView);
+
+  // L'URL EST l'état. Plus de `useState` : c'est ce qui cassait le bouton
+  // Retour, le marque-page et le rafraîchissement.
+  const view: TreasuryView = viewFromPath(pathname) ?? 'operations';
+  const current = TREASURY_VIEWS.find((v) => v.key === view);
 
   const { data: balances } = useTreasuryAccountBalances();
   const { data: wac } = useUsdtWac();
@@ -73,14 +71,17 @@ export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialV
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className={cn('text-[19px] font-bold tracking-[-0.02em]', T.ink)}>Trésorerie</h2>
-          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>Pont USDT · XAF → USDT → CNY</p>
+          {/* Le sous-titre dit ce que la VUE COURANTE sert à faire, pas une
+              généralité sur le module : c'est l'information utile quand on
+              vient d'arriver sur un onglet. */}
+          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>{current?.purpose ?? 'Pont USDT · XAF → USDT → CNY'}</p>
         </div>
         {canManage && (
           <div className="flex items-center gap-2">
-            <MButton onClick={() => navigate('/m/more/treasury/purchase')}>
+            <MButton onClick={() => navigate(treasuryPaths.newPurchase)}>
               <ArrowDownToLine className="h-3.5 w-3.5" /> Achat
             </MButton>
-            <MButton variant="primary" onClick={() => navigate('/m/more/treasury/sale')}>
+            <MButton variant="primary" onClick={() => navigate(treasuryPaths.newSale)}>
               <ArrowUpFromLine className="h-3.5 w-3.5" /> Vente USDT
             </MButton>
           </div>
@@ -89,12 +90,22 @@ export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialV
 
       <TreasuryStatusBar stockUsdt={stockUsdt} wac={wac} totals={totals} />
 
-      <MTabs tabs={VIEWS} value={view} onChange={setView} ariaLabel="Vues du module Trésorerie" />
+      {/* Changer d'onglet NAVIGUE. La vue devient donc partageable,
+          marque-pageable, et le Retour du navigateur revient à l'onglet
+          précédent au lieu de sortir du module. */}
+      <MTabs
+        tabs={TREASURY_VIEWS.map((v) => ({ key: v.key, label: v.label }))}
+        value={view}
+        onChange={(k) => navigate(TREASURY_VIEWS.find((v) => v.key === k)!.path)}
+        ariaLabel="Vues du module Trésorerie"
+      />
 
       {view === 'operations' && <TreasuryOperationsWorkbench canManage={canManage} />}
       {view === 'analysis' && <TreasuryAnalysisView />}
       {view === 'accounts' && <TreasuryAccountsView canManage={canManage} />}
+      {view === 'inventory' && <TreasuryInventoryView canManage={canManage} />}
       {view === 'counterparties' && <TreasuryCounterpartiesView canManage={canManage} />}
+      {view === 'ledger' && <TreasuryLedgerView />}
     </div>
     </MIcons>
   );

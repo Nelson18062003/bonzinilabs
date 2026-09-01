@@ -7,7 +7,8 @@
  * Purchases/Sales/Counterparties) sont remplacés : leurs routes redirigent
  * vers la vue correspondante.
  */
-export { DesktopTreasuryScreen, type TreasuryView } from './DesktopTreasuryScreen';
+export { DesktopTreasuryScreen } from './DesktopTreasuryScreen';
+export { type TreasuryView, treasuryPaths, TREASURY_VIEWS } from './treasuryNav';
 export { DesktopNewPurchase } from './DesktopNewPurchase';
 export { DesktopNewSale } from './DesktopNewSale';
 export { DesktopBalanceDashboard } from './DesktopBalanceDashboard';

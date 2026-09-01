@@ -242,19 +242,24 @@ const App = () => (
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="analysis" />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
+                {/* Vues desktop adressables. Le mobile garde ses propres routes plus bas :
+                    ses écrans par page sont validés et ne changent pas. */}
+                <Route path="/m/more/treasury/operations/:kind/:operationId" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/analysis" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/ledger" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewPurchase />}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewSale />}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="counterparties" />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen initialView="counterparties" />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="accounts" />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="accounts" />}><MobileTreasuryInventory /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="operations" />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="operations" />}><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen initialView="operations" />}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen initialView="operations" />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryInventory /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper desktop={<DesktopBalanceDashboard />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen initialView="operations" />}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
