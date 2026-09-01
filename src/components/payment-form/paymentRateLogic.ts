@@ -13,7 +13,8 @@ import type { Currency, PaymentMethodType } from './types';
  * full hook.
  */
 interface RatesInput {
-  activeRate?: DailyRate;
+  /** `null` quand aucun taux n'est publié — le hook renvoie null, pas undefined. */
+  activeRate?: DailyRate | null;
   adjustments: Array<{
     type: string;
     key: string;

@@ -5,11 +5,17 @@ interface PullToRefreshProps {
   onRefresh: () => Promise<unknown>;
   children: ReactNode;
   className?: string;
+  /**
+   * Neutralise le geste — pour un rafraîchissement déjà en cours côté appelant.
+   * `MobileAnalyticsDashboard` passait déjà cette prop, qui n'existait pas :
+   * rien n'empêchait de déclencher plusieurs rafraîchissements superposés.
+   */
+  disabled?: boolean;
 }
 
 const THRESHOLD = 60;
 
-export function PullToRefresh({ onRefresh, children, className }: PullToRefreshProps) {
+export function PullToRefresh({ onRefresh, children, className, disabled = false }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startY = useRef(0);
@@ -17,15 +23,16 @@ export function PullToRefresh({ onRefresh, children, className }: PullToRefreshP
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (disabled) return;
     // Only allow pull-to-refresh when scrolled to the top
     if (containerRef.current && containerRef.current.scrollTop === 0) {
       startY.current = e.touches[0].clientY;
       isPulling.current = true;
     }
-  }, []);
+  }, [disabled]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling.current || isRefreshing) return;
+    if (!isPulling.current || isRefreshing || disabled) return;
 
     const currentY = e.touches[0].clientY;
     const diff = currentY - startY.current;
@@ -35,7 +42,7 @@ export function PullToRefresh({ onRefresh, children, className }: PullToRefreshP
       const distance = Math.min(diff * 0.5, 100);
       setPullDistance(distance);
     }
-  }, [isRefreshing]);
+  }, [isRefreshing, disabled]);
 
   const handleTouchEnd = useCallback(async () => {
     if (!isPulling.current) return;

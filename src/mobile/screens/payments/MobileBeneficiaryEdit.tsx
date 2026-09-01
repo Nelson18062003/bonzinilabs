@@ -13,6 +13,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import { useAdminPaymentDetail } from '@/hooks/usePayments';
 import { useAdminUpdateBeneficiaryInfo } from '@/hooks/useAdminPayments';
+import { IDENTIFIER_TYPES, type IdentifierType } from '@/lib/beneficiaries/spec';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { toStoredPath } from '@/lib/signedUrls';
@@ -120,7 +121,27 @@ export function MobileBeneficiaryEdit({ desktop = false }: { desktop?: boolean }
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6">
         <BeneficiaryEditForm
-          payment={payment}
+          payment={{
+            ...payment,
+            // `beneficiary_identifier_type` est un texte libre en base : on ne
+            // retient que les valeurs du domaine attendu par le formulaire.
+            beneficiary_identifier_type: IDENTIFIER_TYPES.includes(
+              payment.beneficiary_identifier_type as IdentifierType,
+            )
+              ? (payment.beneficiary_identifier_type as IdentifierType)
+              : null,
+            // `beneficiary_details` est un JSONB : seul un objet nous intéresse.
+            beneficiary_details:
+              payment.beneficiary_details && typeof payment.beneficiary_details === 'object'
+                && !Array.isArray(payment.beneficiary_details)
+                ? (payment.beneficiary_details as Record<string, unknown>)
+                : null,
+            // Même chose pour `cash_beneficiary_type`, texte libre en base.
+            cash_beneficiary_type:
+              payment.cash_beneficiary_type === 'self' || payment.cash_beneficiary_type === 'other'
+                ? payment.cash_beneficiary_type
+                : null,
+          }}
           isSubmitting={isBusy}
           onSubmit={handleSave}
           onValidationError={(key) => toast.error(t(key))}

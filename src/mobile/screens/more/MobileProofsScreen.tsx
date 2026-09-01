@@ -47,7 +47,8 @@ export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = 
   const { data: proofs, isLoading, refetch } = useAdminProofs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
-  const [selectedProof, setSelectedProof] = useState<typeof proofs extends (infer T)[] | undefined ? T : never | null>(null);
+  type Proof = NonNullable<typeof proofs>[number];
+  const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const filteredProofs = proofs?.filter((proof) => {

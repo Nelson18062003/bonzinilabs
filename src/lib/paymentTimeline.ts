@@ -153,7 +153,7 @@ function buildEventBasedTimeline(
   );
 
   // Map to find step index by key
-  const stepIndexMap = new Map(steps.map((s, i) => [s.key, i]));
+  const stepIndexMap = new Map<string, number>(steps.map((s, i) => [s.key, i]));
 
   // Find current step index
   let currentStepIndex = stepIndexMap.get(paymentStatus) ?? -1;

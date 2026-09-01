@@ -97,6 +97,7 @@ function labelFor(bucket: Date, granularity: Granularity): string {
       return `S${week}`;
     }
     case 'month':
+    default:
       return `${MONTH_LABELS_FR[biz.getUTCMonth()]} ${biz.getUTCFullYear().toString().slice(-2)}`;
   }
 }
@@ -136,7 +137,10 @@ async function fetchClientFlow(range: DateRange): Promise<ClientFlowPoint[]> {
       .lt('validated_at', toISO),
     supabase
       .from('payments')
-      .select('amount_xaf, completed_at, created_at')
+      // `payments` n'a pas de colonne `completed_at` : la requête partait en
+    // erreur PostgREST et la série « paiements » du graphique restait vide.
+    // L'horodatage de traitement est `processed_at` (cf. la fiche paiement).
+    .select('amount_xaf, processed_at, created_at')
       .eq('user_id', user.id)
       .eq('status', 'completed')
       .gte('created_at', fromISO)
@@ -158,7 +162,7 @@ async function fetchClientFlow(range: DateRange): Promise<ClientFlowPoint[]> {
     if (bucket) bucket.deposits += Number(dep.amount_xaf ?? 0);
   }
   for (const pay of payRes.data ?? []) {
-    const ts = pay.completed_at ?? pay.created_at;
+    const ts = pay.processed_at ?? pay.created_at;
     if (!ts) continue;
     const key = bucketKeyFor(new Date(ts), range.granularity);
     const bucket = buckets.get(key);

@@ -22,7 +22,6 @@ import {
 import { cn } from '@/lib/utils';
 
 type MKey = 'alipay' | 'wechat' | 'bank' | 'cash';
-const _LILAC = '#8B5CF6';
 const AMBER = '#E8932A';
 
 function MethodLogo({ k, size = 44, radius }: { k: MKey; size?: number; radius?: number }) {

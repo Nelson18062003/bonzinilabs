@@ -506,7 +506,7 @@ export function MobilePaymentDetail() {
   const handleCashSignature = async (signatureDataUrl: string) => {
     if (!paymentId) return;
     const signedByName = currentUser
-      ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Admin'
+      ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Admin'
       : 'Admin';
     try {
       const result = await confirmCash.mutateAsync({ paymentId, signatureDataUrl, signedByName });

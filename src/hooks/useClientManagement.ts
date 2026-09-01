@@ -207,7 +207,7 @@ export function useClient(userId: string) {
           referenceType: lastLedgerEntry.reference_type,
           referenceId: lastLedgerEntry.reference_id,
           description: lastLedgerEntry.description,
-          createdAt: new Date(lastLedgerEntry.created_at),
+          createdAt: new Date(lastLedgerEntry.created_at!),
         } : null,
       };
     },
@@ -279,7 +279,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
         createdByAdminName: entry.created_by_admin_id
           ? adminNameMap.get(entry.created_by_admin_id)
           : undefined,
-        createdAt: new Date(entry.created_at),
+        createdAt: new Date(entry.created_at!),
       })) as LedgerEntry[];
     },
   });

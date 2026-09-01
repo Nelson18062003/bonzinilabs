@@ -82,7 +82,7 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
   const archiveBeneficiary = useAdminArchiveBeneficiary();
 
   const clientName = client
-    ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
+    ? `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim()
     : '';
 
   const filtered = useMemo(() => {
@@ -116,6 +116,9 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
           if (view.kind === 'edit') {
             await updateBeneficiary.mutateAsync({
               beneficiaryId: view.beneficiary.id,
+              // `clientId` est requis (invalidation de cache côté hook) et
+              // n'était pas transmis.
+              clientId: clientId || '',
               updates: {
                 alias: vals.alias,
                 name: vals.name,

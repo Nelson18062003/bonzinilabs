@@ -499,9 +499,9 @@ export function FlowEvolutionChart({
             />
             <Tooltip
               labelFormatter={(_, payload) => payload?.[0]?.payload?.timeLabel ?? ''}
-              formatter={(v: number, _name, item) => {
+              formatter={(v, _name, item) => {
                 const p = item.payload as FlowPoint;
-                return [`${fmt(v, decimals)} ${unit} · ${fmt(p.usdt, 2)} USDT`, ''];
+                return [`${fmt(Number(v), decimals)} ${unit} · ${fmt(p.usdt, 2)} USDT`, ''];
               }}
               labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
               contentStyle={POPOVER_TOOLTIP_STYLE}

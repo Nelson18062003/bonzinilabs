@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { rpcArgs } from '@/integrations/supabase/rpcArgs';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { validateUploadFile } from '@/lib/utils';
@@ -12,7 +13,16 @@ import i18n from '@/i18n';
 const STALE_TIME = 30 * 1000; // 30 seconds
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 
-export type PaymentStatus = 'created' | 'waiting_beneficiary_info' | 'ready_for_payment' | 'processing' | 'completed' | 'rejected' | 'cash_pending' | 'cash_scanned';
+/**
+ * Statut de paiement — l'ENUM de la base, pas une liste recopiée.
+ *
+ * La liste écrite à la main ici oubliait `cancelled_by_admin`, qui existe
+ * pourtant bien en base : côté client, le message « paiement annulé » de
+ * `PaymentsPage` et la carte de statut de `PaymentStatusMessages` étaient donc
+ * inatteignables — un paiement annulé par un administrateur ne disait rien au
+ * client.
+ */
+export type PaymentStatus = Database['public']['Enums']['payment_status'];
 
 export interface Payment {
   id: string;
@@ -260,7 +270,7 @@ export function useCreatePayment() {
           .from('payments')
           .update({
             beneficiary_id: data.beneficiary_id || null,
-            beneficiary_details: data.beneficiary_details || null,
+            beneficiary_details: (data.beneficiary_details ?? null) as Json,
             rate_is_custom: data.rate_is_custom ?? false,
             beneficiary_identifier: data.beneficiary_identifier || null,
             beneficiary_identifier_type: data.beneficiary_identifier_type || null,
@@ -400,9 +410,10 @@ export function useUploadPaymentProof() {
 
       const storedPath = `payment-proofs/${filePath}`;
 
+      if (!user?.id) throw new Error('Non authentifié');
       const { error } = await supabase.from('payment_proofs').insert({
         payment_id: paymentId,
-        uploaded_by: user?.id,
+        uploaded_by: user.id,
         uploaded_by_type: 'client',
         file_name: compressed.name,
         file_url: storedPath,
@@ -589,10 +600,11 @@ export function useAdminUploadPaymentProof() {
       const storedPath = `payment-proofs/${filePath}`;
 
       const { data: { user } } = await supabaseAdmin.auth.getUser();
+      if (!user?.id) throw new Error('Non authentifié');
 
       const { error } = await supabaseAdmin.from('payment_proofs').insert({
         payment_id: paymentId,
-        uploaded_by: user?.id,
+        uploaded_by: user.id,
         uploaded_by_type: 'admin',
         file_name: compressed.name,
         file_url: storedPath,

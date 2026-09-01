@@ -117,7 +117,7 @@ export function MobileDepositsScreenV2() {
     const params: DepositFilters = {};
 
     if (statusFilter === 'to_process') {
-      params.statuses = TO_PROCESS_STATUSES as string[];
+      params.statuses = TO_PROCESS_STATUSES;
     } else if (statusFilter !== 'all') {
       params.status = statusFilter;
     }

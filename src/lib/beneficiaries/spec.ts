@@ -142,7 +142,7 @@ export const BENEFICIARY_MODE_ORDER: readonly BeneficiaryMode[] = [
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function valueOf(input: BeneficiaryInput, field: BeneficiaryField): string {
-  const v = (input as Record<string, unknown>)[field];
+  const v = (input as unknown as Record<string, unknown>)[field];
   return typeof v === 'string' ? v.trim() : '';
 }
 

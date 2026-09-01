@@ -20,6 +20,7 @@
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import {
   bucketKeyFor,
   bucketStarts,
@@ -141,7 +142,7 @@ async function fetchFlow(range: DateRange): Promise<FlowPoint[]> {
   }
 
   for (const entry of data ?? []) {
-    const key = bucketKeyFor(new Date(entry.created_at), range.granularity);
+    const key = bucketKeyFor(new Date(entry.created_at!), range.granularity);
     const bucket = buckets.get(key);
     if (!bucket) continue;
     const amount = Number(entry.amount_xaf ?? 0);
@@ -788,10 +789,19 @@ export interface VolumeReport {
   trendPct: number | null; // (current - previous) / previous
 }
 
+/**
+ * Les deux tables n'ont pas le même enum de statut : le paramètre porte donc
+ * l'union des deux, sinon `.eq('status', …)` refuse un `string` quelconque —
+ * et un statut mal orthographié renvoyait un rapport vide sans rien signaler.
+ */
+type VolumeStatus =
+  | Database['public']['Enums']['deposit_status']
+  | Database['public']['Enums']['payment_status'];
+
 async function fetchVolumeReport(
   range: DateRange,
   table: 'deposits' | 'payments',
-  status: string,
+  status: VolumeStatus,
 ): Promise<VolumeReport> {
   const { fromISO, toISO } = toSupabaseBounds(range);
   const { data, error } = await supabaseAdmin

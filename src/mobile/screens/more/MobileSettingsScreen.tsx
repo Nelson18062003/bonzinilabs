@@ -10,8 +10,8 @@ import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/
 export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const { profile } = useAdminAuth();
-  const role = profile?.role;
+  const { currentUser, profile } = useAdminAuth();
+  const role = currentUser?.role;
 
   return (
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>

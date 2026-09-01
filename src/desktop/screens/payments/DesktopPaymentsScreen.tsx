@@ -92,7 +92,7 @@ export function DesktopPaymentsScreen() {
 
   const filters = useMemo<PaymentFilters>(() => {
     const f: PaymentFilters = { sortField, sortAscending: effectiveAscending };
-    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES as string[];
+    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES;
     else if (bucket === 'blocked') f.status = 'waiting_beneficiary_info';
     else if (bucket === 'processing') f.status = 'processing';
     else if (statusFilter !== 'all') f.status = statusFilter;

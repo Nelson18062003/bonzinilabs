@@ -167,12 +167,14 @@ export default function OnboardingPage() {
 
           {/* Optionnels */}
           <PremiumInput
+            id="onboarding-company"
             label={t('onboarding.companyLabel')}
             value={companyName}
             onChange={setCompanyName}
             icon={<Building className="h-4 w-4" />}
           />
           <PremiumInput
+            id="onboarding-sector"
             label={t('onboarding.sectorLabel')}
             value={activitySector}
             onChange={setActivitySector}

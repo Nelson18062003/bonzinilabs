@@ -93,7 +93,7 @@ export function DesktopDepositsScreen() {
 
   const filters = useMemo<DepositFilters>(() => {
     const f: DepositFilters = { sortField, sortAscending: effectiveAscending };
-    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES as string[];
+    if (bucket === 'queue') f.statuses = TO_PROCESS_STATUSES;
     else if (bucket === 'correction') f.status = 'pending_correction';
     else if (statusFilter !== 'all') f.status = statusFilter;
     if (familyFilter !== 'all') f.methods = FAMILY_TO_METHODS[familyFilter] || [];

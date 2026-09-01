@@ -496,7 +496,7 @@ const NewPaymentPage = () => {
         {step === 'beneficiary' && selectedMethod && (
           <NewPaymentBeneficiaryStep
             selectedMethod={selectedMethod}
-            profile={profile}
+            profile={profile ?? undefined}
             existingBeneficiaries={existingBeneficiaries}
             beneficiaryTab={beneficiaryTab}
             onBeneficiaryTabChange={setBeneficiaryTab}

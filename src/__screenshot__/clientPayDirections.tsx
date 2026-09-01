@@ -69,8 +69,8 @@ const PAYMENTS: {
 const A_STATUS: Record<string, { label: string; cls: string }> = {
   completed: { label: 'Payé', cls: TONE_PILL.success },
   processing: { label: 'En cours', cls: TONE_PILL.info },
-  waiting_beneficiary_info: { label: 'Infos requises', cls: TONE_PILL.warning },
-  cash_pending: { label: 'Cash à retirer', cls: TONE_PILL.warning },
+  waiting_beneficiary_info: { label: 'Infos requises', cls: TONE_PILL.pending },
+  cash_pending: { label: 'Cash à retirer', cls: TONE_PILL.pending },
 };
 
 export function PayDirA() {
