@@ -13,7 +13,7 @@
 import * as React from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Clock } from 'lucide-react';
+import { CalendarBlank as CalendarIcon, Clock } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';

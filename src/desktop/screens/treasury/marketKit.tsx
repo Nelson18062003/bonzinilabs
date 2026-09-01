@@ -17,14 +17,16 @@
  * rayon 10px (`--radius: 0.625rem` dans le thème `.admin-theme`).
  */
 import * as React from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Search, X } from 'lucide-react';
+import { CaretDown as ChevronDown, CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretUpDown as ChevronsUpDown, IconContext, MagnifyingGlass as Search, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { TableHead, TableCell } from '@/components/ui/table';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -142,6 +144,14 @@ export function MIconButton({
 
 /* ── Onglets soulignés ───────────────────────────────────────────── */
 
+/**
+ * Onglets de vue — primitives Radix `Tabs` du design system.
+ *
+ * La version précédente était une `<nav>` de `<button>` : elle avait l'air
+ * juste, mais elle n'avait ni `role="tablist"`, ni navigation au clavier par
+ * flèches, ni lien `aria-controls` vers le panneau. Radix apporte les trois.
+ * Le soulignement reste le nôtre — l'habillage par défaut est une pilule.
+ */
 export function MTabs<K extends string>({
   tabs,
   value,
@@ -154,27 +164,26 @@ export function MTabs<K extends string>({
   ariaLabel: string;
 }) {
   return (
-    <nav className="flex items-center gap-6 border-b border-border" aria-label={ariaLabel}>
-      {tabs.map((t) => {
-        const on = t.key === value;
-        return (
-          <button
+    <Tabs value={value} onValueChange={(v) => onChange(v as K)}>
+      <TabsList
+        aria-label={ariaLabel}
+        className="h-auto w-full justify-start gap-6 rounded-none border-b border-border bg-transparent p-0"
+      >
+        {tabs.map((t) => (
+          <TabsTrigger
             key={t.key}
-            type="button"
-            onClick={() => onChange(t.key)}
-            aria-current={on ? 'page' : undefined}
+            value={t.key}
             className={cn(
-              '-mb-px border-b-2 pb-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              on
-                ? 'border-foreground font-semibold text-foreground'
-                : 'border-transparent font-medium text-muted-foreground hover:text-foreground',
+              '-mb-px rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2.5 pt-0 text-sm font-medium text-muted-foreground shadow-none transition-colors',
+              'hover:text-foreground',
+              'data-[state=active]:border-foreground data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none',
             )}
           >
             {t.label}
-          </button>
-        );
-      })}
-    </nav>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -274,15 +283,36 @@ export function MCard({ children, className }: { children: React.ReactNode; clas
   return <Card className={cn('shadow-none', className)}>{children}</Card>;
 }
 
-export function MCardHeader({ title, meta, action }: { title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode }) {
+/**
+ * En-tête de carte — vraie composition `CardHeader` / `CardTitle` /
+ * `CardDescription` du design system, plus un `<div>` maison.
+ *
+ * `description` est la ligne qui manquait : une carte de trésorerie affiche un
+ * agrégat, et l'agrégat a besoin de dire CE QU'IL COMPTE (« 11 opérations sur
+ * 30 jours ») pour être lisible sans deviner.
+ */
+export function MCardHeader({
+  title,
+  meta,
+  description,
+  action,
+}: {
+  title: React.ReactNode;
+  meta?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
-      <span className="text-sm font-semibold text-foreground">{title}</span>
-      <div className="flex items-center gap-2">
+    <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 border-b border-border px-4 py-2.5">
+      <div className="min-w-0 space-y-0.5">
+        <CardTitle className="text-sm font-semibold leading-none">{title}</CardTitle>
+        {description && <CardDescription className="text-xs">{description}</CardDescription>}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
         {meta && <span className={cn('text-xs', T.muted)}>{meta}</span>}
         {action}
       </div>
-    </div>
+    </CardHeader>
   );
 }
 
@@ -486,10 +516,54 @@ export function MEmpty({ icon: Icon, children }: { icon: React.ElementType; chil
   );
 }
 
-export function MLoading() {
+/**
+ * Chargement — squelettes du design system, pas un rond qui tourne.
+ *
+ * Un spinner centré ne dit rien de ce qui arrive ; des lignes à la bonne
+ * hauteur montrent la table qui se remplit et évitent le saut de mise en page
+ * quand les données tombent.
+ */
+export function MLoading({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="flex justify-center py-14">
-      <span className="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+    <div className="divide-y divide-border">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-4 py-3">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="ml-auto h-4 w-24" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      ))}
     </div>
   );
 }
+
+/* ── Icônes ──────────────────────────────────────────────────────────
+ *
+ * Le module utilise le pack **Phosphor** (celui du fichier Figma). Phosphor
+ * expose la graisse du trait en prop plutôt qu'en jeu d'icônes séparé : un
+ * seul `IconContext` fixe donc l'aspect pour TOUT le module, au lieu de
+ * répéter `weight=` sur chaque appel et de laisser dériver deux écrans.
+ *
+ * `bold` et non `regular` : à 14-16 px, le trait fin de Phosphor s'efface à
+ * côté du texte DM Sans en 600. Les fonds gardent `regular` là où l'icône est
+ * décorative (états vides), via une surcharge locale.
+ */
+export function MIcons({ children }: { children: React.ReactNode }) {
+  return (
+    <IconContext.Provider value={{ weight: 'bold', size: '1em' }}>
+      {children}
+    </IconContext.Provider>
+  );
+}
+
+
+/* ── Table ───────────────────────────────────────────────────────────
+ *
+ * Les écrans montaient leurs tables en balises brutes (`<table>`, `<thead>`,
+ * `<tr>`) et n'empruntaient au design system que les cellules. Ils passent
+ * désormais par la composition complète : bordures, survol, ligne
+ * sélectionnée et défilement viennent d'un seul endroit.
+ */
+export { Table as MTable, TableHeader as MTableHead, TableBody as MTableBody, TableRow as MTableRow };

@@ -13,7 +13,7 @@
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Warning as AlertTriangle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { PhoneInputWithCountry } from '@/components/form';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
@@ -26,7 +26,7 @@ import {
   useUsdtStock,
   useUsdtWac,
 } from '@/hooks/useTreasury';
-import { M, T, NUM, TONE, TONE_BG, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, M_PAGE } from './marketKit';
+import { M, T, NUM, TONE, TONE_BG, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, MIcons, M_PAGE } from './marketKit';
 import { fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 import { TreasurySelect } from './TreasurySelect';
@@ -137,6 +137,7 @@ export function DesktopNewSale() {
   };
 
   return (
+    <MIcons>
     <div className={cn(M_PAGE, T.ink)}>
       <div className="mx-auto max-w-[1080px] space-y-4">
       <header className="flex items-center gap-3">
@@ -308,5 +309,6 @@ export function DesktopNewSale() {
       </MDialog>
       </div>
     </div>
+    </MIcons>
   );
 }

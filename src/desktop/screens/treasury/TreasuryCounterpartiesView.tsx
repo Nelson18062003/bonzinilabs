@@ -11,7 +11,7 @@
  * de laisser remonter une erreur brute.
  */
 import { useMemo, useState } from 'react';
-import { Archive, ArchiveRestore, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Archive, ArrowCounterClockwise as ArchiveRestore, PencilSimple as Pencil, Plus, Trash as Trash2, Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { PhoneInputWithCountry } from '@/components/form';
 import {
@@ -35,6 +35,10 @@ import {
   MIconButton,
   MTh,
   MTd,
+  MTable,
+  MTableHead,
+  MTableBody,
+  MTableRow,
   MTag,
   MDialog,
   MField,
@@ -166,19 +170,19 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
         <MEmpty icon={Users}>{search ? 'Aucune contrepartie pour cette recherche.' : 'Aucune contrepartie enregistrée.'}</MEmpty>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full text-left">
-            <thead className={cn('sticky top-0 z-10 border-b', M.inset, M.border)}>
-              <tr>
+          <MTable className="text-left">
+            <MTableHead className={cn('sticky top-0 z-10', M.inset)}>
+              <MTableRow className="hover:bg-transparent">
                 <MTh>Nom</MTh>
                 <MTh>Réf.</MTh>
                 <MTh>{isSupplier ? 'Téléphone' : 'WeChat / Téléphone'}</MTh>
                 <MTh>Note</MTh>
                 <MTh className="w-[104px]" />
-              </tr>
-            </thead>
-            <tbody>
+              </MTableRow>
+            </MTableHead>
+            <MTableBody>
               {rows.map((c) => (
-                <tr key={c.id} className={M.hover}>
+                <MTableRow key={c.id}>
                   <MTd>
                     <div className="flex items-center gap-2">
                       <span className={cn('truncate text-[12.5px] font-semibold', T.ink)}>{c.display_name}</span>
@@ -207,10 +211,10 @@ export function TreasuryCounterpartiesView({ canManage }: { canManage: boolean }
                       <span aria-hidden />
                     )}
                   </MTd>
-                </tr>
+                </MTableRow>
               ))}
-            </tbody>
-          </table>
+            </MTableBody>
+          </MTable>
         </div>
       )}
 

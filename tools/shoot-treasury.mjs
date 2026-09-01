@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 const OUT = process.argv[2] ?? '/tmp/treasury-shots';
 const DARK = process.argv.includes('--dark');
-const BASE = 'http://127.0.0.1:8083/treasury-preview.html';
+const BASE = 'http://127.0.0.1:8085/treasury-preview.html';
 
 const VIEWS = ['operations', 'analysis', 'accounts', 'counterparties', 'purchase', 'sale'];
 
@@ -39,6 +39,14 @@ page.on('console', (m) => {
 for (const view of VIEWS) {
   const url = `${BASE}?view=${view}${DARK ? '&theme=dark' : ''}`;
   await page.goto(url, { waitUntil: 'networkidle' });
+  // Attendre du CONTENU, pas un délai : `networkidle` + un timer fixe laissait
+  // parfois capturer avant le premier rendu de React, et le PNG sortait blanc
+  // — une capture blanche ressemble à une régression alors que la page va
+  // bien, ce qui rend la vérification visuelle inutilisable.
+  await page.waitForFunction(
+    () => (document.body.innerText || '').trim().length > 200,
+    { timeout: 15_000 },
+  );
   // Laisse le graphique (lightweight-charts) se dessiner.
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(700);

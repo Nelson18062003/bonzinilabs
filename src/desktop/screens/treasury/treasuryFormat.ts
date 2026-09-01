@@ -28,18 +28,13 @@ export function fmtAmount(n: number | null | undefined, currency: TreasuryCurren
   return fmtNum(n, CURRENCY_DECIMALS[currency]);
 }
 
-/**
- * Forme courte pour les grands nombres de la barre d'état (12 400 000 → 12,4 M).
- * Réservée aux chiffres de survol : les tables gardent la valeur exacte, une
- * table sert justement à comparer des montants au franc près.
+/*
+ * PAS d'abréviation M / k dans ce module.
+ *
+ * « 18,4 M XAF » perd les 42 000 francs qui séparent deux soldes, et une
+ * trésorerie se lit au franc près : le chiffre s'écrit en entier partout,
+ * y compris dans la barre d'état. `fmtAmount` est la seule écriture.
  */
-export function fmtCompact(n: number | null | undefined, currency: TreasuryCurrency): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return '—';
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M`;
-  if (abs >= 10_000) return `${(n / 1_000).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} k`;
-  return fmtAmount(n, currency);
-}
 
 /** Signe explicite — un écart ou une marge se lit à son signe avant son chiffre. */
 export function withSign(n: number, decimals = 2): string {

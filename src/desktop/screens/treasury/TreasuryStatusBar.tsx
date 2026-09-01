@@ -9,10 +9,10 @@
  * Un stock USDT négatif signifie mécaniquement un achat non saisi : il est
  * traité comme une alerte, pas comme une valeur parmi d'autres.
  */
-import { AlertTriangle } from 'lucide-react';
+import { Warning as AlertTriangle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { M, T, NUM, LABEL, TONE, TONE_BG } from './marketKit';
-import { fmtCompact, fmtNum, type TreasuryCurrency } from './treasuryFormat';
+import { fmtAmount, fmtNum, type TreasuryCurrency } from './treasuryFormat';
 
 interface Figure {
   label: string;
@@ -44,8 +44,8 @@ export function TreasuryStatusBar({
       danger: stockNegative,
     },
     { label: 'WAC', value: fmtNum(wac, 2), hint: 'XAF/USDT · coût moyen du stock' },
-    { label: 'XAF', value: fmtCompact(totals.XAF?.total ?? 0, 'XAF'), hint: `XAF · ${accounts('XAF')}` },
-    { label: 'CNY', value: fmtCompact(totals.CNY?.total ?? 0, 'CNY'), hint: `CNY · ${accounts('CNY')}` },
+    { label: 'XAF', value: fmtAmount(totals.XAF?.total ?? 0, 'XAF'), hint: `XAF · ${accounts('XAF')}` },
+    { label: 'CNY', value: fmtAmount(totals.CNY?.total ?? 0, 'CNY'), hint: `CNY · ${accounts('CNY')}` },
   ];
 
   return (

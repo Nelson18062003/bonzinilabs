@@ -12,7 +12,7 @@
  *      actionnable (« ce fournisseur me vend 2,7 % plus cher que la moyenne »).
  */
 import { useMemo, useState } from 'react';
-import { BarChart3, TrendingUp, Users } from 'lucide-react';
+import { ChartBar as BarChart3, TrendUp as TrendingUp, Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
   useTopCounterparties,

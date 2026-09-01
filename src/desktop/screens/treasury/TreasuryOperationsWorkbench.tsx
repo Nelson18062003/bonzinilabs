@@ -13,7 +13,7 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Inbox } from 'lucide-react';
+import { Tray as Inbox } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useTreasuryOperations, type OperationRow } from '@/hooks/useTreasury';
 import { normalizeText } from '@/lib/clientSearch';
@@ -28,6 +28,10 @@ import {
   MSearch,
   MTh,
   MTd,
+  MTable,
+  MTableHead,
+  MTableBody,
+  MTableRow,
   MTypeTag,
   MTag,
   MPagination,
@@ -161,9 +165,9 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
         ) : (
           <>
             <div className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full text-left">
-                <thead className={cn('sticky top-0 z-10 border-b', M.inset, M.border)}>
-                  <tr>
+              <MTable className="text-left">
+                <MTableHead className={cn('sticky top-0 z-10', M.inset)}>
+                  <MTableRow className="hover:bg-transparent">
                     <MTh sortable sorted={sortedOf('date')} onSort={() => toggleSort('date')}>Date</MTh>
                     <MTh>Type</MTh>
                     <MTh>Contrepartie</MTh>
@@ -171,9 +175,9 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
                     <MTh align="right">Contre-valeur</MTh>
                     <MTh align="right" sortable sorted={sortedOf('rate')} onSort={() => toggleSort('rate')}>Taux</MTh>
                     <MTh>Compte</MTh>
-                  </tr>
-                </thead>
-                <tbody>
+                  </MTableRow>
+                </MTableHead>
+                <MTableBody>
                   {pageRows.map((op) => {
                     const isPurchase = op.kind === 'purchase';
                     const cv = counterValue(op);
@@ -181,12 +185,13 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
                     const voided = !!op.voided_at;
                     const account = isPurchase ? op.xaf_account?.label : op.cny_account?.label;
                     return (
-                      <tr
+                      <MTableRow
                         key={`${op.kind}-${op.id}`}
                         onClick={() => setSelectedId(op.id === selectedId ? null : op.id)}
+                        data-state={op.id === selectedId ? 'selected' : undefined}
                         className={cn(
-                          'cursor-pointer transition-colors',
-                          op.id === selectedId ? cn(M.inset, 'shadow-[inset_2px_0_0_hsl(var(--primary))]') : M.hover,
+                          'cursor-pointer',
+                          op.id === selectedId && 'shadow-[inset_2px_0_0_hsl(var(--primary))]',
                           voided && 'opacity-45',
                         )}
                       >
@@ -218,11 +223,11 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
                         <MTd className={cn('max-w-[150px] truncate text-[11.5px]', T.muted)}>
                           {account ?? (isPurchase ? 'Plusieurs' : 'Aucun')}
                         </MTd>
-                      </tr>
+                      </MTableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </MTableBody>
+              </MTable>
             </div>
             {pages > 1 && (
               <MPagination

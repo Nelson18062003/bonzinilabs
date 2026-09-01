@@ -17,11 +17,11 @@
  */
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { ArrowLineDown as ArrowDownToLine, ArrowLineUp as ArrowUpFromLine } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTreasuryAccountBalances, useUsdtStock, useUsdtWac } from '@/hooks/useTreasury';
-import { T, MTabs, MButton, M_PAGE } from './marketKit';
+import { T, MTabs, MButton, MIcons, M_PAGE } from './marketKit';
 import { TreasuryStatusBar } from './TreasuryStatusBar';
 import { TreasuryOperationsWorkbench } from './TreasuryOperationsWorkbench';
 import { TreasuryAccountsView } from './TreasuryAccountsView';
@@ -68,6 +68,7 @@ export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialV
     // `font-ui` = Inter : le module bascule sur la typo de la direction
     // retenue sans toucher aux autres écrans de l'admin (portée décidée :
     // Trésorerie d'abord, extension ensuite).
+    <MIcons>
     <div className={cn(M_PAGE, 'space-y-4', T.ink)}>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -95,5 +96,6 @@ export function DesktopTreasuryScreen({ initialView = 'operations' }: { initialV
       {view === 'accounts' && <TreasuryAccountsView canManage={canManage} />}
       {view === 'counterparties' && <TreasuryCounterpartiesView canManage={canManage} />}
     </div>
+    </MIcons>
   );
 }

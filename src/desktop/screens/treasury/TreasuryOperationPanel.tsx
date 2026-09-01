@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { X, Ban } from 'lucide-react';
+import { Prohibit as Ban, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePurchaseSplits, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
 import { M, T, NUM, LABEL, TONE, TONE_BG, MCard, MButton, MSection, MTag, MDialog, MField, MInput } from './marketKit';

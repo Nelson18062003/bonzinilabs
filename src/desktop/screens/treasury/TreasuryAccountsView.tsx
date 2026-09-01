@@ -15,7 +15,7 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Image as ImageIcon, Minus, Plus, Wallet } from 'lucide-react';
+import { ClipboardText as ClipboardCheck, Image as ImageIcon, Minus, Plus, Wallet } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
   useAdjustAccount,
