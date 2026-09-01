@@ -47,6 +47,8 @@ import {
   useDashboardAlerts,
   useAdminProductivity,
   useClientGrowth,
+  useDepositVolumeReport,
+  usePaymentVolumeReport,
 } from '@/hooks/analytics/useAnalytics';
 import {
   NUM,
@@ -63,6 +65,7 @@ import {
   DTh,
   DTd,
 } from './dashboardKit';
+import { VolumeGrowthBlock } from './VolumeGrowthBlock';
 
 /** Couleurs des séries — jetons Tailwind, donc cohérentes clair/sombre. */
 const C = {
@@ -112,6 +115,10 @@ function DashboardBody() {
   // Chaque métrique périodique prend la plage : c'est le sélecteur en haut à
   // droite qui pilote tout l'écran, pas un état par bloc.
   const flow = useFlowSeries(range);
+  // Les deux séries, chacune pour elle-même. Ces hooks existaient déjà et
+  // servaient le mobile ; l'écran desktop ne les affichait nulle part.
+  const depositGrowth = useDepositVolumeReport(range);
+  const paymentGrowth = usePaymentVolumeReport(range);
   const payments = usePaymentSummary(range);
   const deposits = useDepositSummary(range);
   const depositMethods = useDepositMethodBreakdown(range);
@@ -255,17 +262,40 @@ function DashboardBody() {
         )}
       </Block>
 
+      {/* Le flux combiné répond « entre-t-il plus qu'il ne sort ? ». Ces deux
+          blocs répondent à l'autre question, celle de la croissance : chaque
+          flux suivi pour lui-même, avec son cumul. */}
+      <VolumeGrowthBlock
+        title="Croissance des dépôts"
+        description="Volume validé par période, et cumul sur la période"
+        report={depositGrowth.data}
+        loading={depositGrowth.isLoading}
+        color={C.deposits}
+        cumulativeColor="#312E81"
+        unit="Dépôts"
+      />
+
+      <VolumeGrowthBlock
+        title="Croissance des paiements"
+        description="Volume exécuté par période, et cumul sur la période"
+        report={paymentGrowth.data}
+        loading={paymentGrowth.isLoading}
+        color={C.payments}
+        cumulativeColor="#7C2D12"
+        unit="Paiements"
+      />
+
       <div className="grid gap-4 xl:grid-cols-2">
-        <Block title="Dépôts par méthode" description="Volume XAF sur la période">
+        <Block title="Dépôts par méthode" description="Volume validé sur la période">
           <MethodTable rows={depositMethods.data ?? []} loading={depositMethods.isLoading} />
         </Block>
-        <Block title="Paiements par méthode" description="Volume XAF sur la période">
+        <Block title="Paiements par méthode" description="Volume exécuté sur la période">
           <MethodTable rows={paymentMethods.data ?? []} loading={paymentMethods.isLoading} />
         </Block>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Block title="Croissance clients" description="Nouveaux clients par période">
+        <Block title="Croissance clients" description="Nouvelles inscriptions par période">
           {growth.isLoading ? (
             <ChartSkeleton />
           ) : (growth.data ?? []).length === 0 ? (
@@ -283,7 +313,7 @@ function DashboardBody() {
           )}
         </Block>
 
-        <Block title="Qualité des dépôts" description="Répartition des statuts sur la période">
+        <Block title="Qualité des dépôts" description="Dépôts SOUMIS sur la période, par statut actuel">
           {depositStatus.isLoading ? (
             <ChartSkeleton />
           ) : (

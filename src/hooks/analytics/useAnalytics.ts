@@ -21,14 +21,45 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { DEPOSIT_METHOD_LABELS } from '@/types/deposit';
+import { PAYMENT_METHOD_LABELS } from '@/types/payment';
 import {
   bucketKeyFor,
+  bucketLabel,
   bucketStarts,
   previousRange,
   toSupabaseBounds,
   type DateRange,
-  type Granularity,
 } from '@/lib/analytics/dateRange';
+
+/* ── LA DATE QUI COMPTE ────────────────────────────────────────────────
+ *
+ * Une opération porte DEUX dates : celle de sa création, et celle de son
+ * événement (validation d'un dépôt, exécution d'un paiement). Une carte
+ * intitulée « Paiements exécutés sur la période » doit compter les paiements
+ * EXÉCUTÉS pendant la période — pas ceux qui ont été *créés* pendant la
+ * période et qui se trouvent aujourd'hui exécutés.
+ *
+ * Le tableau de bord confondait les deux : les cartes filtraient
+ * `created_at`, le graphique « Flux financier » lisait le grand livre, donc
+ * la date d'exécution. Mesuré en base : 120 paiements sur 603 (19,9 %) ont
+ * été créés un jour et exécutés un autre. Deux panneaux du MÊME écran, sur
+ * la MÊME période, ne pouvaient donc pas s'accorder — et les totaux d'une
+ * période passée bougeaient encore, puisqu'un paiement créé hier et exécuté
+ * aujourd'hui venait grossir la journée d'hier après coup.
+ *
+ * `deposits.validated_at` et `payments.processed_at` sont remplis sur 100 %
+ * des lignes concernées et coïncident avec le grand livre sur 100 % d'entre
+ * elles (1 060 lignes vérifiées) : ce sont les dates d'événement.
+ *
+ * EXCEPTION assumée — les métriques de SOUMISSION (qualité des dépôts,
+ * chronologie des statuts, croissance clients, sources d'inscription)
+ * restent sur `created_at` : elles décrivent une cohorte de dépôts *déposés*
+ * pendant la période, et les statuts en attente n'ont, par définition,
+ * aucune date d'événement. Ces blocs doivent le dire dans leur sous-titre.
+ */
+const DEPOSIT_EVENT_AT = 'validated_at' as const;
+const PAYMENT_EVENT_AT = 'processed_at' as const;
 
 const ANALYTICS_STALE = 60 * 1000;
 const ANALYTICS_GC = 5 * 60 * 1000;
@@ -94,33 +125,12 @@ export interface FunnelStats {
 // Labels — business TZ
 // ────────────────────────────────────────────────────────────────────────────
 
-const DAY_LABELS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-const MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-
-function labelFor(bucket: Date, granularity: Granularity): string {
-  const biz = new Date(bucket.getTime() + 60 * 60_000); // business TZ
-  switch (granularity) {
-    case 'hour':
-      return `${biz.getUTCHours().toString().padStart(2, '0')}h`;
-    case 'day':
-      return `${DAY_LABELS_FR[biz.getUTCDay()]} ${biz.getUTCDate()}`;
-    case 'week': {
-      const d = new Date(biz.getTime());
-      d.setUTCDate(biz.getUTCDate() + 3);
-      const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const week = Math.ceil(((d.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7);
-      return `S${week}`;
-    }
-    case 'month':
-      return `${MONTH_LABELS_FR[biz.getUTCMonth()]} ${biz.getUTCFullYear().toString().slice(-2)}`;
-    case 'quarter': {
-      const q = Math.floor(biz.getUTCMonth() / 3) + 1;
-      return `T${q} ${biz.getUTCFullYear().toString().slice(-2)}`;
-    }
-    case 'year':
-      return biz.getUTCFullYear().toString();
-  }
-}
+// `labelFor` vivait ici, et une COPIE vivait dans `useClientAnalytics`. Les
+// deux nommaient des seaux produits par `bucketKeyFor`, qui vit dans
+// `dateRange` : trois endroits pour une seule convention de fuseau. C'est
+// ainsi que l'étiquette a pu dériver d'un jour sans que rien ne le signale.
+// Source unique désormais : `bucketLabel`.
+const labelFor = bucketLabel;
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1. Net flow by bucket — FIXED (no Math.abs, TZ-safe, range-driven)
@@ -192,8 +202,8 @@ async function fetchPaymentSummary(range: DateRange): Promise<VolumeSummary> {
     .from('payments')
     .select('amount_xaf, amount_rmb')
     .eq('status', 'completed')
-    .gte('created_at', fromISO)
-    .lt('created_at', toISO);
+    .gte(PAYMENT_EVENT_AT, fromISO)
+    .lt(PAYMENT_EVENT_AT, toISO);
   if (error) throw error;
 
   const rows = data ?? [];
@@ -227,8 +237,8 @@ async function fetchDepositSummary(range: DateRange): Promise<VolumeSummary> {
     .from('deposits')
     .select('amount_xaf')
     .eq('status', 'validated')
-    .gte('created_at', fromISO)
-    .lt('created_at', toISO);
+    .gte(DEPOSIT_EVENT_AT, fromISO)
+    .lt(DEPOSIT_EVENT_AT, toISO);
   if (error) throw error;
   const rows = data ?? [];
   const totalXAF = rows.reduce((s, r) => s + Number(r.amount_xaf ?? 0), 0);
@@ -258,14 +268,17 @@ export function useDepositSummary(range: DateRange) {
 // 4. Deposit method breakdown — FIXED (emits BOTH count and amount)
 // ────────────────────────────────────────────────────────────────────────────
 
-const DEPOSIT_METHOD_LABELS: Record<string, string> = {
-  cash_agency: 'Espèces agence',
-  cash_agent: 'Cash agent',
-  mobile_money: 'Mobile Money',
-  bank_transfer: 'Virement bancaire',
-  card: 'Carte',
-  other: 'Autre',
-};
+// Les libellés viennent des tables CANONIQUES de `@/types/*`, typées
+// `Record<DepositMethod, string>` / `Record<PaymentMethod, string>` : le
+// compilateur y impose l'exhaustivité, donc une valeur ajoutée à
+// l'énumération ne peut plus passer inaperçue.
+//
+// Le module analytique s'était fabriqué ses propres tables, avec des clés
+// qui n'existent pas en base (`cash_agency`, `cash_agent`, `mobile_money`,
+// `card`) et sans 6 des 8 méthodes réelles. Résultat à l'écran : le tableau
+// « Dépôts par méthode » affichait `bank_cash`, `mtn_transfer`,
+// `om_withdrawal` — les identifiants bruts de la base — au lieu des noms
+// que le reste de l'application utilise partout ailleurs.
 
 export function useDepositMethodBreakdown(range: DateRange) {
   return useQuery<MethodBreakdown[]>({
@@ -278,8 +291,8 @@ export function useDepositMethodBreakdown(range: DateRange) {
         .from('deposits')
         .select('method, amount_xaf')
         .eq('status', 'validated')
-        .gte('created_at', fromISO)
-        .lt('created_at', toISO);
+        .gte(DEPOSIT_EVENT_AT, fromISO)
+        .lt(DEPOSIT_EVENT_AT, toISO);
       if (error) throw error;
 
       const map = new Map<string, { count: number; amount: number }>();
@@ -293,7 +306,7 @@ export function useDepositMethodBreakdown(range: DateRange) {
       return [...map.entries()]
         .map(([key, v]) => ({
           key,
-          label: DEPOSIT_METHOD_LABELS[key] ?? key,
+          label: DEPOSIT_METHOD_LABELS[key as keyof typeof DEPOSIT_METHOD_LABELS] ?? key,
           count: v.count,
           amount: v.amount,
         }))
@@ -306,13 +319,6 @@ export function useDepositMethodBreakdown(range: DateRange) {
 // 5. Payment method breakdown — FIXED (completed only, both count & amount)
 // ────────────────────────────────────────────────────────────────────────────
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  alipay: 'Alipay',
-  wechat: 'WeChat Pay',
-  bank_transfer: 'Virement',
-  cash: 'Espèces',
-};
-
 export function usePaymentMethodBreakdown(range: DateRange) {
   return useQuery<MethodBreakdown[]>({
     queryKey: ['analytics-v2-payment-methods', range.from.toISOString(), range.to.toISOString()],
@@ -324,8 +330,8 @@ export function usePaymentMethodBreakdown(range: DateRange) {
         .from('payments')
         .select('method, amount_xaf, amount_rmb')
         .eq('status', 'completed')
-        .gte('created_at', fromISO)
-        .lt('created_at', toISO);
+        .gte(PAYMENT_EVENT_AT, fromISO)
+        .lt(PAYMENT_EVENT_AT, toISO);
       if (error) throw error;
 
       const map = new Map<string, { count: number; amount: number }>();
@@ -339,7 +345,7 @@ export function usePaymentMethodBreakdown(range: DateRange) {
       return [...map.entries()]
         .map(([key, v]) => ({
           key,
-          label: PAYMENT_METHOD_LABELS[key] ?? key,
+          label: PAYMENT_METHOD_LABELS[key as keyof typeof PAYMENT_METHOD_LABELS] ?? key,
           count: v.count,
           amount: v.amount,
         }))
@@ -436,8 +442,8 @@ export function useTopClients(range: DateRange, limit = 10) {
         .from('payments')
         .select('user_id, amount_xaf, amount_rmb')
         .eq('status', 'completed')
-        .gte('created_at', fromISO)
-        .lt('created_at', toISO)
+        .gte(PAYMENT_EVENT_AT, fromISO)
+        .lt(PAYMENT_EVENT_AT, toISO)
         .limit(PAYLOAD_CAP);
       if (error) throw error;
 
@@ -501,14 +507,14 @@ export function useFunnel(range: DateRange) {
           .from('deposits')
           .select('user_id')
           .eq('status', 'validated')
-          .gte('created_at', fromISO)
-          .lt('created_at', toISO),
+          .gte(DEPOSIT_EVENT_AT, fromISO)
+          .lt(DEPOSIT_EVENT_AT, toISO),
         supabaseAdmin
           .from('payments')
           .select('user_id')
           .eq('status', 'completed')
-          .gte('created_at', fromISO)
-          .lt('created_at', toISO),
+          .gte(PAYMENT_EVENT_AT, fromISO)
+          .lt(PAYMENT_EVENT_AT, toISO),
       ]);
 
       if (depositUsersRes.error) throw depositUsersRes.error;
@@ -543,8 +549,8 @@ export function useDepositProcessingTime(range: DateRange) {
         .from('deposits')
         .select('created_at, validated_at')
         .eq('status', 'validated')
-        .gte('created_at', fromISO)
-        .lt('created_at', toISO)
+        .gte(DEPOSIT_EVENT_AT, fromISO)
+        .lt(DEPOSIT_EVENT_AT, toISO)
         .not('validated_at', 'is', null);
       if (error) throw error;
 
@@ -804,23 +810,53 @@ async function fetchVolumeReport(
   status: VolumeStatus,
 ): Promise<VolumeReport> {
   const { fromISO, toISO } = toSupabaseBounds(range);
-  const { data, error } = await supabaseAdmin
-    .from(table)
-    .select('amount_xaf, created_at')
-    .eq('status', status)
-    .gte('created_at', fromISO)
-    .lt('created_at', toISO);
-  if (error) throw error;
+
+  // Deux requêtes littérales plutôt qu'une colonne interpolée : PostgREST
+  // type le retour à partir de la chaîne `select`, et une chaîne construite
+  // lui fait perdre le typage des lignes (`amount_xaf` devient inconnu).
+  // Le prix est six lignes de plus, le gain est un `select` vérifié.
+  const rows: Array<{ amountXAF: number; eventAt: string | null }> =
+    table === 'deposits'
+      ? await (async () => {
+          const { data, error } = await supabaseAdmin
+            .from('deposits')
+            .select('amount_xaf, validated_at')
+            .eq('status', status as Database['public']['Enums']['deposit_status'])
+            .gte(DEPOSIT_EVENT_AT, fromISO)
+            .lt(DEPOSIT_EVENT_AT, toISO);
+          if (error) throw error;
+          return (data ?? []).map((r) => ({
+            amountXAF: Number(r.amount_xaf ?? 0),
+            eventAt: r.validated_at,
+          }));
+        })()
+      : await (async () => {
+          const { data, error } = await supabaseAdmin
+            .from('payments')
+            .select('amount_xaf, processed_at')
+            .eq('status', status as Database['public']['Enums']['payment_status'])
+            .gte(PAYMENT_EVENT_AT, fromISO)
+            .lt(PAYMENT_EVENT_AT, toISO);
+          if (error) throw error;
+          return (data ?? []).map((r) => ({
+            amountXAF: Number(r.amount_xaf ?? 0),
+            eventAt: r.processed_at,
+          }));
+        })();
 
   const buckets = new Map<string, { amountXAF: number; opCount: number }>();
   for (const b of bucketStarts(range)) {
     buckets.set(b.toISOString(), { amountXAF: 0, opCount: 0 });
   }
-  for (const row of data ?? []) {
-    const key = bucketKeyFor(new Date(row.created_at), range.granularity);
-    const bucket = buckets.get(key);
+  for (const row of rows) {
+    // Le seau est celui de l'ÉVÉNEMENT (validation / exécution) — la même
+    // date que celle qui a servi à filtrer. Trier sur une date et regrouper
+    // sur une autre ferait tomber des lignes retenues hors de tout seau :
+    // elles disparaîtraient du graphique tout en pesant dans le total.
+    if (!row.eventAt) continue;
+    const bucket = buckets.get(bucketKeyFor(new Date(row.eventAt), range.granularity));
     if (!bucket) continue;
-    bucket.amountXAF += Number(row.amount_xaf ?? 0);
+    bucket.amountXAF += row.amountXAF;
     bucket.opCount += 1;
   }
 
@@ -841,12 +877,13 @@ async function fetchVolumeReport(
   // Previous period total for trend computation
   const prev = previousRange(range);
   const prevBounds = toSupabaseBounds(prev);
+  const eventAt = table === 'deposits' ? DEPOSIT_EVENT_AT : PAYMENT_EVENT_AT;
   const prevRes = await supabaseAdmin
     .from(table)
     .select('amount_xaf')
     .eq('status', status)
-    .gte('created_at', prevBounds.fromISO)
-    .lt('created_at', prevBounds.toISO);
+    .gte(eventAt, prevBounds.fromISO)
+    .lt(eventAt, prevBounds.toISO);
   const previousTotalXAF = (prevRes.data ?? []).reduce((s, r) => s + Number(r.amount_xaf ?? 0), 0);
   const trendPct = previousTotalXAF === 0 ? null : (totalXAF - previousTotalXAF) / Math.abs(previousTotalXAF);
 

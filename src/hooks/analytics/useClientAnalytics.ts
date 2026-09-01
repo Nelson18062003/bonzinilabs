@@ -12,13 +12,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { DEPOSIT_METHOD_LABELS } from '@/types/deposit';
+import { PAYMENT_METHOD_LABELS } from '@/types/payment';
 import {
   bucketKeyFor,
+  bucketLabel,
   bucketStarts,
   previousRange,
   toSupabaseBounds,
   type DateRange,
-  type Granularity,
 } from '@/lib/analytics/dateRange';
 
 const CLIENT_ANALYTICS_STALE = 60 * 1000;
@@ -79,44 +81,11 @@ export interface ClientMethodBreakdown {
 // and this module independent of the admin hooks)
 // ────────────────────────────────────────────────────────────────────────────
 
-const DAY_LABELS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-const MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+// Copie supprimée : même convention de fuseau que `bucketKeyFor`, donc même
+// fonction. Voir `bucketLabel` dans `@/lib/analytics/dateRange`.
+const labelFor = bucketLabel;
 
-function labelFor(bucket: Date, granularity: Granularity): string {
-  const biz = new Date(bucket.getTime() + 60 * 60_000);
-  switch (granularity) {
-    case 'hour':
-      return `${biz.getUTCHours().toString().padStart(2, '0')}h`;
-    case 'day':
-      return `${DAY_LABELS_FR[biz.getUTCDay()]} ${biz.getUTCDate()}`;
-    case 'week': {
-      const d = new Date(biz.getTime());
-      d.setUTCDate(biz.getUTCDate() + 3);
-      const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const week = Math.ceil(((d.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7);
-      return `S${week}`;
-    }
-    case 'month':
-    default:
-      return `${MONTH_LABELS_FR[biz.getUTCMonth()]} ${biz.getUTCFullYear().toString().slice(-2)}`;
-  }
-}
 
-const DEPOSIT_METHOD_LABELS: Record<string, string> = {
-  cash_agency: 'Espèces agence',
-  cash_agent: 'Cash agent',
-  mobile_money: 'Mobile Money',
-  bank_transfer: 'Virement bancaire',
-  card: 'Carte',
-  other: 'Autre',
-};
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  alipay: 'Alipay',
-  wechat: 'WeChat Pay',
-  bank_transfer: 'Virement',
-  cash: 'Espèces',
-};
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1. Client flow series (user's own deposits vs payments by bucket)
@@ -307,7 +276,7 @@ export function useClientPaymentMethodBreakdown(range: DateRange) {
       return [...map.entries()]
         .map(([key, v]) => ({
           key,
-          label: PAYMENT_METHOD_LABELS[key] ?? key,
+          label: PAYMENT_METHOD_LABELS[key as keyof typeof PAYMENT_METHOD_LABELS] ?? key,
           count: v.count,
           amount: v.amount,
         }))
@@ -349,7 +318,7 @@ export function useClientDepositMethodBreakdown(range: DateRange) {
       return [...map.entries()]
         .map(([key, v]) => ({
           key,
-          label: DEPOSIT_METHOD_LABELS[key] ?? key,
+          label: DEPOSIT_METHOD_LABELS[key as keyof typeof DEPOSIT_METHOD_LABELS] ?? key,
           count: v.count,
           amount: v.amount,
         }))
