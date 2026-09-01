@@ -12,28 +12,124 @@
  * `useDashboardAnalytics.ts` implementation.
  */
 
-import {
-  addDays,
-  addMonths,
-  addYears,
-  endOfDay,
-  endOfMonth,
-  endOfQuarter,
-  endOfWeek,
-  endOfYear,
-  startOfDay,
-  startOfMonth,
-  startOfQuarter,
-  startOfWeek,
-  startOfYear,
-  subDays,
-  subMilliseconds,
-  subMonths,
-  subQuarters,
-  subWeeks,
-  subYears,
-  differenceInCalendarDays,
-} from 'date-fns';
+/* ── Primitives de calendrier — EN COMPOSANTS UTC ──────────────────────
+ *
+ * Ces fonctions remplacent volontairement leurs homonymes de `date-fns`,
+ * qui ne sont PAS utilisables ici.
+ *
+ * Le module représente une heure murale de Douala par une `Date` décalée de
+ * +1 h, puis lit ses composants. Or `date-fns` lit les composants LOCAUX du
+ * navigateur : sur un poste à UTC+1 — c'est-à-dire au Cameroun, donc sur
+ * quasiment tous les postes réels — le décalage était appliqué DEUX fois.
+ *
+ * Bug observé en production : chaque barre du graphique portait l'étiquette
+ * du jour PRÉCÉDENT. Les opérations du mardi s'affichaient sous « Lun 31 »,
+ * et la colonne « Mar 1 » paraissait vide alors qu'on était mardi. Les
+ * données étaient justes, les étiquettes mentaient. Le dernier jour de la
+ * période était en prime tronqué (« Cette semaine » perdait son dimanche).
+ *
+ * Le seul environnement où l'ancien code était juste était un navigateur à
+ * UTC — c'est-à-dire les captures d'écran et les tests, jamais l'utilisateur.
+ *
+ * Ces primitives ne lisent QUE des composants UTC : le résultat ne dépend
+ * donc plus du fuseau du poste. Douala étant à UTC+1 toute l'année, sans
+ * heure d'été, l'arithmétique est exacte.
+ */
+
+type WeekOptions = { weekStartsOn?: 0 | 1 };
+
+const clone = (d: Date): Date => new Date(d.getTime());
+
+/** Dernier jour du mois contenant `d` (1-31), en UTC. */
+function lastDayOfMonthUTC(d: Date): number {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+}
+
+function startOfDay(d: Date): Date {
+  const x = clone(d);
+  x.setUTCHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfDay(d: Date): Date {
+  const x = clone(d);
+  x.setUTCHours(23, 59, 59, 999);
+  return x;
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = clone(d);
+  x.setUTCDate(x.getUTCDate() + n);
+  return x;
+}
+
+const subDays = (d: Date, n: number): Date => addDays(d, -n);
+const subWeeks = (d: Date, n: number): Date => addDays(d, -7 * n);
+const subMilliseconds = (d: Date, n: number): Date => new Date(d.getTime() - n);
+
+/**
+ * Ajoute `n` mois en bornant au dernier jour du mois d'arrivée : le 31 janvier
+ * plus un mois donne le 28 (ou 29) février, jamais le 2 ou 3 mars.
+ */
+function addMonths(d: Date, n: number): Date {
+  const x = clone(d);
+  const day = x.getUTCDate();
+  x.setUTCDate(1);
+  x.setUTCMonth(x.getUTCMonth() + n);
+  x.setUTCDate(Math.min(day, lastDayOfMonthUTC(x)));
+  return x;
+}
+
+const subMonths = (d: Date, n: number): Date => addMonths(d, -n);
+const subQuarters = (d: Date, n: number): Date => addMonths(d, -3 * n);
+
+/** Même bornage que `addMonths` : le 29 février plus un an donne le 28. */
+function addYears(d: Date, n: number): Date {
+  const x = clone(d);
+  const day = x.getUTCDate();
+  x.setUTCDate(1);
+  x.setUTCFullYear(x.getUTCFullYear() + n);
+  x.setUTCDate(Math.min(day, lastDayOfMonthUTC(x)));
+  return x;
+}
+
+const subYears = (d: Date, n: number): Date => addYears(d, -n);
+
+function startOfWeek(d: Date, options: WeekOptions = {}): Date {
+  const weekStartsOn = options.weekStartsOn ?? 0;
+  const x = startOfDay(d);
+  return addDays(x, -((x.getUTCDay() - weekStartsOn + 7) % 7));
+}
+
+const endOfWeek = (d: Date, options: WeekOptions = {}): Date =>
+  endOfDay(addDays(startOfWeek(d, options), 6));
+
+function startOfMonth(d: Date): Date {
+  const x = startOfDay(d);
+  x.setUTCDate(1);
+  return x;
+}
+
+const endOfMonth = (d: Date): Date => subMilliseconds(addMonths(startOfMonth(d), 1), 1);
+
+function startOfQuarter(d: Date): Date {
+  const x = startOfMonth(d);
+  x.setUTCMonth(Math.floor(x.getUTCMonth() / 3) * 3);
+  return x;
+}
+
+const endOfQuarter = (d: Date): Date => subMilliseconds(addMonths(startOfQuarter(d), 3), 1);
+
+function startOfYear(d: Date): Date {
+  const x = startOfDay(d);
+  x.setUTCMonth(0, 1);
+  return x;
+}
+
+const endOfYear = (d: Date): Date => subMilliseconds(addYears(startOfYear(d), 1), 1);
+
+const differenceInCalendarDays = (a: Date, b: Date): number =>
+  Math.round((startOfDay(a).getTime() - startOfDay(b).getTime()) / 86_400_000);
 
 /** Business timezone — fixed, no daylight-saving. */
 export const BUSINESS_TZ = 'Africa/Douala';
@@ -279,6 +375,17 @@ export function buildRangeFromPreset(
 }
 
 /**
+ * Le sélecteur de dates fournit une `Date` dont les composants LOCAUX portent
+ * le jour que l'utilisateur a cliqué dans le calendrier. On ne lit donc QUE
+ * ces composants-là, jamais l'instant : sur un poste à UTC+8, minuit local
+ * est déjà la veille en UTC, et lire l'instant décalait la plage d'un jour
+ * entier.
+ */
+function calendarDayToBusiness(day: Date): Date {
+  return new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()));
+}
+
+/**
  * Build a custom range from business-TZ day boundaries.
  * `fromDay` and `toDay` are expressed as business-TZ calendar days.
  */
@@ -287,8 +394,8 @@ export function buildCustomRange(
   toDay: Date,
   granularity?: Granularity,
 ): DateRange {
-  const fromBiz = startOfDay(nowInBusinessTZ(fromDay));
-  const toBiz = endOfDay(nowInBusinessTZ(toDay));
+  const fromBiz = calendarDayToBusiness(fromDay);
+  const toBiz = endOfDay(calendarDayToBusiness(toDay));
   const from = businessTZToUTC(fromBiz);
   const to = businessTZToUTC(toBiz);
   return {
@@ -428,6 +535,51 @@ export function bucketKeyFor(instant: Date, granularity: Granularity): string {
       break;
   }
   return businessTZToUTC(bucketBiz).toISOString();
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Étiquette d'un seau — source unique
+// ────────────────────────────────────────────────────────────────────────────
+
+const DAY_LABELS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+const MONTH_LABELS_FR = [
+  'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+  'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc',
+];
+
+/**
+ * Étiquette humaine d'un seau (« Mar 1 », « 14h », « S36 », « Sep 26 »).
+ *
+ * Vit ICI, avec `bucketKeyFor`, et non dans les hooks : les deux fonctions
+ * doivent partager exactement la même convention de fuseau. Elles étaient
+ * jusqu'ici dans deux fichiers séparés — et dupliquées entre `useAnalytics`
+ * et `useClientAnalytics` —, ce qui a permis à l'étiquette de dériver d'un
+ * jour par rapport au seau qu'elle nomme sans qu'aucun test ne le voie.
+ *
+ * `bucket` est l'instant UTC de début du seau, tel que produit par
+ * `bucketKeyFor` / `bucketStarts`.
+ */
+export function bucketLabel(bucket: Date, granularity: Granularity): string {
+  const biz = new Date(bucket.getTime() + BUSINESS_TZ_OFFSET_MINUTES * 60_000);
+  switch (granularity) {
+    case 'hour':
+      return `${biz.getUTCHours().toString().padStart(2, '0')}h`;
+    case 'day':
+      return `${DAY_LABELS_FR[biz.getUTCDay()]} ${biz.getUTCDate()}`;
+    case 'week': {
+      // Numéro de semaine ISO : on vise le jeudi de la semaine.
+      const d = new Date(biz.getTime());
+      d.setUTCDate(biz.getUTCDate() + 3);
+      const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return `S${Math.ceil(((d.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7)}`;
+    }
+    case 'month':
+      return `${MONTH_LABELS_FR[biz.getUTCMonth()]} ${biz.getUTCFullYear().toString().slice(-2)}`;
+    case 'quarter':
+      return `T${Math.floor(biz.getUTCMonth() / 3) + 1} ${biz.getUTCFullYear().toString().slice(-2)}`;
+    case 'year':
+      return biz.getUTCFullYear().toString();
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────

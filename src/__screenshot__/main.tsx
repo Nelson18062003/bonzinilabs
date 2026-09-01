@@ -106,7 +106,7 @@ import {
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/deposits';
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
-import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics } from './adminRedesign/beforeScreens';
+import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics, ShippedCreateClient } from './adminRedesign/beforeScreens';
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -125,6 +125,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'real-clients-split': { Comp: ShippedClients, route: '/m/clients/u5', path: '/m/clients/:clientId' },
   'real-rates': { Comp: ShippedRates, route: '/m/more/rates' },
   'real-dashboard': { Comp: ShippedAnalytics, route: '/m/dashboard' },
+  'real-client-new': { Comp: ShippedCreateClient, route: '/m/clients/new' },
   'real-rates-publish': { Comp: ShippedRatesPublish, route: '/m/more/rates' },
   'real-rates-history': { Comp: ShippedRatesHistory, route: '/m/more/rates' },
   'real-rates-settings': { Comp: ShippedRatesSettings, route: '/m/more/rates' },

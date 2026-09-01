@@ -29,6 +29,8 @@ import {
 } from '@/lib/generateClientStatement';
 import { ENTRY_TYPE_CONFIG, AMOUNT_TONE } from '@/lib/ledgerDisplay';
 import { normalizePhone } from '@/lib/phone';
+import { useClientPhones } from '@/hooks/useClientPhones';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { AmountField, TextArea } from '@/components/form';
 import { cn } from '@/lib/utils';
@@ -232,6 +234,10 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteChecking, setDeleteChecking] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  // `client.id` est le user_id (voir la construction de l'objet client).
+  const { data: clientPhones } = useClientPhones(client?.id);
+  const extraPhones = (clientPhones ?? []).filter((p) => !p.isPrimary);
 
   const close = () => navigate('/m/clients');
 
@@ -552,7 +558,28 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             Coordonnées
           </SecLabel>
           <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-3">
-            <KV k="Téléphone" v={client.phone || '—'} />
+            {/* Le numéro PRINCIPAL, plus les autres s'il y en a. Sans cette
+                liste, les numéros supplémentaires saisis à la création
+                seraient enregistrés puis jamais montrés — une donnée
+                invisible vaut moins que pas de donnée du tout. */}
+            <KV
+              k="Téléphone"
+              v={
+                extraPhones.length === 0 ? (
+                  formatE164ForDisplay(client.phone) || '—'
+                ) : (
+                  <span className="flex flex-col gap-0.5">
+                    <span>{formatE164ForDisplay(client.phone)}</span>
+                    {extraPhones.map((p) => (
+                      <span key={p.id} className={cn('text-[12px]', TEXT.muted)}>
+                        {formatE164ForDisplay(p.phoneE164)}
+                        {p.label ? ` · ${p.label}` : ''}
+                      </span>
+                    ))}
+                  </span>
+                )
+              }
+            />
             <KV k="E-mail" v={client.email || '—'} />
             <KV k="Entreprise" v={client.companyName || '—'} />
             <KV k="Ville / Pays" v={[client.city, client.country].filter(Boolean).join(' · ') || '—'} />

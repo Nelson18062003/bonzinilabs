@@ -582,6 +582,47 @@ export type Database = {
           },
         ]
       }
+      client_phones: {
+        Row: {
+          client_id: string
+          country_iso: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          label: string | null
+          phone_e164: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          phone_e164: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          phone_e164?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_phones_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           activity_sector: string | null
@@ -2546,6 +2587,10 @@ export type Database = {
       admin_delete_canned_response: { Args: { p_id: string }; Returns: Json }
       admin_delete_client: { Args: { p_user_id: string }; Returns: Json }
       admin_delete_quick_reply: { Args: { p_id: string }; Returns: Json }
+      admin_has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       admin_resend_sms: { Args: { p_outbox_id: string }; Returns: Json }
       admin_reset_client_password: {
         Args: { p_target_user_id: string }
@@ -2558,6 +2603,10 @@ export type Database = {
       admin_revoke_passkey: { Args: { p_credential: string }; Returns: Json }
       admin_set_client_locale: {
         Args: { p_locale: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_set_client_phones: {
+        Args: { p_phones: Json; p_user_id: string }
         Returns: Json
       }
       admin_setup_client: {
