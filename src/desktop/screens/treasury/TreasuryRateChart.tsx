@@ -31,11 +31,21 @@ export function TreasuryRateChart({
   color,
   decimals,
   height = 300,
+  from,
+  to,
 }: {
   points: ChartPoint[];
   color: string;
   decimals: number;
   height?: number;
+  /**
+   * Fenêtre visible. Sans elle, `fitContent` cadre sur l'étendue des POINTS :
+   * une année choisie avec des opérations concentrées sur deux semaines
+   * s'affichait comme deux semaines, et le vide — qui est une information —
+   * disparaissait.
+   */
+  from?: Date;
+  to?: Date;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -82,25 +92,46 @@ export function TreasuryRateChart({
       crosshairMarkerRadius: 4,
     });
 
+    // lightweight-charts ne connaît pas les fuseaux : il affiche les
+    // UTCTimestamp en UTC. L'axe et le curseur montraient donc 13:00 pour une
+    // opération de 14:00 à Douala, et la journée basculait à 23:00. On décale
+    // tous les temps de +1 h (Douala est à UTC+1 toute l'année) pour que le
+    // rendu UTC soit l'heure murale — l'astuce documentée par la bibliothèque.
+    const TZ_SHIFT = 3600;
+    const asChartTime = (ms: number) => Math.floor(ms / 1000) + TZ_SHIFT;
+
     // Temps strictement croissants et uniques — contrat de lightweight-charts.
-    // Deux opérations dans la même seconde : la dernière l'emporte.
-    const byTime = new Map<number, number>();
-    for (const p of points) {
-      const t = Math.floor(Date.parse(p.at) / 1000);
-      if (Number.isFinite(t) && Number.isFinite(p.value)) byTime.set(t, p.value);
+    // Le sélecteur de date remet les secondes à zéro : deux opérations saisies
+    // dans la même minute tombent sur le même temps, et la seconde EFFAÇAIT la
+    // première. On décale les doublons d'une seconde chacun — le point reste
+    // visible, sa position est indiscernable à l'échelle d'une journée.
+    const sorted = points
+      .map((p) => ({ t: Date.parse(p.at), v: p.value }))
+      .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.v))
+      .sort((a, b) => a.t - b.t);
+    const data: { time: UTCTimestamp; value: number }[] = [];
+    let last = -Infinity;
+    for (const p of sorted) {
+      let t = asChartTime(p.t);
+      if (t <= last) t = last + 1;
+      last = t;
+      data.push({ time: t as UTCTimestamp, value: p.v });
     }
-    series.setData(
-      [...byTime.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([time, value]) => ({ time: time as UTCTimestamp, value })),
-    );
-    chart.timeScale().fitContent();
+    series.setData(data);
+    if (from && to && to > from) {
+      chart.timeScale().setVisibleRange({
+        from: asChartTime(from.getTime()) as UTCTimestamp,
+        to: asChartTime(to.getTime()) as UTCTimestamp,
+      });
+    } else {
+      chart.timeScale().fitContent();
+    }
 
     return () => {
       chart.remove();
       chartRef.current = null;
     };
-  }, [points, color, decimals, isDark]);
+  }, [points, color, decimals, isDark, from, to]);
 
   return <div ref={containerRef} style={{ height }} />;
 }

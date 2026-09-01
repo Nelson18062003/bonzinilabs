@@ -26,6 +26,8 @@ import { TreasuryOperationsWorkbench } from './TreasuryOperationsWorkbench';
 import { TreasuryAccountsView } from './TreasuryAccountsView';
 import { TreasuryCounterpartiesView } from './TreasuryCounterpartiesView';
 import { TreasuryAnalysisView } from './TreasuryAnalysisView';
+import { DateRangeProvider } from '@/lib/analytics/DateRangeContext';
+import { TREASURY_DEFAULT_PRESET } from './treasuryPeriod';
 import type { TreasuryCurrency } from './treasuryFormat';
 import { TREASURY_VIEWS, viewFromPath, treasuryPaths, type TreasuryView } from './treasuryNav';
 import { TreasuryInventoryView } from './TreasuryInventoryView';
@@ -100,12 +102,17 @@ export function DesktopTreasuryScreen() {
         ariaLabel="Vues du module Trésorerie"
       />
 
-      {view === 'operations' && <TreasuryOperationsWorkbench canManage={canManage} />}
-      {view === 'analysis' && <TreasuryAnalysisView />}
-      {view === 'accounts' && <TreasuryAccountsView canManage={canManage} />}
-      {view === 'inventory' && <TreasuryInventoryView canManage={canManage} />}
-      {view === 'counterparties' && <TreasuryCounterpartiesView canManage={canManage} />}
-      {view === 'ledger' && <TreasuryLedgerView />}
+      {/* UNE période pour tout le module : choisie dans Opérations, elle est
+          encore là dans Analyse. Chaque vue se fournit son propre contexte
+          quand elle est montée seule (`TreasuryPeriodScope`). */}
+      <DateRangeProvider defaultPreset={TREASURY_DEFAULT_PRESET}>
+        {view === 'operations' && <TreasuryOperationsWorkbench canManage={canManage} />}
+        {view === 'analysis' && <TreasuryAnalysisView />}
+        {view === 'accounts' && <TreasuryAccountsView canManage={canManage} />}
+        {view === 'inventory' && <TreasuryInventoryView canManage={canManage} />}
+        {view === 'counterparties' && <TreasuryCounterpartiesView canManage={canManage} />}
+        {view === 'ledger' && <TreasuryLedgerView />}
+      </DateRangeProvider>
     </div>
     </MIcons>
   );

@@ -136,3 +136,26 @@ Une seule règle : **l'URL est l'état**. Plus de `useState` pour la vue.
 Chaque référence est un lien : une opération pointe vers sa contrepartie et
 vers son compte ; une contrepartie liste ses opérations ; un compte liste ses
 mouvements. C'est ce qui manque le plus aujourd'hui.
+
+## Période — la régression, et le socle partagé
+
+Signalé : « dans la Trésorerie, je ne peux plus mettre une plage
+personnalisée ; il n'y a plus aujourd'hui, cette semaine, ce mois ».
+
+L'ancien écran desktop (`DesktopTreasuryDashboard`, supprimé par la
+reconstruction) offrait jour / semaine / mois / trimestre / année / tout /
+personnalisé avec un calendrier. La vue Analyse reconstruite n'avait gardé
+que quatre durées glissantes (7 j, 30 j, 3 mois, 1 an), dupliquées à
+l'identique dans le workbench des Opérations. Régression desktop → desktop.
+
+Correction : la Trésorerie consomme le **même socle** que le tableau de bord
+— `DateRangeProvider` / `DateRangePicker` de `src/lib/analytics` — sans les
+réglages propres aux seaux (granularité, comparaison), qui n'ont pas de sens
+pour des séries d'événements. Une seule période pour tout le module : choisie
+dans Opérations, elle est encore là dans Analyse. Chaque vue se fournit son
+contexte quand elle est montée seule (`TreasuryPeriodScope`). Les bornes sont
+des jours civils de Douala ; le graphique cadre sur la période choisie et non
+sur l'étendue des points, pour que le vide se voie.
+
+Reste hors périmètre, à savoir : `treasuryDashboardUtils.getRange` (mobile)
+calcule toujours à minuit LOCAL du navigateur.

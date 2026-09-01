@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { DateRangePicker, formatCurrencyFull, formatInteger } from '@/components/analytics';
 import { DateRangeProvider, useDateRange } from '@/lib/analytics/DateRangeContext';
+import { bucketAxisLabel } from '@/lib/analytics/dateRange';
 import {
   useFlowSeries,
   usePaymentSummary,
@@ -142,7 +143,30 @@ function DashboardBody() {
   }, [deposits.data, payments.data]);
 
   const compare = range.compareToPrevious;
-  const flowData = flow.data?.current ?? [];
+
+  /* ── Axes X ───────────────────────────────────────────────────────────
+   *
+   * Deux choses, distinctes, rendaient les axes « bizarres » :
+   *
+   *  1. Le NOMBRE de seaux — corrigé à la source (DateRangeContext) : la
+   *     granularité suit maintenant la plage, plus de 365 barres-filaments
+   *     sur « Cette année ».
+   *  2. Les ÉTIQUETTES, exactes mais sans contexte : « Ven 16 · Lun 2 ·
+   *     Mer 18 » ne dit pas le mois ; « 14h » répété ne dit pas le jour.
+   *     `bucketAxisLabel` ajoute le contexte au premier seau et à chaque
+   *     changement (1er du mois, minuit).
+   *
+   * Recharts élague les étiquettes en mesurant le texte (`preserveEnd`) ;
+   * `preserveStartEnd` garde en plus la PREMIÈRE, celle qui porte le
+   * contexte. On ne pose PAS d'`interval` numérique : il désactiverait cet
+   * élagage par mesure — le seul qui tienne quelle que soit la largeur — et
+   * les plafonds de `timeXAxisProps` sont calibrés pour une carte mobile de
+   * 360 px, pas pour un axe de 1 000 px. */
+  const withAxisLabel = <T extends { bucket: string }>(rows: T[]) =>
+    rows.map((p) => ({ ...p, axisLabel: bucketAxisLabel(new Date(p.bucket), range.granularity, range) }));
+
+  const flowData = useMemo(() => withAxisLabel(flow.data?.current ?? []), [flow.data, range]); // eslint-disable-line react-hooks/exhaustive-deps
+  const growthData = useMemo(() => withAxisLabel(growth.data ?? []), [growth.data, range]); // eslint-disable-line react-hooks/exhaustive-deps
   const flowEmpty = flowData.length === 0 || flowData.every((p) => p.deposits === 0 && p.payments === 0);
 
   return (
@@ -239,7 +263,14 @@ function DashboardBody() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={flowData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
+              <XAxis
+                dataKey="axisLabel"
+                tick={axisTick}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={18}
+              />
               {/* Graduations en ENTIER, pas « 1,6 M ». `formatAxisTick` abrège
                   pour tenir dans 60-80 px : on élargit l'axe plutôt que de
                   réintroduire l'abréviation que le reste de l'écran bannit. */}
@@ -252,11 +283,13 @@ function DashboardBody() {
               />
               <Tooltip
                 {...tooltipStyle}
+                // L'infobulle garde l'étiquette COMPLÈTE du seau, pas l'abrégé de l'axe.
+                labelFormatter={(_, payload) => String(payload?.[0]?.payload?.label ?? '')}
                 formatter={(v, name) => [formatCurrencyFull(Number(v), 'XAF'), String(name)]}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="deposits" name="Dépôts" fill={C.deposits} radius={[3, 3, 0, 0]} />
-              <Bar dataKey="payments" name="Paiements" fill={C.payments} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="deposits" name="Dépôts" fill={C.deposits} radius={[3, 3, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="payments" name="Paiements" fill={C.payments} radius={[3, 3, 0, 0]} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -270,6 +303,7 @@ function DashboardBody() {
         description="Volume validé par période, et cumul sur la période"
         report={depositGrowth.data}
         loading={depositGrowth.isLoading}
+        range={range}
         color={C.deposits}
         cumulativeColor="#312E81"
         unit="Dépôts"
@@ -280,6 +314,7 @@ function DashboardBody() {
         description="Volume exécuté par période, et cumul sur la période"
         report={paymentGrowth.data}
         loading={paymentGrowth.isLoading}
+        range={range}
         color={C.payments}
         cumulativeColor="#7C2D12"
         unit="Paiements"
@@ -302,11 +337,21 @@ function DashboardBody() {
             <EmptyBlock>Aucune inscription sur la période.</EmptyBlock>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={growth.data ?? []} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+              <LineChart data={growthData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="axisLabel"
+                  tick={axisTick}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                  minTickGap={18}
+                />
                 <YAxis tick={axisTick} axisLine={false} tickLine={false} width={44} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} />
+                <Tooltip
+                  {...tooltipStyle}
+                  labelFormatter={(_, payload) => String(payload?.[0]?.payload?.label ?? '')}
+                />
                 <Line type="monotone" dataKey="count" name="Nouveaux clients" stroke={C.clients} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>

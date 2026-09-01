@@ -30,7 +30,6 @@ import {
   MCard,
   MCardHeader,
   MChip,
-  MDropdown,
   MTh,
   MTd,
   MEmpty,
@@ -38,16 +37,13 @@ import {
 } from './marketKit';
 import { fmtNum, withSign, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryRateChart, type ChartPoint } from './TreasuryRateChart';
+import { TreasuryPeriodScope, TreasuryPeriodBar } from './treasuryPeriodScope';
+import { useTreasuryBounds } from './treasuryPeriod';
 
-type Period = '7d' | '30d' | '90d' | '365d';
+// `Period` / `PERIODS` / `rangeOf` — quatre durées glissantes, dupliquées
+// avec le workbench — ont disparu : la période vient du socle partagé,
+// voir `treasuryPeriod.tsx`.
 type Curve = 'wac' | 'purchases' | 'sales';
-
-const PERIODS = [
-  { value: '7d' as const, label: '7 jours' },
-  { value: '30d' as const, label: '30 jours' },
-  { value: '90d' as const, label: '3 mois' },
-  { value: '365d' as const, label: '1 an' },
-];
 
 const CURVES = [
   { key: 'wac' as const, label: 'Coût du stock (WAC)' },
@@ -59,13 +55,6 @@ const CURVES = [
 const C_WAC = '#15803D';
 const C_BUY = '#4F46E5';
 const C_SELL = '#B45309';
-
-function rangeOf(period: Period): { from: Date; to: Date } {
-  const to = new Date();
-  const from = new Date(to);
-  from.setDate(to.getDate() - Number(period.replace('d', '')));
-  return { from, to };
-}
 
 function Headline({
   label,
@@ -201,12 +190,16 @@ function TopTable({
 }
 
 export function TreasuryAnalysisView() {
-  const [period, setPeriod] = useState<Period>('30d');
-  const [curve, setCurve] = useState<Curve>('wac');
+  return (
+    <TreasuryPeriodScope>
+      <AnalysisBody />
+    </TreasuryPeriodScope>
+  );
+}
 
-  const range = useMemo(() => rangeOf(period), [period]);
-  const fromIso = range.from.toISOString();
-  const toIso = range.to.toISOString();
+function AnalysisBody() {
+  const [curve, setCurve] = useState<Curve>('wac');
+  const { range, fromIso, toIso } = useTreasuryBounds();
 
   const { data: dash, isLoading, isError } = useTreasuryDashboard(fromIso, toIso);
   const { data: topSuppliers } = useTopCounterparties('usdt_supplier', fromIso, toIso, 5);
@@ -234,12 +227,7 @@ export function TreasuryAnalysisView() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className={cn('text-[11.5px]', NUM, T.muted)}>
-          {range.from.toLocaleDateString('fr-FR')} → {range.to.toLocaleDateString('fr-FR')}
-        </span>
-        <MDropdown label="Période" value={period} options={PERIODS} onChange={setPeriod} />
-      </div>
+      <TreasuryPeriodBar />
 
       {/* 1. Les quatre chiffres du métier */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -300,7 +288,10 @@ export function TreasuryAnalysisView() {
           </MEmpty>
         ) : (
           <div className="px-2 py-3">
-            <TreasuryRateChart points={chart.points} color={chart.color} decimals={chart.decimals} />
+            {/* La fenêtre visible = la période choisie, pas seulement l'étendue
+                des points : sur « Cette année » avec des opérations concentrées
+                en août, le graphique montre l'année, et le creux se voit. */}
+            <TreasuryRateChart points={chart.points} color={chart.color} decimals={chart.decimals} from={range.from} to={range.to} />
           </div>
         )}
       </MCard>

@@ -31,6 +31,7 @@ import {
 } from 'recharts';
 import { formatCurrencyFull, formatInteger } from '@/components/analytics';
 import type { VolumeReport } from '@/hooks/analytics/useAnalytics';
+import { bucketAxisLabel, type DateRange } from '@/lib/analytics/dateRange';
 import { LABEL, Block, ChartSkeleton, EmptyBlock, DeltaBadge } from './dashboardKit';
 
 interface Props {
@@ -38,6 +39,8 @@ interface Props {
   description: string;
   report: VolumeReport | undefined;
   loading: boolean;
+  /** La plage courante : pour donner du contexte aux étiquettes de l'axe. */
+  range: DateRange;
   /** Couleur des barres — la même que la série correspondante du flux. */
   color: string;
   /** Couleur de la courbe cumulée. */
@@ -62,6 +65,7 @@ export function VolumeGrowthBlock({
   description,
   report,
   loading,
+  range,
   color,
   cumulativeColor,
   unit,
@@ -71,9 +75,15 @@ export function VolumeGrowthBlock({
     let running = 0;
     return (report?.series ?? []).map((p) => {
       running += p.amountXAF;
-      return { label: p.label, volume: p.amountXAF, cumul: running, ops: p.opCount };
+      return {
+        label: p.label,
+        axisLabel: bucketAxisLabel(new Date(p.bucket), range.granularity, range),
+        volume: p.amountXAF,
+        cumul: running,
+        ops: p.opCount,
+      };
     });
-  }, [report]);
+  }, [report, range]);
 
   const empty = data.length === 0 || data.every((p) => p.volume === 0);
 
@@ -114,30 +124,37 @@ export function VolumeGrowthBlock({
             <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
-                dataKey="label"
+                dataKey="axisLabel"
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={18}
               />
-              {/* Axe gauche : volume de la période. Axe droit : cumul. Les deux
-                  en chiffres entiers, d'où la largeur généreuse — on élargit
-                  l'axe plutôt que d'abréger en « 18,4 M ». */}
+              {/* Deux axes Y, deux échelles — et c'était illisible : quand les
+                  deux maxima coïncident (tout le volume dans un seul seau), les
+                  deux axes affichent les MÊMES nombres, et rien ne dit lequel
+                  va avec quoi. Chaque axe porte donc son titre ET la couleur
+                  de sa série. Toujours en chiffres entiers, d'où la largeur —
+                  on élargit l'axe plutôt que d'abréger en « 18,4 M ». */}
               <YAxis
                 yAxisId="periode"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: color }}
                 tickFormatter={(v) => formatInteger(Number(v))}
                 axisLine={false}
                 tickLine={false}
-                width={100}
+                width={112}
+                label={{ value: 'Volume de la période', angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 10.5, fill: color, fontWeight: 600 } }}
               />
               <YAxis
                 yAxisId="cumul"
                 orientation="right"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: cumulativeColor }}
                 tickFormatter={(v) => formatInteger(Number(v))}
                 axisLine={false}
                 tickLine={false}
-                width={110}
+                width={118}
+                label={{ value: 'Cumul', angle: 90, position: 'insideRight', offset: 12, style: { fontSize: 10.5, fill: cumulativeColor, fontWeight: 600 } }}
               />
               <Tooltip
                 contentStyle={{
@@ -147,6 +164,7 @@ export function VolumeGrowthBlock({
                   fontSize: 12,
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                labelFormatter={(_, payload) => String(payload?.[0]?.payload?.label ?? '')}
                 formatter={(value, name, item) => {
                   const v = Number(value);
                   if (name === 'Cumul') return [formatCurrencyFull(v, 'XAF'), 'Cumul depuis le début'];
@@ -155,7 +173,7 @@ export function VolumeGrowthBlock({
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar yAxisId="periode" dataKey="volume" name="Volume" fill={color} radius={[3, 3, 0, 0]} />
+              <Bar yAxisId="periode" dataKey="volume" name="Volume" fill={color} radius={[3, 3, 0, 0]} maxBarSize={28} />
               <Line
                 yAxisId="cumul"
                 type="monotone"

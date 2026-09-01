@@ -186,12 +186,17 @@ export function granularitySubtitle(g: Granularity): string {
 
 /** Granularities that don't make sense for very short / very long ranges. */
 export function granularityIsCompatible(g: Granularity, range: DateRange): boolean {
-  const days = differenceInCalendarDays(range.to, range.from) + 1;
+  // En jours civils de DOUALA. Comptés en UTC, « Aujourd'hui » (23:00Z la
+  // veille → 22:59Z) chevauchait deux dates et valait 2 jours : « par jour »
+  // y était accepté, et donnait un seul seau.
+  const days = differenceInCalendarDays(nowInBusinessTZ(range.to), nowInBusinessTZ(range.from)) + 1;
   switch (g) {
     case 'hour':
       return days <= 3;
     case 'day':
-      return days <= 120;
+      // Un seul jour « par jour » = UN seau : le graphique « Aujourd'hui »
+      // n'affichait qu'une barre. Une journée se lit par heure.
+      return days >= 2 && days <= 120;
     case 'week':
       return days >= 7 && days <= 730;
     case 'month':
@@ -218,6 +223,11 @@ export function coerceGranularity(range: DateRange): Granularity {
   return granularityIsCompatible(range.granularity, range)
     ? range.granularity
     : defaultGranularity(range.from, range.to);
+}
+
+/** Le défaut qu'une plage reçoit quand personne n'a choisi de granularité. */
+export function defaultGranularityOf(range: Pick<DateRange, 'from' | 'to'>): Granularity {
+  return defaultGranularity(range.from, range.to);
 }
 
 export interface DateRange {
@@ -381,7 +391,17 @@ export function buildRangeFromPreset(
  * est déjà la veille en UTC, et lire l'instant décalait la plage d'un jour
  * entier.
  */
-function calendarDayToBusiness(day: Date): Date {
+function calendarDayToBusiness(day: Date | string): Date {
+  if (typeof day === 'string') {
+    // La forme RÉELLE livrée par le calendrier ('YYYY-MM-DD'). La lire ici,
+    // directement en jour civil, supprime le détour qui cassait : le
+    // sélecteur faisait `new Date('2026-09-01')` — minuit UTC — puis on
+    // lisait des composants LOCAUX ; à l'ouest de UTC, c'était la veille, et
+    // TOUTE la plage reculait d'un jour.
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day.trim());
+    if (!m) throw new Error(`Jour civil attendu au format YYYY-MM-DD, reçu « ${day} »`);
+    return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  }
   return new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()));
 }
 
@@ -390,8 +410,8 @@ function calendarDayToBusiness(day: Date): Date {
  * `fromDay` and `toDay` are expressed as business-TZ calendar days.
  */
 export function buildCustomRange(
-  fromDay: Date,
-  toDay: Date,
+  fromDay: Date | string,
+  toDay: Date | string,
   granularity?: Granularity,
 ): DateRange {
   const fromBiz = calendarDayToBusiness(fromDay);
@@ -412,7 +432,11 @@ export function buildCustomRange(
  * at (range.from - 1ms). Used for comparisons ("vs previous period").
  */
 export function previousRange(range: DateRange): DateRange {
-  const length = range.to.getTime() - range.from.getTime();
+  // `to` est INCLUSIF (23:59:59.999) : la longueur vraie est to − from + 1 ms.
+  // Sans le +1, la période précédente d'un custom perdait sa première
+  // milliseconde — et donc, en pratique, rien, mais l'invariant « même
+  // longueur, contiguë » était faux d'un cheveu.
+  const length = range.to.getTime() - range.from.getTime() + 1;
   const to = subMilliseconds(range.from, 1);
   const from = new Date(to.getTime() - length + 1);
 
@@ -478,28 +502,38 @@ export function toSupabaseBounds(range: DateRange): { fromISO: string; toISO: st
  */
 export function bucketStarts(range: DateRange): Date[] {
   const out: Date[] = [];
-  // Anchor on the bucket containing range.from, in business TZ.
-  let cursor = new Date(bucketKeyFor(range.from, range.granularity));
-  while (cursor < range.to) {
-    out.push(new Date(cursor.getTime()));
+  // Ancre : le seau qui contient range.from. Le curseur est tenu en HEURE
+  // MURALE DE DOUALA (composants UTC décalés de +1 h), pas en instant UTC.
+  //
+  // C'est ce qui a manqué : « minuit Douala le 1er mars » est l'instant UTC
+  // « 28 février 23:00 ». Faire `addMonths` sur cet instant borne le jour à
+  // min(28, dernier jour) et l'ancre dérivait — 31 janv → 28 févr → 28 mars
+  // → 28 avr… Les événements d'avril à décembre ne trouvaient plus de seau
+  // et disparaissaient du graphique en silence, tout en comptant dans les
+  // totaux. Sur la date murale, le 1er du mois plus un mois est toujours le
+  // 1er du mois suivant.
+  let cursorBiz = nowInBusinessTZ(new Date(bucketKeyFor(range.from, range.granularity)));
+  const toBiz = nowInBusinessTZ(range.to);
+  while (cursorBiz < toBiz) {
+    out.push(businessTZToUTC(cursorBiz));
     switch (range.granularity) {
       case 'hour':
-        cursor = new Date(cursor.getTime() + 3600_000);
+        cursorBiz = new Date(cursorBiz.getTime() + 3600_000);
         break;
       case 'day':
-        cursor = addDays(cursor, 1);
+        cursorBiz = addDays(cursorBiz, 1);
         break;
       case 'week':
-        cursor = addDays(cursor, 7);
+        cursorBiz = addDays(cursorBiz, 7);
         break;
       case 'month':
-        cursor = addMonths(cursor, 1);
+        cursorBiz = addMonths(cursorBiz, 1);
         break;
       case 'quarter':
-        cursor = addMonths(cursor, 3);
+        cursorBiz = addMonths(cursorBiz, 3);
         break;
       case 'year':
-        cursor = addYears(cursor, 1);
+        cursorBiz = addYears(cursorBiz, 1);
         break;
     }
   }
@@ -516,7 +550,10 @@ export function bucketKeyFor(instant: Date, granularity: Granularity): string {
   let bucketBiz: Date;
   switch (granularity) {
     case 'hour':
-      bucketBiz = new Date(biz.getFullYear(), biz.getMonth(), biz.getDate(), biz.getHours());
+      // Le SEUL cas qui utilisait encore le constructeur LOCAL — raté lors du
+      // passage en composants UTC. Sur un poste à UTC+1, les seaux horaires
+      // étaient décalés d'une heure.
+      bucketBiz = new Date(Date.UTC(biz.getUTCFullYear(), biz.getUTCMonth(), biz.getUTCDate(), biz.getUTCHours()));
       break;
     case 'day':
       bucketBiz = startOfDay(biz);
@@ -580,6 +617,84 @@ export function bucketLabel(bucket: Date, granularity: Granularity): string {
     case 'year':
       return biz.getUTCFullYear().toString();
   }
+}
+
+/**
+ * Étiquette d'AXE : comme `bucketLabel`, mais avec le contexte que l'axe ne
+ * donne pas autrement.
+ *
+ * Sur un axe qui traverse plusieurs mois, « Lun 3 » ne dit pas de quel mois
+ * il s'agit ; sur un axe qui traverse plusieurs jours par heure, « 14h » se
+ * répète sans dire quel jour. L'utilisateur voyait « Dim 4 · Dim 18 · Dim 1 ·
+ * Dim 15… » sur une année entière et ne pouvait pas s'y retrouver — les
+ * étiquettes étaient exactes et illisibles.
+ *
+ * Règle : à chaque changement de contexte (nouveau mois pour les jours,
+ * nouveau jour pour les heures) et sur le premier seau, l'étiquette porte le
+ * contexte ; ailleurs elle reste courte. L'infobulle garde `bucketLabel`.
+ */
+export function bucketAxisLabel(bucket: Date, granularity: Granularity, range: DateRange): string {
+  const biz = new Date(bucket.getTime() + BUSINESS_TZ_OFFSET_MINUTES * 60_000);
+  const fromBiz = new Date(range.from.getTime() + BUSINESS_TZ_OFFSET_MINUTES * 60_000);
+  const toBiz = new Date(range.to.getTime() + BUSINESS_TZ_OFFSET_MINUTES * 60_000);
+  const short = bucketLabel(bucket, granularity);
+  const key = bucket.toISOString();
+  // Le contexte va aux deux BOUTS de l'axe — Recharts garde toujours la
+  // première et la dernière étiquette (`preserveStartEnd`) — et à chaque
+  // changement de mois ou de jour entre les deux.
+  const isFirst = bucketKeyFor(range.from, granularity) === key;
+  const isLast = bucketKeyFor(new Date(range.to.getTime() - 1), granularity) === key;
+  const isEdge = isFirst || isLast;
+
+  switch (granularity) {
+    case 'hour': {
+      const spansDays = fromBiz.getUTCDate() !== toBiz.getUTCDate() || fromBiz.getUTCMonth() !== toBiz.getUTCMonth();
+      if (!spansDays) return short;
+      return isEdge || biz.getUTCHours() === 0
+        ? `${DAY_LABELS_FR[biz.getUTCDay()]} ${biz.getUTCDate()} · ${short}`
+        : short;
+    }
+    case 'day': {
+      const spansMonths = fromBiz.getUTCMonth() !== toBiz.getUTCMonth() || fromBiz.getUTCFullYear() !== toBiz.getUTCFullYear();
+      if (!spansMonths) return short;
+      return isEdge || biz.getUTCDate() === 1
+        ? `${biz.getUTCDate()} ${MONTH_LABELS_FR[biz.getUTCMonth()].toLowerCase()}`
+        : String(biz.getUTCDate());
+    }
+    case 'week': {
+      // « S36 » seul est cryptique : on donne le lundi qui ouvre la semaine.
+      return `${biz.getUTCDate()} ${MONTH_LABELS_FR[biz.getUTCMonth()].toLowerCase()}`;
+    }
+    default:
+      return short;
+  }
+}
+
+/**
+ * Un instant, affiché comme JOUR CIVIL DE DOUALA — « 1 sept. 2026 ».
+ *
+ * Pour le libellé du sélecteur et des en-têtes. `format(range.from, …)` de
+ * date-fns lit les composants LOCAUX du poste : sur un navigateur à UTC, une
+ * plage commençant « minuit Douala » (= 23:00 UTC la veille) s'affichait avec
+ * la date de la veille alors que la plage, elle, était juste.
+ */
+export function formatBusinessDay(instant: Date): string {
+  const biz = new Date(instant.getTime() + BUSINESS_TZ_OFFSET_MINUTES * 60_000);
+  return `${biz.getUTCDate()} ${MONTH_LABELS_FR[biz.getUTCMonth()].toLowerCase()}. ${biz.getUTCFullYear()}`;
+}
+
+/** Jour civil de Douala en 'YYYY-MM-DD' — la forme que parle le calendrier. */
+export function toBusinessDayString(instant: Date): string {
+  const biz = new Date(instant.getTime() + BUSINESS_TZ_OFFSET_MINUTES * 60_000);
+  const mm = String(biz.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(biz.getUTCDate()).padStart(2, '0');
+  return `${biz.getUTCFullYear()}-${mm}-${dd}`;
+}
+
+/** « 1 sept. 2026 → 30 sept. 2026 », ou le libellé du preset. */
+export function formatRangeLabel(range: DateRange): string {
+  if (range.preset !== 'custom') return PRESET_LABELS[range.preset];
+  return `${formatBusinessDay(range.from)} → ${formatBusinessDay(range.to)}`;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
