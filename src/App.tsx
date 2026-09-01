@@ -69,7 +69,9 @@ const BulkPaymentCreate = lazy(() => import("./mobile/screens/payments").then(m 
 const BulkPaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentDetail })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
 const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopClientsScreen })));
-const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopCreateClient })));
+// Sur desktop, la création s'ouvre PAR-DESSUS la liste (la liste reste
+// visible) ; l'URL /m/clients/new ne change pas. Le mobile garde sa page.
+const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopCreateClientDialog })));
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));

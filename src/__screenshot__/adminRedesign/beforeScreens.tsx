@@ -9,6 +9,7 @@ import { DesktopPaymentsScreen, DesktopNewPayment } from '@/desktop/screens/paym
 import { DesktopClientsScreen } from '@/desktop/screens/clients';
 import { DesktopRatesScreen } from '@/desktop/screens/rates';
 import { DesktopAnalyticsDashboard } from '@/desktop/screens/analytics';
+import { DesktopCreateClientDialog } from '@/desktop/screens/clients';
 
 export { DesktopDepositsScreen, DesktopPaymentsScreen };
 
@@ -103,6 +104,20 @@ export function ShippedAnalytics() {
   return (
     <DesktopAppShell>
       <DesktopAnalyticsDashboard />
+    </DesktopAppShell>
+  );
+}
+
+/**
+ * Création d'un client, telle qu'elle est livrée : la fenêtre PAR-DESSUS la
+ * liste. On monte le composant de route lui-même (`DesktopCreateClientDialog`),
+ * pas le formulaire seul — sinon la capture ne dirait rien de ce qui a
+ * changé, à savoir que la liste reste derrière.
+ */
+export function ShippedCreateClient() {
+  return (
+    <DesktopAppShell>
+      <DesktopCreateClientDialog />
     </DesktopAppShell>
   );
 }
