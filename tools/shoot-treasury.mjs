@@ -13,9 +13,9 @@ import { join } from 'node:path';
 
 const OUT = process.argv[2] ?? '/tmp/treasury-shots';
 const DARK = process.argv.includes('--dark');
-const BASE = 'http://127.0.0.1:8086/treasury-preview.html';
+const BASE = 'http://127.0.0.1:8087/treasury-preview.html';
 
-const VIEWS = ['operations', 'analysis', 'accounts', 'counterparties', 'purchase', 'sale'];
+const VIEWS = ['operations', 'analysis', 'accounts', 'inventory', 'counterparties', 'ledger', 'purchase', 'sale'];
 
 mkdirSync(OUT, { recursive: true });
 
@@ -38,7 +38,11 @@ page.on('console', (m) => {
 
 for (const view of VIEWS) {
   const url = `${BASE}?view=${view}${DARK ? '&theme=dark' : ''}`;
-  await page.goto(url, { waitUntil: 'networkidle' });
+  // `domcontentloaded` et non `networkidle` : dans cet environnement la CDN
+  // de polices est bloquée et se fait réessayer, donc le réseau ne devient
+  // JAMAIS inactif et `goto` expirait au bout de 30 s. On n'a de toute façon
+  // pas besoin du réseau : l'attente utile est celle du contenu, juste après.
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
   // Attendre du CONTENU, pas un délai : `networkidle` + un timer fixe laissait
   // parfois capturer avant le premier rendu de React, et le PNG sortait blanc
   // — une capture blanche ressemble à une régression alors que la page va

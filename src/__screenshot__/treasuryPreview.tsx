@@ -13,7 +13,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
-import { DesktopTreasuryScreen, type TreasuryView } from '@/desktop/screens/treasury/DesktopTreasuryScreen';
+import { DesktopTreasuryScreen } from '@/desktop/screens/treasury/DesktopTreasuryScreen';
+import { TREASURY_ROOT } from '@/desktop/screens/treasury/treasuryNav';
 import { DesktopNewPurchase } from '@/desktop/screens/treasury/DesktopNewPurchase';
 import { DesktopNewSale } from '@/desktop/screens/treasury/DesktopNewSale';
 import '../index.css';
@@ -25,13 +26,15 @@ const dark = params.get('theme') === 'dark';
 function Screen() {
   if (view === 'purchase') return <DesktopNewPurchase />;
   if (view === 'sale') return <DesktopNewSale />;
-  return <DesktopTreasuryScreen initialView={view as TreasuryView} />;
+  return <DesktopTreasuryScreen />;
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme={dark ? 'dark' : 'light'} forcedTheme={dark ? 'dark' : 'light'}>
-      <MemoryRouter>
+      {/* La vue se lit dans l'URL : le harnais monte donc le routeur sur la
+          route voulue, exactement comme la production. */}
+      <MemoryRouter initialEntries={[`${TREASURY_ROOT}/${view}`]}>
         {/* MÊME racine que `DesktopAppShell` : la classe `admin-theme` porte
             les variables du design system. Le harnais peignait auparavant son
             propre fond (SURFACE.canvas) — il montrait donc un thème que la

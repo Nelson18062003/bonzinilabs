@@ -679,3 +679,86 @@ export function useUsdtFlowEvolution(fromIso: string, toIso: string) {
     staleTime: 30_000,
   });
 }
+
+// ─── Historique des inventaires ─────────────────────────────
+//
+// `record_inventory_snapshot` écrit dans `treasury_inventory_snapshots`
+// depuis toujours, mais AUCUN écran ne relisait la table : on enregistrait
+// des comptages qu'on ne pouvait jamais consulter. Un inventaire sans
+// historique ne sert à rien — c'est la série des écarts qui dit si une caisse
+// dérive.
+
+export interface InventorySnapshot {
+  id: string;
+  account_id: string;
+  snapshot_at: string;
+  theoretical_balance: number;
+  actual_balance: number;
+  variance: number;
+  variance_reason: string | null;
+  created_at: string;
+  account: { id: string; label: string; currency: string; kind: string | null } | null;
+}
+
+export function useInventorySnapshots(accountId?: string, limit = 100) {
+  return useQuery({
+    queryKey: ['treasury', 'inventory-snapshots', accountId, limit],
+    queryFn: async (): Promise<InventorySnapshot[]> => {
+      let q = supabaseAdmin
+        .from('treasury_inventory_snapshots')
+        .select('id, account_id, snapshot_at, theoretical_balance, actual_balance, variance, variance_reason, created_at, account:treasury_accounts!treasury_inventory_snapshots_account_id_fkey(id, label, currency, kind)')
+        .order('snapshot_at', { ascending: false })
+        .limit(limit);
+      if (accountId) q = q.eq('account_id', accountId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as unknown as InventorySnapshot[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+// ─── Grand livre ────────────────────────────────────────────
+//
+// `treasury_ledger_entries` est la source de vérité des soldes : chaque achat,
+// vente, ajustement et inventaire y écrit une ligne. Le hook existait pour
+// calculer des agrégats, mais la table n'était montrée nulle part — donc
+// impossible de répondre à « d'où vient ce solde ? » autrement qu'en
+// recoupant trois écrans.
+
+export interface LedgerEntry {
+  id: string;
+  account_id: string | null;
+  currency: string;
+  amount: number;
+  occurred_at: string;
+  entry_kind: string;
+  source_table: string | null;
+  source_id: string | null;
+  created_at: string;
+  account: { id: string; label: string; currency: string } | null;
+}
+
+export function useTreasuryLedger(params?: {
+  accountId?: string;
+  currency?: string;
+  limit?: number;
+}) {
+  const { accountId, currency, limit = 200 } = params ?? {};
+  return useQuery({
+    queryKey: ['treasury', 'ledger', accountId, currency, limit],
+    queryFn: async (): Promise<LedgerEntry[]> => {
+      let q = supabaseAdmin
+        .from('treasury_ledger_entries')
+        .select('id, account_id, currency, amount, occurred_at, entry_kind, source_table, source_id, created_at, account:treasury_accounts!treasury_ledger_entries_account_id_fkey(id, label, currency)')
+        .order('occurred_at', { ascending: false })
+        .limit(limit);
+      if (accountId) q = q.eq('account_id', accountId);
+      if (currency) q = q.eq('currency', currency as 'XAF');
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as unknown as LedgerEntry[];
+    },
+    staleTime: 30_000,
+  });
+}

@@ -27,6 +27,15 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -570,3 +579,36 @@ export function MIcons({ children }: { children: React.ReactNode }) {
  * sélectionnée et défilement viennent d'un seul endroit.
  */
 export { Table as MTable, TableHeader as MTableHead, TableBody as MTableBody, TableRow as MTableRow };
+
+/* ── Fil d'Ariane ────────────────────────────────────────────────────
+ *
+ * Sur les pages de détail et de saisie, une flèche « retour » disait qu'on
+ * pouvait partir sans dire vers quoi. Le fil d'Ariane nomme le chemin et
+ * rend chaque niveau cliquable — c'est ce qui manquait pour circuler dans le
+ * module. Construit sur les primitives `Breadcrumb` du design system.
+ */
+export function MCrumbs({ items }: { items: ReadonlyArray<{ label: string; to?: string }> }) {
+  return (
+    <Breadcrumb>
+      <BreadcrumbList className="text-xs">
+        {items.map((c, i) => {
+          const last = i === items.length - 1;
+          return (
+            <React.Fragment key={`${c.label}-${i}`}>
+              <BreadcrumbItem>
+                {c.to && !last ? (
+                  <BreadcrumbLink asChild>
+                    <Link to={c.to}>{c.label}</Link>
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage>{c.label}</BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+              {!last && <BreadcrumbSeparator />}
+            </React.Fragment>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}

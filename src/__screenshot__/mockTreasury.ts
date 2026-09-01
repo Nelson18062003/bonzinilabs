@@ -199,3 +199,56 @@ export type {
   WacPoint,
   FlowPoint,
 } from '@/hooks/useTreasury';
+
+/* ── Inventaires et grand livre ─────────────────────────────────────
+ *
+ * Ce module est substitué à `@/hooks/useTreasury` : il doit en être un
+ * SUR-ENSEMBLE. Ajouter un hook au module réel sans l'ajouter ici casse le
+ * harnais au chargement (« does not provide an export named … »), ce qui
+ * s'est produit en introduisant ces deux vues. */
+
+const INVENTORY_SNAPSHOTS = [
+  { id: 'inv-1', account_id: 'acc-cash-dla', snapshot_at: '2026-08-31T18:00:00Z',
+    theoretical_balance: 1_240_000, actual_balance: 1_240_000, variance: 0,
+    variance_reason: null, created_at: '2026-08-31T18:02:00Z',
+    account: { id: 'acc-cash-dla', label: 'Caisse Douala', currency: 'XAF', kind: 'cash' } },
+  { id: 'inv-2', account_id: 'acc-cash-dla', snapshot_at: '2026-08-24T18:00:00Z',
+    theoretical_balance: 980_000, actual_balance: 975_000, variance: -5_000,
+    variance_reason: 'Appoint non tracé sur un retrait', created_at: '2026-08-24T18:05:00Z',
+    account: { id: 'acc-cash-dla', label: 'Caisse Douala', currency: 'XAF', kind: 'cash' } },
+  { id: 'inv-3', account_id: 'acc-cash-gz', snapshot_at: '2026-08-20T10:00:00Z',
+    theoretical_balance: 8_900, actual_balance: 8_900, variance: 0,
+    variance_reason: null, created_at: '2026-08-20T10:01:00Z',
+    account: { id: 'acc-cash-gz', label: 'Cash Guangzhou', currency: 'CNY', kind: 'cash' } },
+];
+
+const LEDGER = [
+  { id: 'led-1', account_id: 'acc-uba', currency: 'XAF', amount: -3_200_000,
+    occurred_at: '2026-08-31T09:17:00Z', entry_kind: 'purchase', source_table: 'usdt_purchases',
+    source_id: 'p-1', created_at: '2026-08-31T09:17:00Z',
+    account: { id: 'acc-uba', label: 'UBA Cameroun', currency: 'XAF' } },
+  { id: 'led-2', account_id: 'acc-alipay', currency: 'CNY', amount: 28_960,
+    occurred_at: '2026-08-31T15:17:00Z', entry_kind: 'sale', source_table: 'usdt_sales',
+    source_id: 's-1', created_at: '2026-08-31T15:17:00Z',
+    account: { id: 'acc-alipay', label: 'Alipay Guangzhou', currency: 'CNY' } },
+  { id: 'led-3', account_id: 'acc-cash-dla', currency: 'XAF', amount: -5_000,
+    occurred_at: '2026-08-24T18:05:00Z', entry_kind: 'inventory', source_table: null,
+    source_id: null, created_at: '2026-08-24T18:05:00Z',
+    account: { id: 'acc-cash-dla', label: 'Caisse Douala', currency: 'XAF' } },
+  { id: 'led-4', account_id: 'acc-om', currency: 'XAF', amount: 1_275_000,
+    occurred_at: '2026-08-26T11:42:00Z', entry_kind: 'adjustment', source_table: null,
+    source_id: null, created_at: '2026-08-26T11:42:00Z',
+    account: { id: 'acc-om', label: 'Orange Money Douala', currency: 'XAF' } },
+];
+
+export const useInventorySnapshots = (accountId?: string) =>
+  ok((accountId ? INVENTORY_SNAPSHOTS.filter((s) => s.account_id === accountId) : INVENTORY_SNAPSHOTS) as never[]);
+
+export const useTreasuryLedger = (params?: { accountId?: string; currency?: string }) =>
+  ok(
+    LEDGER.filter(
+      (e) =>
+        (!params?.accountId || e.account_id === params.accountId) &&
+        (!params?.currency || e.currency === params.currency),
+    ) as never[],
+  );
