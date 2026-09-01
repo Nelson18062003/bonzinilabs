@@ -34,7 +34,7 @@ import { Warning, Info } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { DateRangePicker, formatCurrencyFull, formatInteger } from '@/components/analytics';
-import { useDateRange } from '@/lib/analytics/DateRangeContext';
+import { DateRangeProvider, useDateRange } from '@/lib/analytics/DateRangeContext';
 import {
   useFlowSeries,
   usePaymentSummary,
@@ -89,7 +89,24 @@ const tooltipStyle = {
   labelStyle: { color: 'hsl(var(--popover-foreground))', fontWeight: 600 },
 } as const;
 
+/**
+ * L'écran FOURNIT son contexte de plage, comme le fait `MobileAnalyticsDashboard`.
+ *
+ * Sans ce fournisseur, `useDateRange()` lève « must be used within a
+ * DateRangeProvider » et toute la page tombe sur l'écran d'erreur — c'est ce
+ * qui est arrivé en production. Le laisser à la charge de l'appelant, c'est
+ * garantir qu'un jour un appelant l'oubliera : le composant doit être montable
+ * n'importe où et fonctionner.
+ */
 export function DesktopAnalyticsDashboard() {
+  return (
+    <DateRangeProvider defaultPreset="last_30_days">
+      <DashboardBody />
+    </DateRangeProvider>
+  );
+}
+
+function DashboardBody() {
   const { range } = useDateRange();
 
   // Chaque métrique périodique prend la plage : c'est le sélecteur en haut à
