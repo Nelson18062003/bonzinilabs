@@ -280,7 +280,10 @@ export function MSearch({
 /* ── Carte ───────────────────────────────────────────────────────── */
 
 export function MCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <Card className={cn('shadow-none', className)}>{children}</Card>;
+  // `shadow-none` était forcé ici : combiné à un canvas de la même couleur
+  // que les cartes, une carte n'avait NI fond distinct NI relief. On rend son
+  // ombre au composant (`shadow-sm`, celle du design system).
+  return <Card className={className}>{children}</Card>;
 }
 
 /**

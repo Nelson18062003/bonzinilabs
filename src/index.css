@@ -1280,7 +1280,23 @@
    ========================================================================= */
 @layer base {
   .admin-theme {
-    --background: 0 0% 100%;
+    /* ── ÉCHELLE DE SURFACES ─────────────────────────────────────────────
+     *
+     * Trois niveaux qui doivent RESTER distincts, sinon l'interface n'a plus
+     * de relief :
+     *
+     *   canvas (96 %)  la page — jamais blanc pur
+     *   carte  (100 %) l'objet posé dessus
+     *   encart (95 %)  la « surface-2 » posée SUR une carte (en-tête de
+     *                  table, récapitulatif) — se lit contre le blanc
+     *
+     * La version précédente mettait `--background` ET `--card` à 100 % : une
+     * carte ne se distinguait plus que par un filet à 90 %, donc le texte
+     * était lisible mais les COMPOSANTS étaient invisibles. Et un aplat de
+     * blanc pur en plein écran est ce qu'on peut infliger de plus fatigant à
+     * l'œil sur un grand moniteur. Le canvas doit être plus sombre que les
+     * cartes ; c'est la règle, pas un réglage. */
+    --background: 0 0% 96%;
     --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
@@ -1293,21 +1309,22 @@
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 96%;
+    --secondary: 0 0% 95%;
     --secondary-foreground: 0 0% 9%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 0 0% 96%;
+    --accent: 0 0% 93%;
     --accent-foreground: 0 0% 9%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    /* #E5E5E5 */
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    /* Un cran plus marqué que le #E5E5E5 d'origine : le filet doit tenir
+     * seul sur une carte blanche, sans compter sur le contraste du fond. */
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
     --ring: 0 0% 63%;
 
     /* 10px — la valeur des composants Figma. */
@@ -1316,13 +1333,15 @@
 
   .dark .admin-theme,
   .admin-theme.dark {
-    --background: 0 0% 4%;
+    /* Même écart canvas / carte qu'en clair. 7 % et non 4 % : le noir quasi
+     * pur derrière du texte clair fatigue autant que le blanc pur. */
+    --background: 0 0% 7%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 9%;
+    --card: 0 0% 11%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 9%;
+    --popover: 0 0% 11%;
     --popover-foreground: 0 0% 98%;
 
     --primary: 0 0% 98%;
@@ -1340,8 +1359,8 @@
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
     --ring: 0 0% 45%;
   }
 }

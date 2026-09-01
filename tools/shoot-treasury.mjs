@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 const OUT = process.argv[2] ?? '/tmp/treasury-shots';
 const DARK = process.argv.includes('--dark');
-const BASE = 'http://127.0.0.1:8085/treasury-preview.html';
+const BASE = 'http://127.0.0.1:8086/treasury-preview.html';
 
 const VIEWS = ['operations', 'analysis', 'accounts', 'counterparties', 'purchase', 'sale'];
 
