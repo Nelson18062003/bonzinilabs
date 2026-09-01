@@ -9,7 +9,6 @@ import { DesktopPaymentsScreen, DesktopNewPayment } from '@/desktop/screens/paym
 import { DesktopClientsScreen } from '@/desktop/screens/clients';
 import { DesktopRatesScreen } from '@/desktop/screens/rates';
 import { DesktopAnalyticsDashboard } from '@/desktop/screens/analytics';
-import { DateRangeProvider } from '@/lib/analytics/DateRangeContext';
 
 export { DesktopDepositsScreen, DesktopPaymentsScreen };
 
@@ -89,15 +88,21 @@ export function ShippedRatesSettings() {
   );
 }
 
-/** Tableau de bord desktop — reconstruit (docs/admin-redesign/09). */
+/**
+ * Tableau de bord desktop — reconstruit (docs/admin-redesign/09).
+ *
+ * PAS de `DateRangeProvider` ici, volontairement. Le harnais en fournissait un,
+ * et c'est précisément ce qui a masqué le plantage : la capture s'affichait
+ * parfaitement pendant que la production tombait sur « useDateRange must be
+ * used within a DateRangeProvider ». Un harnais qui ajoute un fournisseur que
+ * l'application n'a pas ne teste plus l'application. L'écran se fournit
+ * lui-même son contexte ; si un jour il cesse de le faire, la capture doit
+ * tomber en même temps que la production.
+ */
 export function ShippedAnalytics() {
   return (
     <DesktopAppShell>
-      {/* L'écran lit la plage depuis le contexte : le harnais doit donc le
-          fournir, comme la vraie application. */}
-      <DateRangeProvider>
-        <DesktopAnalyticsDashboard />
-      </DateRangeProvider>
+      <DesktopAnalyticsDashboard />
     </DesktopAppShell>
   );
 }
