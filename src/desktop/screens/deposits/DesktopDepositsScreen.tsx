@@ -142,7 +142,7 @@ export function DesktopDepositsScreen() {
           <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Dépôts</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
             {counts.total} dépôt{counts.total > 1 ? 's' : ''} ·{' '}
-            <span className="font-bold text-[#B47A17] dark:text-[#E7C083]">{counts.toProcess} à traiter</span>
+            <span className="font-bold text-amber-700 dark:text-amber-400">{counts.toProcess} à traiter</span>
           </p>
         </div>
         <button
@@ -234,8 +234,8 @@ export function DesktopDepositsScreen() {
                           className={cn(
                             'group cursor-pointer outline-none transition',
                             depositId === deposit.id
-                              ? 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]'
-                              : 'hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
+                              ? 'bg-accent'
+                              : 'hover:bg-muted/40 focus-visible:bg-muted/60 dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]',
                           )}
                         >
                           {!compact && (

@@ -15,7 +15,8 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { OccurredAtField, PhoneInputWithCountry } from '@/components/form';
+import { PhoneInputWithCountry } from '@/components/form';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -25,7 +26,7 @@ import {
   useUsdtStock,
   useUsdtWac,
 } from '@/hooks/useTreasury';
-import { M, T, NUM, TONE, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, M_PAGE } from './marketKit';
+import { M, T, NUM, TONE, TONE_BG, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, M_PAGE } from './marketKit';
 import { fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 import { TreasurySelect } from './TreasurySelect';
@@ -225,8 +226,9 @@ export function DesktopNewSale() {
           <MCard>
             <MCardHeader title="Détails" meta="Date · référence · note" />
             <div className="space-y-3 p-4">
-              {/* OccurredAtField porte déjà son propre libellé. */}
-              <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
+              <MField label="Date / heure de l'opération" htmlFor="occurred-at">
+                <DateTimePicker id="occurred-at" value={occurredAt} onChange={setOccurredAt} />
+              </MField>
               <p className={cn('text-[11.5px]', T.muted)}>Antidatable — saisissez la date réelle de la vente.</p>
               <div className="grid grid-cols-2 gap-3">
                 <MField label="Référence externe">
@@ -260,7 +262,7 @@ export function DesktopNewSale() {
               </div>
 
               {willGoNegative && (
-                <div className="flex items-start gap-2 rounded-[4px] bg-[#FEF2F2] px-2.5 py-2 dark:bg-[#3F1D1D]">
+                <div className={cn('flex items-start gap-2 rounded-md px-2.5 py-2', TONE_BG.negative)}>
                   <AlertTriangle className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', TONE.negative)} />
                   <span className={cn('text-[11.5px] font-medium leading-snug', TONE.negative)}>
                     Cette vente rendrait le stock négatif (<span className={NUM}>{fmtNum(stockAfter, 2)}</span> USDT). Il manque

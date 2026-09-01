@@ -106,11 +106,11 @@ export function RateTrendCard() {
                           {value.toLocaleString('fr-FR')}
                         </span>
                         {pm.key === 'cash' ? (
-                          <span className="w-[52px] rounded-xl bg-[#DEEFE5] px-1.5 py-0.5 text-center text-[10px] font-semibold text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
+                          <span className="w-[52px] rounded-xl bg-emerald-50 px-1.5 py-0.5 text-center text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
                             REF
                           </span>
                         ) : (
-                          <span className="w-[52px] rounded-xl bg-[#FBE7E7] px-1.5 py-0.5 text-center text-[10.5px] font-semibold tabular-nums text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+                          <span className="w-[52px] rounded-xl bg-destructive/10 px-1.5 py-0.5 text-center text-[10.5px] font-semibold tabular-nums text-destructive dark:bg-destructive/10 dark:text-destructive">
                             {diff > 0 ? '+' : ''}
                             {diff}
                           </span>

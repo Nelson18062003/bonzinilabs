@@ -40,7 +40,7 @@ function DeltaChip({ delta }: { delta: number | null }) {
   if (delta === null) return <span className="inline-block w-[72px]" aria-hidden />;
   if (delta === 0) {
     return (
-      <span className={cn('inline-flex w-[72px] justify-center rounded-full px-2 py-1 text-[12px] font-bold tabular-nums', SURFACE.holder, TEXT.muted)}>
+      <span className={cn('inline-flex w-[72px] justify-center rounded-md px-2 py-1 text-[12px] font-bold tabular-nums', SURFACE.holder, TEXT.muted)}>
         =
       </span>
     );
@@ -49,10 +49,10 @@ function DeltaChip({ delta }: { delta: number | null }) {
   return (
     <span
       className={cn(
-        'inline-flex w-[72px] justify-center rounded-full px-2 py-1 text-[12px] font-bold tabular-nums',
+        'inline-flex w-[72px] justify-center rounded-md px-2 py-1 text-[12px] font-bold tabular-nums',
         up
-          ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
-          : 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]',
+          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+          : 'bg-destructive/10 text-destructive',
       )}
     >
       {up ? '+' : ''}
@@ -237,13 +237,13 @@ export function RatePublishCard({ activeRate }: { activeRate: DailyRate | null |
                 key={pm.key}
                 className={cn(
                   'flex items-center justify-between gap-3 rounded-xl px-3 py-2',
-                  big ? 'bg-[#F8EFD8] dark:bg-[#372D14]' : SURFACE.canvas,
+                  big ? 'bg-amber-50 dark:bg-amber-950/50' : SURFACE.canvas,
                 )}
               >
                 <span className="flex items-center gap-2">
                   <MethodLogo method={pm.key} size={22} />
                   <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{pm.label}</span>
-                  {big && <AlertTriangle className="h-3.5 w-3.5 text-[#9A6B12] dark:text-[#E7C083]" />}
+                  {big && <AlertTriangle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />}
                 </span>
                 <span className="flex items-center gap-2 tabular-nums">
                   <span className={cn('text-[13px]', TEXT.muted)}>{active !== null ? fmtRate(active) : '—'}</span>

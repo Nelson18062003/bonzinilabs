@@ -56,7 +56,9 @@ export function usePaymentProofMultiUpload() {
           results.push({ success: true, fileName: file.name });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
-          results.push({ success: false, fileName: file.name, error: err.message });
+          // `file` est déclaré DANS le try : le référencer ici lançait un
+          // ReferenceError qui masquait l'erreur réelle et cassait la boucle.
+          results.push({ success: false, fileName: rawFile.name, error: err.message });
         }
 
         completed++;

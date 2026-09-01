@@ -42,7 +42,7 @@ import {
   isBeneficiaryFormValid,
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
-import { getBeneficiaryNaturalKey, type IdentifierType } from '@/lib/beneficiaries/spec';
+import { getBeneficiaryNaturalKey} from '@/lib/beneficiaries/spec';
 import { useMyWallet } from '@/hooks/useWallet';
 import { useClientRates } from '@/hooks/useDailyRates';
 import { useMyProfile } from '@/hooks/useProfile';

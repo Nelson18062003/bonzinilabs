@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useActiveDailyRate } from '@/hooks/useDailyRates';
-import { SURFACE, TEXT } from '@/mobile/designKit';
+import { SURFACE, TEXT } from '@/desktop/designKit';
 import { formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { activeNavTitle } from './desktopNav';
@@ -27,7 +27,7 @@ export function DesktopTopbar() {
       className={cn(
         'sticky top-0 z-10 flex h-16 items-center gap-4 px-8 backdrop-blur',
         'border-b border-black/[0.05] dark:border-white/[0.06]',
-        'bg-[#ECEAF7]/80 dark:bg-[#141320]/80',
+        'bg-background/80',
       )}
     >
       <div className="min-w-0">
@@ -39,8 +39,8 @@ export function DesktopTopbar() {
         <DesktopGlobalSearch />
 
         {rate?.rate_alipay ? (
-          <div className={cn('hidden items-center gap-2 rounded-full px-3.5 py-2 xl:flex', SURFACE.card, SURFACE.shadow)}>
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[#2E7D52]" />
+          <div className={cn('hidden items-center gap-2 rounded-md px-3.5 py-2 xl:flex', SURFACE.card, SURFACE.shadow)}>
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-600 dark:bg-emerald-400" />
             <span className={cn('text-[12px] font-bold', TEXT.strong)}>¥1 = {formatNumber(rate.rate_alipay)} XAF</span>
           </div>
         ) : null}

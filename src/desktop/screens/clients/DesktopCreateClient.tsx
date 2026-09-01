@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Copy, UserPlus } from 'lucide-react';
 import { useCreateClient } from '@/hooks/useClientManagement';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, Card, Holder, FormField, TextInput, PrimaryPill, SoftPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, Card, Holder, FormField, TextInput, PrimaryPill, SoftPill } from '@/desktop/designKit';
 
 const COUNTRY_CODES: { country: string; code: string; flag: string }[] = [
   { code: '+237', country: 'Cameroun', flag: '🇨🇲' },
@@ -86,7 +86,7 @@ const selectClass = cn(
   SURFACE.card,
   SURFACE.shadow,
   TEXT.strong,
-  'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+  'focus:ring-2 focus:ring-ring ',
 );
 
 export function DesktopCreateClient() {
@@ -145,7 +145,7 @@ export function DesktopCreateClient() {
   };
 
   const optional = <span className={cn('ml-1 text-[12px] font-medium', TEXT.muted)}>optionnel</span>;
-  const required = <span className="text-[#FE560D]">*</span>;
+  const required = <span className="text-destructive">*</span>;
 
   // ── Success ──────────────────────────────────────────────
   if (isSuccess) {
@@ -171,7 +171,7 @@ export function DesktopCreateClient() {
             <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>{tempPassword}</code>
             <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} ariaLabel="Copier le mot de passe" />
           </div>
-          <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <div className="mt-3 rounded-2xl bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
             Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.
           </div>
         </Card>
@@ -264,7 +264,7 @@ export function DesktopCreateClient() {
           </FormField>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+        <div className="mt-4 rounded-2xl bg-amber-50 px-3.5 py-3 text-[12px] leading-relaxed text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
           Un mot de passe temporaire sera envoyé au client par WhatsApp. Il devra le changer lors de sa première connexion.
         </div>
 

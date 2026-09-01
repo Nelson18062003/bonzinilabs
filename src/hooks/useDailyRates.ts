@@ -384,7 +384,7 @@ export function useCalculateRate() {
 
       if (error) throw error;
 
-      const result = data as CalculationResult;
+      const result = data as unknown as CalculationResult;
       if (!result.success) {
         throw new Error(result.error || i18n.t('hooks.calculateRate.error', { ns: 'common', defaultValue: 'Erreur de calcul' }));
       }

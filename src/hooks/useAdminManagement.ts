@@ -141,7 +141,7 @@ export function useResetAdminPassword() {
 
       if (error) throw new Error(error.message);
 
-      const rpcResult = result as ResetPasswordResult;
+      const rpcResult = result as unknown as ResetPasswordResult;
       if (!rpcResult?.success) {
         throw new Error(rpcResult?.error || i18n.t('hooks.resetPassword.error', { ns: 'common', defaultValue: 'Erreur lors de la réinitialisation' }));
       }

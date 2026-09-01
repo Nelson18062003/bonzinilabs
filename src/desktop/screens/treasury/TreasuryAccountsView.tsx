@@ -29,6 +29,7 @@ import {
   NUM,
   LABEL,
   TONE,
+  TONE_BG,
   MCard,
   MCardHeader,
   MButton,
@@ -203,7 +204,7 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
                 className={cn(
                   'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[6px] border text-[12.5px] font-semibold transition-colors',
                   M.border,
-                  direction === d ? (d === 'credit' ? cn('bg-[#F0FDF4] dark:bg-[#14301F]', TONE.positive) : cn('bg-[#FEF2F2] dark:bg-[#3F1D1D]', TONE.negative)) : cn('bg-white dark:bg-[#18181B]', T.body),
+                  direction === d ? (d === 'credit' ? cn(TONE_BG.positive, TONE.positive) : cn(TONE_BG.negative, TONE.negative)) : cn(M.card, T.body),
                 )}
               >
                 {d === 'credit' ? <Plus className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
@@ -268,7 +269,7 @@ export function TreasuryAccountsView({ canManage }: { canManage: boolean }) {
             <div
               className={cn(
                 'rounded-[4px] px-2.5 py-2',
-                amount === null ? M.inset : variance === 0 ? 'bg-[#F0FDF4] dark:bg-[#14301F]' : 'bg-[#FEF2F2] dark:bg-[#3F1D1D]',
+                amount === null ? M.inset : variance === 0 ? TONE_BG.positive : TONE_BG.negative,
               )}
             >
               <div className={cn(LABEL, amount === null ? T.muted : variance === 0 ? TONE.positive : TONE.negative)}>Écart</div>

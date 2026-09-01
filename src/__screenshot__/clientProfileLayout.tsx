@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const GREEN = '#2E7D52', AMBER = '#E8932A', LILAC = '#8B5CF6';
+const GREEN = '#2E7D52', _AMBER = '#E8932A', LILAC = '#8B5CF6';
 
 function Caption({ children }: { children: React.ReactNode }) {
   return <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{children}</h2>;

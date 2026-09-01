@@ -24,7 +24,7 @@ import { useSearchConversations, useSupportAdmins } from '@/hooks/useAdminChatTo
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL, Avatar, TextInput, Holder, ScreenLoader } from '@/mobile/designKit';
+import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL, Avatar, TextInput, Holder, ScreenLoader } from '@/desktop/designKit';
 import { MobileSupportConversationScreen } from '@/mobile/screens/support/MobileSupportConversationScreen';
 
 type StatusFilter = 'open' | 'all' | 'closed';
@@ -138,13 +138,13 @@ export function DesktopSupportScreen() {
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {statusFilters.map((f) => (
-              <button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn('rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-colors', statusFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
+              <button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn('rounded-md px-3 py-1.5 text-[11.5px] font-semibold transition-colors', statusFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
                 {f.label}
               </button>
             ))}
             <span className="mx-0.5 h-4 w-px bg-black/10 dark:bg-white/10" />
             {assignFilters.map((f) => (
-              <button key={f.value} onClick={() => setAssignFilter(f.value)} className={cn('rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-colors', assignFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
+              <button key={f.value} onClick={() => setAssignFilter(f.value)} className={cn('rounded-md px-3 py-1.5 text-[11.5px] font-semibold transition-colors', assignFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
                 {f.label}
               </button>
             ))}
@@ -179,7 +179,7 @@ export function DesktopSupportScreen() {
                     onClick={() => navigate(`/m/support/${c.id}`)}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-2xl p-3 text-left transition',
-                      selected ? 'bg-[#EDEAFA]/80 dark:bg-white/[0.07]' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
+                      selected ? 'bg-muted/80 dark:bg-white/[0.07]' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
                       c.status === 'closed' && !selected && 'opacity-60',
                     )}
                   >
@@ -189,7 +189,7 @@ export function DesktopSupportScreen() {
                         <span className={cn('truncate text-[13.5px]', unread > 0 ? 'font-bold' : 'font-semibold', TEXT.strong)}>{name}</span>
                         <span className={cn('shrink-0 text-[10.5px]', TEXT.muted)}>{time}</span>
                       </div>
-                      {subject && <p className="truncate text-[10.5px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">{subject}</p>}
+                      {subject && <p className="truncate text-[10.5px] font-semibold text-indigo-700 dark:text-indigo-400">{subject}</p>}
                       {isSearching && searchSnippetByConv.has(c.id) ? (
                         <HighlightedSnippet
                           text={searchSnippetByConv.get(c.id) ?? ''}
@@ -201,12 +201,12 @@ export function DesktopSupportScreen() {
                         <p className={cn('mt-0.5 truncate text-[11.5px]', unread > 0 ? TEXT.strong : TEXT.muted)}>{c.last_message_preview || '—'}</p>
                       )}
                       {assignedName && (
-                        <p className="mt-0.5 truncate text-[10px] text-[#9A6B12] dark:text-[#E7C083]">
+                        <p className="mt-0.5 truncate text-[10px] text-amber-700 dark:text-amber-400">
                           {t('admin.assignedToLabel')} {assignedName}
                         </p>
                       )}
                     </div>
-                    {unread > 0 && <span className="shrink-0 rounded-full bg-[#FE560D] px-2 py-0.5 text-[10.5px] font-bold text-white">{unread}</span>}
+                    {unread > 0 && <span className="shrink-0 rounded-md bg-destructive px-2 py-0.5 text-[10.5px] font-bold text-white">{unread}</span>}
                   </button>
                 );
               })}

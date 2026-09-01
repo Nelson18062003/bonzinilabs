@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { SURFACE } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 import { DesktopSidebar } from './DesktopSidebar';
 import { DesktopTopbar } from './DesktopTopbar';
@@ -14,7 +13,10 @@ import { DesktopTopbar } from './DesktopTopbar';
  */
 export function DesktopAppShell({ children }: { children: ReactNode }) {
   return (
-    <div className={cn('min-h-screen', SURFACE.canvas)}>
+    // `admin-theme` : variables shadcn alignées sur la bibliothèque de
+    // référence (voir src/index.css). Portée à l'admin desktop — l'app client
+    // et la landing page gardent leur charte.
+    <div className={cn('admin-theme min-h-screen bg-background text-foreground')}>
       <DesktopSidebar />
       <div className="pl-64">
         <DesktopTopbar />

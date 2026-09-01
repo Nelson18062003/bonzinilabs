@@ -14,7 +14,7 @@
  * Harness: ?screen=cpay-wiz-method | -amount | -benef | -benef-new | -confirm
  */
 import { LOGO_PATH } from '@/mobile/designKit/methods';
-import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit/tokens';
+import { SURFACE, TEXT, PRIMARY_PILL} from '@/mobile/designKit/tokens';
 import {
   ArrowLeft, ArrowRight, Check, Landmark, User, Users, ChevronRight,
   ImagePlus, Info, AlertCircle,
@@ -22,7 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 
 type MKey = 'alipay' | 'wechat' | 'bank' | 'cash';
-const LILAC = '#8B5CF6';
+const _LILAC = '#8B5CF6';
 const AMBER = '#E8932A';
 
 function MethodLogo({ k, size = 44, radius }: { k: MKey; size?: number; radius?: number }) {

@@ -16,7 +16,7 @@ import {
   Clock,
   Bell,
 } from 'lucide-react';
-import { SURFACE, TEXT, type Tone, Card, Holder, SectionTitle } from '@/mobile/designKit';
+import { SURFACE, TEXT, type Tone, Holder, SectionTitle } from '@/mobile/designKit';
 
 // Notification type → icon + unified tone (color carries meaning only).
 const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone: Tone }> = {

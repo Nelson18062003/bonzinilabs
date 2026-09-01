@@ -13,7 +13,7 @@
 import * as React from 'react';
 import { parseAmount } from '@/components/form/AmountField';
 import { cn } from '@/lib/utils';
-import { M, T, NUM } from './marketKit';
+import { T, NUM } from './marketKit';
 
 export function TreasuryMoneyInput({
   currency,
@@ -54,8 +54,9 @@ export function TreasuryMoneyInput({
   return (
     <div
       className={cn(
-        'flex h-8 items-center rounded-[6px] px-3 transition focus-within:ring-2 focus-within:ring-[#4F46E5] dark:focus-within:ring-[#818CF8]',
-        M.inset,
+        // Même habillage qu'un `Input` shadcn — c'est un champ de saisie, il
+        // doit se lire comme les autres champs de la même carte.
+        'flex h-8 items-center rounded-md border border-input bg-background px-2.5 transition focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0',
         className,
       )}
     >
@@ -78,9 +79,9 @@ export function TreasuryMoneyInput({
           onValueChange(parseAmount(cleaned, isDecimal));
         }}
         placeholder={placeholder}
-        className={cn('min-w-0 flex-1 bg-transparent text-right text-[12.5px] font-bold outline-none placeholder:font-normal', NUM, T.ink)}
+        className={cn('min-w-0 flex-1 bg-transparent text-right text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground', NUM, T.ink)}
       />
-      <span className={cn('ml-2 shrink-0 text-[10.5px] font-semibold', T.faint)}>{currency}</span>
+      <span className={cn('ml-2 shrink-0 text-[10.5px] font-semibold uppercase tracking-wide', T.faint)}>{currency}</span>
     </div>
   );
 }

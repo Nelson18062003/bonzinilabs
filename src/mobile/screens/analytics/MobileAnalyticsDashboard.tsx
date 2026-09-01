@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import { RefreshCw, TrendingUp, Users, Wallet, CheckCircle2, Clock, AlertTriangle, ChevronDown, ArrowDownToLine, Percent, Layers } from 'lucide-react';
+import { RefreshCw, TrendingUp, Users, Wallet, CheckCircle2, Clock, AlertTriangle, ChevronDown, Percent, Layers } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart,
@@ -80,7 +80,6 @@ import {
   type AdminProductivityRow,
   type VolumeReport,
   type ClientGrowthPoint,
-  type DepositStatusTimelinePoint,
   type UtmSourceRow,
   type CountryDistributionRow,
 } from '@/hooks/analytics/useAnalytics';

@@ -5,7 +5,7 @@
  */
 import {
   Wallet, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Users, BarChart3,
-  Bell, ChevronRight, Plus, Send, Eye, Sparkles,
+  Bell, ChevronRight, Plus, Send, Eye, _Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -16,7 +16,7 @@ import { fr } from 'date-fns/locale';
 import { X, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePurchaseSplits, useVoidTreasuryOperation, type OperationRow } from '@/hooks/useTreasury';
-import { M, T, NUM, LABEL, TONE, MCard, MButton, MSection, MTag, MDialog, MField, MInput } from './marketKit';
+import { M, T, NUM, LABEL, TONE, TONE_BG, MCard, MButton, MSection, MTag, MDialog, MField, MInput } from './marketKit';
 import { fmtAmount, fmtNum, RATE_DECIMALS } from './treasuryFormat';
 
 const VOID_REASON_MIN = 10;
@@ -166,7 +166,7 @@ export function TreasuryOperationPanel({
         {voided && (
           <section className={cn('mt-3.5 border-t pt-3', M.border)}>
             <MSection>Annulation</MSection>
-            <div className="mt-2 rounded-[4px] bg-[#FEF2F2] p-2.5 dark:bg-[#3F1D1D]">
+            <div className={cn('mt-2 rounded-md p-2.5', TONE_BG.negative)}>
               <div className={cn('text-[11px] font-bold', NUM, TONE.negative)}>
                 {op.voided_at ? format(parseISO(op.voided_at), "dd MMM yyyy 'à' HH:mm", { locale: fr }) : ''}
               </div>

@@ -1,15 +1,24 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG, QUERY_LIMITS } from '@/lib/constants';
+import type { Database } from '@/integrations/supabase/types';
 
 const PAGE_SIZE = QUERY_LIMITS.ITEMS_PER_PAGE;
 
 // ---------- Filter interface ----------
 
+/**
+ * Les filtres portent les ENUMS de la base, pas `string` : un statut mal
+ * orthographié ne renvoyait aucune ligne, sans erreur, ni au type-check ni à
+ * l'exécution.
+ */
+type PaymentStatus = Database['public']['Enums']['payment_status'];
+type PaymentMethod = Database['public']['Enums']['payment_method'];
+
 export interface PaymentFilters {
-  status?: string;
-  statuses?: string[];
-  method?: string;
+  status?: PaymentStatus | 'all';
+  statuses?: PaymentStatus[];
+  method?: PaymentMethod | 'all';
   dateFrom?: string;
   dateTo?: string;
   sortField?: 'created_at' | 'amount_rmb';
@@ -295,7 +304,7 @@ export function usePaymentStats() {
 /**
  * Paginated hook for agent cash payments
  */
-export function usePaginatedAgentCashPayments(statusFilter?: string) {
+export function usePaginatedAgentCashPayments(statusFilter?: PaymentStatus | 'all') {
   return useInfiniteQuery({
     queryKey: ['agent-cash-payments-paginated', statusFilter],
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,

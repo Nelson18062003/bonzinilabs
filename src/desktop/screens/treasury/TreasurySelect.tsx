@@ -31,15 +31,19 @@ export function TreasurySelect({
       <SelectTrigger
         id={id}
         className={cn(
-          'h-8 rounded-[6px] border-0 bg-[#FAFAFA] px-3 text-[12.5px] font-medium ring-offset-0 focus:ring-2 focus:ring-[#4F46E5] data-[placeholder]:font-normal data-[placeholder]:text-[#A1A1AA] dark:bg-[#212124] dark:focus:ring-[#818CF8] [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-55',
+          // On ne change QUE la densité : bordure, fond et anneau de focus
+          // restent ceux du SelectTrigger shadcn. La version précédente était
+          // sans bordure sur un gris plein — à côté d'un Input bordé, deux
+          // champs de la même carte n'avaient pas le même habillage.
+          'h-8 px-2.5 py-1 text-sm ring-offset-0 focus:ring-offset-0 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-55',
           className,
         )}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="rounded-[6px]">
+      <SelectContent>
         {options.map((o) => (
-          <SelectItem key={o.value} value={o.value} className="rounded-[4px] py-1.5 text-[12.5px]">
+          <SelectItem key={o.value} value={o.value} className="py-1.5 text-sm">
             {o.label}
           </SelectItem>
         ))}

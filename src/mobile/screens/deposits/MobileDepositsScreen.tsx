@@ -14,7 +14,7 @@ import {
   DEPOSIT_METHOD_LABELS,
   DEPOSIT_STATUS_COLORS,
 } from '@/types/deposit';
-import type { DepositStatus, DepositMethod } from '@/types/deposit';
+import type { DepositStatus} from '@/types/deposit';
 import {
   Plus, Search, Clock, AlertCircle, CheckCircle, TrendingUp,
   Paperclip, SlidersHorizontal, X, Calendar, FileText,

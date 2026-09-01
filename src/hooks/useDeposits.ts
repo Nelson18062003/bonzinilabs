@@ -4,6 +4,7 @@
 // ============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
@@ -14,7 +15,6 @@ import type {
   Deposit,
   DepositProofWithUrl,
   DepositTimelineEvent,
-  DepositStatus,
   CreateDepositData,
 } from '@/types/deposit';
 
@@ -131,14 +131,14 @@ export function useCreateDeposit() {
       const user = await getCurrentUser();
       if (!user) throw new Error(i18n.t('hooks.auth.mustBeLoggedIn', { ns: 'common', defaultValue: 'Vous devez être connecté' }));
 
-      const { data: result, error } = await supabase.rpc('create_client_deposit', {
+      const { data: result, error } = await supabase.rpc('create_client_deposit', rpcArgs<'create_client_deposit'>({
         p_user_id: user.id,
         p_amount_xaf: data.amount_xaf,
         p_method: data.method,
         p_bank_name: data.bank_name || null,
         p_agency_name: data.agency_name || null,
         p_client_phone: data.client_phone || null,
-      });
+      }));
 
       if (error) throw error;
 

@@ -16,7 +16,6 @@ import { ThemeProvider } from 'next-themes';
 import { DesktopTreasuryScreen, type TreasuryView } from '@/desktop/screens/treasury/DesktopTreasuryScreen';
 import { DesktopNewPurchase } from '@/desktop/screens/treasury/DesktopNewPurchase';
 import { DesktopNewSale } from '@/desktop/screens/treasury/DesktopNewSale';
-import { SURFACE } from '@/desktop/designKit';
 import '../index.css';
 
 const params = new URLSearchParams(window.location.search);
@@ -33,8 +32,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme={dark ? 'dark' : 'light'} forcedTheme={dark ? 'dark' : 'light'}>
       <MemoryRouter>
-        {/* Même fond et même gouttière que la chrome admin desktop (px-8). */}
-        <div className={`min-h-screen ${SURFACE.canvas} px-8 py-7`}>
+        {/* MÊME racine que `DesktopAppShell` : la classe `admin-theme` porte
+            les variables du design system. Le harnais peignait auparavant son
+            propre fond (SURFACE.canvas) — il montrait donc un thème que la
+            production n'a plus. */}
+        <div className="admin-theme min-h-screen bg-background px-8 py-7 text-foreground">
           <Screen />
         </div>
       </MemoryRouter>

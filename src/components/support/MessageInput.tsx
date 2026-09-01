@@ -162,7 +162,7 @@ export function MessageInput({
     : undefined;
 
   const showSendBtn = hasText && !isRecording;
-  const showMicBtn = !hasText && !!handleVoice;
+  const _showMicBtn = !hasText && !!handleVoice;
 
   return (
     <div

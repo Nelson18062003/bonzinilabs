@@ -7,7 +7,7 @@ import { OperationListItem } from '@/components/treasury/OperationListItem';
 import { Segmented } from '@/components/treasury/Segmented';
 import { SelectField } from '@/components/treasury/SelectField';
 import { VoidOperationDialog } from '@/components/treasury/VoidOperationDialog';
-import { FieldLabel, INSET, Pill, SOFT_CARD } from '@/components/treasury/ui';
+import { FieldLabel, Pill, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCounterparties, useTreasuryOperations, type OperationRow } from '@/hooks/useTreasury';
 import { cn } from '@/lib/utils';

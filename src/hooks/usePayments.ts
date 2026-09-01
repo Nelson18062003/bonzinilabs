@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { validateUploadFile } from '@/lib/utils';
@@ -63,7 +64,12 @@ export interface PaymentProof {
   id: string;
   payment_id: string;
   uploaded_by: string;
-  uploaded_by_type: 'client' | 'admin';
+  /**
+   * `admin_instruction` existe bien en base (`usePaymentProofUpload`
+   * l'écrit) : l'omettre ici faisait passer pour « mort » le libellé
+   * « Instruction » de la fiche paiement desktop.
+   */
+  uploaded_by_type: 'client' | 'admin' | 'admin_instruction';
   file_name: string;
   file_url: string;
   file_type: string | null;
@@ -118,7 +124,7 @@ export function useMyPayments() {
       const { data, error } = await supabase
         .from('payments')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -138,7 +144,7 @@ export function usePaymentDetail(paymentId: string | undefined) {
       const { data, error } = await supabase
         .from('payments')
         .select('*')
-        .eq('id', paymentId)
+        .eq('id', paymentId!)
         .single();
 
       if (error) throw error;
@@ -168,7 +174,7 @@ export function usePaymentTimeline(paymentId: string | undefined) {
       const { data, error } = await supabase
         .from('payment_timeline_events')
         .select('*')
-        .eq('payment_id', paymentId)
+        .eq('payment_id', paymentId!)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -187,7 +193,7 @@ export function usePaymentProofs(paymentId: string | undefined) {
       const { data, error } = await supabase
         .from('payment_proofs')
         .select('*')
-        .eq('payment_id', paymentId)
+        .eq('payment_id', paymentId!)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -212,7 +218,7 @@ export function useCreatePayment() {
 
   return useMutation({
     mutationFn: async (data: CreatePaymentData) => {
-      const { data: result, error } = await supabase.rpc('create_payment', {
+      const { data: result, error } = await supabase.rpc('create_payment', rpcArgs<'create_payment'>({
         p_amount_xaf: data.amount_xaf,
         p_amount_rmb: data.amount_rmb,
         p_exchange_rate: data.exchange_rate,
@@ -229,7 +235,7 @@ export function useCreatePayment() {
         p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
         p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
         p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
-      });
+      }));
 
       if (error) throw error;
 
@@ -293,47 +299,21 @@ export function useUpdateBeneficiaryInfo() {
     mutationFn: async ({
       paymentId,
       beneficiaryInfo,
-      paymentMethod
     }: {
       paymentId: string;
       beneficiaryInfo: Partial<Pick<Payment, 'beneficiary_name' | 'beneficiary_phone' | 'beneficiary_email' | 'beneficiary_qr_code_url' | 'beneficiary_bank_name' | 'beneficiary_bank_account' | 'beneficiary_bank_extra' | 'beneficiary_notes' | 'beneficiary_identifier' | 'beneficiary_identifier_type'>>;
+      /** Accepté pour compatibilité d'appel ; la décision est serveur (cf. ci-dessous). */
       paymentMethod?: Payment['method'];
     }) => {
-      // Determine if we have sufficient info based on payment method
-      let hasValidInfo = false;
-      let infoDescription = i18n.t('hooks.updateBeneficiary.infoUpdated', { ns: 'common', defaultValue: 'Informations du bénéficiaire mises à jour' });
-
-      if (paymentMethod === 'alipay' || paymentMethod === 'wechat') {
-        // For Alipay/WeChat: QR code OR (phone/email)
-        const hasQr = !!beneficiaryInfo.beneficiary_qr_code_url;
-        const hasContact = !!(beneficiaryInfo.beneficiary_phone || beneficiaryInfo.beneficiary_email);
-        hasValidInfo = hasQr || hasContact;
-
-        if (hasQr) {
-          infoDescription = i18n.t('hooks.updateBeneficiary.qrAdded', { ns: 'common', defaultValue: `QR Code ${paymentMethod === 'alipay' ? 'Alipay' : 'WeChat'} ajouté`, method: paymentMethod === 'alipay' ? 'Alipay' : 'WeChat' });
-        } else if (hasContact) {
-          infoDescription = i18n.t('hooks.updateBeneficiary.contactAdded', { ns: 'common', defaultValue: 'Coordonnées de paiement ajoutées' });
-        }
-      } else if (paymentMethod === 'bank_transfer') {
-        // For bank transfer: name + bank + account required
-        hasValidInfo = !!(
-          beneficiaryInfo.beneficiary_name &&
-          beneficiaryInfo.beneficiary_bank_name &&
-          beneficiaryInfo.beneficiary_bank_account
-        );
-        infoDescription = i18n.t('hooks.updateBeneficiary.bankAdded', { ns: 'common', defaultValue: 'Coordonnées bancaires ajoutées' });
-      } else {
-        // Fallback: any info is considered sufficient
-        hasValidInfo = !!(
-          beneficiaryInfo.beneficiary_qr_code_url ||
-          beneficiaryInfo.beneficiary_name ||
-          beneficiaryInfo.beneficiary_phone ||
-          beneficiaryInfo.beneficiary_bank_account
-        );
-      }
+      // La suffisance des informations est décidée CÔTÉ SERVEUR : la RPC
+      // `update_payment_beneficiary` renvoie le statut, et c'est lui qui est
+      // relu plus bas (`result.status === 'ready_for_payment'`). Les ~30
+      // lignes de validation par méthode qui vivaient ici calculaient un
+      // `hasValidInfo` et un `infoDescription` que personne ne lisait : deux
+      // règles concurrentes dont une seule comptait.
 
       // Update beneficiary info via server-side RPC (handles status transition)
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('update_payment_beneficiary', {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('update_payment_beneficiary', rpcArgs<'update_payment_beneficiary'>({
         p_payment_id: paymentId,
         p_beneficiary_name: beneficiaryInfo.beneficiary_name || null,
         p_beneficiary_phone: beneficiaryInfo.beneficiary_phone || null,
@@ -342,7 +322,7 @@ export function useUpdateBeneficiaryInfo() {
         p_beneficiary_bank_name: beneficiaryInfo.beneficiary_bank_name || null,
         p_beneficiary_bank_account: beneficiaryInfo.beneficiary_bank_account || null,
         p_beneficiary_notes: beneficiaryInfo.beneficiary_notes || null,
-      });
+      }));
 
       if (rpcError) throw rpcError;
 
@@ -483,7 +463,7 @@ export function useAdminPaymentDetail(paymentId: string | undefined) {
       const { data: payment, error } = await supabaseAdmin
         .from('payments')
         .select('*')
-        .eq('id', paymentId)
+        .eq('id', paymentId!)
         .single();
 
       if (error) throw error;
@@ -522,11 +502,11 @@ export function useProcessPayment() {
       action: 'start_processing' | 'complete' | 'reject'; 
       comment?: string 
     }) => {
-      const { data, error } = await supabaseAdmin.rpc('process_payment', {
+      const { data, error } = await supabaseAdmin.rpc('process_payment', rpcArgs<'process_payment'>({
         p_payment_id: paymentId,
         p_action: action,
         p_comment: comment || null,
-      });
+      }));
 
       if (error) throw error;
       
@@ -654,7 +634,7 @@ export function useAdminPaymentProofs(paymentId: string | undefined) {
       const { data, error } = await supabaseAdmin
         .from('payment_proofs')
         .select('*')
-        .eq('payment_id', paymentId)
+        .eq('payment_id', paymentId!)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -683,7 +663,7 @@ export function useAdminPaymentTimeline(paymentId: string | undefined) {
       const { data, error } = await supabaseAdmin
         .from('payment_timeline_events')
         .select('*')
-        .eq('payment_id', paymentId)
+        .eq('payment_id', paymentId!)
         .order('created_at', { ascending: true });
 
       if (error) throw error;

@@ -21,7 +21,6 @@ export function VoiceMessage({
   path,
   peaks,
   durationSeconds,
-  perspective,
   variant = 'client-app',
   className,
 }: VoiceMessageProps) {

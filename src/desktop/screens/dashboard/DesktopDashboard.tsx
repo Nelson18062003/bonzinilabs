@@ -44,7 +44,7 @@ import {
   StatusPill,
   ScreenLoader,
   type Tone,
-} from '@/mobile/designKit';
+} from '@/desktop/designKit';
 
 function Kpi({
   icon: Icon,
@@ -216,7 +216,7 @@ export function DesktopDashboard() {
                 <h3 className={cn('text-[15px] font-bold', TEXT.strong)}>Activité récente</h3>
                 <button
                   onClick={() => navigate('/m/deposits')}
-                  className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]"
+                  className="inline-flex items-center gap-1 text-[13px] font-semibold text-indigo-700 dark:text-indigo-400"
                 >
                   Tout voir <ChevronRight className="h-3.5 w-3.5" />
                 </button>
@@ -240,7 +240,7 @@ export function DesktopDashboard() {
                         onClick={() => navigate(`/m/deposits/${deposit.id}`)}
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/m/deposits/${deposit.id}`); } }}
-                        className="cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-[#EDEAFA]/40 focus-visible:bg-[#EDEAFA]/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]"
+                        className="cursor-pointer border-t border-black/[0.05] outline-none transition hover:bg-muted/40 focus-visible:bg-muted/60 dark:border-white/[0.05] dark:hover:bg-white/[0.04] dark:focus-visible:bg-white/[0.06]"
                       >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2.5">
@@ -286,7 +286,7 @@ export function DesktopDashboard() {
             onClick={() => navigate('/m/assistant')}
             className={cn(
               'w-full rounded-[22px] p-5 text-left transition hover:brightness-110',
-              'bg-[#1C1B22] text-white dark:bg-[#211F2B] dark:ring-1 dark:ring-white/[0.06]',
+              'bg-primary text-primary-foreground dark:ring-1 dark:ring-border',
             )}
           >
             <div className="flex items-center gap-2.5">
@@ -302,7 +302,7 @@ export function DesktopDashboard() {
               Demandez une action en langage naturel : « Valide le dépôt BZ-DP-2291 », « Volume payé vers la Chine cette
               semaine ? »
             </p>
-            <span className="mt-3 inline-flex rounded-full bg-white/10 px-3.5 py-2 text-[12px] font-semibold text-white/70">
+            <span className="mt-3 inline-flex rounded-md bg-white/10 px-3.5 py-2 text-[12px] font-semibold text-white/70">
               Ouvrir l'assistant →
             </span>
           </button>
@@ -317,7 +317,7 @@ export function DesktopDashboard() {
                   onClick={() => navigate(to)}
                   className={cn(
                     'flex flex-col items-start gap-2 rounded-2xl p-3.5 text-left transition',
-                    'bg-[#EDEAFA]/50 hover:bg-[#EDEAFA] dark:bg-white/[0.04] dark:hover:bg-white/[0.08]',
+                    'bg-muted/50 hover:bg-muted dark:bg-white/[0.04] dark:hover:bg-white/[0.08]',
                   )}
                 >
                   <Holder icon={Icon} tone={tone} size="md" />

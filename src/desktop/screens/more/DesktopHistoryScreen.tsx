@@ -11,7 +11,7 @@ import { useAdminAuditLogs } from '@/hooks/useAdminData';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { TEXT, PRIMARY_PILL, SOFT_PILL, type Tone, Card, Avatar, StatusPill, TextInput, Holder, ScreenLoader } from '@/mobile/designKit';
+import { TEXT, PRIMARY_PILL, SOFT_PILL, type Tone, Card, Avatar, StatusPill, TextInput, Holder, ScreenLoader } from '@/desktop/designKit';
 
 const FILTERS = [
   { value: 'all', label: 'Tous' },
@@ -81,7 +81,7 @@ export function DesktopHistoryScreen() {
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-1.5">
           {FILTERS.map((f) => (
-            <button key={f.value} onClick={() => setTypeFilter(f.value)} className={cn('rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors', typeFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
+            <button key={f.value} onClick={() => setTypeFilter(f.value)} className={cn('rounded-md px-3.5 py-2 text-[12px] font-semibold transition-colors', typeFilter === f.value ? PRIMARY_PILL : SOFT_PILL)}>
               {f.label}
             </button>
           ))}

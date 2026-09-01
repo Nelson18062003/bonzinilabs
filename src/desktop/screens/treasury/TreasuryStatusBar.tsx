@@ -11,7 +11,7 @@
  */
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { M, T, NUM, LABEL, TONE } from './marketKit';
+import { M, T, NUM, LABEL, TONE, TONE_BG } from './marketKit';
 import { fmtCompact, fmtNum, type TreasuryCurrency } from './treasuryFormat';
 
 interface Figure {
@@ -65,7 +65,7 @@ export function TreasuryStatusBar({
         ))}
       </div>
       {stockNegative && (
-        <div className={cn('flex items-center gap-2 border-t px-4 py-2', M.border, 'bg-[#FEF2F2] dark:bg-[#3F1D1D]')}>
+        <div className={cn('flex items-center gap-2 border-t px-4 py-2', M.border, TONE_BG.negative)}>
           <AlertTriangle className={cn('h-3.5 w-3.5 shrink-0', TONE.negative)} />
           <span className={cn('text-[11.5px] font-medium', TONE.negative)}>
             Stock USDT négatif (<span className={NUM}>{fmtNum(stockUsdt, 2)}</span>) — il manque un achat au journal. Le WAC et le

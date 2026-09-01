@@ -1,48 +1,56 @@
 /**
- * « Salle des marchés » — le langage visuel retenu pour la Trésorerie.
+ * Trésorerie — ADAPTATEUR au-dessus du design system (shadcn/ui).
  *
- * Direction choisie sur maquette (A) après rejet du kit partagé : le lilas,
- * DM Sans, les pilules tout-rond et les icônes fines. Ici :
+ * Ce fichier réimplémentait boutons, champs, table, dialogue et badges à la
+ * main. C'était le vrai problème : shadcn/ui est installé dans le projet
+ * (53 composants, `components.json`) et l'admin ne s'en servait pas — 1 écran
+ * desktop sur 37. Tout est maintenant composé à partir de `@/components/ui`,
+ * avec les VARIABLES du thème (`bg-card`, `text-muted-foreground`,
+ * `border-border`…) plutôt que des couleurs écrites en dur.
  *
- *   · gris NEUTRES, aucun lilas ; l'indigo est un accent rare (onglet actif,
- *     focus), jamais une couleur de fond ;
- *   · Inter en texte, **JetBrains Mono sur tous les chiffres** — c'est ce qui
- *     rend une colonne de montants lisible d'un coup d'œil ;
- *   · angles nets : 6px (cartes, boutons, champs), 4px (petits contrôles).
- *     Le tout-rond est réservé aux points de statut ;
- *   · onglets SOULIGNÉS, filtres carrés, badges Achat/Vente réduits à une
- *     barre de couleur + un mot en capitales.
+ * Le fichier ne garde que ce qui est propre au métier :
+ *   · les chiffres en mono tabulaire (une colonne de montants doit s'aligner) ;
+ *   · les tonalités achat / vente ;
+ *   · quelques compositions récurrentes (en-tête de carte, ligne de faits).
  *
- * Portée : la Trésorerie d'abord (décision du fondateur), le reste de l'admin
- * ensuite. Ce fichier est donc volontairement autonome du kit partagé — il
- * est écrit pour devenir le kit global, pas pour s'y greffer.
+ * Géométrie alignée sur la bibliothèque Figma de référence : contrôles 32px,
+ * rayon 10px (`--radius: 0.625rem` dans le thème `.admin-theme`).
  */
 import * as React from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
+import { TableHead, TableCell } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-/* ── Tokens ──────────────────────────────────────────────────────── */
+/* ── Tokens sémantiques ──────────────────────────────────────────────
+ * Plus aucune couleur en dur : tout passe par les variables du thème,
+ * donc le clair/sombre suit tout seul. */
 
 export const M = {
-  /** Fond de page. */
-  canvas: 'bg-[#F4F4F5] dark:bg-[#09090B]',
-  /** Surface d'une carte / d'un panneau. */
-  card: 'bg-white dark:bg-[#18181B]',
-  /** Encart posé sur une carte (en-tête de table, valeur calculée). */
-  inset: 'bg-[#FAFAFA] dark:bg-[#212124]',
-  /** Trait de séparation d'une surface. */
-  border: 'border-[#E4E4E7] dark:border-[#27272A]',
-  /** Filet entre deux lignes de table — plus clair que la bordure. */
-  rule: 'border-[#F4F4F5] dark:border-[#242427]',
-  /** Survol de ligne. */
-  hover: 'hover:bg-[#FAFAFA] dark:hover:bg-[#212124]',
+  canvas: 'bg-background',
+  card: 'bg-card',
+  inset: 'bg-muted/50',
+  border: 'border-border',
+  rule: 'border-border/60',
+  hover: 'hover:bg-muted/50',
 } as const;
 
 export const T = {
-  ink: 'text-[#09090B] dark:text-[#FAFAFA]',
-  body: 'text-[#52525B] dark:text-[#A1A1AA]',
-  muted: 'text-[#71717A] dark:text-[#8B8B93]',
-  faint: 'text-[#A1A1AA] dark:text-[#6B6B73]',
+  ink: 'text-foreground',
+  body: 'text-foreground/85',
+  muted: 'text-muted-foreground',
+  faint: 'text-muted-foreground/70',
 } as const;
 
 /** Chiffres : toujours en mono tabulaire. */
@@ -51,42 +59,36 @@ export const NUM = 'font-mono tabular-nums';
 /** Étiquette de section / en-tête de colonne. */
 export const LABEL = 'text-[10px] font-semibold uppercase tracking-[0.08em]';
 
-export const ACCENT = '#4F46E5';
-/** Achat = entrée de stock · Vente = sortie. Deux teintes, pas deux pastels. */
+/** Tonalités métier — achat (entrée de stock) / vente (sortie) / résultat. */
 export const TONE = {
-  purchase: 'text-[#4F46E5] dark:text-[#818CF8]',
-  purchaseBar: 'border-[#4F46E5] dark:border-[#818CF8]',
-  sale: 'text-[#B45309] dark:text-[#FBBF24]',
-  saleBar: 'border-[#B45309] dark:border-[#FBBF24]',
-  positive: 'text-[#15803D] dark:text-[#4ADE80]',
-  negative: 'text-[#B91C1C] dark:text-[#F87171]',
+  purchase: 'text-indigo-600 dark:text-indigo-400',
+  sale: 'text-amber-600 dark:text-amber-400',
+  positive: 'text-emerald-600 dark:text-emerald-400',
+  negative: 'text-destructive',
+  /** Filets verticaux d'en-tête — même famille que la couleur de texte. */
+  purchaseBar: 'border-indigo-500 dark:border-indigo-400',
+  saleBar: 'border-amber-500 dark:border-amber-400',
 } as const;
 
-const FOCUS = 'outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5] dark:focus-visible:ring-[#818CF8]';
+/**
+ * Fonds teintés des mêmes familles. Palette Tailwind (donc automatiquement
+ * cohérente clair/sombre) plutôt que des hex écrits à la main : c'était le
+ * dernier endroit du module où une couleur ne venait pas du design system.
+ */
+export const TONE_BG = {
+  purchase: 'bg-indigo-50 dark:bg-indigo-950/40',
+  sale: 'bg-amber-50 dark:bg-amber-950/40',
+  positive: 'bg-emerald-50 dark:bg-emerald-950/40',
+  negative: 'bg-destructive/10',
+} as const;
 
 /**
- * Racine de page du module.
- *
- * La coquille de l'admin (`DesktopAppShell`) peint le canevas lilas partagé
- * sur un ANCÊTRE : un calque en `-z-10` passerait derrière lui et resterait
- * invisible (erreur commise au premier essai). Le module annule donc la
- * gouttière de `main` (`px-8 py-7`) par des marges négatives et repeint
- * lui-même la zone de contenu en neutre.
- *
- * Tant que la direction n'est pas étendue au reste de l'admin (décision :
- * Trésorerie d'abord), c'est ce qui isole le module sans toucher aux autres
- * écrans ni à la barre latérale.
+ * Racine de page du module : le thème `.admin-theme` est posé par la coquille,
+ * il n'y a plus de fond à repeindre ici — juste la typo du module.
  */
-export const M_PAGE = cn('font-ui -mx-8 -my-7 min-h-screen px-8 py-7', M.canvas);
+export const M_PAGE = 'font-ui';
 
 /* ── Boutons ─────────────────────────────────────────────────────── */
-
-/**
- * Traitement « PLEIN » retenu sur planche : les contrôles existent par leur
- * FOND, pas par une bordure. Une seule hauteur — 32px — sur toute la barre
- * d'outils (le mélange 26/32 du premier jet violait 02-foundation.md §1.5).
- */
-const FILL = 'bg-[#E4E4E7] dark:bg-[#2E2E33]';
 
 export function MButton({
   children,
@@ -105,29 +107,14 @@ export function MButton({
   type?: 'button' | 'submit';
   className?: string;
 }) {
-  const dead = disabled || loading;
+  const map = { primary: 'default', secondary: 'outline', danger: 'destructive', ghost: 'ghost' } as const;
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={dead}
-      className={cn(
-        'inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] px-3.5 text-[12.5px] font-semibold transition-colors',
-        FOCUS,
-        dead && 'cursor-not-allowed opacity-45',
-        variant === 'primary' && 'bg-[#18181B] text-white hover:bg-[#27272A] dark:bg-[#FAFAFA] dark:text-[#18181B] dark:hover:bg-[#E4E4E7]',
-        variant === 'secondary' && cn(FILL, T.ink, 'hover:bg-[#D4D4D8] dark:hover:bg-[#3A3A40]'),
-        variant === 'danger' && 'bg-[#B91C1C] text-white hover:bg-[#991B1B]',
-        variant === 'ghost' && cn('bg-transparent', T.body, 'hover:bg-[#E4E4E7] dark:hover:bg-[#2E2E33]'),
-        className,
-      )}
-    >
+    <Button type={type} variant={map[variant]} size="compact" onClick={onClick} disabled={disabled || loading} className={className}>
       {children}
-    </button>
+    </Button>
   );
 }
 
-/** Action de ligne : 28px (24 était trop petit et fragile), plein, sans cadre. */
 export function MIconButton({
   icon: Icon,
   onClick,
@@ -140,25 +127,20 @@ export function MIconButton({
   danger?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={cn(
-        'inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-colors',
-        FOCUS,
-        danger
-          ? 'bg-[#FEE2E2] text-[#B91C1C] hover:bg-[#FECACA] dark:bg-[#3F1D1D] dark:text-[#F87171]'
-          : cn(M.inset, T.body, 'hover:bg-[#E4E4E7] dark:hover:bg-[#2E2E33]'),
-      )}
+      className={danger ? 'text-destructive hover:bg-destructive/10 hover:text-destructive' : undefined}
     >
-      <Icon className="h-3.5 w-3.5" />
-    </button>
+      <Icon />
+    </Button>
   );
 }
 
-/* ── Onglets soulignés (remplacent les pilules) ──────────────────── */
+/* ── Onglets soulignés ───────────────────────────────────────────── */
 
 export function MTabs<K extends string>({
   tabs,
@@ -172,7 +154,7 @@ export function MTabs<K extends string>({
   ariaLabel: string;
 }) {
   return (
-    <nav className={cn('flex items-center gap-6 border-b', M.border)} aria-label={ariaLabel}>
+    <nav className="flex items-center gap-6 border-b border-border" aria-label={ariaLabel}>
       {tabs.map((t) => {
         const on = t.key === value;
         return (
@@ -182,11 +164,10 @@ export function MTabs<K extends string>({
             onClick={() => onChange(t.key)}
             aria-current={on ? 'page' : undefined}
             className={cn(
-              'relative -mb-px border-b-2 pb-2.5 text-[13px] transition-colors',
-              FOCUS,
+              '-mb-px border-b-2 pb-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               on
-                ? cn('border-[#4F46E5] font-semibold dark:border-[#818CF8]', T.ink)
-                : cn('border-transparent font-medium', T.muted, 'hover:text-[#09090B] dark:hover:text-[#FAFAFA]'),
+                ? 'border-foreground font-semibold text-foreground'
+                : 'border-transparent font-medium text-muted-foreground hover:text-foreground',
             )}
           >
             {t.label}
@@ -197,7 +178,7 @@ export function MTabs<K extends string>({
   );
 }
 
-/* ── Filtre carré avec compteur ──────────────────────────────────── */
+/* ── Filtre + compteur ───────────────────────────────────────────── */
 
 export function MChip({
   label,
@@ -211,35 +192,18 @@ export function MChip({
   onClick?: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-semibold transition-colors',
-        FOCUS,
-        active
-          ? 'bg-[#18181B] text-white dark:bg-[#FAFAFA] dark:text-[#18181B]'
-          : cn(FILL, T.body, 'hover:bg-[#D4D4D8] dark:hover:bg-[#3A3A40]'),
-      )}
-    >
+    <Button variant={active ? 'default' : 'outline'} size="compact" onClick={onClick} className="gap-1.5">
       {label}
-      {/* Le compteur est un ÉLÉMENT (pastille), plus du texte grisé. */}
       {count != null && (
-        <span
-          className={cn(
-            NUM,
-            'rounded-full px-1.5 py-px text-[10.5px] font-bold',
-            active ? 'bg-white/25 text-white dark:bg-black/15 dark:text-[#18181B]' : 'bg-black/10 text-[#09090B] dark:bg-white/15 dark:text-[#FAFAFA]',
-          )}
-        >
+        <span className={cn(NUM, 'rounded px-1 text-[10.5px] font-bold', active ? 'bg-background/20' : 'bg-foreground/10')}>
           {count}
         </span>
       )}
-    </button>
+    </Button>
   );
 }
 
-/* ── Menu déroulant compact ──────────────────────────────────────── */
+/* ── Menu déroulant ──────────────────────────────────────────────── */
 
 export function MDropdown<V extends string>({
   label,
@@ -252,59 +216,28 @@ export function MDropdown<V extends string>({
   options: ReadonlyArray<{ value: V; label: string }>;
   onChange: (v: V) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDoc);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
   const current = options.find((o) => o.value === value);
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={cn('inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-semibold transition-colors', FOCUS, FILL, T.body, 'hover:bg-[#D4D4D8] dark:hover:bg-[#3A3A40]')}
-      >
-        {label && <span className={T.faint}>{label}</span>}
-        {current?.label ?? ''}
-        <ChevronDown className="h-3 w-3 opacity-60" />
-      </button>
-      {open && (
-        <div className={cn('absolute right-0 z-30 mt-1 min-w-[150px] rounded-[6px] border py-1', M.border, M.card, 'shadow-sm')} role="listbox">
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              role="option"
-              aria-selected={o.value === value}
-              onClick={() => {
-                onChange(o.value);
-                setOpen(false);
-              }}
-              className={cn('block w-full px-3 py-1.5 text-left text-[12px]', o.value === value ? cn('font-semibold', T.ink) : T.body, M.hover)}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="compact" className="gap-1.5">
+          {label && <span className="text-muted-foreground">{label}</span>}
+          {current?.label ?? ''}
+          <ChevronDown className="opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {options.map((o) => (
+          <DropdownMenuItem key={o.value} onSelect={() => onChange(o.value)} className={o.value === value ? 'font-semibold' : undefined}>
+            {o.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-/* ── Champ de recherche ──────────────────────────────────────────── */
+/* ── Recherche ───────────────────────────────────────────────────── */
 
 export function MSearch({
   value,
@@ -319,22 +252,16 @@ export function MSearch({
 }) {
   return (
     <div className={cn('relative', className)}>
-      <Search className={cn('pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2', T.faint)} />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={cn(
-          'h-8 w-full rounded-[6px] border-0 pl-8 pr-7 text-[12px]',
-          FOCUS,
-          M.inset,
-          T.ink,
-          'placeholder:text-[#A1A1AA] dark:placeholder:text-[#6B6B73]',
-        )}
-      />
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="pl-8 pr-7" />
       {value && (
-        <button type="button" onClick={() => onChange('')} aria-label="Effacer" className={cn('absolute right-1.5 top-1/2 -translate-y-1/2 p-1', T.faint)}>
-          <X className="h-3 w-3" />
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          aria-label="Effacer"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        >
+          <X className="size-3.5" />
         </button>
       )}
     </div>
@@ -344,15 +271,15 @@ export function MSearch({
 /* ── Carte ───────────────────────────────────────────────────────── */
 
 export function MCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('rounded-[6px] border', M.border, M.card, className)}>{children}</div>;
+  return <Card className={cn('shadow-none', className)}>{children}</Card>;
 }
 
 export function MCardHeader({ title, meta, action }: { title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className={cn('flex items-center justify-between gap-3 border-b px-4 py-2.5', M.border)}>
-      <span className={cn('text-[12.5px] font-semibold', T.ink)}>{title}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+      <span className="text-sm font-semibold text-foreground">{title}</span>
       <div className="flex items-center gap-2">
-        {meta && <span className={cn('text-[11.5px]', NUM, T.muted)}>{meta}</span>}
+        {meta && <span className={cn('text-xs', T.muted)}>{meta}</span>}
         {action}
       </div>
     </div>
@@ -386,21 +313,21 @@ export function MTh({
   className?: string;
 }) {
   const inner = (
-    <span className={cn('inline-flex items-center gap-1', LABEL, sorted ? T.ink : T.muted)}>
+    <span className={cn('inline-flex items-center gap-1', LABEL, sorted ? 'text-foreground' : 'text-muted-foreground')}>
       {children}
-      {sorted ? <ChevronDown className={cn('h-3 w-3', sorted === 'asc' && 'rotate-180')} /> : sortable && <ChevronsUpDown className="h-3 w-3 opacity-45" />}
+      {sorted ? <ChevronDown className={cn('size-3', sorted === 'asc' && 'rotate-180')} /> : sortable && <ChevronsUpDown className="size-3 opacity-45" />}
     </span>
   );
   return (
-    <th scope="col" className={cn('whitespace-nowrap px-4 py-2.5', align === 'right' ? 'text-right' : 'text-left', className)}>
+    <TableHead className={cn('h-9 px-4', align === 'right' && 'text-right', className)}>
       {sortable && onSort ? (
-        <button type="button" onClick={onSort} className={FOCUS}>
+        <button type="button" onClick={onSort} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           {inner}
         </button>
       ) : (
         inner
       )}
-    </th>
+    </TableHead>
   );
 }
 
@@ -413,46 +340,24 @@ export function MTd({
   align?: 'left' | 'right';
   className?: string;
 }) {
-  return (
-    <td className={cn('whitespace-nowrap border-t px-4 py-2.5', M.rule, align === 'right' && 'text-right', className)}>
-      {children}
-    </td>
-  );
+  return <TableCell className={cn('px-4 py-2.5', align === 'right' && 'text-right', className)}>{children}</TableCell>;
 }
 
-/**
- * Badge Achat / Vente — pastille PLEINE (traitement retenu). La barre
- * latérale seule du premier jet pouvait se lire comme un défaut d'affichage.
- */
+/** Badge Achat / Vente. */
 export function MTypeTag({ kind }: { kind: 'purchase' | 'sale' }) {
-  const purchase = kind === 'purchase';
   return (
-    <span
-      className={cn(
-        'inline-flex h-[22px] items-center rounded-[4px] px-2 text-[10.5px] font-bold uppercase tracking-[0.05em]',
-        purchase
-          ? 'bg-[#EEF2FF] text-[#4F46E5] dark:bg-[#232046] dark:text-[#A5B4FC]'
-          : 'bg-[#FEF3C7] text-[#B45309] dark:bg-[#3A2C10] dark:text-[#FBBF24]',
-      )}
-    >
-      {purchase ? 'Achat' : 'Vente'}
-    </span>
+    <Badge variant={kind === 'purchase' ? 'indigo' : 'amber'} className="uppercase tracking-[0.05em]">
+      {kind === 'purchase' ? 'Achat' : 'Vente'}
+    </Badge>
   );
 }
 
-/** Marqueur d'état discret (annulée, archivée…). */
+/** Marqueur d'état (annulée, archivée…). */
 export function MTag({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'danger' }) {
   return (
-    <span
-      className={cn(
-        'inline-flex h-[22px] items-center rounded-[4px] px-2 text-[10.5px] font-bold uppercase tracking-[0.05em]',
-        tone === 'danger'
-          ? 'bg-[#FEE2E2] text-[#B91C1C] dark:bg-[#3F1D1D] dark:text-[#F87171]'
-          : cn(FILL, T.body),
-      )}
-    >
+    <Badge variant={tone === 'danger' ? 'rose' : 'secondary'} className="uppercase tracking-[0.05em]">
       {children}
-    </span>
+    </Badge>
   );
 }
 
@@ -472,32 +377,20 @@ export function MPagination({
   onPage: (p: number) => void;
 }) {
   return (
-    <div className={cn('flex items-center justify-between border-t px-4 py-2', M.border)}>
-      <span className={cn('text-[11.5px]', T.muted)}>
-        <span className={NUM}>{rangeLabel}</span> sur <span className={cn(NUM, 'font-semibold', T.ink)}>{total}</span>
+    <div className="flex items-center justify-between border-t border-border px-4 py-2">
+      <span className="text-xs text-muted-foreground">
+        <span className={NUM}>{rangeLabel}</span> sur <span className={cn(NUM, 'font-semibold text-foreground')}>{total}</span>
       </span>
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => onPage(page - 1)}
-          aria-label="Page précédente"
-          className={cn('flex h-7 w-7 items-center justify-center rounded-[6px] disabled:opacity-35', FILL, T.body)}
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
-        <span className={cn('px-2 text-[11.5px]', NUM, T.body)}>
+        <Button variant="outline" size="icon-sm" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Page précédente">
+          <ChevronLeft />
+        </Button>
+        <span className={cn('px-2 text-xs', NUM, T.body)}>
           {page} / {pages}
         </span>
-        <button
-          type="button"
-          disabled={page >= pages}
-          onClick={() => onPage(page + 1)}
-          aria-label="Page suivante"
-          className={cn('flex h-7 w-7 items-center justify-center rounded-[6px] disabled:opacity-35', FILL, T.body)}
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+        <Button variant="outline" size="icon-sm" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Page suivante">
+          <ChevronRight />
+        </Button>
       </div>
     </div>
   );
@@ -522,33 +415,20 @@ export function MField({
 }) {
   return (
     <div className={cn('space-y-1.5', className)}>
-      <label htmlFor={htmlFor} className={cn('block text-[12px] font-semibold', T.ink)}>
-        {label}
-      </label>
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error ? (
-        <p className={cn('text-[11.5px] font-medium', TONE.negative)}>{error}</p>
+        <p className="text-xs font-medium text-destructive">{error}</p>
       ) : hint ? (
-        <p className={cn('text-[11.5px] leading-snug', T.muted)}>{hint}</p>
+        <p className="text-xs leading-snug text-muted-foreground">{hint}</p>
       ) : null}
     </div>
   );
 }
 
-export const M_INPUT = cn(
-  'h-8 w-full rounded-[6px] border-0 px-3 text-[12.5px]',
-  FOCUS,
-  M.inset,
-  T.ink,
-  'placeholder:text-[#A1A1AA] dark:placeholder:text-[#6B6B73]',
-);
+export const MInput = Input;
 
-export function MInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  const { className, ...rest } = props;
-  return <input {...rest} className={cn(M_INPUT, className)} />;
-}
-
-/* ── Dialogue centré ─────────────────────────────────────────────── */
+/* ── Dialogue ────────────────────────────────────────────────────── */
 
 export function MDialog({
   open,
@@ -567,62 +447,29 @@ export function MDialog({
   footer?: React.ReactNode;
   width?: number;
 }) {
-  const panelRef = React.useRef<HTMLDivElement>(null);
-  const closeRef = React.useRef(onClose);
-  closeRef.current = onClose;
-  const confirmRef = React.useRef(onConfirm);
-  confirmRef.current = onConfirm;
-
+  // ⌘⏎ / Ctrl+⏎ valide — raccourci conservé de l'ancien dialogue maison.
   React.useEffect(() => {
-    if (!open) return;
-    const focusables = () =>
-      Array.from(
-        panelRef.current?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ) ?? [],
-      ).filter((el) => el.offsetParent !== null);
+    if (!open || !onConfirm) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') return closeRef.current();
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && confirmRef.current) {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        return confirmRef.current();
-      }
-      if (e.key !== 'Tab') return;
-      const list = focusables();
-      if (list.length === 0) return;
-      const first = list[0];
-      const last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
+        onConfirm();
       }
     };
     window.addEventListener('keydown', onKey);
-    const t = window.setTimeout(() => focusables()[0]?.focus(), 60);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      window.clearTimeout(t);
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onConfirm]);
 
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" role="dialog" aria-modal="true">
-      <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-black/45" />
-      <div ref={panelRef} style={{ width }} className={cn('relative max-h-[85vh] overflow-auto rounded-[8px] border', M.border, M.card)}>
-        <div className={cn('border-b px-4 py-3', M.border)}>
-          <h2 className={cn('text-[14px] font-semibold', T.ink)}>{title}</h2>
-        </div>
-        <div className="px-4 py-4">{children}</div>
-        {footer && <div className={cn('flex gap-2 border-t px-4 py-3', M.border)}>{footer}</div>}
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent style={{ maxWidth: width }}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        {children}
+        {footer && <DialogFooter className="gap-2 sm:justify-start">{footer}</DialogFooter>}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -631,10 +478,10 @@ export function MDialog({
 export function MEmpty({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center py-14 text-center">
-      <span className={cn('flex h-10 w-10 items-center justify-center rounded-[6px]', M.inset, T.faint)}>
-        <Icon className="h-5 w-5" />
+      <span className="flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <Icon className="size-5" />
       </span>
-      <p className={cn('mt-3 text-[12.5px]', T.muted)}>{children}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{children}</p>
     </div>
   );
 }
@@ -642,7 +489,7 @@ export function MEmpty({ icon: Icon, children }: { icon: React.ElementType; chil
 export function MLoading() {
   return (
     <div className="flex justify-center py-14">
-      <span className={cn('h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent', T.faint)} />
+      <span className="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
     </div>
   );
 }

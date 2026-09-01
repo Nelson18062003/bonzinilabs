@@ -13,7 +13,7 @@ import { SURFACE, TEXT, PAYMENT_METHOD } from '@/mobile/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import {
   QrCode, X, Check, Phone, Mail, Hash, Info, Landmark, Banknote, Plus, Pencil, RotateCcw,
-  Search, Wallet, Lock, AlertTriangle, Maximize2, Trash2, Copy, ChevronRight, BookUser,
+  Search, Wallet, Lock, AlertTriangle, Maximize2, _Trash2, Copy, ChevronRight, BookUser,
   Users, Download,
 } from 'lucide-react';
 

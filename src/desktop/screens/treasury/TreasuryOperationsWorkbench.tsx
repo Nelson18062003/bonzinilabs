@@ -186,7 +186,7 @@ export function TreasuryOperationsWorkbench({ canManage }: { canManage: boolean 
                         onClick={() => setSelectedId(op.id === selectedId ? null : op.id)}
                         className={cn(
                           'cursor-pointer transition-colors',
-                          op.id === selectedId ? cn(M.inset, 'shadow-[inset_2px_0_0_#4F46E5]') : M.hover,
+                          op.id === selectedId ? cn(M.inset, 'shadow-[inset_2px_0_0_hsl(var(--primary))]') : M.hover,
                           voided && 'opacity-45',
                         )}
                       >

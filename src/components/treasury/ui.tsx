@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
+import { SURFACE, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
 
 /**
  * Treasury design language — the SINGLE source of truth for the module's look.

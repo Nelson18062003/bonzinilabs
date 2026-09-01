@@ -15,9 +15,7 @@ import {
   Check,
   Copy,
   Info,
-  Upload,
   Wallet,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAllClients, useAdminCreateDeposit, useAdminWalletByUserId } from '@/hooks/useAdminDeposits';
@@ -121,7 +119,7 @@ function SelectField<T extends string>({
               }}
               className={cn(
                 'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-semibold transition-colors',
-                o.value === value ? 'bg-[#EDEAFA]/70 dark:bg-white/[0.06]' : 'hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]',
+                o.value === value ? 'bg-accent' : 'hover:bg-muted/50 dark:hover:bg-white/[0.05]',
                 TEXT.strong,
               )}
             >
@@ -129,7 +127,7 @@ function SelectField<T extends string>({
                 <span className="block truncate">{o.label}</span>
                 {o.meta && <span className={cn('block truncate text-[11px] font-normal', TEXT.muted)}>{o.meta}</span>}
               </span>
-              {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+              {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-700 dark:text-indigo-400" />}
             </button>
           ))}
         </div>
@@ -429,7 +427,7 @@ export function DesktopNewDeposit() {
                               setClientOpen(false);
                               setClientSearch('');
                             }}
-                            className={cn('flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-[#EDEAFA]/50 dark:hover:bg-white/[0.05]')}
+                            className={cn('flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                           >
                             <Avatar name={`${c.first_name} ${c.last_name}`} size="sm" />
                             <span className="min-w-0 leading-[16px]">
@@ -464,7 +462,7 @@ export function DesktopNewDeposit() {
                   key={p}
                   type="button"
                   onClick={() => setAmount(String(p))}
-                  className={cn('rounded-full px-3 py-1.5 text-[12px] font-semibold', amountNum === p ? PRIMARY_PILL : SOFT_PILL)}
+                  className={cn('rounded-md px-3 py-1.5 text-[12px] font-semibold', amountNum === p ? PRIMARY_PILL : SOFT_PILL)}
                 >
                   {p >= 1_000_000 ? `${p / 1_000_000}M` : `${p / 1_000}K`}
                 </button>
@@ -498,7 +496,7 @@ export function DesktopNewDeposit() {
                   type="button"
                   onClick={() => pickFamily(f.family)}
                   className={cn(
-                    'inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12px] font-semibold',
+                    'inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-[12px] font-semibold',
                     family === f.family ? PRIMARY_PILL : SOFT_PILL,
                   )}
                 >
@@ -508,7 +506,7 @@ export function DesktopNewDeposit() {
               ))}
             </div>
             {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (family === 'ORANGE_MONEY' || family === 'MTN_MONEY' || family === 'WAVE') && (
-              <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2 text-[12px] font-semibold text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+              <div className="mt-3 rounded-2xl bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
                 Le montant dépasse la limite mobile money ({formatCurrency(MOBILE_MONEY_TRANSACTION_LIMIT)}) — prévoir plusieurs opérations.
               </div>
             )}
@@ -566,7 +564,7 @@ export function DesktopNewDeposit() {
                 value={adminComment}
                 onChange={(e) => setAdminComment(e.target.value)}
                 placeholder="Note interne — visible uniquement par les admins…"
-                className={cn('h-[110px] w-full resize-none rounded-2xl p-3 text-[13px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+                className={cn('h-[110px] w-full resize-none rounded-2xl p-3 text-[13px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
               />
             </div>
           </Card>
@@ -635,9 +633,9 @@ export function DesktopNewDeposit() {
                 </div>
               )}
             </div>
-            <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[#EAE7FA] p-3 dark:bg-[#272252]">
-              <Info className="mt-px h-3.5 w-3.5 shrink-0 text-[#5B4CC4] dark:text-[#B5AAF0]" />
-              <p className="text-[12px] leading-[16px] text-[#5B4CC4] dark:text-[#B5AAF0]">
+            <div className="mt-3 flex items-start gap-2 rounded-2xl bg-indigo-50 p-3 dark:bg-indigo-950/50">
+              <Info className="mt-px h-3.5 w-3.5 shrink-0 text-indigo-700 dark:text-indigo-400" />
+              <p className="text-[12px] leading-[16px] text-indigo-700 dark:text-indigo-400">
                 Le wallet n'est crédité qu'à la validation de la preuve.
               </p>
             </div>

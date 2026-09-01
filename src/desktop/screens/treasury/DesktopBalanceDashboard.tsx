@@ -12,7 +12,7 @@ import { Download, FileText } from 'lucide-react';
 import { MoneyField } from '@/components/treasury/MoneyField';
 import { SectionTitle, SOFT_CARD } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { PRIMARY_PILL } from '@/mobile/designKit';
+import { PRIMARY_PILL } from '@/desktop/designKit';
 import { cn } from '@/lib/utils';
 import { DASHBOARD_ACCOUNTS, PAGE } from '@/mobile/screens/treasury/balance-dashboard/constants';
 import { BalanceDashboardPreview } from '@/mobile/screens/treasury/balance-dashboard/BalanceDashboardPreview';

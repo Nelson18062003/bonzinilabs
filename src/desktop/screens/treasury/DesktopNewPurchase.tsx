@@ -18,7 +18,8 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { OccurredAtField, PhoneInputWithCountry } from '@/components/form';
+import { PhoneInputWithCountry } from '@/components/form';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useCounterparties,
@@ -214,7 +215,7 @@ export function DesktopNewPurchase() {
                   <MField label="Compte" htmlFor="account">
                     <TreasurySelect id="account" value={singleAccountId} onChange={setSingleAccountId} options={accountOptions} />
                   </MField>
-                  <button type="button" onClick={() => setMulti(true)} className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#4F46E5] dark:text-[#818CF8]">
+                  <button type="button" onClick={() => setMulti(true)} className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary underline-offset-2 hover:underline">
                     <Plus className="h-3 w-3" /> Répartir sur plusieurs comptes
                   </button>
                 </>
@@ -251,7 +252,7 @@ export function DesktopNewPurchase() {
                     <MButton onClick={() => setSplits((rows) => [...rows, newSplit()])}>
                       <Plus className="h-3.5 w-3.5" /> Ajouter un compte
                     </MButton>
-                    <button type="button" onClick={() => setMulti(false)} className="text-[11.5px] font-semibold text-[#4F46E5] dark:text-[#818CF8]">
+                    <button type="button" onClick={() => setMulti(false)} className="text-[11.5px] font-semibold text-primary underline-offset-2 hover:underline">
                       ← Un seul compte
                     </button>
                   </div>
@@ -299,8 +300,9 @@ export function DesktopNewPurchase() {
           <MCard>
             <MCardHeader title="Détails" meta="Date · référence · note" />
             <div className="space-y-3 p-4">
-              {/* OccurredAtField porte déjà son propre libellé. */}
-              <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
+              <MField label="Date / heure de l'opération" htmlFor="occurred-at">
+                <DateTimePicker id="occurred-at" value={occurredAt} onChange={setOccurredAt} />
+              </MField>
               <p className={cn('text-[11.5px]', T.muted)}>Antidatable — saisissez la date réelle de l'achat, pas celle de la saisie.</p>
               <div className="grid grid-cols-2 gap-3">
                 <MField label="Référence externe" hint="Binance, hash…">

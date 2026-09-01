@@ -9,7 +9,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAdminAuth, ADMIN_ROLE_LABELS } from '@/contexts/AdminAuthContext';
 import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
-import { SURFACE, TEXT, Avatar } from '@/mobile/designKit';
+import { SURFACE, TEXT, Avatar } from '@/desktop/designKit';
 import { cn } from '@/lib/utils';
 import { MolaMascot } from '@/components/MolaMascot';
 import { BonziniLogo } from '@/components/BonziniLogo';
@@ -65,10 +65,10 @@ export function DesktopSidebar() {
                     end={item.end}
                     className={({ isActive }) =>
                       cn(
-                        'mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]',
+                        'mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                         isActive
-                          ? 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]'
-                          : cn(TEXT.strong, 'hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]'),
+                          ? 'bg-primary text-primary-foreground'
+                          : cn(TEXT.strong, 'hover:bg-accent'),
                       )
                     }
                   >
@@ -79,7 +79,7 @@ export function DesktopSidebar() {
                     )}
                     <span className="flex-1 truncate">{item.label}</span>
                     {badge > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FE560D] px-1.5 text-[11px] font-bold text-white">
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-destructive px-1.5 text-[11px] font-bold text-white">
                         {badge}
                       </span>
                     )}
@@ -97,7 +97,7 @@ export function DesktopSidebar() {
           <button
             type="button"
             onClick={() => navigate('/m/more/profile')}
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left transition hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left transition hover:bg-accent"
             aria-label="Mon profil"
           >
             <Avatar name={`${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`} size="sm" className="shrink-0" />
@@ -114,7 +114,7 @@ export function DesktopSidebar() {
             type="button"
             onClick={handleLogout}
             aria-label="Se déconnecter"
-            className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-[#EDEAFA]/70 dark:hover:bg-white/[0.06]', TEXT.muted)}
+            className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-accent', TEXT.muted)}
           >
             <LogOut className="h-[18px] w-[18px]" />
           </button>

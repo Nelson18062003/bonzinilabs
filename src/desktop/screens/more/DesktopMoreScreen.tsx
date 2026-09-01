@@ -30,7 +30,7 @@ import { useAdminAuth, type RolePermission } from '@/contexts/AdminAuthContext';
 import { useAdminNotificationCount } from '@/hooks/useAdminNotifications';
 import { useAdminConversations } from '@/hooks/useAdminChat';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, SectionTitle } from '@/mobile/designKit';
+import { SURFACE, TEXT, SectionTitle } from '@/desktop/designKit';
 import { MolaMascot } from '@/components/MolaMascot';
 
 interface Tool {
@@ -57,7 +57,7 @@ function ToolCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
         <span className={cn('flex items-center gap-2 text-[15px] font-bold', TEXT.strong)}>
           {tool.label}
           {tool.badge ? (
-            <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#FE560D] px-1.5 text-[11px] font-bold text-white">
+            <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-md bg-destructive px-1.5 text-[11px] font-bold text-white">
               {tool.badge}
             </span>
           ) : null}

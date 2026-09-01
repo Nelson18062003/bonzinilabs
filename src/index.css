@@ -1275,3 +1275,86 @@
 @media (prefers-reduced-motion: reduce) {
   .mola-breathe { animation: none; }
 }
+
+/* ============================================================================
+   THÈME ADMIN — aligné sur la bibliothèque shadcn/ui de référence
+   (fichier Figma « shadcn/ui components with variables », août 2026).
+
+   Valeurs relevées directement sur les composants Figma :
+     · contrôles par défaut  h=32, rayon 10px  (--radius: 0.625rem)
+     · bordure               #E5E5E5
+     · primaire              #171717
+   Palette NEUTRE : le violet de marque n'est plus la couleur des contrôles,
+   il redevient un accent.
+
+   PORTÉE : `.admin-theme` uniquement. L'app client et la landing page gardent
+   leur charte (règles verrouillées dans .claude/rules/frontend.md) — elles ne
+   voient jamais ces variables.
+   ========================================================================= */
+@layer base {
+  .admin-theme {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    /* #171717 — le primaire est l'encre, pas la couleur de marque. */
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* #E5E5E5 */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 63%;
+
+    /* 10px — la valeur des composants Figma. */
+    --radius: 0.625rem;
+  }
+
+  .dark .admin-theme,
+  .admin-theme.dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 64%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 45%;
+  }
+}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
-import { CACHE_CONFIG, QUERY_LIMITS, BUSINESS_RULES } from '@/lib/constants';
+import { CACHE_CONFIG, QUERY_LIMITS} from '@/lib/constants';
 
 export interface Wallet {
   id: string;

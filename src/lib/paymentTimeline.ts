@@ -223,7 +223,7 @@ function buildEventBasedTimeline(
  * Build timeline for rejected payments
  */
 function buildRejectedTimeline(
-  paymentMethod: string,
+  _paymentMethod: string,
   events: PaymentTimelineEvent[]
 ): PaymentTimelineStepUI[] {
   const result: PaymentTimelineStepUI[] = [];

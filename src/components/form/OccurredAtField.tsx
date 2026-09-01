@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Clock } from 'lucide-react';
 import { BzDateTimeField } from '@/mobile/components/BzDateTimePicker';
 import { cn } from '@/lib/utils';

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, Area, AreaChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { IconChip, INSET, Pill, SectionTitle, SOFT_CARD, TONE_DOT, TONE_TEXT } from '@/components/treasury/ui';
+import { IconChip, Pill, SectionTitle, SOFT_CARD, TONE_DOT, TONE_TEXT } from '@/components/treasury/ui';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   type FlowPoint,

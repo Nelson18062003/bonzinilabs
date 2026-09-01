@@ -107,8 +107,8 @@ export function RateAdjustmentsCard() {
         key={adj.id}
         className={cn(
           'flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5',
-          adj.is_reference ? 'bg-[#DEEFE5] dark:bg-[#1E3A2C]' : SURFACE.canvas,
-          dirty && 'ring-1 ring-[#E8932A]',
+          adj.is_reference ? 'bg-emerald-50 dark:bg-emerald-950/50' : SURFACE.canvas,
+          dirty && 'ring-1 ring-amber-500',
         )}
       >
         <div className="min-w-0 leading-[15px]">
@@ -119,7 +119,7 @@ export function RateAdjustmentsCard() {
           {sub && <span className={cn('block text-[10.5px]', TEXT.muted)}>{sub}</span>}
         </div>
         {adj.is_reference ? (
-          <span className="shrink-0 text-[12.5px] font-bold text-[#2E7D52] dark:text-[#7FCBA0]">0 %</span>
+          <span className="shrink-0 text-[12.5px] font-bold text-emerald-700 dark:text-emerald-400">0 %</span>
         ) : (
           <div className="flex shrink-0 items-center gap-1">
             <TextField
@@ -128,7 +128,7 @@ export function RateAdjustmentsCard() {
               value={localValues[adj.id] ?? adj.percentage.toString()}
               onChange={(e) => setLocalValues((prev) => ({ ...prev, [adj.id]: e.target.value }))}
               wrapperClassName="w-[64px]"
-              controlClassName="h-8 text-right text-[12.5px] font-bold text-[#C0504D] dark:text-[#E79A9A]"
+              controlClassName="h-8 text-right text-[12.5px] font-bold text-destructive"
               aria-label={`Ajustement ${label}`}
             />
             <span className={cn('text-[12px] font-semibold', TEXT.muted)}>%</span>
@@ -148,8 +148,8 @@ export function RateAdjustmentsCard() {
             onClick={handleSave}
             disabled={modified.length === 0 || saving}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-bold transition',
-              modified.length > 0 ? 'bg-[#E8932A] text-white' : cn(SURFACE.holder, TEXT.muted, 'cursor-default'),
+              'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11.5px] font-bold transition',
+              modified.length > 0 ? 'bg-amber-600 text-white' : cn(SURFACE.holder, TEXT.muted, 'cursor-default'),
             )}
           >
             {saving && <Loader2 className="h-3 w-3 animate-spin" />}
