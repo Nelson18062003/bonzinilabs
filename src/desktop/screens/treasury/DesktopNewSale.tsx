@@ -1,19 +1,18 @@
 /**
- * Desktop admin — Nouvelle vente USDT (archétype C), habillage « salle des
- * marchés ».
+ * Nouvelle vente USDT — en FENÊTRE par-dessus le module (voir
+ * `TreasuryEntryDialog` pour le pourquoi).
  *
- * Le récapitulatif de droite porte l'information qui décide : le **stock
- * après la vente**. Avant, l'opérateur ne découvrait le stock négatif
- * qu'APRÈS l'enregistrement, dans un toast d'avertissement — ici il le voit
- * pendant la saisie, avant de valider.
+ * Quatre décisions : l'acheteur, le montant, le compte CNY crédité (optionnel
+ * — le cas courant est qu'aucun compte Bonzini n'est concerné), la date. Le
+ * pied de fenêtre montre le STOCK APRÈS LA VENTE : avant, l'opérateur ne
+ * découvrait un stock négatif qu'après l'enregistrement, dans un toast.
  *
  * Logique reprise à l'identique du mobile : 3 modes (USDT+CNY → taux,
- * USDT+taux → CNY, CNY+taux → USDT) et compte CNY crédité OPTIONNEL — le cas
- * courant étant qu'aucun compte Bonzini n'est concerné.
+ * USDT+taux → CNY, CNY+taux → USDT).
  */
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Warning as AlertTriangle } from '@phosphor-icons/react';
+import { Navigate } from 'react-router-dom';
+import { ArrowLineUp, Plus, Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { PhoneInputWithCountry } from '@/components/form';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
@@ -26,10 +25,12 @@ import {
   useUsdtStock,
   useUsdtWac,
 } from '@/hooks/useTreasury';
-import { M, T, NUM, TONE, TONE_BG, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, MIcons, M_PAGE } from './marketKit';
+import { NUM, T, TONE, MChip, MButton, MDialog, MField, MInput } from './marketKit';
 import { fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 import { TreasurySelect } from './TreasurySelect';
+import { treasuryPaths } from './treasuryNav';
+import { TreasuryEntryDialog, EntryStep, EntryComputed, EntryStat, EntryLink } from './TreasuryEntryDialog';
 
 type Mode = 'usdt_cny' | 'usdt_rate' | 'cny_rate';
 
@@ -42,20 +43,7 @@ const MODES: ReadonlyArray<{ value: Mode; label: string }> = [
 /** Valeur sentinelle du Select : Radix n'accepte pas la chaîne vide. */
 const NO_ACCOUNT = '__none__';
 
-function RecapRow({ label, value, unit, strong }: { label: string; value: string; unit?: string; strong?: boolean }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className={cn('text-[11.5px]', T.muted)}>{label}</span>
-      <span className={cn(NUM, strong ? cn('text-[14px] font-bold', T.ink) : cn('text-[12.5px] font-semibold', T.body))}>
-        {value}
-        {unit && <span className={cn('ml-1 text-[10px] font-normal', T.faint)}>{unit}</span>}
-      </span>
-    </div>
-  );
-}
-
-export function DesktopNewSale() {
-  const navigate = useNavigate();
+export function DesktopNewSale({ onClose }: { onClose: () => void }) {
   const { hasPermission } = useAdminAuth();
   const { data: buyers } = useCounterparties('cny_buyer');
   const { data: cnyAccounts } = useTreasuryAccounts('CNY');
@@ -73,6 +61,7 @@ export function DesktopNewSale() {
   const [rate, setRate] = useState<number | null>(null);
   const [externalRef, setExternalRef] = useState('');
   const [notes, setNotes] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const [newOpen, setNewOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -94,7 +83,7 @@ export function DesktopNewSale() {
   }, [mode, usdtAmount, cnyAmount, rate]);
 
   if (!hasPermission('canManageTreasury')) {
-    return <Navigate to="/m/more" replace />;
+    return <Navigate to={treasuryPaths.operations} replace />;
   }
 
   const costBasis = wac !== undefined && resolved.usdt ? resolved.usdt * wac : null;
@@ -114,7 +103,7 @@ export function DesktopNewSale() {
       external_ref: externalRef || undefined,
       notes: notes || undefined,
     });
-    if (result.success) navigate('/m/more/treasury');
+    if (result.success) onClose();
   };
 
   const handleCreateBuyer = async () => {
@@ -136,149 +125,146 @@ export function DesktopNewSale() {
     }
   };
 
+  const derived: { label: string; value: string; unit: string } =
+    mode === 'usdt_cny'
+      ? { label: 'Taux effectif', value: fmtNum(resolved.rate, RATE_DECIMALS.cnyPerUsdt), unit: 'CNY/USDT' }
+      : mode === 'usdt_rate'
+        ? { label: 'CNY reçu', value: fmtNum(resolved.cny, 2), unit: 'CNY' }
+        : { label: 'USDT vendu', value: fmtNum(resolved.usdt, 2), unit: 'USDT' };
+
   return (
-    <MIcons>
-    <div className={cn(M_PAGE, T.ink)}>
-      <div className="mx-auto max-w-[1080px] space-y-4">
-      <header className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/m/more/treasury')}
-          aria-label="Retour à la trésorerie"
-          className={cn('flex h-8 w-8 items-center justify-center rounded-[6px] border', M.border, T.body)}
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-        </button>
-        <div>
-          <h2 className={cn('text-[19px] font-bold tracking-[-0.02em]', T.ink)}>Nouvelle vente USDT</h2>
-          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>Sortie de stock : USDT vendu → CNY reçu</p>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="space-y-3">
-          <MCard>
-            <MCardHeader title="Acheteur" />
-            <div className="space-y-3 p-4">
-              <div className="flex items-end gap-2">
-                <MField label="Acheteur CNY" htmlFor="buyer" className="flex-1">
-                  <TreasurySelect
-                    id="buyer"
-                    value={buyerId}
-                    onChange={setBuyerId}
-                    options={(buyers ?? []).map((b) => ({
-                      value: b.id,
-                      label: `${b.display_name}${b.wechat_id ? ` · ${b.wechat_id}` : b.phone ? ` · ${b.phone}` : ''}`,
-                    }))}
-                  />
-                </MField>
-                <MButton onClick={() => setNewOpen(true)}>
-                  <Plus className="h-3.5 w-3.5" /> Nouveau
-                </MButton>
-              </div>
-
-              <MField
-                label="Compte CNY crédité"
-                htmlFor="cny-account"
-                hint="À renseigner seulement si le CNY a atterri sur un compte Bonzini (cash Guangzhou, Alipay/WeChat…). Sinon laissez « aucun »."
-              >
-                <TreasurySelect
-                  id="cny-account"
-                  value={cnyAccountId || NO_ACCOUNT}
-                  onChange={(v) => setCnyAccountId(v === NO_ACCOUNT ? '' : v)}
-                  options={[
-                    { value: NO_ACCOUNT, label: 'Aucun compte Bonzini concerné' },
-                    ...(cnyAccounts ?? []).map((a) => ({ value: a.id, label: a.label })),
-                  ]}
-                />
-              </MField>
+    <TreasuryEntryDialog
+      title="Nouvelle vente USDT"
+      description="Sortie de stock : USDT vendu → CNY reçu"
+      icon={ArrowLineUp}
+      tone="sale"
+      onClose={onClose}
+      footer={
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <EntryStat label="Coût de revient (au WAC)" value={fmtNum(costBasis, 0)} unit="XAF" />
+              <EntryStat
+                label="Stock actuel → après"
+                value={
+                  <>
+                    {fmtNum(stock, 2)}
+                    <span className={cn('mx-1.5 font-normal', T.faint)}>→</span>
+                    {fmtNum(stockAfter, 2)}
+                  </>
+                }
+                unit="USDT"
+                tone={willGoNegative ? 'negative' : 'neutral'}
+              />
             </div>
-          </MCard>
-
-          <MCard>
-            <MCardHeader title="Montant" />
-            <div className="space-y-3 p-4">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className={cn('text-[10px] font-semibold uppercase tracking-[0.08em]', T.muted)}>Je saisis</span>
-                {MODES.map((m) => (
-                  <MChip key={m.value} label={m.label} active={mode === m.value} onClick={() => setMode(m.value)} />
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {(mode === 'usdt_cny' || mode === 'usdt_rate') && (
-                  <MField label="USDT vendu" htmlFor="s-usdt">
-                    <TreasuryMoneyInput id="s-usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
-                  </MField>
-                )}
-                {(mode === 'usdt_cny' || mode === 'cny_rate') && (
-                  <MField label="CNY reçu" htmlFor="s-cny">
-                    <TreasuryMoneyInput id="s-cny" currency="CNY" value={cnyAmount} onValueChange={setCnyAmount} decimals={2} />
-                  </MField>
-                )}
-                {(mode === 'usdt_rate' || mode === 'cny_rate') && (
-                  <MField label="Taux" htmlFor="s-rate">
-                    <TreasuryMoneyInput id="s-rate" currency="CNY/USDT" value={rate} onValueChange={setRate} decimals={4} />
-                  </MField>
-                )}
-              </div>
-            </div>
-          </MCard>
-
-          <MCard>
-            <MCardHeader title="Détails" meta="Date · référence · note" />
-            <div className="space-y-3 p-4">
-              <MField label="Date / heure de l'opération" htmlFor="occurred-at">
-                <DateTimePicker id="occurred-at" value={occurredAt} onChange={setOccurredAt} />
-              </MField>
-              <p className={cn('text-[11.5px]', T.muted)}>Antidatable — saisissez la date réelle de la vente.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <MField label="Référence externe">
-                  <MInput value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
-                </MField>
-                <MField label="Note">
-                  <MInput value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </MField>
-              </div>
-            </div>
-          </MCard>
-        </div>
-
-        <div className="lg:sticky lg:top-4">
-          <MCard>
-            <MCardHeader title="Récapitulatif" />
-            <div className="space-y-2.5 p-4">
-              <RecapRow label="USDT vendu" value={fmtNum(resolved.usdt, 2)} unit="USDT" strong />
-              <RecapRow label="CNY reçu" value={fmtNum(resolved.cny, 2)} unit="CNY" strong />
-              <div className={cn('border-t pt-2.5', M.border)}>
-                <RecapRow label="Taux effectif" value={fmtNum(resolved.rate, RATE_DECIMALS.cnyPerUsdt)} unit="CNY/USDT" />
-              </div>
-
-              <div className={cn('border-t pt-2.5', M.border)}>
-                <MSection>Effet sur le stock</MSection>
-                <div className="mt-2 space-y-2">
-                  <RecapRow label="Coût des USDT vendus" value={fmtNum(costBasis, 0)} unit="XAF" />
-                  <RecapRow label="Stock actuel" value={fmtNum(stock, 2)} unit="USDT" />
-                  <RecapRow label="Stock après vente" value={fmtNum(stockAfter, 2)} unit="USDT" />
-                </div>
-              </div>
-
-              {willGoNegative && (
-                <div className={cn('flex items-start gap-2 rounded-md px-2.5 py-2', TONE_BG.negative)}>
-                  <AlertTriangle className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', TONE.negative)} />
-                  <span className={cn('text-[11.5px] font-medium leading-snug', TONE.negative)}>
-                    Cette vente rendrait le stock négatif (<span className={NUM}>{fmtNum(stockAfter, 2)}</span> USDT). Il manque
-                    probablement un achat au journal — saisissez-le d'abord, sinon le WAC et le bénéfice seront faux.
-                  </span>
-                </div>
-              )}
-
-              <MButton variant="primary" onClick={handleSubmit} disabled={!valid} loading={submit.isPending} className="w-full">
+            <div className="flex items-center gap-2">
+              <MButton onClick={onClose}>Annuler</MButton>
+              <MButton variant="primary" onClick={handleSubmit} disabled={!valid} loading={submit.isPending}>
                 Enregistrer la vente
               </MButton>
             </div>
-          </MCard>
+          </div>
+          {willGoNegative && (
+            <p className={cn('flex items-start gap-1.5 text-[11.5px] font-medium leading-snug', TONE.negative)}>
+              <Warning className="mt-0.5 size-3.5 shrink-0" weight="bold" />
+              <span>
+                Cette vente rendrait le stock négatif (<span className={NUM}>{fmtNum(stockAfter, 2)}</span> USDT). Il manque
+                probablement un achat au journal — saisissez-le d'abord, sinon le WAC et le bénéfice seront faux.
+              </span>
+            </p>
+          )}
         </div>
-      </div>
+      }
+    >
+      <EntryStep
+        n={1}
+        title="Acheteur"
+        aside={
+          <EntryLink onClick={() => setNewOpen(true)}>
+            <Plus className="size-3" /> Nouvel acheteur
+          </EntryLink>
+        }
+      >
+        <TreasurySelect
+          id="sa-buyer"
+          value={buyerId}
+          onChange={setBuyerId}
+          options={(buyers ?? []).map((b) => ({
+            value: b.id,
+            label: `${b.display_name}${b.wechat_id ? ` · ${b.wechat_id}` : b.phone ? ` · ${b.phone}` : ''}`,
+          }))}
+          placeholder="Choisir l'acheteur CNY…"
+        />
+      </EntryStep>
+
+      <EntryStep
+        n={2}
+        title="Montant"
+        aside={
+          <div className="flex flex-wrap items-center gap-1">
+            {MODES.map((m) => (
+              <MChip key={m.value} label={m.label} active={mode === m.value} onClick={() => setMode(m.value)} />
+            ))}
+          </div>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          {(mode === 'usdt_cny' || mode === 'usdt_rate') && (
+            <MField label="USDT vendu" htmlFor="sa-usdt">
+              <TreasuryMoneyInput id="sa-usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
+            </MField>
+          )}
+          {(mode === 'usdt_cny' || mode === 'cny_rate') && (
+            <MField label="CNY reçu" htmlFor="sa-cny">
+              <TreasuryMoneyInput id="sa-cny" currency="CNY" value={cnyAmount} onValueChange={setCnyAmount} decimals={2} />
+            </MField>
+          )}
+          {(mode === 'usdt_rate' || mode === 'cny_rate') && (
+            <MField label="Taux" htmlFor="sa-rate">
+              <TreasuryMoneyInput id="sa-rate" currency="CNY/USDT" value={rate} onValueChange={setRate} decimals={4} />
+            </MField>
+          )}
+        </div>
+        <EntryComputed label={derived.label} value={derived.value} unit={derived.unit} />
+      </EntryStep>
+
+      <EntryStep n={3} title="Compte CNY crédité">
+        <MField
+          label="Compte"
+          htmlFor="sa-cny-account"
+          hint="Seulement si le CNY a atterri sur un compte Bonzini (cash Guangzhou, Alipay/WeChat…)."
+        >
+          <TreasurySelect
+            id="sa-cny-account"
+            value={cnyAccountId || NO_ACCOUNT}
+            onChange={(v) => setCnyAccountId(v === NO_ACCOUNT ? '' : v)}
+            options={[
+              { value: NO_ACCOUNT, label: 'Aucun compte Bonzini concerné' },
+              ...(cnyAccounts ?? []).map((a) => ({ value: a.id, label: a.label })),
+            ]}
+          />
+        </MField>
+      </EntryStep>
+
+      <EntryStep n={4} title="Date et référence">
+        <div className="grid grid-cols-2 gap-3">
+          <MField label="Date de l'opération" htmlFor="sa-occurred-at" hint="Antidatable : la date réelle de la vente.">
+            <DateTimePicker id="sa-occurred-at" value={occurredAt} onChange={setOccurredAt} />
+          </MField>
+          <MField label="Référence externe" htmlFor="sa-ref" hint="Optionnel">
+            <MInput id="sa-ref" value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
+          </MField>
+        </div>
+        {noteOpen || notes ? (
+          <MField label="Note" htmlFor="sa-note">
+            <MInput id="sa-note" value={notes} onChange={(e) => setNotes(e.target.value)} autoFocus={noteOpen} />
+          </MField>
+        ) : (
+          <EntryLink onClick={() => setNoteOpen(true)}>
+            <Plus className="size-3" /> Ajouter une note
+          </EntryLink>
+        )}
+      </EntryStep>
 
       <MDialog
         open={newOpen}
@@ -307,8 +293,6 @@ export function DesktopNewSale() {
           </MField>
         </div>
       </MDialog>
-      </div>
-    </div>
-    </MIcons>
+    </TreasuryEntryDialog>
   );
 }

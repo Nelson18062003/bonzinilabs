@@ -107,8 +107,6 @@ const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m
 // Trésorerie desktop : UN écran à quatre vues (docs/admin-redesign/07). Les
 // anciennes routes par-page pointent sur la vue correspondante via initialView.
 const DesktopTreasuryScreen = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopTreasuryScreen })));
-const DesktopNewPurchase = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopNewPurchase })));
-const DesktopNewSale = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopNewSale })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const DesktopBalanceDashboard = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopBalanceDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
@@ -250,8 +248,12 @@ const App = () => (
                 <Route path="/m/more/treasury/analysis" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/ledger" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewPurchase />}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewSale />}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
+                {/* Desktop : les deux saisies s'ouvrent en fenêtre PAR-DESSUS l'écran
+                    Trésorerie, qui les rend lui-même d'après l'URL — même élément
+                    que les autres vues, donc l'écran n'est pas remonté. Le mobile
+                    garde ses pages pleines. */}
+                <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />

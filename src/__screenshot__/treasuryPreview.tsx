@@ -15,17 +15,15 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { DesktopTreasuryScreen } from '@/desktop/screens/treasury/DesktopTreasuryScreen';
 import { TREASURY_ROOT } from '@/desktop/screens/treasury/treasuryNav';
-import { DesktopNewPurchase } from '@/desktop/screens/treasury/DesktopNewPurchase';
-import { DesktopNewSale } from '@/desktop/screens/treasury/DesktopNewSale';
 import '../index.css';
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get('view') ?? 'operations';
 const dark = params.get('theme') === 'dark';
 
+// `purchase` et `sale` sont rendus par l'écran lui-même, en fenêtre
+// par-dessus Opérations — exactement comme en production.
 function Screen() {
-  if (view === 'purchase') return <DesktopNewPurchase />;
-  if (view === 'sale') return <DesktopNewSale />;
   return <DesktopTreasuryScreen />;
 }
 

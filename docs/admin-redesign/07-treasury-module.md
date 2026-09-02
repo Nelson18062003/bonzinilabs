@@ -98,8 +98,16 @@ Taux : *une vue = un métier*, rien d'autre à l'écran.
 - **Comptes** — soldes, ajustements **et inventaire** (même objet : un compte).
 - **Contreparties** — fournisseurs USDT / acheteurs CNY.
 
-Les deux saisies (achat, vente) restent des **pages de création** dédiées
-(archétype C), profondément liables : `/treasury/purchase`, `/treasury/sale`.
+Les deux saisies (achat, vente) s'ouvrent en **fenêtre par-dessus la vue
+courante** (voile flouté, `TreasuryEntryDialog`), à leur propre URL —
+`/treasury/purchase`, `/treasury/sale` — donc toujours liables. C'est l'écran
+qui les rend d'après l'URL, pas une route à part : la vue derrière (période,
+filtre, ligne sélectionnée) n'est jamais remontée, et fermer y revient. Le
+formulaire est réduit à quatre décisions numérotées (qui · quel compte ·
+combien · quand) avec un pied fixe montrant l'effet sur le stock (WAC
+avant → après, stock après) ; note et référence sont repliées. La version
+« page pleine » (quatre cartes + récapitulatif latéral) a été retirée sur
+retour utilisateur : trop d'informations à la fois, mal hiérarchisées.
 Le dashboard soldes exportable reste accessible depuis **Comptes**.
 
 Les anciennes routes de liste (`/purchases`, `/sales`, `/operations`,

@@ -1,22 +1,21 @@
 /**
- * Desktop admin — Nouvel achat USDT (archétype C : page de création),
- * habillage « salle des marchés ».
+ * Nouvel achat USDT — en FENÊTRE par-dessus le module (voir
+ * `TreasuryEntryDialog` pour le pourquoi).
  *
- * Remplace le montage du wizard téléphone sur la route desktop. Deux zones :
- * les décisions à gauche, un RÉCAPITULATIF VIVANT collé à droite.
+ * Quatre décisions, dans l'ordre : le fournisseur, le compte XAF débité, le
+ * montant, la date. Le pied de fenêtre montre ce que la saisie FAIT au stock —
+ * le WAC avant → après, parce qu'acheter au-dessus du coût moyen renchérit
+ * tout le stock, et c'est la conséquence réelle qu'on doit voir avant de
+ * valider.
  *
- * Ce récapitulatif est ce qui manquait : on saisissait un montant sans voir
- * son effet. Il montre le taux effectif obtenu et surtout le **WAC avant →
- * après** — acheter au-dessus du coût moyen fait monter le prix de revient de
- * tout le stock, c'est la conséquence réelle de la saisie.
- *
- * La LOGIQUE FINANCIÈRE est reprise à l'identique du mobile (déjà validée) :
+ * La LOGIQUE FINANCIÈRE ne bouge pas (déjà validée sur mobile) :
  *   · compte unique — 3 modes : XAF+USDT → taux · XAF+taux → USDT · USDT+taux → XAF
  *   · multi-comptes — le total XAF vient des lignes, on saisit l'USDT OU le taux
+ *   · WAC après = (stock × WAC + XAF payé) / (stock + USDT reçu)
  */
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash as Trash2 } from '@phosphor-icons/react';
+import { Navigate } from 'react-router-dom';
+import { ArrowLineDown, Plus, Trash } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { PhoneInputWithCountry } from '@/components/form';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
@@ -30,10 +29,12 @@ import {
   useUsdtWac,
   type AccountSplit,
 } from '@/hooks/useTreasury';
-import { M, T, NUM, TONE, MCard, MCardHeader, MChip, MButton, MSection, MDialog, MField, MInput, MIcons, M_PAGE } from './marketKit';
+import { NUM, T, TONE, MChip, MButton, MDialog, MField, MInput } from './marketKit';
 import { fmtNum, RATE_DECIMALS } from './treasuryFormat';
 import { TreasuryMoneyInput } from './TreasuryMoneyInput';
 import { TreasurySelect } from './TreasurySelect';
+import { treasuryPaths } from './treasuryNav';
+import { TreasuryEntryDialog, EntryStep, EntryComputed, EntryStat, EntryLink } from './TreasuryEntryDialog';
 
 type SingleMode = 'xaf_usdt' | 'xaf_rate' | 'usdt_rate';
 type MultiInput = 'usdt' | 'rate';
@@ -53,20 +54,7 @@ interface SplitRow {
 let splitKeyCounter = 0;
 const newSplit = (): SplitRow => ({ key: `s${splitKeyCounter++}`, accountId: '', amount: null });
 
-function RecapRow({ label, value, unit, strong }: { label: string; value: string; unit?: string; strong?: boolean }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className={cn('text-[11.5px]', T.muted)}>{label}</span>
-      <span className={cn(NUM, strong ? cn('text-[14px] font-bold', T.ink) : cn('text-[12.5px] font-semibold', T.body))}>
-        {value}
-        {unit && <span className={cn('ml-1 text-[10px] font-normal', T.faint)}>{unit}</span>}
-      </span>
-    </div>
-  );
-}
-
-export function DesktopNewPurchase() {
-  const navigate = useNavigate();
+export function DesktopNewPurchase({ onClose }: { onClose: () => void }) {
   const { hasPermission } = useAdminAuth();
   const { data: suppliers } = useCounterparties('usdt_supplier');
   const { data: xafAccounts } = useTreasuryAccounts('XAF');
@@ -89,6 +77,7 @@ export function DesktopNewPurchase() {
 
   const [externalRef, setExternalRef] = useState('');
   const [notes, setNotes] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const [newOpen, setNewOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -120,7 +109,7 @@ export function DesktopNewPurchase() {
   }, [multi, multiTotalXaf, multiInput, singleMode, xafAmount, usdtAmount, rate]);
 
   if (!hasPermission('canManageTreasury')) {
-    return <Navigate to="/m/more" replace />;
+    return <Navigate to={treasuryPaths.operations} replace />;
   }
 
   // WAC après l'achat : (valeur du stock + XAF payé) / (stock + USDT reçu).
@@ -129,6 +118,7 @@ export function DesktopNewPurchase() {
       ? (stock * wac + resolved.xaf) / (stock + resolved.usdt)
       : null;
   const wacDelta = wacAfter !== null && wac !== undefined ? wacAfter - wac : null;
+  const stockAfter = stock !== undefined && resolved.usdt ? stock + resolved.usdt : stock;
 
   const splitsValid = splits.every((r) => r.accountId && (r.amount ?? 0) > 0);
   const valid =
@@ -150,7 +140,7 @@ export function DesktopNewPurchase() {
       external_ref: externalRef || undefined,
       notes: notes || undefined,
     });
-    if (result.success) navigate('/m/more/treasury');
+    if (result.success) onClose();
   };
 
   const handleCreateSupplier = async () => {
@@ -169,194 +159,187 @@ export function DesktopNewPurchase() {
 
   const accountOptions = (xafAccounts ?? []).map((a) => ({ value: a.id, label: a.label }));
 
+  // Quels champs on tape, et laquelle des trois grandeurs en découle.
+  const showXaf = !multi && (singleMode === 'xaf_usdt' || singleMode === 'xaf_rate');
+  const showUsdt = multi ? multiInput === 'usdt' : singleMode === 'xaf_usdt' || singleMode === 'usdt_rate';
+  const showRate = multi ? multiInput === 'rate' : singleMode === 'xaf_rate' || singleMode === 'usdt_rate';
+  const derived: { label: string; value: string; unit: string } =
+    (!multi && singleMode === 'xaf_usdt') || (multi && multiInput === 'usdt')
+      ? { label: 'Taux effectif', value: fmtNum(resolved.rate, RATE_DECIMALS.xafPerUsdt), unit: 'XAF/USDT' }
+      : (!multi && singleMode === 'xaf_rate') || (multi && multiInput === 'rate')
+        ? { label: 'USDT reçu', value: fmtNum(resolved.usdt, 2), unit: 'USDT' }
+        : { label: 'XAF payé', value: fmtNum(resolved.xaf, 0), unit: 'XAF' };
+
   return (
-    <MIcons>
-    <div className={cn(M_PAGE, T.ink)}>
-      <div className="mx-auto max-w-[1080px] space-y-4">
-      <header className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/m/more/treasury')}
-          aria-label="Retour à la trésorerie"
-          className={cn('flex h-8 w-8 items-center justify-center rounded-[6px] border', M.border, T.body)}
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-        </button>
-        <div>
-          <h2 className={cn('text-[19px] font-bold tracking-[-0.02em]', T.ink)}>Nouvel achat USDT</h2>
-          <p className={cn('mt-0.5 text-[12.5px]', T.muted)}>Entrée de stock : XAF payé → USDT reçu</p>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
-        {/* ── Décisions ── */}
-        <div className="space-y-3">
-          <MCard>
-            <MCardHeader title="Fournisseur" />
-            <div className="flex items-end gap-2 p-4">
-              <MField label="Fournisseur USDT" htmlFor="supplier" className="flex-1">
-                <TreasurySelect
-                  id="supplier"
-                  value={supplierId}
-                  onChange={setSupplierId}
-                  options={(suppliers ?? []).map((s) => ({ value: s.id, label: `${s.short_id} · ${s.display_name}` }))}
-                />
-              </MField>
-              <MButton onClick={() => setNewOpen(true)}>
-                <Plus className="h-3.5 w-3.5" /> Nouveau
-              </MButton>
-            </div>
-          </MCard>
-
-          <MCard>
-            <MCardHeader title="Compte XAF débité" meta={multi ? `${splits.length} compte${splits.length > 1 ? 's' : ''}` : undefined} />
-            <div className="space-y-3 p-4">
-              {!multi ? (
+    <TreasuryEntryDialog
+      title="Nouvel achat USDT"
+      description="Entrée de stock : XAF payé → USDT reçu"
+      icon={ArrowLineDown}
+      tone="purchase"
+      onClose={onClose}
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <EntryStat
+              label="WAC actuel → après"
+              value={
                 <>
-                  <MField label="Compte" htmlFor="account">
-                    <TreasurySelect id="account" value={singleAccountId} onChange={setSingleAccountId} options={accountOptions} />
-                  </MField>
-                  <button type="button" onClick={() => setMulti(true)} className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary underline-offset-2 hover:underline">
-                    <Plus className="h-3 w-3" /> Répartir sur plusieurs comptes
-                  </button>
-                </>
-              ) : (
-                <>
-                  {splits.map((row, idx) => (
-                    <div key={row.key} className={cn('space-y-2 rounded-[6px] border p-3', M.border, M.inset)}>
-                      <MSection
-                        right={
-                          splits.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))}
-                              aria-label={`Retirer le compte ${idx + 1}`}
-                              className={TONE.negative}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          ) : undefined
-                        }
-                      >
-                        Compte {idx + 1}
-                      </MSection>
-                      <TreasurySelect
-                        value={row.accountId}
-                        onChange={(v) => updateSplit(row.key, { accountId: v })}
-                        options={accountOptions}
-                        placeholder="Choisir le compte…"
-                      />
-                      <TreasuryMoneyInput currency="XAF" value={row.amount} onValueChange={(v) => updateSplit(row.key, { amount: v })} decimals={0} />
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2">
-                    <MButton onClick={() => setSplits((rows) => [...rows, newSplit()])}>
-                      <Plus className="h-3.5 w-3.5" /> Ajouter un compte
-                    </MButton>
-                    <button type="button" onClick={() => setMulti(false)} className="text-[11.5px] font-semibold text-primary underline-offset-2 hover:underline">
-                      ← Un seul compte
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </MCard>
-
-          <MCard>
-            <MCardHeader title="Montant" meta={multi ? 'Le total XAF vient des comptes' : undefined} />
-            <div className="space-y-3 p-4">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className={cn('text-[10px] font-semibold uppercase tracking-[0.08em]', T.muted)}>Je saisis</span>
-                {!multi
-                  ? SINGLE_MODES.map((m) => (
-                      <MChip key={m.value} label={m.label} active={singleMode === m.value} onClick={() => setSingleMode(m.value)} />
-                    ))
-                  : (
-                    <>
-                      <MChip label="USDT reçu" active={multiInput === 'usdt'} onClick={() => setMultiInput('usdt')} />
-                      <MChip label="Taux" active={multiInput === 'rate'} onClick={() => setMultiInput('rate')} />
-                    </>
-                  )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {!multi && (singleMode === 'xaf_usdt' || singleMode === 'xaf_rate') && (
-                  <MField label="XAF payé" htmlFor="xaf">
-                    <TreasuryMoneyInput id="xaf" currency="XAF" value={xafAmount} onValueChange={setXafAmount} decimals={0} />
-                  </MField>
-                )}
-                {((!multi && (singleMode === 'xaf_usdt' || singleMode === 'usdt_rate')) || (multi && multiInput === 'usdt')) && (
-                  <MField label="USDT reçu" htmlFor="usdt">
-                    <TreasuryMoneyInput id="usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
-                  </MField>
-                )}
-                {((!multi && (singleMode === 'xaf_rate' || singleMode === 'usdt_rate')) || (multi && multiInput === 'rate')) && (
-                  <MField label="Taux" htmlFor="rate">
-                    <TreasuryMoneyInput id="rate" currency="XAF/USDT" value={rate} onValueChange={setRate} decimals={2} />
-                  </MField>
-                )}
-              </div>
-            </div>
-          </MCard>
-
-          <MCard>
-            <MCardHeader title="Détails" meta="Date · référence · note" />
-            <div className="space-y-3 p-4">
-              <MField label="Date / heure de l'opération" htmlFor="occurred-at">
-                <DateTimePicker id="occurred-at" value={occurredAt} onChange={setOccurredAt} />
-              </MField>
-              <p className={cn('text-[11.5px]', T.muted)}>Antidatable — saisissez la date réelle de l'achat, pas celle de la saisie.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <MField label="Référence externe" hint="Binance, hash…">
-                  <MInput value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
-                </MField>
-                <MField label="Note">
-                  <MInput value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </MField>
-              </div>
-            </div>
-          </MCard>
-        </div>
-
-        {/* ── Récapitulatif vivant ── */}
-        <div className="lg:sticky lg:top-4">
-          <MCard>
-            <MCardHeader title="Récapitulatif" />
-            <div className="space-y-2.5 p-4">
-              <RecapRow label="XAF payé" value={fmtNum(resolved.xaf, 0)} unit="XAF" strong />
-              <RecapRow label="USDT reçu" value={fmtNum(resolved.usdt, 2)} unit="USDT" strong />
-              <div className={cn('border-t pt-2.5', M.border)}>
-                <RecapRow label="Taux effectif" value={fmtNum(resolved.rate, RATE_DECIMALS.xafPerUsdt)} unit="XAF/USDT" />
-              </div>
-
-              <div className={cn('border-t pt-2.5', M.border)}>
-                <MSection>Effet sur le stock</MSection>
-                <div className="mt-2 space-y-2">
-                  <RecapRow label="WAC actuel" value={fmtNum(wac, RATE_DECIMALS.xafPerUsdt)} unit="XAF/USDT" />
-                  <RecapRow label="WAC après achat" value={fmtNum(wacAfter, RATE_DECIMALS.xafPerUsdt)} unit="XAF/USDT" />
+                  {fmtNum(wac, RATE_DECIMALS.xafPerUsdt)}
+                  <span className={cn('mx-1.5 font-normal', T.faint)}>→</span>
+                  {fmtNum(wacAfter, RATE_DECIMALS.xafPerUsdt)}
                   {wacDelta !== null && (
-                    <div className={cn('flex items-center justify-between rounded-[4px] px-2.5 py-1.5 text-[11.5px] font-semibold', M.inset)}>
-                      <span className={T.muted}>{wacDelta > 0 ? 'Renchérit le stock' : 'Abaisse le coût du stock'}</span>
-                      <span className={cn(NUM, 'font-bold', wacDelta > 0 ? TONE.sale : TONE.positive)}>
-                        {wacDelta > 0 ? '+' : ''}
-                        {fmtNum(wacDelta, RATE_DECIMALS.xafPerUsdt)}
-                      </span>
-                    </div>
+                    <span className={cn('ml-1.5 text-[11px] font-semibold', wacDelta > 0 ? TONE.sale : TONE.positive)}>
+                      ({wacDelta > 0 ? '+' : ''}
+                      {fmtNum(wacDelta, RATE_DECIMALS.xafPerUsdt)})
+                    </span>
                   )}
-                  <RecapRow
-                    label="Stock après"
-                    value={fmtNum(stock !== undefined && resolved.usdt ? stock + resolved.usdt : stock, 2)}
-                    unit="USDT"
-                  />
-                </div>
-              </div>
-
-              <MButton variant="primary" onClick={handleSubmit} disabled={!valid} loading={submit.isPending} className="w-full">
-                Enregistrer l'achat
-              </MButton>
-            </div>
-          </MCard>
+                </>
+              }
+              unit="XAF/USDT"
+            />
+            <EntryStat label="Stock après" value={fmtNum(stockAfter, 2)} unit="USDT" />
+          </div>
+          <div className="flex items-center gap-2">
+            <MButton onClick={onClose}>Annuler</MButton>
+            <MButton variant="primary" onClick={handleSubmit} disabled={!valid} loading={submit.isPending}>
+              Enregistrer l'achat
+            </MButton>
+          </div>
         </div>
-      </div>
+      }
+    >
+      <EntryStep
+        n={1}
+        title="Fournisseur"
+        aside={
+          <EntryLink onClick={() => setNewOpen(true)}>
+            <Plus className="size-3" /> Nouveau fournisseur
+          </EntryLink>
+        }
+      >
+        <TreasurySelect
+          id="pu-supplier"
+          value={supplierId}
+          onChange={setSupplierId}
+          options={(suppliers ?? []).map((s) => ({ value: s.id, label: `${s.short_id} · ${s.display_name}` }))}
+          placeholder="Choisir le fournisseur USDT…"
+        />
+      </EntryStep>
+
+      <EntryStep
+        n={2}
+        title="Compte XAF débité"
+        aside={
+          multi ? (
+            <EntryLink onClick={() => setMulti(false)}>Un seul compte</EntryLink>
+          ) : (
+            <EntryLink onClick={() => setMulti(true)}>
+              <Plus className="size-3" /> Répartir sur plusieurs comptes
+            </EntryLink>
+          )
+        }
+      >
+        {!multi ? (
+          <TreasurySelect
+            id="pu-account"
+            value={singleAccountId}
+            onChange={setSingleAccountId}
+            options={accountOptions}
+            placeholder="Choisir le compte…"
+          />
+        ) : (
+          <div className="space-y-2">
+            {splits.map((row, idx) => (
+              <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_180px_28px] items-center gap-2">
+                <TreasurySelect
+                  value={row.accountId}
+                  onChange={(v) => updateSplit(row.key, { accountId: v })}
+                  options={accountOptions}
+                  placeholder={`Compte ${idx + 1}…`}
+                />
+                <TreasuryMoneyInput currency="XAF" value={row.amount} onValueChange={(v) => updateSplit(row.key, { amount: v })} decimals={0} />
+                <button
+                  type="button"
+                  onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))}
+                  disabled={splits.length <= 1}
+                  aria-label={`Retirer le compte ${idx + 1}`}
+                  className={cn('flex size-7 items-center justify-center rounded-md hover:bg-muted disabled:opacity-30', TONE.negative)}
+                >
+                  <Trash className="size-3.5" />
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center justify-between gap-3">
+              <EntryLink onClick={() => setSplits((rows) => [...rows, newSplit()])}>
+                <Plus className="size-3" /> Ajouter un compte
+              </EntryLink>
+              <span className={cn('text-[11.5px]', T.muted)}>
+                Total{' '}
+                <span className={cn(NUM, 'font-semibold', T.ink)}>{fmtNum(multiTotalXaf, 0)}</span> XAF
+              </span>
+            </div>
+          </div>
+        )}
+      </EntryStep>
+
+      <EntryStep
+        n={3}
+        title="Montant"
+        aside={
+          <div className="flex flex-wrap items-center gap-1">
+            {!multi ? (
+              SINGLE_MODES.map((m) => (
+                <MChip key={m.value} label={m.label} active={singleMode === m.value} onClick={() => setSingleMode(m.value)} />
+              ))
+            ) : (
+              <>
+                <MChip label="USDT reçu" active={multiInput === 'usdt'} onClick={() => setMultiInput('usdt')} />
+                <MChip label="Taux" active={multiInput === 'rate'} onClick={() => setMultiInput('rate')} />
+              </>
+            )}
+          </div>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          {showXaf && (
+            <MField label="XAF payé" htmlFor="pu-xaf">
+              <TreasuryMoneyInput id="pu-xaf" currency="XAF" value={xafAmount} onValueChange={setXafAmount} decimals={0} />
+            </MField>
+          )}
+          {showUsdt && (
+            <MField label="USDT reçu" htmlFor="pu-usdt">
+              <TreasuryMoneyInput id="pu-usdt" currency="USDT" value={usdtAmount} onValueChange={setUsdtAmount} decimals={2} />
+            </MField>
+          )}
+          {showRate && (
+            <MField label="Taux" htmlFor="pu-rate">
+              <TreasuryMoneyInput id="pu-rate" currency="XAF/USDT" value={rate} onValueChange={setRate} decimals={2} />
+            </MField>
+          )}
+        </div>
+        {multi && <EntryComputed label="XAF payé · total des comptes" value={fmtNum(resolved.xaf, 0)} unit="XAF" />}
+        <EntryComputed label={derived.label} value={derived.value} unit={derived.unit} />
+      </EntryStep>
+
+      <EntryStep n={4} title="Date et référence">
+        <div className="grid grid-cols-2 gap-3">
+          <MField label="Date de l'opération" htmlFor="pu-occurred-at" hint="Antidatable : la date réelle de l'achat.">
+            <DateTimePicker id="pu-occurred-at" value={occurredAt} onChange={setOccurredAt} />
+          </MField>
+          <MField label="Référence externe" htmlFor="pu-ref" hint="Binance, hash… (optionnel)">
+            <MInput id="pu-ref" value={externalRef} onChange={(e) => setExternalRef(e.target.value)} />
+          </MField>
+        </div>
+        {noteOpen || notes ? (
+          <MField label="Note" htmlFor="pu-note">
+            <MInput id="pu-note" value={notes} onChange={(e) => setNotes(e.target.value)} autoFocus={noteOpen} />
+          </MField>
+        ) : (
+          <EntryLink onClick={() => setNoteOpen(true)}>
+            <Plus className="size-3" /> Ajouter une note
+          </EntryLink>
+        )}
+      </EntryStep>
 
       {/* Créer un fournisseur sans quitter la saisie */}
       <MDialog
@@ -380,8 +363,6 @@ export function DesktopNewPurchase() {
           <PhoneInputWithCountry label="Téléphone (optionnel)" value={newPhone} onValueChange={setNewPhone} defaultDialCode="+237" />
         </div>
       </MDialog>
-      </div>
-    </div>
-    </MIcons>
+    </TreasuryEntryDialog>
   );
 }
