@@ -30,6 +30,10 @@ const SCENARIOS = [
   { key: 'custom-6m', custom: { from: '2026-03-01', to: '2026-08-31' } },
   // Le pire cas rapporté : « Aujourd'hui » (par heure) PUIS une longue plage.
   { key: 'today-then-6m', preset: "Aujourd'hui", then: { from: '2026-03-01', to: '2026-08-31' } },
+  // Granularité EXPLICITE « Jour » sur 90 jours : des étiquettes nues
+  // homonymes (« 3 » en juin et « 3 » en juillet) — les barres doivent
+  // toutes rester (180 = 90 × 2 séries), pas fusionner par catégorie.
+  { key: '90d-jour', preset: '90 derniers jours', granularity: 'Jour' },
 ];
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
@@ -138,6 +142,20 @@ for (const s of SCENARIOS.filter((x) => !ONLY || ONLY.includes(x.key))) {
   await page.waitForTimeout(800);
   try {
     if (s.preset) await choosePreset(s.preset);
+    if (s.granularity) {
+      await openPicker();
+      // Le popover dépasse la fenêtre : clic DOM, sans exiger la visibilité.
+      const state = await page.evaluate((label) => {
+        const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === label);
+        if (!b) return 'absent';
+        if (b.disabled) return 'désactivé';
+        b.click();
+        return 'cliqué';
+      }, s.granularity);
+      if (state !== 'cliqué') throw new Error(`granularité « ${s.granularity} » ${state}`);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(1200);
+    }
     if (s.custom) await chooseCustom(s.custom);
     if (s.then) await chooseCustom(s.then);
   } catch (e) {
