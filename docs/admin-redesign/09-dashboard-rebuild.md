@@ -144,3 +144,43 @@ Trois causes, distinctes :
 
 Le test de fuseau rejoue chaque assertion dans quatre fuseaux ; c'est un test
 qui ne tournait qu'à UTC qui avait laissé passer le décalage d'un jour.
+
+## 6. Le graphique clients et les sept blocs oubliés
+
+Retour utilisateur : « le graphique clients ne marche pas », « tu as supprimé
+beaucoup de graphiques, je veux les revoir ».
+
+**Le graphique clients ne marchait pas au sens propre.** Le bloc desktop
+traçait `<Line dataKey="count">` sur des points `ClientGrowthPoint
+{ newClients, cumulative }`. Recharts ne signale pas une clé absente : il ne
+dessine rien. Le graphique était vide sous un titre plein, indistinguable
+d'une période sans inscription. Corrigé dans `ClientGrowthBlock` avec deux
+garde-fous : les clés lues par le graphique sont dérivées du type des lignes
+(`GROWTH_KEYS … satisfies Record<…, keyof GrowthRow>`, une clé inexistante ne
+compile pas) et `clientGrowthBlock.test.tsx` rend le bloc avec des points et
+vérifie que les chiffres en sortent.
+
+Le bloc est reconstruit sur le modèle des deux blocs de croissance de volume :
+barres = nouveaux clients par période (le rythme), aire = total de clients au
+fil du temps (la pente), axe du total partant du total de DÉBUT de période
+(sinon 1 180 → 1 240 est une ligne plate), en-tête nouveaux · total · pic ·
+période précédente, variation vs période précédente. Le rapport vient d'un
+nouveau hook `useClientGrowthReport` (même série que `useClientGrowth`, plus
+un comptage `head` de la période précédente).
+
+**Les sept blocs oubliés.** La première version desktop consommait 13 des 21
+métriques ; le mobile les avait toutes. Restaurés dans `dashboardBlocks.tsx`,
+sur `dashboardKit` et avec les axes contextuels (`bucketAxisLabel`) :
+
+| Bloc | Hook | Forme desktop |
+|---|---|---|
+| Nouveaux clients · Clients actifs · Conversion dépôt → paiement · Délai de validation (médiane, P90) | `useClientGrowthReport`, `useFunnel`, `useDepositProcessingTime` | deuxième ligne d'indicateurs |
+| Sources d'inscription (+ canaux UTM) | `useRegistrationSource`, `useUtmSources` | deux chiffres, barre de part, table UTM |
+| Répartition des clients par pays | `useClientCountryDistribution` | anneau + table (top 5 + Autres + Non renseigné, alerte ≥ 10 % sans pays) |
+| Statut des dépôts dans le temps | `useDepositStatusTimeline` | barres empilées validés / en attente / rejetés |
+| Évolution des taux | `useRateHistory` | 4 courbes, domaine resserré, Alipay moyen · variation · écart moyen |
+
+Ordre de lecture de l'écran : alertes → indicateurs (argent, puis clients et
+service) → flux financier → croissance dépôts / paiements → croissance
+clients → sources / pays → méthodes → statut des dépôts / qualité → taux →
+top clients / productivité.

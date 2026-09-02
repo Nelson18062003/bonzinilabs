@@ -919,50 +919,116 @@ export interface ClientGrowthPoint {
   cumulative: number;
 }
 
+/** Les points de croissance — partagés entre la série simple et le rapport. */
+async function fetchClientGrowthPoints(range: DateRange): Promise<ClientGrowthPoint[]> {
+  const { fromISO, toISO } = toSupabaseBounds(range);
+  // Cumulative requires counting everyone BEFORE the window too.
+  const [before, within] = await Promise.all([
+    supabaseAdmin
+      .from('clients')
+      .select('id', { count: 'exact', head: true })
+      .lt('created_at', fromISO),
+    supabaseAdmin
+      .from('clients')
+      .select('created_at')
+      .gte('created_at', fromISO)
+      .lt('created_at', toISO)
+      .order('created_at', { ascending: true }),
+  ]);
+
+  if (before.error) throw before.error;
+  if (within.error) throw within.error;
+
+  const buckets = new Map<string, number>();
+  for (const b of bucketStarts(range)) {
+    buckets.set(b.toISOString(), 0);
+  }
+  for (const row of within.data ?? []) {
+    const key = bucketKeyFor(new Date(row.created_at), range.granularity);
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+
+  let cumulative = before.count ?? 0;
+  return [...buckets.entries()].map(([iso, newClients]) => {
+    cumulative += newClients;
+    return {
+      bucket: iso,
+      label: labelFor(new Date(iso), range.granularity),
+      newClients,
+      cumulative,
+    };
+  });
+}
+
 export function useClientGrowth(range: DateRange) {
   return useQuery<ClientGrowthPoint[]>({
     queryKey: ['analytics-v2-client-growth', range.from.toISOString(), range.to.toISOString(), range.granularity],
     staleTime: ANALYTICS_STALE,
     gcTime: ANALYTICS_GC,
+    queryFn: () => fetchClientGrowthPoints(range),
+  });
+}
+
+/**
+ * Le rapport de croissance clients — ce que le bloc desktop affiche en tête :
+ * combien de nouveaux sur la période, le total au bout, le pic, et la
+ * variation par rapport à la période précédente (même longueur, juste
+ * avant). La série est la même que `useClientGrowth` ; s'y ajoute UN comptage
+ * (`head`) de la période précédente.
+ */
+export interface ClientGrowthReport {
+  points: ClientGrowthPoint[];
+  /** Inscriptions sur la période. */
+  newClients: number;
+  /** Total de clients à la fin de la période (tous, y compris d'avant). */
+  totalAtEnd: number;
+  /** Total au début de la période — d'où part la courbe. */
+  totalAtStart: number;
+  /** Le seau qui a le plus recruté. `null` si aucune inscription. */
+  peak: { label: string; newClients: number } | null;
+  /** Inscriptions sur la période précédente. */
+  previousNewClients: number;
+  /** Variation relative des inscriptions. `null` si la précédente est vide. */
+  trendPct: number | null;
+}
+
+export function useClientGrowthReport(range: DateRange) {
+  return useQuery<ClientGrowthReport>({
+    queryKey: ['analytics-v2-client-growth-report', range.from.toISOString(), range.to.toISOString(), range.granularity],
+    staleTime: ANALYTICS_STALE,
+    gcTime: ANALYTICS_GC,
     queryFn: async () => {
-      const { fromISO, toISO } = toSupabaseBounds(range);
-      // Cumulative requires counting everyone BEFORE the window too.
-      const [before, within] = await Promise.all([
+      const prev = previousRange(range);
+      const prevBounds = toSupabaseBounds(prev);
+      const [points, previous] = await Promise.all([
+        fetchClientGrowthPoints(range),
         supabaseAdmin
           .from('clients')
           .select('id', { count: 'exact', head: true })
-          .lt('created_at', fromISO),
-        supabaseAdmin
-          .from('clients')
-          .select('created_at')
-          .gte('created_at', fromISO)
-          .lt('created_at', toISO)
-          .order('created_at', { ascending: true }),
+          .gte('created_at', prevBounds.fromISO)
+          .lt('created_at', prevBounds.toISO),
       ]);
-
-      if (within.error) throw within.error;
-
-      const buckets = new Map<string, number>();
-      for (const b of bucketStarts(range)) {
-        buckets.set(b.toISOString(), 0);
-      }
-      for (const row of within.data ?? []) {
-        const key = bucketKeyFor(new Date(row.created_at), range.granularity);
-        if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
-      }
-
-      let cumulative = before.count ?? 0;
-      return [...buckets.entries()].map(([iso, newClients]) => {
-        cumulative += newClients;
-        return {
-          bucket: iso,
-          label: labelFor(new Date(iso), range.granularity),
-          newClients,
-          cumulative,
-        };
-      });
+      if (previous.error) throw previous.error;
+      return buildClientGrowthReport(points, previous.count ?? 0);
     },
   });
+}
+
+/** Pure : de la série aux chiffres de tête. Testé isolément. */
+export function buildClientGrowthReport(points: ClientGrowthPoint[], previousNewClients: number): ClientGrowthReport {
+  const newClients = points.reduce((s, p) => s + p.newClients, 0);
+  const last = points[points.length - 1];
+  const first = points[0];
+  const totalAtEnd = last ? last.cumulative : 0;
+  const totalAtStart = first ? first.cumulative - first.newClients : 0;
+  let peak: ClientGrowthReport['peak'] = null;
+  for (const p of points) {
+    if (p.newClients > 0 && (peak === null || p.newClients > peak.newClients)) {
+      peak = { label: p.label, newClients: p.newClients };
+    }
+  }
+  const trendPct = previousNewClients === 0 ? null : (newClients - previousNewClients) / previousNewClients;
+  return { points, newClients, totalAtEnd, totalAtStart, peak, previousNewClients, trendPct };
 }
 
 // ────────────────────────────────────────────────────────────────────────────

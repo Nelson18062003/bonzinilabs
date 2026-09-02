@@ -138,6 +138,28 @@ export function viewFromPath(pathname: string): TreasuryView | null {
   return PATH_TO_VIEW[segment] ?? null;
 }
 
+/** Le chemin d'une vue de premier niveau. */
+export function pathForView(view: TreasuryView): string {
+  return TREASURY_VIEWS.find((v) => v.key === view)?.path ?? TREASURY_ROOT;
+}
+
+/* ── Saisies ──────────────────────────────────────────────────────────
+ *
+ * `/purchase` et `/sale` ne sont PAS des vues : elles s'ouvrent en fenêtre
+ * PAR-DESSUS la vue courante, qui reste visible derrière un voile. C'est
+ * pourquoi `viewFromPath` renvoie `null` pour elles — l'écran garde alors la
+ * dernière vue affichée, et y revient quand la fenêtre se ferme. */
+
+export type TreasuryEntry = 'purchase' | 'sale';
+
+export function entryFromPath(pathname: string): TreasuryEntry | null {
+  const rest = pathname.startsWith(TREASURY_ROOT) ? pathname.slice(TREASURY_ROOT.length) : '';
+  const parts = rest.split('/').filter(Boolean);
+  // `/operations/purchase/<id>` est une opération, pas une saisie.
+  if (parts.length !== 1) return null;
+  return parts[0] === 'purchase' || parts[0] === 'sale' ? parts[0] : null;
+}
+
 /**
  * L'identifiant d'opération présent dans l'URL, quelle que soit sa forme :
  * `/operations/purchase/<id>` (desktop) ou `/purchases/<id>` et

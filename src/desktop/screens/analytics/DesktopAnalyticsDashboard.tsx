@@ -13,7 +13,8 @@
  *
  * Ici : tout est visible, les montants sont entiers, et les atomes viennent du
  * design system (`dashboardKit`). La couche de données ne bouge pas — elle est
- * bonne : 21 métriques dans `useAnalytics`, 20 déjà consommées.
+ * bonne : 21 métriques dans `useAnalytics`, toutes consommées ici (la
+ * première version desktop en avait laissé sept de côté ; `dashboardBlocks`).
  *
  * Le mobile garde son écran : ses accordéons sont justifiés par sa largeur.
  */
@@ -21,8 +22,6 @@ import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -33,7 +32,7 @@ import {
 import { Warning, Info } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { DateRangePicker, formatCurrencyFull, formatInteger } from '@/components/analytics';
+import { DateRangePicker, formatCurrencyFull, formatInteger, formatPercent } from '@/components/analytics';
 import { DateRangeProvider, useDateRange } from '@/lib/analytics/DateRangeContext';
 import { bucketAxisLabel } from '@/lib/analytics/dateRange';
 import {
@@ -47,9 +46,16 @@ import {
   useWalletExposure,
   useDashboardAlerts,
   useAdminProductivity,
-  useClientGrowth,
+  useClientGrowthReport,
   useDepositVolumeReport,
   usePaymentVolumeReport,
+  useFunnel,
+  useDepositProcessingTime,
+  useRegistrationSource,
+  useUtmSources,
+  useClientCountryDistribution,
+  useDepositStatusTimeline,
+  useRateHistory,
 } from '@/hooks/analytics/useAnalytics';
 import {
   NUM,
@@ -67,12 +73,21 @@ import {
   DTd,
 } from './dashboardKit';
 import { VolumeGrowthBlock } from './VolumeGrowthBlock';
+import { ClientGrowthBlock } from './ClientGrowthBlock';
+import {
+  RegistrationSourcesBlock,
+  CountryDistributionBlock,
+  DepositStatusTimelineBlock,
+  RateEvolutionBlock,
+  formatMinutes,
+} from './dashboardBlocks';
 
 /** Couleurs des séries — jetons Tailwind, donc cohérentes clair/sombre. */
 const C = {
   deposits: '#4F46E5',
   payments: '#D97706',
   clients: '#059669',
+  clientsTotal: '#065F46',
 } as const;
 
 /** Variation relative entre deux périodes. `null` = rien à comparer. */
@@ -127,9 +142,18 @@ function DashboardBody() {
   const depositStatus = useDepositStatusSummary(range);
   const topClients = useTopClients(range);
   const productivity = useAdminProductivity(range);
-  const growth = useClientGrowth(range);
-  // Ces deux-là sont des instantanés : ils ignorent la plage, à dessein.
+  const growth = useClientGrowthReport(range);
+  // Les sept métriques que la première version desktop n'affichait pas —
+  // le mobile les avait, l'utilisateur les a réclamées.
+  const funnel = useFunnel(range);
+  const processing = useDepositProcessingTime(range);
+  const registration = useRegistrationSource(range);
+  const utm = useUtmSources(range, 10);
+  const statusTimeline = useDepositStatusTimeline(range);
+  const rateHistory = useRateHistory(range);
+  // Ces trois-là sont des instantanés : ils ignorent la plage, à dessein.
   const exposure = useWalletExposure();
+  const countries = useClientCountryDistribution();
   const alerts = useDashboardAlerts();
 
   const paymentsXAF = payments.data?.current.totalXAF ?? 0;
@@ -166,7 +190,6 @@ function DashboardBody() {
     rows.map((p) => ({ ...p, axisLabel: bucketAxisLabel(new Date(p.bucket), range.granularity, range) }));
 
   const flowData = useMemo(() => withAxisLabel(flow.data?.current ?? []), [flow.data, range]); // eslint-disable-line react-hooks/exhaustive-deps
-  const growthData = useMemo(() => withAxisLabel(growth.data ?? []), [growth.data, range]); // eslint-disable-line react-hooks/exhaustive-deps
   const flowEmpty = flowData.length === 0 || flowData.every((p) => p.deposits === 0 && p.payments === 0);
 
   return (
@@ -251,6 +274,40 @@ function DashboardBody() {
         />
       </div>
 
+      {/* Deuxième ligne : les CLIENTS et le SERVICE. L'entonnoir et le délai
+          de validation vivaient sur mobile ; ils avaient disparu ici. */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Nouveaux clients"
+          value={formatInteger(growth.data?.newClients ?? 0)}
+          hint={`${formatInteger(growth.data?.totalAtEnd ?? 0)} clients au total`}
+          delta={compare ? growth.data?.trendPct : undefined}
+          loading={growth.isLoading}
+        />
+        <StatCard
+          label="Clients actifs"
+          value={formatInteger(funnel.data?.clientsWithPayment ?? 0)}
+          hint="au moins un paiement exécuté sur la période"
+          loading={funnel.isLoading}
+        />
+        <StatCard
+          label="Conversion dépôt → paiement"
+          value={formatPercent(funnel.data?.depositToPaymentRate ?? 0)}
+          hint={`${formatInteger(funnel.data?.clientsWithDeposit ?? 0)} ont déposé · ${formatInteger(funnel.data?.clientsWithPayment ?? 0)} ont payé`}
+          loading={funnel.isLoading}
+        />
+        <StatCard
+          label="Délai de validation (médiane)"
+          value={formatMinutes(processing.data?.medianMinutes)}
+          hint={
+            processing.data && processing.data.sampleSize > 0
+              ? `P90 ${formatMinutes(processing.data.p90Minutes)} · ${formatInteger(processing.data.sampleSize)} dépôts`
+              : 'aucun dépôt validé sur la période'
+          }
+          loading={processing.isLoading}
+        />
+      </div>
+
       <Block
         title="Flux financier"
         description="Dépôts validés contre paiements exécutés, agrégés par période"
@@ -329,34 +386,23 @@ function DashboardBody() {
         </Block>
       </div>
 
+      {/* LE graphique clients. Il lisait `dataKey="count"` sur des points qui
+          n'ont pas de `count` : vide en permanence. Voir `ClientGrowthBlock`. */}
+      <ClientGrowthBlock
+        report={growth.data}
+        loading={growth.isLoading}
+        range={range}
+        color={C.clients}
+        totalColor={C.clientsTotal}
+      />
+
       <div className="grid gap-4 xl:grid-cols-2">
-        <Block title="Croissance clients" description="Nouvelles inscriptions par période">
-          {growth.isLoading ? (
-            <ChartSkeleton />
-          ) : (growth.data ?? []).length === 0 ? (
-            <EmptyBlock>Aucune inscription sur la période.</EmptyBlock>
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={growthData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="axisLabel"
-                  tick={axisTick}
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                  minTickGap={18}
-                />
-                <YAxis tick={axisTick} axisLine={false} tickLine={false} width={44} allowDecimals={false} />
-                <Tooltip
-                  {...tooltipStyle}
-                  labelFormatter={(_, payload) => String(payload?.[0]?.payload?.label ?? '')}
-                />
-                <Line type="monotone" dataKey="count" name="Nouveaux clients" stroke={C.clients} strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </Block>
+        <RegistrationSourcesBlock stats={registration.data} utm={utm.data ?? []} loading={registration.isLoading || utm.isLoading} />
+        <CountryDistributionBlock rows={countries.data ?? []} loading={countries.isLoading} />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <DepositStatusTimelineBlock points={statusTimeline.data} loading={statusTimeline.isLoading} range={range} />
 
         <Block title="Qualité des dépôts" description="Dépôts SOUMIS sur la période, par statut actuel">
           {depositStatus.isLoading ? (
@@ -407,6 +453,8 @@ function DashboardBody() {
           )}
         </Block>
       </div>
+
+      <RateEvolutionBlock points={rateHistory.data} loading={rateHistory.isLoading} range={range} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Block title="Top clients" description="Classés par volume de paiements sur la période">

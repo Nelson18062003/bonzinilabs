@@ -13,8 +13,13 @@
  *   · Comptes   — soldes, ajustements ET inventaire (même objet : un compte).
  *   · Contreparties — fournisseurs USDT / acheteurs CNY.
  *
- * Les deux saisies restent des pages dédiées (profondément liables).
+ * Les deux saisies (achat, vente) s'ouvrent en FENÊTRE par-dessus la vue
+ * courante, à leur propre URL (`/purchase`, `/sale`) — voir
+ * `TreasuryEntryDialog`. C'est CET écran qui les rend, et non une route à
+ * part : ainsi la vue derrière (période, filtre, ligne sélectionnée) n'est
+ * jamais remontée quand la fenêtre s'ouvre ou se ferme.
  */
+import { useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLineDown as ArrowDownToLine, ArrowLineUp as ArrowUpFromLine } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -29,7 +34,9 @@ import { TreasuryAnalysisView } from './TreasuryAnalysisView';
 import { DateRangeProvider } from '@/lib/analytics/DateRangeContext';
 import { TREASURY_DEFAULT_PRESET } from './treasuryPeriod';
 import type { TreasuryCurrency } from './treasuryFormat';
-import { TREASURY_VIEWS, viewFromPath, treasuryPaths, type TreasuryView } from './treasuryNav';
+import { TREASURY_VIEWS, viewFromPath, entryFromPath, pathForView, treasuryPaths, type TreasuryView } from './treasuryNav';
+import { DesktopNewPurchase } from './DesktopNewPurchase';
+import { DesktopNewSale } from './DesktopNewSale';
 import { TreasuryInventoryView } from './TreasuryInventoryView';
 import { TreasuryLedgerView } from './TreasuryLedgerView';
 
@@ -40,8 +47,18 @@ export function DesktopTreasuryScreen() {
 
   // L'URL EST l'état. Plus de `useState` : c'est ce qui cassait le bouton
   // Retour, le marque-page et le rafraîchissement.
-  const view: TreasuryView = viewFromPath(pathname) ?? 'operations';
+  //
+  // Une saisie (`/purchase`, `/sale`) n'est pas une vue : elle s'ouvre
+  // par-dessus la DERNIÈRE vue affichée, qui reste visible derrière le voile,
+  // et la fermer y revient. Arrivé directement sur `/purchase` (lien
+  // partagé), c'est Opérations qui sert de fond.
+  const routeView = viewFromPath(pathname);
+  const entry = entryFromPath(pathname);
+  const lastViewRef = useRef<TreasuryView>('operations');
+  if (routeView) lastViewRef.current = routeView;
+  const view: TreasuryView = routeView ?? lastViewRef.current;
   const current = TREASURY_VIEWS.find((v) => v.key === view);
+  const closeEntry = () => navigate(pathForView(view));
 
   const { data: balances } = useTreasuryAccountBalances();
   const { data: wac } = useUsdtWac();
@@ -55,10 +72,10 @@ export function DesktopTreasuryScreen() {
   const totals = (balances ?? []).reduce<Partial<Record<TreasuryCurrency, { total: number; count: number }>>>(
     (acc, b) => {
       const cur = (b.currency ?? 'XAF') as TreasuryCurrency;
-      const entry = acc[cur] ?? { total: 0, count: 0 };
-      entry.total += Number(b.balance ?? 0);
-      entry.count += 1;
-      acc[cur] = entry;
+      const bucket = acc[cur] ?? { total: 0, count: 0 };
+      bucket.total += Number(b.balance ?? 0);
+      bucket.count += 1;
+      acc[cur] = bucket;
       return acc;
     },
     {},
@@ -113,6 +130,10 @@ export function DesktopTreasuryScreen() {
         {view === 'counterparties' && <TreasuryCounterpartiesView canManage={canManage} />}
         {view === 'ledger' && <TreasuryLedgerView />}
       </DateRangeProvider>
+
+      {/* Les saisies, PAR-DESSUS la vue — la vue reste montée. */}
+      {entry === 'purchase' && <DesktopNewPurchase onClose={closeEntry} />}
+      {entry === 'sale' && <DesktopNewSale onClose={closeEntry} />}
     </div>
     </MIcons>
   );
