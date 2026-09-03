@@ -9,6 +9,12 @@
  * Ces tests fixent la chaîne complète : des points du hook aux lignes du
  * graphique (les clés que le graphique lit existent et portent les bonnes
  * valeurs), aux chiffres de tête, et au rendu du bloc.
+ *
+ * SECONDE demande, après coup : « il a une ligne, mais il a aussi des barres
+ * dedans, je ne comprends pas ce graphique ». Les barres sont parties, le bloc
+ * ne dessine plus qu'une série — le parc de clients. `GrowthRow.nouveaux`
+ * reste rempli : l'infobulle le donne, et c'est ce qui permet de retirer les
+ * barres sans perdre ce qu'elles disaient.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -90,7 +96,7 @@ describe('Croissance clients — des points au graphique', () => {
 
   it('le bloc rendu affiche les chiffres de tête tirés des points', () => {
     const report = buildClientGrowthReport(points, 4);
-    render(<ClientGrowthBlock report={report} loading={false} range={range} color="#059669" totalColor="#065F46" />);
+    render(<ClientGrowthBlock report={report} loading={false} range={range} color="#059669" />);
     expect(screen.getByText('Nouveaux sur la période')).toBeTruthy();
     expect(screen.getByText('8')).toBeTruthy();
     expect(screen.getByText('1 188')).toBeTruthy();
@@ -99,7 +105,7 @@ describe('Croissance clients — des points au graphique', () => {
   });
 
   it('le bloc vide le dit, au lieu de dessiner un graphique sans données', () => {
-    render(<ClientGrowthBlock report={buildClientGrowthReport([], 0)} loading={false} range={range} color="#059669" totalColor="#065F46" />);
+    render(<ClientGrowthBlock report={buildClientGrowthReport([], 0)} loading={false} range={range} color="#059669" />);
     expect(screen.getByText('Aucune donnée sur la période.')).toBeTruthy();
   });
 });

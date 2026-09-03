@@ -12,9 +12,15 @@
  *     côté du design system.
  *
  * Ici : tout est visible, les montants sont entiers, et les atomes viennent du
- * design system (`dashboardKit`). La couche de données ne bouge pas — elle est
- * bonne : 21 métriques dans `useAnalytics`, toutes consommées ici (la
- * première version desktop en avait laissé sept de côté ; `dashboardBlocks`).
+ * design system (`dashboardKit`). La couche de données ne bouge pas.
+ *
+ * La COMPOSITION, elle, suit les demandes successives de l'utilisateur : sept
+ * graphiques que la première version desktop avait laissés de côté ont été
+ * restaurés (`dashboardBlocks`), puis trois ont été retirés à sa demande
+ * (statut des dépôts dans le temps, qualité des dépôts, évolution des taux),
+ * et une section « Croissance » est venue répondre à la question qui manquait :
+ * non pas « combien sur la période » mais « est-ce que ça monte, semaine après
+ * semaine, mois après mois » (`GrowthMatrixSection`).
  *
  * Le mobile garde son écran : ses accordéons sont justifiés par sa largeur.
  */
@@ -41,7 +47,6 @@ import {
   useDepositSummary,
   useDepositMethodBreakdown,
   usePaymentMethodBreakdown,
-  useDepositStatusSummary,
   useTopClients,
   useWalletExposure,
   useDashboardAlerts,
@@ -54,12 +59,9 @@ import {
   useRegistrationSource,
   useUtmSources,
   useClientCountryDistribution,
-  useDepositStatusTimeline,
-  useRateHistory,
 } from '@/hooks/analytics/useAnalytics';
 import {
   NUM,
-  LABEL,
   TONE,
   StatCard,
   Block,
@@ -77,17 +79,15 @@ import { ClientGrowthBlock } from './ClientGrowthBlock';
 import {
   RegistrationSourcesBlock,
   CountryDistributionBlock,
-  DepositStatusTimelineBlock,
-  RateEvolutionBlock,
   formatMinutes,
 } from './dashboardBlocks';
+import { GrowthMatrixSection } from './GrowthMatrixSection';
 
 /** Couleurs des séries — jetons Tailwind, donc cohérentes clair/sombre. */
 const C = {
   deposits: '#4F46E5',
   payments: '#D97706',
   clients: '#059669',
-  clientsTotal: '#065F46',
 } as const;
 
 /** Variation relative entre deux périodes. `null` = rien à comparer. */
@@ -139,18 +139,15 @@ function DashboardBody() {
   const deposits = useDepositSummary(range);
   const depositMethods = useDepositMethodBreakdown(range);
   const paymentMethods = usePaymentMethodBreakdown(range);
-  const depositStatus = useDepositStatusSummary(range);
   const topClients = useTopClients(range);
   const productivity = useAdminProductivity(range);
   const growth = useClientGrowthReport(range);
-  // Les sept métriques que la première version desktop n'affichait pas —
-  // le mobile les avait, l'utilisateur les a réclamées.
+  // Les métriques que la première version desktop n'affichait pas — le
+  // mobile les avait, l'utilisateur les a réclamées.
   const funnel = useFunnel(range);
   const processing = useDepositProcessingTime(range);
   const registration = useRegistrationSource(range);
   const utm = useUtmSources(range, 10);
-  const statusTimeline = useDepositStatusTimeline(range);
-  const rateHistory = useRateHistory(range);
   // Ces trois-là sont des instantanés : ils ignorent la plage, à dessein.
   const exposure = useWalletExposure();
   const countries = useClientCountryDistribution();
@@ -353,11 +350,14 @@ function DashboardBody() {
       </Block>
 
       {/* Le flux combiné répond « entre-t-il plus qu'il ne sort ? ». Ces deux
-          blocs répondent à l'autre question, celle de la croissance : chaque
-          flux suivi pour lui-même, avec son cumul. */}
+          blocs suivent chaque flux POUR LUI-MÊME sur la période choisie, avec
+          son cumul. Le RYTHME (semaine après semaine) est une autre question,
+          traitée plus bas par `GrowthMatrixSection` — d'où les titres
+          « Volume … sur la période » ici et « Croissance … » là-bas : deux
+          blocs ne peuvent pas porter le même nom sur un même écran. */}
       <VolumeGrowthBlock
-        title="Croissance des dépôts"
-        description="Volume validé par période, et cumul sur la période"
+        title="Volume des dépôts sur la période"
+        description="Volume validé par seau, et cumul depuis le début de la période"
         report={depositGrowth.data}
         loading={depositGrowth.isLoading}
         range={range}
@@ -367,8 +367,8 @@ function DashboardBody() {
       />
 
       <VolumeGrowthBlock
-        title="Croissance des paiements"
-        description="Volume exécuté par période, et cumul sur la période"
+        title="Volume des paiements sur la période"
+        description="Volume exécuté par seau, et cumul depuis le début de la période"
         report={paymentGrowth.data}
         loading={paymentGrowth.isLoading}
         range={range}
@@ -386,75 +386,19 @@ function DashboardBody() {
         </Block>
       </div>
 
-      {/* LE graphique clients. Il lisait `dataKey="count"` sur des points qui
-          n'ont pas de `count` : vide en permanence. Voir `ClientGrowthBlock`. */}
-      <ClientGrowthBlock
-        report={growth.data}
-        loading={growth.isLoading}
-        range={range}
-        color={C.clients}
-        totalColor={C.clientsTotal}
-      />
+      {/* LE graphique clients : le parc au fil de la période, une seule
+          courbe. Les barres qui s'y superposaient sont parties — « il a une
+          ligne et aussi des barres dedans, je ne comprends pas ». */}
+      <ClientGrowthBlock report={growth.data} loading={growth.isLoading} range={range} color={C.clients} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <RegistrationSourcesBlock stats={registration.data} utm={utm.data ?? []} loading={registration.isLoading || utm.isLoading} />
         <CountryDistributionBlock rows={countries.data ?? []} loading={countries.isLoading} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <DepositStatusTimelineBlock points={statusTimeline.data} loading={statusTimeline.isLoading} range={range} />
-
-        <Block title="Qualité des dépôts" description="Dépôts SOUMIS sur la période, par statut actuel">
-          {depositStatus.isLoading ? (
-            <ChartSkeleton />
-          ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className={LABEL}>Taux de validation</div>
-                  <div className={cn('mt-1 text-[20px] font-bold', NUM, TONE.positive)}>
-                    {((depositStatus.data?.validationRate ?? 0) * 100).toFixed(1).replace('.', ',')} %
-                  </div>
-                </div>
-                <div>
-                  <div className={LABEL}>Taux de rejet</div>
-                  <div className={cn('mt-1 text-[20px] font-bold', NUM, TONE.negative)}>
-                    {((depositStatus.data?.rejectionRate ?? 0) * 100).toFixed(1).replace('.', ',')} %
-                  </div>
-                </div>
-              </div>
-              <DTable>
-                <DHead>
-                  <DRow className="hover:bg-transparent">
-                    <DTh>Statut</DTh>
-                    <DTh align="right">Nombre</DTh>
-                    <DTh align="right">Montant</DTh>
-                  </DRow>
-                </DHead>
-                <DBody>
-                  {([
-                    ['Validés', depositStatus.data?.validated],
-                    ['En attente de preuve', depositStatus.data?.pendingProof],
-                    ['En revue', depositStatus.data?.pendingReview],
-                    ['Rejetés', depositStatus.data?.rejected],
-                    ['Annulés', depositStatus.data?.cancelled],
-                  ] as const).map(([label, s]) => (
-                    <DRow key={label}>
-                      <DTd>{label}</DTd>
-                      <DTd align="right" className={NUM}>{formatInteger(s?.count ?? 0)}</DTd>
-                      <DTd align="right" className={cn(NUM, 'font-semibold')}>
-                        {formatCurrencyFull(s?.amountXAF ?? 0, 'XAF')}
-                      </DTd>
-                    </DRow>
-                  ))}
-                </DBody>
-              </DTable>
-            </div>
-          )}
-        </Block>
-      </div>
-
-      <RateEvolutionBlock points={rateHistory.data} loading={rateHistory.isLoading} range={range} />
+      {/* Les trois matrices de croissance : le RYTHME, sur douze semaines ou
+          douze mois, indépendamment de la période choisie en haut. */}
+      <GrowthMatrixSection />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Block title="Top clients" description="Classés par volume de paiements sur la période">
