@@ -180,7 +180,64 @@ sur `dashboardKit` et avec les axes contextuels (`bucketAxisLabel`) :
 | Statut des dépôts dans le temps | `useDepositStatusTimeline` | barres empilées validés / en attente / rejetés |
 | Évolution des taux | `useRateHistory` | 4 courbes, domaine resserré, Alipay moyen · variation · écart moyen |
 
+## 7. La section « Croissance » — le rythme, et non le volume
+
+Demande suivante, après la restauration : « je veux voir comment nos clients
+grandissent chaque semaine et chaque mois… pouvoir changer sur le graphique
+entre semaine après semaine et mois après mois », pour les clients, les
+dépôts ET les paiements.
+
+C'est une question que le reste de l'écran ne posait pas. « Flux financier »
+et « Volume des dépôts sur la période » répondent *combien sur la période
+choisie* ; la croissance demande *à quel rythme*, ce qui suppose une suite de
+périodes comparables. Sur « 30 derniers jours », un graphique mensuel donne un
+seul seau : la question n'a alors pas de réponse.
+
+D'où une **fenêtre propre** (`src/lib/analytics/growthWindow.ts`) : douze
+semaines ou douze mois glissants, indépendante du sélecteur du haut. Le calcul
+se fait en jours civils de Douala, en arithmétique de chaînes 'YYYY-MM-DD' —
+pas de `Date` locale, c'est la leçon du bogue de fuseau (§5). La fenêtre
+commence exactement au début d'un seau, sinon la première barre est une
+demi-période qu'on lirait comme un effondrement.
+
+| Bloc | Hook | Pas par défaut |
+|---|---|---|
+| Croissance des clients | `useClientGrowth` | mois (une inscription est rare) |
+| Croissance des dépôts | `useDepositVolumeReport` | semaine |
+| Croissance des paiements | `usePaymentVolumeReport` | semaine |
+
+Chaque bloc porte SON pas : on lit les clients par mois pendant qu'on regarde
+les paiements par semaine.
+
+**Un seul encodage : des barres.** La variation d'une période à l'autre n'est
+pas une seconde série, c'est une étiquette posée sur la barre (voir §8). Deux
+règles d'honnêteté :
+
+- la **période en cours** est incomplète : dessinée en clair, sans étiquette
+  de variation (une semaine à son deuxième jour afficherait « −70 % »), et
+  exclue des chiffres de tête, qui portent sur les périodes terminées ;
+- une **période précédente à zéro** ne donne pas « +∞ % » mais rien.
+
+## 8. Trois graphiques retirés, et les barres du graphique clients
+
+Même message : « tu peux supprimer ce graphique, il ne me sert à rien pour le
+moment ». Retirés de l'écran desktop — **Évolution des taux**, **Qualité des
+dépôts**, **Statut des dépôts dans le temps**. Le code est supprimé, pas
+commenté ; les hooks (`useRateHistory`, `useDepositStatusSummary`,
+`useDepositStatusTimeline`) restent, l'écran mobile les consomme.
+
+Et : « il a une ligne, mais il a aussi des barres dedans, je ne comprends pas
+ce graphique ». Le bloc clients était un graphique combiné — des barres (les
+nouveaux du seau) et une aire (le total cumulé) sur deux axes de sens
+différents. Les barres sont parties ; reste l'aire, renommée **Parc de
+clients**. Le nombre de nouveaux par seau vit dans l'infobulle et dans les
+chiffres de tête. Le rythme, lui, a désormais son propre graphique (§7).
+
+Deux blocs ne pouvant pas porter le même nom sur un écran, les anciens blocs
+de volume sont devenus **Volume des dépôts / des paiements sur la période**,
+et les matrices gardent **Croissance des …**.
+
 Ordre de lecture de l'écran : alertes → indicateurs (argent, puis clients et
-service) → flux financier → croissance dépôts / paiements → croissance
-clients → sources / pays → méthodes → statut des dépôts / qualité → taux →
-top clients / productivité.
+service) → flux financier → volume dépôts / paiements sur la période →
+méthodes → parc de clients → sources / pays → **croissance clients / dépôts /
+paiements** → top clients / productivité.
