@@ -18,6 +18,7 @@ import { buildGrowthRange } from '@/lib/analytics/growthWindow';
 import {
   GrowthMatrixBlock,
   buildGrowthBuckets,
+  growthDeltaPhrase,
   summarizeGrowth,
   type GrowthInput,
 } from '@/desktop/screens/analytics/GrowthMatrixBlock';
@@ -111,6 +112,29 @@ describe('Les chiffres de tête ignorent la période en cours', () => {
       range,
     );
     expect(summarizeGrowth(flat).best).toBeNull();
+  });
+});
+
+describe("La variation de l'infobulle", () => {
+  // Recharts ne rend aucune infobulle en jsdom (pas de mise en page) : la
+  // phrase avait donc échappé à la correction d'accord des autres libellés et
+  // disait « vs mois précédente ». Elle est désormais une fonction pure,
+  // atteignable par un test.
+  const buckets = buildGrowthBuckets(points, range);
+
+  it('accorde le genre, comme le reste du bloc', () => {
+    expect(growthDeltaPhrase(buckets[2], 'week')).toBe(' · -40,0 % vs semaine précédente');
+    expect(growthDeltaPhrase(buckets[2], 'month')).toBe(' · -40,0 % vs mois précédent');
+    expect(growthDeltaPhrase(buckets[2], 'month')).not.toMatch(/précédente/);
+  });
+
+  it('porte le signe des hausses', () => {
+    expect(growthDeltaPhrase(buckets[1], 'week')).toBe(' · +100,0 % vs semaine précédente');
+  });
+
+  it("ne dit rien sur la période en cours ni sur la première", () => {
+    expect(growthDeltaPhrase(buckets[3], 'week')).toBe(''); // en cours
+    expect(growthDeltaPhrase(buckets[0], 'week')).toBe(''); // rien avant elle
   });
 });
 

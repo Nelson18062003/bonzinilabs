@@ -44,17 +44,26 @@ export const GROWTH_MODE_NOUN: Record<GrowthMode, string> = {
  */
 export const GROWTH_MODE_TEXT: Record<
   GrowthMode,
-  { lastComplete: string; vsPrevious: string; plural: string; currentIs: string }
+  {
+    lastComplete: string;
+    vsPrevious: string;
+    /** Forme courte, pour l'infobulle : « vs semaine précédente ». */
+    vsPreviousShort: string;
+    plural: string;
+    currentIs: string;
+  }
 > = {
   week: {
     lastComplete: 'Dernière semaine complète',
     vsPrevious: "vs la semaine d'avant",
+    vsPreviousShort: 'vs semaine précédente',
     plural: 'semaines',
     currentIs: 'est la semaine en cours',
   },
   month: {
     lastComplete: 'Dernier mois complet',
     vsPrevious: "vs le mois d'avant",
+    vsPreviousShort: 'vs mois précédent',
     plural: 'mois',
     currentIs: 'est le mois en cours',
   },

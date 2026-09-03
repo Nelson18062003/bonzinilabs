@@ -118,6 +118,22 @@ export function summarizeGrowth(buckets: ReadonlyArray<GrowthBucket>): GrowthSum
   };
 }
 
+/**
+ * Le complément de variation de l'infobulle : « · +12,4 % vs semaine
+ * précédente », ou rien.
+ *
+ * Fonction PURE et exportée, à dessein. Écrite en ligne dans le `formatter`
+ * de Recharts, elle était intestable — aucune infobulle ne se rend en jsdom,
+ * faute de mise en page — et c'est là qu'une faute d'accord (« vs mois
+ * précédente ») a survécu à la correction des autres libellés.
+ */
+export function growthDeltaPhrase(bucket: GrowthBucket, mode: GrowthMode): string {
+  if (bucket.isCurrent || bucket.deltaPct === null) return '';
+  const pct = (bucket.deltaPct * 100).toFixed(1).replace('.', ',');
+  const sign = bucket.deltaPct > 0 ? '+' : '';
+  return ` · ${sign}${pct} % ${GROWTH_MODE_TEXT[mode].vsPreviousShort}`;
+}
+
 function HeadStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="min-w-0">
@@ -171,7 +187,9 @@ function DeltaLabel({
   // d'affichage. L'absence de barre dit déjà que la période est vide.
   if (bucket.value === 0) return null;
   const positive = bucket.deltaPct > 0;
-  const flat = Math.abs(bucket.deltaPct) < 0.001;
+  // L'étiquette est arrondie à l'entier : sous un demi-point, « +0 % » serait
+  // à la fois faux (ce n'est pas zéro) et illisible. On écrit « = ».
+  const flat = Math.abs(bucket.deltaPct) < 0.005;
   return (
     <text
       x={Number(x) + Number(width) / 2}
@@ -231,7 +249,7 @@ export function GrowthMatrixBlock({
             <HeadStat
               label={text.lastComplete}
               value={summary.lastComplete ? format(summary.lastComplete.value) : '—'}
-              hint={summary.lastComplete?.label}
+              hint={summary.lastComplete?.axisLabel}
             />
             <div className="min-w-0">
               <div className={LABEL}>Variation</div>
@@ -252,7 +270,7 @@ export function GrowthMatrixBlock({
             <HeadStat
               label="Meilleure période"
               value={summary.best ? format(summary.best.value) : '—'}
-              hint={summary.best?.label}
+              hint={summary.best?.axisLabel}
             />
           </div>
 
@@ -294,11 +312,7 @@ export function GrowthMatrixBlock({
                 }}
                 formatter={(value, _name, item) => {
                   const b = item?.payload as GrowthBucket | undefined;
-                  const delta =
-                    b && !b.isCurrent && b.deltaPct !== null
-                      ? ` · ${b.deltaPct > 0 ? '+' : ''}${(b.deltaPct * 100).toFixed(1).replace('.', ',')} % vs ${noun} précédente`
-                      : '';
-                  return [`${format(Number(value))}${delta}`, unit];
+                  return [`${format(Number(value))}${b ? growthDeltaPhrase(b, mode) : ''}`, unit];
                 }}
               />
               <Bar dataKey="value" name={unit} radius={[3, 3, 0, 0]} maxBarSize={44}>
