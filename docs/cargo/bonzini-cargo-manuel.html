@@ -1,0 +1,1250 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<title>Bonzini Cargo — Manuel de la chaîne logistique Chine → Cameroun</title>
+<style>
+@page { size: A4; margin: 18mm 16mm 20mm 16mm;
+  @bottom-center { content: counter(page); font-family: Helvetica, Arial, sans-serif; font-size: 8pt; color: #8a8a96; } }
+@page cover { @bottom-center { content: ""; } }
+:root{
+  --violet:hsl(258 100% 60%); --violet-d:hsl(258 60% 38%); --violet-l:hsl(258 100% 97%);
+  --amber:hsl(36 100% 55%);  --amber-d:hsl(36 80% 34%);   --amber-l:hsl(36 100% 96%);
+  --orange:hsl(16 100% 55%); --orange-d:hsl(16 80% 36%);  --orange-l:hsl(16 100% 97%);
+  --ink:#1a1a1f; --ink2:#3d3d47; --mut:#6b6b78; --line:#dcdce4; --bg:#fafafc;
+}
+*{box-sizing:border-box}
+body{font-family:"Georgia","Times New Roman",serif; color:var(--ink); font-size:10.2pt; line-height:1.62; margin:0;}
+h1,h2,h3,h4,.ui{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+h1{font-size:23pt;line-height:1.15;margin:0 0 6pt;letter-spacing:-.02em}
+h2{font-size:16pt;margin:0 0 4pt;letter-spacing:-.01em;color:var(--violet-d)}
+h3{font-size:11.6pt;margin:16pt 0 5pt;color:var(--ink);letter-spacing:-.005em;page-break-after:avoid;page-break-inside:avoid}
+h4{font-size:10.2pt;margin:12pt 0 3pt;color:var(--violet-d);text-transform:uppercase;letter-spacing:.06em;font-size:8.6pt}
+p{margin:0 0 7pt;orphans:2;widows:2}
+ul,ol{margin:0 0 8pt;padding-left:16pt}
+li{margin-bottom:3.5pt}
+strong{color:#000}
+em{color:var(--ink2)}
+code,.mono{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:8.8pt;background:#f1f1f6;padding:1px 4px;border-radius:3px}
+a{color:var(--violet-d);text-decoration:none}
+
+/* ---- page architecture ---- */
+.chapter{page-break-before:always}
+.chapter-head{border-top:3px solid var(--violet);padding-top:10pt;margin-bottom:14pt;page-break-after:avoid}
+.chapter-num{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:8pt;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:3pt}
+.lede{font-size:11pt;color:var(--ink2);border-left:2px solid var(--amber);padding-left:10pt;margin:0 0 14pt;font-style:italic;page-break-inside:avoid}
+.nobreak{page-break-inside:avoid}
+
+/* ---- cover ---- */
+.cover{page:cover;height:250mm;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always}
+.cover-top{padding-top:14mm}
+.brand{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;font-size:11pt;letter-spacing:.02em}
+.brand .b1{color:var(--violet)}.brand .b2{color:var(--amber)}.brand .b3{color:var(--orange)}
+.cover h1{font-size:36pt;line-height:1.06;margin:26mm 0 0}
+.cover .sub{font-size:14pt;color:var(--ink2);margin-top:8pt;line-height:1.35}
+.rule3{display:flex;height:5px;margin:14pt 0 0;width:70mm}
+.rule3 i{flex:1}.rule3 i:nth-child(1){background:var(--violet)}.rule3 i:nth-child(2){background:var(--amber)}.rule3 i:nth-child(3){background:var(--orange)}
+.cover-meta{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:8.6pt;color:var(--mut);border-top:1px solid var(--line);padding-top:8pt;line-height:1.7}
+
+/* ---- tables ---- */
+table{width:100%;border-collapse:collapse;margin:8pt 0 12pt;font-size:8.8pt;page-break-inside:auto}
+tr{page-break-inside:avoid;page-break-after:auto}
+th{page-break-after:avoid}
+th{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:7.6pt;text-transform:uppercase;letter-spacing:.05em;
+   text-align:left;background:var(--violet-l);color:var(--violet-d);padding:5pt 6pt;border-bottom:1.5px solid var(--violet);vertical-align:bottom}
+td{padding:5pt 6pt;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.45}
+tr:nth-child(even) td{background:#fbfbfd}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+table.compact td,table.compact th{padding:3.5pt 5pt;font-size:8.3pt}
+caption{caption-side:bottom;font-size:7.8pt;color:var(--mut);text-align:left;padding-top:4pt;font-style:italic}
+
+/* ---- callouts ---- */
+.box{padding:9pt 11pt;margin:10pt 0;border-radius:4px;font-size:9.4pt;page-break-inside:avoid;line-height:1.55}
+.box p:last-child{margin-bottom:0}
+.box .t{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:7.8pt;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4pt}
+.k{background:var(--violet-l);border-left:3px solid var(--violet)} .k .t{color:var(--violet-d)}
+.w{background:var(--orange-l);border-left:3px solid var(--orange)} .w .t{color:var(--orange-d)}
+.n{background:var(--amber-l);border-left:3px solid var(--amber)} .n .t{color:var(--amber-d)}
+.g{background:#f2f2f6;border-left:3px solid #9a9aa8} .g .t{color:#55555f}
+
+/* ---- source tag ---- */
+.src{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:7.2pt;color:var(--mut);display:block;margin-top:4pt}
+sup.r{font-size:6.6pt;color:var(--violet);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;vertical-align:super}
+.badge{display:inline-block;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:6.6pt;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;padding:1.5px 5px;border-radius:8px;vertical-align:2px}
+.b-off{background:#dff3e4;color:#1e6b34}   /* officiel */
+.b-mar{background:#fdeacd;color:#8a5a00}   /* marché */
+.b-ver{background:#fde0dc;color:#9c2a1c}   /* à vérifier */
+
+/* ---- flow diagram ---- */
+.flow{margin:12pt 0;page-break-inside:auto}
+.fstep{display:flex;gap:8pt;margin-bottom:6pt;align-items:stretch;page-break-inside:avoid}
+.fnum{flex:0 0 26pt;background:var(--violet);color:#fff;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;
+  font-size:11pt;display:flex;align-items:center;justify-content:center;border-radius:3px}
+.fstep:nth-child(3n+2) .fnum{background:var(--amber)}
+.fstep:nth-child(3n) .fnum{background:var(--orange)}
+.fbody{flex:1;border:1px solid var(--line);border-left:none;padding:6pt 9pt;background:#fff;border-radius:0 3px 3px 0}
+.fbody>b{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:9.4pt;display:block;margin-bottom:2pt}
+.fbody span b{display:inline;font-family:inherit;font-size:inherit;margin:0;color:#000}
+.fbody span{font-size:8.6pt;color:var(--ink2);line-height:1.5;display:block}
+.fmeta{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:7.4pt;color:var(--mut);margin-top:3pt;display:block}
+
+/* ---- TOC ---- */
+.toc{page-break-after:always}
+.toc ol{list-style:none;padding:0;margin:0;counter-reset:t}
+.toc li{counter-increment:t;display:flex;gap:8pt;padding:4.5pt 0;border-bottom:1px dotted var(--line);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:9.4pt}
+.toc li::before{content:counter(t,decimal-leading-zero);color:var(--violet);font-weight:700;font-size:8.4pt;flex:0 0 18pt}
+.toc li i{color:var(--mut);font-size:8.4pt;font-style:normal;margin-left:auto;text-align:right;flex:0 0 auto;max-width:52%}
+.toc li.p0{counter-increment:none}
+.toc .p0::before{content:"00";color:var(--amber)}
+
+/* glossary */
+.gl{font-size:9.2pt}
+.gl dt{page-break-after:avoid;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;font-size:9.2pt;margin-top:8pt;color:var(--violet-d)}
+.gl dd{page-break-inside:avoid;margin:1pt 0 0;padding-left:0;line-height:1.55}
+.gl dd .who{font-size:8pt;color:var(--mut);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;display:block;margin-top:2pt}
+.srclist{font-size:8.4pt;line-height:1.5}
+.srclist li{margin-bottom:5pt;page-break-inside:avoid}
+.srclist .u{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:7.4pt;color:var(--mut);word-break:break-all;display:block}
+</style></head><body>
+
+<!-- ══════════════ COVER ══════════════ -->
+<div class="cover">
+ <div class="cover-top">
+  <div class="brand"><span class="b1">Bonzini</span> <span class="b2">Labs</span> <span class="b3">·</span> Division Cargo</div>
+  <h1>La chaîne logistique<br>Chine&nbsp;→&nbsp;Cameroun</h1>
+  <div class="sub">Manuel de compréhension complet :<br>acteurs, étapes, documents, douane, coûts, fiscalité<br>— et ce qu'on digitalise.</div>
+  <div class="rule3"><i></i><i></i><i></i></div>
+ </div>
+ <div class="cover-meta">
+  <b>Document interne de référence</b> — v1.0<br>
+  Établi le 4 septembre 2026 · Périmètre : importation de marchandises générales, Guangzhou / Guangdong → Douala &amp; Kribi<br>
+  Sources : Code des douanes CEMAC, lois camerounaises, CNCC, GUCE, DGD, ANOR, opérateurs de marché. Toutes référencées au chapitre 20.<br>
+  <span style="color:var(--orange-d)"><b>Avertissement :</b> les montants de marché sont indicatifs et volatils. Vérifier avant tout engagement commercial.</span>
+ </div>
+</div>
+<!-- ══════════════ SOMMAIRE ══════════════ -->
+<div class="toc">
+<div class="chapter-head" style="border-top-color:var(--amber)">
+<span class="chapter-num">Sommaire</span><h2 style="color:var(--amber-d)">Ce que contient ce manuel</h2>
+</div>
+<ol>
+<li class="p0">Mode d&#39;emploi &amp; niveau de fiabilité des chiffres <i>comment lire ce document</i></li>
+<li>La chaîne en une page : les 7 blocs <i>vue d'ensemble</i></li>
+<li>Les acteurs : qui fait quoi, qui encaisse quoi <i>14 parties prenantes</i></li>
+<li>Les Incoterms : le contrat qui décide de tout <i>EXW · FOB · CIF · DDP</i></li>
+<li>Bloc A — La Chine : de l'usine au navire <i>enlèvement, groupage, export</i></li>
+<li>Bloc B — La mer : navire, conteneur, connaissement <i>FCL, LCL, BL</i></li>
+<li>Bloc C — Le pré-dédouanement camerounais <i>DI · SGS · ANOR · BESC</i></li>
+<li>Le BESC, enfin expliqué <i>et pourquoi ce n'est pas un impôt</i></li>
+<li>Bloc D — L'arrivée au port <i>manifeste, débarquement, acconage</i></li>
+<li>Bloc E — La douane <i>déclaration, circuits, liquidation, BAE</i></li>
+<li>Bloc F — Enlèvement et livraison finale <i>sortie port, camion, conteneur vide</i></li>
+<li>L'argent : anatomie complète d'un coût de bout en bout <i>+ exemple chiffré</i></li>
+<li>Douane, impôts, TVA : qui prend quoi et pourquoi <i>la clarification</i></li>
+<li>Le dossier documentaire, pièce par pièce <i>16 documents</i></li>
+<li>Les délais réels : le calendrier honnête <i>J+0 à J+70</i></li>
+<li>Là où ça casse : incidents, pièges, arnaques <i>et comment on les évite</i></li>
+<li>Glossaire anti-panique <i>A → Z, ~90 termes</i></li>
+<li>Le modèle économique Bonzini Cargo <i>comment on gagne de l'argent</i></li>
+<li>Cadre légal : avons-nous le droit d'exercer ? <i>agrément, statuts, fiscalité</i></li>
+<li>La techno : devenir le Flexport du Cameroun <i>modèle de données + plan par phases</i></li>
+<li>Sources <i>toutes les références</i></li>
+</ol>
+</div>
+
+<!-- ══════════════ 00 — MODE D'EMPLOI ══════════════ -->
+<div class="chapter" style="page-break-before:auto">
+<div class="chapter-head" style="border-top-color:var(--amber)">
+<span class="chapter-num">Chapitre 00</span>
+<h2 style="color:var(--amber-d)">Mode d'emploi &amp; fiabilité des chiffres</h2>
+</div>
+<p class="lede">Avant tout : ce document mélange du droit (stable, vérifiable) et des prix (volatils, négociés). Les deux ne se lisent pas de la même façon. Voici la convention.</p>
+
+<h3>Les trois niveaux de fiabilité</h3>
+<p>Chaque affirmation chiffrée porte une étiquette. Tu peux t'appuyer sur une, discuter la deuxième, et tu dois vérifier la troisième avant de signer quoi que ce soit.</p>
+
+<table>
+<tr><th style="width:22%">Étiquette</th><th style="width:33%">Ce que ça veut dire</th><th>Comment t'en servir</th></tr>
+<tr><td><span class="badge b-off">Officiel</span></td>
+    <td>Issu d'un texte de loi, d'un règlement CEMAC, d'un décret ou d'une publication d'une administration.</td>
+    <td>Opposable. Tu peux le mettre dans un contrat, une facture, une formation interne.</td></tr>
+<tr><td><span class="badge b-mar">Marché</span></td>
+    <td>Prix ou délai pratiqué par des opérateurs privés (armateurs, groupeurs, transitaires, terminaux).</td>
+    <td>Ordre de grandeur pour construire une grille tarifaire. Se re-cote à chaque expédition. Jamais dans un contrat sans clause de révision.</td></tr>
+<tr><td><span class="badge b-ver">À vérifier</span></td>
+    <td>Information trouvée dans plusieurs sources secondaires qui se contredisent, ou susceptible d'avoir changé récemment.</td>
+    <td>À confirmer auprès de la source primaire (douane, CNCC, GUCE) avant usage opérationnel. Liste des points ouverts en fin de chapitre 20.</td></tr>
+</table>
+
+<div class="box w"><span class="t">Ce que ce document n'est pas</span>
+<p>Ce n'est pas un avis juridique ni fiscal. Le droit douanier camerounais bouge tous les ans avec la loi de finances, et 2026 est une année de bascule majeure (nouveau code des douanes et nouveau tarif harmonisés CEEAC-CEMAC entrés en vigueur le 1<sup>er</sup> janvier 2026). Avant de figer une grille tarifaire client ou un contrat de commission, fais valider par un commissionnaire agréé en douane et un conseil fiscal camerounais.</p></div>
+
+<h3>Une convention de vocabulaire, pour arrêter de s'y perdre</h3>
+<p>Le métier utilise trois mots pour la même chose et un mot pour trois choses. On fixe le vocabulaire Bonzini une fois pour toutes :</p>
+<table class="compact">
+<tr><th style="width:26%">On dit</th><th style="width:30%">On ne dit plus</th><th>Pourquoi</th></tr>
+<tr><td><b>Expédition</b> (shipment)</td><td>« dossier », « colis », « cargo »</td><td>Une expédition = une marchandise, un client, un point A, un point B. C'est l'objet central de notre système.</td></tr>
+<tr><td><b>Connaissement</b> / BL</td><td>« le papier du bateau », « le titre »</td><td>C'est le titre de propriété transportable. Le mot compte juridiquement.</td></tr>
+<tr><td><b>Commissionnaire agréé en douane</b> (CAD)</td><td>« le transitaire », « le déclarant » indistinctement</td><td>Seul le CAD a le droit légal de déclarer pour autrui. Un « transitaire » sans agrément ne peut pas signer une déclaration.</td></tr>
+<tr><td><b>Valeur CIF</b> (ou CAF)</td><td>« la valeur de la marchandise »</td><td>C'est la base de calcul de TOUTES les taxes. Marchandise + fret + assurance. Confondre les deux fausse tous les calculs.</td></tr>
+<tr><td><b>Surestaries</b> (demurrage)<br><b>Détention</b> (detention)</td><td>« les pénalités du port »</td><td>Deux compteurs différents, deux bénéficiaires différents. Voir chapitre 8, et le glossaire.</td></tr>
+</table>
+
+<div class="box k"><span class="t">Comment lire ce manuel selon ton besoin</span>
+<p><b>Tu veux comprendre le métier en 20 minutes</b> → chapitres 1, 2, 3, puis 16 (glossaire).<br>
+<b>Tu veux chiffrer une expédition</b> → chapitres 3, 11, 12.<br>
+<b>Tu veux répondre à un client qui panique</b> → chapitres 15 et 16.<br>
+<b>Tu veux construire le produit</b> → chapitres 17, 18, 19.<br>
+<b>Tu veux comprendre le BESC</b> → chapitre 7, c'est un chapitre entier.</p></div>
+</div>
+<!-- ══════════════ 01 — LA CHAÎNE EN UNE PAGE ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 01</span><h2>La chaîne en une page : les 7 blocs</h2></div>
+<p class="lede">Tout ce qui suit dans ce manuel n'est que le détail de ces sept blocs. Si tu retiens cette page, tu peux déjà tenir une conversation avec un transitaire sans être perdu.</p>
+
+<p>Le nom du métier, c'est le <b>transit international</b> ou la <b>commission de transport</b>. Ce qu'on appelle en anglais <i>freight forwarding</i>. La « chaîne logistique » (supply chain) est le terme large ; ce qu'on opère précisément, c'est le segment <b>« porte de l'usine chinoise → porte du client camerounais »</b>, ce que le métier appelle le <b>door-to-door</b>.</p>
+
+<div class="flow">
+<div class="fstep"><div class="fnum">A</div><div class="fbody"><b>En Chine — de l'usine au navire</b>
+<span>Le client a acheté chez un fournisseur. On récupère la marchandise (chez le fournisseur, ou il la livre à notre entrepôt de Guangzhou), on la contrôle, on la pèse, on la cube, on l'emballe, on la groupe avec d'autres, et on fait la déclaration d'exportation chinoise.</span>
+<span class="fmeta">Durée : 3 à 10 jours · Acteurs : fournisseur, notre entrepôt, groupeur, douane chinoise</span></div></div>
+
+<div class="fstep"><div class="fnum">B</div><div class="fbody"><b>Sur la mer — le transport principal</b>
+<span>La marchandise est chargée dans un conteneur, le conteneur sur un navire. L'armateur émet le <b>connaissement (BL)</b> : le titre qui prouve qui possède la marchandise. Le navire part de Shenzhen / Nansha / Shanghai vers Douala ou Kribi.</span>
+<span class="fmeta">Durée : 30 à 45 jours de mer · Acteurs : armateur (Maersk, CMA CGM, MSC, COSCO), consignataire</span></div></div>
+
+<div class="fstep"><div class="fnum">C</div><div class="fbody"><b>Pendant la traversée — le pré-dédouanement camerounais</b>
+<span>C'est le bloc que tout le monde rate. Pendant que le bateau navigue, il faut avoir déjà obtenu : la <b>Déclaration d'Importation</b>, le rapport d'inspection <b>SGS</b>, le certificat de conformité <b>ANOR</b> si le produit est réglementé, le <b>BESC</b>, la domiciliation bancaire et l'assurance locale. Un seul manquant = conteneur bloqué à l'arrivée.</span>
+<span class="fmeta">À faire entre J+0 et J+25 · Acteurs : GUCE, SGS, ANOR, CNCC, banque, assureur</span></div></div>
+
+<div class="fstep"><div class="fnum">D</div><div class="fbody"><b>À l'arrivée — le port</b>
+<span>Le navire dépose son <b>manifeste</b> à la douane, le conteneur est déchargé et pris en charge par le terminal (RTC à Douala, KCT à Kribi). Le compteur de la franchise de magasinage démarre. Passage au scanner.</span>
+<span class="fmeta">Durée : 1 à 4 jours · Acteurs : PAD/PAK, terminal, acconier, douane, scanner</span></div></div>
+
+<div class="fstep"><div class="fnum">E</div><div class="fbody"><b>La douane — la déclaration en détail</b>
+<span>Le <b>commissionnaire agréé en douane</b> saisit la déclaration dans CAMCIS : quel produit (code SH), quelle valeur, quelle origine, quel régime. Le système attribue un <b>circuit</b> (vert / jaune / rouge). La douane <b>liquide</b> les droits et taxes, on paie, on reçoit la <b>quittance</b> puis le <b>Bon À Enlever (BAE)</b>.</span>
+<span class="fmeta">Durée : 2 à 15 jours selon le circuit · Acteurs : CAD, inspecteur des douanes, Trésor</span></div></div>
+
+<div class="fstep"><div class="fnum">F</div><div class="fbody"><b>L'enlèvement — sortir la marchandise du port</b>
+<span>On paie le terminal et l'armateur, on récupère les bons de sortie, on charge sur camion, on passe les postes de contrôle, on sort. Puis on restitue le conteneur vide — sinon la caution est perdue et la détention court.</span>
+<span class="fmeta">Durée : 1 à 5 jours · Acteurs : terminal, consignataire, transporteur routier, police/phyto/véto</span></div></div>
+
+<div class="fstep"><div class="fnum">G</div><div class="fbody"><b>La livraison finale — jusqu'au client</b>
+<span>Douala intra-muros, ou Yaoundé, Bafoussam, Garoua, Bamenda… On livre, le client signe, on solde le dossier et on archive. C'est là que se joue la satisfaction, et c'est le segment le plus mal servi aujourd'hui au Cameroun.</span>
+<span class="fmeta">Durée : quelques heures à 3 jours · Acteurs : transporteur, magasinier, client</span></div></div>
+</div>
+
+<div class="box k"><span class="t">La règle d'or du métier</span>
+<p>Les blocs A, B, D, E, F sont <b>séquentiels</b> : on ne peut pas les paralléliser, ils prennent le temps qu'ils prennent. Le bloc C, lui, est <b>parallèle</b> : il se fait pendant que le bateau navigue. <b>Toute la performance d'un transitaire se joue là.</b> Un mauvais transitaire commence le bloc C quand le bateau arrive — il perd alors 10 à 20 jours et facture au client des surestaries qu'il a lui-même causées. Un bon transitaire a fini le bloc C avant l'accostage.</p>
+<p style="margin-top:6pt"><b>C'est exactement le levier produit de Bonzini Cargo</b> : un système qui déclenche automatiquement chaque formalité du bloc C dès que l'expédition est créée, et qui alerte quand une pièce manque. Voir chapitre 19.</p></div>
+</div>
+
+<!-- ══════════════ 02 — LES ACTEURS ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 02</span><h2>Les acteurs : qui fait quoi, qui encaisse quoi</h2></div>
+<p class="lede">On te parle de « la douane », « le port », « le transitaire », « le déclarant », « la CNCC » comme si c'était la même famille. Ce sont des métiers, des statuts et des intérêts différents. Voici la carte.</p>
+
+<h3>Côté Chine</h3>
+<table>
+<tr><th style="width:22%">Acteur</th><th style="width:38%">Son rôle</th><th>Comment il gagne sa vie / ce qu'il te facture</th></tr>
+<tr><td><b>Le fournisseur / l'usine</b></td><td>Fabrique ou vend la marchandise. Émet la facture commerciale et la liste de colisage.</td><td>Le prix de la marchandise. Attention : il vend presque toujours en <b>EXW</b> ou <b>FOB</b> — au-delà, ce n'est plus son problème (voir ch. 3).</td></tr>
+<tr><td><b>L'agent de sourcing</b></td><td>Trouve le fournisseur, négocie, contrôle la qualité. Optionnel.</td><td>Commission de 3 à 10 % de la valeur marchandise. <span class="badge b-mar">Marché</span></td></tr>
+<tr><td><b>Notre entrepôt Guangzhou</b></td><td>Réceptionne les livraisons des différents fournisseurs, contrôle, pèse, cube, réemballe, stocke, groupe.</td><td>C'est <b>notre</b> actif. Facturable en réception/manutention/stockage. Le vrai différenciateur Bonzini.</td></tr>
+<tr><td><b>Le groupeur (consolidateur)</b></td><td>Remplit un conteneur avec les marchandises de plusieurs clients. C'est ce qui rend le LCL possible.</td><td>Prix au CBM (mètre cube). Peut être nous-mêmes une fois le volume atteint.</td></tr>
+<tr><td><b>La douane chinoise</b></td><td>Contrôle et enregistre la sortie du territoire. Émet la déclaration d'exportation.</td><td>Ne facture pas l'importateur. Mais c'est <b>elle</b> qui conditionne le remboursement de TVA export du fournisseur chinois — d'où son insistance à ce que la facture soit « propre ».</td></tr>
+</table>
+
+<h3>Sur le transport maritime</h3>
+<table>
+<tr><th style="width:22%">Acteur</th><th style="width:38%">Son rôle</th><th>Ce qu'il te facture</th></tr>
+<tr><td><b>L'armateur</b><br><span class="src">Maersk, CMA CGM, MSC, COSCO…</span></td><td>Possède le navire et les conteneurs. Émet le connaissement (Master BL). C'est lui le transporteur au sens juridique.</td><td>Le fret maritime, les surcharges (BAF, CAF, congestion), la <b>détention</b> du conteneur, les frais de documentation, le dépôt du vide.</td></tr>
+<tr><td><b>Le consignataire</b><br><span class="src">l'agent local de l'armateur</span></td><td>Représente l'armateur au port d'arrivée. Dépose le manifeste, délivre le <b>Bon à Délivrer (BAD)</b> contre remise du connaissement.</td><td>Frais de dossier, THC (manutention terminal), frais de délivrance, timbre.</td></tr>
+<tr><td><b>Le NVOCC / groupeur</b></td><td>Transporteur sans navire : il achète de l'espace en gros à l'armateur et le revend au détail. Émet un <b>House BL</b>.</td><td>Le fret LCL au CBM. Souvent notre partenaire, parfois notre concurrent.</td></tr>
+</table>
+
+<h3>Côté Cameroun — l'écosystème portuaire et administratif</h3>
+<table>
+<tr><th style="width:22%">Acteur</th><th style="width:38%">Son rôle</th><th>Ce qu'il perçoit</th></tr>
+<tr><td><b>PAD / PAK</b><br><span class="src">Port Autonome de Douala / de Kribi</span></td><td>Autorité portuaire : propriétaire et régulateur du domaine portuaire. Ne manipule pas les conteneurs lui-même.</td><td>Redevances portuaires, taxe sur la marchandise, droits de port.</td></tr>
+<tr><td><b>RTC (Douala) / KCT (Kribi)</b><br><span class="src">exploitants de terminal à conteneurs</span></td><td>Déchargent, empilent, stockent, chargent sur camion. Le <b>terminal</b> ≠ le <b>port</b>.</td><td>Manutention, acconage, levage, <b>magasinage</b> au-delà de la franchise, pesage.</td></tr>
+<tr><td><b>DGD</b><br><span class="src">Direction Générale des Douanes, sous MINFI</span></td><td>Contrôle l'entrée des marchandises, classe, évalue, liquide et perçoit les droits et taxes. Exploite le système <b>CAMCIS</b>.</td><td>Droits de douane, TVA à l'import, droits d'accises, redevance informatique, TCI, précompte. Voir ch. 12.</td></tr>
+<tr><td><b>GUCE</b><br><span class="src">Guichet Unique du Commerce Extérieur</span></td><td>Plateforme e-GUCE / e-Force : regroupe les formalités préalables (DI, domiciliation, paiements) en un point d'entrée.</td><td>Frais de dossier / de plateforme.</td></tr>
+<tr><td><b>CNCC</b><br><span class="src">Conseil National des Chargeurs du Cameroun</span></td><td>Établissement public créé en 1975, tutelle Transports. Défend les intérêts des chargeurs, produit les statistiques du commerce extérieur maritime, et <b>délivre le BESC</b>.</td><td>La redevance BESC. Voir chapitre 7 — c'est le chapitre le plus important pour toi.</td></tr>
+<tr><td><b>MINCOMMERCE</b></td><td>Gère le <b>fichier des importateurs (FIMEX)</b> et les autorisations spéciales d'importation.</td><td>Frais d'inscription au fichier.</td></tr>
+<tr><td><b>ANOR</b><br><span class="src">Agence des Normes et de la Qualité</span></td><td>Impose le <b>PECAE</b> : évaluation de conformité <i>avant embarquement</i> pour les produits réglementés. Délègue à SGS, Intertek, TÜV.</td><td>Frais de certification, via les organismes mandatés.</td></tr>
+<tr><td><b>SGS</b> (et opérateurs d'inspection)</td><td>Inspection avant embarquement, émission du <b>Rapport de Valeur et de Classification (RVC)</b> : la valeur et le code SH que la douane utilisera. Opère aussi le scanner à Douala.</td><td>Commission sur la valeur FOB, frais de scanner.</td></tr>
+<tr><td><b>Le commissionnaire agréé en douane (CAD)</b></td><td><b>Seul habilité par la loi</b> à faire profession de déclarer en douane pour autrui. Signe la déclaration, engage sa responsabilité.</td><td>Honoraires de déclaration + commission sur débours. Voir ch. 18 : c'est le sujet clé pour Bonzini.</td></tr>
+<tr><td><b>Le transitaire</b></td><td>Terme commercial large : organise le transport et les formalités. Peut être CAD ou pas.</td><td>Honoraires d'organisation, marge sur les prestations achetées.</td></tr>
+<tr><td><b>Le transporteur routier</b></td><td>Sort le conteneur du port et livre chez le client. Ramène le vide.</td><td>Prix de la course, immobilisation du camion.</td></tr>
+<tr><td><b>L'assureur agréé au Cameroun</b></td><td>Assure la marchandise. <b>Obligatoire localement</b> — pas au choix, voir ch. 6.</td><td>Prime, en % de la valeur CIF.</td></tr>
+<tr><td><b>La banque domiciliataire</b></td><td>Domicilie l'opération d'importation : trace le transfert de devises vers la Chine (réglementation des changes CEMAC).</td><td>Frais de domiciliation, commission de change, frais de transfert. <b>C'est le métier historique de Bonzini.</b></td></tr>
+</table>
+
+<div class="box n"><span class="t">La lecture stratégique</span>
+<p>Regarde cette liste : <b>14 interlocuteurs</b>, dont 8 côté camerounais, chacun avec sa facture, son délai et son guichet. Le client final — la commerçante de Douala qui a acheté 12 m³ de mèches à Guangzhou — n'a ni le temps, ni le réseau, ni le vocabulaire pour gérer ça. <b>C'est là qu'est le métier, et c'est là qu'est la marge.</b> Bonzini vend un interlocuteur unique là où il y en a quatorze.</p></div>
+</div>
+
+<!-- ══════════════ 03 — INCOTERMS ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 03</span><h2>Les Incoterms : le contrat qui décide de tout</h2></div>
+<p class="lede">« Il m'a vendu en FOB », « c'est du CIF »… Ce ne sont pas des détails techniques. L'Incoterm décide de qui paie quoi, qui porte le risque si le conteneur tombe à l'eau, et sur quelle base la douane camerounaise va taxer ton client. C'est le premier truc à demander sur toute affaire.</p>
+
+<h3>La définition, en une phrase</h3>
+<p>Les <b>Incoterms®</b> sont 11 règles publiées par la <b>Chambre de Commerce Internationale (ICC)</b>, dont la version en vigueur est <b>Incoterms® 2020</b>. Chaque règle est un sigle de trois lettres qui répond à trois questions : <b>jusqu'où le vendeur paie-t-il ?</b>, <b>à partir de quand l'acheteur porte-t-il le risque ?</b>, et <b>qui fait les formalités douanières de chaque côté ?</b> <span class="badge b-off">Officiel</span></p>
+
+<div class="box w"><span class="t">Le piège numéro un, que 90 % des importateurs ne comprennent pas</span>
+<p><b>Le transfert de coût et le transfert de risque ne sont pas au même endroit.</b> En <b>CIF</b>, le vendeur paie le fret et l'assurance jusqu'à Douala — mais le risque passe à l'acheteur <b>dès que la marchandise est chargée au port chinois</b>. Si le navire coule au milieu de l'Atlantique, c'est <b>ton client</b> qui a perdu sa marchandise, même si c'est le fournisseur qui avait payé le transport. D'où l'importance vitale de l'assurance (ch. 6).</p></div>
+
+<h3>Les 4 Incoterms que tu rencontreras réellement</h3>
+<table>
+<tr><th style="width:9%">Sigle</th><th style="width:20%">Nom</th><th style="width:33%">Ce que ça veut dire concrètement</th><th>Pour Bonzini</th></tr>
+<tr><td><b>EXW</b></td><td>Ex Works<br><span class="src">« à l'usine »</span></td>
+<td>Le fournisseur pose la marchandise devant son atelier. <b>Point final.</b> Tout le reste — chargement, transport intérieur chinois, export, fret, arrivée, douane — est à la charge de l'acheteur.</td>
+<td><b>Notre meilleur cas.</b> On contrôle toute la chaîne, donc toute la marge. C'est le cas quand on va chercher la marchandise chez le fournisseur.</td></tr>
+<tr><td><b>FOB</b></td><td>Free On Board<br><span class="src">« franco à bord »</span></td>
+<td>Le fournisseur livre la marchandise <b>à bord du navire</b> au port chinois et fait la déclaration d'export. Le risque passe à l'acheteur à ce moment-là. Réservé au maritime.</td>
+<td><b>Le cas le plus fréquent.</b> Le fournisseur gère jusqu'au navire, on prend le relais. Notre valeur ajoutée démarre au fret.</td></tr>
+<tr><td><b>CIF</b></td><td>Cost, Insurance &amp; Freight<br><span class="src">« coût, assurance, fret »</span></td>
+<td>Le fournisseur paie la marchandise + le fret + une assurance minimale jusqu'au port de destination. Mais le risque a basculé dès le chargement en Chine.</td>
+<td><b>À surveiller.</b> Le fournisseur gonfle souvent le fret et prend une marge dessus. On perd la main sur le choix de l'armateur. Souvent moins bon pour le client qu'il ne le croit.</td></tr>
+<tr><td><b>DDP</b></td><td>Delivered Duty Paid<br><span class="src">« rendu droits acquittés »</span></td>
+<td>Le vendeur livre chez l'acheteur, <b>droits de douane et taxes payés</b>. Il porte tout, jusqu'au bout.</td>
+<td><b>Notre produit final.</b> C'est ce que le client veut vraiment : « donne-moi un prix tout compris, livré chez moi. » Le plus rentable et le plus risqué — il faut savoir chiffrer la douane à l'avance.</td></tr>
+</table>
+<p style="font-size:8.6pt;color:var(--mut)">Les sept autres (FCA, FAS, CFR, CPT, CIP, DAP, DPU) existent et sont dans le glossaire, mais tu les croiseras rarement sur l'axe Chine–Cameroun.</p>
+
+<h3>Pourquoi ça change le montant des taxes</h3>
+<p>La douane camerounaise ne taxe pas le prix de la facture du fournisseur. Elle taxe la <b>valeur en douane</b>, qui est la <b>valeur CIF</b>. Le Code des douanes CEMAC l'impose explicitement : à la valeur transactionnelle, on <b>ajoute</b> les frais de transport jusqu'au lieu d'introduction, les frais de chargement et de manutention liés à ce transport, et <b>le coût de l'assurance</b>. <span class="badge b-off">Officiel — Code des douanes CEMAC, art. 31.1 e), f), g)</span></p>
+
+<div class="box k"><span class="t">Conséquence pratique, à expliquer à chaque client</span>
+<p>Si ton client achète <b>FOB à 10 000 000 FCFA</b> et que le fret + assurance coûtent <b>2 000 000 FCFA</b>, la douane taxe sur <b>12 000 000 FCFA</b>, pas sur 10 000 000.<br>
+<b>Autrement dit : plus le fret est cher, plus les taxes sont élevées.</b> Un fret économisé fait économiser deux fois — sur le transport, et sur la douane.</p>
+<p style="margin-top:6pt">C'est un argument commercial puissant, et c'est aussi pourquoi acheter en CIF chez un fournisseur qui gonfle son fret coûte doublement cher au client. Beaucoup l'ignorent totalement.</p></div>
+
+<h3>Le tableau de bascule des responsabilités</h3>
+<table class="compact">
+<tr><th style="width:34%">Poste de coût</th><th class="num">EXW</th><th class="num">FOB</th><th class="num">CIF</th><th class="num">DDP</th></tr>
+<tr><td>Emballage export</td><td class="num">V</td><td class="num">V</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Chargement à l'usine</td><td class="num">A</td><td class="num">V</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Transport intérieur Chine</td><td class="num">A</td><td class="num">V</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Formalités d'export chinoises</td><td class="num">A</td><td class="num">V</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Chargement à bord du navire</td><td class="num">A</td><td class="num">V</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Fret maritime</td><td class="num">A</td><td class="num">A</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Assurance transport</td><td class="num">A</td><td class="num">A</td><td class="num">V</td><td class="num">V</td></tr>
+<tr><td>Déchargement au port camerounais</td><td class="num">A</td><td class="num">A</td><td class="num">A</td><td class="num">V</td></tr>
+<tr><td>Droits de douane &amp; TVA import</td><td class="num">A</td><td class="num">A</td><td class="num">A</td><td class="num">V</td></tr>
+<tr><td>Livraison finale chez le client</td><td class="num">A</td><td class="num">A</td><td class="num">A</td><td class="num">V</td></tr>
+<tr style="background:var(--orange-l)"><td><b>Le risque passe à l'acheteur…</b></td><td class="num" colspan="1"><b>à l'usine</b></td><td class="num"><b>à bord</b></td><td class="num"><b>à bord</b></td><td class="num"><b>chez lui</b></td></tr>
+</table>
+<caption style="display:block">V = à la charge du Vendeur · A = à la charge de l'Acheteur. Ligne orange : point de transfert du risque.</caption>
+</div>
+<!-- ══════════════ 04 — BLOC A : LA CHINE ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 04</span><h2>Bloc A — La Chine : de l'usine au navire</h2></div>
+<p class="lede">C'est le bloc que Bonzini contrôle le mieux, puisqu'on a des locaux à Guangzhou. C'est aussi celui où on peut créer le plus de valeur perçue, parce que c'est là que le client est le plus aveugle : sa marchandise est à 12 000 km et il n'a aucune idée de ce qui se passe.</p>
+
+<h3>Les deux modes de prise en charge — les tiens</h3>
+<table>
+<tr><th style="width:26%">Mode</th><th style="width:37%">Comment ça se passe</th><th>Ce que ça implique pour nous</th></tr>
+<tr><td><b>1. Enlèvement chez le fournisseur</b><br><span class="src">« pick-up »</span></td>
+<td>On envoie un camion ou un coursier chez le fournisseur, on charge, on ramène à notre entrepôt. Le client nous donne l'adresse, le contact et le numéro de commande.</td>
+<td>Plus de travail, plus de marge. Nécessite : un réseau de transporteurs locaux, quelqu'un qui parle mandarin, et une procédure de contrôle à la prise en charge (photos, comptage, état des colis).</td></tr>
+<tr><td><b>2. Livraison à notre entrepôt Guangzhou</b><br><span class="src">« delivery to warehouse »</span></td>
+<td>Le client (ou son fournisseur) livre directement chez nous. On donne une <b>adresse d'entrepôt + un code client</b> à mettre sur les colis.</td>
+<td>Moins cher pour nous, plus scalable. <b>C'est le modèle à industrialiser :</b> chaque client a un identifiant, chaque colis reçu est scanné, pesé, photographié et rattaché automatiquement à son compte.</td></tr>
+</table>
+
+<div class="box k"><span class="t">Le produit caché dans le mode 2</span>
+<p>Le mode 2 est en réalité un <b>service d'adresse en Chine</b>. Le client achète chez 5 fournisseurs différents sur 1688 ou au marché de Baiyun, il fait tout livrer à « Bonzini Guangzhou / Client BZ-1047 », et il voit dans son application : « 3 colis reçus sur 5 annoncés ». Ça, aucun transitaire camerounais classique ne le fait proprement. C'est un produit à part entière, et c'est ce qui fixe le client chez nous avant même l'expédition.</p></div>
+
+<h3>Ce qu'on fait dans l'entrepôt — et pourquoi chaque geste compte</h3>
+<table class="compact">
+<tr><th style="width:24%">Opération</th><th style="width:38%">Le geste</th><th>Pourquoi c'est critique</th></tr>
+<tr><td><b>Réception &amp; rattachement</b></td><td>Scanner le colis, l'associer au bon client, photographier l'état.</td><td>Sans ça, colis orphelins et litiges. Le cauchemar de tous les entrepôts de groupage africains.</td></tr>
+<tr><td><b>Comptage &amp; contrôle</b></td><td>Vérifier la quantité contre la facture. Ouvrir si le client le demande.</td><td>C'est là qu'on détecte que le fournisseur a envoyé 800 pièces au lieu de 1 000 — <b>pendant qu'on peut encore réclamer</b>. Une fois à Douala, c'est mort.</td></tr>
+<tr><td><b>Pesée &amp; cubage</b></td><td>Poids brut (kg) et volume (m³ / CBM : Longueur × largeur × hauteur en mètres).</td><td><b>Le CBM détermine le prix du fret LCL.</b> Une erreur de cubage, c'est une marge perdue ou un client furieux.</td></tr>
+<tr><td><b>Réemballage / palettisation</b></td><td>Renforcer, filmer, cercler, marquer.</td><td>45 jours de mer + manutention brutale à Douala. Un carton chinois de marché ne survit pas. Chaque casse est une réclamation.</td></tr>
+<tr><td><b>Traitement du bois</b></td><td>Palettes et calages en bois : traitement et marquage <b>ISPM 15 / NIMP 15</b>.</td><td>Norme phytosanitaire internationale. Du bois non traité peut faire refuser le lot.</td></tr>
+<tr><td><b>Groupage (stuffing)</b></td><td>Empoter dans le conteneur, plan de chargement, liste de colisage définitive.</td><td>Détermine le remplissage — donc la rentabilité réelle du conteneur.</td></tr>
+</table>
+
+<h3>Poids taxable vs poids réel : le calcul qui piège tout le monde</h3>
+<p>Le transport ne facture pas seulement le poids. Il facture le <b>plus défavorable</b> entre le poids réel et le volume converti en poids, appelé <b>poids volumétrique</b> ou <b>poids taxable</b>.</p>
+<table class="compact">
+<tr><th style="width:20%">Mode</th><th style="width:30%">Règle d'équivalence usuelle</th><th>Ce que ça veut dire</th></tr>
+<tr><td><b>Maritime LCL</b></td><td>1 CBM ≙ 1 000 kg</td><td>On facture au m³ sauf marchandise très dense (métal, carrelage) où le poids l'emporte.</td></tr>
+<tr><td><b>Aérien classique</b></td><td>1 m³ ≙ 167 kg <span class="src">(L×l×H en cm ÷ 6 000)</span></td><td>Une caisse de mèches légère et volumineuse coûte comme si elle pesait bien plus.</td></tr>
+<tr><td><b>Express</b> (DHL/FedEx)</td><td>L×l×H en cm ÷ 5 000</td><td>Encore plus pénalisant pour le volumineux.</td></tr>
+</table>
+<p class="src">Règles d'usage professionnel <span class="badge b-mar">Marché</span> — à confirmer dans chaque contrat de transport, les diviseurs varient selon les compagnies.</p>
+
+<h3>Les formalités côté chinois</h3>
+<p>Le fournisseur (ou nous, en EXW) doit faire la <b>déclaration d'exportation</b> auprès des douanes chinoises via le <b>Single Window</b>. Elle porte le nom et le numéro fiscal de l'exportateur, le destinataire, le code SH, la valeur FOB et la date. <span class="badge b-off">Officiel</span></p>
+<div class="box n"><span class="t">Pourquoi ton fournisseur chinois est parfois pénible sur la facture</span>
+<p>L'exportateur chinois récupère un <b>remboursement de TVA à l'export</b> adossé à cette déclaration douanière. Toute incohérence entre la déclaration, la facture (<i>fapiao</i>) et le règlement bancaire fait sauter son remboursement. C'est pour ça qu'il insiste pour que les documents collent au centime — et pourquoi il refuse parfois de sous-déclarer la valeur, ce qui d'ailleurs vous protège tous les deux.</p></div>
+
+<h3>Le VGM — une obligation qu'on oublie et qui bloque le conteneur</h3>
+<p>Depuis la convention <b>SOLAS</b>, la masse brute vérifiée (<b>VGM</b>, <i>Verified Gross Mass</i>) de chaque conteneur empoté doit être déclarée à l'armateur avant chargement. La responsabilité légale incombe au <b>chargeur nommé sur le connaissement</b>. Sans VGM, l'armateur ne charge pas le conteneur — le navire part sans lui. <span class="badge b-off">Officiel — SOLAS</span></p>
+</div>
+
+<!-- ══════════════ 05 — BLOC B : LA MER ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 05</span><h2>Bloc B — La mer : navire, conteneur, connaissement</h2></div>
+<p class="lede">« Louer le cargo », « louer le conteneur » — ces expressions qu'on te sert cachent une réalité simple : on n'affrète pas un navire, on achète de l'espace. Voici ce qu'on achète vraiment.</p>
+
+<h3>FCL ou LCL : la seule question qui compte au départ</h3>
+<table>
+<tr><th style="width:16%"></th><th style="width:42%">FCL — Full Container Load</th><th>LCL — Less than Container Load (groupage)</th></tr>
+<tr><td><b>Le principe</b></td><td>Le client a assez de marchandise pour remplir un conteneur entier. Il le paie en entier, même à moitié vide.</td><td>La marchandise du client partage un conteneur avec celle d'autres clients. On paie au volume occupé.</td></tr>
+<tr><td><b>Facturation</b></td><td>Prix forfaitaire par conteneur (20' ou 40').</td><td>Prix au <b>CBM</b> (mètre cube), avec un minimum facturable (souvent 1 CBM).</td></tr>
+<tr><td><b>Seuil de bascule</b></td><td colspan="2">Un conteneur 20' fait environ <b>28 à 33 m³</b> utiles, un 40' environ <b>58 à 67 m³</b>, un 40' HC environ <b>68 à 76 m³</b>. En pratique, dès qu'on dépasse ~13-15 m³, le FCL 20' redevient compétitif. <span class="badge b-mar">Marché</span></td></tr>
+<tr><td><b>Délai</b></td><td>Plus rapide : le conteneur part dès qu'il est prêt.</td><td>Plus lent : il faut attendre que le conteneur se remplisse (le <i>cut-off</i>), puis le dégrouper à l'arrivée.</td></tr>
+<tr><td><b>Risque</b></td><td>Conteneur scellé au départ, ouvert à l'arrivée. Peu de manipulation.</td><td>Dégroupage = manipulation = casse et perte possibles. La marchandise d'un autre client peut aussi bloquer le tien à la douane.</td></tr>
+<tr><td><b>Pour Bonzini</b></td><td>Marge sur le fret négocié. Simple.</td><td><b>Le cœur du business.</b> On achète un conteneur entier et on le revend au m³ avec une marge. Plus on remplit, plus on gagne. C'est un métier de taux de remplissage.</td></tr>
+</table>
+
+<div class="box k"><span class="t">L'économie du groupage, en clair</span>
+<p>Si on achète un 40' HC à <b>4 000 USD</b> pour 68 m³ utiles, notre coût de revient est de <b>~59 USD/m³</b>. Si on revend à <b>140 USD/m³</b> et qu'on remplit à 100 %, la marge brute sur ce conteneur est de <b>~5 500 USD</b>. Si on ne remplit qu'à 60 %, la marge tombe à <b>~1 700 USD</b>. <span class="badge b-mar">Illustration sur ordres de grandeur marché — à recalculer avec vos coûts réels</span></p>
+<p style="margin-top:6pt"><b>Le taux de remplissage est donc LA métrique de rentabilité de Bonzini Cargo.</b> Elle doit être en haut du tableau de bord, pas enfouie dans un tableur.</p></div>
+
+<h3>Les types de conteneurs</h3>
+<table class="compact">
+<tr><th style="width:16%">Type</th><th style="width:20%">Dimensions utiles approx.</th><th style="width:16%">Volume</th><th>Usage</th></tr>
+<tr><td><b>20' Dry</b></td><td>5,9 × 2,35 × 2,39 m</td><td>~33 m³</td><td>Marchandise dense et lourde (carrelage, quincaillerie, groupes électrogènes).</td></tr>
+<tr><td><b>40' Dry</b></td><td>12,0 × 2,35 × 2,39 m</td><td>~67 m³</td><td>Volume standard.</td></tr>
+<tr><td><b>40' High Cube</b></td><td>12,0 × 2,35 × 2,69 m</td><td>~76 m³</td><td><b>Le plus utilisé en groupage</b> : 30 cm de hauteur en plus, quasi au même prix.</td></tr>
+<tr><td><b>Reefer</b></td><td>variable</td><td>—</td><td>Réfrigéré. Coût très supérieur, branchement obligatoire au port.</td></tr>
+<tr><td><b>Open Top / Flat Rack</b></td><td>variable</td><td>—</td><td>Machines hors gabarit, hors hauteur. Tarification spéciale.</td></tr>
+</table>
+<p class="src">Dimensions standards ISO <span class="badge b-mar">Marché</span> — varient légèrement selon le constructeur du conteneur.</p>
+
+<h3>Le connaissement (Bill of Lading, BL) — le document le plus important de la chaîne</h3>
+<p>Le connaissement est simultanément trois choses : un <b>reçu</b> de la marchandise, un <b>contrat de transport</b>, et — c'est le point clé — un <b>titre représentatif de la marchandise</b>. Celui qui détient l'original détient la marchandise. C'est pour ça qu'il ne se manipule pas à la légère.</p>
+<table>
+<tr><th style="width:22%">Forme</th><th style="width:38%">Comment ça marche</th><th>Quand l'utiliser / risque</th></tr>
+<tr><td><b>Original BL (OBL)</b><br><span class="src">3 originaux émis</span></td>
+<td>Les originaux papier sont émis en Chine et envoyés physiquement. Il faut en présenter un au consignataire à Douala pour obtenir la marchandise.</td>
+<td><b>Le plus sûr pour le vendeur</b> : il ne libère les originaux qu'une fois payé. <b>Le plus risqué logistiquement</b> : si le pli DHL se perd, la marchandise est bloquée et la procédure de remplacement est longue et coûteuse.</td></tr>
+<tr><td><b>Telex Release</b></td>
+<td>Les originaux sont émis puis <b>restitués à l'armateur en Chine</b>. L'armateur télégraphie à son agent de Douala : « libère sans original ».</td>
+<td><b>Le meilleur compromis, et le standard sur cet axe.</b> Rapide, pas de papier à transporter, et le vendeur garde le contrôle jusqu'à la restitution.</td></tr>
+<tr><td><b>Express Release / Sea Waybill</b></td>
+<td>Aucun original n'est émis. La marchandise est libérée au destinataire nommé, sur simple identification.</td>
+<td>Le plus rapide et le moins cher. <b>À réserver aux relations de confiance</b> — le vendeur perd tout moyen de pression si l'acheteur ne paie pas.</td></tr>
+</table>
+
+<div class="box w"><span class="t">Master BL vs House BL — la confusion classique</span>
+<p>Quand on passe par un groupeur ou un NVOCC, il y a <b>deux</b> connaissements : le <b>Master BL (MBL)</b> émis par l'armateur au nom du groupeur, et le <b>House BL (HBL)</b> émis par le groupeur au nom du client final. Le client reçoit le HBL. <b>Il ne peut rien faire avec le MBL et n'a pas à le voir.</b> Si un client te réclame « le vrai BL de Maersk », c'est qu'on lui a mal expliqué.</p></div>
+
+<h3>Les ports d'arrivée : Douala ou Kribi ?</h3>
+<table>
+<tr><th style="width:20%"></th><th style="width:40%">Douala (PAD / terminal RTC)</th><th>Kribi (PAK / terminal KCT)</th></tr>
+<tr><td><b>Nature</b></td><td>Port fluvio-maritime historique, sur le Wouri. Tirant d'eau limité, chenal à draguer.</td><td>Port en eau profonde (16 m de tirant d'eau), mis en service en 2018.</td></tr>
+<tr><td><b>Capacité</b></td><td>Terminal à conteneurs : 660 m de quai, ~25 400 EVP de parc, exploité en régie (RTC) depuis la fin de la concession fin 2019.</td><td>2 terminaux. Le second (715 m de quai, 30 ha) mis en service le 9 mai 2025 porte la capacité vers <b>1 million d'EVP/an</b>.</td></tr>
+<tr><td><b>Trafic 2025</b></td><td>Reste le premier centre de recettes douanières du pays ; trafic conteneurs en recul.</td><td><b>555 398 EVP en 2025</b>, soit <b>~37,5 %</b> du trafic conteneurs national, en hausse de 19 %.</td></tr>
+<tr><td><b>Pour un importateur</b></td><td>Plus proche du marché de Douala (donc moins de post-acheminement), mais congestion et incidents plus fréquents.</td><td>Moins congestionné, navires plus gros, mais <b>~250 km de route</b> jusqu'à Douala à ajouter.</td></tr>
+</table>
+<p class="src"><span class="badge b-off">Officiel / presse économique</span> Chiffres 2025-2026. La dynamique est claire : Kribi monte, Douala résiste par la proximité du marché.</p>
+
+<div class="box n"><span class="t">Arbitrage à intégrer dans notre outil de cotation</span>
+<p>Un conteneur déchargé à Kribi peut coûter moins cher en manutention et en attente, mais ajoute un pré-acheminement routier vers Douala. Pour un client de Yaoundé, Kribi peut même être <b>plus proche</b>. Cet arbitrage doit être calculé, pas fait au feeling — c'est une fonctionnalité produit, pas une intuition d'opérateur.</p></div>
+</div>
+
+<!-- ══════════════ 06 — BLOC C : PRÉ-DÉDOUANEMENT ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 06</span><h2>Bloc C — Le pré-dédouanement camerounais</h2></div>
+<p class="lede">Le bloc décisif. Tout ceci doit être fait <b>pendant que le bateau navigue</b>, et une partie <b>avant même qu'il ne charge</b>. C'est la source numéro un des conteneurs bloqués au port, des surestaries et des clients furieux.</p>
+
+<h3>Les prérequis permanents — à faire une fois, puis à renouveler</h3>
+<table>
+<tr><th style="width:26%">Formalité</th><th style="width:16%">Auprès de</th><th style="width:16%">Coût / durée</th><th>À quoi ça sert</th></tr>
+<tr><td><b>NIU</b><br><span class="src">Numéro d'Identifiant Unique</span></td><td>DGI (impôts)</td><td>Gratuit · 24-72 h</td><td>Identité fiscale. Sans NIU, rien n'est possible.</td></tr>
+<tr><td><b>RCCM / patente</b></td><td>Greffe / commune</td><td>Variable</td><td>Existence juridique et licence commerciale.</td></tr>
+<tr><td><b>Inscription au FIMEX</b><br><span class="src">Fichier des Importateurs et Exportateurs</span></td><td>MINCOMMERCE</td><td><b>~25 000 FCFA/an</b> · 48 h <span class="badge b-ver">À vérifier</span></td><td>Attestation annuelle obligatoire pour importer. Se renouvelle chaque année.</td></tr>
+<tr><td><b>Compte e-Force / e-GUCE</b></td><td>GUCE</td><td>Gratuit · ~24 h</td><td>Accès à la plateforme unique. Sans compte valide, aucune importation possible.</td></tr>
+</table>
+
+<h3>Les formalités par expédition — dans l'ordre</h3>
+<div class="flow">
+<div class="fstep"><div class="fnum">1</div><div class="fbody"><b>La Déclaration d'Importation (DI)</b>
+<span>Se lève électroniquement sur <b>e-GUCE</b>, sur la base de la facture proforma du fournisseur, <b>avant l'arrivée</b> de la marchandise. Elle matérialise l'intention d'importer et ouvre le dossier.</span>
+<span class="fmeta">Seuil : obligatoire à partir de <b>1 000 000 FCFA de valeur FOB</b> <span class="badge b-ver">À vérifier</span> — certaines sources citent 2 M. Validité : <b>6 mois</b>. Base légale : loi n° 2016/004 du 18 avril 2016, art. 12.</span></div></div>
+
+<div class="fstep"><div class="fnum">2</div><div class="fbody"><b>L'inspection avant embarquement &amp; le RVC</b>
+<span>Au-delà d'un seuil de valeur, l'opération passe par un organisme d'inspection (<b>SGS</b> au Cameroun) qui émet le <b>Rapport de Valeur et de Classification (RVC)</b> : il fixe le <b>code SH</b> et la <b>valeur en douane</b> que l'administration utilisera.</span>
+<span class="fmeta">Seuil usuel : <b>FOB ≥ 2 000 000 FCFA</b>. Frais : <b>~0,95 % de la valeur FOB</b> (+ TVA sur les frais). Délai d'émission : ~3 jours après documents complets. <span class="badge b-ver">À vérifier auprès de SGS Cameroun</span></span></div></div>
+
+<div class="fstep"><div class="fnum">3</div><div class="fbody"><b>Le certificat de conformité ANOR (PECAE)</b>
+<span>Si le produit est <b>réglementé</b> (alimentaire, cosmétique, électrique, matériaux de construction, jouets, produits pétroliers, bouteilles de gaz, papier…), il doit être <b>testé et certifié dans le pays d'origine, avant embarquement</b>. Le <b>Certificat de Conformité (CoC)</b> est émis par un organisme mandaté par l'ANOR : SGS, Intertek, TÜV Rheinland.</span>
+<span class="fmeta">Exemption usuelle : valeur FOB &lt; 2 000 000 FCFA. Délai CoC : 1-2 jours ouvrés une fois les tests faits. <b>Sans CoC, la cargaison est refusée à l'arrivée et sanctionnée.</b> <span class="badge b-off">Officiel — programme ANOR/PECAE</span></span></div></div>
+
+<div class="fstep"><div class="fnum">4</div><div class="fbody"><b>Le BESC (CNCC)</b>
+<span>Le Bordereau Électronique de Suivi des Cargaisons. À faire établir <b>au départ, depuis la Chine</b>, et à valider <b>avant l'arrivée du navire</b>. → <b>Chapitre 7 entier.</b></span>
+<span class="fmeta">Sans BESC valide : le débarquement est bloqué et les pénalités sont lourdes.</span></div></div>
+
+<div class="fstep"><div class="fnum">5</div><div class="fbody"><b>La domiciliation bancaire</b>
+<span>L'opération d'importation doit être <b>domiciliée</b> auprès d'une banque agréée au Cameroun au-delà d'un certain seuil. C'est le dispositif de contrôle des changes de la zone CEMAC : il trace le transfert de devises vers la Chine.</span>
+<span class="fmeta">Seuil couramment cité : <b>FOB ≥ 2 000 000 FCFA</b> <span class="badge b-ver">À vérifier — une source cite 5 M</span> · <b>Directement lié au métier de paiement de Bonzini.</b></span></div></div>
+
+<div class="fstep"><div class="fnum">6</div><div class="fbody"><b>L'assurance locale — obligatoire, pas optionnelle</b>
+<span>Toute marchandise importée au Cameroun doit être assurée auprès d'une <b>compagnie agréée au Cameroun</b>. Ce n'est pas un conseil : c'est la loi.</span>
+<span class="fmeta"><b>Loi n° 75-14 du 8 décembre 1975</b> et <b>décret n° 76/334 du 6 août 1976</b> : obligation dès que la valeur FOB dépasse <b>500 000 FCFA</b>. Cadre régional : <b>Code CIMA, art. 278</b>. Prime usuelle : 0,3 à 1,5 % de la valeur CIF. <span class="badge b-off">Officiel</span></span></div></div>
+</div>
+
+<div class="box w"><span class="t">La conséquence qu'aucun client ne comprend avant de la vivre</span>
+<p>Une assurance souscrite chez un assureur chinois ou européen <b>ne vaut rien au regard de la loi camerounaise</b>. Si le client a acheté en <b>CIF</b>, le fournisseur chinois a souscrit une assurance… qui ne satisfait pas l'obligation locale. <b>Il faut en souscrire une seconde au Cameroun.</b> Le client paie donc deux fois — et souvent il ne le découvre qu'au moment du dédouanement, avec des pénalités à la clé.</p>
+<p style="margin-top:6pt"><b>Argument de vente Bonzini :</b> on le dit dès la cotation, on l'intègre au prix, et on souscrit pour le client. Ce simple point évite un litige sur presque chaque dossier CIF.</p></div>
+
+<div class="box k"><span class="t">Le check-list du bloc C, à automatiser</span>
+<p>DI levée · Frais SGS payés · RVC reçu · CoC ANOR obtenu (si produit réglementé) · BESC établi et validé · Domiciliation bancaire ouverte · Police d'assurance locale souscrite · Documents du fournisseur complets et cohérents entre eux.</p>
+<p style="margin-top:6pt"><b>Huit cases.</b> Aujourd'hui elles vivent dans la tête d'un opérateur et dans des messages WhatsApp. Dans le produit, ce sont huit champs avec un statut, une date d'échéance calée sur l'ETA du navire, et une alerte. C'est la première fonctionnalité à construire.</p></div>
+</div>
+<!-- ══════════════ 07 — LE BESC ══════════════ -->
+<div class="chapter">
+<div class="chapter-head" style="border-top-color:var(--orange)">
+<span class="chapter-num">Chapitre 07</span><h2 style="color:var(--orange-d)">Le BESC, enfin expliqué</h2></div>
+<p class="lede">Tu as dit : « je ne comprends rien au BESC, ni sa différence avec les impôts, la douane ou la TVA. » C'est la question la plus légitime du document, parce que la réponse n'est écrite nulle part en clair. La voici.</p>
+
+<h3>En une phrase</h3>
+<div class="box k" style="font-size:11pt;line-height:1.6">
+<p><b>Le BESC est un document de suivi, pas un impôt.</b> C'est une fiche électronique qui décrit ta cargaison — ce que c'est, d'où ça vient, qui l'envoie, qui la reçoit, combien ça a coûté à transporter — que tu dois faire établir <b>avant que le bateau n'arrive</b>, auprès d'un organisme camerounais qui s'appelle le <b>CNCC</b>. Tu paies une <b>redevance</b> pour l'obtenir. Ce n'est pas une taxe sur la valeur de ta marchandise : c'est le prix d'un service administratif obligatoire.</p></div>
+
+<h3>Ce que veut dire le sigle</h3>
+<p><b>B</b>ordereau <b>É</b>lectronique de <b>S</b>uivi des <b>C</b>argaisons. On l'appelle aussi <b>ECTN</b> en anglais (<i>Electronic Cargo Tracking Note</i>), et tu verras parfois « BESC 3.0 » : c'est simplement la version actuelle de l'application du CNCC.</p>
+
+<h3>Qui le délivre, et qui est le CNCC</h3>
+<p>Le <b>Conseil National des Chargeurs du Cameroun (CNCC)</b> est un <b>établissement public administratif créé en 1975</b>. Ce n'est ni la douane, ni les impôts, ni le port. Sa mission est de représenter et défendre les <b>chargeurs</b> — c'est-à-dire les propriétaires de marchandises, donc tes clients — face aux armateurs, et de produire les statistiques du commerce extérieur maritime du pays. <span class="badge b-off">Officiel</span></p>
+<p>Le BESC est son instrument : il couvre, selon le CNCC lui-même, « les besoins statistiques, d'identification, de contrôle des coûts de transport, de sécurité et de traçabilité » du commerce maritime camerounais.</p>
+
+<h3>La question que tu poses vraiment : BESC vs douane vs TVA vs impôts</h3>
+<p>Voici le tableau qui répond. Ce sont <b>quatre choses différentes</b>, quatre organismes différents, quatre logiques différentes.</p>
+
+<table>
+<tr><th style="width:15%"></th><th style="width:21%">BESC</th><th style="width:21%">Droits de douane</th><th style="width:21%">TVA à l'import</th><th>Impôts (DGI)</th></tr>
+<tr><td><b>Perçu par</b></td><td><b>CNCC</b><br><span class="src">tutelle Transports</span></td><td><b>Douane (DGD)</b><br><span class="src">tutelle Finances</span></td><td><b>Douane</b>, pour le compte du fisc</td><td><b>DGI</b><br><span class="src">tutelle Finances</span></td></tr>
+<tr><td><b>Nature</b></td><td><b>Redevance</b> — prix d'un service (l'émission d'un document)</td><td><b>Droit</b> — prélèvement sur l'entrée d'une marchandise sur le territoire</td><td><b>Impôt sur la consommation</b>, collecté à l'entrée</td><td><b>Impôt sur le revenu / le bénéfice</b> de l'entreprise</td></tr>
+<tr><td><b>Assiette</b></td><td>Ni la valeur, ni le poids : un <b>forfait</b> par connaissement, par conteneur ou par véhicule</td><td>La <b>valeur CIF</b> × le taux du code SH</td><td><b>(CIF + droits + autres taxes)</b> × 19,25 %</td><td>Le chiffre d'affaires et le résultat de l'entreprise</td></tr>
+<tr><td><b>Quand</b></td><td><b>Avant l'arrivée du navire</b> — établi au départ, en Chine</td><td>Au dédouanement, à l'arrivée</td><td>Au dédouanement, à l'arrivée</td><td>Déclarations mensuelles et annuelles, sans lien avec l'expédition</td></tr>
+<tr><td><b>Si absent</b></td><td>Débarquement bloqué, pénalités lourdes, surestaries qui courent</td><td>Pas de Bon À Enlever : marchandise immobilisée</td><td>Idem</td><td>Redressement fiscal, pénalités, mais rien à voir avec la marchandise</td></tr>
+<tr><td><b>Récupérable ?</b></td><td>Non — c'est un coût</td><td>Non — c'est un coût qui entre dans le prix de revient</td><td><b>Oui</b> si l'importateur est assujetti : elle se déduit de la TVA collectée sur ses ventes</td><td>Sans objet</td></tr>
+</table>
+
+<div class="box n"><span class="t">L'image qui va t'aider à retenir</span>
+<p>Imagine que ta marchandise est un passager qui prend l'avion.<br>
+Le <b>BESC</b>, c'est <b>la carte d'embarquement</b> : sans elle tu ne montes pas, mais elle ne coûte pas cher et son prix ne dépend pas de ta richesse.<br>
+Les <b>droits de douane</b>, c'est <b>le visa d'entrée</b> : le prix dépend d'où tu viens et de qui tu es.<br>
+La <b>TVA</b>, c'est <b>la taxe de séjour</b> : elle frappe la consommation dans le pays.<br>
+Les <b>impôts</b>, c'est <b>ta déclaration de revenus</b> : rien à voir avec ce voyage-là.</p></div>
+
+<h3>Comment on l'obtient, concrètement</h3>
+<div class="flow">
+<div class="fstep"><div class="fnum">1</div><div class="fbody"><b>C'est le chargeur, au départ, qui le demande</b>
+<span>Le BESC doit être établi <b>par un agent agréé du CNCC</b>, généralement dans le pays d'expédition. Le CNCC publie la liste de ses agents. En Chine, ce sont des correspondants qui traitent les demandes des expéditeurs.</span></div></div>
+<div class="fstep"><div class="fnum">2</div><div class="fbody"><b>On fournit le dossier</b>
+<span>Facture commerciale · connaissement (ou draft BL) · liste de colisage · facture de fret · déclaration d'exportation. Les données du BESC doivent <b>correspondre exactement</b> à celles du connaissement.</span></div></div>
+<div class="fstep"><div class="fnum">3</div><div class="fbody"><b>On paie la redevance et on obtient le numéro</b>
+<span>Le numéro BESC est ensuite reporté sur les documents et transmis au consignataire, qui le porte au manifeste.</span></div></div>
+<div class="fstep"><div class="fnum">4</div><div class="fbody"><b>On valide avant l'arrivée</b>
+<span>Le BESC doit être <b>validé avant l'arrivée du navire</b>. Les délais annoncés varient selon les sources entre <b>2 et 5 jours avant l'accostage</b>. <span class="badge b-ver">À vérifier auprès du CNCC — c'est un point opérationnel critique</span></span></div></div>
+</div>
+
+<h3>Combien ça coûte</h3>
+<p>Le CNCC a <b>révisé sa grille tarifaire au 1<sup>er</sup> janvier 2026</b>. Les tarifs sont forfaitaires et libellés en euros pour les importations.</p>
+<table class="compact">
+<tr><th style="width:38%">Cas</th><th style="width:24%">Tarif indicatif</th><th>Base de facturation</th></tr>
+<tr><td>Conteneur(s), sans véhicule — départ Europe / Afrique</td><td><b>55 €</b></td><td>par tranche de 10 EVP, par connaissement</td></tr>
+<tr><td>Conteneur(s), sans véhicule — <b>autres origines (dont la Chine)</b></td><td><b>100 €</b></td><td>par tranche de 10 EVP, par connaissement</td></tr>
+<tr><td>Conteneur(s) contenant des véhicules</td><td><b>100 €</b></td><td>par tranche de 10 EVP</td></tr>
+<tr><td>Véhicules (au-delà de 2) — départ Europe / Afrique</td><td><b>40 €</b> <span class="src">(relevé de 20 € au 1<sup>er</sup> janvier 2026)</span></td><td>par châssis</td></tr>
+<tr><td>Véhicules (au-delà de 2) — autres origines</td><td><b>100 €</b></td><td>par châssis</td></tr>
+</table>
+<p class="src"><span class="badge b-ver">À vérifier</span> Grille reconstituée à partir de sources d'agents BESC et de communiqués relayés. <b>Le barème officiel doit être confirmé directement auprès du CNCC avant toute intégration dans une grille tarifaire client.</b> Un ordre de grandeur souvent cité côté opérateurs camerounais est de <b>50 000 à 100 000 FCFA</b> tout compris par dossier.</p>
+
+<div class="box k"><span class="t">Ce que ça veut dire pour ta trésorerie</span>
+<p>À ~100 € (≈ 65 600 FCFA) par connaissement pour un départ de Chine, <b>le BESC est un coût fixe par expédition, pas proportionnel à la valeur.</b> Conséquence directe : il pénalise lourdement les petites expéditions et devient négligeable sur les grosses.</p>
+<p style="margin-top:6pt"><b>C'est un argument massif en faveur du groupage Bonzini :</b> si 20 clients partagent un conteneur sous <b>un seul connaissement Bonzini</b>, ils partagent <b>un seul BESC</b> — au lieu de payer 20 BESC s'ils expédiaient chacun de leur côté. À lui seul, ce poste justifie une partie de notre commission.</p></div>
+
+<h3>Un point d'actualité à connaître — et à ne pas mal interpréter</h3>
+<div class="box w"><span class="t">La suspension de juin 2026 ne concerne PAS tes clients</span>
+<p>Par communiqué du <b>15 juin 2026</b>, le Directeur Général du CNCC a <b>suspendu jusqu'à nouvel ordre l'exigibilité du BESC</b> — mais uniquement pour les <b>marchandises en transit</b> sur les corridors <b>Douala–N'Djamena</b> (Tchad) et <b>Douala–Bangui</b> (Centrafrique).</p>
+<p style="margin-top:6pt"><b>Les importations à destination du Cameroun restent soumises au BESC.</b> Ne laisse personne te dire « le BESC est supprimé ». Il ne l'est pas pour ton activité. <span class="badge b-off">Officiel — communiqué CNCC du 15 juin 2026</span></p></div>
+
+<h3>Et si on ne l'a pas ?</h3>
+<p>Les sanctions rapportées pour BESC manquant ou erroné sont sévères : des pénalités pouvant atteindre <b>30 % à 50 % de la valeur du fret CIF</b>, auxquelles s'ajoutent mécaniquement les frais de magasinage et les surestaries pendant l'immobilisation. <span class="badge b-ver">À vérifier — ordre de grandeur rapporté par des opérateurs, à confirmer sur le barème officiel CNCC</span></p>
+<p>Par ailleurs, les <b>modifications du BESC après émission sont interdites</b> au Cameroun. Autrement dit : ce qui est saisi doit être juste du premier coup. C'est un point de contrôle qualité, pas une formalité.</p>
+</div>
+
+<!-- ══════════════ 08 — BLOC D : LE PORT ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 08</span><h2>Bloc D — L'arrivée au port</h2></div>
+<p class="lede">Le navire accoste. À partir de cet instant, des compteurs se déclenchent — et ils coûtent cher. Chaque jour compte littéralement.</p>
+
+<h3>Ce qui se passe, dans l'ordre</h3>
+<table>
+<tr><th style="width:6%">#</th><th style="width:26%">Étape</th><th>Ce que ça implique</th></tr>
+<tr><td>1</td><td><b>Dépôt du manifeste</b></td><td>Le consignataire transmet à la douane, <b>par voie électronique</b>, la liste complète de tout ce que porte le navire. Le Code des douanes CEMAC impose que les marchandises arrivant par mer soient inscrites au manifeste, avec leur véritable dénomination — les marchandises prohibées comprises. <span class="badge b-off">Art. 113 et s.</span></td></tr>
+<tr><td>2</td><td><b>Déchargement</b></td><td>Le terminal (RTC à Douala, KCT à Kribi) décharge les conteneurs et les place sur son parc. <b>Le compteur de magasinage démarre.</b></td></tr>
+<tr><td>3</td><td><b>Prise en charge / acconage</b></td><td>Réception, comptage, reconnaissance de la marchandise. Facturé par le terminal.</td></tr>
+<tr><td>4</td><td><b>Passage au scanner</b></td><td>Inspection non intrusive obligatoire au port de Douala. Opérée par SGS. Tarifs indicatifs : <b>50 000 FCFA</b> (conteneur vide) à <b>85 000 FCFA</b> (40 pieds). <span class="badge b-mar">Marché</span></td></tr>
+<tr><td>5</td><td><b>Émission du BAD</b></td><td>Le consignataire délivre le <b>Bon À Délivrer</b> contre remise du connaissement (ou telex release) et paiement de ses frais. Sans BAD, on ne peut rien entreprendre.</td></tr>
+</table>
+
+<h3>La franchise — le chiffre à connaître par cœur</h3>
+<div class="box w"><span class="t">11 jours calendaires</span>
+<p>Au port de Douala, la période de franchise de magasinage est de <b>11 jours calendaires</b> à compter du déchargement. Au-delà, le magasinage court, chaque jour. <span class="badge b-ver">À vérifier</span> — référence citée : décret n° 85/1278, art. 44.</p>
+<p style="margin-top:6pt"><b>11 jours calendaires, ce n'est pas 11 jours ouvrés.</b> Deux week-ends et un jour férié dedans, il ne reste que 6 jours utiles. C'est extrêmement court quand il faut faire une déclaration, payer, et sortir.</p></div>
+
+<h3>Les barèmes de surestaries — ordres de grandeur</h3>
+<table class="compact">
+<tr><th style="width:34%">Conteneur</th><th style="width:22%">Jours 12 à 21</th><th>À partir du 22<sup>e</sup> jour</th></tr>
+<tr><td>20' Dry</td><td><b>~7 092 FCFA / jour</b></td><td><b>~12 962 FCFA / jour</b></td></tr>
+<tr><td>40' Dry</td><td colspan="2">Sensiblement supérieur — barème progressif du même type</td></tr>
+</table>
+<p class="src"><span class="badge b-mar">Marché</span> Barèmes cités comme applicables depuis le 1<sup>er</sup> janvier 2024. Les tarifs sont <b>progressifs</b> : plus on traîne, plus le tarif journalier monte. À reconfirmer auprès du terminal — ils sont révisés régulièrement.</p>
+
+<div class="box k"><span class="t">Le calcul qui fait mal</span>
+<p>Un 20' bloqué <b>30 jours</b> : 10 jours à ~7 092 F (jours 12-21) + 9 jours à ~12 962 F (jours 22-30) ≈ <b>187 578 FCFA</b> de magasinage — <b>en plus</b> de la détention facturée par l'armateur sur le même conteneur, et <b>en plus</b> du camion qui attend. Un dossier mal préparé peut coûter plus cher en pénalités qu'en fret.</p>
+<p style="margin-top:6pt"><b>C'est le chiffre à mettre sous les yeux du client</b> quand il tarde à envoyer un document. Pas « dépêchez-vous », mais « chaque jour de retard vous coûte 13 000 FCFA ».</p></div>
+
+<h3>Le point de vigilance sur la caution conteneur</h3>
+<p>L'armateur exige une <b>caution</b> pour laisser sortir son conteneur du port. Ordre de grandeur rapporté : <b>500 000 à 1 500 000 FCFA</b>, remboursable à la restitution du vide en bon état. <span class="badge b-mar">Marché</span> C'est de la trésorerie immobilisée, souvent longtemps, et c'est un poste que les clients découvrent avec surprise. <b>À financer, ou à mutualiser — c'est un produit financier potentiel pour Bonzini.</b></p>
+</div>
+
+<!-- ══════════════ 09 — BLOC E : LA DOUANE ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 09</span><h2>Bloc E — La douane : la déclaration en détail</h2></div>
+<p class="lede">« La douane », « la déclaration en douane », « le déclarant », « faire la procédure en ligne » — voici ce que ça recouvre réellement, article par article.</p>
+
+<h3>Le principe légal</h3>
+<p><b>Toutes</b> les marchandises importées doivent faire l'objet d'une <b>déclaration en détail</b> leur assignant un régime douanier. Et l'exemption de droits ne dispense pas de la déclaration. <span class="badge b-off">Code des douanes CEMAC, art. 145</span></p>
+<p>La déclaration peut être <b>déposée avant l'arrivée</b> des marchandises (déclaration anticipée) ; elle prend effet à la date d'arrivée justifiée, et la <b>mainlevée peut être accordée immédiatement</b> dès confirmation de l'arrivée. <span class="badge b-off">Art. 147</span> <b>C'est un levier de vitesse considérable et sous-exploité.</b></p>
+
+<h3>Qui a le droit de déclarer</h3>
+<div class="box w"><span class="t">L'article qui détermine si Bonzini peut exercer ce métier</span>
+<p>« <b>Nul ne peut faire profession d'accomplir pour autrui les formalités de douane concernant la déclaration en détail des marchandises s'il n'a été agréé comme commissionnaire en douane.</b> » <span class="badge b-off">Code des douanes CEMAC, art. 149.1</span></p>
+<p style="margin-top:6pt">L'agrément est donné par le <b>Conseil des Ministres de l'UEAC</b>, après avis du <b>Comité Consultatif National</b> des commissionnaires en douane agréés. Les critères comprennent obligatoirement <b>la moralité douanière et fiscale, la solvabilité, et les connaissances douanières et compétences professionnelles</b>. <span class="badge b-off">Art. 149.2 et 149.4</span></p>
+<p style="margin-top:6pt">L'agrément est <b>personnel</b> : pour une société, il doit être obtenu pour la société <b>et</b> pour chaque personne habilitée à la représenter. <span class="badge b-off">Art. 151.1</span> → <b>Voir chapitre 18 pour ce que ça implique concrètement pour nous.</b></p></div>
+
+<h3>Ce que contient une déclaration, et pourquoi chaque champ compte</h3>
+<table>
+<tr><th style="width:24%">Élément</th><th style="width:34%">Ce que c'est</th><th>L'enjeu</th></tr>
+<tr><td><b>L'espèce tarifaire</b><br><span class="src">le code SH</span></td>
+<td>Le <b>Système Harmonisé</b> de l'OMD : 21 sections, 97 chapitres, plus de 5 000 groupes de marchandises. Structure : <b>2 chiffres</b> = chapitre, <b>4</b> = position, <b>6</b> = sous-position internationale, puis des chiffres nationaux. <span class="badge b-off">Officiel — OMD</span></td>
+<td><b>C'est le champ le plus lourd de conséquences.</b> Il détermine le taux de droit. Une erreur de classement fait passer un produit de 10 % à 30 %.</td></tr>
+<tr><td><b>L'origine</b></td><td>Le pays où la marchandise a été produite — pas celui d'où elle est expédiée.</td><td>Détermine l'éligibilité à un régime préférentiel. Sur la Chine : aucun accord préférentiel avec la CEMAC, donc plein tarif.</td></tr>
+<tr><td><b>La valeur en douane</b></td><td>La <b>valeur transactionnelle</b> — le prix effectivement payé — ajustée selon l'art. 31, donc <b>CIF</b>. Si elle n'est pas déterminable, la douane applique en cascade : marchandises identiques, similaires, valeur déductive, valeur calculée, méthode de dernier recours. <span class="badge b-off">Art. 27 à 37</span></td>
+<td>Base de <b>tous</b> les calculs. Le RVC de SGS la fixe en amont — d'où son importance.</td></tr>
+<tr><td><b>Le régime douanier</b></td><td>Mise à la consommation (le cas normal), transit, entrepôt, admission temporaire, perfectionnement…</td><td>Détermine si on paie tout de suite, plus tard, ou jamais.</td></tr>
+</table>
+
+<h3>Les circuits de contrôle : le feu tricolore de CAMCIS</h3>
+<p>Depuis le 1<sup>er</sup> janvier 2020, le Cameroun utilise <b>CAMCIS</b> (<i>Cameroon Customs Information System</i>), système d'inspiration coréenne qui a remplacé SYDONIA. Il comporte trois portails : douaniers, opérateurs économiques, et public. <span class="badge b-off">Officiel — DGD</span></p>
+<div class="box n"><span class="t">Attention à une confusion très répandue</span>
+<p>Beaucoup de guides en ligne, y compris récents, parlent encore de « SYDONIA++ ». <b>C'est du contenu périmé.</b> Le système en production est CAMCIS. Si un prestataire te parle de SYDONIA aujourd'hui, c'est un signal sur son niveau d'actualisation.</p></div>
+
+<table>
+<tr><th style="width:14%">Circuit</th><th style="width:32%">Ce que fait la douane</th><th style="width:18%">Délai indicatif</th><th>Coût induit</th></tr>
+<tr><td><b style="color:#1e6b34">Vert</b></td><td>Aucun contrôle. Mainlevée après paiement.</td><td>Le plus rapide</td><td>Aucun surcoût</td></tr>
+<tr><td><b style="color:#8a5a00">Jaune / orange</b></td><td>Contrôle documentaire seul.</td><td>+1 à 3 jours</td><td>Faible, mais le magasinage court</td></tr>
+<tr><td><b style="color:#9c2a1c">Rouge</b></td><td><b>Visite physique</b> : dépotage du conteneur, comptage, vérification.</td><td>+2 à 7 jours, jusqu'à 1-2 semaines</td><td><b>Lourd</b> : dépotage, rempotage, magasinage, surestaries</td></tr>
+<tr><td><b style="color:#2a4d9c">Bleu</b></td><td>Contrôle <b>a posteriori</b>, après enlèvement.</td><td>Pas de blocage</td><td>Risque de redressement ultérieur</td></tr>
+</table>
+<p class="src"><span class="badge b-ver">À vérifier</span> Les délais sont des ordres de grandeur d'opérateurs, pas des engagements de service.</p>
+
+<h3>Liquidation, quittance, BAE : les trois derniers mots</h3>
+<div class="flow">
+<div class="fstep"><div class="fnum">1</div><div class="fbody"><b>La liquidation</b><span>L'inspecteur calcule le montant total des droits et taxes dus et émet un <b>numéro de liquidation</b>. C'est le « devis » officiel de l'État.</span></div></div>
+<div class="fstep"><div class="fnum">2</div><div class="fbody"><b>La quittance</b><span>La preuve de paiement au Trésor. À conserver — c'est la pièce justificative comptable de tout le dossier, et elle sert de base à la récupération de TVA du client.</span></div></div>
+<div class="fstep"><div class="fnum">3</div><div class="fbody"><b>Le Bon À Enlever (BAE)</b><span>L'autorisation douanière de faire sortir la marchandise. <b>Sans BAE, rien ne bouge.</b> C'est le jalon que tout client demande, et le seul qui compte vraiment pour lui.</span></div></div>
+</div>
+
+<div class="box w"><span class="t">Le compteur qui ne s'arrête jamais : le dépôt de douane</span>
+<p>Si les marchandises ne sont pas déclarées dans le délai légal, elles sont <b>constituées d'office en dépôt de douane</b>. Et à partir de leur inscription au registre de dépôt, elles sont <b>vendues aux enchères publiques au bout de trois mois</b>. Les marchandises d'une valeur inférieure à <b>200 000 francs</b> non enlevées à l'expiration de ce délai sont <b>considérées comme abandonnées</b>. <span class="badge b-off">Code des douanes CEMAC, art. 325, 329</span></p>
+<p style="margin-top:6pt">Autrement dit : <b>un conteneur oublié finit vendu par l'État.</b> Et pendant tout ce temps, « les frais de toute nature résultant de la constitution et du séjour en dépôt sont à la charge de la marchandise » <span class="badge b-off">art. 327.2</span>. Ce n'est pas une menace théorique : ça arrive tous les mois à Douala.</p></div>
+</div>
+<!-- ══════════════ 10 — BLOC F : ENLÈVEMENT ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 10</span><h2>Bloc F — Enlèvement et livraison finale</h2></div>
+<p class="lede">Le BAE est obtenu. On croit avoir fini. En réalité il reste une dizaine de guichets, et c'est souvent là que les journées se perdent.</p>
+
+<h3>La séquence de sortie du port de Douala</h3>
+<table class="compact">
+<tr><th style="width:6%">#</th><th style="width:30%">Étape</th><th>Détail</th></tr>
+<tr><td>1</td><td><b>Autorisation PAD</b></td><td>L'autorité portuaire autorise l'opération.</td></tr>
+<tr><td>2</td><td><b>BAD du consignataire</b></td><td>Obtenu contre remise du connaissement + paiement des frais armateur + <b>caution conteneur</b>.</td></tr>
+<tr><td>3</td><td><b>Facture &amp; paiement RTC</b></td><td>Manutention, acconage, levage, magasinage éventuel.</td></tr>
+<tr><td>4</td><td><b>BAD terminal</b></td><td>Autorisation du terminal de manipuler et livrer le conteneur.</td></tr>
+<tr><td>5</td><td><b>Contrôle douanier de sortie</b></td><td>Selon le circuit attribué.</td></tr>
+<tr><td>6</td><td><b>Bon de sortie / ticket de livraison</b></td><td>Autorisation physique de franchir la porte.</td></tr>
+<tr><td>7</td><td><b>Postes de contrôle</b></td><td>Police, phytosanitaire, vétérinaire selon la nature de la marchandise.</td></tr>
+<tr><td>8</td><td><b>Chargement &amp; sortie</b></td><td>Camion, badge d'accès portuaire, pesage.</td></tr>
+<tr><td>9</td><td><b>Livraison client</b></td><td>Déchargement, comptage contradictoire, <b>signature du bon de livraison</b>.</td></tr>
+<tr><td>10</td><td><b>Restitution du conteneur vide</b></td><td><b>Le compteur de détention tourne encore.</b> Retour au dépôt désigné, état constaté, caution libérée.</td></tr>
+</table>
+<p class="src"><span class="badge b-ver">À vérifier</span> Séquence reconstituée à partir de guides opérationnels camerounais ; l'ordre exact peut varier selon le terminal et le régime.</p>
+
+<div class="box w"><span class="t">L'erreur classique : croire que c'est fini à la livraison</span>
+<p>Le conteneur vide est encore la propriété de l'armateur, et la <b>détention</b> court jusqu'à sa restitution. Un client qui garde le conteneur trois jours devant sa boutique « pour décharger tranquillement » génère des frais que personne n'a prévus — et perd potentiellement la caution si le conteneur est abîmé.</p>
+<p style="margin-top:6pt"><b>Règle Bonzini :</b> le délai de déchargement chez le client fait partie du contrat, et il est chiffré à l'avance.</p></div>
+
+<h3>Le post-acheminement à l'intérieur du pays</h3>
+<p>Douala–Yaoundé, Douala–Bafoussam, Douala–Garoua : c'est un métier en soi, avec ses propres risques (état des routes, contrôles routiers, immobilisation). Pour donner l'échelle des tracasseries régionales, sur le corridor <b>Douala–Bangui</b>, un camionneur dépense en moyenne <b>~64 000 FCFA</b> aux contrôles routiers pour un aller-retour, et jusqu'à <b>225 000 FCFA</b> au maximum. Sur <b>Douala–N'Djamena</b>, la moyenne tombe à ~22 941 FCFA. <span class="badge b-off">Officiel — relevés relayés par le CNCC</span></p>
+<p>Ces montants ne sont pas des taxes : ce sont des frais de route. Ils doivent être budgétés, sinon ils sortent de la marge.</p>
+</div>
+
+<!-- ══════════════ 11 — L'ARGENT ══════════════ -->
+<div class="chapter">
+<div class="chapter-head" style="border-top-color:var(--amber)">
+<span class="chapter-num">Chapitre 11</span><h2 style="color:var(--amber-d)">L'argent : anatomie complète d'un coût</h2></div>
+<p class="lede">Voici ce que paie réellement un client, poste par poste, avec un exemple chiffré de bout en bout. C'est le chapitre à connaître pour construire une grille tarifaire et pour ne plus jamais se faire surprendre.</p>
+
+<h3>Les quatre familles de coûts</h3>
+<table class="compact">
+<tr><th style="width:22%">Famille</th><th style="width:30%">Qui encaisse</th><th>Nature</th></tr>
+<tr><td><b>1. Le transport</b></td><td>Armateur, groupeur, transporteur routier</td><td>Prix de marché, négociable, volatil</td></tr>
+<tr><td><b>2. Les formalités</b></td><td>CNCC, SGS, ANOR, GUCE, banque, assureur</td><td>Redevances forfaitaires ou en % — quasi incompressibles</td></tr>
+<tr><td><b>3. Les droits et taxes</b></td><td>État camerounais (douane / Trésor)</td><td>Fixés par la loi — non négociables</td></tr>
+<tr><td><b>4. Les prestations</b></td><td>Terminal, acconier, CAD, transitaire</td><td>Tarifs de place + honoraires — c'est là qu'est notre marge</td></tr>
+</table>
+
+<h3>La formule de calcul des taxes — à mémoriser</h3>
+<div class="box k">
+<p style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:9.6pt;line-height:1.9">
+<b>1.</b> Valeur CIF &nbsp;=&nbsp; FOB + Fret + Assurance<br>
+<b>2.</b> Droit de douane &nbsp;=&nbsp; CIF × taux du code SH &nbsp;<span style="color:var(--mut)">(0 · 5 · 10 · 20 · 30 %…)</span><br>
+<b>3.</b> Taxes communautaires &nbsp;=&nbsp; CIF × TCI &nbsp;<span style="color:var(--mut)">(1 %)</span><br>
+<b>4.</b> Redevance informatique &nbsp;=&nbsp; CIF × 0,5 %<br>
+<b>5.</b> Droits d'accises &nbsp;=&nbsp; sur produits spécifiques uniquement<br>
+<b>6.</b> <b>TVA &nbsp;=&nbsp; 19,25 % × (CIF + droits + taxes ci-dessus)</b><br>
+<b>7.</b> Précompte / acompte &nbsp;=&nbsp; % × valeur en douane
+</p></div>
+<p>Le taux de <b>TVA de 19,25 %</b> se décompose en <b>17,5 % en principal</b> plus <b>10 % du principal</b> au titre des <b>centimes additionnels communaux (CAC)</b>. <span class="badge b-off">Officiel</span> Le point capital, c'est que <b>la TVA se calcule sur une base qui inclut déjà les droits de douane</b> : on paie de la TVA sur la taxe. C'est normal, c'est la règle partout, mais ça surprend systématiquement.</p>
+
+<h3>Le tarif douanier applicable en 2026 — une année de bascule</h3>
+<div class="box n"><span class="t">Ce qui a changé au 1<sup>er</sup> janvier 2026</span>
+<p>Le Cameroun applique désormais le <b>Tarif Extérieur Commun (TEC) harmonisé CEEAC-CEMAC</b>, approuvé le <b>18 octobre 2024</b> par les 11 États membres de la CEEAC, entré en vigueur au Cameroun le <b>1<sup>er</sup> janvier 2026</b>, en même temps que le <b>code des douanes harmonisé</b>. <span class="badge b-off">Officiel</span></p>
+<p style="margin-top:6pt">Les droits du TEC sont <b>distincts des taxes nationales</b> (TVA, droits d'accises), qui restent régies par la réglementation camerounaise.</p></div>
+
+<table>
+<tr><th style="width:12%">Taux</th><th style="width:38%">Catégorie</th><th>Exemples de produits</th></tr>
+<tr><td><b>0 %</b></td><td>Exonérés</td><td>Semences de céréales, véhicules et machines de transport aérien</td></tr>
+<tr><td><b>5 %</b></td><td>Biens de première nécessité</td><td>Produits pharmaceutiques, céréales, intrants agricoles, certains équipements médicaux</td></tr>
+<tr><td><b>10 %</b></td><td>Matières premières et biens d'équipement</td><td>Machines-outils, équipements industriels, <b>téléphones</b>, ordinateurs, tracteurs</td></tr>
+<tr><td><b>20 %</b></td><td>Biens intermédiaires et divers</td><td>Viandes, poissons, jouets, instruments de musique, meubles, camions légers</td></tr>
+<tr><td><b>30 %</b></td><td>Biens de consommation courante</td><td>Véhicules de tourisme, vêtements confectionnés, climatiseurs, réfrigérateurs, cosmétiques</td></tr>
+<tr><td><b>40 %</b></td><td>Taux maximal</td><td>Poudre de cacao, tabac, eau minérale, boissons toniques, tissus coton et polyester, prêt-à-porter, mèches et extensions capillaires</td></tr>
+</table>
+<p class="src"><span class="badge b-ver">À vérifier impérativement</span> Les sources divergent sur la structure exacte (4 bandes CEMAC historiques 5/10/20/30 vs bandes CEEAC élargies incluant 0 % et 40 %) et sur l'affectation produit par produit. <b>Le taux applicable se lit dans le tarif intégré, ligne par ligne, à partir du code SH exact — jamais à partir d'une catégorie générale.</b> C'est le travail du RVC et du commissionnaire agréé.</p>
+
+<div class="box w"><span class="t">Le point qui touche directement le business de tes clientes</span>
+<p>Si les <b>mèches et extensions capillaires</b> et le <b>prêt-à-porter</b> relèvent bien de la bande à <b>40 %</b>, cela change radicalement l'économie de ces filières — qui sont massivement représentées dans le commerce Chine→Cameroun. <b>C'est le premier point à faire vérifier ligne par ligne dans le tarif intégré.</b> Ne construis aucune grille client avant d'avoir cette réponse.</p></div>
+
+<h3>Exemple chiffré complet : un conteneur 20' de quincaillerie</h3>
+<p class="src">Hypothèses : FOB 10 000 000 FCFA · fret 20' Guangzhou→Douala 2 800 USD · taux de travail 1 USD = 600 FCFA <span class="badge b-ver">le USD/XAF flotte — l'EUR/XAF est fixe à 655,957</span> · assurance 0,5 % · code SH en catégorie 20 % · importateur au régime simplifié.</p>
+
+<table class="compact">
+<tr><th style="width:44%">Poste</th><th class="num" style="width:20%">Montant (FCFA)</th><th class="num" style="width:12%">% du CIF</th><th>Encaissé par</th></tr>
+<tr style="background:var(--violet-l)"><td colspan="4"><b>A · CONSTRUCTION DE LA VALEUR EN DOUANE</b></td></tr>
+<tr><td>Valeur marchandise (FOB)</td><td class="num">10 000 000</td><td class="num">85,2 %</td><td>Fournisseur chinois</td></tr>
+<tr><td>Fret maritime 20' (2 800 USD)</td><td class="num">1 680 000</td><td class="num">14,3 %</td><td>Armateur</td></tr>
+<tr><td>Assurance (0,5 %)</td><td class="num">60 000</td><td class="num">0,5 %</td><td>Assureur agréé Cameroun</td></tr>
+<tr style="background:#eeeef4"><td><b>= VALEUR CIF (base taxable)</b></td><td class="num"><b>11 740 000</b></td><td class="num"><b>100 %</b></td><td>—</td></tr>
+
+<tr style="background:var(--violet-l)"><td colspan="4"><b>B · DROITS ET TAXES — ÉTAT CAMEROUNAIS</b></td></tr>
+<tr><td>Droit de douane (20 %)</td><td class="num">2 348 000</td><td class="num">20,0 %</td><td>Douane</td></tr>
+<tr><td>Taxe Communautaire d'Intégration (1 %)</td><td class="num">117 400</td><td class="num">1,0 %</td><td>CEMAC</td></tr>
+<tr><td>Redevance informatique (0,5 %)</td><td class="num">58 700</td><td class="num">0,5 %</td><td>Douane</td></tr>
+<tr><td>TVA 19,25 % sur (CIF + DD + TCI + RI)</td><td class="num">2 745 839</td><td class="num">23,4 %</td><td>Trésor <span class="src" style="display:inline">— déductible</span></td></tr>
+<tr><td>Précompte / acompte d'impôt (5 %)</td><td class="num">587 000</td><td class="num">5,0 %</td><td>DGI <span class="src" style="display:inline">— imputable</span></td></tr>
+<tr style="background:#eeeef4"><td><b>= TOTAL DROITS ET TAXES</b></td><td class="num"><b>5 856 939</b></td><td class="num"><b>49,9 %</b></td><td>—</td></tr>
+
+<tr style="background:var(--violet-l)"><td colspan="4"><b>C · FORMALITÉS ET PRESTATIONS</b> <span style="font-weight:400">— ordres de grandeur <span class="badge b-mar">Marché</span></span></td></tr>
+<tr><td>Frais SGS / RVC (0,95 % FOB + TVA)</td><td class="num">~113 300</td><td class="num">1,0 %</td><td>SGS</td></tr>
+<tr><td>BESC (~100 €)</td><td class="num">~65 600</td><td class="num">0,6 %</td><td>CNCC</td></tr>
+<tr><td>Domiciliation bancaire</td><td class="num">~11 100</td><td class="num">0,1 %</td><td>Banque</td></tr>
+<tr><td>Frais documentation + timbre armateur</td><td class="num">~65 000</td><td class="num">0,6 %</td><td>Consignataire</td></tr>
+<tr><td>Manutention / acconage / levage terminal</td><td class="num">~300 000</td><td class="num">2,6 %</td><td>RTC</td></tr>
+<tr><td>Scanner</td><td class="num">~75 000</td><td class="num">0,6 %</td><td>SGS</td></tr>
+<tr><td>Honoraires commissionnaire agréé + commission débours</td><td class="num">~320 000</td><td class="num">2,7 %</td><td>CAD</td></tr>
+<tr><td>Transport port → client (Douala)</td><td class="num">~200 000</td><td class="num">1,7 %</td><td>Transporteur</td></tr>
+<tr style="background:#eeeef4"><td><b>= TOTAL FORMALITÉS ET PRESTATIONS</b></td><td class="num"><b>~1 150 000</b></td><td class="num"><b>9,8 %</b></td><td>—</td></tr>
+
+<tr style="background:var(--amber-l)"><td><b>COÛT TOTAL RENDU CHEZ LE CLIENT</b></td><td class="num"><b>~18 746 900</b></td><td class="num"><b>159,7 %</b></td><td>—</td></tr>
+<tr style="background:var(--amber-l)"><td><b>Soit, sur 10 M de marchandise achetée…</b></td><td class="num" colspan="3"><b>+ 87 % de coûts d'acheminement, taxes comprises</b></td></tr>
+</table>
+<p class="src">Hors caution conteneur (~500 000 à 1 500 000 FCFA, immobilisée puis restituée). Calcul illustratif : chaque ligne doit être re-cotée pour un dossier réel.</p>
+
+<div class="box k"><span class="t">Trois enseignements de ce tableau</span>
+<p><b>1. Les taxes représentent presque la moitié de la valeur CIF.</b> Sur une catégorie à 20 %, on atterrit autour de <b>47 à 55 % du CIF</b> tous prélèvements confondus — cohérent avec ce que rapportent les opérateurs camerounais. En catégorie 30 ou 40 %, ça explose.</p>
+<p style="margin-top:6pt"><b>2. Le poste « formalités et prestations » (~10 % du CIF) est le seul sur lequel on agit.</b> C'est notre terrain de jeu : c'est là qu'on optimise pour le client et qu'on se rémunère.</p>
+<p style="margin-top:6pt"><b>3. Pour un client formel, le coût réel est plus bas qu'il n'y paraît.</b> La <b>TVA est déductible</b> et le <b>précompte est imputable</b> sur l'impôt. Sur cet exemple, ce sont <b>3,3 millions</b> qui sont récupérables — mais uniquement si le client est en règle et tient une comptabilité. <b>C'est un argument massif pour pousser nos clients vers la formalisation, et un service à vendre.</b></p></div>
+</div>
+
+<!-- ══════════════ 12 — FISCALITÉ ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 12</span><h2>Douane, impôts, TVA : qui prend quoi et pourquoi</h2></div>
+<p class="lede">Tu demandais explicitement la différence. La voici, structurée. C'est aussi la base pour expliquer à un client pourquoi il paie ce qu'il paie.</p>
+
+<h3>Deux administrations, deux logiques</h3>
+<table>
+<tr><th style="width:22%"></th><th style="width:39%">La Douane (DGD)</th><th>Les Impôts (DGI)</th></tr>
+<tr><td><b>Tutelle</b></td><td colspan="2">Les deux dépendent du <b>Ministère des Finances</b>. C'est la source de la confusion : ce sont deux directions du même ministère.</td></tr>
+<tr><td><b>Ce qu'elle taxe</b></td><td><b>Le franchissement de la frontière</b> par une marchandise.</td><td><b>L'activité économique</b> : chiffre d'affaires, bénéfice, salaires, patrimoine.</td></tr>
+<tr><td><b>Quand</b></td><td>À l'instant du dédouanement, une fois par expédition.</td><td>Périodiquement : mensuel (TVA), annuel (impôt sur les sociétés).</td></tr>
+<tr><td><b>Si tu n'importes rien</b></td><td>Tu ne la vois jamais.</td><td>Tu la vois quand même, tous les mois.</td></tr>
+<tr><td><b>Le lien entre les deux</b></td><td colspan="2">La douane <b>collecte de la TVA pour le compte du fisc</b> à l'importation. Cette TVA est ensuite <b>déductible</b> par l'importateur assujetti dans sa déclaration mensuelle DGI. C'est le même impôt, encaissé à deux endroits.</td></tr>
+</table>
+
+<h3>Les prélèvements de l'importation, un par un</h3>
+<table>
+<tr><th style="width:24%">Prélèvement</th><th style="width:12%">Taux</th><th style="width:22%">Assiette</th><th>Ce que c'est vraiment</th></tr>
+<tr><td><b>Droit de douane</b></td><td>0 à 40 %</td><td>Valeur CIF</td><td>Protection de la production locale et recette de l'État. Fixé par le TEC, selon le code SH. <b>Coût définitif</b>, entre dans le prix de revient.</td></tr>
+<tr><td><b>TVA à l'importation</b></td><td><b>19,25 %</b><br><span class="src">17,5 % + 10 % CAC</span></td><td>CIF + droits + autres taxes</td><td>Impôt sur la consommation. <b>Déductible</b> pour un assujetti — donc neutre pour une entreprise formelle, et un vrai coût pour un informel.</td></tr>
+<tr><td><b>Droits d'accises</b></td><td>12,5 à 50 %</td><td>Produits spécifiques</td><td>Taxe de dissuasion : alcools, tabac, véhicules anciens, cosmétiques. <b>LF 2026</b> : 12,5 % pour les véhicules de 12 à 20 ans, <b>25 % au-delà de 20 ans</b>. <span class="badge b-off">Officiel</span></td></tr>
+<tr><td><b>TCI</b><br><span class="src">Taxe Communautaire d'Intégration</span></td><td>1 %</td><td>Valeur CIF</td><td>Finance l'intégration régionale CEMAC. Fait partie intégrante du tarif douanier.</td></tr>
+<tr><td><b>CCI</b><br><span class="src">Contribution Communautaire d'Intégration</span></td><td>0,4 %</td><td>Valeur CIF</td><td>Équivalent CEEAC. <span class="badge b-ver">Cumul avec la TCI à confirmer après l'harmonisation 2026</span></td></tr>
+<tr><td><b>Redevance informatique</b></td><td>~0,5 %</td><td>Valeur imposable</td><td>Finance le système douanier. Un projet de relèvement à 1 % a été évoqué. <span class="badge b-ver">Taux en vigueur à confirmer</span></td></tr>
+<tr><td><b>Précompte sur achat</b></td><td>5 % ou 10 %</td><td>Valeur en douane</td><td><b>Ce n'est pas une taxe supplémentaire : c'est une avance sur l'impôt sur le revenu.</b> 5 % au régime simplifié ; <b>10 % pour qui n'a pas de carte de contribuable</b>. <span class="badge b-off">Officiel — CGI</span></td></tr>
+</table>
+
+<div class="box w"><span class="t">Le message le plus rentable à faire passer à un client</span>
+<p>Un importateur <b>sans NIU</b> paie le précompte à <b>10 %</b> au lieu de 5 %, et <b>ne récupère jamais la TVA</b>. Sur notre exemple à 11,74 M de CIF, l'écart entre un importateur formalisé et un informel dépasse <b>3,3 millions de FCFA sur un seul conteneur</b>.</p>
+<p style="margin-top:6pt"><b>Se formaliser n'est pas un coût : c'est le premier gain de la chaîne.</b> C'est un argument de vente, un service à facturer, et un fossé concurrentiel — parce qu'aucun transitaire classique ne le dit à ses clients.</p></div>
+
+<h3>Ce que 2026 change — loi de finances</h3>
+<table class="compact">
+<tr><th style="width:38%">Mesure</th><th>Effet</th></tr>
+<tr><td><b>Code des douanes et TEC harmonisés CEEAC-CEMAC</b></td><td>En vigueur au 1<sup>er</sup> janvier 2026. Mise en œuvre encore en cours — d'où les incertitudes de classement signalées plus haut.</td></tr>
+<tr><td><b>Exonération des biens d'équipement pour start-up</b></td><td>Suppression des droits de douane à l'importation des équipements destinés au développement des start-up, au titre de la promotion de l'économie numérique. <b>Potentiellement applicable à Bonzini pour son propre équipement.</b></td></tr>
+<tr><td><b>Prorogation d'exonérations</b></td><td>Équipements médicaux (24 mois), eau potable et énergies solaire / éolienne / biomasse (12 mois), équipements pour personnes handicapées, matériels d'enseignement professionnel.</td></tr>
+<tr><td><b>Droits d'accises véhicules d'occasion</b></td><td>12,5 % (12-20 ans) et 25 % (&gt; 20 ans). Véhicules au gaz naturel exonérés.</td></tr>
+<tr><td><b>Fiscalité environnementale</b></td><td>Nouvelle taxation sur ciment, fer à béton, carreaux, emballages non retournables et plastiques — <b>producteurs locaux et importateurs</b>, dès le 1<sup>er</sup> janvier 2026.</td></tr>
+<tr><td><b>Anti-évasion sur les achats à l'étranger</b></td><td>Interdiction d'acquérir des marchandises auprès de fournisseurs étrangers <b>via des mécanismes n'impliquant pas un transfert de fonds effectif</b>. <b>Point d'attention direct pour l'activité de paiement de Bonzini</b> — à faire analyser par un fiscaliste.</td></tr>
+</table>
+<p class="src"><span class="badge b-off">Officiel</span> Loi de finances 2026 du Cameroun — MINFI et analyses de cabinets.</p>
+</div>
+<!-- ══════════════ 13 — DOCUMENTS ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 13</span><h2>Le dossier documentaire, pièce par pièce</h2></div>
+<p class="lede">Une expédition, c'est une marchandise et un dossier. Si le dossier est incomplet ou incohérent, la marchandise ne bouge pas. Voici les 16 pièces, qui les produit et à quoi elles servent.</p>
+
+<table>
+<tr><th style="width:24%">Document</th><th style="width:17%">Produit par</th><th style="width:12%">Quand</th><th>Rôle et point de vigilance</th></tr>
+<tr style="background:var(--violet-l)"><td colspan="4"><b>ÉMIS EN CHINE</b></td></tr>
+<tr><td><b>Facture commerciale</b><br><span class="src">Commercial Invoice</span></td><td>Fournisseur</td><td>À la commande</td><td>Fixe la valeur, l'Incoterm, la devise, les parties. <b>C'est la pièce maîtresse de la valeur en douane.</b> Doit être cohérente avec tout le reste, au centime.</td></tr>
+<tr><td><b>Liste de colisage</b><br><span class="src">Packing List</span></td><td>Fournisseur / notre entrepôt</td><td>À l'expédition</td><td>Détail par colis : contenu, quantité, poids, dimensions. Sert au contrôle physique et au calcul du CBM.</td></tr>
+<tr><td><b>Déclaration d'exportation chinoise</b></td><td>Douane chinoise</td><td>Avant embarquement</td><td>Conditionne le remboursement de TVA du fournisseur. Utile comme preuve d'origine et de valeur.</td></tr>
+<tr><td><b>Certificat d'origine</b></td><td>CCPIT / chambre de commerce chinoise</td><td>Avant embarquement</td><td>Atteste du pays de fabrication. Pas de régime préférentiel Chine–CEMAC, mais exigé pour le classement et certains contrôles.</td></tr>
+<tr><td><b>Certificat de Conformité (CoC)</b></td><td>SGS / Intertek / TÜV, mandatés par l'ANOR</td><td><b>Avant embarquement</b></td><td>Programme <b>PECAE</b>. <b>Sans lui, sur produit réglementé, la cargaison est refusée à l'arrivée.</b> Ne se rattrape pas après coup.</td></tr>
+<tr><td><b>Déclaration VGM</b></td><td>Chargeur</td><td>Avant chargement</td><td>Masse brute vérifiée. Sans VGM, l'armateur ne charge pas.</td></tr>
+<tr><td><b>Certificat de fumigation / ISPM 15</b></td><td>Opérateur agréé</td><td>Si emballage bois</td><td>Norme phytosanitaire. Bois non traité = risque de refus.</td></tr>
+<tr><td><b>Connaissement (BL)</b></td><td>Armateur ou groupeur</td><td>Au chargement</td><td>Reçu + contrat + <b>titre de propriété</b>. Master BL et House BL en groupage. Ne jamais l'égarer.</td></tr>
+
+<tr style="background:var(--violet-l)"><td colspan="4"><b>ÉMIS AU CAMEROUN, AVANT L'ARRIVÉE</b></td></tr>
+<tr><td><b>Attestation FIMEX</b></td><td>MINCOMMERCE</td><td>Annuelle</td><td>Inscription au fichier des importateurs. Se renouvelle — beaucoup de blocages viennent d'une attestation périmée.</td></tr>
+<tr><td><b>Déclaration d'Importation (DI)</b></td><td>Importateur via e-GUCE</td><td>Avant arrivée</td><td>Ouvre le dossier. <b>Validité 6 mois.</b> Au-delà, pénalités et nouvelle DI à lever.</td></tr>
+<tr><td><b>Rapport de Valeur et Classification (RVC)</b></td><td>SGS</td><td>Avant arrivée</td><td><b>Fixe le code SH et la valeur en douane.</b> Un RVC mal renseigné coûte des points de droit sur toute l'expédition.</td></tr>
+<tr><td><b>BESC</b></td><td>Agent agréé CNCC</td><td>Avant arrivée</td><td>Voir chapitre 7. <b>Non modifiable après émission.</b></td></tr>
+<tr><td><b>Attestation de domiciliation</b></td><td>Banque agréée</td><td>Avant arrivée</td><td>Contrôle des changes. Trace le transfert vers la Chine.</td></tr>
+<tr><td><b>Police d'assurance locale</b></td><td>Assureur agréé au Cameroun</td><td>Avant arrivée</td><td><b>Obligation légale</b> au-delà de 500 000 FCFA FOB. Une police étrangère ne suffit pas.</td></tr>
+
+<tr style="background:var(--violet-l)"><td colspan="4"><b>ÉMIS À L'ARRIVÉE</b></td></tr>
+<tr><td><b>Déclaration en détail</b></td><td>Commissionnaire agréé, dans CAMCIS</td><td>À l'arrivée</td><td>L'acte juridique central. Engage la responsabilité du CAD.</td></tr>
+<tr><td><b>Quittance + Bon À Enlever (BAE)</b></td><td>Douane / Trésor</td><td>Après paiement</td><td>Preuve de paiement + autorisation de sortie. <b>À conserver au moins 5 ans</b> — support de la déduction de TVA du client.</td></tr>
+</table>
+
+<div class="box k"><span class="t">La règle de cohérence — la cause n°1 des blocages</span>
+<p>Le nom du destinataire, la description de la marchandise, le nombre de colis, le poids et la valeur doivent être <b>identiques</b> sur la facture, la liste de colisage, le connaissement, le BESC et la déclaration. Une virgule qui diffère entre le BL et le BESC, et le conteneur reste à quai pendant qu'on négocie une rectification — sachant que <b>le BESC n'est pas modifiable</b>.</p>
+<p style="margin-top:6pt"><b>Fonctionnalité produit évidente :</b> un contrôle de cohérence automatique entre les documents d'une expédition, avant émission. C'est trivial techniquement et ça élimine la faute la plus coûteuse du métier.</p></div>
+</div>
+
+<!-- ══════════════ 14 — DÉLAIS ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 14</span><h2>Les délais réels : le calendrier honnête</h2></div>
+<p class="lede">Le client demande toujours « c'est combien de temps ? ». Voici la réponse honnête, avec les fourchettes, pour ne pas promettre ce qu'on ne tient pas.</p>
+
+<table>
+<tr><th style="width:8%">Jalon</th><th style="width:32%">Étape</th><th style="width:16%">Durée</th><th>Ce qui fait déraper</th></tr>
+<tr><td><b>J+0</b></td><td>Commande passée au fournisseur, acompte versé</td><td>—</td><td>—</td></tr>
+<tr><td><b>J+3→30</b></td><td>Production / disponibilité de la marchandise</td><td>Très variable</td><td>Le fournisseur annonce 7 jours et livre en 25. Cause n°1 de retard, et hors de notre contrôle.</td></tr>
+<tr><td><b>J+2→5</b></td><td>Réception à l'entrepôt Guangzhou, contrôle, cubage</td><td>2 à 5 j</td><td>Colis mal identifiés, livraisons partielles.</td></tr>
+<tr><td><b>J+3→10</b></td><td>Groupage, attente du cut-off, empotage</td><td>3 à 10 j (LCL)</td><td>En LCL, on attend que le conteneur se remplisse.</td></tr>
+<tr><td><b>J+1→3</b></td><td>Formalités export chinoises, VGM, émission du BL</td><td>1 à 3 j</td><td>Documents fournisseur incomplets.</td></tr>
+<tr style="background:var(--amber-l)"><td><b>+30→45 j</b></td><td><b>Traversée maritime Chine → Douala / Kribi</b></td><td><b>30-40 j (FCL)<br>35-45 j (LCL)</b></td><td>Transbordements, escales, congestion. Ningbo ~40 j, Shanghai ~41 j, Qingdao ~44 j. <span class="badge b-mar">Marché</span></td></tr>
+<tr><td>pendant</td><td><b>Bloc C : pré-dédouanement</b></td><td>3 à 4 semaines</td><td><b>Doit tenir dans la traversée.</b> S'il déborde, tout le reste dérape.</td></tr>
+<tr><td><b>+1→4 j</b></td><td>Accostage, déchargement, manifeste, scanner</td><td>1 à 4 j</td><td>Congestion portuaire, incidents scanner.</td></tr>
+<tr><td><b>+2→15 j</b></td><td><b>Dédouanement</b></td><td>Vert : 3-5 j<br>Rouge : 10-20 j</td><td>Le circuit. Les documents manquants. La trésorerie du client pour payer les droits.</td></tr>
+<tr><td><b>+1→5 j</b></td><td>Enlèvement, sortie du port, livraison</td><td>1 à 5 j</td><td>Disponibilité camion, postes de contrôle.</td></tr>
+<tr style="background:var(--violet-l)"><td colspan="2"><b>TOTAL RÉALISTE, commande → livraison</b></td><td colspan="2"><b>45 à 90 jours.</b> Un scénario nominal bien géré tourne autour de <b>55 à 65 jours</b>. Annoncer moins, c'est mentir.</td></tr>
+</table>
+
+<h3>L'alternative aérienne</h3>
+<table class="compact">
+<tr><th style="width:24%">Mode</th><th style="width:20%">Délai porte-à-porte</th><th style="width:22%">Prix indicatif</th><th>Quand ça se justifie</th></tr>
+<tr><td><b>Maritime LCL</b></td><td>45-70 j</td><td>~60 à 180 USD / m³</td><td>Le cas normal. Le meilleur rapport coût/volume.</td></tr>
+<tr><td><b>Maritime FCL</b></td><td>40-60 j</td><td>20' : 2 000-4 500 USD<br>40' : 2 600-5 500 USD</td><td>Dès ~13-15 m³.</td></tr>
+<tr><td><b>Aérien groupage</b></td><td>7-12 j</td><td>~5 à 8 USD / kg</td><td>Réassort urgent, échantillons, produits à forte valeur au kilo (électronique, pièces).</td></tr>
+<tr><td><b>Express</b> (DHL/FedEx)</td><td>3-7 j</td><td>~2,5 à 15 USD / kg</td><td>Documents, petits colis urgents.</td></tr>
+</table>
+<p class="src"><span class="badge b-mar">Marché — septembre 2026</span> Fourchettes issues de transitaires opérant l'axe Chine–Cameroun. <b>Très volatiles</b> : le fret maritime a connu des variations de 1 à 5 en trois ans. Toute grille tarifaire doit être re-cotée mensuellement.</p>
+
+<div class="box n"><span class="t">Le calcul que peu de gens font</span>
+<p>Pour une marchandise à forte valeur au kilo, l'aérien n'est pas un luxe : il peut être <b>moins cher au total</b>. 45 jours de mer, c'est 45 jours de stock immobilisé et de trésorerie bloquée. Pour un commerçant qui tourne son stock 8 fois par an, gagner 40 jours vaut souvent plus que le surcoût du fret. <b>Un simulateur qui compare « coût total incluant l'immobilisation de trésorerie » est un produit à part entière</b> — et personne ne le propose au Cameroun.</p></div>
+</div>
+
+<!-- ══════════════ 15 — LÀ OÙ ÇA CASSE ══════════════ -->
+<div class="chapter">
+<div class="chapter-head" style="border-top-color:var(--orange)">
+<span class="chapter-num">Chapitre 15</span><h2 style="color:var(--orange-d)">Là où ça casse : incidents, pièges, arnaques</h2></div>
+<p class="lede">Ce chapitre vaut de l'argent. Chacun de ces points a coûté cher à quelqu'un. Les connaître, c'est la moitié du métier.</p>
+
+<h3>Les pièges côté fournisseur chinois</h3>
+<table class="compact">
+<tr><th style="width:28%">Le piège</th><th style="width:34%">Comment ça se passe</th><th>La parade</th></tr>
+<tr><td><b>Le faux fournisseur</b></td><td>Site vitrine, prix imbattable, demande de virement sur un compte personnel ou dans un pays tiers. La marchandise n'existe pas.</td><td>Vérifier la licence d'exploitation chinoise, exiger un compte bancaire <b>au nom exact de la société</b>, visiter l'usine, payer par étapes.</td></tr>
+<tr><td><b>La quantité en moins</b></td><td>Commande de 1 000 pièces, expédition de 800. Découvert à Douala, deux mois plus tard.</td><td><b>Contrôle et comptage à notre entrepôt Guangzhou, avant embarquement.</b> C'est exactement à ça que sert le mode 2 du chapitre 4.</td></tr>
+<tr><td><b>La qualité dégradée</b></td><td>L'échantillon était parfait, la production ne l'est pas.</td><td>Inspection avant expédition, avec photos et rapport. Service facturable.</td></tr>
+<tr><td><b>La sous-facturation « pour aider »</b></td><td>Le fournisseur propose une facture minorée pour réduire les droits.</td><td><b>Refuser.</b> Le RVC de SGS redresse la valeur, la douane sanctionne, et l'assurance ne couvre que la valeur déclarée. En cas de perte totale, le client est indemnisé sur le montant sous-déclaré.</td></tr>
+</table>
+
+<h3>Les pièges côté transport et documentation</h3>
+<table class="compact">
+<tr><th style="width:28%">Le piège</th><th style="width:34%">Comment ça se passe</th><th>La parade</th></tr>
+<tr><td><b>Le BL original perdu</b></td><td>Le pli DHL se perd. La marchandise est à Douala, personne ne peut la réclamer.</td><td><b>Utiliser le telex release par défaut.</b> Ça élimine le problème à la racine.</td></tr>
+<tr><td><b>Le BESC oublié ou erroné</b></td><td>Personne ne l'a fait au départ. Débarquement bloqué, pénalités jusqu'à 30-50 % du fret CIF.</td><td>Le BESC est une case obligatoire de notre check-list, déclenchée à la création de l'expédition, échéance calée sur l'ETA.</td></tr>
+<tr><td><b>Le CoC ANOR manquant</b></td><td>Produit réglementé embarqué sans certification. <b>Impossible à régulariser après coup</b> — la certification est <i>avant embarquement</i>.</td><td>Qualifier le produit <b>avant l'achat</b>. Une base « ce produit est-il réglementé ? » interrogeable est une fonctionnalité produit à forte valeur.</td></tr>
+<tr><td><b>L'assurance étrangère qui ne vaut rien</b></td><td>Achat en CIF, assurance souscrite en Chine, refusée par la réglementation camerounaise.</td><td>Souscrire systématiquement une police locale, et l'annoncer dès la cotation.</td></tr>
+<tr><td><b>Le mauvais code SH</b></td><td>Classement approximatif : le produit passe de 10 % à 30 %, ou déclenche un redressement a posteriori.</td><td>S'appuyer sur le RVC, faire valider par le CAD, et <b>capitaliser</b> : chaque code SH validé doit être mémorisé par produit et réutilisé.</td></tr>
+</table>
+
+<h3>Les incidents côté port et administration</h3>
+<table class="compact">
+<tr><th style="width:28%">L'incident</th><th style="width:34%">Ce qui se passe</th><th>Ce qu'on peut faire</th></tr>
+<tr><td><b>La congestion portuaire</b></td><td>Les délais explosent, les surestaries courent alors qu'on n'y peut rien.</td><td>Suivre l'actualité portuaire. Négocier des franchises exceptionnelles — <b>une franchise de 21 jours sur les surestaries a été accordée à Douala en janvier 2026.</b> <span class="badge b-ver">À vérifier</span></td></tr>
+<tr><td><b>La crise du scanning (2026)</b></td><td>Début 2026, coexistence de deux opérateurs de scanner à Douala (SGS et Transatlantic) : <b>double passage et double facturation</b>. Le GECAM a menacé de suspendre les opérations d'import-export le 16 février 2026. Le DG du PAD a suspendu partiellement le contrat de Transatlantic le 17 février 2026 et le scanning SGS a repris.</td><td><b>Leçon :</b> le risque réglementaire local est réel et brutal. Nos contrats clients doivent prévoir une clause de force majeure administrative.</td></tr>
+<tr><td><b>Les pannes de CAMCIS</b></td><td>Des incidents ont déjà paralysé le système de dédouanement électronique.</td><td>Prévoir des marges de délai. Ne jamais promettre une date de livraison « au jour près ».</td></tr>
+<tr><td><b>Le circuit rouge</b></td><td>Dépotage complet, jours perdus, frais supplémentaires.</td><td>Dossier irréprochable = moins de rouge. La régularité d'un opérateur influence son profil de risque.</td></tr>
+<tr><td><b>Le conteneur oublié</b></td><td>Constitution d'office en dépôt, puis <b>vente aux enchères au bout de 3 mois</b>.</td><td>Alerte automatique à J-15 du dépôt. C'est un sauvetage client à haute valeur perçue.</td></tr>
+</table>
+
+<div class="box w"><span class="t">Les trois pièges qui concernent directement Bonzini</span>
+<p><b>1. Exercer sans agrément.</b> Faire profession de déclarer en douane pour autrui sans être commissionnaire agréé est interdit par le Code des douanes CEMAC (art. 149.1). Voir chapitre 18 : ce n'est pas un détail administratif, c'est un préalable structurant.</p>
+<p style="margin-top:6pt"><b>2. Confondre débours et honoraires.</b> Les sommes avancées pour le compte du client (droits, taxes, frais de port) sont des <b>débours</b> : elles transitent, elles ne sont pas notre chiffre d'affaires. Les mélanger fausse la comptabilité, gonfle artificiellement le CA et crée un risque fiscal sur la TVA.</p>
+<p style="margin-top:6pt"><b>3. La nouvelle règle anti-évasion de la LF 2026</b> interdit l'acquisition de marchandises auprès de fournisseurs étrangers via des mécanismes n'impliquant pas un transfert de fonds effectif. <b>À faire analyser par un fiscaliste au regard de notre activité de paiement</b>, avant de coupler cargo et paiement dans une même offre.</p></div>
+</div>
+<!-- ══════════════ 16 — GLOSSAIRE ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 16</span><h2>Glossaire anti-panique</h2></div>
+<p class="lede">Tous les mots qu'on te balance dans une réunion ou au téléphone. Pour chacun : ce que c'est, qui l'emploie, et ce que ça te coûte.</p>
+
+<dl class="gl">
+<dt>Acconage</dt><dd>Ensemble des opérations de réception, comptage, reconnaissance et garde de la marchandise débarquée. <span class="who">Facturé par le terminal (RTC, KCT). Poste significatif de la facture portuaire.</span></dd>
+<dt>Acconier</dt><dd>L'entreprise qui réalise l'acconage. Souvent confondu avec le manutentionnaire. <span class="who">Au port de Douala, c'est le terminal.</span></dd>
+<dt>Admission temporaire</dt><dd>Régime douanier permettant d'importer sans payer les droits, à charge de réexporter. <span class="who">Matériel de chantier, équipements de foire.</span></dd>
+<dt>AWB — Air Waybill</dt><dd>Lettre de transport aérien. L'équivalent du connaissement pour l'avion — mais <b>non négociable</b> : ce n'est pas un titre de propriété.</dd>
+<dt>BAD — Bon À Délivrer</dt><dd>Document par lequel le <b>consignataire</b> autorise la remise de la marchandise, contre remise du connaissement et paiement de ses frais. <span class="who">Sans BAD, aucune démarche possible.</span></dd>
+<dt>BAE — Bon À Enlever</dt><dd>Autorisation de la <b>douane</b> de faire sortir la marchandise, une fois les droits payés. <span class="who">Le jalon que tout client attend. Ne pas confondre avec le BAD : deux documents, deux émetteurs.</span></dd>
+<dt>BESC</dt><dd>Bordereau Électronique de Suivi des Cargaisons, délivré par le CNCC. → <b>Chapitre 7.</b></dd>
+<dt>BL — Bill of Lading / Connaissement</dt><dd>Reçu + contrat de transport + <b>titre représentatif de la marchandise</b>. Le document le plus important de la chaîne maritime.</dd>
+<dt>CAD — Commissionnaire Agréé en Douane</dt><dd>Seule personne légalement habilitée à faire profession de déclarer en douane pour autrui. Agrément délivré par le Conseil des Ministres de l'UEAC. <span class="who">Code des douanes CEMAC, art. 149.</span></dd>
+<dt>CAF</dt><dd>Coût, Assurance, Fret — la traduction française de CIF. <span class="who">Même chose. Les documents camerounais utilisent les deux.</span></dd>
+<dt>CAMCIS</dt><dd>Cameroon Customs Information System. Le système informatique douanier en production depuis le 1<sup>er</sup> janvier 2020, en remplacement de SYDONIA. <span class="who">Si quelqu'un te parle de SYDONIA aujourd'hui, son information a six ans de retard.</span></dd>
+<dt>CBM</dt><dd>Cubic Meter — mètre cube. <b>L'unité de facturation du groupage maritime.</b> Longueur × largeur × hauteur, en mètres.</dd>
+<dt>CEMAC</dt><dd>Communauté Économique et Monétaire de l'Afrique Centrale. 6 États. Union douanière : c'est son code des douanes et son tarif qui s'appliquent au Cameroun.</dd>
+<dt>CEEAC</dt><dd>Communauté Économique des États de l'Afrique Centrale. 11 États. Son TEC harmonisé avec celui de la CEMAC s'applique au Cameroun depuis le 1<sup>er</sup> janvier 2026.</dd>
+<dt>Centimes Additionnels Communaux (CAC)</dt><dd>Majoration de 10 % appliquée au principal de certains impôts au profit des communes. <span class="who">C'est ce qui fait passer la TVA de 17,5 % à 19,25 %.</span></dd>
+<dt>CIF — Cost, Insurance and Freight</dt><dd>Incoterm : le vendeur paie marchandise + fret + assurance jusqu'au port de destination, mais <b>le risque passe à l'acheteur dès le chargement</b>. <span class="who">C'est aussi le nom de la base taxable de la douane.</span></dd>
+<dt>CIMA</dt><dd>Conférence Interafricaine des Marchés d'Assurances. 14 États. Son code impose l'assurance locale des facultés importées.</dd>
+<dt>Circuit (vert / jaune / rouge / bleu)</dt><dd>Niveau de contrôle attribué automatiquement par CAMCIS à une déclaration. Détermine le délai et le coût du dédouanement.</dd>
+<dt>CNCC</dt><dd>Conseil National des Chargeurs du Cameroun. Établissement public créé en 1975, tutelle Transports. Délivre le BESC.</dd>
+<dt>CoC — Certificate of Conformity</dt><dd>Certificat de conformité émis avant embarquement dans le cadre du PECAE. <span class="who">Obligatoire pour les produits réglementés. Non rattrapable après embarquement.</span></dd>
+<dt>Connaissement</dt><dd>Voir BL.</dd>
+<dt>Consignataire</dt><dd>Agent local de l'armateur au port d'arrivée. Dépose le manifeste, délivre le BAD, facture les frais de l'armateur.</dd>
+<dt>Cut-off</dt><dd>Date limite pour remettre la marchandise ou les documents avant le départ du navire. <span class="who">Rater un cut-off, c'est attendre le navire suivant — souvent une semaine.</span></dd>
+<dt>DDP — Delivered Duty Paid</dt><dd>Incoterm où le vendeur livre chez l'acheteur, droits et taxes acquittés. <span class="who">Le produit « tout compris » que veulent les clients.</span></dd>
+<dt>Déclarant</dt><dd>Celui qui signe la déclaration en douane. Pour une déclaration pour autrui : nécessairement un CAD.</dd>
+<dt>Déclaration en détail</dt><dd>L'acte par lequel on assigne un régime douanier à une marchandise. Obligatoire pour toute marchandise importée, même exonérée. <span class="who">Code des douanes CEMAC, art. 145.</span></dd>
+<dt>Dédouanement</dt><dd>L'ensemble des opérations permettant de mettre une marchandise à la consommation : déclaration, contrôle, liquidation, paiement, enlèvement.</dd>
+<dt>Dépotage</dt><dd>Vider un conteneur. <span class="who">Systématique en LCL (dégroupage) et en circuit rouge (contrôle physique).</span></dd>
+<dt>Dépôt de douane</dt><dd>Statut des marchandises non déclarées dans le délai légal. <b>Vente aux enchères au bout de 3 mois.</b> <span class="who">Code des douanes CEMAC, art. 325 et 329.</span></dd>
+<dt>Détention (detention)</dt><dd>Frais dus à l'<b>armateur</b> pour l'immobilisation de <b>son conteneur</b> après sa sortie du terminal, jusqu'à restitution du vide.</dd>
+<dt>DGD</dt><dd>Direction Générale des Douanes, sous tutelle du MINFI.</dd>
+<dt>DGI</dt><dd>Direction Générale des Impôts. Ne pas confondre avec la DGD : deux directions, deux logiques.</dd>
+<dt>DI — Déclaration d'Importation</dt><dd>Document préalable obligatoire au-delà d'un seuil de valeur FOB, levé sur e-GUCE. Validité 6 mois.</dd>
+<dt>Domiciliation bancaire</dt><dd>Rattachement d'une opération d'importation à une banque agréée, au titre du contrôle des changes.</dd>
+<dt>Droits d'accises</dt><dd>Taxe spécifique sur certains produits (alcools, tabac, véhicules anciens, cosmétiques). S'ajoute aux droits de douane.</dd>
+<dt>EVP / TEU</dt><dd>Équivalent Vingt Pieds / Twenty-foot Equivalent Unit. Unité de mesure du trafic conteneurisé. <span class="who">Un 40' = 2 EVP.</span></dd>
+<dt>EXW — Ex Works</dt><dd>Incoterm minimal : le vendeur met à disposition dans ses locaux, tout le reste est à l'acheteur.</dd>
+<dt>e-GUCE / e-Force</dt><dd>Plateforme électronique du Guichet Unique. Point d'entrée des formalités préalables. <span class="who">Sans compte e-Force valide, aucune importation possible.</span></dd>
+<dt>FCL — Full Container Load</dt><dd>Conteneur complet dédié à un seul client.</dd>
+<dt>FIMEX</dt><dd>Fichier des Importateurs et Exportateurs, tenu par le MINCOMMERCE. Inscription annuelle obligatoire.</dd>
+<dt>FOB — Free On Board</dt><dd>Incoterm : le vendeur livre à bord du navire au port de départ et fait l'export. <span class="who">Le cas le plus fréquent sur l'axe Chine–Cameroun.</span></dd>
+<dt>Fret</dt><dd>Le prix du transport. Par extension, la marchandise transportée. <span class="who">« Le fret » selon le contexte peut désigner l'un ou l'autre — d'où les malentendus.</span></dd>
+<dt>Franchise</dt><dd>Période de gratuité avant que les compteurs (magasinage, détention) ne démarrent. <span class="who">Environ 11 jours calendaires au port de Douala.</span></dd>
+<dt>GECAM</dt><dd>Groupement des Entreprises du Cameroun — le patronat. Intervient publiquement sur les blocages portuaires.</dd>
+<dt>Groupage</dt><dd>Regrouper les marchandises de plusieurs clients dans un même conteneur. Le cœur du métier LCL.</dd>
+<dt>GUCE</dt><dd>Guichet Unique des Opérations du Commerce Extérieur.</dd>
+<dt>HBL — House Bill of Lading</dt><dd>Connaissement émis par le groupeur au client final. <span class="who">C'est celui que reçoit ton client.</span></dd>
+<dt>Incoterms®</dt><dd>Les 11 règles de la Chambre de Commerce Internationale répartissant frais, risques et formalités. Version en vigueur : Incoterms® 2020.</dd>
+<dt>ISPM 15 / NIMP 15</dt><dd>Norme internationale de traitement des emballages en bois. Marquage obligatoire.</dd>
+<dt>KCT</dt><dd>Kribi Conteneurs Terminal, exploitant du terminal à conteneurs de Kribi.</dd>
+<dt>LCL — Less than Container Load</dt><dd>Groupage. Facturé au CBM.</dd>
+<dt>Liquidation</dt><dd>Le calcul officiel, par l'inspecteur des douanes, du montant des droits et taxes dus.</dd>
+<dt>Magasinage</dt><dd>Frais de stockage au terminal au-delà de la franchise. Progressifs : plus on traîne, plus le tarif journalier monte.</dd>
+<dt>Mainlevée</dt><dd>L'acte par lequel la douane libère la marchandise. Se matérialise par le BAE.</dd>
+<dt>Manifeste</dt><dd>La liste complète de la cargaison d'un navire, déposée à la douane par le consignataire, par voie électronique. <span class="who">Code des douanes CEMAC, art. 113 et suivants.</span></dd>
+<dt>MBL — Master Bill of Lading</dt><dd>Connaissement émis par l'armateur au groupeur. <span class="who">Ton client n'a pas à le voir.</span></dd>
+<dt>NIU</dt><dd>Numéro d'Identifiant Unique — l'identité fiscale camerounaise. <span class="who">Sans NIU : précompte à 10 % au lieu de 5 %, et pas de récupération de TVA.</span></dd>
+<dt>NVOCC</dt><dd>Non-Vessel Operating Common Carrier. Transporteur sans navire : achète de l'espace en gros, revend au détail, émet des HBL.</dd>
+<dt>OMD</dt><dd>Organisation Mondiale des Douanes. Publie le Système Harmonisé.</dd>
+<dt>PAD / PAK</dt><dd>Port Autonome de Douala / Port Autonome de Kribi. Autorités portuaires — à distinguer des exploitants de terminal.</dd>
+<dt>PECAE</dt><dd>Programme d'Évaluation de la Conformité Avant Embarquement, piloté par l'ANOR.</dd>
+<dt>Précompte sur achat</dt><dd>Avance sur l'impôt sur le revenu prélevée à l'importation. 5 % au régime simplifié, 10 % sans carte de contribuable. <b>Imputable, donc pas une charge définitive</b> pour un contribuable en règle.</dd>
+<dt>Quittance</dt><dd>Preuve de paiement des droits et taxes au Trésor. <span class="who">À conserver au moins 5 ans.</span></dd>
+<dt>RTC</dt><dd>Régie du Terminal à Conteneurs — exploitant du terminal à conteneurs de Douala depuis la fin de la concession DIT fin 2019.</dd>
+<dt>RVC</dt><dd>Rapport de Valeur et de Classification, émis par SGS. Fixe le code SH et la valeur en douane. <span class="who">Détermine en amont le montant des droits.</span></dd>
+<dt>SH — Système Harmonisé</dt><dd>Nomenclature mondiale de l'OMD. 21 sections, 97 chapitres, &gt;5 000 groupes. 2 chiffres = chapitre, 4 = position, 6 = sous-position internationale.</dd>
+<dt>SOLAS / VGM</dt><dd>Convention maritime imposant la déclaration de la masse brute vérifiée du conteneur avant chargement. <span class="who">Sans VGM, pas de chargement.</span></dd>
+<dt>Surestaries (demurrage)</dt><dd>Frais dus au <b>terminal/port</b> pour l'immobilisation du conteneur <b>dans l'enceinte portuaire</b> au-delà de la franchise. <span class="who">À ne pas confondre avec la détention : autre compteur, autre bénéficiaire.</span></dd>
+<dt>TCI</dt><dd>Taxe Communautaire d'Intégration — 1 % de la valeur CIF, au profit de la CEMAC.</dd>
+<dt>TEC</dt><dd>Tarif Extérieur Commun. La grille de droits de douane commune à l'union douanière. Version harmonisée CEEAC-CEMAC depuis le 1<sup>er</sup> janvier 2026.</dd>
+<dt>Telex release</dt><dd>Libération de la marchandise sans présentation d'original, après restitution des originaux au départ. <span class="who">Le standard recommandé sur l'axe Chine–Cameroun.</span></dd>
+<dt>THC — Terminal Handling Charges</dt><dd>Frais de manutention au terminal, facturés par l'armateur ou le terminal.</dd>
+<dt>Transitaire</dt><dd>Terme commercial large : celui qui organise le transport et les formalités. <span class="who">N'implique pas l'agrément douanier. Un transitaire n'est pas forcément un CAD.</span></dd>
+<dt>Transit (régime)</dt><dd>Régime douanier permettant de transporter une marchandise sous douane sans acquitter les droits, généralement vers un pays tiers. <span class="who">Ex. : Douala → N'Djamena.</span></dd>
+<dt>Valeur en douane</dt><dd>La base de calcul des droits : valeur transactionnelle ajustée = CIF. <span class="who">Code des douanes CEMAC, art. 27 à 37.</span></dd>
+<dt>Valeur transactionnelle</dt><dd>Le prix effectivement payé ou à payer pour la marchandise. Méthode première d'évaluation. <span class="who">Art. 30.</span></dd>
+<dt>ZLECAf</dt><dd>Zone de Libre-Échange Continentale Africaine. Régime préférentiel <b>entre pays africains</b>. <span class="who">Sans effet sur les importations chinoises — mais pertinent si Bonzini fait un jour de l'intra-africain.</span></dd>
+</dl>
+</div>
+<!-- ══════════════ 17 — MODÈLE ÉCONOMIQUE ══════════════ -->
+<div class="chapter">
+<div class="chapter-head" style="border-top-color:var(--amber)">
+<span class="chapter-num">Chapitre 17</span><h2 style="color:var(--amber-d)">Le modèle économique Bonzini Cargo</h2></div>
+<p class="lede">Maintenant qu'on sait où passe l'argent, la question devient : où gagne-t-on le nôtre ? Voici les sept sources de revenus possibles, classées par facilité de mise en œuvre.</p>
+
+<h3>La leçon Flexport, en deux phrases</h3>
+<p>Flexport, fondé en 2013, est un transitaire « tech-driven » <b>asset-light</b> : il ne possède ni navire, ni camion, ni entrepôt en propre au départ. Il achète du transport en gros aux transporteurs et le revend, en créant sa valeur par <b>la technologie et la visibilité de bout en bout</b>. Son revenu vient principalement du <b>spread</b> entre ce qu'il paie aux transporteurs et ce qu'il facture aux clients, complété par le courtage en douane, l'assurance et le financement du commerce. <span class="badge b-off">Officiel</span></p>
+<div class="box n"><span class="t">L'avertissement que porte ce modèle</span>
+<p>Les marges nettes du transit sont <b>structurellement minces — 3 à 8 %</b>. Flexport a réalisé son premier bénéfice en 2021 : <b>37 M$ sur 3,3 Md$ de revenus, soit 1,1 % de marge nette.</b></p>
+<p style="margin-top:6pt"><b>Conséquence directe pour nous :</b> le fret pur est un métier de volume à faible marge. La rentabilité vient des <b>services adjacents</b> — dédouanement, assurance, entreposage, financement, et dans notre cas <b>le paiement</b>. Ne construis pas Bonzini Cargo comme un pur revendeur de fret.</p></div>
+
+<h3>Les sept sources de revenus, par ordre de mise en œuvre</h3>
+<table>
+<tr><th style="width:6%">#</th><th style="width:22%">Source</th><th style="width:26%">Comment ça marche</th><th>Marge type et difficulté</th></tr>
+<tr><td>1</td><td><b>Marge sur groupage LCL</b></td><td>On achète un conteneur entier, on le revend au CBM. La marge est fonction du <b>taux de remplissage</b>.</td><td><b>Le cœur.</b> Marge forte si bien rempli, négative si mal rempli. Difficulté : moyenne. <b>À lancer en premier.</b></td></tr>
+<tr><td>2</td><td><b>Honoraires de transit</b></td><td>Forfait par dossier pour l'organisation et le suivi des formalités.</td><td>Prévisible, récurrent. Facile. Doit couvrir le coût opérateur.</td></tr>
+<tr><td>3</td><td><b>Services d'entrepôt Guangzhou</b></td><td>Réception, contrôle, comptage, photo, réemballage, stockage au-delà de X jours.</td><td><b>Notre différenciateur.</b> Marge élevée, actif déjà en place. Facile à facturer parce que la valeur est visible.</td></tr>
+<tr><td>4</td><td><b>Marge sur fret FCL</b></td><td>Spread entre le taux négocié avec l'armateur et le prix client.</td><td>Faible en %, mais sur de gros montants. Dépend du volume qu'on représente.</td></tr>
+<tr><td>5</td><td><b>Courtage d'assurance</b></td><td>Commission sur les polices locales souscrites pour le compte des clients.</td><td>Marge nette, quasi sans coût marginal. Nécessite un partenariat assureur.</td></tr>
+<tr><td>6</td><td><b>Change et paiement fournisseur</b></td><td><b>Le métier historique de Bonzini.</b> Le client paie en XAF, le fournisseur reçoit en CNY/USD.</td><td><b>La synergie évidente.</b> Marge sur le change + frais. Déjà opérationnel — il ne reste qu'à le brancher sur le cargo.</td></tr>
+<tr><td>7</td><td><b>Financement (avance de droits, caution conteneur)</b></td><td>On avance les droits de douane ou la caution, remboursés à la livraison.</td><td>Marge financière élevée, <b>risque de crédit élevé</b>. À ne lancer qu'avec un historique client et un scoring.</td></tr>
+</table>
+
+<div class="box k"><span class="t">L'angle qu'aucun concurrent camerounais ne peut copier</span>
+<p>Un transitaire classique voit passer la marchandise. Une fintech de paiement voit passer l'argent. <b>Bonzini voit les deux sur le même client.</b></p>
+<p style="margin-top:6pt">Ça veut dire qu'on sait, avant tout le monde : ce que le client achète, à qui, pour combien, à quelle fréquence, et s'il paie bien. C'est la donnée qui permet de faire du <b>scoring de crédit</b> là où les banques camerounaises n'ont rien. C'est la base d'une offre de financement du commerce — le vrai gisement de marge à 3-5 ans, et une barrière à l'entrée que personne ne franchit facilement.</p></div>
+
+<h3>Comment construire une grille tarifaire honnête</h3>
+<table class="compact">
+<tr><th style="width:26%">Poste</th><th style="width:24%">Mode de facturation</th><th>Pourquoi</th></tr>
+<tr><td>Fret LCL</td><td>Prix au CBM, minimum 1 CBM</td><td>Standard du marché, compréhensible par le client.</td></tr>
+<tr><td>Fret FCL</td><td>Forfait par conteneur</td><td>Idem.</td></tr>
+<tr><td>Formalités (DI, BESC, SGS, assurance)</td><td><b>Débours refacturés à l'euro près, sur justificatif</b></td><td><b>Transparence totale.</b> C'est ce qui construit la confiance et nous distingue des transitaires opaques.</td></tr>
+<tr><td>Droits et taxes</td><td>Débours refacturés, sur quittance</td><td>Ce n'est pas notre argent. Le mélanger avec nos honoraires est une faute comptable et fiscale.</td></tr>
+<tr><td>Honoraires Bonzini</td><td><b>Ligne séparée et explicite</b></td><td>Le client doit voir ce qu'il nous paie, à nous. Un prix caché est un prix contesté.</td></tr>
+<tr><td>Entreposage Guangzhou</td><td>Gratuit X jours, puis par m³ et par jour</td><td>Incite à la rotation et évite que l'entrepôt devienne un garde-meuble.</td></tr>
+</table>
+<div class="box w"><span class="t">Débours vs honoraires : la distinction comptable à ne jamais rater</span>
+<p>Les <b>débours</b> (droits, taxes, frais de port avancés pour le compte du client) transitent par nos comptes mais <b>ne sont pas du chiffre d'affaires</b>. Seuls nos <b>honoraires</b> et nos <b>marges</b> le sont. Les confondre gonfle artificiellement le CA, fausse les ratios, et crée un risque de redressement sur la TVA.</p>
+<p style="margin-top:6pt">Au Cameroun, la TVA applicable aux honoraires des commissionnaires agréés en douane, ainsi qu'aux frais d'acconage, de manutention, de scanning, d'inspection et de contrôle, est <b>collectée et reversée via le système informatique douanier</b> lors de la validation de la déclaration. <span class="badge b-ver">À faire confirmer par un fiscaliste — cela structure notre facturation.</span></p></div>
+</div>
+
+<!-- ══════════════ 18 — CADRE LÉGAL ══════════════ -->
+<div class="chapter">
+<div class="chapter-head" style="border-top-color:var(--orange)">
+<span class="chapter-num">Chapitre 18</span><h2 style="color:var(--orange-d)">Cadre légal : avons-nous le droit d'exercer ?</h2></div>
+<p class="lede">C'est la question préalable à tout le reste. La réponse est nuancée : on peut faire une grande partie du métier tout de suite, mais pas tout.</p>
+
+<h3>Ce qu'on peut faire sans agrément douanier</h3>
+<table class="compact">
+<tr><th style="width:44%">Activité</th><th>Statut</th></tr>
+<tr><td>Réceptionner, contrôler, stocker et grouper de la marchandise en Chine</td><td><b>Libre</b> — soumis au droit chinois local</td></tr>
+<tr><td>Acheter du fret et le revendre (commission de transport / NVOCC)</td><td><b>Libre</b> — activité commerciale</td></tr>
+<tr><td>Organiser le transport de bout en bout</td><td><b>Libre</b></td></tr>
+<tr><td>Faire établir un BESC, une DI, une police d'assurance pour un client</td><td><b>Libre</b> — ce sont des formalités préalables, pas la déclaration en détail</td></tr>
+<tr><td>Transporter et livrer au Cameroun</td><td><b>Libre</b> — réglementation transport routier</td></tr>
+<tr><td><b>Signer une déclaration en douane pour le compte d'un tiers</b></td><td><b style="color:var(--orange-d)">INTERDIT sans agrément CAD</b></td></tr>
+</table>
+
+<div class="box w"><span class="t">Le texte, mot pour mot</span>
+<p>« Nul ne peut faire profession d'accomplir pour autrui les formalités de douane concernant la déclaration en détail des marchandises s'il n'a été agréé comme commissionnaire en douane. » <span class="badge b-off">Code des douanes CEMAC, art. 149.1</span></p>
+<p style="margin-top:6pt">Il existe une seconde voie : « Toute personne physique ou morale qui, <b>sans exercer la profession</b> de commissionnaire en douane entend, à l'occasion de son industrie ou de son commerce, faire à la douane des déclarations en détail pour autrui, doit obtenir <b>l'autorisation de dédouaner</b> », accordée par le Directeur national des Douanes, <b>à titre temporaire et révocable, pour des opérations déterminées</b>. <span class="badge b-off">Art. 150</span></p></div>
+
+<h3>Les trois stratégies possibles</h3>
+<table>
+<tr><th style="width:8%"></th><th style="width:24%">Stratégie</th><th style="width:30%">Comment</th><th>Arbitrage</th></tr>
+<tr><td><b>A</b></td><td><b>Partenariat avec un CAD</b></td><td>On fait tout sauf la déclaration, qu'on sous-traite à un commissionnaire agréé partenaire, rémunéré au dossier.</td><td><b>À faire immédiatement.</b> Zéro barrière, démarrage rapide. Inconvénient : dépendance, marge partagée, et on ne maîtrise pas le maillon le plus critique du délai.</td></tr>
+<tr><td><b>B</b></td><td><b>Acquérir l'agrément CAD</b></td><td>Constituer le dossier : statuts, local, patente, <b>caution bancaire</b>, affiliation à un syndicat de CAD, puis avis du Comité Consultatif National et décision du Conseil des Ministres de l'UEAC.</td><td><b>L'objectif à 12-24 mois.</b> Débloque la marge complète et la maîtrise du délai. Coûteux, long, exige une compétence douanière interne réelle.</td></tr>
+<tr><td><b>C</b></td><td><b>Racheter un CAD existant</b></td><td>Acquérir une société déjà agréée.</td><td>Le plus rapide vers l'agrément. Mais l'agrément étant <b>personnel</b> (art. 151.1), il faut vérifier sa transmissibilité — c'est le point de due diligence n°1.</td></tr>
+</table>
+
+<div class="box k"><span class="t">Recommandation</span>
+<p><b>Démarrer en A, préparer B dès maintenant.</b> Le partenariat CAD permet de lancer le service et d'apprendre le métier sur des dossiers réels. En parallèle, on recrute une compétence douanière senior et on monte le dossier d'agrément — c'est un chemin de 12 à 24 mois qu'il ne faut pas démarrer trop tard.</p>
+<p style="margin-top:6pt"><b>Point de vigilance sur le partenariat :</b> si le CAD partenaire est aussi notre concurrent sur le transit, il a accès à notre portefeuille client. Contractualiser une clause de non-sollicitation, et ne jamais dépendre d'un seul CAD.</p></div>
+
+<h3>Les obligations une fois agréé</h3>
+<p>Les commissionnaires en douane doivent tenir des <b>répertoires annuels</b>, cotés et paraphés par le Président du Tribunal civil, distincts pour l'import et l'export, avec une série unique de numéros reportés sur les déclarations. Ces répertoires, correspondances et pièces comptables doivent être <b>conservés dix ans</b> à compter de l'enregistrement des déclarations. <span class="badge b-off">Code des douanes CEMAC, art. 153</span></p>
+<div class="box n"><span class="t">Traduction produit</span>
+<p>Une obligation légale d'archivage de dix ans, avec numérotation séquentielle unique et traçabilité pièce par pièce, c'est <b>exactement ce qu'un système bien construit fait nativement</b> — et exactement ce qu'un classeur papier fait mal. C'est un argument de conformité, pas seulement de confort : c'est un des rares endroits où la techno est un avantage <i>réglementaire</i>, pas juste opérationnel.</p></div>
+</div>
+
+<!-- ══════════════ 19 — LA TECHNO ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 19</span><h2>La techno : devenir le Flexport du Cameroun</h2></div>
+<p class="lede">On ne digitalise pas « la logistique ». On digitalise des points de douleur précis, dans l'ordre où ils font mal. Voici lesquels, et dans quel ordre.</p>
+
+<h3>Ce que Flexport a réellement digitalisé</h3>
+<p>Un TMS de transit s'articule autour d'un objet central : <b>l'expédition (shipment)</b>, rattachée à une réservation transporteur, autour de laquelle gravitent le HBL, le MBL et les numéros de conteneurs. Les modules classiques sont : gestion des taux, cotation, opérations, <b>suivi des jalons</b>, gestion documentaire, connectivité transporteurs, et facturation. <span class="badge b-off">Officiel — pratique du secteur</span></p>
+<p>Le cœur de la proposition de valeur n'est pas le transport : c'est la <b>visibilité de bout en bout</b>. C'est ce qui manque totalement au marché camerounais aujourd'hui.</p>
+
+<h3>Le modèle de données minimal</h3>
+<table class="compact">
+<tr><th style="width:22%">Entité</th><th style="width:34%">Champs essentiels</th><th>Rôle</th></tr>
+<tr><td><b>client</b></td><td>identité, NIU, FIMEX + échéance, code entrepôt Guangzhou, conditions négociées</td><td>Réutilise la base clients existante de la plateforme paiement. <b>Un client = un compte, cargo et paiement confondus.</b></td></tr>
+<tr><td><b>shipment</b></td><td>référence <span class="mono">BZ-SH-…</span>, client, mode (LCL/FCL/air), incoterm, origine, destination, ETD, ETA, statut</td><td><b>L'objet central.</b> Tout s'y rattache.</td></tr>
+<tr><td><b>package</b></td><td>shipment, fournisseur, poids, L×l×H, CBM calculé, photos, date de réception entrepôt</td><td>Permet le mode « adresse en Chine » et le cubage automatique.</td></tr>
+<tr><td><b>container</b></td><td>numéro ISO, type, plombage, MBL, date de déchargement, date de restitution du vide</td><td>Support des compteurs franchise / surestaries / détention.</td></tr>
+<tr><td><b>document</b></td><td>shipment, type (facture, BL, BESC, RVC, CoC, DI, quittance, BAE), fichier, statut, date d'expiration</td><td>Le dossier documentaire. Base des contrôles de cohérence.</td></tr>
+<tr><td><b>milestone</b></td><td>shipment, code de jalon, date prévue, date réelle, source (manuelle / API)</td><td>La colonne vertébrale du suivi et des alertes.</td></tr>
+<tr><td><b>charge</b></td><td>shipment, libellé, montant, devise, <b>type : débours | honoraire | marge</b>, justificatif</td><td><b>Le champ « type » est critique</b> : c'est lui qui sépare proprement le CA des débours en comptabilité.</td></tr>
+<tr><td><b>hs_code_memo</b></td><td>désignation produit, code SH retenu, taux appliqué, source (RVC / CAD), date</td><td><b>La mémoire tarifaire.</b> Chaque classement validé est capitalisé et réutilisé. Actif qui s'apprécie avec le volume.</td></tr>
+</table>
+
+<h3>Les jalons à suivre — le référentiel</h3>
+<table class="compact">
+<tr><th style="width:34%">Bloc</th><th>Jalons</th></tr>
+<tr><td><b>Chine</b></td><td>commande confirmée · colis reçu entrepôt · contrôle effectué · cubé &amp; pesé · empoté · export déclaré · VGM déclaré</td></tr>
+<tr><td><b>Mer</b></td><td>BL émis · navire parti (ATD) · en transit · transbordement · ETA confirmée · navire arrivé (ATA)</td></tr>
+<tr><td><b>Pré-dédouanement</b></td><td>DI levée · RVC reçu · CoC obtenu · <b>BESC validé</b> · domiciliation ouverte · assurance souscrite</td></tr>
+<tr><td><b>Port &amp; douane</b></td><td>déchargé · <b>début franchise</b> · scanné · BAD obtenu · déclaration déposée · circuit attribué · liquidé · payé · <b>BAE obtenu</b></td></tr>
+<tr><td><b>Livraison</b></td><td>sorti du port · en route · livré · <b>vide restitué</b> · dossier soldé</td></tr>
+</table>
+
+<h3>Le plan de construction, par phases</h3>
+<div class="flow">
+<div class="fstep"><div class="fnum">1</div><div class="fbody"><b>Phase 1 — Le registre et la visibilité</b>
+<span>Créer une expédition, y rattacher client, colis, documents et jalons. Une page de suivi partageable avec le client. Rien de plus.</span>
+<span class="fmeta">Douleur résolue : « où est ma marchandise ? » — la question posée 10 fois par jour par WhatsApp. Le gain de temps opérateur paie la phase à lui seul.</span></div></div>
+
+<div class="fstep"><div class="fnum">2</div><div class="fbody"><b>Phase 2 — La check-list du bloc C, automatisée</b>
+<span>Les 8 formalités du pré-dédouanement deviennent 8 tâches avec statut, responsable et <b>échéance calculée à rebours de l'ETA</b>. Alertes automatiques.</span>
+<span class="fmeta">Douleur résolue : les conteneurs bloqués faute de BESC ou de CoC. <b>C'est ici que se paie l'essentiel du ROI.</b></span></div></div>
+
+<div class="fstep"><div class="fnum">3</div><div class="fbody"><b>Phase 3 — Cotation et compte du client</b>
+<span>Simulateur : « j'ai X m³ de tel produit, ça me coûte combien rendu à Douala ? » — fret + formalités + droits estimés. Puis un espace client avec ses expéditions, ses documents et ses factures.</span>
+<span class="fmeta">Douleur résolue : l'opacité totale des prix. Nourrit aussi le pipeline commercial : chaque simulation est un lead.</span></div></div>
+
+<div class="fstep"><div class="fnum">4</div><div class="fbody"><b>Phase 4 — Les compteurs qui coûtent de l'argent</b>
+<span>Franchise, magasinage, détention, validité DI, échéance FIMEX, seuil des 3 mois avant dépôt de douane. Chaque compteur est visible et alerte avant qu'il ne soit trop tard.</span>
+<span class="fmeta">Douleur résolue : les pénalités évitables. Se vend tout seul : « on vous a économisé 187 000 FCFA ce mois-ci. »</span></div></div>
+
+<div class="fstep"><div class="fnum">5</div><div class="fbody"><b>Phase 5 — La convergence cargo × paiement</b>
+<span>Une expédition et son règlement fournisseur dans le même dossier : le client voit ce qu'il a payé, à qui, et où est la marchandise correspondante.</span>
+<span class="fmeta"><b>C'est le fossé concurrentiel.</b> Aucun transitaire camerounais ne peut le faire, aucune fintech non plus. Nous seuls avons les deux moitiés.</span></div></div>
+
+<div class="fstep"><div class="fnum">6</div><div class="fbody"><b>Phase 6 — La donnée qui devient un produit</b>
+<span>Mémoire tarifaire des codes SH, historique des délais réels par armateur et par route, scoring client fondé sur l'historique de paiement et de volume, puis financement.</span>
+<span class="fmeta">Horizon 2-3 ans. C'est ce qui transforme un transitaire en plateforme.</span></div></div>
+</div>
+
+<div class="box k"><span class="t">Le principe directeur, à ne jamais perdre de vue</span>
+<p><b>Ne construis pas un ERP logistique.</b> Le marché est plein de TMS complets, chers et inadaptés. Construis <b>l'outil qui fait disparaître les huit cases du bloc C et les compteurs du chapitre 8</b>. C'est là qu'est la douleur camerounaise, c'est mesurable en francs CFA, et c'est défendable.</p>
+<p style="margin-top:6pt">Contrainte AI-native, conforme à la convention Mola : <b>chaque action du module cargo doit être exposée comme une capacité appelable</b> — créer une expédition, rattacher un document, marquer un jalon, générer une cotation. Un agent piloté par un humain doit pouvoir tout atteindre dans les limites des droits de la personne. C'est une contrainte d'architecture à poser dès la phase 1, pas à rattraper en phase 5.</p></div>
+
+<h3>Ce que font les autres en Afrique</h3>
+<p><b>Kobo360</b> (Nigeria, 2017) et <b>Lori Systems</b> (Kenya, 2016) ont bâti des places de marché numériques du transport routier, en s'attaquant au taux de retour à vide de plus de 40 % qui rend la logistique africaine la plus chère du monde. Kobo360 a levé 20 M$ en Série A menée par Goldman Sachs, plus 10 M$ de fonds de roulement, et opère dans six pays. <span class="badge b-off">Officiel</span></p>
+<div class="box n"><span class="t">Ce qu'ils n'ont pas fait, et qui est notre place</span>
+<p>Ces plateformes ont attaqué le <b>routier intra-africain</b>. Personne n'a sérieusement attaqué le <b>corridor Chine → Afrique centrale, de bout en bout, avec le paiement intégré</b>. C'est un couloir à fort volume, à forte douleur, à faible outillage — et où nous avons déjà les deux actifs qui comptent : un entrepôt à Guangzhou et une licence de paiement.</p></div>
+</div>
+<!-- ══════════════ 20 — SOURCES ══════════════ -->
+<div class="chapter">
+<div class="chapter-head"><span class="chapter-num">Chapitre 20</span><h2>Sources</h2></div>
+<p class="lede">Toutes les références utilisées, classées par niveau d'autorité. Les sources primaires priment toujours sur les secondaires — et en cas de contradiction, ce sont elles qui font foi.</p>
+
+<h3>A · Textes juridiques et sources primaires <span class="badge b-off">Officiel</span></h3>
+<ol class="srclist">
+<li><b>Code des douanes de la CEMAC</b> — Règlement n° 05/19-UEAC-010A-CM-33 portant révision du Code des douanes. <i>Source directement dépouillée pour ce document : articles 27-37 (valeur en douane), 113 et s. (manifeste), 143 (séjour en magasins), 145-147 (déclaration en détail), 148-155 (commissionnaire agréé), 200 et s. (transit), 324-331 (zone franche et dépôt de douane).</i><span class="u">https://www.sgg.cg/txts-droit-reg/CEMAC-Reglement-2019-05-revision-code-douanes.pdf</span></li>
+<li><b>Tarif des douanes de la CEMAC</b> — Acte n° 7/93-UDEAC-556-CD-SE1 du 21 juin 1993 et versions ultérieures.<span class="u">https://www.droit-afrique.com/upload/doc/cemac/CEMAC-Acte-1993-07-tarif-douanier.pdf</span></li>
+<li><b>Loi n° 2016/004 du 18 avril 2016</b> régissant le commerce extérieur au Cameroun — art. 12 (déclaration préalable), art. 9 (produits prohibés). Texte officiel MINCOMMERCE.<span class="u">https://www.mincommerce.gov.cm/sites/default/files/documents/loi-n-2016-004-du-18-avril-2016-regissant-le-commerce-exterieur-au-cameroun.pdf</span></li>
+<li><b>Loi n° 75-14 du 8 décembre 1975</b> et <b>décret n° 76/334 du 6 août 1976</b> — obligation d'assurance locale des facultés importées (seuil 500 000 FCFA FOB). <b>Code CIMA, art. 278.</b></li>
+<li><b>Loi de finances 2026 du Cameroun</b> — mesures douanières et fiscales. MINFI et Direction Générale du Budget.<span class="u">https://minfi.gov.cm/loi-de-finances-2026-comprendre-les-nouvelles-mesures/ · https://www.dgb.cm/wp-content/uploads/2025/11/PROJET-DE-LOI-FINANCES-2026_FR_26112025.pdf</span></li>
+<li><b>Code Général des Impôts du Cameroun</b> — précompte sur achat, TVA. Fiche TVA de la DGI.<span class="u">https://www.impots.cm/sites/default/files/documents/FICHE%20TVA.pdf</span></li>
+<li><b>Direction Générale des Douanes du Cameroun</b> — portail officiel, procédures, CAMCIS.<span class="u">http://www.douanes.cm/douane/index.php/fr/accueil</span></li>
+<li><b>Organisation Mondiale des Douanes</b> — le Système Harmonisé : structure, sections, chapitres, positions.<span class="u">https://www.wcoomd.org/fr/topics/nomenclature/overview/what-is-the-harmonized-system.aspx</span></li>
+<li><b>Chambre de Commerce Internationale — Incoterms® 2020</b>, et l'analyse de la douane française sur leur articulation avec la valeur en douane.<span class="u">https://www.douane.gouv.fr/les-nouvelles-regles-incotermsr-2020-et-la-valeur-en-douane</span></li>
+</ol>
+
+<h3>B · Administrations et organismes camerounais <span class="badge b-off">Officiel</span></h3>
+<ol class="srclist" start="10">
+<li><b>CNCC — Conseil National des Chargeurs du Cameroun</b> : site institutionnel, communiqués, et plateforme BESC 3.0. <i>Y compris le communiqué du 15 juin 2026 suspendant l'exigibilité du BESC sur les corridors Douala–N'Djamena et Douala–Bangui.</i><span class="u">https://www.cncc.cm/ · https://besc.cncc.cm/ · https://export.cncc.cm/</span></li>
+<li><b>CNCC — Le Tarif Extérieur Commun (TEC) de la CEEAC s'applique au Cameroun</b> : catégories, taux 0 % à 40 %, approbation du 18 octobre 2024, entrée en vigueur au 1<sup>er</sup> janvier 2026.<span class="u">https://www.cncc.cm/fr/article/le-tarif-exterieur-commun-tec-de-la-ceeac-s-applique-au-cameroun-1031</span></li>
+<li><b>GUCE — Guichet Unique du Commerce Extérieur</b> et fiches de procédure eRegulations Douala / Yaoundé.<span class="u">https://www.guichetunique.cm/ · https://douala.eregulations.org/Contacts/41?l=fr</span></li>
+<li><b>MINCOMMERCE</b> — procédure d'inscription au fichier des importateurs et exportateurs (FIMEX) et guide utilisateur.<span class="u">https://www.mincommerce.gov.cm/fr/procedure-dinscription-au-fichier-des-importateurs-et-exportateurs · https://www.mincommerce.gov.cm/sites/default/files/documents/guide-user-fimex.pdf</span></li>
+<li><b>Cameroon Trade Hub</b> — régime des importations et exportations.<span class="u">https://cameroontradehub.cm/article/6/fr</span></li>
+<li><b>RTC — Régie du Terminal à Conteneurs de Douala</b> : caractéristiques du terminal, fin de la concession DIT au 31 décembre 2019.<span class="u">https://rtcdouala.cm/a-propos-du-terminal-a-conteneurs/</span></li>
+</ol>
+
+<h3>C · Organismes d'inspection et de certification mandatés <span class="badge b-off">Officiel</span></h3>
+<ol class="srclist" start="16">
+<li><b>Intertek</b> — Guide camerounais de l'exportateur et de l'importateur, Programme d'Évaluation de la Conformité Avant Embarquement (PECAE) mandaté par l'ANOR.<span class="u">https://www.intertek.com/siteassets/gts/cameroon/cam-eig-guide-camerounais-d-exportateur-et-d-importateur.pdf · https://www.intertek.com/government/product-conformity/certificate-of-conformity-exports-cameroon/</span></li>
+<li><b>SGS</b> — PECAE Cameroun et Guide de l'importateur (Trade Facilitation Services).<span class="u">https://www.sgs.com/fr-fr/services/cameroun-evaluation-de-la-conformite-des-produits-avant-l-expedition-pecae · https://www.sgsgroup.cm/-/media/local/cameroon/documents/technical-documents/technical-guidelines-and-policies/guide-des-importateurs-cameroun-fr.pdf</span></li>
+<li><b>TÜV Rheinland</b> — Cameroon Attestation of Conformity (AoC).<span class="u">https://www.tuv.com/landingpage/en/government-inspections-international-trade/navigation/pvoc/exporting-to-africa/cameroon-attestation-of-conformity-(aoc)/</span></li>
+<li><b>Maersk</b> — fiche technique PCA Cameroun (programme de vérification de conformité).<span class="u">https://www.maersk.com/~/media_sc9/maersk/local-information/files/africa/cameroon/import/sgc-gis-pca-cameroun-datasheet-fr-20-v17.pdf</span></li>
+</ol>
+
+<h3>D · Presse économique et sectorielle <span class="badge b-off">Officiel</span> / <span class="badge b-ver">À recouper</span></h3>
+<ol class="srclist" start="20">
+<li><b>Investir au Cameroun</b> — TEC CEEAC applicable depuis le 1<sup>er</sup> janvier 2026 ; suspension du BESC sur les corridors ; lancement et incidents de CAMCIS ; exonération des équipements de start-up ; droits d'accises véhicules d'occasion ; coûts des contrôles routiers sur les corridors Douala–Bangui et Douala–N'Djamena ; capacités et trafic du port de Kribi.<span class="u">https://www.investiraucameroun.com/</span></li>
+<li><b>Journal du Cameroun · Cameroon Tribune · EcoMatin · Ecofinances · Business in Cameroon</b> — suspension du BESC ; crise du scanning au port de Douala (février 2026, suspension partielle du contrat Transatlantic le 17 février 2026, reprise SGS) ; trafic conteneurs Douala / Kribi 2025.</li>
+<li><b>Deloitte Société d'Avocats</b> — Cameroun : les principales innovations de la loi de finances pour 2026.<span class="u">https://blog.avocats.deloitte.fr/cameroun-les-principales-innovations-de-la-loi-de-finances-pour-2026/</span></li>
+</ol>
+
+<h3>E · Sources professionnelles et de marché <span class="badge b-mar">Marché</span></h3>
+<ol class="srclist" start="23">
+<li><b>lefisk.cm</b> — guides opérationnels camerounais 2025-2026 : procédure d'importation, pré-dédouanement, DI e-GUCE, RVC, liquidation, enlèvement au port de Douala, tarif douanier CEMAC. <i>Ressource locale détaillée et à jour sur beaucoup de points, mais comportant des passages périmés (références à SYDONIA++) et des seuils divergents. À recouper systématiquement.</i></li>
+<li><b>Logistique Magazine</b> — série « Comprendre chaque ligne de votre facture de dédouanement à l'importation au Cameroun » : frais d'acconage, taxe sur la marchandise, honoraires des commissionnaires, frais de dossier.</li>
+<li><b>Agents BESC et plateformes ECTN</b> (easyctn.org, cncc-besc.org, africacompliancenews.com, getctn.com) — grille tarifaire BESC applicable au 1<sup>er</sup> janvier 2026. <i>Sources commerciales : le barème officiel doit être confirmé auprès du CNCC.</i></li>
+<li><b>Transitaires opérant l'axe Chine–Afrique</b> (sino-shipping, basenton, topwayshipping, tonlexing, docshipper) — fourchettes de fret maritime et aérien Chine → Douala, délais de transit par port chinois, prix au CBM et au kg. <i>Volatiles : à re-coter à chaque expédition.</i></li>
+<li><b>Ressources sectorielles logistiques</b> — GoFreight, CargoWise, iContainers, Trade Finance Global, SeaRates : architecture des TMS de transit, modèle de données shipment / HBL / MBL / container, jalons ; distinction original BL / telex release / express release ; distinction surestaries / détention ; VGM et SOLAS.</li>
+<li><b>Analyses du modèle Flexport</b> — Contrary Research, Sacra, ProductMint, FourWeekMBA : modèle asset-light, structure de revenus, marges nettes du secteur (3-8 %), premier bénéfice 2021 (37 M$ sur 3,3 Md$).</li>
+<li><b>FreightWaves · TechCrunch</b> — Kobo360 et Lori Systems : levées de fonds, modèle de place de marché, taux de retour à vide en Afrique.</li>
+</ol>
+
+<h3 style="margin-top:20pt">Points à vérifier en priorité <span class="badge b-ver">À vérifier</span></h3>
+<p>Ce sont les onze points sur lesquels les sources divergent ou risquent d'avoir bougé. Ils doivent être confirmés auprès des sources primaires <b>avant</b> toute construction de grille tarifaire ou d'engagement contractuel.</p>
+<table class="compact">
+<tr><th style="width:6%">#</th><th style="width:40%">Point à confirmer</th><th>Auprès de qui</th></tr>
+<tr><td>1</td><td>Seuil exact de la DI : <b>1 000 000</b> ou <b>2 000 000 FCFA</b> de valeur FOB ?</td><td>GUCE / DGD</td></tr>
+<tr><td>2</td><td>Seuil de la domiciliation bancaire : <b>2 M</b> ou <b>5 M FCFA</b> ?</td><td>Banque agréée / BEAC</td></tr>
+<tr><td>3</td><td><b>Barème officiel du BESC</b> au 1<sup>er</sup> janvier 2026 et pénalités réelles pour BESC manquant</td><td><b>CNCC — prioritaire</b></td></tr>
+<tr><td>4</td><td>Délai exact de validation du BESC avant arrivée : <b>2 ou 5 jours</b> ?</td><td>CNCC</td></tr>
+<tr><td>5</td><td>Structure exacte du <b>TEC harmonisé CEEAC-CEMAC 2026</b> : existence des bandes 0 % et 40 %, et affectation produit par produit</td><td><b>DGD — prioritaire</b></td></tr>
+<tr><td>6</td><td>Taux applicable aux <b>mèches, extensions et prêt-à-porter</b> — 30 % ou 40 % ?</td><td><b>DGD / CAD — prioritaire</b></td></tr>
+<tr><td>7</td><td>Cumul ou substitution entre <b>TCI (1 %)</b> et <b>CCI (0,4 %)</b> après l'harmonisation</td><td>DGD</td></tr>
+<tr><td>8</td><td>Taux en vigueur de la <b>redevance informatique</b> : 0,45 %, 0,5 % ou 1 % ?</td><td>DGD</td></tr>
+<tr><td>9</td><td>Barèmes à jour des <b>surestaries et du magasinage</b>, et durée réelle de la franchise</td><td>RTC Douala / KCT Kribi</td></tr>
+<tr><td>10</td><td><b>Transmissibilité de l'agrément CAD</b> en cas de rachat de société</td><td>Comité Consultatif National des CAD</td></tr>
+<tr><td>11</td><td>Portée de la mesure <b>anti-évasion de la LF 2026</b> sur les transferts de fonds, au regard de l'activité de paiement</td><td><b>Conseil fiscal — prioritaire</b></td></tr>
+</table>
+
+<div class="box k" style="margin-top:16pt"><span class="t">Prochaine étape recommandée</span>
+<p>Ce document donne le cadre. La suite est du terrain : prendre rendez-vous avec un commissionnaire agréé en douane de Douala, dérouler avec lui les onze points ci-dessus sur un dossier réel, et corriger ce manuel avec ses réponses. <b>Une version 2.0 fondée sur un vrai dossier vaudra dix fois cette version 1.0.</b></p></div>
+
+<div style="margin-top:24pt;border-top:1px solid var(--line);padding-top:10pt;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:8pt;color:var(--mut)">
+<div class="rule3" style="width:40mm;height:3px;margin-bottom:8pt"><i></i><i></i><i></i></div>
+<b>Bonzini Labs — Division Cargo</b> · Manuel de la chaîne logistique Chine → Cameroun · v1.0 · 4 septembre 2026<br>
+Document interne. Les montants de marché sont indicatifs et volatils ; les points signalés « à vérifier » doivent être confirmés auprès des sources primaires avant tout usage contractuel.
+</div>
+</div>
+
+</body></html>
