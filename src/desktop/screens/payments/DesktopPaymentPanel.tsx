@@ -59,7 +59,7 @@ import {
 } from '@/desktop/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { QRCodeSVG } from 'qrcode.react';
-import { toPng } from 'html-to-image';
+import { copyNodePng, captureNodePng, triggerDownload } from '@/lib/nodeImage';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF, type PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { captureQrDataUrl } from '@/components/payment-detail/paymentReceiptHelpers';
@@ -466,16 +466,16 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       if (!ficheRef.current || !payment || exporting) return;
       setExporting(target);
       try {
-        const dataUrl = await toPng(ficheRef.current, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true });
-        if (target === 'copy' && typeof ClipboardItem !== 'undefined') {
-          const blob = await (await fetch(dataUrl)).blob();
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          toast.success('Fiche copiée — collez-la dans WeChat / WhatsApp');
+        const opts = { pixelRatio: 2, backgroundColor: '#ffffff' } as const;
+        if (target === 'copy') {
+          const outcome = await copyNodePng(ficheRef.current, `fiche_${payment.reference}.png`, opts);
+          toast.success(
+            outcome === 'copied'
+              ? 'Fiche copiée — collez-la dans WeChat / WhatsApp'
+              : 'Fiche téléchargée — ce navigateur ne sait pas copier une image',
+          );
         } else {
-          const a = document.createElement('a');
-          a.href = dataUrl;
-          a.download = `fiche_${payment.reference}.png`;
-          a.click();
+          triggerDownload(await captureNodePng(ficheRef.current, opts), `fiche_${payment.reference}.png`);
           toast.success('Fiche téléchargée');
         }
       } catch {

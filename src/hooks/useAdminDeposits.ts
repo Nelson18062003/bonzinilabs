@@ -473,6 +473,75 @@ export function useAdminCreateDeposit() {
   });
 }
 
+
+// ── Rapprochement bancaire ───────────────────────────────────
+/**
+ * Marque un dépôt VÉRIFIÉ EN BANQUE, ou retire la marque.
+ *
+ * Axe distinct du statut : `validate_deposit` crédite le portefeuille du
+ * client, `set_deposit_verified` dit qu'on a CONSTATÉ l'argent sur le compte.
+ * L'un précède parfois l'autre de plusieurs heures — c'est ce décalage que
+ * l'opérateur veut voir en fin de journée, quand il rapproche les comptes
+ * avec son partenaire.
+ *
+ * La bascule se fait depuis la LISTE, donc elle doit être instantanée : les
+ * caches sont écrits sur place, sans attendre un rechargement.
+ */
+export function useSetDepositVerified() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ depositId, verified }: { depositId: string; verified: boolean }) => {
+      const { data, error } = await supabaseAdmin.rpc(
+        'set_deposit_verified',
+        rpcArgs<'set_deposit_verified'>({ p_deposit_id: depositId, p_verified: verified }),
+      );
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string; verified?: boolean; verified_at?: string | null };
+      if (!result.success) throw new Error(result.error || 'Vérification impossible');
+      return result;
+    },
+    onSuccess: (data, { depositId, verified }) => {
+      // La RPC renvoie l'instant qu'elle a écrit : on l'utilise plutôt que
+      // `now()` côté navigateur, dont l'horloge peut dériver.
+      const verifiedAt = verified ? (data.verified_at ?? new Date().toISOString()) : null;
+      const patch = <T extends { id: string }>(d: T) =>
+        d.id === depositId ? { ...d, verified_at: verifiedAt } : d;
+
+      queryClient.setQueryData(
+        ['admin-deposit', depositId],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (old: any) => (old ? { ...old, verified_at: verifiedAt } : old),
+      );
+      queryClient.setQueryData(
+        ['admin-deposits'],
+        (old: DepositWithProfile[] | undefined) => old?.map(patch) ?? old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['admin-deposits-paged'] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (old: any) => (old?.data ? { ...old, data: old.data.map(patch) } : old),
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['admin-deposits-paginated'] },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (old: any) => (old?.pages
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ? { ...old, pages: old.pages.map((p: any) => ({ ...p, data: p.data?.map(patch) })) }
+          : old),
+      );
+
+      // La chronologie du dépôt reçoit un événement : elle, il faut la relire.
+      queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
+      toast.success(verified ? 'Dépôt vérifié en banque' : 'Vérification retirée');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
 export function useAdminUploadProofs() {
   const queryClient = useQueryClient();
 
