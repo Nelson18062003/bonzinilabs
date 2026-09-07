@@ -14,12 +14,17 @@
  * (`PaymentInstructionPage`), pour qu'on sache avant d'envoyer. D'où le fond
  * blanc constant du bloc : c'est un document, pas un écran.
  *
- * Deux sorties, parce que les deux servent :
+ * Trois sorties, parce que les trois servent :
  *   · le PDF — le QR y est imprimable, c'est ce qu'on joint à un e-mail ;
- *   · le texte — ce qu'on colle dans WeChat, où un PDF se perd.
+ *   · l'IMAGE — une capture de la carte ENTIÈRE, collée telle quelle dans
+ *     WeChat ou WhatsApp. Sans ce bouton, « copier l'image » depuis le
+ *     navigateur ne prenait que le QR : ni le montant, ni la référence, ni le
+ *     nom, ni le téléphone — le destinataire recevait un carré sans contexte ;
+ *   · le texte — quand l'image ne suffit pas, ou pour un e-mail.
  */
-import { useCallback, useState } from 'react';
-import { Copy, Download, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Copy, Download, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { copyNodePng, prewarmFontEmbedCss } from '@/lib/nodeImage';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { CenterDialog, SOFT_PILL, VIOLET_PILL } from '@/desktop/designKit';
@@ -63,8 +68,18 @@ export function PaymentInstructionDialog({
   onClose: () => void;
   entry: PaymentInstructionEntry;
 }) {
-  const [busy, setBusy] = useState<'pdf' | 'copy' | null>(null);
+  const [busy, setBusy] = useState<'pdf' | 'copy' | 'image' | null>(null);
   const isQr = usesQrCode(entry.method);
+  // La capture porte sur CETTE carte, pas sur la fenêtre : ni le titre, ni la
+  // phrase d'explication, ni les boutons ne doivent partir chez le partenaire.
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // La capture doit réécrire les `@font-face` en base64 : la première coûte
+  // plusieurs secondes de réseau. On la paie pendant que l'opérateur lit la
+  // carte, pas après son clic.
+  useEffect(() => {
+    if (open && cardRef.current) prewarmFontEmbedCss(cardRef.current);
+  }, [open]);
 
   const handleDownload = useCallback(async () => {
     if (busy) return;
@@ -74,6 +89,27 @@ export function PaymentInstructionDialog({
       toast.success('Instruction téléchargée');
     } catch {
       toast.error("Impossible de générer l'instruction");
+    } finally {
+      setBusy(null);
+    }
+  }, [entry, busy]);
+
+  /** La carte ENTIÈRE dans le presse-papiers (repli téléchargement : cf. nodeImage). */
+  const handleCopyImage = useCallback(async () => {
+    if (busy || !cardRef.current) return;
+    setBusy('image');
+    try {
+      const outcome = await copyNodePng(cardRef.current, `${entry.reference}.png`, {
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+      });
+      toast.success(
+        outcome === 'copied'
+          ? 'Image copiée — collez-la dans WeChat ou WhatsApp'
+          : 'Image téléchargée — ce navigateur ne sait pas copier une image',
+      );
+    } catch {
+      toast.error("Impossible de copier l'image");
     } finally {
       setBusy(null);
     }
@@ -111,6 +147,18 @@ export function PaymentInstructionDialog({
           </button>
           <button
             type="button"
+            onClick={handleCopyImage}
+            disabled={!!busy}
+            className={cn(
+              'flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-[13px] font-semibold disabled:opacity-60',
+              SOFT_PILL,
+            )}
+          >
+            {busy === 'image' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+            Copier l'image
+          </button>
+          <button
+            type="button"
             onClick={handleCopy}
             disabled={!!busy}
             className={cn(
@@ -128,7 +176,7 @@ export function PaymentInstructionDialog({
         Ce que le partenaire chinois recevra — bilingue EN / 中文, identique à la page de l'export.
       </p>
 
-      <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.08]">
+      <div ref={cardRef} className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.08]">
         {/* En-tête : la méthode et la référence, comme en haut de la page PDF. */}
         <div
           className="flex items-center justify-between gap-3 px-4 py-2.5"
