@@ -1,7 +1,7 @@
 # Dossier — Conteneur ECMU5839181 · BL GGZ2867008
 
 **Le dossier le plus instructif du corpus.** Un conteneur immobilisé 46 jours,
-dont le coût d'arrivée est à **66 % composé de pénalités de retard**.
+dont le coût d'arrivée est à **67 % composé de pénalités de retard**.
 
 ## Identité de l'opération
 
@@ -25,6 +25,10 @@ dont le coût d'arrivée est à **66 % composé de pénalités de retard**.
 ## Reconstitution du coût — tout se recoupe au franc près
 
 ### A · CMA CGM — frais normaux
+
+> ⚠️ **Périmètre.** Ce sous-total (372 279) ne concerne **que CMA CGM**.
+> Il ne contient **aucun** frais du terminal RTC. Voir la section E pour le
+> total « frais normaux » de tout le dossier (CMA CGM + RTC).
 
 | # | Facture | Objet | Montant TTC |
 |---|---|---|---|
@@ -75,15 +79,34 @@ Actualisé au 12/06 dans le devis : **661 191**.
 | RTC (acconage, encombrement, stationnement) | 661 191 |
 | **TOTAL GÉNÉRAL** | **2 084 072 FCFA** |
 
-## L'enseignement
+## E · L'enseignement — répartition normal / pénalités
 
-| | Montant | Part |
-|---|---|---|
-| Surestaries CMA CGM | 1 026 752 | |
-| Retrait tardif | 23 850 | |
-| Encombrement + stationnement RTC | 320 067 | |
-| **TOTAL PÉNALITÉS DE RETARD** | **1 370 669** | **66 %** |
-| Coût qu'aurait eu le dossier sans retard | **713 403** | 34 % |
+**Deux factureurs distincts sur ce dossier**, à ne jamais confondre :
+**CMA CGM** (l'armateur : transport + location du conteneur) et
+**RTC** (l'exploitant du terminal de Douala : manutention + stockage).
+Aucun des deux ne facture pour l'autre.
+
+| | Frais **normaux** | **Pénalités** de retard | Total facturé |
+|---|---:|---:|---:|
+| CMA CGM | **372 279** | 1 050 602 | **1 422 881** |
+| RTC (draft du 03/06) | 311 123 | 320 067 | 631 190 |
+| Réactualisation du devis au 12/06 | — | +30 001 *(à confirmer)* | +30 001 |
+| **TOTAL** | **683 402** | **1 400 670** | **2 084 072** |
+
+- Pénalités CMA CGM = 1 026 752 (surestaries) + 23 850 (retrait tardif du BAD)
+- Frais normaux RTC = 3 578 (sécurité) + 213 100 (acconage) + 94 446 (relevage)
+- Pénalités RTC = 238 500 (encombrement) + 81 567 (stationnement PAD + RTC)
+
+**Part des pénalités : 67 % du coût d'arrivée du conteneur.**
+
+> ⚠️ **Incertitude assumée sur 30 001 F.** La facture RTC en notre possession est
+> un *draft* daté du **03/06** (631 190). Le devis récapitulatif du **12/06** retient
+> **661 191** pour le RTC. L'écart de 30 001 F est vraisemblablement du
+> stationnement supplémentaire entre ces deux dates — donc une **pénalité** — mais
+> le devis ne le détaille pas. Si l'écart était au contraire un frais normal, la
+> répartition serait 713 403 / 1 370 669 (66 %). **Le total 2 084 072 est certain
+> dans les deux cas** ; seule la frontière entre les deux colonnes bouge.
+> → Demander au RTC / SITRASER la **facture RTC définitive du 12/06** détaillée.
 
 **Deux tarifs progressifs se cumulent :**
 - CMA CGM : 17 465 F/jour le 1er jour, puis **32 444 F/jour**
@@ -100,3 +123,6 @@ Actualisé au 12/06 dans le devis : **661 191**.
 3. **Pourquoi la facturation démarre-t-elle le 17/05** alors que le déchargement date
    du 27/04 et que la franchise est de 13 jours ? (27/04 + 13 j = 10/05)
 4. **Acconage « surpoids »** à 178 700 F — quel seuil de poids déclenche ce tarif ?
+5. **Écart de 30 001 F** entre le draft RTC du 03/06 (631 190) et le devis du 12/06
+   (661 191) — obtenir la facture RTC définitive détaillée pour trancher
+   normal / pénalité.
