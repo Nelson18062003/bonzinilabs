@@ -1,9 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import type { CargoEvent, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import { validateUploadFile } from '@/lib/utils';
+import type { CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
+
+type RpcResult = { success?: boolean; error?: string; [k: string]: unknown } | null;
+function assertOk(data: unknown): Record<string, unknown> {
+  const r = data as RpcResult;
+  if (r && r.success === false) throw new Error(r.error ?? 'Refus');
+  return (r ?? {}) as Record<string, unknown>;
+}
+
+/* ── Flotte ─────────────────────────────────────────────────────────────── */
 
 export function useCargoShipments() {
   return useQuery({
@@ -16,6 +26,19 @@ export function useCargoShipments() {
         .order('eta_promised', { ascending: true });
       if (error) throw error;
       return (data ?? []) as CargoShipment[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useCargoShipment(id: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'shipment', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.from('cargo_shipments').select('*').eq('id', id!).maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as CargoShipment | null;
     },
     staleTime: 30_000,
   });
@@ -50,6 +73,37 @@ export function useCargoEvents(shipmentId: string | null) {
   });
 }
 
+/** Les champs que l'admin édite à la main (RLS : canManageCargo). */
+export type CargoShipmentPatch = Partial<Pick<CargoShipment, 'freight_paid' | 'telex_released' | 'notes' | 'client_label' | 'freight_usd' | 'eta_promised' | 'etd_promised'>>;
+
+export function useUpdateCargoShipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: CargoShipmentPatch }) => {
+      const { error } = await supabaseAdmin.from('cargo_shipments').update(patch).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cargo'] }),
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
+  });
+}
+
+export function useRemoveCargoShipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabaseAdmin.rpc('remove_cargo_shipment', { p_id: id });
+      if (error) throw error;
+      assertOk(data);
+    },
+    onSuccess: () => {
+      toast.success('Conteneur retiré de la flotte');
+      qc.invalidateQueries({ queryKey: ['cargo'] });
+    },
+    onError: (e: Error) => toast.error(`Retrait impossible : ${e.message}`),
+  });
+}
+
 /**
  * Bouton « Rafraîchir » : la RPC déclenche l'edge function via pg_net (on ne
  * peut pas l'invoquer depuis le front, cf. règle supabase-clients). La
@@ -61,14 +115,162 @@ export function useRequestCargoSync() {
     mutationFn: async () => {
       const { data, error } = await supabaseAdmin.rpc('request_cargo_sync');
       if (error) throw error;
-      const res = data as { success?: boolean; error?: string } | null;
-      if (res && res.success === false) throw new Error(res.error ?? 'Refus');
+      assertOk(data);
     },
     onSuccess: () => {
-      toast.success('Synchronisation lancée — les données se mettent à jour dans quelques secondes');
+      toast.success('Mise à jour lancée — les jalons arrivent dans quelques secondes');
       window.setTimeout(() => qc.invalidateQueries({ queryKey: ['cargo'] }), 8_000);
       window.setTimeout(() => qc.invalidateQueries({ queryKey: ['cargo'] }), 25_000);
     },
-    onError: (e: Error) => toast.error(`Synchronisation impossible : ${e.message}`),
+    onError: (e: Error) => toast.error(`Mise à jour impossible : ${e.message}`),
   });
+}
+
+/* ── Suivre une référence ───────────────────────────────────────────────── */
+
+export function useRequestCargoLookup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (reference: string) => {
+      const { data, error } = await supabaseAdmin.rpc('request_cargo_lookup', { p_reference: reference });
+      if (error) throw error;
+      const r = assertOk(data);
+      return r.lookup_id as string;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cargo', 'lookups'] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Sonde la recherche toutes les 1,5 s tant qu'elle est en cours. */
+export function useCargoLookup(lookupId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'lookup', lookupId],
+    enabled: !!lookupId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.from('cargo_lookups').select('*').eq('id', lookupId!).single();
+      if (error) throw error;
+      return data as CargoLookup;
+    },
+    refetchInterval: (q) => (q.state.data?.status === 'pending' ? 1_500 : false),
+  });
+}
+
+export function useRecentCargoLookups() {
+  return useQuery({
+    queryKey: ['cargo', 'lookups'],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_lookups')
+        .select('id, reference, reference_type, carrier, status, created_at, completed_at, error, result, requested_by')
+        .order('created_at', { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return (data ?? []) as CargoLookup[];
+    },
+    staleTime: 15_000,
+  });
+}
+
+export interface AddShipmentInput {
+  lookupId: string;
+  containerNumber: string;
+  clientLabel: string;
+  freightUsd: number | null;
+  etaPromised: string | null;
+  etdPromised: string | null;
+}
+
+export function useAddCargoShipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AddShipmentInput) => {
+      const { data, error } = await supabaseAdmin.rpc('add_cargo_shipment', {
+        p_lookup_id: input.lookupId,
+        p_container_number: input.containerNumber,
+        p_client_label: input.clientLabel,
+        p_freight_usd: input.freightUsd ?? undefined,
+        p_eta_promised: input.etaPromised ?? undefined,
+        p_etd_promised: input.etdPromised ?? undefined,
+      });
+      if (error) throw error;
+      return assertOk(data).shipment_id as string;
+    },
+    onSuccess: () => {
+      toast.success('Conteneur ajouté à la flotte');
+      qc.invalidateQueries({ queryKey: ['cargo'] });
+    },
+    onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+/* ── Documents ──────────────────────────────────────────────────────────── */
+
+const BUCKET = 'cargo-documents';
+
+export function useCargoDocuments(shipmentId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'documents', shipmentId],
+    enabled: !!shipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_documents')
+        .select('*')
+        .eq('shipment_id', shipmentId!)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as CargoDocument[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useUploadCargoDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shipmentId, kind, file }: { shipmentId: string; kind: string; file: File }) => {
+      validateUploadFile(file);
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      const safe = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
+      const path = `${shipmentId}/${Date.now()}-${safe}`;
+      const up = await supabaseAdmin.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) throw up.error;
+      const { error } = await supabaseAdmin.from('cargo_documents').insert({
+        shipment_id: shipmentId, kind, file_name: file.name, storage_path: path, mime_type: file.type, size_bytes: file.size, uploaded_by: uid,
+      });
+      if (error) {
+        await supabaseAdmin.storage.from(BUCKET).remove([path]);
+        throw error;
+      }
+    },
+    onSuccess: (_d, v) => {
+      toast.success('Document ajouté');
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents', v.shipmentId] });
+    },
+    onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+export function useDeleteCargoDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (doc: CargoDocument) => {
+      const { error } = await supabaseAdmin.from('cargo_documents').delete().eq('id', doc.id);
+      if (error) throw error;
+      await supabaseAdmin.storage.from(BUCKET).remove([doc.storage_path]);
+    },
+    onSuccess: (_d, doc) => qc.invalidateQueries({ queryKey: ['cargo', 'documents', doc.shipment_id] }),
+    onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
+  });
+}
+
+export async function openCargoDocument(doc: CargoDocument) {
+  const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(doc.storage_path, 300);
+  if (error || !data?.signedUrl) {
+    toast.error("Impossible d'ouvrir ce document");
+    return;
+  }
+  window.open(data.signedUrl, '_blank', 'noopener');
 }

@@ -1,8 +1,8 @@
 /**
  * Données Cargo figées pour le harnais de capture (SCREENSHOT_MOCK=1) :
- * les cinq dossiers du 11/09/2026 et les trois navires, sans réseau.
+ * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
-import type { CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -24,9 +24,50 @@ const POSITIONS: CargoVesselPosition[] = [
   { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 1.78142, longitude: 102.62114, speed_kn: 17.4, course_deg: 301.6, destination: 'CIABJ', eta: '2026-10-04T07:00:00Z', reported_at: '2026-09-11T21:49:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
 ];
 
+const ev = (id: string, code: string, type: string, time: string, classifier = 'ACT', location: string | null = 'GZ Oceangate Container Terminal', vessel: string | null = null): CargoEvent => ({
+  id, shipment_id: '2', carrier_event_id: id, event_type: type, event_code: code, classifier, event_time: time, location_name: location,
+  unlocode: 'CNNSA', latitude: null, longitude: null, vessel_name: vessel, vessel_imo: vessel ? '9454412' : null, voyage: vessel ? '631W' : null, raw: code === 'GTOT' ? { emptyIndicatorCode: 'EMPTY' } : code === 'GTIN' ? { emptyIndicatorCode: 'LADEN' } : null, created_at: time,
+});
+const EVENTS: CargoEvent[] = [
+  ev('e1', 'CONF', 'SHIPMENT', '2026-07-16T09:10:43Z', 'ACT', null),
+  ev('e2', 'GTOT', 'EQUIPMENT', '2026-08-01T18:42:00Z'),
+  ev('e3', 'GTIN', 'EQUIPMENT', '2026-08-02T18:24:00Z'),
+  ev('e4', 'RECE', 'SHIPMENT', '2026-08-11T03:46:11Z', 'ACT', null),
+  ev('e5', 'DRFT', 'SHIPMENT', '2026-08-11T03:46:22Z', 'ACT', null),
+  ev('e6', 'LOAD', 'EQUIPMENT', '2026-08-15T15:25:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
+  ev('e7', 'DEPA', 'TRANSPORT', '2026-08-15T23:38:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
+  ev('e8', 'ARRI', 'TRANSPORT', '2026-10-11T10:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+];
+
+const LOOKUP: CargoLookup = {
+  id: 'lk1', reference: '274428633', reference_type: 'BL', carrier: 'MAERSK', status: 'done', error: null, requested_by: null,
+  created_at: '2026-09-11T22:00:00Z', completed_at: '2026-09-11T22:00:04Z',
+  result: {
+    carrier: 'MAERSK', reference: '274428633', bl_number: '274428633', fetched_at: '2026-09-11T22:00:04Z',
+    containers: [{
+      number: 'MIEU3611115', iso: '45G1', status: 'AT_SEA', vessel: { name: 'CMA CGM LAPEROUSE', imo: '9454412' }, voyage: '631W',
+      pol: { name: 'GZ Oceangate Container Terminal', unlocode: 'CNNSA' }, pod: { name: 'Kribi Port', unlocode: 'CMKBI' },
+      etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', last_event_at: '2026-08-15T23:38:00Z', last_event_label: 'Navire parti',
+      events: EVENTS.map((e) => ({ id: e.id, type: e.event_type, code: e.event_code, classifier: e.classifier, time: e.event_time, label: e.event_code === 'DEPA' ? 'Navire parti' : e.event_code === 'ARRI' ? 'Arrivée prévue du navire' : e.event_code === 'LOAD' ? 'Chargé à bord' : e.event_code === 'GTIN' ? 'Boîte pleine rendue au terminal' : e.event_code === 'GTOT' ? 'Boîte vide retirée du terminal' : e.event_code === 'CONF' ? 'Réservation confirmée' : e.event_code === 'RECE' ? "Instructions d'expédition reçues" : 'Bill of lading en brouillon', location: e.location_name, unlocode: e.unlocode, lat: null, lon: null, vessel: e.vessel_name, imo: e.vessel_imo, voyage: e.voyage })),
+    }],
+  },
+};
+
 const ok = <T,>(data: T) => ({ data, isLoading: false, error: null, refetch: async () => undefined });
+const noop = () => ({ mutate: () => undefined, mutateAsync: async () => undefined, isPending: false });
 
 export const useCargoShipments = () => ok(SHIPMENTS);
+export const useCargoShipment = (id: string | null) => ok(SHIPMENTS.find((s) => s.id === id) ?? null);
 export const useCargoVesselPositions = () => ok(POSITIONS);
-export const useCargoEvents = () => ok([]);
-export const useRequestCargoSync = () => ({ mutate: () => undefined, isPending: false });
+export const useCargoEvents = (id: string | null) => ok(id === '2' ? EVENTS : []);
+export const useUpdateCargoShipment = noop;
+export const useRemoveCargoShipment = noop;
+export const useRequestCargoSync = noop;
+export const useRequestCargoLookup = noop;
+export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined);
+export const useRecentCargoLookups = () => ok([LOOKUP]);
+export const useAddCargoShipment = noop;
+export const useCargoDocuments = () => ok([] as CargoDocument[]);
+export const useUploadCargoDocument = noop;
+export const useDeleteCargoDocument = noop;
+export const openCargoDocument = async () => undefined;

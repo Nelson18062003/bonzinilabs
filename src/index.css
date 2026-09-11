@@ -1365,65 +1365,54 @@
   }
 }
 
-/* ── Bonzini Cargo — pastilles de navire sur la carte Leaflet ──────────────
- * Pleine = position AIS récente (halo animé, orange du logo) ; creuse =
- * dernière position connue, le navire est hors couverture. */
-.cargo-ship-marker {
+/* ── Bonzini Cargo — carte Leaflet ─────────────────────────────────────────
+ * Langage neutre : pastille encre pour un navire, creuse quand la dernière
+ * position AIS est ancienne (plein océan), anneau accent quand il est
+ * sélectionné. Aucune couleur de logo ici. */
+.cargo-ship {
   position: relative;
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 9999px;
-  background: hsl(16 100% 55%);
+  background: hsl(var(--foreground));
   border: 3px solid hsl(var(--card));
-  box-shadow: 0 0 0 1px hsl(16 100% 55%);
+  box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.35);
 }
-.cargo-ship-marker::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 9999px;
-  border: 2px solid hsl(16 100% 55%);
-  opacity: 0.7;
-  animation: cargo-ping 2s ease-out infinite;
-}
-.cargo-ship-marker.is-stale {
+.cargo-ship.is-stale {
   background: hsl(var(--card));
-  border-color: hsl(16 100% 55%);
+  border: 2px solid hsl(var(--foreground));
   box-shadow: none;
 }
-.cargo-ship-marker.is-stale::after {
-  animation: none;
-  opacity: 0;
+.cargo-ship.is-selected {
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.55);
 }
-.cargo-ship-marker.is-selected {
-  box-shadow: 0 0 0 3px hsl(258 100% 60% / 0.45);
-}
-@keyframes cargo-ping {
-  0% { transform: scale(0.5); opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cargo-ship-marker::after { animation: none; }
-}
-.leaflet-tooltip.cargo-ship-label {
+i.cargo-ship { width: 12px; height: 12px; border-width: 2px; }
+.leaflet-tooltip.cargo-ship-label,
+.leaflet-tooltip.cargo-port-label {
   background: hsl(var(--card));
   color: hsl(var(--foreground));
   border: 1px solid hsl(var(--border));
   border-radius: 6px;
-  font-weight: 700;
-  font-size: 12px;
-  padding: 2px 7px;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 1px 6px;
   box-shadow: none;
 }
-.leaflet-tooltip.cargo-ship-label::before { display: none; }
-.leaflet-container { font-family: inherit; }
+.leaflet-tooltip.cargo-port-label { color: hsl(var(--muted-foreground)); font-weight: 500; }
+.leaflet-tooltip.cargo-ship-label::before,
+.leaflet-tooltip.cargo-port-label::before { display: none; }
+.leaflet-container { font-family: inherit; background: hsl(var(--muted)); }
 .leaflet-popup-content-wrapper {
   background: hsl(var(--card));
   color: hsl(var(--foreground));
   border-radius: 10px;
-  box-shadow: 0 6px 20px hsl(222 47% 11% / 0.15);
+  box-shadow: none;
+  border: 1px solid hsl(var(--border));
 }
-.leaflet-popup-tip { background: hsl(var(--card)); }
-.cargo-popup { font-size: 13px; line-height: 1.4; display: grid; gap: 4px; }
-.cargo-popup a { color: hsl(16 100% 45%); font-weight: 600; }
+.leaflet-popup-tip { background: hsl(var(--card)); box-shadow: none; }
+.cargo-popup { font-size: 12.5px; line-height: 1.4; display: grid; gap: 3px; }
+.cargo-popup a { color: hsl(var(--foreground)); font-weight: 600; }
+.leaflet-bar a { background: hsl(var(--card)); color: hsl(var(--foreground)); border-bottom-color: hsl(var(--border)); }
+/* La page « Suivre » réutilise l'écran desktop sur mobile : une seule colonne. */
+.cargo-track-mobile .grid-cols-\[minmax\(0\,1fr\)_360px\] { grid-template-columns: 1fr; }

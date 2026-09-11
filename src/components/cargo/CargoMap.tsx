@@ -1,43 +1,43 @@
 /**
- * Carte des navires — Leaflet (fond CARTO, gratuit, clair/sombre).
+ * Carte des navires — Leaflet, fond CARTO neutre (clair/sombre).
  *
- * Trois couches : la tournée WAX1 en pointillé, les ports en petits ronds,
- * les navires en pastille orange (pleine = position récente, creuse = dernière
- * position connue, le navire est hors couverture). Sélectionner un dossier
- * dans la liste recentre la carte sur son navire.
+ * Langage visuel : tout est neutre (encre, gris) ; la sélection prend
+ * l'accent. Trois couches : la tournée en pointillé, les ports en points,
+ * les navires en pastille — pleine si la position est récente, creuse si le
+ * navire est hors couverture AIS (plein océan).
  */
 import { useEffect, useMemo } from 'react';
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from 'next-themes';
-import { PORTS, WAX1_ROUTE, fmtDayTime, liveVesselUrl } from '@/lib/cargo/model';
+import { PORTS, WAX1_ROUTE, fmtDayTime, fmtLatLng, liveVesselUrl, positionAge } from '@/lib/cargo/model';
 import type { LatLng } from '@/lib/cargo/model';
 import type { VesselOnMap } from '@/lib/cargo/vessels';
 
 function shipIcon(stale: boolean, selected: boolean) {
   return L.divIcon({
     className: '',
-    html: `<span class="cargo-ship-marker${stale ? ' is-stale' : ''}${selected ? ' is-selected' : ''}"></span>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    html: `<span class="cargo-ship${stale ? ' is-stale' : ''}${selected ? ' is-selected' : ''}"></span>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
     popupAnchor: [0, -10],
   });
 }
 
-function FlyTo({ target }: { target: LatLng | null }) {
+function FlyTo({ target, zoom }: { target: LatLng | null; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (target) map.flyTo(target, Math.max(map.getZoom(), 5), { duration: 0.8 });
-  }, [map, target]);
+    if (target) map.flyTo(target, Math.max(map.getZoom(), zoom), { duration: 0.7 });
+  }, [map, target, zoom]);
   return null;
 }
 
-function FitOnce({ points }: { points: LatLng[] }) {
+function FitOnce({ points, maxZoom }: { points: LatLng[]; maxZoom: number }) {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
-    map.fitBounds(L.latLngBounds(points), { padding: [28, 28], maxZoom: 5 });
+    map.fitBounds(L.latLngBounds(points), { padding: [24, 24], maxZoom });
     // Cadrage initial seulement : ensuite l'utilisateur pilote la carte.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
@@ -49,61 +49,59 @@ export function CargoMap({
   selectedImo,
   onSelectVessel,
   className,
+  compact = false,
+  focus,
 }: {
   vessels: VesselOnMap[];
   selectedImo: string | null;
   onSelectVessel?: (imo: string) => void;
   className?: string;
+  /** Mode dossier : pas d'étiquettes de navires, cadrage serré sur le navire. */
+  compact?: boolean;
+  /** Point à cadrer en priorité (mode dossier). */
+  focus?: LatLng | null;
 }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === 'dark';
-  const tiles = dark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
-  const labels = dark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png';
+  const style = dark ? 'dark' : 'light';
 
-  const fitPoints = useMemo<LatLng[]>(
-    () => [
-      ...vessels.map((v) => [v.position.latitude, v.position.longitude] as LatLng),
-      PORTS.CNNSA.pos,
-      PORTS.CMKBI.pos,
-    ],
-    [vessels],
-  );
+  const fitPoints = useMemo<LatLng[]>(() => {
+    if (compact && focus) return [focus];
+    return [...vessels.map((v) => [v.position.latitude, v.position.longitude] as LatLng), PORTS.CNNSA.pos, PORTS.CMKBI.pos];
+  }, [vessels, compact, focus]);
   const target = useMemo<LatLng | null>(() => {
+    if (compact) return focus ?? null;
     const v = vessels.find((x) => x.position.vessel_imo === selectedImo);
     return v ? [v.position.latitude, v.position.longitude] : null;
-  }, [vessels, selectedImo]);
+  }, [vessels, selectedImo, compact, focus]);
 
   return (
     <div className={className}>
       <MapContainer
-        center={[0, 60]}
-        zoom={3}
+        center={focus ?? [0, 60]}
+        zoom={compact ? 4 : 3}
         minZoom={2}
         worldCopyJump
-        scrollWheelZoom
+        scrollWheelZoom={!compact}
+        dragging
+        zoomControl={!compact}
         className="h-full w-full"
         attributionControl={false}
       >
-        <TileLayer url={tiles} subdomains="abcd" />
-        <Polyline positions={WAX1_ROUTE} pathOptions={{ color: '#F59E0B', weight: 2, dashArray: '2 6', opacity: 0.9 }} />
+        <TileLayer url={`https://{s}.basemaps.cartocdn.com/${style}_nolabels/{z}/{x}/{y}{r}.png`} subdomains="abcd" />
+        <Polyline positions={WAX1_ROUTE} pathOptions={{ color: dark ? '#8a8a8a' : '#9a9a9a', weight: 1.5, dashArray: '1 5', opacity: 0.9 }} />
         {Object.entries(PORTS).map(([code, p]) => (
           <CircleMarker
             key={code}
             center={p.pos}
-            radius={5}
-            pathOptions={{ color: dark ? '#0B141C' : '#ffffff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 }}
+            radius={3.5}
+            pathOptions={{ color: dark ? '#1c1c1c' : '#ffffff', weight: 1.5, fillColor: dark ? '#bdbdbd' : '#6b6b6b', fillOpacity: 1 }}
           >
-            <Tooltip
-              direction={code === 'CMKBI' ? 'bottom' : 'top'}
-              offset={[0, code === 'CMKBI' ? 6 : -6]}
-              permanent={code === 'CMKBI' || code === 'CNNSA' || code === 'CMDLA'}
-            >
-              {p.name}
-            </Tooltip>
+            {!compact && (
+              <Tooltip direction={code === 'CMKBI' ? 'bottom' : 'top'} offset={[0, code === 'CMKBI' ? 4 : -4]} permanent className="cargo-port-label">
+                {p.name}
+              </Tooltip>
+            )}
           </CircleMarker>
         ))}
         {vessels.map((v) => {
@@ -116,24 +114,24 @@ export function CargoMap({
               icon={shipIcon(v.stale, imo === selectedImo)}
               eventHandlers={{ click: () => onSelectVessel?.(imo) }}
             >
-              <Tooltip direction="right" offset={[10, 0]} permanent className="cargo-ship-label">
-                {v.shipments.map((s) => s.client_label).join(' + ')}
-              </Tooltip>
+              {!compact && (
+                <Tooltip direction="right" offset={[9, 0]} permanent className="cargo-ship-label">
+                  {v.position.vessel_name ?? imo}
+                </Tooltip>
+              )}
               <Popup>
                 <div className="cargo-popup">
                   <strong>{v.position.vessel_name ?? imo}</strong>
                   <div>
-                    Transporte {v.shipments.map((s) => `${s.container_number} (${s.client_label})`).join(', ')}
+                    {v.shipments.length} conteneur{v.shipments.length > 1 ? 's' : ''} : {v.shipments.map((s) => s.client_label).join(', ')}
                   </div>
                   <div>
-                    {v.stale ? 'Dernière position connue' : 'Position'} : {fmtDayTime(new Date(v.position.reported_at))}
-                    {v.position.speed_kn != null ? ` · ${v.position.speed_kn} nd` : ''}
-                    {v.position.course_deg != null ? ` · cap ${Math.round(Number(v.position.course_deg))}°` : ''}
+                    {fmtLatLng(v.position.latitude, v.position.longitude)} · {fmtDayTime(new Date(v.position.reported_at))} ({positionAge(v.position)})
                   </div>
-                  {v.stale && <div>Hors couverture AIS (plein océan) — normal, pas inquiétant.</div>}
+                  {v.stale && <div>Hors couverture AIS (plein océan) — dernière position connue.</div>}
                   {live && (
                     <a href={live} target="_blank" rel="noopener noreferrer">
-                      Voir le navire en direct ↗
+                      Position en direct ↗
                     </a>
                   )}
                 </div>
@@ -141,9 +139,9 @@ export function CargoMap({
             </Marker>
           );
         })}
-        <TileLayer url={labels} subdomains="abcd" pane="shadowPane" />
-        <FitOnce points={fitPoints} />
-        <FlyTo target={target} />
+        <TileLayer url={`https://{s}.basemaps.cartocdn.com/${style}_only_labels/{z}/{x}/{y}{r}.png`} subdomains="abcd" pane="shadowPane" />
+        <FitOnce points={fitPoints} maxZoom={compact ? 4 : 5} />
+        <FlyTo target={target} zoom={compact ? 4 : 5} />
       </MapContainer>
     </div>
   );

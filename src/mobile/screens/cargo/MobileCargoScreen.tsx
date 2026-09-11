@@ -1,71 +1,64 @@
-/** Mobile admin — Bonzini Cargo : la même carte et les mêmes fiches, empilées. */
-import { useMemo, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { RefreshCw } from 'lucide-react';
+/** Mobile admin — Cargo : la flotte, une carte par conteneur, l'arrivée en premier. */
+import { useMemo } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoShipments, useCargoVesselPositions, useRequestCargoSync } from '@/hooks/useCargo';
-import { CargoMap } from '@/components/cargo/CargoMap';
-import { groupVessels } from '@/lib/cargo/vessels';
-import { CargoShipmentCard } from '@/components/cargo/CargoShipmentCard';
-import { CargoKpis } from '@/components/cargo/CargoKpis';
-import { SURFACE, TEXT } from '@/desktop/designKit';
+import { useCargoShipments } from '@/hooks/useCargo';
+import { CARRIER_LABEL, bestEta, etaSlipDays, fmtDay, statusMeta } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
+import { SURFACE, TEXT, Card, StatusPill, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
 
 export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();
-  const shipments = useCargoShipments();
-  const positions = useCargoVesselPositions();
-  const sync = useRequestCargoSync();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const list = useMemo(() => shipments.data ?? [], [shipments.data]);
-  const vessels = useMemo(() => groupVessels(list, positions.data ?? []), [list, positions.data]);
-  const selectedImo = list.find((s) => s.id === selectedId)?.vessel_imo ?? null;
+  const navigate = useNavigate();
+  const { data, isLoading } = useCargoShipments();
+  const rows = useMemo(() => [...(data ?? [])].sort((a, b) => (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity)), [data]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-28">
       <MobileHeader
-        title="Bonzini Cargo"
-        subtitle="Où sont les conteneurs"
+        title="Cargo"
+        subtitle={`${rows.length} conteneur${rows.length > 1 ? 's' : ''} suivi${rows.length > 1 ? 's' : ''}`}
         showBack
         backTo="/m/more"
         rightElement={
-          <button
-            type="button"
-            aria-label="Rafraîchir"
-            onClick={() => sync.mutate()}
-            disabled={sync.isPending}
-            className={cn('flex h-9 w-9 items-center justify-center rounded-full', SURFACE.holder)}
-          >
-            <RefreshCw className={cn('h-4 w-4', sync.isPending && 'animate-spin')} />
+          <button type="button" aria-label="Carte" onClick={() => navigate('/m/cargo/map')} className={cn('flex h-9 w-9 items-center justify-center rounded-full', SURFACE.holder)}>
+            <MapIcon className="h-4 w-4" />
           </button>
         }
       />
-      <div className="space-y-4 px-4 pt-3">
-        <CargoKpis shipments={list} className="grid-cols-2" />
-        <div className={cn('overflow-hidden rounded-xl', SURFACE.card, SURFACE.shadow)}>
-          <CargoMap
-            vessels={vessels}
-            selectedImo={selectedImo}
-            onSelectVessel={(imo) => {
-              const first = list.find((s) => s.vessel_imo === imo);
-              if (first) setSelectedId(first.id);
-            }}
-            className="h-[320px]"
-          />
-        </div>
-        {shipments.isLoading && <p className={cn('text-center text-[13px]', TEXT.muted)}>Chargement…</p>}
-        {list.map((s) => (
-          <CargoShipmentCard
-            key={s.id}
-            shipment={s}
-            selected={selectedImo != null && s.vessel_imo === selectedImo}
-            onSelect={() => setSelectedId(s.id)}
-          />
-        ))}
+      <div className="space-y-2.5 px-4 pt-3">
+        {isLoading && <ScreenLoader />}
+        {rows.map((s) => {
+          const meta = statusMeta(s.status);
+          const eta = bestEta(s);
+          const slip = etaSlipDays(s);
+          return (
+            <Card key={s.id} onClick={() => navigate(`/m/cargo/${s.id}`)} className="flex cursor-pointer items-center gap-3 p-3.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{s.client_label}</span>
+                  <StatusPill tone={meta.tone} label={meta.label} />
+                </div>
+                <div className={cn('mt-0.5 font-mono text-[12px]', TEXT.muted)}>{s.container_number} · {CARRIER_LABEL[s.carrier] ?? s.carrier}</div>
+                <div className={cn('mt-1.5 text-[13px]', TEXT.strong)}>
+                  {s.pod_name} · <b>{fmtDay(eta.date)}</b>
+                  {slip > 0 && <span className="ml-1.5 text-[11.5px] font-semibold text-amber-700 dark:text-amber-400">+{slip} j</span>}
+                </div>
+              </div>
+              <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+            </Card>
+          );
+        })}
+        {!isLoading && rows.length === 0 && <p className={cn('py-10 text-center text-[13px]', TEXT.muted)}>Aucun conteneur suivi.</p>}
+      </div>
+      <div className="fixed inset-x-4 bottom-24 z-20">
+        <PrimaryPill onClick={() => navigate('/m/cargo/track')} className="w-full">
+          <SearchIcon className="h-4 w-4" /> Suivre un conteneur
+        </PrimaryPill>
       </div>
     </div>
   );

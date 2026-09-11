@@ -582,6 +582,50 @@ export type Database = {
           },
         ]
       }
+      cargo_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          kind: string
+          mime_type: string | null
+          shipment_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          kind: string
+          mime_type?: string | null
+          shipment_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          shipment_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_documents_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_events: {
         Row: {
           carrier_event_id: string
@@ -646,6 +690,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cargo_lookups: {
+        Row: {
+          carrier: string
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          reference: string
+          reference_type: string
+          requested_by: string | null
+          result: Json | null
+          status: string
+        }
+        Insert: {
+          carrier: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          reference: string
+          reference_type: string
+          requested_by?: string | null
+          result?: Json | null
+          status?: string
+        }
+        Update: {
+          carrier?: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          reference?: string
+          reference_type?: string
+          requested_by?: string | null
+          result?: Json | null
+          status?: string
+        }
+        Relationships: []
       }
       cargo_shipments: {
         Row: {
@@ -2728,6 +2811,29 @@ export type Database = {
       }
     }
     Functions: {
+      add_cargo_shipment: {
+        Args: {
+          p_client_label: string
+          p_container_number: string
+          p_eta_promised?: string
+          p_etd_promised?: string
+          p_freight_usd?: number
+          p_lookup_id: string
+        }
+        Returns: Json
+      }
+      cargo_detect_carrier: {
+        Args: { p_ref: string }
+        Returns: { carrier: string; reference_type: string }[]
+      }
+      remove_cargo_shipment: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      request_cargo_lookup: {
+        Args: { p_reference: string }
+        Returns: Json
+      }
       request_cargo_sync: {
         Args: never
         Returns: Json

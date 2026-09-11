@@ -110,6 +110,11 @@ const DesktopTreasuryScreen = lazy(() => import("./desktop/screens/treasury").th
 // Bonzini Cargo — suivi des conteneurs (carte + dossiers).
 const MobileCargoScreen = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoScreen })));
 const DesktopCargoScreen = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoScreen })));
+const MobileCargoDossier = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDossier })));
+const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
+const MobileCargoMap = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoMap })));
+const DesktopCargoTrack = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoTrack })));
+const DesktopCargoMap = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoMap })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const DesktopBalanceDashboard = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopBalanceDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
@@ -245,6 +250,9 @@ const App = () => (
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
                 <Route path="/m/cargo" element={<AdminRouteWrapper desktop={<DesktopCargoScreen />}><MobileCargoScreen /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/:shipmentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoScreen />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />
                 {/* Vues desktop adressables. Le mobile garde ses propres routes plus bas :
                     ses écrans par page sont validés et ne changent pas. */}

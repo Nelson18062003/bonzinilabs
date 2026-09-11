@@ -25,14 +25,13 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAERSK_KEY = Deno.env.get("MAERSK_CONSUMER_KEY") ?? "";
 const AISSTREAM_KEY = Deno.env.get("AISSTREAM_API_KEY") ?? "";
 const AIS_LISTEN_MS = 20_000;
-
-const MAERSK_URL = "https://api.maersk.com/track-and-trace/public-events";
 
 type Shipment = {
   id: string;
@@ -46,132 +45,37 @@ type Shipment = {
   status: string;
 };
 
-// ── Maersk (DCSA) ────────────────────────────────────────────────────────
-
-interface DcsaEvent {
-  eventID: string;
-  eventType: "SHIPMENT" | "EQUIPMENT" | "TRANSPORT";
-  eventDateTime: string;
-  eventClassifierCode: "ACT" | "EST" | "PLN";
-  shipmentEventTypeCode?: string;
-  equipmentEventTypeCode?: string;
-  transportEventTypeCode?: string;
-  emptyIndicatorCode?: string;
-  ISOEquipmentCode?: string;
-  documentTypeCode?: string;
-  eventLocation?: { locationName?: string; UNLocationCode?: string; latitude?: string; longitude?: string };
-  transportCall?: {
-    carrierVoyageNumber?: string;
-    UNLocationCode?: string;
-    location?: { locationName?: string; latitude?: string; longitude?: string };
-    vessel?: { vesselName?: string; vesselIMONumber?: string; vesselCallSignNumber?: string };
-  };
-  references?: { referenceType: string; referenceValue: string }[];
-}
-
-/** Libellé humain d'un jalon — le même vocabulaire que l'écran. */
-function labelOf(e: DcsaEvent): string {
-  const code = e.shipmentEventTypeCode ?? e.equipmentEventTypeCode ?? e.transportEventTypeCode ?? "";
-  const est = e.eventClassifierCode !== "ACT";
-  switch (code) {
-    case "CONF": return "Réservation confirmée";
-    case "RECE": return "Instructions d'expédition reçues";
-    case "DRFT": return "Bill of lading en brouillon";
-    case "ISSU": return "Bill of lading émis";
-    case "GTOT": return e.emptyIndicatorCode === "EMPTY" ? "Conteneur vide retiré du terminal" : "Conteneur sorti du terminal";
-    case "GTIN": return e.emptyIndicatorCode === "LADEN" ? "Conteneur plein rendu au terminal" : "Conteneur entré au terminal";
-    case "LOAD": return "Chargé à bord";
-    case "DISC": return "Déchargé du navire";
-    case "DEPA": return est ? "Départ prévu du navire" : "Navire parti";
-    case "ARRI": return est ? "Arrivée prévue du navire" : "Navire arrivé";
-    case "STRP": return "Conteneur dépoté";
-    case "STUF": return "Conteneur empoté";
-    default: return code || e.eventType;
-  }
-}
-
-function num(v?: string): number | null {
-  if (v == null || v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
+// ── Maersk (DCSA) — logique partagée dans _shared/maersk.ts ─────────────
 
 async function syncMaersk(sb: ReturnType<typeof createClient>, s: Shipment) {
-  const res = await fetch(`${MAERSK_URL}?transportDocumentReference=${encodeURIComponent(s.bl_number)}`, {
-    headers: { "Consumer-Key": MAERSK_KEY, Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`Maersk HTTP ${res.status}`);
-  const json = await res.json();
-  const events: DcsaEvent[] = json.events ?? [];
+  const events = await fetchMaerskEvents(MAERSK_KEY, { bl: s.bl_number });
+  const c = summarizeContainer(s.container_number, events);
 
-  // Ne garder que les jalons de CE conteneur (un B/L peut en porter plusieurs).
-  const mine = events.filter((e) => {
-    const eq = (e.references ?? []).filter((r) => r.referenceType === "EQ").map((r) => r.referenceValue);
-    return eq.length === 0 || eq.includes(s.container_number);
-  });
-
-  const rows = mine.map((e) => {
-    const tc = e.transportCall;
-    const loc = e.eventLocation ?? tc?.location;
-    return {
-      shipment_id: s.id,
-      carrier_event_id: e.eventID,
-      event_type: e.eventType,
-      event_code: e.shipmentEventTypeCode ?? e.equipmentEventTypeCode ?? e.transportEventTypeCode ?? "?",
-      classifier: e.eventClassifierCode ?? "ACT",
-      event_time: e.eventDateTime,
-      location_name: loc?.locationName ?? null,
-      unlocode: e.eventLocation?.UNLocationCode ?? tc?.UNLocationCode ?? null,
-      latitude: num(loc?.latitude),
-      longitude: num(loc?.longitude),
-      vessel_name: tc?.vessel?.vesselName ?? null,
-      vessel_imo: tc?.vessel?.vesselIMONumber ?? null,
-      voyage: tc?.carrierVoyageNumber ?? null,
-      raw: e,
-    };
-  });
-  if (rows.length) {
+  if (c.events.length) {
+    const rows = c.events.map((e) => ({
+      shipment_id: s.id, carrier_event_id: e.id, event_type: e.type, event_code: e.code, classifier: e.classifier,
+      event_time: e.time, location_name: e.location, unlocode: e.unlocode, latitude: e.lat, longitude: e.lon,
+      vessel_name: e.vessel, vessel_imo: e.imo, voyage: e.voyage, raw: e.raw,
+    }));
     const { error } = await sb.from("cargo_events").upsert(rows, { onConflict: "shipment_id,carrier_event_id" });
     if (error) throw error;
   }
 
-  // Dérivés : navire, départ réel, ETA au port de déchargement, statut.
-  const sorted = [...mine].sort((a, b) => a.eventDateTime.localeCompare(b.eventDateTime));
-  const actual = sorted.filter((e) => e.eventClassifierCode === "ACT");
-  const lastActual = actual[actual.length - 1];
-  const depa = actual.find((e) => e.transportEventTypeCode === "DEPA");
-  const arri = sorted.filter((e) => e.transportEventTypeCode === "ARRI")
-    .filter((e) => !s.pod_unlocode || e.transportCall?.UNLocationCode === s.pod_unlocode)
-    .pop();
-  const withVessel = sorted.filter((e) => e.transportCall?.vessel?.vesselName).pop();
-  const codes = new Set(actual.map((e) => e.shipmentEventTypeCode ?? e.equipmentEventTypeCode ?? e.transportEventTypeCode));
-
-  let status = s.status;
-  if (codes.has("STRP") || (codes.has("GTOT") && codes.has("DISC") && actual.filter((e) => e.equipmentEventTypeCode === "GTOT").length >= 2)) status = "DELIVERED";
-  else if (codes.has("DISC") || (arri && arri.eventClassifierCode === "ACT")) status = "ARRIVED";
-  else if (codes.has("DEPA") || codes.has("LOAD")) status = "AT_SEA";
-  else if (codes.has("GTIN") || codes.has("GTOT")) status = "AT_ORIGIN";
-  else if (codes.has("CONF")) status = "BOOKED";
-
-  const iso = mine.find((e) => e.ISOEquipmentCode)?.ISOEquipmentCode ?? null;
   const patch: Record<string, unknown> = {
-    status,
+    status: c.status === "UNKNOWN" ? s.status : c.status,
     last_synced_at: new Date().toISOString(),
     sync_error: null,
-    last_event_at: lastActual?.eventDateTime ?? null,
-    last_event_label: lastActual ? labelOf(lastActual) : null,
+    last_event_at: c.last_event_at,
+    last_event_label: c.last_event_label,
   };
-  if (iso) patch.container_iso = iso;
-  if (depa) patch.etd_actual = depa.eventDateTime;
-  if (arri) patch.eta_carrier = arri.eventDateTime;
-  if (withVessel?.transportCall?.vessel) {
-    patch.vessel_name = withVessel.transportCall.vessel.vesselName ?? null;
-    patch.vessel_imo = withVessel.transportCall.vessel.vesselIMONumber ?? null;
-    patch.voyage = withVessel.transportCall.carrierVoyageNumber ?? null;
-  }
+  if (c.iso) patch.container_iso = c.iso;
+  if (c.etd_actual) patch.etd_actual = c.etd_actual;
+  if (c.eta_carrier) patch.eta_carrier = c.eta_carrier;
+  if (c.vessel) { patch.vessel_name = c.vessel.name; patch.vessel_imo = c.vessel.imo; patch.voyage = c.voyage; }
+  if (c.pod?.name) { patch.pod_name = c.pod.name; patch.pod_unlocode = c.pod.unlocode; }
   const { error } = await sb.from("cargo_shipments").update(patch).eq("id", s.id);
   if (error) throw error;
-  return rows.length;
+  return c.events.length;
 }
 
 // ── AIS (aisstream.io) ───────────────────────────────────────────────────
