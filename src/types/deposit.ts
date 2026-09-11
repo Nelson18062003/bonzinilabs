@@ -123,6 +123,15 @@ export interface Deposit {
   admin_internal_note: string | null;
   validated_by: string | null;
   validated_at: string | null;
+  /**
+   * RAPPROCHEMENT BANCAIRE — à ne pas confondre avec `validated_at`.
+   * `validated_at` dit que le portefeuille du client a été crédité ;
+   * `verified_at` dit qu'un administrateur a CONSTATÉ l'argent sur le compte.
+   * Le premier précède parfois le second de plusieurs heures : c'est
+   * précisément le risque que ce marqueur rend visible.
+   */
+  verified_at: string | null;
+  verified_by: string | null;
   created_at: string;
   updated_at: string;
 }

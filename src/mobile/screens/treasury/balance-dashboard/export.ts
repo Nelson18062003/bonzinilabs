@@ -1,4 +1,4 @@
-import { toPng } from 'html-to-image';
+import { captureNodePng, triggerDownload } from '@/lib/nodeImage';
 import { jsPDF } from 'jspdf';
 import { PAGE } from './constants';
 
@@ -6,39 +6,13 @@ function fileName(ext: string): string {
   return `bonzini_soldes_${new Date().toISOString().slice(0, 10)}.${ext}`;
 }
 
-function triggerDownload(dataUrl: string, name: string): void {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// Ensure DM Sans is loaded before capture, otherwise the
-// PNG renders with a fallback serif (classic html-to-image pitfall).
-async function ensureFontsReady(): Promise<void> {
-  if (typeof document !== 'undefined' && 'fonts' in document) {
-    try {
-      await Promise.all([
-        document.fonts.load('400 16px "DM Sans"'),
-        document.fonts.load('700 16px "DM Sans"'),
-      ]);
-      await document.fonts.ready;
-    } catch {
-      /* best effort */
-    }
-  }
-}
 
 /** Capture the preview node to a high-res PNG data URL (≈1785×2525, pixelRatio 3). */
 async function capturePng(node: HTMLElement): Promise<string> {
-  await ensureFontsReady();
-  return toPng(node, {
+  return captureNodePng(node, {
     pixelRatio: 3,
     width: PAGE.width,
     height: PAGE.height,
-    cacheBust: true,
     backgroundColor: '#0F1117',
   });
 }

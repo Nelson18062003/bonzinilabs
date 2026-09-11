@@ -7,7 +7,7 @@
 // chemin de Mola pour l'envoi côté serveur ; à redéployer séparément.)
 //
 // Téléchargement via anchor click direct — iOS Safari 13+, Android, desktop.
-import { toPng } from 'html-to-image';
+import { captureNodePng, triggerDownload } from './nodeImage';
 import { jsPDF } from 'jspdf';
 
 // Taille naturelle du flyer (le nœud capturé doit être non transformé).
@@ -18,43 +18,9 @@ function fileName(ext: string): string {
   return `bonzini_taux_${new Date().toISOString().slice(0, 10)}.${ext}`;
 }
 
-function triggerDownload(dataUrl: string, name: string): void {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// DM Sans (latin/chiffres) + Noto Sans SC (chinois) doivent être chargées
-// AVANT la capture, sinon le PNG part avec une police de repli — piège
-// classique html-to-image (même garde que l'export Trésorerie).
-async function ensureFontsReady(): Promise<void> {
-  if (typeof document !== 'undefined' && 'fonts' in document) {
-    try {
-      await Promise.all([
-        document.fonts.load('700 16px "DM Sans"'),
-        document.fonts.load('800 16px "DM Sans"'),
-        document.fonts.load('900 16px "DM Sans"'),
-        document.fonts.load('700 16px "Noto Sans SC"'),
-        document.fonts.load('900 16px "Noto Sans SC"'),
-      ]);
-      await document.fonts.ready;
-    } catch {
-      /* best effort */
-    }
-  }
-}
-
 async function capturePng(node: HTMLElement): Promise<string> {
-  await ensureFontsReady();
-  return toPng(node, {
-    width: FLYER_W,
-    height: FLYER_H,
-    pixelRatio: 1, // le nœud est déjà en taille naturelle 2150×2560
-    cacheBust: true,
-  });
+  // pixelRatio 1 : le nœud est déjà rendu en taille naturelle 2150×2560.
+  return captureNodePng(node, { width: FLYER_W, height: FLYER_H, pixelRatio: 1 });
 }
 
 // ── API publique ──────────────────────────────────────────────────────────
@@ -73,9 +39,7 @@ export async function downloadNodePNG(
   height: number,
   name: string,
 ): Promise<void> {
-  await ensureFontsReady();
-  const dataUrl = await toPng(node, { width, height, pixelRatio: 1, cacheBust: true });
-  triggerDownload(dataUrl, name);
+  triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1 }), name);
 }
 
 export async function downloadFlyerPDF(node: HTMLElement): Promise<void> {
