@@ -15,7 +15,7 @@ export function MobileCargoDossier() {
       <MobileHeader title="Dossier conteneur" showBack backTo="/m/cargo" />
       <div className="px-4 pt-3">
         <div className="overflow-hidden rounded-[22px] bg-card ring-1 ring-black/[0.06] dark:ring-white/[0.06]">
-          <CargoDetail shipmentId={shipmentId} asPage onClose={() => navigate('/m/cargo')} />
+          <CargoDetail shipmentId={shipmentId} onClose={() => navigate("/m/cargo")} />
         </div>
       </div>
     </div>
