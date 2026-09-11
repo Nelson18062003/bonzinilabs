@@ -32,6 +32,10 @@ export interface RolePermission {
   canViewTreasury: boolean;
   canManageTreasury: boolean;
   canAccessSupportChat: boolean;
+  /** Module Bonzini Cargo : voir les conteneurs, la carte et les jalons. */
+  canViewCargo: boolean;
+  /** Éditer un dossier cargo (paiement du fret, télex, notes). */
+  canManageCargo: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -48,6 +52,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewTreasury: true,
     canManageTreasury: true,
     canAccessSupportChat: true,
+    canViewCargo: true,
+    canManageCargo: true,
   },
   ops: {
     canViewClients: true,
@@ -62,6 +68,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewTreasury: false,
     canManageTreasury: false,
     canAccessSupportChat: true,
+    canViewCargo: true,
+    canManageCargo: true,
   },
   support: {
     canViewClients: true,
@@ -76,6 +84,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewTreasury: false,
     canManageTreasury: false,
     canAccessSupportChat: true,
+    canViewCargo: true,
+    canManageCargo: false,
   },
   customer_success: {
     canViewClients: true,
@@ -90,6 +100,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewTreasury: false,
     canManageTreasury: false,
     canAccessSupportChat: true,
+    canViewCargo: true,
+    canManageCargo: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -104,6 +116,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewTreasury: false,
     canManageTreasury: false,
     canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
   },
   treasurer: {
     canViewClients: false,
@@ -118,6 +132,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewTreasury: true,
     canManageTreasury: true,
     canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
   },
 };
 

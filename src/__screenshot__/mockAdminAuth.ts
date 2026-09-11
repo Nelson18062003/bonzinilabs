@@ -24,6 +24,12 @@ export const useAdminAuth = () => ({
     role: 'super_admin' as const,
   },
   isLoading: false,
+  // Le shell desktop (AdminRouteWrapper → ProtectedAdminRoute) redirige vers
+  // /m/login sans ceci : on se déclare connecté pour capturer les écrans
+  // complets, sidebar comprise.
+  isAuthenticated: true,
+  permissions: null,
   hasPermission: () => true,
   signOut: async () => undefined,
+  logout: async () => undefined,
 });

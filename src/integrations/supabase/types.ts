@@ -582,6 +582,223 @@ export type Database = {
           },
         ]
       }
+      cargo_events: {
+        Row: {
+          carrier_event_id: string
+          classifier: string
+          created_at: string
+          event_code: string
+          event_time: string
+          event_type: string
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          raw: Json | null
+          shipment_id: string
+          unlocode: string | null
+          vessel_imo: string | null
+          vessel_name: string | null
+          voyage: string | null
+        }
+        Insert: {
+          carrier_event_id: string
+          classifier?: string
+          created_at?: string
+          event_code: string
+          event_time: string
+          event_type: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          raw?: Json | null
+          shipment_id: string
+          unlocode?: string | null
+          vessel_imo?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Update: {
+          carrier_event_id?: string
+          classifier?: string
+          created_at?: string
+          event_code?: string
+          event_time?: string
+          event_type?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          raw?: Json | null
+          shipment_id?: string
+          unlocode?: string | null
+          vessel_imo?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_shipments: {
+        Row: {
+          bl_number: string
+          carrier: string
+          client_id: string | null
+          client_label: string
+          container_iso: string | null
+          container_number: string
+          created_at: string
+          eta_carrier: string | null
+          eta_promised: string | null
+          etd_actual: string | null
+          etd_promised: string | null
+          freight_paid: boolean
+          freight_usd: number | null
+          id: string
+          last_event_at: string | null
+          last_event_label: string | null
+          last_synced_at: string | null
+          notes: string | null
+          pod_name: string
+          pod_unlocode: string | null
+          pol_name: string | null
+          pol_unlocode: string | null
+          status: string
+          sync_error: string | null
+          telex_released: boolean
+          updated_at: string
+          vessel_imo: string | null
+          vessel_mmsi: string | null
+          vessel_name: string | null
+          voyage: string | null
+        }
+        Insert: {
+          bl_number: string
+          carrier: string
+          client_id?: string | null
+          client_label: string
+          container_iso?: string | null
+          container_number: string
+          created_at?: string
+          eta_carrier?: string | null
+          eta_promised?: string | null
+          etd_actual?: string | null
+          etd_promised?: string | null
+          freight_paid?: boolean
+          freight_usd?: number | null
+          id?: string
+          last_event_at?: string | null
+          last_event_label?: string | null
+          last_synced_at?: string | null
+          notes?: string | null
+          pod_name: string
+          pod_unlocode?: string | null
+          pol_name?: string | null
+          pol_unlocode?: string | null
+          status?: string
+          sync_error?: string | null
+          telex_released?: boolean
+          updated_at?: string
+          vessel_imo?: string | null
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Update: {
+          bl_number?: string
+          carrier?: string
+          client_id?: string | null
+          client_label?: string
+          container_iso?: string | null
+          container_number?: string
+          created_at?: string
+          eta_carrier?: string | null
+          eta_promised?: string | null
+          etd_actual?: string | null
+          etd_promised?: string | null
+          freight_paid?: boolean
+          freight_usd?: number | null
+          id?: string
+          last_event_at?: string | null
+          last_event_label?: string | null
+          last_synced_at?: string | null
+          notes?: string | null
+          pod_name?: string
+          pod_unlocode?: string | null
+          pol_name?: string | null
+          pol_unlocode?: string | null
+          status?: string
+          sync_error?: string | null
+          telex_released?: boolean
+          updated_at?: string
+          vessel_imo?: string | null
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_shipments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_vessel_positions: {
+        Row: {
+          course_deg: number | null
+          destination: string | null
+          eta: string | null
+          latitude: number
+          longitude: number
+          reported_at: string
+          source: string
+          speed_kn: number | null
+          updated_at: string
+          vessel_imo: string
+          vessel_mmsi: string | null
+          vessel_name: string | null
+        }
+        Insert: {
+          course_deg?: number | null
+          destination?: string | null
+          eta?: string | null
+          latitude: number
+          longitude: number
+          reported_at: string
+          source?: string
+          speed_kn?: number | null
+          updated_at?: string
+          vessel_imo: string
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+        }
+        Update: {
+          course_deg?: number | null
+          destination?: string | null
+          eta?: string | null
+          latitude?: number
+          longitude?: number
+          reported_at?: string
+          source?: string
+          speed_kn?: number | null
+          updated_at?: string
+          vessel_imo?: string
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+        }
+        Relationships: []
+      }
       client_phones: {
         Row: {
           client_id: string
@@ -2511,6 +2728,10 @@ export type Database = {
       }
     }
     Functions: {
+      request_cargo_sync: {
+        Args: never
+        Returns: Json
+      }
       _create_client_and_wallet: {
         Args: { p_email: string; p_id: string; p_meta: Json }
         Returns: undefined
