@@ -1364,3 +1364,55 @@
     --ring: 0 0% 45%;
   }
 }
+
+/* ── Bonzini Cargo — carte Leaflet ─────────────────────────────────────────
+ * Langage neutre : pastille encre pour un navire, creuse quand la dernière
+ * position AIS est ancienne (plein océan), anneau accent quand il est
+ * sélectionné. Aucune couleur de logo ici. */
+.cargo-ship {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: hsl(var(--foreground));
+  border: 3px solid hsl(var(--card));
+  box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.35);
+}
+.cargo-ship.is-stale {
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--foreground));
+  box-shadow: none;
+}
+.cargo-ship.is-selected {
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.55);
+}
+i.cargo-ship { width: 12px; height: 12px; border-width: 2px; }
+.leaflet-tooltip.cargo-ship-label,
+.leaflet-tooltip.cargo-port-label {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 1px 6px;
+  box-shadow: none;
+}
+.leaflet-tooltip.cargo-port-label { color: hsl(var(--muted-foreground)); font-weight: 500; }
+.leaflet-tooltip.cargo-ship-label::before,
+.leaflet-tooltip.cargo-port-label::before { display: none; }
+.leaflet-container { font-family: inherit; background: hsl(var(--muted)); }
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-radius: 10px;
+  box-shadow: none;
+  border: 1px solid hsl(var(--border));
+}
+.leaflet-popup-tip { background: hsl(var(--card)); box-shadow: none; }
+.cargo-popup { font-size: 12.5px; line-height: 1.4; display: grid; gap: 3px; }
+.cargo-popup a { color: hsl(var(--foreground)); font-weight: 600; }
+.leaflet-bar a { background: hsl(var(--card)); color: hsl(var(--foreground)); border-bottom-color: hsl(var(--border)); }
+/* La page « Suivre » réutilise l'écran desktop sur mobile : une seule colonne. */
+.cargo-track-mobile .grid-cols-\[minmax\(0\,1fr\)_360px\] { grid-template-columns: 1fr; }

@@ -13,14 +13,22 @@
 // mettre à jour le garde-fou serveur (ou l'inverse).
 // ============================================================
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROLE_PERMISSIONS, type AppRole, type RolePermission } from '@/contexts/AdminAuthContext';
 
-const MIGRATION = join(
-  process.cwd(),
-  'supabase/migrations/20260831160000_role_permission_enforcement.sql',
-);
+// La matrice vit dans la DERNIÈRE migration qui (re)définit
+// admin_has_permission : chaque nouvelle permission redéfinit la fonction en
+// entier (voir 20260911120000_cargo_module.sql), et c'est cette version-là
+// qui tourne en production.
+const MIGRATIONS_DIR = join(process.cwd(), 'supabase/migrations');
+const DEFINES_MATRIX = /FUNCTION public\.admin_has_permission\(_user_id UUID, _permission TEXT\)/;
+const MIGRATION = readdirSync(MIGRATIONS_DIR)
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+  .filter((f) => DEFINES_MATRIX.test(readFileSync(join(MIGRATIONS_DIR, f), 'utf8')))
+  .map((f) => join(MIGRATIONS_DIR, f))
+  .pop() as string;
 
 /** Extrait la matrice du CASE SQL : permission -> rôles autorisés. */
 function parseSqlMatrix(sql: string): Record<string, Set<string>> {
