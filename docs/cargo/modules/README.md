@@ -21,8 +21,8 @@ inconnu est signalé comme tel.
 | **Les objets physiques** | 1 | Le conteneur | ✅ livré (chat) |
 | | 2 | Ce qu'on met dedans — colis, volume, poids | ✅ livré (chat) |
 | | 3 | **Les ports et les terminaux** | ✅ **[écrit](03-ports-et-terminaux.md)** |
-| | 4 | L'entrepôt et le groupage — consolidation, empotage, plan de chargement, plombage | ⏭️ suivant |
-| | 5 | Les délais — ETD, ETA, d'où sortent les 38 jours | ⬜ |
+| | 4 | **L'entrepôt et le groupage** — consolidation, empotage, plan de chargement, plombage | ✅ **[écrit](04-entrepot-et-groupage.md)** |
+| | 5 | Les délais — ETD, ETA, d'où sortent les 38 jours | ⏭️ suivant |
 | **L'argent du transport** | 6 | Le taux de fret | ⬜ |
 | | 7 | Les Incoterms — FOB, CIF, FCL, envois partiels | ⬜ |
 | **L'État et les taxes** | 8 | Le code SH et le métier de la classification | ⬜ |
