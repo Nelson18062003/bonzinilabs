@@ -107,6 +107,9 @@ const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m
 // Trésorerie desktop : UN écran à quatre vues (docs/admin-redesign/07). Les
 // anciennes routes par-page pointent sur la vue correspondante via initialView.
 const DesktopTreasuryScreen = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopTreasuryScreen })));
+// Bonzini Cargo — suivi des conteneurs (carte + dossiers).
+const MobileCargoScreen = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoScreen })));
+const DesktopCargoScreen = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoScreen })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const DesktopBalanceDashboard = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopBalanceDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
@@ -241,6 +244,7 @@ const App = () => (
                 <Route path="/m/more/quick-replies" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileQuickRepliesScreen desktop />}><MobileQuickRepliesScreen /></AdminRouteWrapper>} />
 
                 {/* Treasury (visible only to roles with canViewTreasury — guard is in-screen) */}
+                <Route path="/m/cargo" element={<AdminRouteWrapper desktop={<DesktopCargoScreen />}><MobileCargoScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />
                 {/* Vues desktop adressables. Le mobile garde ses propres routes plus bas :
                     ses écrans par page sont validés et ne changent pas. */}

@@ -1364,3 +1364,66 @@
     --ring: 0 0% 45%;
   }
 }
+
+/* ── Bonzini Cargo — pastilles de navire sur la carte Leaflet ──────────────
+ * Pleine = position AIS récente (halo animé, orange du logo) ; creuse =
+ * dernière position connue, le navire est hors couverture. */
+.cargo-ship-marker {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: hsl(16 100% 55%);
+  border: 3px solid hsl(var(--card));
+  box-shadow: 0 0 0 1px hsl(16 100% 55%);
+}
+.cargo-ship-marker::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 2px solid hsl(16 100% 55%);
+  opacity: 0.7;
+  animation: cargo-ping 2s ease-out infinite;
+}
+.cargo-ship-marker.is-stale {
+  background: hsl(var(--card));
+  border-color: hsl(16 100% 55%);
+  box-shadow: none;
+}
+.cargo-ship-marker.is-stale::after {
+  animation: none;
+  opacity: 0;
+}
+.cargo-ship-marker.is-selected {
+  box-shadow: 0 0 0 3px hsl(258 100% 60% / 0.45);
+}
+@keyframes cargo-ping {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cargo-ship-marker::after { animation: none; }
+}
+.leaflet-tooltip.cargo-ship-label {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 7px;
+  box-shadow: none;
+}
+.leaflet-tooltip.cargo-ship-label::before { display: none; }
+.leaflet-container { font-family: inherit; }
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-radius: 10px;
+  box-shadow: 0 6px 20px hsl(222 47% 11% / 0.15);
+}
+.leaflet-popup-tip { background: hsl(var(--card)); }
+.cargo-popup { font-size: 13px; line-height: 1.4; display: grid; gap: 4px; }
+.cargo-popup a { color: hsl(16 100% 45%); font-weight: 600; }

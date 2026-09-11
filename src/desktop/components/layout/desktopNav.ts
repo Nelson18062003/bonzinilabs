@@ -22,6 +22,7 @@ import {
   Settings,
   LayoutGrid,
   LineChart as ChartLine,
+  Ship,
 } from 'lucide-react';
 import type { RolePermission } from '@/contexts/AdminAuthContext';
 
@@ -72,6 +73,7 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
       // resterait ouverte.
       { to: '/m/dashboard', label: 'Tableau de bord', icon: ChartLine },
       { to: '/m/more/rates', label: 'Taux de change', icon: Percent, perm: 'canManageRates' },
+      { to: '/m/cargo', label: 'Cargo', icon: Ship, perm: 'canViewCargo' },
       { to: '/m/support', label: 'Support', icon: LifeBuoy, perm: 'canAccessSupportChat' },
     ],
   },

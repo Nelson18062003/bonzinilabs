@@ -35,3 +35,7 @@ verify_jwt = false
 # is not configured.
 [functions.telnyx-webhook]
 verify_jwt = false
+# cargo-sync est appelée par pg_cron / request_cargo_sync avec la clé service
+# en Bearer : la fonction vérifie elle-même ce porteur (401 sinon).
+[functions.cargo-sync]
+verify_jwt = false

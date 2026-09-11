@@ -19,6 +19,7 @@ import {
   MessageSquareQuote,
   Sparkles,
   Newspaper,
+  Ship,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
@@ -71,6 +72,7 @@ export function MobileMoreScreen() {
   const { t } = useTranslation('common');
   const { profile, logout, canManageUsers, hasPermission } = useAdminAuth();
   const canViewTreasury = hasPermission('canViewTreasury');
+  const canViewCargo = hasPermission('canViewCargo');
   const canAccessSupportChat = hasPermission('canAccessSupportChat');
   const { data: notifCount } = useAdminNotificationCount();
   const { data: convs } = useAdminConversations();
@@ -138,6 +140,14 @@ export function MobileMoreScreen() {
                 label="Trésorerie"
                 description="Achats/ventes USDT, soldes, inventaire"
                 onClick={() => navigate('/m/more/treasury')}
+              />
+            )}
+            {canViewCargo && (
+              <MenuRow
+                icon={Ship}
+                label="Bonzini Cargo"
+                description="Où sont les conteneurs, quand ils arrivent"
+                onClick={() => navigate('/m/cargo')}
               />
             )}
           </Card>
