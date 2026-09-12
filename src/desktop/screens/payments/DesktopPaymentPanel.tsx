@@ -59,10 +59,12 @@ import {
 } from '@/desktop/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { QRCodeSVG } from 'qrcode.react';
-import { toPng } from 'html-to-image';
+import { copyNodePng, captureNodePng, triggerDownload } from '@/lib/nodeImage';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF, type PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { captureQrDataUrl } from '@/components/payment-detail/paymentReceiptHelpers';
+import { PaymentInstructionDialog } from './PaymentInstructionDialog';
+import type { PaymentInstructionEntry } from '@/lib/paymentInstruction';
 import {
   Loader2,
   AlertTriangle,
@@ -80,6 +82,7 @@ import {
   PenLine,
   Play,
   Plus,
+  Send,
   RefreshCw,
   Trash2,
   Upload,
@@ -199,6 +202,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const [showBenefEdit, setShowBenefEdit] = useState(false);
   const [benefDraft, setBenefDraft] = useState({ name: '', identifier: '', phone: '', email: '', bank: '', account: '', extra: '', notes: '' });
   const [benefQrFile, setBenefQrFile] = useState<File | null>(null);
+  const [showInstruction, setShowInstruction] = useState(false);
   const [exporting, setExporting] = useState<'copy' | 'png' | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [deleteProofId, setDeleteProofId] = useState<string | null>(null);
@@ -462,16 +466,16 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       if (!ficheRef.current || !payment || exporting) return;
       setExporting(target);
       try {
-        const dataUrl = await toPng(ficheRef.current, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true });
-        if (target === 'copy' && typeof ClipboardItem !== 'undefined') {
-          const blob = await (await fetch(dataUrl)).blob();
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          toast.success('Fiche copiée — collez-la dans WeChat / WhatsApp');
+        const opts = { pixelRatio: 2, backgroundColor: '#ffffff' } as const;
+        if (target === 'copy') {
+          const outcome = await copyNodePng(ficheRef.current, `fiche_${payment.reference}.png`, opts);
+          toast.success(
+            outcome === 'copied'
+              ? 'Fiche copiée — collez-la dans WeChat / WhatsApp'
+              : 'Fiche téléchargée — ce navigateur ne sait pas copier une image',
+          );
         } else {
-          const a = document.createElement('a');
-          a.href = dataUrl;
-          a.download = `fiche_${payment.reference}.png`;
-          a.click();
+          triggerDownload(await captureNodePng(ficheRef.current, opts), `fiche_${payment.reference}.png`);
           toast.success('Fiche téléchargée');
         }
       } catch {
@@ -585,6 +589,30 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   // QR de la fiche : QR bénéficiaire (Alipay/WeChat), sinon QR cash actif.
   const showCashQr = isCash && !['completed', 'rejected', 'cancelled_by_admin'].includes(payment.status);
   const ficheHasQr = !!payment.beneficiary_qr_code_url || showCashQr;
+
+  /* L'instruction destinée au partenaire chinois — le même objet que celui
+     que l'export du lot construit, pour que les deux chemins produisent le
+     même document. Le QR est DÉJÀ signé ici (`useAdminPaymentDetail` le passe
+     par `signStored`), donc utilisable tel quel à l'écran comme dans le PDF.
+     Le cash n'en a pas : personne à payer en Chine, et l'export du lot
+     l'exclut déjà. */
+  const instructionEntry: PaymentInstructionEntry = {
+    id: payment.id,
+    reference: payment.reference,
+    amount_rmb: payment.amount_rmb,
+    method: payment.method,
+    created_at: payment.created_at,
+    beneficiary_name: payment.beneficiary_name,
+    beneficiary_phone: payment.beneficiary_phone,
+    beneficiary_email: payment.beneficiary_email,
+    beneficiary_bank_name: payment.beneficiary_bank_name,
+    beneficiary_bank_account: payment.beneficiary_bank_account,
+    beneficiary_bank_extra: bankExtra ?? null,
+    beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
+    beneficiary_notes: (payment as { beneficiary_notes?: string | null }).beneficiary_notes ?? null,
+    beneficiary_identifier: identifier ?? null,
+  };
+  const canSendInstruction = !isCash && hasBeneficiaryInfo;
 
   // Timeline: built from real events, completed steps stamped with their time.
   const evt = (type: string) => timeline?.find((e) => e.event_type === type);
@@ -818,6 +846,21 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             </span>
           </div>
         </div>
+
+        {/* L'instruction fournisseur passe AVANT les exports d'image : c'est
+            le geste quotidien — envoyer ce paiement-ci au partenaire — alors
+            que l'export du lot oblige à générer tous les paiements en cours et
+            à y chercher la bonne page. */}
+        {canSendInstruction && (
+          <button
+            type="button"
+            onClick={() => setShowInstruction(true)}
+            className={cn('mt-2 flex h-10 w-full items-center justify-center gap-2 text-[13px]', VIOLET_PILL)}
+          >
+            <Send className="h-4 w-4" />
+            Instruction de paiement · 付款指令
+          </button>
+        )}
 
         {/* Actions de partage — hors capture */}
         <div className="mt-2 flex gap-1.5">
@@ -1111,6 +1154,14 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       <input ref={instructionInputRef} type="file" accept={ACCEPT_UPLOAD} multiple className="hidden" onChange={handleInstructionUpload} />
 
       {/* ── Dialogue : corriger montants / taux (super admin) ───────────── */}
+      {canSendInstruction && (
+        <PaymentInstructionDialog
+          open={showInstruction}
+          onClose={() => setShowInstruction(false)}
+          entry={instructionEntry}
+        />
+      )}
+
       <CenterDialog
         open={showCorrect}
         onClose={() => setShowCorrect(false)}

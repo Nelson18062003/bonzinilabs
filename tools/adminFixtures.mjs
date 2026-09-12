@@ -74,14 +74,19 @@ const rateSuggestions = [
 // graphiques vides — et une capture vide se lit comme « rien ce mois-ci », pas
 // comme « la fixture est incomplète ». Le harnais doit exiger ce que
 // l'application exige.
+//
+// `verified_at` est le RAPPROCHEMENT BANCAIRE, un axe distinct du statut :
+// d2/d5 sont constatés sur le compte, les autres restent à pointer. La
+// fixture doit porter les deux cas, sinon la colonne se capture toujours
+// dans le même état et ne prouve rien.
 const deposits = [
-  { id: 'd1', reference: 'BZ-DP-2026-0838', user_id: 'u1', amount_xaf: 2400000, method: 'bank_transfer', bank_name: 'Afriland First Bank', agency_name: null, status: 'proof_submitted', created_at: ago(11), validated_at: ago(11 - 0.3), confirmed_amount_xaf: null, admin_comment: null },
-  { id: 'd2', reference: 'BZ-DP-2026-0841', user_id: 'u2', amount_xaf: 780000, method: 'mtn_transfer', bank_name: null, agency_name: null, status: 'proof_submitted', created_at: ago(177), validated_at: ago(177 - 0.3), confirmed_amount_xaf: null, admin_comment: null },
-  { id: 'd3', reference: 'BZ-DP-2026-0844', user_id: 'u3', amount_xaf: 5100000, method: 'bank_cash', bank_name: 'UBA', agency_name: null, status: 'admin_review', created_at: ago(342), validated_at: ago(342 - 0.3), confirmed_amount_xaf: null, admin_comment: null },
-  { id: 'd4', reference: 'BZ-DP-2026-0846', user_id: 'u4', amount_xaf: 1250000, method: 'om_withdrawal', bank_name: null, agency_name: null, status: 'proof_submitted', created_at: ago(508), validated_at: ago(508 - 0.3), confirmed_amount_xaf: null, admin_comment: null },
-  { id: 'd5', reference: 'BZ-DP-2026-0847', user_id: 'u5', amount_xaf: 850000, method: 'om_withdrawal', bank_name: null, agency_name: null, status: 'admin_review', created_at: ago(675), validated_at: ago(675 - 0.3), confirmed_amount_xaf: null, admin_comment: '2e dépôt du mois — 1re preuve floue, remplacée.' },
-  { id: 'd6', reference: 'BZ-DP-2026-0849', user_id: 'u6', amount_xaf: 3400000, method: 'wave', bank_name: null, agency_name: null, status: 'proof_submitted', created_at: ago(1009), validated_at: ago(1009 - 0.3), confirmed_amount_xaf: null, admin_comment: null },
-  { id: 'd7', reference: 'BZ-DP-2026-0851', user_id: 'u7', amount_xaf: 1050000, method: 'agency_cash', bank_name: null, agency_name: 'Douala Bonapriso', status: 'proof_submitted', created_at: ago(1346), validated_at: ago(1346 - 0.3), confirmed_amount_xaf: null, admin_comment: null },
+  { id: 'd1', reference: 'BZ-DP-2026-0838', user_id: 'u1', amount_xaf: 2400000, method: 'bank_transfer', bank_name: 'Afriland First Bank', agency_name: null, status: 'proof_submitted', created_at: ago(11), validated_at: ago(11 - 0.3), confirmed_amount_xaf: null, admin_comment: null, verified_at: null, verified_by: null },
+  { id: 'd2', reference: 'BZ-DP-2026-0841', user_id: 'u2', amount_xaf: 780000, method: 'mtn_transfer', bank_name: null, agency_name: null, status: 'proof_submitted', created_at: ago(177), validated_at: ago(177 - 0.3), confirmed_amount_xaf: null, admin_comment: null, verified_at: ago(176), verified_by: 'a1' },
+  { id: 'd3', reference: 'BZ-DP-2026-0844', user_id: 'u3', amount_xaf: 5100000, method: 'bank_cash', bank_name: 'UBA', agency_name: null, status: 'admin_review', created_at: ago(342), validated_at: ago(342 - 0.3), confirmed_amount_xaf: null, admin_comment: null, verified_at: null, verified_by: null },
+  { id: 'd4', reference: 'BZ-DP-2026-0846', user_id: 'u4', amount_xaf: 1250000, method: 'om_withdrawal', bank_name: null, agency_name: null, status: 'proof_submitted', created_at: ago(508), validated_at: ago(508 - 0.3), confirmed_amount_xaf: null, admin_comment: null, verified_at: null, verified_by: null },
+  { id: 'd5', reference: 'BZ-DP-2026-0847', user_id: 'u5', amount_xaf: 850000, method: 'om_withdrawal', bank_name: null, agency_name: null, status: 'admin_review', created_at: ago(675), validated_at: ago(675 - 0.3), confirmed_amount_xaf: null, admin_comment: '2e dépôt du mois — 1re preuve floue, remplacée.', verified_at: ago(674), verified_by: 'a1' },
+  { id: 'd6', reference: 'BZ-DP-2026-0849', user_id: 'u6', amount_xaf: 3400000, method: 'wave', bank_name: null, agency_name: null, status: 'proof_submitted', created_at: ago(1009), validated_at: ago(1009 - 0.3), confirmed_amount_xaf: null, admin_comment: null, verified_at: null, verified_by: null },
+  { id: 'd7', reference: 'BZ-DP-2026-0851', user_id: 'u7', amount_xaf: 1050000, method: 'agency_cash', bank_name: null, agency_name: 'Douala Bonapriso', status: 'proof_submitted', created_at: ago(1346), validated_at: ago(1346 - 0.3), confirmed_amount_xaf: null, admin_comment: null, verified_at: null, verified_by: null },
 ];
 
 const depositProofs = [

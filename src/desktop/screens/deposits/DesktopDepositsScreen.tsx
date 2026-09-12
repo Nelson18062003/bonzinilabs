@@ -11,7 +11,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Paperclip, FileText } from 'lucide-react';
-import { useDepositStats } from '@/hooks/useAdminDeposits';
+import { useDepositStats, useSetDepositVerified } from '@/hooks/useAdminDeposits';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { usePagedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { DEPOSIT_STATUS_LABELS } from '@/types/deposit';
@@ -44,6 +45,7 @@ import {
   DANGER_SOFT_PILL,
 } from '@/desktop/designKit';
 import { DesktopDepositPanel } from './DesktopDepositPanel';
+import { DepositVerifiedToggle } from './DepositVerifiedToggle';
 
 type Bucket = 'queue' | 'correction' | 'all';
 type SortField = 'created_at' | 'amount_xaf';
@@ -85,6 +87,12 @@ export function DesktopDepositsScreen() {
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortAscending, setSortAscending] = useState<boolean | null>(null);
   const [page, setPage] = useState(1);
+  /* Rapprochement bancaire — le seul dépôt dont la bascule est en vol, pour
+     ne faire tourner QUE sa pastille et non toute la colonne. */
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const setVerified = useSetDepositVerified();
+  const { hasPermission } = useAdminAuth();
+  const canVerify = hasPermission('canProcessDeposits');
   const debouncedSearch = useDebouncedValue(searchQuery);
   const { data: stats } = useDepositStats();
 
@@ -206,7 +214,11 @@ export function DesktopDepositsScreen() {
                       <Th sortable sorted={sortedMark('created_at')} onSort={() => toggleSort('created_at')}>
                         Reçu
                       </Th>
-                      <Th last={compact}>Statut</Th>
+                      <Th>Statut</Th>
+                      {/* Le rapprochement bancaire est un AXE À PART : un dépôt
+                          peut être validé (portefeuille crédité) sans que
+                          l'argent ait encore été constaté sur le compte. */}
+                      <Th last={compact}>Vérifié</Th>
                       {!compact && <Th last className="w-[176px]" />}
                     </tr>
                   </thead>
@@ -283,8 +295,23 @@ export function DesktopDepositsScreen() {
                           <Td>
                             <Age date={deposit.created_at} level={slaLevel} relOnly={compact} />
                           </Td>
-                          <Td last={compact}>
+                          <Td>
                             <StatusPill tone={depositStatusTone(deposit.status)} label={DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status} />
+                          </Td>
+                          <Td last={compact}>
+                            <DepositVerifiedToggle
+                              verifiedAt={deposit.verified_at}
+                              readOnly={!canVerify}
+                              compact={compact}
+                              pending={verifyingId === deposit.id}
+                              onToggle={(next) => {
+                                setVerifyingId(deposit.id);
+                                setVerified.mutate(
+                                  { depositId: deposit.id, verified: next },
+                                  { onSettled: () => setVerifyingId(null) },
+                                );
+                              }}
+                            />
                           </Td>
                           {!compact && (
                             <Td last align="right">

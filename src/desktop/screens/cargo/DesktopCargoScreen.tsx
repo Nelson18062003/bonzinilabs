@@ -7,13 +7,13 @@
  * route /m/cargo/:shipmentId porte la sélection (lien profond).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { CargoDetail } from '@/components/cargo/CargoDetail';
-import { CARRIER_LABEL, bestEta, daysUntilArrival, etaSlipDays, fmtDay, fmtUsd, statusMeta } from '@/lib/cargo/model';
+import { CargoDossierDialog } from '@/components/cargo/CargoDetail';
+import { CARRIER_LABEL, bestEta, daysUntilArrival, etaSlipDays, fmtDay, statusMeta } from '@/lib/cargo/model';
 import type { CargoShipment } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
 import {
@@ -36,7 +36,7 @@ function inBucket(s: CargoShipment, b: Bucket): boolean {
 export function DesktopCargoScreen() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
-  const { shipmentId } = useParams<{ shipmentId: string }>();
+  const [openId, setOpenId] = useState<string | null>(null);
   const { data, isLoading } = useCargoShipments();
   const [bucket, setBucket] = useState<Bucket>('all');
   const [search, setSearch] = useState('');
@@ -67,25 +67,20 @@ export function DesktopCargoScreen() {
     return true;
   }).sort((a, b) => (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity)), [all, bucket, carrier, pod, q]);
 
-  const selected = shipmentId ?? null;
-  const compact = !!selected;
   useEffect(() => {
-    if (selected && !isLoading && all.length && !all.some((s) => s.id === selected)) navigate('/m/cargo', { replace: true });
-  }, [selected, isLoading, all, navigate]);
+    if (openId && !isLoading && all.length && !all.some((s) => s.id === openId)) setOpenId(null);
+  }, [openId, isLoading, all]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
   return (
-    <div className={cn('flex flex-col', compact ? 'h-[calc(100vh-120px)] min-h-[560px]' : 'min-h-[calc(100vh-120px)]')}>
+    <div className="flex min-h-[calc(100vh-120px)] flex-col">
       {/* ── En-tête de page ─────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Cargo</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
-            {counts.all} conteneur{counts.all > 1 ? 's' : ''} suivi{counts.all > 1 ? 's' : ''}
-            {counts.soon > 0 && <> · <span className="font-bold text-amber-700 dark:text-amber-400">{counts.soon} arrive{counts.soon > 1 ? 'nt' : ''} cette semaine</span></>}
-          </p>
-        </div>
+        <p className={cn('text-[15px] font-semibold', TEXT.body)}>
+          {counts.all} conteneur{counts.all > 1 ? 's' : ''} suivi{counts.all > 1 ? 's' : ''}
+          {counts.soon > 0 && <> · <span className="font-bold text-amber-700 dark:text-amber-400">{counts.soon} arrive{counts.soon > 1 ? 'nt' : ''} cette semaine</span></>}
+        </p>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => navigate('/m/cargo/map')} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}>
             <MapIcon className="h-4 w-4" /> Carte
@@ -106,7 +101,7 @@ export function DesktopCargoScreen() {
           <Chip label="Sans suivi" count={counts.untracked || null} active={bucket === 'untracked'} onClick={() => setBucket('untracked')} />
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <SearchField value={search} onChange={setSearch} placeholder={compact ? 'Rechercher…' : 'Client, conteneur, B/L, navire…'} className={compact ? 'w-[200px]' : 'w-[280px]'} />
+          <SearchField value={search} onChange={setSearch} placeholder="Client, conteneur, B/L, navire…" className="w-[280px]" />
           <DropChip label="Armateur" value={carrier} options={carrierOptions} onChange={setCarrier} />
           <DropChip label="Destination" value={pod} options={podOptions} onChange={setPod} />
         </div>
@@ -125,10 +120,10 @@ export function DesktopCargoScreen() {
                   <tr>
                     <Th first>Client</Th>
                     <Th>Conteneur</Th>
-                    {!compact && <Th>Navire</Th>}
+                    <Th>Navire</Th>
                     <Th>Arrivée</Th>
                     <Th>Statut</Th>
-                    {!compact && <Th align="right">Fret</Th>}
+                    <Th>Fret · télex</Th>
                     <Th last className="w-[36px]" />
                   </tr>
                 </thead>
@@ -137,13 +132,8 @@ export function DesktopCargoScreen() {
                     const meta = statusMeta(s.status);
                     const eta = bestEta(s);
                     const slip = etaSlipDays(s);
-                    const active = s.id === selected;
                     return (
-                      <tr
-                        key={s.id}
-                        onClick={() => navigate(active ? '/m/cargo' : `/m/cargo/${s.id}`)}
-                        className={cn('cursor-pointer transition-colors hover:bg-muted/40', active && 'bg-accent shadow-[inset_2px_0_0_0_hsl(var(--ring))]')}
-                      >
+                      <tr key={s.id} onClick={() => setOpenId(s.id)} className="cursor-pointer transition-colors hover:bg-muted/40">
                         <Td first>
                           <div className={cn('text-[13px] font-semibold', TEXT.strong)}>{s.client_label}</div>
                           <div className={cn('text-[11.5px]', TEXT.muted)}>{CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className="font-mono">{s.bl_number}</span></div>
@@ -151,12 +141,10 @@ export function DesktopCargoScreen() {
                         <Td>
                           <RefChip>{s.container_number}</RefChip>
                         </Td>
-                        {!compact && (
-                          <Td>
-                            <div className={cn('text-[13px]', TEXT.body)}>{s.vessel_name ?? <span className={TEXT.muted}>—</span>}</div>
-                            {s.voyage && <div className={cn('text-[11.5px]', TEXT.muted)}>voyage {s.voyage}</div>}
-                          </Td>
-                        )}
+                        <Td>
+                          <div className={cn('text-[13px]', TEXT.body)}>{s.vessel_name ?? <span className={TEXT.muted}>—</span>}</div>
+                          {s.voyage && <div className={cn('text-[11.5px]', TEXT.muted)}>voyage {s.voyage}</div>}
+                        </Td>
                         <Td>
                           <div className={cn('text-[13px] font-semibold tabular-nums', TEXT.strong)}>{s.pod_name} · {fmtDay(eta.date)}</div>
                           <div className={cn('text-[11.5px] tabular-nums', slip > 0 ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>
@@ -166,14 +154,11 @@ export function DesktopCargoScreen() {
                         <Td>
                           <StatusPill tone={meta.tone} label={meta.label} />
                         </Td>
-                        {!compact && (
-                          <Td align="right">
-                            <div className={cn('text-[13px] font-semibold tabular-nums', TEXT.strong)}>{fmtUsd(s.freight_usd)}</div>
-                            <div className={cn('text-[11.5px]', s.freight_paid && s.telex_released ? TEXT.muted : 'text-destructive')}>
-                              {s.freight_paid ? 'réglé' : 'à régler'} · télex {s.telex_released ? 'reçu' : 'non'}
-                            </div>
-                          </Td>
-                        )}
+                        <Td>
+                          <div className={cn('text-[12.5px] font-semibold', s.freight_paid && s.telex_released ? 'text-emerald-700 dark:text-emerald-400' : 'text-destructive')}>
+                            {s.freight_paid ? 'Fret réglé' : 'Fret à régler'} · télex {s.telex_released ? 'reçu' : 'non reçu'}
+                          </div>
+                        </Td>
                         <Td last>
                           <ChevronRight className={cn('h-4 w-4', TEXT.muted)} />
                         </Td>
@@ -198,14 +183,9 @@ export function DesktopCargoScreen() {
           )}
         </Card>
 
-        {selected && (
-          <aside className="w-[42%] min-w-[560px] shrink-0">
-            <div className={cn('flex h-full flex-col overflow-hidden rounded-[22px]', SURFACE.card, SURFACE.shadow)}>
-              <CargoDetail shipmentId={selected} onClose={() => navigate('/m/cargo')} />
-            </div>
-          </aside>
-        )}
       </div>
+
+      <CargoDossierDialog shipmentId={openId} onClose={() => setOpenId(null)} />
     </div>
   );
 }
