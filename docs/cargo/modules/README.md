@@ -24,8 +24,8 @@ inconnu est signalé comme tel.
 | | 4 | **L'entrepôt et le groupage** — consolidation, empotage, plan de chargement, plombage | ✅ **[écrit](04-entrepot-et-groupage.md)** |
 | | 5 | **Les délais** — ETD, ETA, d'où sortent les 40 jours | ✅ **[écrit](05-les-delais.md)** |
 | **L'argent du transport** | 6 | **Le taux de fret** | ✅ **[écrit](06-le-taux-de-fret.md)** |
-| | 7 | Les Incoterms — FOB, CIF, FCL, envois partiels | ⏭️ suivant |
-| **L'État et les taxes** | 8 | Le code SH et le métier de la classification | ⬜ |
+| | 7 | **Les Incoterms et la valeur en douane** — FOB, CIF, FCL, envois partiels | ✅ **[écrit](07-les-incoterms.md)** |
+| **L'État et les taxes** | 8 | Le code SH et le métier de la classification | ⏭️ suivant |
 | | 9 | Le tarif douanier et la TVA | ⬜ |
 | | 10 | Le régime particulier des téléphones | ⬜ |
 | | 11 | Les contrôles de conformité — PECAE, ANOR, organismes | ⬜ |
