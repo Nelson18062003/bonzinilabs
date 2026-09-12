@@ -5,7 +5,7 @@
  * Un onglet = une route `/m/cargo/:id/:tab`, donc le bouton Retour, le
  * rafraîchissement et un lien envoyé par message tombent tous au bon endroit.
  */
-export type DossierTab = 'apercu' | 'suivi' | 'documents' | 'douane' | 'couts' | 'client' | 'notes';
+export type DossierTab = 'apercu' | 'suivi' | 'chargement' | 'documents' | 'douane' | 'couts' | 'client' | 'notes';
 
 export interface DossierTabDef {
   key: DossierTab;
@@ -17,6 +17,7 @@ export interface DossierTabDef {
 export const DOSSIER_TABS: readonly DossierTabDef[] = [
   { key: 'apercu', label: "Aperçu", purpose: 'Où il est, quand il arrive, ce qu’il reste à faire' },
   { key: 'suivi', label: 'Suivi', purpose: 'Les jalons de l’armateur, du booking à l’arrivée' },
+  { key: 'chargement', label: 'Chargement', purpose: 'Ce qu’il y a dans la boîte, et la place qu’il reste' },
   { key: 'documents', label: 'Documents', purpose: 'B/L, facture, packing list, télex, BESC, douane' },
   { key: 'douane', label: 'Douane & arrivée', purpose: 'Les étapes camerounaises et la franchise' },
   { key: 'couts', label: 'Coûts', purpose: 'Le prix de revient réel du conteneur' },

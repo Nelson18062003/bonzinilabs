@@ -2,7 +2,7 @@
  * Données Cargo figées pour le harnais de capture (SCREENSHOT_MOCK=1) :
  * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
-import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -57,6 +57,20 @@ const LOOKUP: CargoLookup = {
 };
 
 const ok = <T,>(data: T) => ({ data, isLoading: false, error: null, refetch: async () => undefined });
+
+/** Colis d'exemple : une packing list plausible pour un 40' High Cube. */
+const PACKAGES: CargoPackage[] = [
+  { id: 'p1', shipment_id: '2', label: 'Téléphones — cartons maîtres', kind: 'CARTON', qty: 220,
+    length_cm: 60, width_cm: 40, height_cm: 40, weight_kg: 18, stackable: true, supplier: 'Shenzhen Hongfa',
+    note: null, position: 0, created_by: null, created_at: '2026-08-10T09:00:00Z', updated_at: '2026-08-10T09:00:00Z' },
+  { id: 'p2', shipment_id: '2', label: 'Accessoires — cartons', kind: 'CARTON', qty: 140,
+    length_cm: 50, width_cm: 40, height_cm: 30, weight_kg: 11, stackable: true, supplier: 'Guangzhou Yite',
+    note: null, position: 1, created_by: null, created_at: '2026-08-10T09:05:00Z', updated_at: '2026-08-10T09:05:00Z' },
+  { id: 'p3', shipment_id: '2', label: 'Présentoirs — caisses bois', kind: 'CRATE', qty: 18,
+    length_cm: 120, width_cm: 80, height_cm: 60, weight_kg: 42, stackable: false, supplier: 'Foshan Ledi',
+    note: 'ISPM 15 requis', position: 2, created_by: null, created_at: '2026-08-10T09:10:00Z', updated_at: '2026-08-10T09:10:00Z' },
+];
+
 const noop = () => ({ mutate: () => undefined, mutateAsync: async () => undefined, isPending: false });
 
 export const useCargoShipments = () => ok(SHIPMENTS);
@@ -73,6 +87,10 @@ export const useAddCargoShipment = noop;
 export const useCreateCargoShipmentManual = noop;
 export const useCargoDocuments = () => ok([] as CargoDocument[]);
 export const useCargoCosts = () => ok([] as CargoCost[]);
+export const useCargoPackages = (id: string | null) => ok(id === '2' ? PACKAGES : []);
+export const useAddCargoPackage = noop;
+export const useUpdateCargoPackage = noop;
+export const useDeleteCargoPackage = noop;
 export const useAddCargoCost = noop;
 export const useUpdateCargoCost = noop;
 export const useDeleteCargoCost = noop;
