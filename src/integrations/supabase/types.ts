@@ -638,6 +638,71 @@ export type Database = {
           },
         ]
       }
+      cargo_packages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          height_cm: number
+          id: string
+          kind: string
+          label: string
+          length_cm: number
+          note: string | null
+          position: number
+          qty: number
+          shipment_id: string
+          stackable: boolean
+          supplier: string | null
+          updated_at: string
+          weight_kg: number | null
+          width_cm: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          height_cm: number
+          id?: string
+          kind?: string
+          label: string
+          length_cm: number
+          note?: string | null
+          position?: number
+          qty?: number
+          shipment_id: string
+          stackable?: boolean
+          supplier?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+          width_cm: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number
+          id?: string
+          kind?: string
+          label?: string
+          length_cm?: number
+          note?: string | null
+          position?: number
+          qty?: number
+          shipment_id?: string
+          stackable?: boolean
+          supplier?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+          width_cm?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_packages_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_documents: {
         Row: {
           created_at: string

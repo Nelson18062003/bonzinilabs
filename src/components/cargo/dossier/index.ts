@@ -2,6 +2,7 @@ export { DossierHeader } from './DossierHeader';
 export { DossierTabsBar } from './DossierTabsBar';
 export { TabApercu } from './TabApercu';
 export { TabSuivi } from './TabSuivi';
+export { TabChargement } from './TabChargement';
 export { TabDocuments } from './TabDocuments';
 export { TabDouane } from './TabDouane';
 export { TabCouts } from './TabCouts';
