@@ -12,7 +12,7 @@ import { ChevronRight, Download, Map as MapIcon, Search as SearchIcon } from 'lu
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { CargoDossierDialog } from '@/components/cargo/CargoDetail';
+import { CargoQuickView } from '@/components/cargo/CargoQuickView';
 import { CARRIER_LABEL, bestEta, daysUntilArrival, etaSlipDays, fmtDay, statusMeta } from '@/lib/cargo/model';
 import { todoCounts } from '@/lib/cargo/todo';
 import { exportToCSV } from '@/lib/exportCSV';
@@ -220,7 +220,7 @@ export function DesktopCargoScreen() {
 
       </div>
 
-      <CargoDossierDialog shipmentId={openId} onClose={() => setOpenId(null)} />
+      <CargoQuickView shipmentId={openId} onClose={() => setOpenId(null)} />
     </div>
   );
 }

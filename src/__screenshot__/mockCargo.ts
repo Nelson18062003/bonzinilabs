@@ -2,7 +2,7 @@
  * Données Cargo figées pour le harnais de capture (SCREENSHOT_MOCK=1) :
  * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
-import type { CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -72,6 +72,12 @@ export const useRecentCargoLookups = () => ok([LOOKUP]);
 export const useAddCargoShipment = noop;
 export const useCreateCargoShipmentManual = noop;
 export const useCargoDocuments = () => ok([] as CargoDocument[]);
+export const useCargoCosts = () => ok([] as CargoCost[]);
+export const useAddCargoCost = noop;
+export const useUpdateCargoCost = noop;
+export const useDeleteCargoCost = noop;
+export const useCargoClient = () => ok(null);
+export const useCargoClientOptions = () => ok([] as { id: string; first_name: string; last_name: string; company_name: string | null }[]);
 export const useUploadCargoDocument = noop;
 export const useDeleteCargoDocument = noop;
 export const openCargoDocument = async () => undefined;

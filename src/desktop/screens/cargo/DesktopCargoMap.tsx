@@ -14,7 +14,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { CargoMap } from '@/components/cargo/CargoMap';
 import { DEFAULT_LAYERS } from '@/lib/cargo/layers';
 import type { MapLayers } from '@/lib/cargo/layers';
-import { CargoDossierDialog } from '@/components/cargo/CargoDetail';
+import { CargoQuickView } from '@/components/cargo/CargoQuickView';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, vesselLiveStatus } from '@/lib/cargo/geo';
 import { bestEta, daysUntilArrival, etaSlipDays, fmtDay, positionAge, statusMeta } from '@/lib/cargo/model';
@@ -204,7 +204,7 @@ export function DesktopCargoMap() {
         </Card>
       </div>
 
-      <CargoDossierDialog shipmentId={openId} onClose={() => setOpenId(null)} />
+      <CargoQuickView shipmentId={openId} onClose={() => setOpenId(null)} />
     </div>
   );
 }
