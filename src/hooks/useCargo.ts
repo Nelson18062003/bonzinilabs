@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { validateUploadFile } from '@/lib/utils';
-import type { CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
 
@@ -74,7 +74,16 @@ export function useCargoEvents(shipmentId: string | null) {
 }
 
 /** Les champs que l'admin édite à la main (RLS : canManageCargo). */
-export type CargoShipmentPatch = Partial<Pick<CargoShipment, 'freight_paid' | 'telex_released' | 'notes' | 'client_label' | 'freight_usd' | 'eta_promised' | 'etd_promised' | 'vessel_name' | 'vessel_imo' | 'vessel_mmsi' | 'voyage' | 'eta_carrier' | 'status'>>;
+export type CargoShipmentPatch = Partial<
+  Pick<
+    CargoShipment,
+    | 'freight_paid' | 'telex_released' | 'notes' | 'client_label' | 'client_id' | 'freight_usd'
+    | 'eta_promised' | 'etd_promised' | 'vessel_name' | 'vessel_imo' | 'vessel_mmsi' | 'voyage'
+    | 'eta_carrier' | 'status' | 'arrival_notice_at' | 'free_time_ends_on' | 'customs_declaration_ref'
+    | 'customs_cleared_at' | 'delivery_order_at' | 'gate_out_at' | 'empty_returned_at' | 'besc_number'
+    | 'goods_description' | 'gross_weight_kg' | 'packages_count'
+  >
+>;
 
 export function useUpdateCargoShipment() {
   const qc = useQueryClient();
@@ -230,6 +239,104 @@ export function useCreateCargoShipmentManual() {
       qc.invalidateQueries({ queryKey: ['cargo'] });
     },
     onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+/* ── Coûts du dossier ───────────────────────────────────────────────────── */
+
+export function useCargoCosts(shipmentId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'costs', shipmentId],
+    enabled: !!shipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_costs')
+        .select('*')
+        .eq('shipment_id', shipmentId!)
+        .order('incurred_on', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return (data ?? []) as CargoCost[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export type CargoCostInput = Pick<CargoCost, 'kind' | 'amount' | 'currency'> &
+  Partial<Pick<CargoCost, 'label' | 'incurred_on' | 'paid' | 'invoice_ref' | 'note'>>;
+
+export function useAddCargoCost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shipmentId, cost }: { shipmentId: string; cost: CargoCostInput }) => {
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      const { error } = await supabaseAdmin.from('cargo_costs').insert({ ...cost, shipment_id: shipmentId, created_by: uid });
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success('Coût ajouté');
+      qc.invalidateQueries({ queryKey: ['cargo', 'costs', v.shipmentId] });
+    },
+    onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+export function useUpdateCargoCost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<CargoCost>; shipmentId: string }) => {
+      const { error } = await supabaseAdmin.from('cargo_costs').update(patch).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'costs', v.shipmentId] }),
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
+  });
+}
+
+export function useDeleteCargoCost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; shipmentId: string }) => {
+      const { error } = await supabaseAdmin.from('cargo_costs').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'costs', v.shipmentId] }),
+    onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
+  });
+}
+
+/* ── Client Bonzini rattaché au dossier ─────────────────────────────────── */
+
+export function useCargoClient(clientId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'client', clientId],
+    enabled: !!clientId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('clients')
+        .select('id, first_name, last_name, company_name, phone, email, city, country, kyc_verified')
+        .eq('id', clientId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** Liste courte des clients, pour rattacher un dossier. */
+export function useCargoClientOptions(search: string) {
+  return useQuery({
+    queryKey: ['cargo', 'client-options', search],
+    queryFn: async () => {
+      let q = supabaseAdmin.from('clients').select('id, first_name, last_name, company_name').limit(20);
+      if (search.trim()) q = q.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,company_name.ilike.%${search}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 30_000,
   });
 }
 

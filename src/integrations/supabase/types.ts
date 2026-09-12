@@ -582,6 +582,62 @@ export type Database = {
           },
         ]
       }
+      cargo_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          incurred_on: string | null
+          invoice_ref: string | null
+          kind: string
+          label: string | null
+          note: string | null
+          paid: boolean
+          shipment_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          incurred_on?: string | null
+          invoice_ref?: string | null
+          kind: string
+          label?: string | null
+          note?: string | null
+          paid?: boolean
+          shipment_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          incurred_on?: string | null
+          invoice_ref?: string | null
+          kind?: string
+          label?: string | null
+          note?: string | null
+          paid?: boolean
+          shipment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_costs_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_documents: {
         Row: {
           created_at: string
@@ -732,6 +788,17 @@ export type Database = {
       }
       cargo_shipments: {
         Row: {
+          arrival_notice_at: string | null
+          besc_number: string | null
+          customs_cleared_at: string | null
+          customs_declaration_ref: string | null
+          delivery_order_at: string | null
+          empty_returned_at: string | null
+          free_time_ends_on: string | null
+          gate_out_at: string | null
+          goods_description: string | null
+          gross_weight_kg: number | null
+          packages_count: number | null
           bl_number: string
           carrier: string
           client_id: string | null
@@ -764,6 +831,17 @@ export type Database = {
           voyage: string | null
         }
         Insert: {
+          arrival_notice_at?: string | null
+          besc_number?: string | null
+          customs_cleared_at?: string | null
+          customs_declaration_ref?: string | null
+          delivery_order_at?: string | null
+          empty_returned_at?: string | null
+          free_time_ends_on?: string | null
+          gate_out_at?: string | null
+          goods_description?: string | null
+          gross_weight_kg?: number | null
+          packages_count?: number | null
           bl_number: string
           carrier: string
           client_id?: string | null
@@ -796,6 +874,17 @@ export type Database = {
           voyage?: string | null
         }
         Update: {
+          arrival_notice_at?: string | null
+          besc_number?: string | null
+          customs_cleared_at?: string | null
+          customs_declaration_ref?: string | null
+          delivery_order_at?: string | null
+          empty_returned_at?: string | null
+          free_time_ends_on?: string | null
+          gate_out_at?: string | null
+          goods_description?: string | null
+          gross_weight_kg?: number | null
+          packages_count?: number | null
           bl_number?: string
           carrier?: string
           client_id?: string | null
