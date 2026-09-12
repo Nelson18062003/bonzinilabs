@@ -138,10 +138,9 @@ timbre 25 000 **hors TVA** = 72 700 au franc près — même structure que CMA C
 6. **Franchise Maersk** et compteur de surestaries à ce jour
 7. **Valeur des 20 téléviseurs et des autres marchandises neuves** — non documentée
 8. Le rapport mentionne un relevé « sur une tranchée » : **l'inspection était-elle partielle ?**
-9. **Puissance moteur du tracteur, en kW ou en ch** — donnée manquante et décisive : elle
-   départage `870190.11.0000` (ligne agricole, celle du CGI annexe 1) et `870194.00.1100`
-   (« à usage agricole, neufs », seulement au-dessus de 75 kW). Voir
-   [`code-sh-tracteur.md`](code-sh-tracteur.md).
+9. ~~Puissance moteur du tracteur~~ — **sans objet** depuis le 12/09/2026 : le code
+   retenu est `870190.11.0000`, qui ne dépend d'aucune tranche de puissance. Voir
+   [`code-sh-tracteur.md` §12](code-sh-tracteur.md).
 
 ---
 

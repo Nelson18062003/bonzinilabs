@@ -234,3 +234,133 @@ porte l'exonération. Question à lui poser, mot pour mot :
 > `870190 11 000`. Précisez également la puissance moteur retenue à la déclaration.
 
 Cette simulation coûte zéro et remplace toute discussion : elle montre le montant.
+
+---
+
+# 8. Synthèse — la chaîne complète, dans l'ordre
+
+*(Cette section remplace, pour la lecture, les sections 3 et 7. Elle ne les contredit
+pas ; elle les met en ordre.)*
+
+## 8.1 Ce qu'un code SH commande — et rien d'autre
+
+Un code de nomenclature détermine **deux** choses :
+1. le **taux de droit de douane** applicable,
+2. l'**éligibilité aux exonérations**, qui sont écrites *par code* dans la loi.
+
+Il ne détermine pas la valeur, ni le poids, ni la propriété de la marchandise.
+
+## 8.2 Le code posé aujourd'hui sur notre dossier
+
+La SGS a retenu **`870193.00.1000`**. Libellé officiel, relevé le 12/09/2026 dans CAMCIS :
+
+> « Autres tracteurs d'une puissance de moteur excédant 37 kW mais n'excédant pas
+> 75 kW, **neufs** »
+
+Le mot « agricole » n'y figure pas.
+
+## 8.3 La liste des exonérations de TVA
+
+**CGI, article 128-6a** : sont exonérés de TVA les « biens de première nécessité figurant
+à l'**annexe 1** ». L'annexe 1, **section IV**, ne comporte que trois codes du chapitre 87 :
+
+```
+870110 00 000   Motoculteurs
+870190 11 000   Tracteurs agricole à roues (sauf 87.09), à moteur à explosion
+                ou à combustion interne
+871620 00 000   Remorques et semi-remorques pour usages agricoles
+```
+
+`870193` n'y est pas. **Donc, avec le code actuel, l'exonération ne peut pas s'appliquer.**
+Ce n'est pas une appréciation du déclarant : c'est la lecture d'une liste.
+
+## 8.4 Le code exonéré existe-t-il encore ?
+
+Oui. Vérifié le 12/09/2026 dans CAMCIS : **`870190.11.0000`**, validité
+`26/12/2019 → 31/12/9999`, champ `delYn` **vide** (non supprimée). Ligne ouverte,
+déclarable.
+
+## 8.5 Conclusion de la chaîne
+
+**Le code corrigé en `870190.11.0000`, l'exonération de TVA s'applique.**
+C'est la réponse, et elle est acquise.
+
+---
+
+# 9. Ce que l'exonération couvre — et ce qu'elle ne couvre pas
+
+L'article 128 du CGI est un article sur la **TVA**. Il ne touche pas au droit de douane,
+qui relève du Tarif Extérieur Commun CEMAC. À l'importation du tracteur :
+
+| Prélèvement | Taux | Effet du bon code |
+|---|---|---|
+| **TVA** (17,5 % + 10 % CAC = **19,25 %**) | 19,25 % | **supprimée** — art. 128-6a |
+| **Droit de douane** (TEC CEMAC, biens d'équipement) | 10 % | **reste dû** |
+| TCI · CCI · précompte · redevance informatique | ~2 % cumulés | restent dus |
+
+**Donc : exonéré de TVA, pas de droit de douane.** C'est la ligne la plus lourde qui
+tombe, mais ce n'est pas zéro.
+
+---
+
+# 10. Deux problèmes restants, indépendants du code
+
+Le code ne règle que la TVA. Deux autres postes coûtent de l'argent, et le bon code
+n'y change rien.
+
+## 10.1 La valeur en douane
+
+La SGS n'a pas retenu la valeur de la facture : elle a appliqué la **méthode 6.4**
+(dernier recours) au motif porté sur son propre rapport — **« LA FACTURE NON SOUMISE »** —
+et a retenu une valeur d'environ le **triple** du prix payé.
+
+Or **toutes** les taxes sont un pourcentage de la valeur en douane. Une valeur triplée
+triple le droit de douane, même avec l'exonération de TVA acquise. Corriger la valeur
+pèse donc autant que corriger le code, et se corrige par le même canal : une demande de
+révision à la SGS, **facture et preuve de paiement à l'appui**.
+
+Trois autres erreurs figurent sur le même rapport SGS et se corrigent dans la même
+demande :
+- **« USED »** sur une machine neuve — le tarif sépare formellement neuf et usagé par des
+  lignes distinctes (§4), ce n'est donc pas une nuance de rédaction ;
+- le **numéro de facture inscrit dans le champ châssis**, au lieu du n° de série `24050226` ;
+- le **poids brut 8 500 kg** au lieu de **1 750 kg** (1 530 tracteur + 220 rotavator),
+  ce qui gonfle d'environ 5× le fret réparti ajouté à la valeur en douane
+  (art. 31.1 e) du code CEMAC, cf. module 7).
+
+## 10.2 Le connaissement
+
+Sur l'espace client Maersk, le **Lawful BL Holder** est **HIGH GOAL LOGISTICS (GD) LTD**,
+pas Bonzini. Le titre de la marchandise est entre leurs mains.
+
+Ce point n'a **aucun** rapport avec la fiscalité : même à taxe nulle, sans connaissement
+endossé ou *telex release*, la marchandise ne sort pas. Et pendant ce temps les
+surestaries courent, à la charge de Bonzini (désigné *demurrage payer* et *detention
+payer* sur le même écran).
+
+---
+
+# 11. Ce qu'il reste à faire — trois actions, trois destinataires
+
+| # | À qui | Quoi | Ce que ça débloque |
+|---|---|---|---|
+| 1 | **SITRASER** (déclarant en douane) | Déposer / rectifier la déclaration avec le code **`870190.11.0000`** et invoquer l'**article 128-6a du CGI, annexe 1 section IV** | la TVA à 19,25 % |
+| 2 | **SGS** | Demande de révision : facture + preuve de paiement → valeur transactionnelle ; **NEUF** au lieu de USED ; châssis **`24050226`** ; poids brut **1 750 kg** | la base de toutes les taxes |
+| 3 | **HIGH GOAL LOGISTICS (GD) LTD** | Connaissement endossé ou *telex release* | la sortie physique du conteneur |
+
+Les trois sont **parallèles** : aucune n'attend les autres.
+
+---
+
+# 12. Retrait : `870194.00.1100`
+
+Cette piste, ouverte au §7, est **abandonnée**. Deux raisons :
+
+1. Elle suppose une puissance moteur **supérieure à 75 kW**, ce qui contredit la
+   classification SGS en `8701.93` (37–75 kW) et resterait à prouver sur plaque.
+2. Elle **ne figure pas** à l'annexe 1 du CGI, donc elle n'ouvre pas l'exonération
+   d'elle-même.
+
+`870190.11.0000` est meilleure sur les deux plans : elle est **écrite dans la loi**, et
+elle **ne dépend d'aucune puissance**. La question de la puissance moteur ne se pose
+donc plus. Le point 9 de la liste « Points à éclaircir » du README est sans objet.
