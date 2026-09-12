@@ -158,3 +158,79 @@ Réponse : `{"paginationInfo":{...},"resultList":[{"hsCd":"870190110000","hsDesc
 
 Équivalent manuel : écran « Recherche du code SH » du portail, champs *Code SH* /
 *Description du SH*, structure tarifaire **12**.
+
+---
+
+# 7. Addendum du 12/09/2026 — `870194.00.1100` vs `870190.11.0000`
+
+## 7.1 Ce que liste réellement l'annexe 1 du CGI
+
+Dépouillement intégral du CGI édition 2024. **Section IV « LES MATERIELS, ENGINS ET
+EQUIPEMENTS DE PREPARATION DU SOL ET DE CULTURE »** ne contient que deux codes du
+chapitre 87 :
+
+```
+870110 00 000   Motoculteurs
+870190 11 000   Tracteurs agricole à roues (sauf chariots-tracteurs du 87.09),
+                à moteur à explosion ou à combustion interne
+871620 00 000   Remorques et semi-remorques ... pour usages agricoles
+```
+
+**Ni `870193`, ni `870194`, ni `870195` n'apparaissent nulle part dans le CGI.**
+Le seul autre endroit du CGI où figure `870190` est la liste du droit d'accises sur les
+véhicules de plus de 15 ans — et il y est écrit « **à l'exclusion des tracteurs
+agricoles** ».
+
+**Conséquence directe :** l'exonération de TVA de l'article 128-6a est déclenchée
+*par le code inscrit à l'annexe 1*. Avec `870190.11.0000`, elle est **mécanique**.
+Avec `870194.00.1100`, elle suppose que l'administration admette la **correspondance**
+entre l'ancienne ligne et la nouvelle. C'est un argument, pas un automatisme.
+
+## 7.2 Statut technique des deux lignes dans CAMCIS
+
+| Code | Unité | `lastYn` | `delYn` | Génération |
+|---|---|---|---|---|
+| `870190.11.0000` | **NMB** | N | *(vide)* | ancienne (2019-2020) |
+| `870190.11.0010` | NMB | N | *(vide)* | ancienne |
+| `870194.00.0000` | NMB | N | *(vide)* | ancienne (2020) |
+| `870193.00.1000` | **UNT** | *(vide)* | *(vide)* | actuelle (2023) |
+| `870194.00.1100` | **UNT** | *(vide)* | *(vide)* | actuelle (2023) |
+| `870195.00.1100` | UNT | Y | *(vide)* | actuelle (2022) |
+
+Lecture : les lignes de l'ancienne génération portent l'unité `NMB`, les nouvelles `UNT`
+(code d'unité UN/CEE Rec. 20). **Aucune n'est supprimée** (`delYn` vide partout) et toutes
+courent jusqu'au `31/12/9999`. `870190.11.0000` est donc une ligne **héritée mais
+toujours ouverte** — déclarable, mais d'une génération antérieure à `870194.00.1100`.
+
+## 7.3 ⚠️ Vérification bloquante avant de retenir `870194.00.1100`
+
+`870194` = **puissance moteur supérieure à 75 kW** (≈ 102 ch) et inférieure ou égale à
+130 kW. Ce n'est pas un choix de rédaction : c'est le critère de la sous-position.
+
+**La SGS a classé en `8701.93`, c'est-à-dire la tranche 37–75 kW.** Il y a donc
+contradiction entre le code `870194.00.1100` et la classification SGS. L'un des deux
+se trompe de tranche de puissance.
+
+Retenir `870194.00.1100` sur un tracteur qui ferait en réalité moins de 75 kW ne serait
+pas une correction : ce serait une **fausse déclaration de sous-position**, plus grave
+que la situation actuelle. Il faut donc la plaque constructeur, pas une déduction.
+
+| Puissance relevée sur la plaque | Code à demander | Exonération TVA |
+|---|---|---|
+| **> 75 kW et ≤ 130 kW** | `870194.00.1100` « à usage agricole, neufs » | par correspondance avec l'annexe 1 — à plaider |
+| **37 à 75 kW** | `870190.11.0000` (aucune ligne agricole n'existe à `8701.93`) | mécanique — code inscrit à l'annexe 1 |
+| **> 130 kW** | `870195.00.1100` « à usage agricole, neufs » | par correspondance — à plaider |
+
+## 7.4 Le test qui tranche en cinq minutes
+
+Le portail externe ne donne pas les taux (§5). Mais SITRASER, connecté à CAMCIS, peut
+lancer une **simulation de liquidation sur les deux codes** et lire directement lequel
+porte l'exonération. Question à lui poser, mot pour mot :
+
+> Pouvez-vous faire tourner une simulation de liquidation CAMCIS sur le tracteur, une
+> fois avec `870190.11.0000` et une fois avec `870194.00.1100`, et me renvoyer les deux
+> écrans de taxation ? Je veux voir lequel des deux codes déclenche l'exonération de TVA
+> de l'article 128-6a du CGI (annexe 1, section IV), qui vise nommément
+> `870190 11 000`. Précisez également la puissance moteur retenue à la déclaration.
+
+Cette simulation coûte zéro et remplace toute discussion : elle montre le montant.
