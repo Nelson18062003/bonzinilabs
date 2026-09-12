@@ -572,6 +572,7 @@ export function CenterDialog({
   children,
   footer,
   width = 520,
+  bodyClassName,
 }: {
   open: boolean;
   onClose: () => void;
@@ -581,6 +582,8 @@ export function CenterDialog({
   children: React.ReactNode;
   footer?: React.ReactNode;
   width?: number;
+  /** Marges du corps — permet à un contenu en bandes de toucher les bords. */
+  bodyClassName?: string;
 }) {
   const panelRef = React.useRef<HTMLDivElement>(null);
   const onCloseRef = React.useRef(onClose);
@@ -648,11 +651,11 @@ export function CenterDialog({
         )}
         style={{ width }}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          {typeof title === 'string' ? <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2> : <div className="min-w-0 flex-1">{title}</div>}
           <Holder icon={X} size="sm" onClick={onClose} ariaLabel="Fermer" />
         </div>
-        {children}
+        <div className={bodyClassName}>{children}</div>
         {footer && <div className="mt-4 flex gap-2">{footer}</div>}
       </div>
     </div>

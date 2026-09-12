@@ -87,3 +87,70 @@ describe('SÉCURITÉ — admin_has_permission est le miroir de ROLE_PERMISSIONS'
     expect(sql).toMatch(/is_disabled = false OR ur\.is_disabled IS NULL/i);
   });
 });
+
+// ============================================================
+// Troisième matrice : la passerelle Mola.
+//
+// `supabase/functions/admin-assistant/index.ts` garde SA PROPRE copie de
+// ROLE_PERMISSIONS pour garder les capacités @mola (`do_capability` lit
+// `perms[meta.permission]`). Une clé absente de cette copie vaut `undefined`,
+// donc faux : l'action devient injoignable pour TOUS les rôles, super_admin
+// compris. C'est exactement ce qui est arrivé aux capacités Cargo, que les
+// deux autres matrices connaissaient déjà.
+//
+// La règle AI-native de CLAUDE.md — « un agent piloté par un humain doit
+// pouvoir atteindre toutes les actions, dans les limites des droits de la
+// personne » — impose donc que cette troisième copie reste identique.
+// ============================================================
+const GATEWAY = join(process.cwd(), 'supabase/functions/admin-assistant/index.ts');
+
+/** Extrait la matrice TypeScript de la passerelle : rôle -> permission -> bool. */
+function parseGatewayMatrix(ts: string): Record<string, Record<string, boolean>> {
+  const block = /const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = \{([\s\S]*?)\n\};/.exec(ts);
+  if (!block) throw new Error('matrice ROLE_PERMISSIONS introuvable dans la passerelle Mola');
+  const matrix: Record<string, Record<string, boolean>> = {};
+  const roleRe = /(\w+):\s*\{([^}]*)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = roleRe.exec(block[1])) !== null) {
+    const perms: Record<string, boolean> = {};
+    for (const [, key, val] of m[2].matchAll(/(can\w+):\s*(true|false)/g)) perms[key] = val === 'true';
+    matrix[m[1]] = perms;
+  }
+  return matrix;
+}
+
+describe('SÉCURITÉ — la passerelle Mola connaît les mêmes permissions', () => {
+  const gatewayMatrix = parseGatewayMatrix(readFileSync(GATEWAY, 'utf8'));
+  const appRoles = Object.keys(ROLE_PERMISSIONS) as AppRole[];
+  const permissionKeys = Object.keys(ROLE_PERMISSIONS.super_admin) as (keyof RolePermission)[];
+
+  it('déclare exactement les mêmes rôles que l’app', () => {
+    expect(Object.keys(gatewayMatrix).sort()).toEqual([...appRoles].sort());
+  });
+
+  it.each(appRoles)('« %s » a exactement les mêmes clés de permission', (role) => {
+    expect(
+      Object.keys(gatewayMatrix[role] ?? {}).sort(),
+      `clé manquante côté passerelle : l’action devient injoignable pour ${role}`,
+    ).toEqual([...permissionKeys].sort());
+  });
+
+  it.each(appRoles)('« %s » a exactement les mêmes valeurs que l’app', (role) => {
+    for (const perm of permissionKeys) {
+      expect(
+        gatewayMatrix[role]?.[perm],
+        `${role}.${perm} diverge entre la passerelle Mola et AdminAuthContext`,
+      ).toBe(ROLE_PERMISSIONS[role][perm]);
+    }
+  });
+
+  it('les permissions Cargo sont bien connues de la passerelle', () => {
+    // Régression : les cinq capacités Cargo exposées à Mola étaient refusées
+    // pour tout le monde parce que ces deux clés manquaient ici.
+    for (const role of appRoles) {
+      expect(gatewayMatrix[role]).toHaveProperty('canViewCargo');
+      expect(gatewayMatrix[role]).toHaveProperty('canManageCargo');
+    }
+    expect(gatewayMatrix.super_admin.canManageCargo).toBe(true);
+  });
+});

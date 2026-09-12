@@ -2,12 +2,15 @@
  * Données Cargo figées pour le harnais de capture (SCREENSHOT_MOCK=1) :
  * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
-import type { CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
   freight_paid: false, telex_released: false, last_synced_at: '2026-09-11T20:40:00Z', sync_error: null, notes: null,
   created_at: '2026-09-11T20:00:00Z', updated_at: '2026-09-11T20:00:00Z', last_event_label: 'Navire parti',
+  arrival_notice_at: null, besc_number: null, customs_cleared_at: null, customs_declaration_ref: null,
+  delivery_order_at: null, empty_returned_at: null, free_time_ends_on: null, gate_out_at: null,
+  goods_description: 'Téléphones et accessoires', gross_weight_kg: 18400, packages_count: 860,
 } as const;
 
 const SHIPMENTS: CargoShipment[] = [
@@ -67,7 +70,14 @@ export const useRequestCargoLookup = noop;
 export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined);
 export const useRecentCargoLookups = () => ok([LOOKUP]);
 export const useAddCargoShipment = noop;
+export const useCreateCargoShipmentManual = noop;
 export const useCargoDocuments = () => ok([] as CargoDocument[]);
+export const useCargoCosts = () => ok([] as CargoCost[]);
+export const useAddCargoCost = noop;
+export const useUpdateCargoCost = noop;
+export const useDeleteCargoCost = noop;
+export const useCargoClient = () => ok(null);
+export const useCargoClientOptions = () => ok([] as { id: string; first_name: string; last_name: string; company_name: string | null }[]);
 export const useUploadCargoDocument = noop;
 export const useDeleteCargoDocument = noop;
 export const openCargoDocument = async () => undefined;
