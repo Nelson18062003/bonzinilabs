@@ -11,6 +11,7 @@ import { ArrowLeft, Loader2, Search as SearchIcon } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddCargoShipment, useCargoLookup, useCargoShipments, useRecentCargoLookups, useRequestCargoLookup } from '@/hooks/useCargo';
 import { CargoTimeline } from '@/components/cargo/CargoTimeline';
+import { CargoManualAddDialog } from '@/components/cargo/CargoManualAddDialog';
 import {
   CARRIER_LABEL, CARRIER_SUPPORT, cleanReference, fmtDay, fmtDayTime, guessCarrier, parseLookupResult, statusMeta, timelineFromLookup,
 } from '@/lib/cargo/model';
@@ -70,6 +71,7 @@ export function DesktopCargoTrack() {
   const canManage = hasPermission('canManageCargo');
 
   const [adding, setAdding] = useState<LookupContainer | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
   const [clientLabel, setClientLabel] = useState('');
   const [freight, setFreight] = useState<number | null>(null);
   const [etaPromised, setEtaPromised] = useState('');
@@ -159,11 +161,19 @@ export function DesktopCargoTrack() {
                 <div className="px-5 py-5">
                   <p className={cn('text-[13px] font-semibold', TEXT.strong)}>{lookup.status === 'unsupported' ? 'Pas encore interrogeable' : 'Pas de résultat'}</p>
                   <p className={cn('mt-1 text-[13px]', TEXT.body)}>{lookup.error}</p>
-                  {lookup.carrier === 'CMA_CGM' && (
-                    <a href={`https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy=${lookup.reference_type === 'CONTAINER' ? 'Container' : 'BL'}&Reference=${lookup.reference}`} target="_blank" rel="noopener noreferrer" className={cn('mt-3 inline-flex h-8 items-center px-3 text-[12px] font-semibold', SOFT_PILL)}>
-                      Ouvrir sur cma-cgm.com ↗
-                    </a>
-                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {lookup.carrier === 'CMA_CGM' && (
+                      <a href={`https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy=${lookup.reference_type === 'CONTAINER' ? 'Container' : 'BL'}&Reference=${lookup.reference}`} target="_blank" rel="noopener noreferrer" className={cn('inline-flex h-8 items-center px-3 text-[12px] font-semibold', SOFT_PILL)}>
+                        Ouvrir sur cma-cgm.com ↗
+                      </a>
+                    )}
+                    {canManage && (
+                      <button type="button" onClick={() => setManualOpen(true)} className={cn('inline-flex h-8 items-center px-3 text-[12px] font-bold', PRIMARY_PILL)}>
+                        Ajouter quand même à ma flotte
+                      </button>
+                    )}
+                  </div>
+                  <p className={cn('mt-2 text-[12px]', TEXT.muted)}>Le dossier existera avec les dates du transitaire ; les jalons arriveront quand l'armateur sera interrogeable.</p>
                 </div>
               )}
               {lookup.status === 'done' && result && result.containers.map((c) => (
@@ -219,6 +229,7 @@ export function DesktopCargoTrack() {
         </aside>
       </div>
 
+      {manualOpen && <CargoManualAddDialog open={manualOpen} onClose={() => setManualOpen(false)} reference={lookup?.reference ?? ref} />}
       <CenterDialog
         open={!!adding}
         onClose={() => setAdding(null)}

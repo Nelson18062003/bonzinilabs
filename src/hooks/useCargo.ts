@@ -74,7 +74,7 @@ export function useCargoEvents(shipmentId: string | null) {
 }
 
 /** Les champs que l'admin édite à la main (RLS : canManageCargo). */
-export type CargoShipmentPatch = Partial<Pick<CargoShipment, 'freight_paid' | 'telex_released' | 'notes' | 'client_label' | 'freight_usd' | 'eta_promised' | 'etd_promised'>>;
+export type CargoShipmentPatch = Partial<Pick<CargoShipment, 'freight_paid' | 'telex_released' | 'notes' | 'client_label' | 'freight_usd' | 'eta_promised' | 'etd_promised' | 'vessel_name' | 'vessel_imo' | 'vessel_mmsi' | 'voyage' | 'eta_carrier' | 'status'>>;
 
 export function useUpdateCargoShipment() {
   const qc = useQueryClient();
@@ -192,6 +192,35 @@ export function useAddCargoShipment() {
         p_freight_usd: input.freightUsd ?? undefined,
         p_eta_promised: input.etaPromised ?? undefined,
         p_etd_promised: input.etdPromised ?? undefined,
+      });
+      if (error) throw error;
+      return assertOk(data).shipment_id as string;
+    },
+    onSuccess: () => {
+      toast.success('Conteneur ajouté à la flotte');
+      qc.invalidateQueries({ queryKey: ['cargo'] });
+    },
+    onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+export interface ManualShipmentInput {
+  clientLabel: string; carrier: string; blNumber: string; containerNumber: string;
+  podName: string; podUnlocode: string | null; polName: string | null; polUnlocode: string | null;
+  etdPromised: string | null; etaPromised: string | null; freightUsd: number | null;
+  vesselName: string | null; vesselImo: string | null; vesselMmsi: string | null; voyage: string | null;
+}
+
+/** Ajouter un conteneur sans suivi armateur (CMA CGM en attendant l'API). */
+export function useCreateCargoShipmentManual() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (i: ManualShipmentInput) => {
+      const { data, error } = await supabaseAdmin.rpc('create_cargo_shipment_manual', {
+        p_client_label: i.clientLabel, p_carrier: i.carrier, p_bl_number: i.blNumber, p_container_number: i.containerNumber,
+        p_pod_name: i.podName, p_pod_unlocode: i.podUnlocode ?? undefined, p_pol_name: i.polName ?? undefined, p_pol_unlocode: i.polUnlocode ?? undefined,
+        p_etd_promised: i.etdPromised ?? undefined, p_eta_promised: i.etaPromised ?? undefined, p_freight_usd: i.freightUsd ?? undefined,
+        p_vessel_name: i.vesselName ?? undefined, p_vessel_imo: i.vesselImo ?? undefined, p_vessel_mmsi: i.vesselMmsi ?? undefined, p_voyage: i.voyage ?? undefined,
       });
       if (error) throw error;
       return assertOk(data).shipment_id as string;

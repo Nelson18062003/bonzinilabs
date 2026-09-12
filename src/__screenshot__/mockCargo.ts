@@ -67,6 +67,7 @@ export const useRequestCargoLookup = noop;
 export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined);
 export const useRecentCargoLookups = () => ok([LOOKUP]);
 export const useAddCargoShipment = noop;
+export const useCreateCargoShipmentManual = noop;
 export const useCargoDocuments = () => ok([] as CargoDocument[]);
 export const useUploadCargoDocument = noop;
 export const useDeleteCargoDocument = noop;

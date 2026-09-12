@@ -6,14 +6,18 @@
  *   CargoDetail         la page complète (mobile, /m/cargo/:id)
  */
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle, ExternalLink, MoreHorizontal, RefreshCw, Trash2 } from 'lucide-react';
+import { CheckCircle, Circle, Copy, ExternalLink, MoreHorizontal, RefreshCw, Ship, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { TextArea } from '@/components/form';
-import { useCargoEvents, useCargoShipment, useCargoVesselPositions, useRemoveCargoShipment, useRequestCargoSync, useUpdateCargoShipment } from '@/hooks/useCargo';
+import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useRemoveCargoShipment, useRequestCargoSync, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { CargoMap } from '@/components/cargo/CargoMap';
 import { CargoTimeline } from '@/components/cargo/CargoTimeline';
 import { CargoDocuments } from '@/components/cargo/CargoDocuments';
+import { CargoJourney } from '@/components/cargo/CargoJourney';
+import { CargoVesselDialog } from '@/components/cargo/CargoVesselDialog';
+import { nextSteps } from '@/lib/cargo/todo';
+import { copyToClipboard } from '@/lib/clipboard';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, vesselLiveStatus } from '@/lib/cargo/geo';
 import { CARRIER_LABEL, bestEta, daysUntilArrival, etaSlipDays, fmtDay, fmtDayFull, fmtDayTime, fmtLatLng, fmtUsd, liveVesselUrl, statusMeta, timelineFromEvents, voyageProgress, whereIs } from '@/lib/cargo/model';
@@ -31,6 +35,7 @@ export function CargoDossierHeader({ shipment: s, onRemoved }: { shipment: Cargo
   const sync = useRequestCargoSync();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [vesselOpen, setVesselOpen] = useState(false);
   const meta = statusMeta(s.status);
   const doRemove = () => remove.mutate(s.id, { onSuccess: () => { setConfirmRemove(false); onRemoved?.(); } });
 
@@ -38,9 +43,13 @@ export function CargoDossierHeader({ shipment: s, onRemoved }: { shipment: Cargo
     <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
         <RefChip className="text-[13px]">{s.container_number}</RefChip>
+        <button type="button" onClick={() => copyToClipboard(s.container_number, 'Numéro de conteneur')} className={cn('rounded-md p-1 hover:bg-muted', TEXT.muted)} aria-label="Copier le numéro de conteneur"><Copy className="h-3.5 w-3.5" /></button>
         <StatusPill tone={meta.tone} label={meta.label} />
         <span className={cn('text-[15px] font-bold', TEXT.strong)}>Conteneur de {s.client_label}</span>
-        <span className={cn('text-[13px]', TEXT.muted)}>{CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className="font-mono">{s.bl_number}</span></span>
+        <span className={cn('inline-flex items-center gap-1 text-[13px]', TEXT.muted)}>
+          {CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className="font-mono">{s.bl_number}</span>
+          <button type="button" onClick={() => copyToClipboard(s.bl_number, 'Numéro de B/L')} className="rounded-md p-1 hover:bg-muted" aria-label="Copier le numéro de B/L"><Copy className="h-3 w-3" /></button>
+        </span>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <button type="button" onClick={() => sync.mutate()} disabled={sync.isPending} className={cn('flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold disabled:opacity-60', SOFT_PILL)}>
@@ -57,6 +66,9 @@ export function CargoDossierHeader({ shipment: s, onRemoved }: { shipment: Cargo
                 <button type="button" onClick={() => { setMenuOpen(false); update.mutate({ id: s.id, patch: { telex_released: !s.telex_released } }); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold hover:bg-muted/50', TEXT.strong)}>
                   <CheckCircle className="h-3.5 w-3.5" /> {s.telex_released ? 'Télex : non reçu' : 'Télex reçu'}
                 </button>
+                <button type="button" onClick={() => { setMenuOpen(false); setVesselOpen(true); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold hover:bg-muted/50', TEXT.strong)}>
+                  <Ship className="h-3.5 w-3.5" /> {s.vessel_name ? 'Modifier le navire' : 'Renseigner le navire'}
+                </button>
                 <button type="button" onClick={() => { setMenuOpen(false); setConfirmRemove(true); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-destructive hover:bg-destructive/10">
                   <Trash2 className="h-3.5 w-3.5" /> Retirer de la flotte
                 </button>
@@ -65,6 +77,7 @@ export function CargoDossierHeader({ shipment: s, onRemoved }: { shipment: Cargo
           </div>
         )}
       </div>
+      <CargoVesselDialog shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />
       <CenterDialog
         open={confirmRemove}
         onClose={() => setConfirmRemove(false)}
@@ -91,6 +104,7 @@ export function CargoDossierBody({ shipment: s }: { shipment: CargoShipment }) {
   const { hasPermission } = useAdminAuth();
   const canManage = hasPermission('canManageCargo');
   const { data: events } = useCargoEvents(s.id);
+  const { data: docs } = useCargoDocuments(s.id);
   const { data: positions } = useCargoVesselPositions();
   const update = useUpdateCargoShipment();
   const [notes, setNotes] = useState(s.notes ?? '');
@@ -104,6 +118,7 @@ export function CargoDossierBody({ shipment: s }: { shipment: CargoShipment }) {
   const progress = voyageProgress(s);
   const live = liveVesselUrl(s.vessel_imo);
   const liveStatus = vessel ? vesselLiveStatus(vessel.position) : null;
+  const todo = useMemo(() => nextSteps(s, docs), [s, docs]);
   const saveNotes = () => { if ((s.notes ?? '') !== notes) update.mutate({ id: s.id, patch: { notes: notes || null } }); };
 
   return (
@@ -140,6 +155,11 @@ export function CargoDossierBody({ shipment: s }: { shipment: CargoShipment }) {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-5 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
+          <SecLabel className="mb-3">Parcours</SecLabel>
+          <CargoJourney shipment={s} position={vessel?.position ?? null} />
         </div>
 
         <div className="mt-5 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
@@ -182,6 +202,20 @@ export function CargoDossierBody({ shipment: s }: { shipment: CargoShipment }) {
               Position en direct <ExternalLink className="h-3 w-3" />
             </a>
           )}
+        </div>
+        <div>
+          <SecLabel className="mb-2" right={<span className={cn('text-[11px]', TEXT.muted)}>{todo.filter((t) => t.level !== 'done').length} restante{todo.filter((t) => t.level !== 'done').length > 1 ? 's' : ''}</span>}>À faire avant l'arrivée</SecLabel>
+          <ul className="space-y-1.5">
+            {todo.map((t) => (
+              <li key={t.id} className="flex items-start gap-2">
+                {t.level === 'done' ? <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" /> : <Circle className={cn('mt-0.5 h-4 w-4 shrink-0', t.level === 'now' ? 'text-destructive' : TEXT.muted)} />}
+                <div className="min-w-0">
+                  <div className={cn('text-[13px]', t.level === 'done' ? cn('line-through', TEXT.muted) : t.level === 'now' ? cn('font-semibold', TEXT.strong) : TEXT.body)}>{t.label}</div>
+                  {t.detail && t.level !== 'done' && <div className={cn('text-[11.5px]', TEXT.muted)}>{t.detail}</div>}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
         <div>
           <CargoDocuments shipmentId={s.id} canManage={canManage} />

@@ -2828,6 +2828,26 @@ export type Database = {
         }
         Returns: Json
       }
+      create_cargo_shipment_manual: {
+        Args: {
+          p_bl_number: string
+          p_carrier: string
+          p_client_label: string
+          p_container_number: string
+          p_eta_promised?: string
+          p_etd_promised?: string
+          p_freight_usd?: number
+          p_pod_name: string
+          p_pod_unlocode?: string
+          p_pol_name?: string
+          p_pol_unlocode?: string
+          p_vessel_imo?: string
+          p_vessel_mmsi?: string
+          p_vessel_name?: string
+          p_voyage?: string
+        }
+        Returns: Json
+      }
       cargo_detect_carrier: {
         Args: { p_ref: string }
         Returns: { carrier: string; reference_type: string }[]
