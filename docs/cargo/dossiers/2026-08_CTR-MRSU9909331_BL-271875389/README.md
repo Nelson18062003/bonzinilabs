@@ -138,3 +138,20 @@ timbre 25 000 **hors TVA** = 72 700 au franc près — même structure que CMA C
 6. **Franchise Maersk** et compteur de surestaries à ce jour
 7. **Valeur des 20 téléviseurs et des autres marchandises neuves** — non documentée
 8. Le rapport mentionne un relevé « sur une tranchée » : **l'inspection était-elle partielle ?**
+9. **Puissance moteur du tracteur, en kW ou en ch** — donnée manquante et décisive : elle
+   départage `870190.11.0000` (ligne agricole, celle du CGI annexe 1) et `870194.00.1100`
+   (« à usage agricole, neufs », seulement au-dessus de 75 kW). Voir
+   [`code-sh-tracteur.md`](code-sh-tracteur.md).
+
+---
+
+## Code SH — vérifié à la source
+
+Le code retenu par la SGS (`8701.93.00.1000`) n'est **pas** un code agricole. La ligne
+agricole `870190.11.0000` — celle que nomme l'annexe 1 du CGI et qui ouvre l'exonération
+de TVA de l'article 128-6a — est **toujours en vigueur** dans CAMCIS (validité
+26/12/2019 → 31/12/9999), vérifiée le 12/09/2026 directement sur
+`https://ept.camcis.cm/ept`.
+
+→ Analyse complète, table des 86 lignes de la position 8701, et méthode d'interrogation :
+**[`code-sh-tracteur.md`](code-sh-tracteur.md)**
