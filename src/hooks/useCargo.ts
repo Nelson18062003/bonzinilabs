@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { validateUploadFile } from '@/lib/utils';
+import { shouldPollLookup } from '@/lib/cargo/lookup';
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
@@ -151,7 +152,12 @@ export function useRequestCargoLookup() {
   });
 }
 
-/** Sonde la recherche toutes les 1,5 s tant qu'elle est en cours. */
+/**
+ * Sonde la recherche toutes les 1,5 s tant qu'elle est en cours — mais PAS
+ * indéfiniment. `net.http_post` est un tir sans retour : si l'edge function
+ * n'est pas déployée, la ligne reste `pending` pour toujours et on sonderait
+ * jusqu'à la fermeture de l'onglet. Voir src/lib/cargo/lookup.ts.
+ */
 export function useCargoLookup(lookupId: string | null) {
   return useQuery({
     queryKey: ['cargo', 'lookup', lookupId],
@@ -161,7 +167,7 @@ export function useCargoLookup(lookupId: string | null) {
       if (error) throw error;
       return data as CargoLookup;
     },
-    refetchInterval: (q) => (q.state.data?.status === 'pending' ? 1_500 : false),
+    refetchInterval: (q) => (shouldPollLookup(q.state.data) ? 1_500 : false),
   });
 }
 

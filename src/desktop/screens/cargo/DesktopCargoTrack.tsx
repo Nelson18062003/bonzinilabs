@@ -12,6 +12,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddCargoShipment, useCargoLookup, useCargoShipments, useRecentCargoLookups, useRequestCargoLookup } from '@/hooks/useCargo';
 import { CargoTimeline } from '@/components/cargo/CargoTimeline';
 import { CargoManualAddDialog } from '@/components/cargo/CargoManualAddDialog';
+import { lookupState, STALLED_BODY, STALLED_CAUSES, STALLED_TITLE } from '@/lib/cargo/lookup';
 import {
   CARRIER_LABEL, CARRIER_SUPPORT, cleanReference, fmtDay, fmtDayTime, guessCarrier, parseLookupResult, statusMeta, timelineFromLookup,
 } from '@/lib/cargo/model';
@@ -79,6 +80,10 @@ export function DesktopCargoTrack() {
 
   const guess = guessCarrier(ref);
   const result = lookup ? parseLookupResult(lookup.result) : null;
+  // `stalled` n'existe pas en base : c'est le délai qui le crée. La requête se
+  // rafraîchit toutes les 1,5 s tant qu'elle est en cours, donc la bascule se
+  // fait d'elle-même sans minuterie supplémentaire.
+  const state = lookupState(lookup);
   useEffect(() => { if (lookup && !ref) setRef(lookup.reference); }, [lookup, ref]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
@@ -150,11 +155,32 @@ export function DesktopCargoTrack() {
             <Card className="overflow-hidden p-0">
               <CardHeader
                 title={`Résultat ${CARRIER_LABEL[lookup.carrier] ?? lookup.carrier}`}
-                meta={lookup.completed_at ? `il y a ${relShort(lookup.completed_at)}` : 'en cours'}
+                meta={lookup.completed_at ? `il y a ${relShort(lookup.completed_at)}` : state === 'stalled' ? 'sans réponse' : 'en cours'}
               />
-              {lookup.status === 'pending' && (
+              {state === 'pending' && (
                 <div className={cn('flex items-center gap-3 px-5 py-8 text-[13px]', TEXT.muted)}>
                   <Loader2 className="h-4 w-4 animate-spin" /> On interroge {CARRIER_LABEL[lookup.carrier] ?? lookup.carrier}… quelques secondes.
+                </div>
+              )}
+              {/* Une recherche qui n'aboutit pas doit être une réponse, jamais
+                  un sablier : au bout du délai on dit ce qui bloque. */}
+              {state === 'stalled' && (
+                <div className="px-5 py-5">
+                  <p className={cn('text-[13px] font-semibold', TEXT.strong)}>{STALLED_TITLE}</p>
+                  <p className={cn('mt-1 text-[13px]', TEXT.body)}>{STALLED_BODY}</p>
+                  <ul className={cn('mt-2 list-disc space-y-1 pl-5 text-[12.5px]', TEXT.muted)}>
+                    {STALLED_CAUSES.map((c) => <li key={c}>{c}</li>)}
+                  </ul>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {canManage && (
+                      <button type="button" onClick={() => setManualOpen(true)} className={cn('inline-flex h-8 items-center px-3 text-[12px] font-bold', PRIMARY_PILL)}>
+                        Ajouter quand même à ma flotte
+                      </button>
+                    )}
+                    <button type="button" onClick={submit} className={cn('inline-flex h-8 items-center px-3 text-[12px] font-semibold', SOFT_PILL)}>
+                      Réessayer
+                    </button>
+                  </div>
                 </div>
               )}
               {(lookup.status === 'error' || lookup.status === 'unsupported') && (
