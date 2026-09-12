@@ -14,9 +14,11 @@
 
 **Périmètre :** passé, en cours **et** à venir.
 
-⚠️ Pièces financières demandées **en privé**, pas dans le groupe.
+**Le message s'arrête après la section 6 et est signé Nelson, COO.** Sur
+décision de Nelson, il ne comporte ni échéance, ni consigne d'envoi, ni
+questions ouvertes : uniquement le périmètre et la liste des pièces.
 
-À compléter : `[PARTNER NAME]`, `[DATE]`, `[YOUR NAME]`.
+À compléter avant envoi : `[PARTNER NAME]`.
 
 ---
 ---
@@ -113,37 +115,8 @@ later is.
 For any container that had a delay, a damage, a customs hold, a demurrage
 charge or a claim: the **correspondence** and what was finally decided and paid.
 
-## Five questions that are not written in any document
-
-1. **Who obtains the BESC on our shipments — you, or someone on our side?**
-   Which CNCC-accredited agent in China do you use, and what do they charge?
-2. For each container, was the BESC validated **before the vessel departed**, or
-   **regularised late after arrival**? If a late penalty was ever paid, send the
-   receipt.
-3. **Who initiates the SGS / PECAE inspection on our shipments — you, the
-   supplier, or our side in Cameroon?** And who pays for it?
-4. **Which of the services above do you perform yourself, and which do you
-   subcontract?** Please name the subcontractors.
-5. Going forward, **can you send us the BESC number and the B/L within 5 days
-   of vessel departure, and the full document pack within 15 days?** The legal
-   BESC deadline is 48 hours before arrival in Cameroon, and we do not want to
-   keep working that close to the limit.
-
-## Sending
-
-Please share everything through a **cloud drive or WeTransfer link** — not file
-by file in the chat.
-
-🔒 **Payment proofs and bank documents: send those to me directly in private**,
-not in this group.
-
-Could you first tell me **how many containers there are in total**? One line is
-enough, today. Then the full pack by **[DATE]**.
-
-Thank you. A complete file protects you as much as it protects us — once
-everything is on record, nobody comes back to you with questions months later.
-
-[YOUR NAME]
+Nelson
+COO, Bonzini
 
 ---
 ---
@@ -226,27 +199,5 @@ everything is on record, nobody comes back to you with questions months later.
 凡是出现过延误、货损、海关查验、滞箱费或索赔的柜子，请提供**往来沟通记录**，
 以及最终如何处理、由谁承担。
 
-## 五个在单证里查不到的问题，请直接回复
-
-1. **我们的货，BESC 是您办理的，还是我方办理的？** 您使用的是哪一家 CNCC 授权
-   代理？收费标准是多少？
-2. 每个柜子的 BESC 是**开船前完成的**，还是**到港后补办的**？若产生过逾期罚款，
-   请提供收据。
-3. **我们的货，SGS / PECAE 检验是谁发起的 —— 贵司、供应商，还是我们喀麦隆这边？**
-   费用由谁承担？
-4. **以上服务中，哪些是贵司自己做的，哪些是外包的？** 请说明外包方名称。
-5. 今后**能否在开船后 5 天内把 BESC 号码和提单发给我们，15 天内把整套单证发齐？**
-   BESC 的法定期限是船舶抵达喀麦隆前 48 小时，我们不想再卡着这个期限走。
-
-## 发送方式
-
-请通过**网盘或 WeTransfer 链接**打包发送，不要在群里一个一个发。
-
-🔒 **付款凭证和银行单据请私聊单独发给我**，不要发在群里。
-
-麻烦您先告诉我**总共有多少个柜子**，今天回一句话就行。完整资料请在 **[DATE]**
-前发来。
-
-谢谢您。资料齐全对您也是保护 —— 一次归档到位，几个月后就不会再有人回头找您。
-
-[YOUR NAME]
+Nelson
+Bonzini 首席运营官（COO）
