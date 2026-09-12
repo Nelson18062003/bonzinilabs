@@ -16,6 +16,7 @@ export type CargoEvent = Database['public']['Tables']['cargo_events']['Row'];
 export type CargoVesselPosition = Database['public']['Tables']['cargo_vessel_positions']['Row'];
 export type CargoLookup = Database['public']['Tables']['cargo_lookups']['Row'];
 export type CargoDocument = Database['public']['Tables']['cargo_documents']['Row'];
+export type CargoCost = Database['public']['Tables']['cargo_costs']['Row'];
 
 export type CargoStatus = 'BOOKED' | 'AT_ORIGIN' | 'AT_SEA' | 'ARRIVED' | 'DELIVERED' | 'UNKNOWN';
 
@@ -243,4 +244,59 @@ export const WAX1_ROUTE: LatLng[] = [
   [2.8, 101.0], [5.5, 98.0], [5.0, 93.0], [0.0, 80.0], [-15.0, 60.0], [-28.0, 48.0], [-33.0, 35.0],
   [-36.0, 22.0], [-34.3, 17.5], [-28.0, 13.5], [-20.4, 9.9], [-12.0, 8.5], [-3.0, 6.0], [2.0, 2.0],
   [4.5, -3.5], [5.33, -4.02], [4.2, -1.5], [5.4, 2.5], [6.43, 3.98], [4.6, 5.0], [2.8, 8.0], [2.6, 9.5], [2.936, 9.909],
+];
+
+/* ── Coûts du dossier ─────────────────────────────────────────────────────
+ * L'ordre est celui où les coûts tombent dans la chaîne (manuel cargo,
+ * chapitre « anatomie complète d'un coût »). */
+export const COST_KINDS = [
+  'FREIGHT', 'SURCHARGE', 'THC', 'BESC', 'INSURANCE', 'CUSTOMS_DUTY', 'CUSTOMS_FEE',
+  'DEMURRAGE', 'STORAGE', 'TRANSIT', 'TRUCKING', 'OTHER',
+] as const;
+
+export const COST_KIND_LABEL: Record<string, string> = {
+  FREIGHT: 'Fret maritime',
+  SURCHARGE: 'Surcharges (BAF, CAF…)',
+  THC: 'Manutention portuaire (THC)',
+  BESC: 'BESC',
+  INSURANCE: 'Assurance',
+  CUSTOMS_DUTY: 'Droits de douane',
+  CUSTOMS_FEE: 'Frais de douane et taxes',
+  DEMURRAGE: 'Surestaries / détention',
+  STORAGE: 'Stockage au port',
+  TRANSIT: 'Transitaire (honoraires)',
+  TRUCKING: 'Transport final',
+  OTHER: 'Autre',
+};
+
+export const CURRENCY_LABEL: Record<string, string> = { XAF: 'XAF', USD: '$', EUR: '€', CNY: '¥' };
+
+export function fmtMoney(amount: number | null | undefined, currency = 'XAF'): string {
+  if (amount == null) return '—';
+  const n = Math.round(amount).toLocaleString('fr-FR');
+  return currency === 'XAF' ? `${n} XAF` : `${n} ${CURRENCY_LABEL[currency] ?? currency}`;
+}
+
+/* ── Documents : ce qu'un dossier d'import camerounais exige ───────────────
+ * `required` = pièce sans laquelle on ne sort pas le conteneur (manuel cargo,
+ * « le dossier documentaire, pièce par pièce »). */
+export const DOCUMENT_KINDS: { kind: string; label: string; required: boolean; who: string }[] = [
+  { kind: 'BL', label: 'Bill of lading', required: true, who: "émis par l'armateur — titre de la marchandise" },
+  { kind: 'TELEX', label: 'Télex release', required: true, who: "libération du B/L par l'armateur, après paiement du fret" },
+  { kind: 'INVOICE', label: 'Facture commerciale', required: true, who: 'émise par le fournisseur — base de la valeur en douane' },
+  { kind: 'PACKING_LIST', label: 'Packing list', required: true, who: 'émise par le fournisseur — détail des colis et des poids' },
+  { kind: 'BESC', label: 'BESC', required: true, who: 'Conseil national des chargeurs — obligatoire à l’import au Cameroun' },
+  { kind: 'CUSTOMS', label: 'Pièces de douane', required: false, who: 'déclaration, quittance, bon à enlever' },
+  { kind: 'OTHER', label: 'Autre pièce', required: false, who: 'certificat d’origine, assurance, ANOR/PECAE…' },
+];
+
+/* ── Jalons camerounais après l'arrivée ───────────────────────────────────
+ * Ces dates sont saisies à la main : aucun armateur ne les publie. */
+export const ARRIVAL_STEPS: { key: keyof CargoShipment; label: string; hint: string }[] = [
+  { key: 'arrival_notice_at', label: 'Avis d’arrivée reçu', hint: 'le consignataire annonce le déchargement' },
+  { key: 'free_time_ends_on', label: 'Fin de franchise', hint: 'au-delà, les surestaries courent' },
+  { key: 'customs_cleared_at', label: 'Douane liquidée', hint: 'déclaration acceptée et droits payés' },
+  { key: 'delivery_order_at', label: 'Bon à enlever', hint: 'le port autorise la sortie' },
+  { key: 'gate_out_at', label: 'Conteneur sorti du port', hint: 'chargé sur camion' },
+  { key: 'empty_returned_at', label: 'Vide restitué', hint: 'fin de la détention' },
 ];

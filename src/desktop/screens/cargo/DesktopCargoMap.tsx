@@ -7,20 +7,20 @@
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Expand, Layers, Maximize2, Minimize2, Ship } from 'lucide-react';
+import { ArrowLeft, Expand, Globe2, Layers, Maximize2, Minimize2, Ship } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments, useCargoVesselPositions } from '@/hooks/useCargo';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { CargoMap } from '@/components/cargo/CargoMap';
 import { DEFAULT_LAYERS } from '@/lib/cargo/layers';
 import type { MapLayers } from '@/lib/cargo/layers';
-import { CargoDossierDialog } from '@/components/cargo/CargoDetail';
+import { CargoQuickView } from '@/components/cargo/CargoQuickView';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, vesselLiveStatus } from '@/lib/cargo/geo';
 import { bestEta, daysUntilArrival, etaSlipDays, fmtDay, positionAge, statusMeta } from '@/lib/cargo/model';
 import type { CargoShipment } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, SOFT_PILL, Card, Chip, SearchField, RefChip, StatusPill } from '@/desktop/designKit';
+import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, Card, Chip, SearchField, RefChip, StatusPill } from '@/desktop/designKit';
 
 type Filter = 'all' | 'route' | 'soon' | 'unpaid' | 'nopos';
 
@@ -62,6 +62,7 @@ export function DesktopCargoMap() {
   const [layers, setLayers] = useState<MapLayers>(DEFAULT_LAYERS);
   const [layersOpen, setLayersOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [globe, setGlobe] = useState(false);
   const [fitNonce, setFitNonce] = useState(1);
   const [resizeNonce, setResizeNonce] = useState(0);
 
@@ -151,11 +152,12 @@ export function DesktopCargoMap() {
         </Card>
 
         {/* ── Carte ────────────────────────────────────────────────────── */}
-        <Card className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+        <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden p-0">
           <CargoMap
             shipments={rows}
             positions={positions ?? []}
             layers={layers}
+            globe={globe}
             selectedVesselImo={selected}
             hoveredVesselImo={hovered}
             onSelectVessel={setSelected}
@@ -165,7 +167,7 @@ export function DesktopCargoMap() {
             className={cn('flex-1', fullscreen ? 'min-h-0' : 'min-h-[520px]')}
           />
           {/* Outils : couches · tout voir · plein écran */}
-          <div className="absolute right-3 top-3 z-[500] flex items-center gap-1.5">
+          <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
             <div className="relative">
               <button type="button" onClick={() => setLayersOpen((o) => !o)} className={cn('flex h-8 items-center gap-1.5 px-2.5 text-[12px] font-semibold', SOFT_PILL)}>
                 <Layers className="h-3.5 w-3.5" /> Couches
@@ -181,6 +183,9 @@ export function DesktopCargoMap() {
                 </div>
               )}
             </div>
+            <button type="button" onClick={() => setGlobe((g) => !g)} className={cn('flex h-8 items-center gap-1.5 px-2.5 text-[12px] font-semibold', globe ? PRIMARY_PILL : SOFT_PILL)} title="Vue globe">
+              <Globe2 className="h-3.5 w-3.5" /> Globe
+            </button>
             <button type="button" onClick={() => { setSelected(null); setFitNonce((n) => n + 1); }} className={cn('flex h-8 items-center gap-1.5 px-2.5 text-[12px] font-semibold', SOFT_PILL)} title="Tout voir">
               <Expand className="h-3.5 w-3.5" /> Tout voir
             </button>
@@ -199,7 +204,7 @@ export function DesktopCargoMap() {
         </Card>
       </div>
 
-      <CargoDossierDialog shipmentId={openId} onClose={() => setOpenId(null)} />
+      <CargoQuickView shipmentId={openId} onClose={() => setOpenId(null)} />
     </div>
   );
 }

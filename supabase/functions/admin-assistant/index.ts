@@ -87,19 +87,25 @@ const ATTACHMENT_BUCKET = "assistant-attachments";
 const ALLOWED_ATTACHMENT_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
 const MAX_ATTACHMENTS = 5;
 
-// Permissions par rôle — miroir de src/contexts/AdminAuthContext.tsx
+// Permissions par rôle — miroir EXACT de src/contexts/AdminAuthContext.tsx.
+// Les 14 clés doivent rester identiques des deux côtés : do_capability refuse
+// une capacité dont la clé est absente ici (perms[key] === undefined → falsy),
+// donc une clé oubliée rend l'action INVISIBLE à Mola pour TOUS les rôles,
+// super_admin compris. C'est ce qui est arrivé aux capacités Cargo.
 type PermKey =
   | "canViewClients" | "canEditClients"
   | "canViewDeposits" | "canProcessDeposits"
   | "canViewPayments" | "canProcessPayments"
-  | "canManageRates" | "canViewLogs" | "canManageUsers" | "canViewTreasury";
+  | "canManageRates" | "canViewLogs" | "canManageUsers" | "canViewTreasury"
+  | "canManageTreasury" | "canAccessSupportChat"
+  | "canViewCargo" | "canManageCargo";
 const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
-  super_admin:      { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: true,  canManageRates: true,  canViewLogs: true,  canManageUsers: true,  canViewTreasury: true },
-  ops:              { canViewClients: true,  canEditClients: false, canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: true,  canManageRates: true,  canViewLogs: true,  canManageUsers: false, canViewTreasury: false },
-  support:          { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: false, canViewPayments: true,  canProcessPayments: false, canManageRates: false, canViewLogs: true,  canManageUsers: false, canViewTreasury: false },
-  customer_success: { canViewClients: true,  canEditClients: true,  canViewDeposits: true,  canProcessDeposits: true,  canViewPayments: true,  canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
-  cash_agent:       { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true,  canProcessPayments: true,  canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false },
-  treasurer:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true },
+  super_admin:       { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: true , canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: true , canViewCargo: true , canManageCargo: true },
+  ops:               { canViewClients: true , canEditClients: false, canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: true },
+  support:           { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: false, canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false },
+  customer_success:  { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false },
+  cash_agent:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true , canProcessPayments: true , canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false },
+  treasurer:         { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: false, canViewCargo: false, canManageCargo: false },
 };
 
 function json(body: Record<string, unknown>, status = 200) {
