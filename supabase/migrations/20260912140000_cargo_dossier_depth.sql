@@ -64,11 +64,37 @@ DROP POLICY IF EXISTS cargo_costs_insert ON public.cargo_costs;
 CREATE POLICY cargo_costs_insert ON public.cargo_costs
   FOR INSERT TO authenticated WITH CHECK (public.admin_has_permission(auth.uid(), 'canManageCargo') AND created_by = auth.uid());
 
+-- Volontairement SANS « created_by = auth.uid() » : l'ops travaille à
+-- plusieurs sur un même dossier, et un collègue doit pouvoir cocher « payé »
+-- sur une ligne qu'il n'a pas saisie. La propriété est protégée autrement,
+-- par le déclencheur ci-dessous — une politique ne saurait pas distinguer
+-- « je modifie le montant » de « je me réattribue la ligne ».
 DROP POLICY IF EXISTS cargo_costs_update ON public.cargo_costs;
 CREATE POLICY cargo_costs_update ON public.cargo_costs
   FOR UPDATE TO authenticated
   USING (public.admin_has_permission(auth.uid(), 'canManageCargo'))
   WITH CHECK (public.admin_has_permission(auth.uid(), 'canManageCargo'));
+
+-- Deux colonnes sont posées à la création et ne se réécrivent jamais :
+-- l'auteur (sinon la trace de qui a saisi le coût se perd) et le dossier
+-- (sinon un coût peut être déplacé d'un conteneur à l'autre, ce qui fausse
+-- le prix de revient des deux). On les rétablit en silence plutôt que de
+-- refuser la mise à jour : le reste du patch est légitime.
+CREATE OR REPLACE FUNCTION public.cargo_costs_freeze_owner()
+RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  NEW.created_by  := OLD.created_by;
+  NEW.shipment_id := OLD.shipment_id;
+  NEW.created_at  := OLD.created_at;
+  RETURN NEW;
+END; $$;
+REVOKE ALL ON FUNCTION public.cargo_costs_freeze_owner() FROM public, anon, authenticated;
+COMMENT ON FUNCTION public.cargo_costs_freeze_owner() IS
+  '@mola:{"expose":false,"kind":"write","permission":"canManageCargo","label":"Figer auteur et dossier d''une ligne de cout (declencheur interne)"}';
+
+DROP TRIGGER IF EXISTS cargo_costs_freeze ON public.cargo_costs;
+CREATE TRIGGER cargo_costs_freeze BEFORE UPDATE ON public.cargo_costs
+  FOR EACH ROW EXECUTE FUNCTION public.cargo_costs_freeze_owner();
 
 DROP POLICY IF EXISTS cargo_costs_delete ON public.cargo_costs;
 CREATE POLICY cargo_costs_delete ON public.cargo_costs
