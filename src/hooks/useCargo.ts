@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { validateUploadFile } from '@/lib/utils';
-import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import { shouldPollLookup } from '@/lib/cargo/lookup';
+import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
 
@@ -151,7 +152,12 @@ export function useRequestCargoLookup() {
   });
 }
 
-/** Sonde la recherche toutes les 1,5 s tant qu'elle est en cours. */
+/**
+ * Sonde la recherche toutes les 1,5 s tant qu'elle est en cours — mais PAS
+ * indéfiniment. `net.http_post` est un tir sans retour : si l'edge function
+ * n'est pas déployée, la ligne reste `pending` pour toujours et on sonderait
+ * jusqu'à la fermeture de l'onglet. Voir src/lib/cargo/lookup.ts.
+ */
 export function useCargoLookup(lookupId: string | null) {
   return useQuery({
     queryKey: ['cargo', 'lookup', lookupId],
@@ -161,7 +167,7 @@ export function useCargoLookup(lookupId: string | null) {
       if (error) throw error;
       return data as CargoLookup;
     },
-    refetchInterval: (q) => (q.state.data?.status === 'pending' ? 1_500 : false),
+    refetchInterval: (q) => (shouldPollLookup(q.state.data) ? 1_500 : false),
   });
 }
 
@@ -302,6 +308,71 @@ export function useDeleteCargoCost() {
       if (error) throw error;
     },
     onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'costs', v.shipmentId] }),
+    onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
+  });
+}
+
+/* ── Colis du conteneur (ce qu'il y a dedans) ───────────────────────────── */
+
+export function useCargoPackages(shipmentId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'packages', shipmentId],
+    enabled: !!shipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_packages')
+        .select('*')
+        .eq('shipment_id', shipmentId!)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as CargoPackage[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export type CargoPackageInput = Pick<CargoPackage, 'label' | 'kind' | 'qty' | 'length_cm' | 'width_cm' | 'height_cm'> &
+  Partial<Pick<CargoPackage, 'weight_kg' | 'stackable' | 'supplier' | 'note' | 'position'>>;
+
+export function useAddCargoPackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shipmentId, pkg }: { shipmentId: string; pkg: CargoPackageInput }) => {
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      const { error } = await supabaseAdmin.from('cargo_packages').insert({ ...pkg, shipment_id: shipmentId, created_by: uid });
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success('Colis ajouté');
+      qc.invalidateQueries({ queryKey: ['cargo', 'packages', v.shipmentId] });
+    },
+    onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+export function useUpdateCargoPackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<CargoPackage>; shipmentId: string }) => {
+      const { error } = await supabaseAdmin.from('cargo_packages').update(patch).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'packages', v.shipmentId] }),
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
+  });
+}
+
+export function useDeleteCargoPackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; shipmentId: string }) => {
+      const { error } = await supabaseAdmin.from('cargo_packages').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'packages', v.shipmentId] }),
     onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
   });
 }

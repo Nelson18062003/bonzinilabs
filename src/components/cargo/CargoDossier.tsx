@@ -9,7 +9,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipment } from '@/hooks/useCargo';
 import {
   DossierHeader, DossierTabsBar,
-  TabApercu, TabClient, TabCouts, TabDocuments, TabDouane, TabNotes, TabSuivi,
+  TabApercu, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabNotes, TabSuivi,
 } from '@/components/cargo/dossier';
 import { DOSSIER_TABS, type DossierTab } from '@/lib/cargo/dossierNav';
 import { cn } from '@/lib/utils';
@@ -57,6 +57,7 @@ export function CargoDossier({
       <div className="mt-3 pb-10">
         {tab === 'apercu' && <TabApercu shipment={s} />}
         {tab === 'suivi' && <TabSuivi shipment={s} />}
+        {tab === 'chargement' && <TabChargement shipment={s} canManage={canManage} />}
         {tab === 'documents' && <TabDocuments shipment={s} canManage={canManage} />}
         {tab === 'douane' && <TabDouane shipment={s} canManage={canManage} />}
         {tab === 'couts' && <TabCouts shipment={s} canManage={canManage} />}

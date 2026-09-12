@@ -17,6 +17,8 @@ export type CargoVesselPosition = Database['public']['Tables']['cargo_vessel_pos
 export type CargoLookup = Database['public']['Tables']['cargo_lookups']['Row'];
 export type CargoDocument = Database['public']['Tables']['cargo_documents']['Row'];
 export type CargoCost = Database['public']['Tables']['cargo_costs']['Row'];
+/** Un lot de colis identiques dans un conteneur — une ligne de packing list. */
+export type CargoPackage = Database['public']['Tables']['cargo_packages']['Row'];
 
 export type CargoStatus = 'BOOKED' | 'AT_ORIGIN' | 'AT_SEA' | 'ARRIVED' | 'DELIVERED' | 'UNKNOWN';
 

@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { AttributionControl, Layer, Marker, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
 import type { MapRef } from 'react-map-gl/maplibre';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { FeatureCollection, LineString } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTheme } from 'next-themes';
@@ -22,11 +23,31 @@ import type { VesselOnMap } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, nearestPort, portCounts, vesselLiveStatus, vesselTrack } from '@/lib/cargo/geo';
 import { DEFAULT_LAYERS } from '@/lib/cargo/layers';
 import type { MapLayers } from '@/lib/cargo/layers';
+import { ALERT, ALERT_ORDER, alertTally, mapInk, worstAlert } from '@/lib/cargo/palette';
+import type { AlertLevel } from '@/lib/cargo/palette';
 export type { MapLayers };
 
 const STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/positron';
 const STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
 const toLngLat = (p: LatLng): [number, number] => [p[1], p[0]];
+
+/**
+ * Le fond de carte livre un océan gris (positron : rgb(194,200,202) ; dark :
+ * rgb(27,27,29)). Sur une carte maritime c'est presque tout l'écran, et c'est
+ * ce qui rendait la carte éteinte. On repeint l'eau après le chargement du
+ * style, plutôt que d'adopter un fond bariolé qui écraserait les marqueurs.
+ */
+function paintWater(map: MapLibreMap, water: string) {
+  for (const layer of map.getStyle()?.layers ?? []) {
+    if (layer.type !== 'fill') continue;
+    if (!/water|ocean|sea/i.test(layer.id)) continue;
+    try {
+      map.setPaintProperty(layer.id, 'fill-color', water);
+    } catch {
+      // Une couche absente d'un style à l'autre ne doit pas casser la carte.
+    }
+  }
+}
 
 function line(coords: LatLng[], props: Record<string, unknown>): GeoJSON.Feature<LineString> {
   return { type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords.map(toLngLat) } };
@@ -63,6 +84,27 @@ function VesselCard({ v, onOpenShipment }: { v: VesselOnMap; onOpenShipment?: (i
         </button>
       ))}
       {live && <a href={live} target="_blank" rel="noopener noreferrer">Position en direct ↗</a>}
+    </div>
+  );
+}
+
+/**
+ * La légende — obligatoire, pas décorative. La palette de statut descend sous
+ * 3:1 sur l'eau claire ; la règle est alors de redire l'état en toutes lettres.
+ * C'est ici qu'on le fait, avec le compte de conteneurs dans chaque état.
+ */
+function MapLegend({ tally }: { tally: Record<AlertLevel, number> }) {
+  const shown = ALERT_ORDER.filter((k) => tally[k] > 0);
+  if (shown.length === 0) return null;
+  return (
+    <div className="cargo-legend">
+      {shown.map((k) => (
+        <span key={k} className="cargo-legend__item">
+          <i className="cargo-legend__dot" style={{ background: ALERT[k].hex }} aria-hidden />
+          {ALERT[k].label}
+          <b>{tally[k]}</b>
+        </span>
+      ))}
     </div>
   );
 }
@@ -138,12 +180,23 @@ export function CargoMap({
     if (v) mapRef.current?.flyTo({ center: [v.position.longitude, v.position.latitude], zoom: Math.max(mapRef.current.getZoom(), 4.5), padding: { top: 260, bottom: 0, left: 0, right: 0 }, duration: 700 });
   }, [selectedVesselImo, vessels, mini, loaded]);
 
-  const ink = dark ? '#e2e2e2' : '#171717';
-  const faint = dark ? '#7a7a7a' : '#b0b0b0';
+  const C = mapInk(dark);
   const selectedVessel = vessels.find((v) => v.position.vessel_imo === selectedVesselImo) ?? null;
+  const tally = useMemo(() => alertTally(shipments), [shipments]);
+
+  // L'eau est repeinte à chaque chargement de style — donc aussi au basculement
+  // clair/sombre, qui recharge le style et perdrait la peinture sans cela.
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !loaded) return;
+    paintWater(map, C.water);
+    const again = () => paintWater(map, C.water);
+    map.on('styledata', again);
+    return () => { map.off('styledata', again); };
+  }, [loaded, C.water]);
 
   return (
-    <div className={className}>
+    <div className={['cargo-map-wrap', className].filter(Boolean).join(' ')}>
       <Map
         ref={mapRef}
         mapStyle={dark ? STYLE_DARK : STYLE_LIGHT}
@@ -163,15 +216,17 @@ export function CargoMap({
 
         {layers.routes && (
           <Source id="wax1" type="geojson" data={routeGeo}>
-            <Layer id="wax1-line" type="line" paint={{ 'line-color': faint, 'line-width': 1.2, 'line-dasharray': [1, 4], 'line-opacity': 0.9 }} />
+            <Layer id="wax1-line" type="line" paint={{ 'line-color': C.routeFaint, 'line-width': 1.2, 'line-dasharray': [1, 4], 'line-opacity': 0.9 }} />
           </Source>
         )}
         {layers.routes && (
           <Source id="tracks" type="geojson" data={tracksGeo}>
+            {/* Parcouru : trait plein et teinté. Restant : même teinte, pâlie et pointillée.
+                Une seule teinte pour la route, pour ne pas rivaliser avec les statuts. */}
             <Layer id="track-sailed" type="line" filter={['==', ['get', 'kind'], 'sailed']} layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-              paint={{ 'line-color': ink, 'line-width': ['case', ['==', ['get', 'sel'], 1], 2.8, 1.8], 'line-opacity': ['case', ['==', ['get', 'sel'], 1], 1, 0.75] }} />
+              paint={{ 'line-color': C.route, 'line-width': ['case', ['==', ['get', 'sel'], 1], 3.2, 2], 'line-opacity': ['case', ['==', ['get', 'sel'], 1], 1, 0.85] }} />
             <Layer id="track-remaining" type="line" filter={['==', ['get', 'kind'], 'remaining']}
-              paint={{ 'line-color': ink, 'line-width': ['case', ['==', ['get', 'sel'], 1], 2.2, 1.4], 'line-dasharray': [3, 4], 'line-opacity': ['case', ['==', ['get', 'sel'], 1], 0.9, 0.55] }} />
+              paint={{ 'line-color': C.routeFaint, 'line-width': ['case', ['==', ['get', 'sel'], 1], 2.4, 1.6], 'line-dasharray': [3, 4], 'line-opacity': ['case', ['==', ['get', 'sel'], 1], 1, 0.7] }} />
           </Source>
         )}
 
@@ -189,13 +244,25 @@ export function CargoMap({
         {vessels.map((v) => {
           const imo = v.position.vessel_imo;
           const status = vesselLiveStatus(v.position);
-          const cls = ['cargo-ship', `is-${status}`, imo === selectedVesselImo ? 'is-selected' : '', imo === hoveredVesselImo ? 'is-hover' : ''].filter(Boolean).join(' ');
+          // La teinte dit l'état du pire conteneur à bord ; l'anneau la détache
+          // de la mer et de la route ; l'étiquette la redit en toutes lettres.
+          const alert = worstAlert(v.shipments);
+          const cls = ['cargo-ship', `is-${status}`, `alert-${alert}`, imo === selectedVesselImo ? 'is-selected' : '', imo === hoveredVesselImo ? 'is-hover' : ''].filter(Boolean).join(' ');
           return (
-            <Marker key={imo} longitude={v.position.longitude} latitude={v.position.latitude} anchor="center" style={{ zIndex: imo === selectedVesselImo ? 10 : 2 }}
+            <Marker key={imo} longitude={v.position.longitude} latitude={v.position.latitude} anchor="center" style={{ zIndex: imo === selectedVesselImo ? 10 : ALERT[alert].rank + 2 }}
               onClick={(e) => { e.originalEvent.stopPropagation(); onSelectVessel?.(imo); }}>
-              <span className={cls}>
+              <span
+                className={cls}
+                style={{ ['--alert' as string]: ALERT[alert].hex, ['--ring' as string]: C.ring }}
+                title={`${v.position.vessel_name ?? imo} — ${ALERT[alert].label}`}
+              >
                 {!mini && v.shipments.length > 0 && <b>{v.shipments.length}</b>}
-                {layers.labels && !mini && <span className="cargo-ship__label">{v.position.vessel_name ?? imo}</span>}
+                {layers.labels && !mini && (
+                  <span className="cargo-ship__label">
+                    {v.position.vessel_name ?? imo}
+                    <em>{ALERT[alert].label}</em>
+                  </span>
+                )}
               </span>
             </Marker>
           );
@@ -227,6 +294,7 @@ export function CargoMap({
           </Popup>
         )}
       </Map>
+      {!mini && <MapLegend tally={tally} />}
     </div>
   );
 }
