@@ -72,7 +72,13 @@ export function MobileCargoCout({ desktop = false }: { desktop?: boolean } = {})
 
   return (
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
-      {!desktop && <MobileHeader title="Le coût à quai" showBack backTo={shipmentId ? `/m/cargo/${shipmentId}/couts` : '/m/cargo'} />}
+      {desktop ? (
+        <header className="mb-2 px-5 pt-4">
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>Le coût à quai</h2>
+        </header>
+      ) : (
+        <MobileHeader title="Le coût à quai" showBack backTo={shipmentId ? `/m/cargo/${shipmentId}/couts` : '/m/cargo'} />
+      )}
 
       <div className={cn('flex flex-col gap-6 px-5 pb-10 pt-4', SURFACE.canvas)}>
         <Line>
