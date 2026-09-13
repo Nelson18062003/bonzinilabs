@@ -146,19 +146,19 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
             {isStarting && !cameraError && (
               <div className="flex h-72 flex-col items-center justify-center gap-3">
                 <Holder icon={Camera} size="lg" className="animate-pulse" />
-                <p className={cn('text-sm', TEXT.muted)}>Démarrage de la caméra…</p>
+                <p className={cn('text-[16px]', TEXT.muted)}>Démarrage de la caméra…</p>
               </div>
             )}
             {cameraError && (
               <div className="flex h-72 flex-col items-center justify-center gap-3 p-6 text-center">
                 <Holder icon={AlertCircle} tone="danger" size="lg" />
-                <p className={cn('text-sm', TEXT.muted)}>{cameraError}</p>
+                <p className={cn('text-[16px]', TEXT.muted)}>{cameraError}</p>
               </div>
             )}
             <div id="client-code-qr-reader" className={cameraError ? 'hidden' : ''} style={{ width: '100%' }} />
             {!cameraError && !isStarting && (
               <div className="p-3 text-center">
-                <div className={cn('flex items-center justify-center gap-2 text-sm', TEXT.muted)}>
+                <div className={cn('flex items-center justify-center gap-2 text-[16px]', TEXT.muted)}>
                   {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
                   <span>{resolving ? 'Recherche du client…' : 'Cadrez le QR code de l’étiquette'}</span>
                 </div>
@@ -167,10 +167,10 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
           </Card>
         )}
 
-        <p className={cn('px-1 pt-1 text-xs font-bold uppercase tracking-wider', TEXT.muted)}>Saisie manuelle</p>
+        <p className={cn('px-1 pt-1 text-[14px] font-semibold uppercase tracking-wider', TEXT.muted)}>Saisie manuelle</p>
 
         <Card className="space-y-3">
-          <p className={cn('text-sm', TEXT.muted)}>
+          <p className={cn('text-[16px]', TEXT.muted)}>
             L’identifiant tel qu’il figure sur le virement ou le carton : <span className={cn('font-bold tabular-nums', TEXT.strong)}>BZ-482913</span>
           </p>
           <div className="flex gap-2">

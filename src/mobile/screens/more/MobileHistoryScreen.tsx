@@ -16,18 +16,7 @@ import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  type Tone,
-  Card,
-  Avatar,
-  StatusPill,
-  TextInput,
-  Holder,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, type Tone, Card, Avatar, StatusPill, TextInput, Holder, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
 
 const FILTERS = [
   { value: 'all', label: 'Tous' },
@@ -107,8 +96,8 @@ export function MobileHistoryScreen() {
                 key={filter.value}
                 onClick={() => setTypeFilter(filter.value)}
                 className={cn(
-                  'whitespace-nowrap px-4 py-2 text-[13px] font-semibold transition-colors',
-                  typeFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+                  'whitespace-nowrap px-4 py-2 text-[14px] font-semibold transition-colors',
+                  typeFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
                 )}
               >
                 {filter.label}
@@ -134,7 +123,7 @@ export function MobileHistoryScreen() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{name}</p>
-                          <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
+                          <p className={cn('mt-0.5 truncate text-[14px]', TEXT.muted)}>
                             {log.action_type}
                           </p>
                         </div>
@@ -148,7 +137,7 @@ export function MobileHistoryScreen() {
                           }
                         />
                       </div>
-                      <p className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                      <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
                         {formatDate(log.created_at)}
                       </p>
                     </div>

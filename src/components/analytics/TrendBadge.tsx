@@ -25,7 +25,7 @@ export function TrendBadge({
       <span
         className={cn(
           'inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground',
-          size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs',
+          size === 'sm' ? 'px-1.5 py-0.5 text-[14px] max-lg:text-[14px]' : 'px-2 py-1 text-xs max-lg:text-[14px]',
           className,
         )}
       >
@@ -51,7 +51,7 @@ export function TrendBadge({
     <span
       className={cn(
         'inline-flex items-center gap-0.5 rounded-full font-semibold tabular-nums',
-        size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs',
+        size === 'sm' ? 'px-1.5 py-0.5 text-[14px] max-lg:text-[14px]' : 'px-2 py-1 text-xs max-lg:text-[14px]',
         palette,
         className,
       )}

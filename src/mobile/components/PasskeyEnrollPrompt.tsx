@@ -106,14 +106,14 @@ export function PasskeyEnrollPrompt() {
           'ring-1 ring-black/[0.08] dark:ring-white/[0.08]',
         )}
       >
-        <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#EDEAFA] text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]">
+        <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
           <Fingerprint className="h-6 w-6" />
         </div>
 
-        <h2 className={cn('mt-4 text-[19px] font-extrabold leading-tight tracking-tight', TEXT.strong)}>
+        <h2 className={cn('mt-4 text-[20px] font-bold leading-tight tracking-tight', TEXT.strong)}>
           {t('passkeyPromptTitle', { defaultValue: 'Se connecter plus vite la prochaine fois' })}
         </h2>
-        <p className={cn('mt-2 text-[13.5px] leading-relaxed', TEXT.muted)}>
+        <p className={cn('mt-2 text-[14px] leading-relaxed', TEXT.muted)}>
           {t('passkeyPromptBody', {
             defaultValue:
               'Utilisez le déverrouillage de votre appareil pour ouvrir Bonzini Admin. Plus de code à saisir, plus de mot de passe à retenir.',
@@ -124,7 +124,7 @@ export function PasskeyEnrollPrompt() {
           type="button"
           onClick={activate}
           disabled={busy}
-          className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#1C1B22] text-[15px] font-bold text-white transition active:scale-[0.99] disabled:opacity-50 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+          className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#2C2C2C] text-[16px] font-bold text-white transition active:scale-[0.99] disabled:opacity-50 dark:bg-[#E3E3E3] dark:text-[#1E1E1E]"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Fingerprint className="h-[18px] w-[18px]" />}
           {t('passkeyPromptActivate', { defaultValue: 'Activer' })}
@@ -133,7 +133,7 @@ export function PasskeyEnrollPrompt() {
         <button
           type="button"
           onClick={dismiss}
-          className={cn('mt-3 h-11 w-full text-[13.5px] font-semibold', TEXT.muted)}
+          className={cn('mt-3 h-11 w-full text-[14px] font-semibold', TEXT.muted)}
         >
           {t('later', { defaultValue: 'Plus tard' })}
         </button>

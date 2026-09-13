@@ -52,28 +52,28 @@ export function RateHistoryCard({ rate, previousRate, isLast }: RateHistoryCardP
         className="flex w-full items-center gap-3 py-3 text-left"
       >
         {/* Holder neutre (maquette) */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2A2738]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
           <ArrowLeftRight className={cn('h-4 w-4', TEXT.strong)} />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className={cn('text-[14px] font-bold', TEXT.strong)}>{dateStr}</span>
+            <span className={cn('text-[16px] font-bold', TEXT.strong)}>{dateStr}</span>
             {rate.is_active && <StatusPill tone="success" label="Actif" />}
             {variationStr && (
               <span
                 className={cn(
-                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums',
+                  'inline-flex items-center rounded-lg px-2 py-0.5 text-[16px] font-bold tabular-nums',
                   isPositive
-                    ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
-                    : 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]',
+                    ? 'bg-[#CFF7D3] text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]'
+                    : 'bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]',
                 )}
               >
                 {variationStr}
               </span>
             )}
           </div>
-          <div className={cn('mt-0.5 truncate text-[12px] tabular-nums', TEXT.muted)}>
+          <div className={cn('mt-0.5 truncate text-[16px] tabular-nums', TEXT.muted)}>
             ¥ {PAYMENT_METHODS.map((pm) => rateValues[pm.key].toLocaleString('fr-FR')).join(' · ')}
           </div>
         </div>
@@ -85,11 +85,11 @@ export function RateHistoryCard({ rate, previousRate, isLast }: RateHistoryCardP
       {open && (
         <div className="grid grid-cols-2 gap-2 pb-3">
           {PAYMENT_METHODS.map((pm) => (
-            <div key={pm.key} className={cn('flex items-center gap-2 rounded-xl px-2.5 py-2', SURFACE.canvas)}>
+            <div key={pm.key} className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2', SURFACE.canvas)}>
               <MethodLogo method={pm.key} size={26} />
               <div className="min-w-0">
-                <div className={cn('text-[11px]', TEXT.muted)}>{pm.label}</div>
-                <div className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
+                <div className={cn('text-[16px]', TEXT.muted)}>{pm.label}</div>
+                <div className={cn('text-[16px] font-bold tabular-nums', TEXT.strong)}>
                   {rateValues[pm.key].toLocaleString('fr-FR')}
                 </div>
               </div>

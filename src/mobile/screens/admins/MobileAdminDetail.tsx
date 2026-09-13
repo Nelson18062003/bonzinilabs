@@ -67,7 +67,7 @@ function ActionRow({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.99]"
+      className="flex w-full items-center gap-3.5 rounded-lg px-2 py-2.5 text-left transition active:scale-[0.99]"
     >
       <span
         className={cn(
@@ -78,10 +78,10 @@ function ActionRow({
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+        <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block truncate text-[12.5px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block truncate text-[14px]', TEXT.muted)}>{description}</span>}
       </span>
       <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
     </button>
@@ -210,8 +210,8 @@ export function MobileAdminDetail() {
             </div>
             <span
               className={cn(
-                'absolute bottom-1 right-1 h-4 w-4 rounded-full ring-2 ring-white dark:ring-[#211F2B]',
-                isActive ? 'bg-[#2E7D52] dark:bg-[#7FCBA0]' : 'bg-[#C0504D] dark:bg-[#E79A9A]',
+                'absolute bottom-1 right-1 h-4 w-4 rounded-full ring-2 ring-white dark:ring-[#2C2C2C]',
+                isActive ? 'bg-[#02542D] dark:bg-[#CFF7D3]' : 'bg-[#EC221F] dark:bg-[#FDD3D0]',
               )}
             />
           </div>
@@ -220,7 +220,7 @@ export function MobileAdminDetail() {
             {admin.firstName} {admin.lastName}
           </h2>
 
-          <div className={cn('mt-1 flex items-center justify-center gap-1.5 text-[13px]', TEXT.muted)}>
+          <div className={cn('mt-1 flex items-center justify-center gap-1.5 text-[14px]', TEXT.muted)}>
             <Mail className="h-3.5 w-3.5" />
             {admin.email}
           </div>
@@ -246,14 +246,14 @@ export function MobileAdminDetail() {
             icon={Calendar}
             tone="info"
             label={t('createdOn', { defaultValue: 'Créé le' })}
-            value={<span className="text-[15px]">{formatDate(admin.createdAt)}</span>}
+            value={<span className="text-[16px]">{formatDate(admin.createdAt)}</span>}
           />
           <StatCard
             icon={Clock}
             tone="pending"
             label={t('lastLogin', { defaultValue: 'Dernière connexion' })}
             value={
-              <span className="text-[15px]">
+              <span className="text-[16px]">
                 {admin.lastLoginAt
                   ? formatDistanceToNow(new Date(admin.lastLoginAt), { addSuffix: true, locale: fr })
                   : t('never', { defaultValue: 'Jamais' })}
@@ -267,10 +267,10 @@ export function MobileAdminDetail() {
           <div className="flex items-center gap-3">
             <Holder icon={Shield} tone={roleMeta(admin.role).tone} />
             <div>
-              <p className={cn('text-[15px] font-semibold', TEXT.strong)}>
+              <p className={cn('text-[16px] font-semibold', TEXT.strong)}>
                 {ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
               </p>
-              <p className={cn('text-[13px]', TEXT.muted)}>{t('assignedRole', { defaultValue: 'Rôle attribué' })}</p>
+              <p className={cn('text-[14px]', TEXT.muted)}>{t('assignedRole', { defaultValue: 'Rôle attribué' })}</p>
             </div>
           </div>
         </Card>
@@ -320,7 +320,7 @@ export function MobileAdminDetail() {
         onClose={() => setEditDrawerOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <Edit2 className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            <Edit2 className="h-5 w-5 text-[#1E1E1E] dark:text-[#F5F5F5]" />
             {t('editAdmin', { defaultValue: "Modifier l'admin" })}
           </span>
         }
@@ -354,15 +354,15 @@ export function MobileAdminDetail() {
                       key={role}
                       onClick={() => setEditRole(role)}
                       className={cn(
-                        'flex items-center gap-3 rounded-2xl p-3 text-left transition',
+                        'flex items-center gap-3 rounded-lg p-3 text-left transition',
                         SURFACE.card,
                         SURFACE.shadow,
-                        active && 'ring-2 ring-[#6B5BD2] dark:ring-[#A99BF0]',
+                        active && 'ring-2 ring-[#2C2C2C] dark:ring-[#E3E3E3]',
                       )}
                     >
                       <Holder icon={Shield} tone={roleMeta(role).tone} size="sm" />
                       <span className={cn('flex-1 text-[14px] font-semibold', TEXT.strong)}>{ADMIN_ROLE_LABELS[role]}</span>
-                      {active && <Check className="h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+                      {active && <Check className="h-4 w-4 text-[#1E1E1E] dark:text-[#F5F5F5]" />}
                     </button>
                   );
                 })}
@@ -389,7 +389,7 @@ export function MobileAdminDetail() {
         open={statusDrawerOpen}
         onClose={() => setStatusDrawerOpen(false)}
         title={
-          <span className={cn('flex items-center gap-2', isActive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+          <span className={cn('flex items-center gap-2', isActive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
             <AlertTriangle className="h-5 w-5" />
             {isActive ? t('deactivate', { defaultValue: 'Désactiver' }) : t('reactivate', { defaultValue: 'Réactiver' })} {t('theAdmin', { defaultValue: "l'admin" })}
           </span>
@@ -421,7 +421,7 @@ export function MobileAdminDetail() {
         onClose={() => setResetDrawerOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            <Key className="h-5 w-5 text-[#1E1E1E] dark:text-[#F5F5F5]" />
             {t('resetPasswordAction', { defaultValue: 'Réinitialiser le mot de passe' })}
           </span>
         }
@@ -448,7 +448,7 @@ export function MobileAdminDetail() {
         onClose={() => setPasswordResultDrawerOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
+            <Check className="h-5 w-5 text-[#02542D] dark:text-[#CFF7D3]" />
             {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
           </span>
         }
@@ -457,11 +457,11 @@ export function MobileAdminDetail() {
           <p className={cn('text-[14px]', TEXT.muted)}>
             {t('copyPasswordOtherMessage', { defaultValue: "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur." })}
           </p>
-          <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-4', SURFACE.canvas)}>
-            <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>
+          <div className={cn('flex items-center justify-between gap-3 rounded-lg p-4', SURFACE.canvas)}>
+            <code className={cn('font-mono text-[20px]', TEXT.strong)}>{newPassword}</code>
             <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
           </div>
-          <p className="rounded-2xl bg-[#F8EFD8] p-3 text-[13px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <p className="rounded-lg bg-[#FFF1C2] p-3 text-[14px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
             {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
           </p>
         </div>

@@ -93,13 +93,13 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
             label: t(`myCode.dest.${d}`, { defaultValue: DESTINATION_LABEL[d].fr }),
           }))}
         />
-        <p className={cn('mt-2 px-1 text-[12px] leading-snug', TEXT.muted)}>
+        <p className={cn('mt-2 px-1 text-[14px] leading-snug', TEXT.muted)}>
           {destination === 'warehouse'
             ? t('myCode.destHintWarehouse', { defaultValue: 'Pour la plupart des envois. Le fournisseur livre directement à notre entrepôt.' })
             : t('myCode.destHintOffice', { defaultValue: 'Uniquement si Bonzini vous l’a demandé pour cet envoi.' })}
         </p>
         {!destConfigured && (
-          <p className={cn('mt-2 rounded-xl px-3 py-2 text-[12px]', SURFACE.inset, TEXT.body)}>
+          <p className={cn('mt-2 rounded-lg px-3 py-2 text-[14px]', SURFACE.inset, TEXT.body)}>
             {t('myCode.destUnavailable', { defaultValue: 'Adresse en cours de mise à jour — l’étiquette sera disponible très bientôt.' })}
           </p>
         )}
@@ -107,7 +107,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
 
       {/* 2 · Fournisseur (facultatif) : imprimé s'il est connu, sinon lignes vides */}
       <div className={cn('rounded-2xl p-3', SURFACE.inset)}>
-        <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
+        <div className={cn('mb-2 text-[14px] font-semibold uppercase tracking-wider', TEXT.muted)}>
           {t('myCode.supplierTitle', { defaultValue: 'Fournisseur (facultatif)' })}
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -116,7 +116,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
           <div className="col-span-2">{field('email', t('myCode.supplierEmail', { defaultValue: 'E-mail' }))}</div>
           <div className="col-span-2">{field('address', t('myCode.supplierAddress', { defaultValue: 'Adresse (en Chine)' }))}</div>
         </div>
-        <p className={cn('mt-2 text-[11.5px] leading-snug', TEXT.muted)}>
+        <p className={cn('mt-2 text-[14px] leading-snug', TEXT.muted)}>
           {t('myCode.supplierHint', { defaultValue: 'Laissez vide : le fournisseur remplira ces lignes au stylo.' })}
         </p>
       </div>
@@ -159,7 +159,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
           type="button"
           onClick={() => run('share')}
           disabled={!canExport}
-          className={cn('flex items-center justify-center gap-2 py-3 text-[13.5px] font-bold transition active:scale-[0.98] disabled:opacity-60', PRIMARY_PILL)}
+          className={cn('flex items-center justify-center gap-2 py-3 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60', PRIMARY_PILL)}
         >
           {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
           {t('myCode.shareLabel', { defaultValue: 'Partager l’image' })}
@@ -168,7 +168,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
           type="button"
           onClick={() => run('pdf')}
           disabled={!canExport}
-          className={cn('flex items-center justify-center gap-2 py-3 text-[13.5px] font-bold transition active:scale-[0.98] disabled:opacity-60', SOFT_PILL)}
+          className={cn('flex items-center justify-center gap-2 py-3 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60', SOFT_PILL)}
         >
           {busy === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           {t('myCode.downloadPdf', { defaultValue: 'PDF à imprimer' })}

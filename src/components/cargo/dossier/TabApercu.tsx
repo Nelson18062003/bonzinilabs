@@ -27,9 +27,11 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
   const live = liveVesselUrl(s.vessel_imo);
 
   return (
+    // Sur mobile les deux colonnes s'effacent (`contents`) et chaque section
+    // prend son rang : ce qu'il reste à faire d'abord, la carte en dernier.
     <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-5 max-lg:grid-cols-1">
-      <div className="space-y-5">
-        <Section title="Où est-il ?" meta={vessel ? fmtDayTime(new Date(vessel.position.reported_at)) : undefined}>
+      <div className="lg:space-y-5 max-lg:contents">
+        <Section className="max-lg:order-2" title="Où est-il ?" meta={vessel ? fmtDayTime(new Date(vessel.position.reported_at)) : undefined}>
           <p className={cn('text-[17px] font-bold leading-snug', TEXT.strong)}>{whereIs(s, vessel?.position ?? null)}</p>
           {vessel && liveStatus ? (
             <Facts cols={3}>
@@ -42,7 +44,7 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
               <Fact label="Position" value={fmtLatLng(vessel.position.latitude, vessel.position.longitude)} hint={liveStatus === 'stale' ? 'hors couverture AIS' : 'relevé AIS'} />
             </Facts>
           ) : (
-            <p className={cn('mt-2 text-[13px]', TEXT.muted)}>
+            <p className={cn('mt-2 text-[13px] max-lg:text-[14px]', TEXT.muted)}>
               {s.status === 'UNKNOWN'
                 ? `${CARRIER_LABEL[s.carrier] ?? s.carrier} n'est pas encore interrogeable : les dates viennent du transitaire. Renseigne le navire (menu ⋯) pour suivre sa position.`
                 : "Aucune position de navire pour l'instant."}
@@ -50,7 +52,7 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
           )}
         </Section>
 
-        <Section title="Parcours" meta={progress ? `jour ${progress.day} sur ${progress.total}` : undefined}>
+        <Section className="max-lg:order-3" title="Parcours" meta={progress ? `jour ${progress.day} sur ${progress.total}` : undefined}>
           <CargoJourney shipment={s} position={vessel?.position ?? null} />
           <div className="mt-5 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
             <Facts cols={4}>
@@ -70,7 +72,7 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
           </div>
         </Section>
 
-        <Section title="La marchandise">
+        <Section className="max-lg:order-5" title="La marchandise">
           <Facts cols={4}>
             <Fact label="Type de boîte" value={s.container_iso === '45G1' ? "40' High Cube" : s.container_iso ?? '—'} />
             <Fact label="Marchandise" value={s.goods_description ?? '—'} />
@@ -80,21 +82,21 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
         </Section>
       </div>
 
-      <div className="space-y-5">
-        <Section title="Sur la carte" bodyClassName="p-0">
+      <div className="lg:space-y-5 max-lg:contents">
+        <Section className="max-lg:order-6" title="Sur la carte" bodyClassName="p-0">
           {vessel ? (
             <CargoMap shipments={[s]} positions={positions ?? []} mode="mini" selectedVesselImo={vessel.position.vessel_imo} className="h-[220px]" />
           ) : (
-            <div className={cn('flex h-[220px] items-center justify-center px-4 text-center text-[12.5px]', SURFACE.inset, TEXT.muted)}>Pas de position de navire</div>
+            <div className={cn('flex h-[220px] items-center justify-center px-4 text-center text-[12.5px] max-lg:text-[14px]', SURFACE.inset, TEXT.muted)}>Pas de position de navire</div>
           )}
           {live && (
-            <a href={live} target="_blank" rel="noopener noreferrer" className={cn('flex items-center justify-center gap-1 border-t border-black/[0.06] py-2.5 text-[12px] font-semibold dark:border-white/[0.06]', TEXT.body)}>
+            <a href={live} target="_blank" rel="noopener noreferrer" className={cn('flex items-center justify-center gap-1 border-t border-black/[0.06] py-2.5 text-[12px] max-lg:text-[14px] font-semibold dark:border-white/[0.06]', TEXT.body)}>
               Position en direct <ExternalLink className="h-3 w-3" />
             </a>
           )}
         </Section>
 
-        <Section title="À faire avant l'arrivée" meta={open.length > 0 ? `${open.length} restante${open.length > 1 ? 's' : ''}` : 'tout est prêt'}>
+        <Section className="max-lg:order-1" title="À faire avant l'arrivée" meta={open.length > 0 ? `${open.length} restante${open.length > 1 ? 's' : ''}` : 'tout est prêt'}>
           {todo.length === 0 ? (
             <Empty title="Rien à faire">Ce dossier est livré.</Empty>
           ) : (
@@ -105,8 +107,8 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
                     ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     : <Circle className={cn('mt-0.5 h-4 w-4 shrink-0', t.level === 'now' ? 'text-destructive' : TEXT.muted)} />}
                   <div className="min-w-0">
-                    <div className={cn('text-[13px]', t.level === 'done' ? cn('line-through', TEXT.muted) : t.level === 'now' ? cn('font-semibold', TEXT.strong) : TEXT.body)}>{t.label}</div>
-                    {t.detail && t.level !== 'done' && <div className={cn('text-[11.5px]', TEXT.muted)}>{t.detail}</div>}
+                    <div className={cn('text-[13px] max-lg:text-[14px]', t.level === 'done' ? cn('line-through', TEXT.muted) : t.level === 'now' ? cn('font-semibold', TEXT.strong) : TEXT.body)}>{t.label}</div>
+                    {t.detail && t.level !== 'done' && <div className={cn('text-[11.5px] max-lg:text-[14px]', TEXT.muted)}>{t.detail}</div>}
                   </div>
                 </li>
               ))}
@@ -114,7 +116,7 @@ export function TabApercu({ shipment: s }: { shipment: CargoShipment }) {
           )}
         </Section>
 
-        <Section title="Argent">
+        <Section className="max-lg:order-4" title="Argent">
           <Facts cols={2}>
             <Fact label="Fret" value={fmtUsd(s.freight_usd)} hint="au transitaire" />
             <Fact

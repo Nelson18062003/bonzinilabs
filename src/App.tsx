@@ -50,16 +50,15 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
 const MobileLoginScreen = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.MobileLoginScreen })));
 const AdminAuthCallback = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.AdminAuthCallback })));
-const MobileDashboard = lazy(() => import("./mobile/screens/dashboard").then(m => ({ default: m.MobileDashboard })));
+const MobileHome = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.MobileHome })));
+const MobileOperationsScreen = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.MobileOperationsScreen })));
 const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
 const DesktopAnalyticsDashboard = lazy(() => import("./desktop/screens/analytics").then(m => ({ default: m.DesktopAnalyticsDashboard })));
-const MobileDepositsScreen = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositsScreenV2 })));
 const DesktopDepositsScreen = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopDepositsScreen })));
 const DesktopNewDeposit = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopNewDeposit })));
 const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositDetailV2 })));
 const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileNewDepositV2 })));
-const MobilePaymentsScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentsScreen })));
 const DesktopPaymentsScreen = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopPaymentsScreen })));
 const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentDetail })));
 const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileNewPayment })));
@@ -116,6 +115,7 @@ const DesktopCargoScreen = lazy(() => import("./desktop/screens/cargo").then(m =
 const MobileCargoDossier = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDossier })));
 const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
 const MobileCargoMap = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoMap })));
+const MobileCargoCout = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoCout })));
 const DesktopCargoTrack = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoTrack })));
 const DesktopCargoMap = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoMap })));
 const DesktopCargoDossier = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoDossier })));
@@ -225,15 +225,16 @@ const App = () => (
                 {/* Mobile Admin Routes */}
                 <Route path="/m/login" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><MobileLoginScreen /></AdminRouteWrapper>} />
                 <Route path="/m/auth/callback" element={<AdminRouteWrapper requireAuth={false} showTabBar={false}><AdminAuthCallback /></AdminRouteWrapper>} />
-                <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileDepositsScreen /></AdminRouteWrapper>} />
+                <Route path="/m" element={<AdminRouteWrapper desktop={<DesktopDashboard />}><MobileHome /></AdminRouteWrapper>} />
+                <Route path="/m/ops" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileOperationsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/deposits" element={<AdminRouteWrapper desktop={<DesktopDepositsScreen />}><MobileOperationsScreen tab="deposits" /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewDeposit />}><MobileNewDeposit /></AdminRouteWrapper>} />
                 <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopDepositsScreen />}><MobileDepositDetail /></AdminRouteWrapper>} />
-                <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobileOperationsScreen tab="payments" /></AdminRouteWrapper>} />
                 <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewPayment />}><MobileNewPayment /></AdminRouteWrapper>} />
                 <Route path="/m/payments/batch/new" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentCreate desktop />}><BulkPaymentCreate /></AdminRouteWrapper>} />
                 <Route path="/m/payments/batch/:batchId" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentDetail desktop />}><BulkPaymentDetail /></AdminRouteWrapper>} />
-                <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
+                <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper desktop={<MobileBeneficiaryEdit desktop />}><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
@@ -242,7 +243,7 @@ const App = () => (
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
-                <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
+                <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
@@ -269,6 +270,7 @@ const App = () => (
                 <Route path="/m/cargo" element={<AdminRouteWrapper desktop={<DesktopCargoScreen />}><MobileCargoScreen /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId/:tab" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />

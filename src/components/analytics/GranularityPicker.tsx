@@ -53,7 +53,7 @@ export function GranularityPicker({
           type="button"
           aria-label="Changer la granularité de ce rapport"
           className={cn(
-            'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium hover:bg-muted/40',
+            'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] max-lg:h-10 max-lg:px-3 max-lg:text-[16px] font-medium hover:bg-muted/40',
             isOverride && 'border-primary/40 text-primary',
             className,
           )}
@@ -69,7 +69,7 @@ export function GranularityPicker({
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={6} className="w-[180px] p-1.5">
-        <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="mb-1 px-1 text-[14px] max-lg:text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
           Granularité du rapport
         </div>
         <div className="flex flex-col">
@@ -87,7 +87,7 @@ export function GranularityPicker({
                   setOpen(false);
                 }}
                 className={cn(
-                  'flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors',
+                  'flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs max-lg:text-[14px] transition-colors',
                   active
                     ? 'bg-primary text-primary-foreground'
                     : compatible
@@ -100,7 +100,7 @@ export function GranularityPicker({
                   {isDefault ? (
                     <span
                       className={cn(
-                        'rounded-full px-1.5 py-px text-[9px] uppercase tracking-wide',
+                        'rounded-full px-1.5 py-px text-[9px] max-lg:text-[14px] uppercase tracking-wide',
                         active
                           ? 'bg-primary-foreground/20'
                           : 'bg-muted text-muted-foreground',
@@ -123,7 +123,7 @@ export function GranularityPicker({
                 onChange(globalGranularity);
                 setOpen(false);
               }}
-              className="w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+              className="w-full rounded-md px-2 py-1.5 text-left text-xs max-lg:text-[14px] text-muted-foreground hover:bg-muted"
             >
               Suivre la période ({GRANULARITY_LABELS[globalGranularity]})
             </button>

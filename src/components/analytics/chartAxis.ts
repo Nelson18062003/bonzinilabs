@@ -72,7 +72,7 @@ export function timeXAxisProps(opts: TimeXAxisOpts) {
 
   return {
     interval,
-    tick: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+    tick: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' },
     axisLine: false,
     tickLine: false,
     minTickGap: 4,

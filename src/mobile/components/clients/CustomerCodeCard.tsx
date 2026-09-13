@@ -33,20 +33,20 @@ export function CustomerCodeCard({ code, className }: { code: string; className?
   return (
     <Card className={cn('p-4', className)}>
       <div className="flex items-center gap-3.5">
-        <div className="rounded-2xl bg-white p-2 ring-1 ring-black/[0.06]">
+        <div className="rounded-lg bg-white p-2 ring-1 ring-[#D9D9D9]">
           <QRCodeSVG value={customerQrPayload(code)} size={72} level="M" marginSize={0} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className={cn('flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
+          <div className={cn('flex items-center gap-1.5 text-[14px] font-semibold uppercase tracking-wider', TEXT.muted)}>
             <QrCode className="h-3.5 w-3.5" />
             Identifiant client
           </div>
           <div className={cn('mt-1 text-[24px] font-black leading-none tracking-[0.04em] tabular-nums', TEXT.strong)}>{code}</div>
-          <p className={cn('mt-1.5 text-[12px] leading-snug', TEXT.muted)}>Libellé de virement · étiquette colis</p>
+          <p className={cn('mt-1.5 text-[14px] leading-snug', TEXT.muted)}>Libellé de virement · étiquette colis</p>
         </div>
         <Holder icon={copied ? Check : Copy} tone={copied ? 'success' : 'neutral'} size="sm" onClick={copy} ariaLabel="Copier l'identifiant" />
       </div>
-      <div className={cn('mt-3 rounded-xl px-3 py-2 text-[12px]', SURFACE.inset, TEXT.body)}>
+      <div className={cn('mt-3 rounded-lg px-3 py-2 text-[14px]', SURFACE.inset, TEXT.body)}>
         Un virement dont le libellé porte ce code est à créditer sur ce client.
       </div>
     </Card>

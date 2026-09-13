@@ -77,7 +77,7 @@ const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean
 };
 
 // Vert d'action = marque Dépôts (cohérent liste/détail).
-const GREEN = '#10B981';
+const GREEN = '#2C2C2C'; // l'accent du kit : l'encre, pas la couleur de module
 
 // ── Types ──────────────────────────────────────────────────
 type Step = 'client' | 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
@@ -117,10 +117,10 @@ function CopyBtn({ text, fieldKey, copiedField, onCopy }: {
     <button
       onClick={() => onCopy(text, fieldKey)}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition active:scale-95',
+        'inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[16px] font-bold transition active:scale-95',
         copied
-          ? 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]'
-          : 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]',
+          ? 'bg-[#CFF7D3] text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]'
+          : 'bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]',
       )}
     >
       {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -487,16 +487,16 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
   if (isSuccess) {
     const familyName = selectedFamily ? FAMILIES_CONF[selectedFamily]?.name || selectedFamily : '';
     return (
-      <div className={cn('mx-auto flex flex-col items-center justify-center px-6 text-center', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
+      <div className={cn('mx-auto flex flex-col items-center justify-center px-6 text-center', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
         <Holder icon={Check} tone="success" size="lg" className="mb-4" />
-        <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>Dépôt créé</div>
+        <div className={cn('text-[20px] font-bold', TEXT.strong)}>Dépôt créé</div>
         <div className="mt-1.5">
           <Amount value={fmt(amountNum)} unit="XAF" size="lg" />
         </div>
-        <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
+        <div className={cn('mt-1 text-[16px]', TEXT.muted)}>
           pour {selectedClient?.first_name} {selectedClient?.last_name} via {familyName}
         </div>
-        <div className={cn('mt-2 max-w-xs text-[12px] leading-relaxed', TEXT.muted)}>
+        <div className={cn('mt-2 max-w-xs text-[16px] leading-relaxed', TEXT.muted)}>
           Le client peut maintenant ajouter ses preuves de dépôt depuis son application.
         </div>
         <div className="mt-7 flex w-full gap-2.5">
@@ -505,7 +505,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           </SoftPill>
           <PrimaryPill
             onClick={() => createdDepositId && navigate(`/m/deposits/${createdDepositId}`)}
-            className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+            className="flex-1 bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
           >
             Voir la fiche
           </PrimaryPill>
@@ -516,7 +516,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
 
   // ── Layout principal ─────────────────────────────────────
   return (
-    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
+    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
       {/* ── Header + barre de progression ─────────────────── */}
       <div className={cn('shrink-0 px-5 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
         <div className="flex h-14 items-center gap-2">
@@ -524,14 +524,14 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
             <button
               onClick={handleHeaderBack}
               aria-label="Retour"
-              className={cn('-ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
+              className={cn('-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
           )}
-          <span className={cn('flex-1 text-[15px] font-bold', TEXT.strong)}>Nouveau dépôt</span>
+          <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>Nouveau dépôt</span>
           {step !== 'creating' && (
-            <span className="text-[12px] font-bold" style={{ color: GREEN }}>
+            <span className="text-[16px] font-bold" style={{ color: GREEN }}>
               {currentStepNum}/{totalSteps}
             </span>
           )}
@@ -554,11 +554,11 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {/* Étape 1 — Client */}
         {step === 'client' && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quel client ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Quel client ?</div>
             <div className="relative mb-3">
               <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
               <input
-                className={cn('h-12 w-full rounded-2xl pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+                className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
                 placeholder="Nom, téléphone ou identifiant BZ-…"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
@@ -587,7 +587,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                       key={client.user_id}
                       onClick={() => { setSelectedClient(client); goTo('amount'); }}
                       className={cn(
-                        'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                        'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                         SURFACE.card,
                         SURFACE.shadow,
                         isSelected && 'ring-2',
@@ -595,16 +595,16 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                       style={isSelected ? { boxShadow: `0 0 0 2px ${GREEN}` } : undefined}
                     >
                       <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
                         style={{ background: `${FAMILIES_CONF.AGENCY_BONZINI.bg}14`, color: FAMILIES_CONF.AGENCY_BONZINI.bg }}
                       >
                         {client.first_name?.[0]}{client.last_name?.[0]}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className={cn('truncate text-[14px] font-bold', TEXT.strong)}>
+                        <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
                           {client.first_name} {client.last_name}
                         </div>
-                        <div className={cn('truncate text-[11px] tabular-nums', TEXT.muted)}>{[client.customer_code, client.phone].filter(Boolean).join(' · ')}</div>
+                        <div className={cn('truncate text-[16px] tabular-nums', TEXT.muted)}>{[client.customer_code, client.phone].filter(Boolean).join(' · ')}</div>
                       </div>
                       <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
                     </button>
@@ -614,7 +614,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
             ) : (
               <div className="flex flex-col items-center py-10">
                 <Holder icon={User} size="lg" />
-                <p className={cn('mt-3 text-[13px]', TEXT.muted)}>Aucun client trouvé</p>
+                <p className={cn('mt-3 text-[16px]', TEXT.muted)}>Aucun client trouvé</p>
               </div>
             )}
           </div>
@@ -623,11 +623,11 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {/* Étape 2 — Montant */}
         {step === 'amount' && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Combien ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Combien ?</div>
             <Card className="mb-3.5 py-6 text-center">
               <div className="flex items-baseline justify-center gap-2">
                 <input
-                  className={cn('w-[65%] border-none bg-transparent text-right text-[44px] font-black tracking-tight outline-none', TEXT.strong)}
+                  className={cn('w-[65%] border-none bg-transparent text-right text-[44px] font-bold tracking-tight outline-none', TEXT.strong)}
                   placeholder="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
@@ -637,7 +637,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 <span className={cn('text-[20px] font-bold', TEXT.muted)}>XAF</span>
               </div>
               {amountNum > 0 && (
-                <div className={cn('mt-1.5 text-[14px] tabular-nums', TEXT.muted)}>{fmt(animatedAmount)} XAF</div>
+                <div className={cn('mt-1.5 text-[16px] tabular-nums', TEXT.muted)}>{fmt(animatedAmount)} XAF</div>
               )}
             </Card>
             <div className="flex gap-2">
@@ -648,7 +648,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     key={preset}
                     onClick={() => setAmount(preset.toString())}
                     className={cn(
-                      'flex-1 rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95',
+                      'flex-1 rounded-lg py-2.5 text-[16px] font-bold transition active:scale-95',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
@@ -671,17 +671,17 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               accent={GREEN}
             />
             {amountOverCap && (
-              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#C0504D] bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
-                <p className="text-[11px] font-semibold text-[#C0504D] dark:text-[#E79A9A]">
+              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#C00F0C] bg-[#FDD3D0] p-3 dark:bg-[#900B09]">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#900B09] dark:text-[#FDD3D0]" />
+                <p className="text-[16px] font-semibold text-[#900B09] dark:text-[#FDD3D0]">
                   Montant maximum : {MAX_AMOUNT_XAF_LABEL} XAF par dépôt.
                 </p>
               </div>
             )}
             {!amountOverCap && amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
-              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#F3A745] bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-                <p className="text-[11px] text-[#9A6B12] dark:text-[#E7C083]">
+              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#E8B931] bg-[#FFF1C2] p-3 dark:bg-[#522504]">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
+                <p className="text-[16px] text-[#682D03] dark:text-[#FFF1C2]">
                   Le montant dépasse la limite mobile money ({formatCurrency(MOBILE_MONEY_TRANSACTION_LIMIT)})
                 </p>
               </div>
@@ -692,7 +692,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {/* Étape 3 — Famille */}
         {step === 'family' && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Comment ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Comment ?</div>
             <div className="space-y-2.5">
               {methodFamilies.map((family) => {
                 const isSelected = selectedFamily === family.family;
@@ -704,21 +704,21 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     key={family.family}
                     onClick={() => handleFamilySelected(family.family)}
                     className={cn(
-                      'flex w-full items-center gap-3.5 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'flex w-full items-center gap-3.5 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
                     style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
                     <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[18px] font-extrabold"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[20px] font-bold"
                       style={{ background: conf?.bg || color, color: conf?.dark ? '#1a1028' : '#fff' }}
                     >
                       {conf?.letter || family.family[0]}
                     </div>
                     <div className="flex-1">
-                      <div className={cn('text-[15px] font-bold', TEXT.strong)}>{family.label}</div>
-                      <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{family.description}</div>
+                      <div className={cn('text-[16px] font-bold', TEXT.strong)}>{family.label}</div>
+                      <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>{family.description}</div>
                     </div>
                     {isSelected && <Check className="h-4 w-4 shrink-0" style={{ color }} />}
                   </button>
@@ -731,7 +731,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {/* Étape 4 — Sous-méthode */}
         {step === 'submethod' && selectedFamily && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Type d'opération</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Type d'opération</div>
             <div className="space-y-2.5">
               {getSubMethodsForFamily(selectedFamily).map((subMethod) => {
                 const conf = FAMILIES_CONF[selectedFamily];
@@ -742,15 +742,15 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     key={subMethod.subMethod}
                     onClick={() => handleSubMethodSelected(subMethod.subMethod)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
                     style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
                     <div className="flex-1">
-                      <div className={cn('text-[14px] font-bold', TEXT.strong)}>{subMethod.label}</div>
-                      <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{subMethod.description}</div>
+                      <div className={cn('text-[16px] font-bold', TEXT.strong)}>{subMethod.label}</div>
+                      <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>{subMethod.description}</div>
                     </div>
                     {isSelected ? (
                       <Check className="h-4 w-4 shrink-0" style={{ color }} />
@@ -767,7 +767,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {/* Étape banque */}
         {step === 'bank' && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quelle banque ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Quelle banque ?</div>
             <div className="space-y-2.5">
               {banks.map((bank) => {
                 const isSelected = selectedBank === bank.bank;
@@ -777,19 +777,19 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     key={bank.bank}
                     onClick={() => handleBankSelected(bank.bank)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
                     style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
                     <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
                       style={{ background: `${color}14` }}
                     >
                       <Building2 className="h-[18px] w-[18px]" style={{ color }} />
                     </div>
-                    <span className={cn('flex-1 text-[14px] font-bold', TEXT.strong)}>{bank.label}</span>
+                    <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>{bank.label}</span>
                     {isSelected ? (
                       <Check className="h-4 w-4 shrink-0" style={{ color }} />
                     ) : (
@@ -805,7 +805,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {/* Étape agence */}
         {step === 'agency' && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quelle agence ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Quelle agence ?</div>
             <div className="space-y-2.5">
               {agencies.map((agency) => {
                 const isSelected = selectedAgency === agency.agency;
@@ -815,22 +815,22 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     key={agency.agency}
                     onClick={() => handleAgencySelected(agency.agency)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
                     style={isSelected ? { boxShadow: `0 0 0 2px ${color}` } : undefined}
                   >
                     <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
                       style={{ background: `${color}14` }}
                     >
                       <MapPin className="h-[18px] w-[18px]" style={{ color }} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={cn('text-[14px] font-bold', TEXT.strong)}>{agency.label}</div>
-                      <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{agency.address}</div>
-                      <div className={cn('mt-0.5 flex items-center gap-1 text-[10px]', TEXT.muted)}>
+                      <div className={cn('text-[16px] font-bold', TEXT.strong)}>{agency.label}</div>
+                      <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>{agency.address}</div>
+                      <div className={cn('mt-0.5 flex items-center gap-1 text-[16px]', TEXT.muted)}>
                         <Clock className="h-2.5 w-2.5" />
                         {agency.hours}
                       </div>
@@ -853,7 +853,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           if (!info) return null;
           return (
             <div className="space-y-2.5 pb-4">
-              <div className={cn('text-[22px] font-extrabold', TEXT.strong)}>Tout est bon ?</div>
+              <div className={cn('text-[20px] font-bold', TEXT.strong)}>Tout est bon ?</div>
 
               {/* Montant centré */}
               <Card className="py-5 text-center">
@@ -878,23 +878,23 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                   .filter(Boolean)
                   .map((r, i) => (
                     <div key={i} className={infoLineCls}>
-                      <span className={cn('text-[13px]', TEXT.muted)}>{r!.l}</span>
-                      <span className={cn('text-right text-[13px] font-semibold', TEXT.strong)}>{r!.v}</span>
+                      <span className={cn('text-[16px]', TEXT.muted)}>{r!.l}</span>
+                      <span className={cn('text-right text-[16px] font-semibold', TEXT.strong)}>{r!.v}</span>
                     </div>
                   ))}
               </Card>
 
               {/* Coordonnées */}
               <Card>
-                <div className={cn('mb-2 flex items-center gap-1.5 text-[12px] font-bold', TEXT.strong)}>
+                <div className={cn('mb-2 flex items-center gap-1.5 text-[16px] font-bold', TEXT.strong)}>
                   <Info className="h-3.5 w-3.5" style={{ color: GREEN }} />
                   Coordonnées à communiquer
                 </div>
                 {info.fields.map((field) => (
                   <div key={field.key} className={infoLineCls}>
-                    <span className={cn('text-[11px]', TEXT.muted)}>{field.label}</span>
+                    <span className={cn('text-[16px]', TEXT.muted)}>{field.label}</span>
                     <div className="flex items-center gap-1.5">
-                      <span className={cn('text-[11px] font-bold', TEXT.strong, field.mono && 'font-mono')}>
+                      <span className={cn('text-[16px] font-bold', TEXT.strong, field.mono && 'font-mono')}>
                         {field.value}
                       </span>
                       <CopyBtn text={field.value} fieldKey={field.key} copiedField={copiedField} onCopy={handleCopy} />
@@ -905,9 +905,9 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 {/* Code marchand */}
                 {info.merchantCode && (
                   <div className="mt-1 border-t border-black/[0.06] pt-2 dark:border-white/[0.06]">
-                    <span className={cn('mb-1.5 block text-[11px]', TEXT.muted)}>Code Marchand</span>
-                    <div className={cn('flex items-center justify-between gap-2 rounded-xl p-2.5', SURFACE.canvas)}>
-                      <span className={cn('flex-1 break-all font-mono text-[11px] font-bold', TEXT.strong)}>
+                    <span className={cn('mb-1.5 block text-[16px]', TEXT.muted)}>Code Marchand</span>
+                    <div className={cn('flex items-center justify-between gap-2 rounded-lg p-2.5', SURFACE.canvas)}>
+                      <span className={cn('flex-1 break-all font-mono text-[16px] font-bold', TEXT.strong)}>
                         {info.merchantCode}
                       </span>
                       <CopyBtn text={info.merchantCode} fieldKey="merchant" copiedField={copiedField} onCopy={handleCopy} />
@@ -917,9 +917,9 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
 
                 {/* Montant */}
                 <div className={cn(infoLineCls, 'mt-1 border-t border-black/[0.06] dark:border-white/[0.06]')}>
-                  <span className={cn('text-[11px]', TEXT.muted)}>Montant à envoyer</span>
+                  <span className={cn('text-[16px]', TEXT.muted)}>Montant à envoyer</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-extrabold" style={{ color: GREEN }}>{fmt(amountNum)} XAF</span>
+                    <span className="text-[16px] font-bold" style={{ color: GREEN }}>{fmt(amountNum)} XAF</span>
                     <CopyBtn text={`${fmt(amountNum)} XAF`} fieldKey="amount" copiedField={copiedField} onCopy={handleCopy} />
                   </div>
                 </div>
@@ -927,17 +927,17 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
 
               {/* Instructions */}
               <Card>
-                <div className={cn('mb-2 text-[12px] font-bold', TEXT.strong)}>Instructions</div>
+                <div className={cn('mb-2 text-[16px] font-bold', TEXT.strong)}>Instructions</div>
                 <ol className="m-0 flex list-none flex-col gap-2 p-0">
                   {info.instructions.map((instruction, index) => (
                     <li key={index} className="flex items-start gap-2.5">
                       <span
-                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[16px] font-bold"
                         style={{ background: `${GREEN}1A`, color: GREEN }}
                       >
                         {index + 1}
                       </span>
-                      <span className={cn('pt-0.5 text-[12px]', TEXT.muted)}>{instruction}</span>
+                      <span className={cn('pt-0.5 text-[16px]', TEXT.muted)}>{instruction}</span>
                     </li>
                   ))}
                 </ol>
@@ -945,7 +945,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
 
               {/* Upload preuves optionnel */}
               <Card>
-                <div className={cn('mb-2.5 text-[12px] font-bold', TEXT.strong)}>Preuves (optionnel)</div>
+                <div className={cn('mb-2.5 text-[16px] font-bold', TEXT.strong)}>Preuves (optionnel)</div>
                 {/* Only live on this step — the wizard's other steps must not
                     swallow a paste, and two live zones would double-attach. */}
                 <PasteDropZone onFiles={addProofFiles} enabled={step === 'recap'} />
@@ -954,18 +954,18 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
 
               {/* Commentaire admin optionnel */}
               <Card>
-                <div className={cn('mb-2 text-[12px] font-bold', TEXT.strong)}>Commentaire admin (optionnel)</div>
+                <div className={cn('mb-2 text-[16px] font-bold', TEXT.strong)}>Commentaire admin (optionnel)</div>
                 <textarea
                   placeholder="Note interne..."
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
                   rows={3}
-                  className={cn('w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+                  className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.canvas, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
                 />
               </Card>
 
               {/* Note de confirmation */}
-              <div className="rounded-2xl bg-[#DEEFE5] px-3.5 py-3 text-[12px] leading-relaxed text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]">
+              <div className="rounded-lg bg-[#CFF7D3] px-3.5 py-3 text-[16px] leading-relaxed text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]">
                 Le dépôt sera créé pour le client.{' '}
                 {proofFiles.length > 0
                   ? 'Les preuves seront téléchargées et le statut avancé à "Preuve envoyée".'
@@ -979,8 +979,8 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
         {step === 'creating' && (
           <div className="flex flex-col items-center justify-center py-20">
             <Holder icon={Loader2} tone="success" size="lg" className="mb-5 [&_svg]:animate-spin" />
-            <p className={cn('text-[15px] font-bold', TEXT.strong)}>Création du dépôt...</p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>Un instant</p>
+            <p className={cn('text-[16px] font-bold', TEXT.strong)}>Création du dépôt...</p>
+            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>Un instant</p>
           </div>
         )}
       </div>
@@ -997,7 +997,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
             <PrimaryPill
               onClick={doCreateDeposit}
               loading={createDeposit.isPending}
-              className="flex-[1.4] bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+              className="flex-[1.4] bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
             >
               <ShieldCheck className="h-[18px] w-[18px]" />
               Confirmer le dépôt
@@ -1006,7 +1006,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           {step === 'client' && selectedClient && (
             <PrimaryPill
               onClick={() => goTo('amount')}
-              className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+              className="flex-1 bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
             >
               Suivant
             </PrimaryPill>
@@ -1015,7 +1015,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
             <PrimaryPill
               onClick={() => amountValid && goTo('family')}
               disabled={!amountValid}
-              className={cn('flex-[1.4]', amountValid && 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white')}
+              className={cn('flex-[1.4]', amountValid && 'bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white')}
             >
               Suivant
             </PrimaryPill>

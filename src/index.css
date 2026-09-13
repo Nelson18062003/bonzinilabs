@@ -1521,6 +1521,14 @@
 .cargo-popup__status { font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .cargo-popup__muted { color: hsl(var(--muted-foreground)); }
 .cargo-popup__k { margin-top: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+@media (max-width: 1023px) {
+  /* Mobile : la carte se lit aussi au soleil — étiquettes 14 px, encre foncée. */
+  .cargo-ship__label, .cargo-port__label, .cargo-legend { font-size: 14px; }
+  .cargo-ship__label em { font-size: 13px; }
+  .cargo-port__label { color: hsl(var(--foreground)); }
+  .cargo-popup__k { font-size: 12px; }
+  .cargo-ship b { min-width: 20px; height: 20px; top: -10px; right: -12px; font-size: 12px; line-height: 17px; }
+}
 .cargo-popup__row { display: flex; justify-content: space-between; gap: 10px; width: 100%; padding: 5px 6px; margin: 0 -6px; border-radius: 6px; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 .cargo-popup__row:hover { background: hsl(var(--muted)); }
 .cargo-popup__row span:last-child { color: hsl(var(--muted-foreground)); white-space: nowrap; }
@@ -1587,6 +1595,13 @@
   user-select: none;
 }
 .c3d-stage:active { cursor: grabbing; }
+@media (max-width: 1023px) {
+  /* Mobile : la cible a 50–60 ans — boutons de 40 px, texte 16 px, comme le kit. */
+  .c3d-stage { height: 300px; }
+  .c3d-bar button, .c3d-layers { font-size: 16px; }
+  .c3d-bar button { height: 40px; padding: 0 12px; border-radius: 8px; color: hsl(var(--foreground)); }
+  .c3d-layers input { width: 120px; height: 24px; }
+}
 
 .c3d-world,
 .c3d-origin,
@@ -1653,3 +1668,8 @@
   overflow: hidden;
 }
 .cargo-gauge__fill { display: block; height: 100%; border-radius: 9999px; }
+@media (max-width: 1023px) {
+  /* Après les règles de base pour gagner la cascade : 16 px sur mobile. */
+  .c3d-hint { font-size: 16px; }
+  .cargo-gauge__head { font-size: 16px; }
+}

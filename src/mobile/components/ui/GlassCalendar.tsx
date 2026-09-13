@@ -36,7 +36,7 @@ export function GlassCalendar({
         nav: 'flex items-center',
         button_previous: cn(
           'absolute left-0 z-10',
-          'w-10 h-10 rounded-xl',
+          'w-10 h-10 rounded-lg',
           'bg-card/60 backdrop-blur-md border border-border/30',
           'flex items-center justify-center',
           'text-foreground/70 hover:text-foreground',
@@ -45,7 +45,7 @@ export function GlassCalendar({
         ),
         button_next: cn(
           'absolute right-0 z-10',
-          'w-10 h-10 rounded-xl',
+          'w-10 h-10 rounded-lg',
           'bg-card/60 backdrop-blur-md border border-border/30',
           'flex items-center justify-center',
           'text-foreground/70 hover:text-foreground',
@@ -59,7 +59,7 @@ export function GlassCalendar({
         weekdays: 'flex mb-1',
         weekday: cn(
           'flex-1 h-10 flex items-center justify-center',
-          'text-xs font-semibold uppercase tracking-wider',
+          'text-[14px] font-semibold',
           'text-muted-foreground/60',
         ),
         weeks: '',
@@ -71,7 +71,7 @@ export function GlassCalendar({
           'relative p-0.5',
         ),
         day_button: cn(
-          'w-full h-full min-h-[44px] rounded-xl',
+          'w-full h-full min-h-[44px] rounded-lg',
           'flex items-center justify-center',
           'text-sm font-medium text-foreground',
           'transition-all duration-200 ease-out',

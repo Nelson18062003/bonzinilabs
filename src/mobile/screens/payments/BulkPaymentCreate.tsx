@@ -93,12 +93,12 @@ interface DraftLine {
 
 /** ¥ ALWAYS before the number (amber unit). */
 function Yen({ value, size = 'sm' }: { value: number; size?: 'sm' | 'md' | 'lg' }) {
-  const sym = size === 'lg' ? 'text-[22px]' : size === 'md' ? 'text-[14px]' : 'text-[12px]';
-  const num = size === 'lg' ? 'text-[32px] leading-none tracking-tight' : size === 'md' ? 'text-[15px]' : 'text-[13px]';
+  const sym = size === 'lg' ? 'text-[20px]' : size === 'md' ? 'text-[14px]' : 'text-[14px]';
+  const num = size === 'lg' ? 'text-[32px] leading-none tracking-tight' : size === 'md' ? 'text-[16px]' : 'text-[14px]';
   return (
     <span className="inline-flex items-baseline gap-1 tabular-nums">
-      <span className={cn('font-extrabold', sym)} style={{ color: AMBER }}>¥</span>
-      <span className={cn('font-extrabold', num, TEXT.strong)}>{formatYuan(value)}</span>
+      <span className={cn('font-bold', sym)} style={{ color: AMBER }}>¥</span>
+      <span className={cn('font-bold', num, TEXT.strong)}>{formatYuan(value)}</span>
     </span>
   );
 }
@@ -109,7 +109,7 @@ function Chip({ icon: Icon, label, on, onClick }: { icon?: React.ComponentType<{
       type="button"
       onClick={onClick}
       className={cn(
-        'flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11.5px] font-bold transition active:scale-95',
+        'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[14px] font-bold transition active:scale-95',
         on ? 'text-white' : cn('bg-black/[0.05] dark:bg-white/[0.06]', TEXT.muted),
       )}
       style={on ? { background: VIOLET } : undefined}
@@ -404,8 +404,8 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
         <div className="mb-6 flex items-center gap-3">
           <Holder icon={ChevronLeft} size="sm" onClick={() => navigate('/m/payments')} ariaLabel={t('bulk.back', { defaultValue: 'Retour' })} />
           <div>
-            <h1 className={cn('text-[22px] font-extrabold tracking-tight', TEXT.strong)}>{t('bulk.title', { defaultValue: 'Paiement groupé' })}</h1>
-            <p className={cn('text-[13px]', TEXT.muted)}>{t('bulk.subtitle', { defaultValue: 'Plusieurs bénéficiaires, un seul client, payés ensemble' })}</p>
+            <h1 className={cn('text-[20px] font-bold tracking-tight', TEXT.strong)}>{t('bulk.title', { defaultValue: 'Paiement groupé' })}</h1>
+            <p className={cn('text-[14px]', TEXT.muted)}>{t('bulk.subtitle', { defaultValue: 'Plusieurs bénéficiaires, un seul client, payés ensemble' })}</p>
           </div>
         </div>
 
@@ -415,12 +415,12 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
           <Card className="mb-6 flex items-center gap-3">
             <Avatar name={`${client.first_name ?? ''} ${client.last_name ?? ''}`} tone="info" />
             <div className="min-w-0 flex-1">
-              <p className={cn('truncate text-[15px] font-bold', TEXT.strong)}>{client.first_name} {client.last_name}</p>
-              <p className={cn('flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
+              <p className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{client.first_name} {client.last_name}</p>
+              <p className={cn('flex items-center gap-1.5 text-[14px]', TEXT.muted)}>
                 <Wallet className="h-3.5 w-3.5" /> {t('form.balance', { defaultValue: 'Solde' })} {formatXAF(clientBalance)}
               </p>
             </div>
-            <SoftPill onClick={() => { setClient(null); setLines([]); }} className="px-4 py-2 text-[13px]">{t('bulk.change', { defaultValue: 'Changer' })}</SoftPill>
+            <SoftPill onClick={() => { setClient(null); setLines([]); }} className="px-4 py-2 text-[14px]">{t('bulk.change', { defaultValue: 'Changer' })}</SoftPill>
           </Card>
         ) : (
           <Card className="mb-6">
@@ -430,16 +430,16 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
             </div>
             <div className="max-h-72 space-y-1.5 overflow-y-auto">
               {filtered.slice(0, 40).map((c) => (
-                <button key={c.user_id} type="button" onClick={() => { setClient(c); setSearch(''); }} className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+                <button key={c.user_id} type="button" onClick={() => { setClient(c); setSearch(''); }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
                   <Avatar name={`${c.first_name ?? ''} ${c.last_name ?? ''}`} size="sm" tone="info" />
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{c.first_name} {c.last_name}</p>
-                    {c.phone && <p className={cn('truncate text-[11.5px]', TEXT.muted)}>{c.phone}</p>}
+                    {c.phone && <p className={cn('truncate text-[14px]', TEXT.muted)}>{c.phone}</p>}
                   </div>
-                  <span className={cn('shrink-0 text-[12px] font-bold tabular-nums', TEXT.muted)}>{formatXAF(walletsMap.get(c.user_id) ?? 0)}</span>
+                  <span className={cn('shrink-0 text-[14px] font-bold tabular-nums', TEXT.muted)}>{formatXAF(walletsMap.get(c.user_id) ?? 0)}</span>
                 </button>
               ))}
-              {filtered.length === 0 && <p className={cn('px-2 py-8 text-center text-[13px]', TEXT.muted)}>{t('bulk.noClientFound', { defaultValue: 'Aucun client trouvé.' })}</p>}
+              {filtered.length === 0 && <p className={cn('px-2 py-8 text-center text-[14px]', TEXT.muted)}>{t('bulk.noClientFound', { defaultValue: 'Aucun client trouvé.' })}</p>}
             </div>
           </Card>
         )}
@@ -456,8 +456,8 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 <span className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: `${VIOLET}14` }}>
                   <Users className="h-7 w-7" style={{ color: VIOLET }} />
                 </span>
-                <p className={cn('mt-3 text-[15px] font-extrabold', TEXT.strong)}>{t('bulk.emptyTitle', { defaultValue: 'Ajoutez votre premier fournisseur' })}</p>
-                <p className={cn('mt-1 max-w-[280px] text-[12.5px]', TEXT.muted)}>{t('bulk.emptyBody', { defaultValue: 'Chaque ligne devient un paiement à part entière, réglé ensemble depuis le solde du client.' })}</p>
+                <p className={cn('mt-3 text-[16px] font-bold', TEXT.strong)}>{t('bulk.emptyTitle', { defaultValue: 'Ajoutez votre premier fournisseur' })}</p>
+                <p className={cn('mt-1 max-w-[280px] text-[14px]', TEXT.muted)}>{t('bulk.emptyBody', { defaultValue: 'Chaque ligne devient un paiement à part entière, réglé ensemble depuis le solde du client.' })}</p>
                 <PrimaryPill onClick={openAdd} className="mt-4"><Plus className="h-4 w-4" /> {t('bulk.addBeneficiary', { defaultValue: 'Ajouter un bénéficiaire' })}</PrimaryPill>
               </Card>
             ) : (
@@ -472,11 +472,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                           <span className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{l.alias || l.name || methodLabel(l.method)}</span>
                           {ok ? <Check className="h-3.5 w-3.5 shrink-0" style={{ color: GREEN }} /> : <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: AMBER }} />}
                         </div>
-                        <p className={cn('truncate text-[12px]', TEXT.muted)}>{l.identifier || l.account || l.phone || methodLabel(l.method)}</p>
+                        <p className={cn('truncate text-[14px]', TEXT.muted)}>{l.identifier || l.account || l.phone || methodLabel(l.method)}</p>
                       </div>
                       <div className="text-right">
                         <Yen value={l.cny} size="md" />
-                        <p className={cn('text-[11px] tabular-nums', TEXT.muted)}>{formatXAF(l.xaf)}</p>
+                        <p className={cn('text-[14px] tabular-nums', TEXT.muted)}>{formatXAF(l.xaf)}</p>
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
                         <Holder icon={Pencil} size="sm" onClick={() => openEdit(l)} ariaLabel={t('detail.edit', { defaultValue: 'Modifier' })} />
@@ -486,7 +486,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                     </Card>
                   );
                 })}
-                <button type="button" onClick={openAdd} className={cn('flex w-full items-center justify-center gap-2 rounded-[22px] border-2 border-dashed py-3.5 text-[13px] font-bold transition', 'border-black/10 hover:bg-black/[0.02] dark:border-white/10 dark:hover:bg-white/[0.03]', TEXT.muted)}>
+                <button type="button" onClick={openAdd} className={cn('flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-3.5 text-[14px] font-bold transition', 'border-black/10 hover:bg-black/[0.02] dark:border-white/10 dark:hover:bg-white/[0.03]', TEXT.muted)}>
                   <Plus className="h-4 w-4" /> {t('bulk.addBeneficiary', { defaultValue: 'Ajouter un bénéficiaire' })}
                 </button>
               </div>
@@ -501,19 +501,19 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
       {/* Sticky total + per-method breakdown + CTA */}
       {client && lines.length > 0 && (
-        <div className="sticky bottom-0 z-10 border-t border-black/[0.06] bg-[#ECEAF7]/85 px-4 py-3 backdrop-blur dark:border-white/[0.06] dark:bg-[#141320]/85">
+        <div className="sticky bottom-0 z-10 border-t border-black/[0.06] bg-white/85 px-4 py-3 backdrop-blur dark:border-white/[0.06] dark:bg-[#1E1E1E]/85">
           <div className="mx-auto max-w-3xl">
             <div className="mb-2 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
                   <Yen value={totalCny} size="lg" />
-                  <span className={cn('text-[13px] font-semibold tabular-nums', TEXT.muted)}>{formatXAF(totalXaf)}</span>
+                  <span className={cn('text-[14px] font-semibold tabular-nums', TEXT.muted)}>{formatXAF(totalXaf)}</span>
                 </div>
-                <p className={cn('mt-0.5 flex items-center gap-1 text-[11.5px] font-medium tabular-nums', overBudget ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.muted)}>
+                <p className={cn('mt-0.5 flex items-center gap-1 text-[14px] font-medium tabular-nums', overBudget ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.muted)}>
                   {overBudget ? <><AlertTriangle className="h-3.5 w-3.5" /> {t('form.insufficientBalance', { defaultValue: 'Solde insuffisant' })}</> : <>{t('bulk.remaining', { amount: formatXAF(remaining), defaultValue: `Restant ${formatXAF(remaining)}` })}</>}
                 </p>
               </div>
-              <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: `${VIOLET}1A`, color: VIOLET }}>
+              <span className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[14px] font-bold" style={{ background: `${VIOLET}1A`, color: VIOLET }}>
                 <Lock className="h-3 w-3" /> {t('bulk.locked', { defaultValue: 'solde verrouillé' })}
               </span>
             </div>
@@ -530,11 +530,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
         <div className="space-y-4">
           {/* carnet shortcut */}
           {!editingId && carnet.length > 0 && (
-            <button type="button" onClick={() => setCarnetOpen(true)} className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08]" style={{ background: `${VIOLET}0D` }}>
+            <button type="button" onClick={() => setCarnetOpen(true)} className="flex w-full items-center gap-3 rounded-lg px-3.5 py-3 text-left ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08]" style={{ background: `${VIOLET}0D` }}>
               <span className="flex h-9 w-9 items-center justify-center rounded-full text-white" style={{ background: VIOLET }}><BookUser className="h-4 w-4" /></span>
               <div className="flex-1">
-                <p className={cn('text-[13.5px] font-bold', TEXT.strong)}>{t('bulk.fromCarnet', { defaultValue: 'Choisir dans le carnet' })}</p>
-                <p className={cn('text-[11.5px]', TEXT.muted)}>{t('bulk.carnetCount', { count: carnet.length, defaultValue: `${carnet.length} bénéficiaires enregistrés` })}</p>
+                <p className={cn('text-[14px] font-bold', TEXT.strong)}>{t('bulk.fromCarnet', { defaultValue: 'Choisir dans le carnet' })}</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>{t('bulk.carnetCount', { count: carnet.length, defaultValue: `${carnet.length} bénéficiaires enregistrés` })}</p>
               </div>
               <ChevronRight className={cn('h-4 w-4', TEXT.muted)} />
             </button>
@@ -546,28 +546,28 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
               const meta = PAYMENT_METHOD[m];
               const active = eMethod === m;
               return (
-                <button key={m} type="button" onClick={() => setEMethod(m)} aria-label={methodLabel(m)} className={cn('flex flex-col items-center gap-1.5 rounded-2xl py-2.5 transition active:scale-95', active ? 'ring-2' : cn('ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08]'))} style={active ? { ['--tw-ring-color' as string]: meta.color, backgroundColor: `${meta.color}12` } : undefined}>
+                <button key={m} type="button" onClick={() => setEMethod(m)} aria-label={methodLabel(m)} className={cn('flex flex-col items-center gap-1.5 rounded-lg py-2.5 transition active:scale-95', active ? 'ring-2' : cn('ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08]'))} style={active ? { ['--tw-ring-color' as string]: meta.color, backgroundColor: `${meta.color}12` } : undefined}>
                   <PaymentMethodLogo method={dbMethod(m)} size={34} />
-                  <span className={cn('text-[11px] font-bold', active ? TEXT.strong : TEXT.muted)}>{methodLabel(m)}</span>
+                  <span className={cn('text-[14px] font-bold', active ? TEXT.strong : TEXT.muted)}>{methodLabel(m)}</span>
                 </button>
               );
             })}
           </div>
 
           {/* amount + rate */}
-          <div className="rounded-[22px] bg-black/[0.035] p-3.5 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]">
+          <div className="rounded-lg bg-black/[0.035] p-3.5 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]">
             <Segmented value={eCurrency} onChange={setECurrency} options={[{ value: 'cny', label: '¥ RMB' }, { value: 'xaf', label: 'XAF' }]} className="mb-2" />
             <TextInput inputMode="numeric" value={eRawAmount} onChange={(e) => setERawAmount(e.target.value.replace(/[^\d]/g, ''))} placeholder={eCurrency === 'cny' ? t('bulk.amountInRmb', { defaultValue: 'Montant en ¥' }) : t('bulk.amountInXaf', { defaultValue: 'Montant en XAF' })} />
-            <div className="mt-2 flex items-center gap-1.5 px-1 text-[12px]">
+            <div className="mt-2 flex items-center gap-1.5 px-1 text-[14px]">
               <span className={TEXT.muted}>≈</span>
               {eCurrency === 'cny' ? <span className={cn('font-bold tabular-nums', TEXT.strong)}>{formatXAF(eXaf)}</span> : <Yen value={eCny} size="sm" />}
             </div>
             {/* presets */}
             <div className="mt-3 flex gap-1.5">
               {(eCurrency === 'cny' ? [['¥1K', 1000], ['¥2,5K', 2500], ['¥5K', 5000]] : [['250K', 250000], ['500K', 500000], ['1M', 1000000]]).map(([lbl, val]) => (
-                <button key={lbl as string} type="button" onClick={() => setERawAmount(String(val))} className={cn('flex-1 rounded-xl py-1.5 text-center text-[12px] font-bold transition active:scale-95', 'bg-black/[0.05] dark:bg-white/[0.06]', TEXT.muted)}>{lbl}</button>
+                <button key={lbl as string} type="button" onClick={() => setERawAmount(String(val))} className={cn('flex-1 rounded-lg py-1.5 text-center text-[14px] font-bold transition active:scale-95', 'bg-black/[0.05] dark:bg-white/[0.06]', TEXT.muted)}>{lbl}</button>
               ))}
-              <button type="button" onClick={() => { setECurrency('xaf'); setERawAmount(String(Math.max(0, remaining))); }} className="flex-1 rounded-xl py-1.5 text-center text-[12px] font-bold text-white transition active:scale-95" style={{ background: VIOLET }}>{t('bulk.all', { defaultValue: 'Restant' })}</button>
+              <button type="button" onClick={() => { setECurrency('xaf'); setERawAmount(String(Math.max(0, remaining))); }} className="flex-1 rounded-lg py-1.5 text-center text-[14px] font-bold text-white transition active:scale-95" style={{ background: VIOLET }}>{t('bulk.all', { defaultValue: 'Restant' })}</button>
             </div>
             {/* rate */}
             <div className="mt-3 border-t border-black/[0.06] pt-3 dark:border-white/[0.07]">
@@ -575,12 +575,12 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className={cn('text-[12.5px] font-bold', TEXT.strong)}>{t('bulk.dailyRate', { defaultValue: 'Taux du jour' })}</span>
-                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ background: `${GREEN}1F`, color: GREEN }}>auto</span>
+                      <span className={cn('text-[14px] font-bold', TEXT.strong)}>{t('bulk.dailyRate', { defaultValue: 'Taux du jour' })}</span>
+                      <span className="rounded-lg px-1.5 py-0.5 text-[14px] font-bold" style={{ background: `${GREEN}1F`, color: GREEN }}>auto</span>
                     </div>
-                    <p className={cn('text-[12px] tabular-nums', TEXT.muted)}>1 000 000 XAF = <span className="font-bold" style={{ color: AMBER }}>¥{formatYuan(eBaseRate)}</span></p>
+                    <p className={cn('text-[14px] tabular-nums', TEXT.muted)}>1 000 000 XAF = <span className="font-bold" style={{ color: AMBER }}>¥{formatYuan(eBaseRate)}</span></p>
                   </div>
-                  <button type="button" onClick={() => { setECustomRate(true); setECustomRateStr(String(eBaseRate)); }} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold" style={{ background: `${VIOLET}1F`, color: VIOLET }}>
+                  <button type="button" onClick={() => { setECustomRate(true); setECustomRateStr(String(eBaseRate)); }} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[14px] font-bold" style={{ background: `${VIOLET}1F`, color: VIOLET }}>
                     <Pencil className="h-3.5 w-3.5" /> {t('bulk.personalize', { defaultValue: 'Personnaliser' })}
                   </button>
                 </div>
@@ -588,14 +588,14 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className={cn('text-[12.5px] font-bold', TEXT.strong)}>{t('bulk.customRateLabel', { defaultValue: 'Taux personnalisé' })}</span>
-                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ background: `${AMBER}26`, color: AMBER }}>manuel</span>
+                      <span className={cn('text-[14px] font-bold', TEXT.strong)}>{t('bulk.customRateLabel', { defaultValue: 'Taux personnalisé' })}</span>
+                      <span className="rounded-lg px-1.5 py-0.5 text-[14px] font-bold" style={{ background: `${AMBER}26`, color: AMBER }}>manuel</span>
                     </div>
-                    <button type="button" onClick={() => setECustomRate(false)} className="flex items-center gap-1 text-[11.5px] font-bold" style={{ color: VIOLET }}><RotateCcw className="h-3 w-3" /> {t('bulk.dailyRate', { defaultValue: 'Taux du jour' })}</button>
+                    <button type="button" onClick={() => setECustomRate(false)} className="flex items-center gap-1 text-[14px] font-bold" style={{ color: VIOLET }}><RotateCcw className="h-3 w-3" /> {t('bulk.dailyRate', { defaultValue: 'Taux du jour' })}</button>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1"><TextInput inputMode="numeric" value={eCustomRateStr} onChange={(e) => setECustomRateStr(e.target.value.replace(/[^\d]/g, ''))} placeholder={String(eBaseRate)} /></div>
-                    <span className={cn('text-[11px] font-medium leading-tight', TEXT.muted)}>¥ pour<br />1 000 000 XAF</span>
+                    <span className={cn('text-[14px] font-medium leading-tight', TEXT.muted)}>¥ pour<br />1 000 000 XAF</span>
                   </div>
                 </div>
               )}
@@ -610,8 +610,8 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
           {/* alipay/wechat — choose one or several reachability channels */}
           {isQrMethod && (
             <div>
-              <label className={cn('mb-1 ml-0.5 block text-[12.5px] font-bold', TEXT.strong)}>{t('bulk.channels', { defaultValue: 'Coordonnées du bénéficiaire' })}</label>
-              <p className={cn('mb-2 ml-0.5 text-[11.5px]', TEXT.muted)}>{t('bulk.channelsHint', { defaultValue: 'Choisissez un ou plusieurs moyens (au moins un).' })}</p>
+              <label className={cn('mb-1 ml-0.5 block text-[14px] font-bold', TEXT.strong)}>{t('bulk.channels', { defaultValue: 'Coordonnées du bénéficiaire' })}</label>
+              <p className={cn('mb-2 ml-0.5 text-[14px]', TEXT.muted)}>{t('bulk.channelsHint', { defaultValue: 'Choisissez un ou plusieurs moyens (au moins un).' })}</p>
               <div className="mb-3 flex flex-wrap gap-1.5">
                 <Chip icon={QrCode} label="QR code" on={eCh.qr} onClick={() => toggleCh('qr')} />
                 <Chip icon={Hash} label="ID" on={eCh.id} onClick={() => toggleCh('id')} />
@@ -620,14 +620,14 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
               </div>
               {eCh.qr && (
                 eQrPreview || eQrStoredUrl ? (
-                  <div className="mb-3 flex items-center gap-3 rounded-2xl bg-black/[0.035] p-2.5 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.05] dark:ring-white/[0.08]">
-                    <button type="button" onClick={() => setQrZoom({ url: (eQrPreview || eQrStoredUrl)!, name: eName || methodLabel(eMethod) })} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-black/10">
+                  <div className="mb-3 flex items-center gap-3 rounded-lg bg-black/[0.035] p-2.5 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.05] dark:ring-white/[0.08]">
+                    <button type="button" onClick={() => setQrZoom({ url: (eQrPreview || eQrStoredUrl)!, name: eName || methodLabel(eMethod) })} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
                       <img src={eQrPreview || eQrStoredUrl} alt="QR" className="h-full w-full object-cover" />
-                      <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2 ring-white dark:ring-[#26242F]" style={{ background: VIOLET }}><Maximize2 className="h-3 w-3" /></span>
+                      <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2 ring-white dark:ring-[#444444]" style={{ background: VIOLET }}><Maximize2 className="h-3 w-3" /></span>
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className={cn('flex items-center gap-1.5 text-[13px] font-bold', TEXT.strong)}><Check className="h-4 w-4" style={{ color: GREEN }} /> {t('bulk.qrAdded', { defaultValue: 'QR code ajouté' })}</p>
-                      <p className="mt-0.5 text-[11.5px] font-semibold" style={{ color: VIOLET }}>{t('bulk.qrTapZoom', { defaultValue: 'Appuyer pour agrandir' })}</p>
+                      <p className={cn('flex items-center gap-1.5 text-[14px] font-bold', TEXT.strong)}><Check className="h-4 w-4" style={{ color: GREEN }} /> {t('bulk.qrAdded', { defaultValue: 'QR code ajouté' })}</p>
+                      <p className="mt-0.5 text-[14px] font-semibold" style={{ color: VIOLET }}>{t('bulk.qrTapZoom', { defaultValue: 'Appuyer pour agrandir' })}</p>
                     </div>
                     <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.06]"><Pencil className={cn('h-3.5 w-3.5', TEXT.muted)} /><input type="file" accept={ACCEPT_IMAGE} className="hidden" onChange={(e) => onQrPick(e.target.files?.[0])} /></label>
                   </div>
@@ -669,7 +669,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
             <>
               <FormField label={t('bulk.bank', { defaultValue: 'Banque' })}>
                 <div className="flex items-center gap-2">
-                  <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl" style={{ background: `${VIOLET}1F` }}><Landmark className="h-5 w-5" style={{ color: VIOLET }} /></span>
+                  <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-lg" style={{ background: `${VIOLET}1F` }}><Landmark className="h-5 w-5" style={{ color: VIOLET }} /></span>
                   <div className="flex-1"><TextInput value={eBank} onChange={(e) => setEBank(e.target.value)} placeholder={t('bulk.bankPlaceholder', { defaultValue: 'Nom de la banque' })} /></div>
                 </div>
               </FormField>
@@ -687,13 +687,13 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
             <>
               <FormField label={t('bulk.phoneReq', { defaultValue: 'Téléphone' })}>
                 <div className="flex items-center gap-2">
-                  <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl" style={{ background: `${PAYMENT_METHOD.cash.color}1F` }}><Banknote className="h-5 w-5" style={{ color: PAYMENT_METHOD.cash.color }} /></span>
+                  <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-lg" style={{ background: `${PAYMENT_METHOD.cash.color}1F` }}><Banknote className="h-5 w-5" style={{ color: PAYMENT_METHOD.cash.color }} /></span>
                   <div className="flex-1"><TextInput value={ePhone} onChange={(e) => setEPhone(e.target.value)} placeholder="+86 …" /></div>
                 </div>
               </FormField>
-              <div className="flex items-start gap-2 rounded-2xl px-3.5 py-3" style={{ background: `${VIOLET}14` }}>
+              <div className="flex items-start gap-2 rounded-lg px-3.5 py-3" style={{ background: `${VIOLET}14` }}>
                 <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: VIOLET }} />
-                <p className={cn('text-[12px] leading-snug', TEXT.strong)}>{t('bulk.cashInfo', { defaultValue: 'Un QR de retrait est généré automatiquement — rien à joindre.' })}</p>
+                <p className={cn('text-[14px] leading-snug', TEXT.strong)}>{t('bulk.cashInfo', { defaultValue: 'Un QR de retrait est généré automatiquement — rien à joindre.' })}</p>
               </div>
             </>
           )}
@@ -704,11 +704,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
           {/* save to carnet (only for a freshly typed beneficiary) */}
           {!eBeneficiaryId && (
-            <button type="button" onClick={() => setESaveToCarnet((v) => !v)} className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left transition" style={{ background: eSaveToCarnet ? `${VIOLET}14` : undefined }}>
+            <button type="button" onClick={() => setESaveToCarnet((v) => !v)} className="flex w-full items-center gap-3 rounded-lg px-3.5 py-3 text-left transition" style={{ background: eSaveToCarnet ? `${VIOLET}14` : undefined }}>
               <span className={cn('flex h-6 w-6 items-center justify-center rounded-md', eSaveToCarnet ? 'text-white' : cn('ring-1 ring-inset ring-black/15 dark:ring-white/20'))} style={eSaveToCarnet ? { background: VIOLET } : undefined}>{eSaveToCarnet && <Check className="h-4 w-4" />}</span>
               <div className="flex-1">
-                <p className={cn('text-[13px] font-bold', TEXT.strong)}>{t('bulk.saveCarnet', { defaultValue: 'Enregistrer dans le carnet' })}</p>
-                <p className={cn('text-[11.5px]', TEXT.muted)}>{t('bulk.saveCarnetHint', { defaultValue: 'Réutilisable pour les prochains paiements de ce client' })}</p>
+                <p className={cn('text-[14px] font-bold', TEXT.strong)}>{t('bulk.saveCarnet', { defaultValue: 'Enregistrer dans le carnet' })}</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>{t('bulk.saveCarnetHint', { defaultValue: 'Réutilisable pour les prochains paiements de ce client' })}</p>
               </div>
             </button>
           )}
@@ -730,7 +730,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
           )}
 
           {triedCommit && errMsg() && (
-            <p className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: RED }}><AlertTriangle className="h-3.5 w-3.5" /> {errMsg()}</p>
+            <p className="flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: RED }}><AlertTriangle className="h-3.5 w-3.5" /> {errMsg()}</p>
           )}
 
           <div className="flex gap-2.5 pt-1">
@@ -743,13 +743,13 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
       {/* ── Carnet picker ── */}
       <BottomSheet open={carnetOpen} onClose={() => setCarnetOpen(false)} title={t('bulk.carnetTitle', { defaultValue: 'Carnet du client' })}>
         <div className="space-y-2">
-          {carnet.length === 0 && <p className={cn('py-8 text-center text-[13px]', TEXT.muted)}>{t('bulk.carnetEmpty', { defaultValue: 'Aucun bénéficiaire enregistré.' })}</p>}
+          {carnet.length === 0 && <p className={cn('py-8 text-center text-[14px]', TEXT.muted)}>{t('bulk.carnetEmpty', { defaultValue: 'Aucun bénéficiaire enregistré.' })}</p>}
           {carnet.map((b) => (
-            <button key={b.id} type="button" onClick={() => pickFromCarnet(b)} className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left ring-1 ring-inset ring-black/[0.06] transition active:scale-[0.99] dark:ring-white/[0.08]">
+            <button key={b.id} type="button" onClick={() => pickFromCarnet(b)} className="flex w-full items-center gap-3 rounded-lg p-2.5 text-left ring-1 ring-inset ring-black/[0.06] transition active:scale-[0.99] dark:ring-white/[0.08]">
               <PaymentMethodLogo method={b.payment_method} size={38} />
               <div className="min-w-0 flex-1">
                 <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{b.alias || b.name}</p>
-                <p className={cn('truncate text-[11.5px]', TEXT.muted)}>{b.name} · {b.identifier || b.bank_account || b.phone || methodLabel(fromDbMethod(b.payment_method))}</p>
+                <p className={cn('truncate text-[14px]', TEXT.muted)}>{b.name} · {b.identifier || b.bank_account || b.phone || methodLabel(fromDbMethod(b.payment_method))}</p>
               </div>
               <ChevronRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
             </button>
@@ -761,24 +761,24 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
       <BottomSheet open={recapOpen} onClose={() => setRecapOpen(false)} title={t('bulk.recapTitle', { defaultValue: 'Vérifier le lot' })}>
         <div className="space-y-2">
           {lines.map((l) => (
-            <div key={l.id} className="flex items-center gap-3 rounded-2xl p-2.5 ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08]">
+            <div key={l.id} className="flex items-center gap-3 rounded-lg p-2.5 ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08]">
               <PaymentMethodLogo method={dbMethod(l.method)} size={34} />
-              <p className={cn('min-w-0 flex-1 truncate text-[13.5px] font-semibold', TEXT.strong)}>{l.alias || l.name || methodLabel(l.method)}</p>
+              <p className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', TEXT.strong)}>{l.alias || l.name || methodLabel(l.method)}</p>
               <div className="text-right">
                 <Yen value={l.cny} size="sm" />
-                <p className={cn('text-[10.5px] tabular-nums', TEXT.muted)}>{formatXAF(l.xaf)}</p>
+                <p className={cn('text-[14px] tabular-nums', TEXT.muted)}>{formatXAF(l.xaf)}</p>
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-3 rounded-2xl p-3" style={{ background: `${VIOLET}0F` }}>
+        <div className="mt-3 rounded-lg p-3" style={{ background: `${VIOLET}0F` }}>
           <div className="flex items-center justify-between">
-            <span className={cn('text-[12.5px] font-bold', TEXT.strong)}>{t('bulk.totalDebited', { defaultValue: 'Total débité' })}</span>
+            <span className={cn('text-[14px] font-bold', TEXT.strong)}>{t('bulk.totalDebited', { defaultValue: 'Total débité' })}</span>
             <Yen value={totalCny} size="md" />
           </div>
           <div className="mt-1 flex items-center justify-between">
-            <span className={cn('text-[12px]', TEXT.muted)}>{t('bulk.remainingAfter', { defaultValue: 'Solde restant' })}</span>
-            <span className="text-[12.5px] font-bold tabular-nums" style={{ color: overBudget ? RED : GREEN }}>{formatXAF(remaining)}</span>
+            <span className={cn('text-[14px]', TEXT.muted)}>{t('bulk.remainingAfter', { defaultValue: 'Solde restant' })}</span>
+            <span className="text-[14px] font-bold tabular-nums" style={{ color: overBudget ? RED : GREEN }}>{formatXAF(remaining)}</span>
           </div>
         </div>
         <div className="mt-4 flex gap-2.5">
@@ -790,9 +790,9 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
       {/* ── QR fullscreen (above the sheet: z-[70] > z-[60]) ── */}
       {qrZoom && (
         <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-black/85 p-6" onClick={() => setQrZoom(null)} role="dialog" aria-modal="true">
-          <img src={qrZoom.url} alt="QR" className="max-h-[68vh] w-auto max-w-[88vw] rounded-2xl bg-white p-3" onClick={(e) => e.stopPropagation()} />
-          <p className="text-[15px] font-bold text-white">{qrZoom.name}</p>
-          <button type="button" onClick={() => setQrZoom(null)} className="rounded-full bg-white/15 px-5 py-2.5 text-[14px] font-bold text-white backdrop-blur">{t('bulk.close', { defaultValue: 'Fermer' })}</button>
+          <img src={qrZoom.url} alt="QR" className="max-h-[68vh] w-auto max-w-[88vw] rounded-lg bg-white p-3" onClick={(e) => e.stopPropagation()} />
+          <p className="text-[16px] font-bold text-white">{qrZoom.name}</p>
+          <button type="button" onClick={() => setQrZoom(null)} className="rounded-lg bg-white/15 px-5 py-2.5 text-[14px] font-bold text-white backdrop-blur">{t('bulk.close', { defaultValue: 'Fermer' })}</button>
         </div>
       )}
     </div>
@@ -815,7 +815,7 @@ function Breakdown({ lines }: { lines: DraftLine[] }) {
       </div>
       <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
         {byMethod.map((s) => (
-          <span key={s.m} className={cn('flex items-center gap-1 text-[10.5px] font-semibold', TEXT.muted)}>
+          <span key={s.m} className={cn('flex items-center gap-1 text-[14px] font-semibold', TEXT.muted)}>
             <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
             {PAYMENT_METHOD[s.m].label} <span className="font-bold tabular-nums" style={{ color: AMBER }}>¥{formatYuan(s.cny)}</span>
           </span>

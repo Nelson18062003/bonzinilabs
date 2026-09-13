@@ -56,7 +56,7 @@ export function MobileInventoryScreen() {
       <MobileHeader title="Inventaire" showBack backTo="/m/more/treasury" />
 
       <div className="px-5 py-5 space-y-3">
-        <p className="px-1 text-[12px] leading-snug text-muted-foreground">
+        <p className="px-1 text-[14px] leading-snug text-muted-foreground">
           Réconcilie le solde théorique (calculé depuis le ledger) avec le solde réellement constaté.
           Tout écart doit être justifié.
         </p>
@@ -82,11 +82,11 @@ export function MobileInventoryScreen() {
               >
                 <div className="min-w-0 text-left">
                   <div className="truncate font-semibold text-foreground">{a.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[14px] text-muted-foreground">
                     Solde théorique : {balance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {a.currency}
                   </div>
                 </div>
-                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', isActive ? 'bg-violet-500/10 text-bonzini-violet' : 'bg-muted text-muted-foreground')}>
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', isActive ? 'bg-[#2C2C2C]/10 text-bonzini-violet' : 'bg-muted text-muted-foreground')}>
                   <ClipboardCheck className="h-4 w-4" />
                 </div>
               </button>
@@ -103,14 +103,14 @@ export function MobileInventoryScreen() {
                     max={null}
                   />
 
-                  <div className="grid grid-cols-2 gap-2 text-[12px]">
+                  <div className="grid grid-cols-2 gap-2 text-[14px]">
                     <div className={cn(INSET, 'p-2.5')}>
                       <div className="text-muted-foreground">Théorique</div>
                       <div className="font-bold tabular-nums text-foreground">{theoretical.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</div>
                     </div>
-                    <div className={cn('rounded-2xl p-2.5', variance === 0 ? 'bg-emerald-500/10' : 'bg-red-500/10')}>
-                      <div className={cn(variance === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>Écart</div>
-                      <div className={cn('font-bold tabular-nums', variance === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
+                    <div className={cn('rounded-lg p-2.5', variance === 0 ? 'bg-[#14AE5C]/10' : 'bg-[#EC221F]/10')}>
+                      <div className={cn(variance === 0 ? 'text-[#009951] dark:text-[#14AE5C]' : 'text-[#C00F0C] dark:text-[#EC221F]')}>Écart</div>
+                      <div className={cn('font-bold tabular-nums', variance === 0 ? 'text-[#009951] dark:text-[#14AE5C]' : 'text-[#C00F0C] dark:text-[#EC221F]')}>
                         {variance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
                       </div>
                     </div>
@@ -120,7 +120,7 @@ export function MobileInventoryScreen() {
                     <div>
                       <TextField label="Motif de l’écart (10 caractères min)" value={reason} onChange={(e) => setReason(e.target.value)} />
                       {!reasonValid && (
-                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-red-600 dark:text-red-400">
+                        <div className="mt-1 flex items-center gap-1.5 text-[14px] text-[#C00F0C] dark:text-[#EC221F]">
                           <AlertTriangle className="h-3 w-3" />
                           Motif obligatoire et au moins 10 caractères.
                         </div>
@@ -138,7 +138,7 @@ export function MobileInventoryScreen() {
         })}
 
         {accounts.length === 0 && (
-          <div className="py-8 text-center text-[13px] text-muted-foreground">
+          <div className="py-8 text-center text-[14px] text-muted-foreground">
             Aucun compte cash / Alipay / WeChat à inventorier.
           </div>
         )}

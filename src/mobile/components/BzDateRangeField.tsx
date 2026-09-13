@@ -93,10 +93,10 @@ export function BzDateRangeField({
   );
 
   return (
-    <div className={cn('rounded-2xl', SURFACE.canvas)}>
+    <div className={cn('rounded-lg', SURFACE.canvas)}>
       <button type="button" onClick={() => setOpen((o) => !o)} className="flex h-11 w-full items-center gap-2.5 px-3.5">
         <CalendarDays className="h-4 w-4 shrink-0" style={{ color: accent }} />
-        <span className={cn('flex-1 text-left text-[13px] font-semibold', label ? TEXT.strong : TEXT.muted)}>
+        <span className={cn('flex-1 text-left text-[14px] font-semibold', label ? TEXT.strong : TEXT.muted)}>
           {label ?? placeholder}
         </span>
         {(value.from || value.to) && (
@@ -106,7 +106,7 @@ export function BzDateRangeField({
             aria-label="Effacer la période"
             onClick={(e) => { e.stopPropagation(); onChange({ from: '', to: '' }); }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onChange({ from: '', to: '' }); } }}
-            className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold', SURFACE.holder)}
+            className={cn('rounded-lg px-2 py-0.5 text-[14px] font-bold', SURFACE.holder)}
           >
             Effacer
           </span>
@@ -116,12 +116,12 @@ export function BzDateRangeField({
 
       {open && (
         <div className="px-3 pb-3">
-          <div className={cn('rounded-2xl p-3', SURFACE.card)}>
+          <div className={cn('rounded-lg p-3', SURFACE.card)}>
             <div className="flex items-center justify-between">
               <button type="button" aria-label="Mois précédent" onClick={() => shiftMonth(-1)} className={navBtnCls}>
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className={cn('text-[13px] font-bold', TEXT.strong)}>
+              <span className={cn('text-[14px] font-bold', TEXT.strong)}>
                 {MONTH_LABELS[view.month]} {view.year}
               </span>
               <button type="button" aria-label="Mois suivant" onClick={() => shiftMonth(1)} disabled={nextDisabled} className={navBtnCls}>
@@ -131,7 +131,7 @@ export function BzDateRangeField({
 
             <div className="mt-1 grid grid-cols-7">
               {DAY_LABELS.map((d) => (
-                <div key={d} className={cn('py-1 text-center text-[11px] font-semibold', TEXT.muted)}>{d}</div>
+                <div key={d} className={cn('py-1 text-center text-[14px] font-semibold', TEXT.muted)}>{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-y-0.5">
@@ -160,7 +160,7 @@ export function BzDateRangeField({
                       disabled={disabled}
                       onClick={() => pick(day)}
                       className={cn(
-                        'flex h-8 w-8 items-center justify-center rounded-xl text-[12px] font-semibold transition active:scale-95',
+                        'flex h-8 w-8 items-center justify-center rounded-lg text-[14px] font-semibold transition active:scale-95',
                         isEdge ? 'text-white' : TEXT.strong,
                         !isEdge && !inMonth && 'opacity-35',
                         disabled && 'opacity-20',
@@ -178,7 +178,7 @@ export function BzDateRangeField({
               })}
             </div>
             {from && !to && (
-              <p className={cn('mt-1.5 text-center text-[11px]', TEXT.muted)}>Choisissez la date de fin</p>
+              <p className={cn('mt-1.5 text-center text-[14px]', TEXT.muted)}>Choisissez la date de fin</p>
             )}
           </div>
         </div>

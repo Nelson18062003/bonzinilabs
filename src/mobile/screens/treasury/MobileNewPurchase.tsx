@@ -48,7 +48,7 @@ function LinkButton({ onClick, children }: { onClick: () => void; children: Reac
     <button
       type="button"
       onClick={onClick}
-      className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-bonzini-violet active:opacity-70"
+      className="mt-2 inline-flex items-center gap-1 text-[14px] font-semibold text-bonzini-violet active:opacity-70"
     >
       {children}
     </button>
@@ -58,7 +58,7 @@ function LinkButton({ onClick, children }: { onClick: () => void; children: Reac
 // Discreet computed/derived value (no loud filled box — keeps the form calm).
 function Computed({ label, value, unit, decimals }: { label: string; value: number | null; unit: string; decimals: number }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3.5 py-2.5 text-[12px]">
+    <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3.5 py-2.5 text-[14px]">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-semibold tabular-nums text-foreground">
         {fmt(value, decimals)} <span className="font-normal text-muted-foreground">{unit}</span>
@@ -176,7 +176,7 @@ export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
       {desktop ? (
         <header className="mb-6">
-          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">Nouvel achat USDT</h2>
+          <h2 className="text-[24px] font-bold tracking-tight text-foreground">Nouvel achat USDT</h2>
           <p className="mt-0.5 text-[14px] text-muted-foreground">Entrée de stock USDT contre XAF</p>
         </header>
       ) : (
@@ -226,9 +226,9 @@ export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {
               {splits.map((row, idx) => (
                 <div key={row.key} className={cn(INSET, 'space-y-2.5 p-3.5')}>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Compte {idx + 1}</span>
+                    <span className="text-[14px] font-bold text-muted-foreground">Compte {idx + 1}</span>
                     {splits.length > 1 && (
-                      <button type="button" onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))} className="text-red-600 dark:text-red-400" aria-label="Retirer">
+                      <button type="button" onClick={() => setSplits((rows) => rows.filter((r) => r.key !== row.key))} className="text-[#C00F0C] dark:text-[#EC221F]" aria-label="Retirer">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
@@ -245,11 +245,11 @@ export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {
               <button
                 type="button"
                 onClick={() => setSplits((rows) => [...rows, newSplit()])}
-                className="flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl bg-muted/60 text-[13px] font-semibold text-muted-foreground transition active:scale-[0.99]"
+                className="flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-muted/60 text-[14px] font-semibold text-muted-foreground transition active:scale-[0.99]"
               >
                 <Plus className="h-4 w-4" /> Ajouter un compte
               </button>
-              <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3.5 py-2.5 text-[12px]">
+              <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3.5 py-2.5 text-[14px]">
                 <span className="text-muted-foreground">Total XAF payé</span>
                 <span className="font-bold tabular-nums text-foreground">{fmt(multiTotalXaf, 0)} <span className="font-normal text-muted-foreground">XAF</span></span>
               </div>
@@ -286,7 +286,7 @@ export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {
             </>
           ) : (
             <>
-              <p className="text-[12px] text-muted-foreground">
+              <p className="text-[14px] text-muted-foreground">
                 Le XAF total ({fmt(multiTotalXaf, 0)}) vient de tes comptes. Saisis l’USDT reçu OU le taux.
               </p>
               <Segmented
@@ -307,7 +307,7 @@ export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {
             </>
           )}
 
-          <div className="px-1 text-[11px] text-muted-foreground">
+          <div className="px-1 text-[14px] text-muted-foreground">
             WAC USDT courant : <span className="font-semibold text-foreground">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
           </div>
         </div>
@@ -317,7 +317,7 @@ export function MobileNewPurchase({ desktop = false }: { desktop?: boolean } = {
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className={cn(INSET, 'flex w-full items-center gap-2 px-4 py-3.5 text-[13px] font-semibold')}
+            className={cn(INSET, 'flex w-full items-center gap-2 px-4 py-3.5 text-[14px] font-semibold')}
           >
             <span>Détails</span>
             <span className="font-normal text-muted-foreground">date · référence · note</span>

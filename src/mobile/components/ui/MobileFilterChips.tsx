@@ -26,7 +26,7 @@ export function MobileFilterChips<T extends string>({
           key={filter.value}
           onClick={() => onChange(filter.value)}
           className={cn(
-            'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
+            'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
             activeKey === filter.value
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-muted-foreground hover:bg-muted/80'

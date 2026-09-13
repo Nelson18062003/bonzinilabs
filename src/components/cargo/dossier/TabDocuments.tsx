@@ -37,15 +37,16 @@ function KindRow({
               ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
               : <FileText className={cn('mt-0.5 h-4 w-4 shrink-0', TEXT.muted)} />}
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className={cn('text-[13px] font-semibold', TEXT.strong)}>{label}</span>
-              {required && !present && <span className="rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10.5px] font-bold text-destructive">manquant</span>}
+            {/* Sur mobile le libellé garde sa ligne ; « manquant » passe dessous, à côté de l'explication. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className={cn('text-[13px] max-lg:text-[16px] font-semibold', TEXT.strong)}>{label}</span>
+              {required && !present && <span className="rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10.5px] max-lg:text-[14px] font-bold text-destructive">manquant</span>}
             </div>
-            <p className={cn('mt-0.5 text-[11.5px]', TEXT.muted)}>{who}</p>
+            <p className={cn('mt-0.5 text-[11.5px] max-lg:text-[14px]', TEXT.muted)}>{who}</p>
           </div>
         </div>
         {canManage && (
-          <button type="button" onClick={() => onAdd(kind)} className={cn('inline-flex h-7 shrink-0 items-center gap-1 px-2.5 text-[11.5px] font-semibold', SOFT_PILL)}>
+          <button type="button" onClick={() => onAdd(kind)} className={cn('inline-flex h-7 shrink-0 items-center gap-1 px-2.5 text-[11.5px] max-lg:h-8 max-lg:text-[14px] font-semibold', SOFT_PILL)}>
             <Plus className="h-3 w-3" /> Ajouter
           </button>
         )}
@@ -56,8 +57,8 @@ function KindRow({
             <li key={d.id} className={cn('flex items-center gap-2 rounded-lg px-2 py-1.5', SURFACE.inset)}>
               <button type="button" onClick={() => openCargoDocument(d)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
                 <Download className={cn('h-3.5 w-3.5 shrink-0', TEXT.muted)} />
-                <span className={cn('truncate text-[12.5px] font-medium', TEXT.body)}>{d.file_name}</span>
-                <span className={cn('shrink-0 text-[11px] tabular-nums', TEXT.muted)}>{absShort(d.created_at)}{d.size_bytes ? ` · ${kb(d.size_bytes)}` : ''}</span>
+                <span className={cn('truncate text-[12.5px] max-lg:text-[14px] font-medium', TEXT.body)}>{d.file_name}</span>
+                <span className={cn('shrink-0 text-[11px] max-lg:text-[14px] tabular-nums', TEXT.muted)}>{absShort(d.created_at)}{d.size_bytes ? ` · ${kb(d.size_bytes)}` : ''}</span>
               </button>
               {canManage && (
                 <button type="button" onClick={() => onDelete(d)} aria-label="Supprimer" className={cn('rounded-md p-1 hover:bg-destructive/10', TEXT.muted)}>
@@ -109,12 +110,12 @@ export function TabDocuments({ shipment: s, canManage }: { shipment: CargoShipme
       </div>
 
       <Section title="Pourquoi ces pièces">
-        <p className={cn('text-[12.5px] leading-relaxed', TEXT.body)}>
+        <p className={cn('text-[12.5px] max-lg:text-[14px] leading-relaxed', TEXT.body)}>
           Sans <b>bill of lading</b> et <b>télex release</b>, l'armateur ne remet pas la marchandise. Sans <b>facture</b> et
           <b> packing list</b>, la douane ne peut pas établir la valeur. Sans <b>BESC</b>, la déclaration est bloquée au
           Cameroun et une pénalité s'ajoute.
         </p>
-        <p className={cn('mt-3 text-[12.5px]', TEXT.muted)}>
+        <p className={cn('mt-3 text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>
           Formats acceptés : PDF, JPG, PNG, WebP. 10 Mo maximum par pièce. Les fichiers sont stockés dans un espace privé :
           seuls les membres autorisés du module Cargo peuvent les ouvrir.
         </p>
@@ -127,8 +128,8 @@ export function TabDocuments({ shipment: s, canManage }: { shipment: CargoShipme
         title={addKind ? `Ajouter — ${DOCUMENT_KINDS.find((k) => k.kind === addKind)?.label}` : ''}
         footer={
           <>
-            <button type="button" onClick={() => { setAddKind(null); setFile(null); }} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-            <button type="button" onClick={submit} disabled={!file || upload.isPending} className={cn('h-9 px-4 text-[13px] font-bold disabled:opacity-60', PRIMARY_PILL)}>
+            <button type="button" onClick={() => { setAddKind(null); setFile(null); }} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>Annuler</button>
+            <button type="button" onClick={submit} disabled={!file || upload.isPending} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-bold disabled:opacity-60', PRIMARY_PILL)}>
               {upload.isPending ? 'Envoi…' : 'Ajouter'}
             </button>
           </>
@@ -139,7 +140,7 @@ export function TabDocuments({ shipment: s, canManage }: { shipment: CargoShipme
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className={cn('flex h-24 w-full items-center justify-center rounded-[10px] border border-dashed border-input text-[13px]', SURFACE.inset, file ? TEXT.strong : TEXT.muted)}
+          className={cn('flex h-24 w-full items-center justify-center rounded-[10px] border border-dashed border-input text-[13px] max-lg:text-[14px]', SURFACE.inset, file ? TEXT.strong : TEXT.muted)}
         >
           {file ? file.name : 'Choisir un PDF ou une image (10 Mo max)'}
         </button>

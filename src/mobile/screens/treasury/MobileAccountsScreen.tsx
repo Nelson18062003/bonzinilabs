@@ -60,9 +60,9 @@ export function MobileAccountsScreen() {
                 <div className="mb-2.5 flex items-center justify-between px-1">
                   <div className="flex items-center gap-1.5">
                     <span className={cn('h-2 w-2 rounded-full', TONE_DOT[group.tone])} />
-                    <h2 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">{group.label}</h2>
+                    <h2 className="text-[14px] font-bold text-muted-foreground">{group.label}</h2>
                   </div>
-                  <span className="text-[13px] font-bold tabular-nums text-foreground">
+                  <span className="text-[14px] font-bold tabular-nums text-foreground">
                     {formatBalance(total, group.currency)} {group.currency}
                   </span>
                 </div>
@@ -110,7 +110,7 @@ export function AccountRow({
       >
         <div className="min-w-0">
           <div className="truncate font-semibold text-foreground">{account.label}</div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[14px] text-muted-foreground">
             {KIND_LABEL[account.kind ?? 'other'] ?? account.kind} ·{' '}
             {account.last_entry_at
               ? `dernière écriture ${new Date(account.last_entry_at).toLocaleDateString('fr-FR')}`
@@ -118,7 +118,7 @@ export function AccountRow({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className={cn('text-right font-bold tabular-nums', negative ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+          <div className={cn('text-right font-bold tabular-nums', negative ? 'text-[#C00F0C] dark:text-[#EC221F]' : 'text-foreground')}>
             {formatBalance(balance, currency)}
           </div>
           {canManage && (open ? <ChevronUp className="h-4 w-4 text-muted-foreground/60" /> : <ChevronDown className="h-4 w-4 text-muted-foreground/60" />)}
@@ -174,8 +174,8 @@ function AdjustForm({
           type="button"
           onClick={() => setDirection('credit')}
           className={cn(
-            'flex h-11 items-center justify-center gap-1.5 rounded-2xl text-[13px] font-semibold transition-colors',
-            direction === 'credit' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-muted text-muted-foreground',
+            'flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold transition-colors',
+            direction === 'credit' ? 'bg-[#14AE5C]/15 text-[#009951] dark:text-[#14AE5C]' : 'bg-muted text-muted-foreground',
           )}
         >
           <Plus className="h-4 w-4" /> Approvisionner
@@ -184,8 +184,8 @@ function AdjustForm({
           type="button"
           onClick={() => setDirection('debit')}
           className={cn(
-            'flex h-11 items-center justify-center gap-1.5 rounded-2xl text-[13px] font-semibold transition-colors',
-            direction === 'debit' ? 'bg-red-500/15 text-red-700 dark:text-red-300' : 'bg-muted text-muted-foreground',
+            'flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold transition-colors',
+            direction === 'debit' ? 'bg-[#EC221F]/15 text-[#C00F0C] dark:text-[#EC221F]' : 'bg-muted text-muted-foreground',
           )}
         >
           <Minus className="h-4 w-4" /> Débiter
@@ -212,7 +212,7 @@ function AdjustForm({
       <div className="flex gap-2.5">
         <button
           onClick={onClose}
-          className="h-12 flex-1 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
+          className="h-12 flex-1 rounded-lg bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
         >
           Annuler
         </button>
@@ -220,12 +220,12 @@ function AdjustForm({
           onClick={handleSubmit}
           disabled={!valid || adjust.isPending}
           className={cn(
-            'flex h-12 flex-1 items-center justify-center rounded-2xl text-[14px] font-bold transition active:scale-[0.99]',
+            'flex h-12 flex-1 items-center justify-center rounded-lg text-[14px] font-bold transition active:scale-[0.99]',
             !valid || adjust.isPending
               ? 'bg-muted text-muted-foreground'
               : direction === 'credit'
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'bg-red-600 text-white hover:bg-red-700',
+                ? 'bg-[#14AE5C] text-white hover:bg-emerald-700'
+                : 'bg-[#EC221F] text-white hover:bg-[#EC221F]',
           )}
         >
           {adjust.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : direction === 'credit' ? 'Approvisionner' : 'Débiter'}

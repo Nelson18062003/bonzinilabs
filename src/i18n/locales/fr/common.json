@@ -47,7 +47,7 @@
   "activateAccount": "Activer le compte",
   "active": "Actif",
   "activeUsers": "Actifs",
-  "activityLog": "Journal d",
+  "activityLog": "Journal d'activité",
   "adminCreatedSuccess": "Admin créé avec succès",
   "adminDetail": "Détail admin",
   "adminNotFound": "Admin non trouvé",
@@ -447,5 +447,8 @@
   "shippingLabelActionDesc": "Entrepôt ou bureau · image ou PDF à imprimer",
   "shippingSettings": "Expédition",
   "shippingSettingsRow": "Adresses en Chine et coordonnées",
-  "shippingSettingsRowHint": "Entrepôt, bureau, téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis"
+  "shippingSettingsRowHint": "Entrepôt, bureau, téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis",
+  "assistant": "Mola",
+  "cargo": "Cargo",
+  "navOperations": "Opérations"
 }

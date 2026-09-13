@@ -43,7 +43,7 @@ export function TabSuivi({ shipment: s }: { shipment: CargoShipment }) {
             />
           </Facts>
           {slip > 3 && (
-            <p className={cn('mt-4 border-t border-black/[0.06] pt-3 text-[12.5px] dark:border-white/[0.06]', TEXT.body)}>
+            <p className={cn('mt-4 border-t border-black/[0.06] pt-3 text-[12.5px] max-lg:text-[14px] dark:border-white/[0.06]', TEXT.body)}>
               Écart significatif : c'est l'argument à opposer au transitaire, et la raison de prévenir {s.client_label}.
             </p>
           )}
@@ -52,8 +52,8 @@ export function TabSuivi({ shipment: s }: { shipment: CargoShipment }) {
         <Section title="Dernier mouvement">
           {s.last_event_label ? (
             <>
-              <p className={cn('text-[15px] font-bold', TEXT.strong)}>{s.last_event_label}</p>
-              <p className={cn('mt-1 text-[12.5px]', TEXT.muted)}>{s.last_event_at ? fmtDayTime(new Date(s.last_event_at)) : '—'}</p>
+              <p className={cn('text-[15px] max-lg:text-[16px] font-bold', TEXT.strong)}>{s.last_event_label}</p>
+              <p className={cn('mt-1 text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>{s.last_event_at ? fmtDayTime(new Date(s.last_event_at)) : '—'}</p>
             </>
           ) : (
             <Empty title="Rien de neuf" />

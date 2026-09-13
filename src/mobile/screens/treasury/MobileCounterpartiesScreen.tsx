@@ -92,7 +92,7 @@ export function MobileCounterpartiesScreen() {
               <div className="flex gap-2.5 pt-1">
                 <button
                   onClick={resetForm}
-                  className="h-[52px] flex-1 rounded-2xl bg-muted text-[15px] font-bold text-foreground transition active:scale-[0.99]"
+                  className="h-[52px] flex-1 rounded-lg bg-muted text-[16px] font-bold text-foreground transition active:scale-[0.99]"
                 >
                   Annuler
                 </button>
@@ -106,7 +106,7 @@ export function MobileCounterpartiesScreen() {
           ) : (
             <button
               onClick={() => setShowForm(true)}
-              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl bg-muted/60 text-[13px] font-semibold text-muted-foreground transition active:scale-[0.99]"
+              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-muted/60 text-[14px] font-semibold text-muted-foreground transition active:scale-[0.99]"
             >
               <Plus className="h-4 w-4" />
               Nouvelle contrepartie {isSupplier ? '(fournisseur USDT)' : '(acheteur CNY)'}
@@ -119,34 +119,34 @@ export function MobileCounterpartiesScreen() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (data ?? []).length === 0 ? (
-          <div className="py-8 text-center text-[13px] text-muted-foreground">
+          <div className="py-8 text-center text-[14px] text-muted-foreground">
             Aucune contrepartie {isSupplier ? 'fournisseur' : 'acheteur'} pour l’instant.
           </div>
         ) : (
           <div className="space-y-2.5">
             {(data ?? []).map((c) => {
               const toneBadge = isSupplier
-                ? 'bg-violet-500/10 text-bonzini-violet'
-                : 'bg-amber-500/10 text-bonzini-amber';
+                ? 'bg-[#2C2C2C]/10 text-bonzini-violet'
+                : 'bg-[#E8B931]/10 text-bonzini-amber';
               return (
                 <button
                   key={c.id}
                   onClick={() => canManage && navigate(`/m/more/treasury/counterparties/${c.id}`)}
                   className={cn(SOFT_CARD, 'flex w-full items-center gap-3 p-3.5 text-left', canManage && 'transition active:scale-[0.99]')}
                 >
-                  <span className={cn('shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold', toneBadge)}>{c.short_id}</span>
+                  <span className={cn('shrink-0 rounded-lg px-2 py-1 text-[14px] font-bold', toneBadge)}>{c.short_id}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="truncate font-semibold text-foreground">{c.display_name}</span>
                       {!c.is_active && (
-                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[14px] font-bold uppercase text-muted-foreground">
                           <Archive className="h-3 w-3" />
                           Archivée
                         </span>
                       )}
                     </div>
-                    {c.legal_name && <div className="truncate text-[12px] text-muted-foreground">{c.legal_name}</div>}
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    {c.legal_name && <div className="truncate text-[14px] text-muted-foreground">{c.legal_name}</div>}
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[14px] text-muted-foreground">
                       {c.phone && (
                         <span className="inline-flex items-center gap-1">
                           <Phone className="h-3 w-3" />

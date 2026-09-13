@@ -139,7 +139,7 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
         ) : (
           <>
             {!canEdit && (
-              <p className={cn('rounded-2xl px-4 py-3 text-[13px]', SURFACE.inset, TEXT.body)}>
+              <p className={cn('rounded-lg px-4 py-3 text-[14px]', SURFACE.inset, TEXT.body)}>
                 Lecture seule : seul un super-administrateur peut modifier ces réglages.
               </p>
             )}
@@ -149,7 +149,7 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
               <Card className="space-y-3">
                 <div className="flex items-center gap-3">
                   {sectionIcon(Mail)}
-                  <p className={cn('text-[13px]', TEXT.muted)}>Apparaît dans la case « destinataire » de chaque étiquette.</p>
+                  <p className={cn('text-[14px]', TEXT.muted)}>Apparaît dans la case « destinataire » de chaque étiquette.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Field id="c-en" label="Nom (latin)" value={form.company.nameEn} onChange={(v) => update('company', { ...form.company, nameEn: v })} disabled={!canEdit} />
@@ -169,7 +169,7 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
               <Card className="space-y-3">
                 <div className="flex items-center gap-3">
                   {sectionIcon(Warehouse)}
-                  <p className={cn('text-[13px]', TEXT.muted)}>La destination par défaut des étiquettes.</p>
+                  <p className={cn('text-[14px]', TEXT.muted)}>La destination par défaut des étiquettes.</p>
                 </div>
                 <LocationFields prefix="w" value={form.warehouse} onChange={(v) => update('warehouse', v)} disabled={!canEdit} />
               </Card>
@@ -180,7 +180,7 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
               <Card className="space-y-3">
                 <div className="flex items-center gap-3">
                   {sectionIcon(Building2)}
-                  <p className={cn('text-[13px]', TEXT.muted)}>Proposé au client comme seconde destination.</p>
+                  <p className={cn('text-[14px]', TEXT.muted)}>Proposé au client comme seconde destination.</p>
                 </div>
                 <LocationFields prefix="o" value={form.office} onChange={(v) => update('office', v)} disabled={!canEdit} />
               </Card>

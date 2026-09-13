@@ -10,7 +10,6 @@ import {
   Bell,
   UserCog,
   BarChart3,
-  Bot,
   LogOut,
   ChevronRight,
   Settings,
@@ -19,13 +18,13 @@ import {
   MessageSquareQuote,
   Sparkles,
   Newspaper,
-  Ship,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTheme } from 'next-themes';
+import { supportedLanguages, languageNames, type SupportedLanguage } from '@/i18n';
+import { persistPreferredLocale } from '@/lib/persistLocale';
 import { useAdminConversations } from '@/hooks/useAdminChat';
-import { SURFACE, TEXT, TONE_HOLDER, Card, SectionTitle } from '@/mobile/designKit';
+import { SURFACE, TEXT, TONE_HOLDER, Card, Chip, SectionTitle, Segmented } from '@/mobile/designKit';
 
 interface MenuRowProps {
   icon: React.ElementType;
@@ -42,7 +41,7 @@ function MenuRow({ icon: Icon, label, description, onClick, destructive, badge }
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.99]"
+      className="flex w-full items-center gap-3.5 rounded-lg px-2 py-2.5 text-left transition active:scale-[0.99]"
     >
       <span
         className={cn(
@@ -53,13 +52,13 @@ function MenuRow({ icon: Icon, label, description, onClick, destructive, badge }
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+        <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block truncate text-[12.5px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block break-words text-[16px]', TEXT.muted)}>{description}</span>}
       </span>
       {badge && (
-        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#D14343] px-1.5 text-[11px] font-bold text-white">
+        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-lg bg-[#EC221F] px-1.5 text-[16px] font-bold text-white">
           {badge}
         </span>
       )}
@@ -72,7 +71,6 @@ export function MobileMoreScreen() {
   const { t } = useTranslation('common');
   const { profile, logout, canManageUsers, hasPermission } = useAdminAuth();
   const canViewTreasury = hasPermission('canViewTreasury');
-  const canViewCargo = hasPermission('canViewCargo');
   const canAccessSupportChat = hasPermission('canAccessSupportChat');
   const { data: notifCount } = useAdminNotificationCount();
   const { data: convs } = useAdminConversations();
@@ -80,6 +78,10 @@ export function MobileMoreScreen() {
     ? (convs ?? []).reduce((sum, c) => sum + (c.unread_count_admin || 0), 0)
     : 0;
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const { i18n } = useTranslation();
+  const currentLang = (i18n.language?.slice(0, 2) ?? 'fr') as SupportedLanguage;
+  const selectLanguage = (lang: SupportedLanguage) => { i18n.changeLanguage(lang); void persistPreferredLocale(lang); };
 
   const handleLogout = async () => {
     await logout();
@@ -94,7 +96,7 @@ export function MobileMoreScreen() {
         {/* Profile — cliquable pour éditer */}
         <button
           onClick={() => navigate('/m/more/profile')}
-          className={cn('flex w-full items-center gap-4 rounded-[22px] p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
+          className={cn('flex w-full items-center gap-4 rounded-lg p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
         >
           <div className={cn('flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-xl font-bold', SURFACE.holder)}>
             {profile?.avatar_url ? (
@@ -104,10 +106,10 @@ export function MobileMoreScreen() {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className={cn('truncate text-[18px] font-bold', TEXT.strong)}>
+            <p className={cn('break-words text-[20px] font-bold', TEXT.strong)}>
               {profile?.first_name || 'Mon profil'} {profile?.last_name}
             </p>
-            <p className={cn('text-[13px]', TEXT.muted)}>Modifier mes informations</p>
+            <p className={cn('text-[16px]', TEXT.muted)}>Modifier mes informations</p>
           </div>
           <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
         </button>
@@ -116,12 +118,6 @@ export function MobileMoreScreen() {
         <div>
           <SectionTitle>{t('tools', { defaultValue: 'Outils' })}</SectionTitle>
           <Card className="space-y-0.5 p-2">
-            <MenuRow
-              icon={Bot}
-              label="Mola"
-              description="Pose une question sur la plateforme"
-              onClick={() => navigate('/m/assistant')}
-            />
             <MenuRow
               icon={BarChart3}
               label="Dashboard"
@@ -140,14 +136,6 @@ export function MobileMoreScreen() {
                 label="Trésorerie"
                 description="Achats/ventes USDT, soldes, inventaire"
                 onClick={() => navigate('/m/more/treasury')}
-              />
-            )}
-            {canViewCargo && (
-              <MenuRow
-                icon={Ship}
-                label="Bonzini Cargo"
-                description="Où sont les conteneurs, quand ils arrivent"
-                onClick={() => navigate('/m/cargo')}
               />
             )}
           </Card>
@@ -234,15 +222,23 @@ export function MobileMoreScreen() {
           </Card>
         </div>
 
-        {/* Langue & Thème */}
-        <Card className="space-y-1 p-4">
-          <div className="flex items-center justify-between py-1">
-            <span className={cn('text-[13.5px] font-medium', TEXT.muted)}>{t('language', { defaultValue: 'Langue' })}</span>
-            <LanguageSwitcher />
+        {/* Langue & Thème — des choix qu'on voit tous en même temps, pas un bouton qui tourne. */}
+        <Card className="space-y-4">
+          <div className="space-y-2">
+            <p className={cn('text-[16px] font-semibold', TEXT.strong)}>{t('language', { defaultValue: 'Langue' })}</p>
+            <div className="flex flex-wrap gap-2">
+              {supportedLanguages.map((lang) => (
+                <Chip key={lang} label={languageNames[lang]} active={currentLang === lang} onClick={() => selectLanguage(lang)} />
+              ))}
+            </div>
           </div>
-          <div className="flex items-center justify-between py-1">
-            <span className={cn('text-[13.5px] font-medium', TEXT.muted)}>{t('theme', { defaultValue: 'Thème' })}</span>
-            <ThemeToggleCompact />
+          <div className="space-y-2">
+            <p className={cn('text-[16px] font-semibold', TEXT.strong)}>{t('theme', { defaultValue: 'Thème' })}</p>
+            <Segmented
+              options={[{ value: 'light', label: 'Clair' }, { value: 'dark', label: 'Sombre' }, { value: 'system', label: 'Auto' }] as const}
+              value={(theme ?? 'system') as 'light' | 'dark' | 'system'}
+              onChange={setTheme}
+            />
           </div>
         </Card>
 

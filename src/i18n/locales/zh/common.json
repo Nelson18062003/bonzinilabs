@@ -445,5 +445,8 @@
   "shippingLabelActionDesc": "仓库或办公室 · 图片或可打印 PDF",
   "shippingSettings": "发货",
   "shippingSettingsRow": "中国地址与联系方式",
-  "shippingSettingsRowHint": "仓库、办公室、电话、微信、WhatsApp、邮箱 — 印在发货标签上"
+  "shippingSettingsRowHint": "仓库、办公室、电话、微信、WhatsApp、邮箱 — 印在发货标签上",
+  "assistant": "Mola",
+  "cargo": "货运",
+  "navOperations": "业务"
 }

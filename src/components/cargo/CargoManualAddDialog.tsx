@@ -47,19 +47,19 @@ export function CargoManualAddDialog({ open, onClose, reference }: { open: boole
       title="Ajouter sans suivi armateur"
       footer={
         <>
-          <button type="button" onClick={onClose} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-          <button type="button" onClick={submit} disabled={!ok || create.isPending} className={cn('h-9 px-4 text-[13px] font-bold disabled:opacity-60', PRIMARY_PILL)}>{create.isPending ? 'Ajout…' : 'Ajouter à ma flotte'}</button>
+          <button type="button" onClick={onClose} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>Annuler</button>
+          <button type="button" onClick={submit} disabled={!ok || create.isPending} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-bold disabled:opacity-60', PRIMARY_PILL)}>{create.isPending ? 'Ajout…' : 'Ajouter à ma flotte'}</button>
         </>
       }
     >
-      <p className={cn('mb-4 text-[13px]', TEXT.body)}>Le dossier existera avec les dates du transitaire ; les jalons viendront quand l'armateur sera interrogeable. Renseigne le navire si tu le connais : il sera placé sur la carte.</p>
+      <p className={cn('mb-4 text-[13px] max-lg:text-[14px]', TEXT.body)}>Le dossier existera avec les dates du transitaire ; les jalons viendront quand l'armateur sera interrogeable. Renseigne le navire si tu le connais : il sera placé sur la carte.</p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <div><SecLabel className="mb-1.5">Client</SecLabel><TextField id="cargo-man-client" size="sm" variant="name" value={client} onChange={(e) => setClient(e.target.value)} placeholder="GAUSS, PRC…" /></div>
         <div>
           <SecLabel className="mb-1.5">Armateur</SecLabel>
           <div className="flex flex-wrap gap-1">
             {CARRIERS.map((c) => (
-              <button key={c} type="button" onClick={() => setCarrier(c)} className={cn('h-8 rounded-md px-2.5 text-[12px] font-semibold', c === carrier ? PRIMARY_PILL : SOFT_PILL)}>{CARRIER_LABEL[c]}</button>
+              <button key={c} type="button" onClick={() => setCarrier(c)} className={cn('h-8 rounded-md px-2.5 text-[12px] max-lg:text-[14px] font-semibold', c === carrier ? PRIMARY_PILL : SOFT_PILL)}>{CARRIER_LABEL[c]}</button>
             ))}
           </div>
         </div>
@@ -69,7 +69,7 @@ export function CargoManualAddDialog({ open, onClose, reference }: { open: boole
           <SecLabel className="mb-1.5">Port d'arrivée</SecLabel>
           <div className="flex gap-1">
             {PODS.map(([code, name]) => (
-              <button key={code} type="button" onClick={() => setPod(code)} className={cn('h-8 rounded-md px-3 text-[12px] font-semibold', code === pod ? PRIMARY_PILL : SOFT_PILL)}>{name}</button>
+              <button key={code} type="button" onClick={() => setPod(code)} className={cn('h-8 rounded-md px-3 text-[12px] max-lg:text-[14px] font-semibold', code === pod ? PRIMARY_PILL : SOFT_PILL)}>{name}</button>
             ))}
           </div>
         </div>
