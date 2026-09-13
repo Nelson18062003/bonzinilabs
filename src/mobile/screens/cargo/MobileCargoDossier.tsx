@@ -18,7 +18,9 @@ import { CheckCircle2, ChevronDown, Circle, ExternalLink } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoShipment, useCargoVesselPositions } from '@/hooks/useCargo';
-import { DossierActions, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabNotes } from '@/components/cargo/dossier';
+import { DossierActions, TabChargement, TabClient, TabCouts, TabNotes } from '@/components/cargo/dossier';
+import { MobilePapiers } from './MobilePapiers';
+import { MobileDouane } from './MobileDouane';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { nextSteps } from '@/lib/cargo/todo';
@@ -140,8 +142,8 @@ export function MobileCargoDossier() {
     { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} /> },
     { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} /> },
     { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} /> },
-    { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <div className="admin-theme"><TabDocuments shipment={x} canManage={canManage} /></div> },
-    { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <div className="admin-theme"><TabDouane shipment={x} canManage={canManage} /></div> },
+    { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <MobilePapiers shipment={x} canManage={canManage} /> },
+    { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <MobileDouane shipment={x} canManage={canManage} /> },
     { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} /> },
     { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'La boîte vue de l’intérieur, lot par lot', body: (x) => <div className="admin-theme"><TabChargement shipment={x} canManage={canManage} /></div> },
     { key: 'client', title: 'Le client', summary: (x) => x.client_label, body: (x) => <div className="admin-theme"><TabClient shipment={x} canManage={canManage} /></div> },

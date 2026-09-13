@@ -138,3 +138,20 @@ et la référence BZ-DP-… quittent la liste (ils sont dans le détail, et la
 recherche par référence marche toujours). Un client : le nom et son état,
 « Solde : 310 000 XAF », le téléphone. Les totaux dépôts / paiements
 quittent la liste. Sur les 578 tests et les 21 écrans, rien ne casse.
+
+## Passe 7 — « Les papiers » et « La douane » en phrases
+
+Les deux sections du dossier qui ouvraient encore les composants desktop
+ont leur version mobile (`MobilePapiers.tsx`, `MobileDouane.tsx`) :
+- chaque pièce dit ce qu'elle est, qui la fait et pourquoi on ne peut pas
+  s'en passer (« C'est la preuve que le fret est payé. L'armateur l'envoie
+  après paiement ; sans lui, le conteneur reste au port. ») ; « Ajouter le
+  télex » ouvre directement l'appareil photo ou les fichiers, sans dialogue ;
+  une pièce reçue montre la date et s'ouvre d'un tap ; « Retirer » demande
+  confirmation ;
+- chaque étape camerounaise dit ce qu'elle veut dire ; « C'est fait
+  aujourd'hui » suffit dans la plupart des cas, « Un autre jour » ouvre une
+  date ; la franchise est dite en ambre puis en rouge, avec le nombre de
+  jours ; les numéros de BESC et de déclaration se lisent en phrase et se
+  saisissent dessous.
+Les deux sections sont à 0 texte sous 14 px et 2 cibles sous 40 px.
