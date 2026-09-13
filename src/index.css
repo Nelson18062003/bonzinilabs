@@ -1521,6 +1521,14 @@
 .cargo-popup__status { font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .cargo-popup__muted { color: hsl(var(--muted-foreground)); }
 .cargo-popup__k { margin-top: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+@media (max-width: 1023px) {
+  /* Mobile : la carte se lit aussi au soleil — étiquettes 14 px, encre foncée. */
+  .cargo-ship__label, .cargo-port__label, .cargo-legend { font-size: 14px; }
+  .cargo-ship__label em { font-size: 13px; }
+  .cargo-port__label { color: hsl(var(--foreground)); }
+  .cargo-popup__k { font-size: 12px; }
+  .cargo-ship b { min-width: 20px; height: 20px; top: -10px; right: -12px; font-size: 12px; line-height: 17px; }
+}
 .cargo-popup__row { display: flex; justify-content: space-between; gap: 10px; width: 100%; padding: 5px 6px; margin: 0 -6px; border-radius: 6px; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 .cargo-popup__row:hover { background: hsl(var(--muted)); }
 .cargo-popup__row span:last-child { color: hsl(var(--muted-foreground)); white-space: nowrap; }

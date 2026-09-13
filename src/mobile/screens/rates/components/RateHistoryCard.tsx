@@ -58,12 +58,12 @@ export function RateHistoryCard({ rate, previousRate, isLast }: RateHistoryCardP
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className={cn('text-[14px] font-bold', TEXT.strong)}>{dateStr}</span>
+            <span className={cn('text-[16px] font-bold', TEXT.strong)}>{dateStr}</span>
             {rate.is_active && <StatusPill tone="success" label="Actif" />}
             {variationStr && (
               <span
                 className={cn(
-                  'inline-flex items-center rounded-lg px-2 py-0.5 text-[14px] font-bold tabular-nums',
+                  'inline-flex items-center rounded-lg px-2 py-0.5 text-[16px] font-bold tabular-nums',
                   isPositive
                     ? 'bg-[#CFF7D3] text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]'
                     : 'bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]',
@@ -73,7 +73,7 @@ export function RateHistoryCard({ rate, previousRate, isLast }: RateHistoryCardP
               </span>
             )}
           </div>
-          <div className={cn('mt-0.5 truncate text-[14px] tabular-nums', TEXT.muted)}>
+          <div className={cn('mt-0.5 truncate text-[16px] tabular-nums', TEXT.muted)}>
             ¥ {PAYMENT_METHODS.map((pm) => rateValues[pm.key].toLocaleString('fr-FR')).join(' · ')}
           </div>
         </div>
@@ -88,8 +88,8 @@ export function RateHistoryCard({ rate, previousRate, isLast }: RateHistoryCardP
             <div key={pm.key} className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2', SURFACE.canvas)}>
               <MethodLogo method={pm.key} size={26} />
               <div className="min-w-0">
-                <div className={cn('text-[14px]', TEXT.muted)}>{pm.label}</div>
-                <div className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
+                <div className={cn('text-[16px]', TEXT.muted)}>{pm.label}</div>
+                <div className={cn('text-[16px] font-bold tabular-nums', TEXT.strong)}>
                   {rateValues[pm.key].toLocaleString('fr-FR')}
                 </div>
               </div>

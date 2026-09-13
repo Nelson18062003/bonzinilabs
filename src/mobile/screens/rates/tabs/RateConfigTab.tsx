@@ -99,17 +99,17 @@ export function RateConfigTab() {
     >
       <div className="flex items-center gap-2">
         <div>
-          <span className={cn('text-[14px] font-semibold', TEXT.strong)}>
+          <span className={cn('text-[16px] font-semibold', TEXT.strong)}>
             {meta.shortLabel || meta.label}
           </span>
           {meta.shortLabel && (
-            <div className={cn('text-[14px]', TEXT.muted)}>{meta.label}</div>
+            <div className={cn('text-[16px]', TEXT.muted)}>{meta.label}</div>
           )}
         </div>
         {adj.is_reference && <StatusPill tone="success" label="REF" />}
       </div>
       {adj.is_reference ? (
-        <span className="text-[14px] font-bold text-[#02542D] dark:text-[#CFF7D3]">0 %</span>
+        <span className="text-[16px] font-bold text-[#02542D] dark:text-[#CFF7D3]">0 %</span>
       ) : (
         <div className="flex items-center gap-1">
           <TextField
@@ -123,7 +123,7 @@ export function RateConfigTab() {
             controlClassName="text-right font-bold text-[#900B09] dark:text-[#FDD3D0]"
             aria-label={`Ajustement ${meta.label}`}
           />
-          <span className={cn('text-[14px] font-semibold', TEXT.muted)}>%</span>
+          <span className={cn('text-[16px] font-semibold', TEXT.muted)}>%</span>
         </div>
       )}
     </div>
@@ -134,12 +134,12 @@ export function RateConfigTab() {
       {/* Ajustements par pays */}
       <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
         <div className="mb-3.5 flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
             <Globe className={cn('h-[18px] w-[18px]', TEXT.strong)} />
           </div>
           <div>
             <h3 className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>Ajustements par pays</h3>
-            <p className={cn('text-[14px]', TEXT.muted)}>Cameroun = référence (0%)</p>
+            <p className={cn('text-[16px]', TEXT.muted)}>Cameroun = référence (0%)</p>
           </div>
         </div>
         <div className="space-y-2">
@@ -152,12 +152,12 @@ export function RateConfigTab() {
       {/* Ajustements par tranche */}
       <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
         <div className="mb-3.5 flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
             <Layers className={cn('h-[18px] w-[18px]', TEXT.strong)} />
           </div>
           <div>
             <h3 className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>Ajustements par tranche</h3>
-            <p className={cn('text-[14px]', TEXT.muted)}>Pourcentage selon le montant</p>
+            <p className={cn('text-[16px]', TEXT.muted)}>Pourcentage selon le montant</p>
           </div>
         </div>
         <div className="space-y-2">

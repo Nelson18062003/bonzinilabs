@@ -33,7 +33,7 @@ export function RateChartTab() {
               key={p.key}
               onClick={() => setPeriod(p.key)}
               className={cn(
-                'flex-1 rounded-lg py-2 text-[14px] font-semibold transition-colors',
+                'flex-1 rounded-lg py-2.5 text-[16px] font-semibold transition-colors',
                 active ? 'bg-[#2C2C2C] text-white' : TEXT.muted,
               )}
             >
@@ -56,7 +56,7 @@ export function RateChartTab() {
         <MultiCurveChart data={chartData} />
       ) : (
         <div className={cn('rounded-lg p-8 text-center', SURFACE.card, SURFACE.shadow)}>
-          <div className={cn('text-[14px]', TEXT.muted)}>Aucune donnée pour cette période</div>
+          <div className={cn('text-[16px]', TEXT.muted)}>Aucune donnée pour cette période</div>
         </div>
       )}
     </div>

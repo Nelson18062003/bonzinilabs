@@ -174,10 +174,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       {currentRate && (
         <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
           <div className="flex items-center justify-between">
-            <span className={cn('text-[14px] font-bold', TEXT.muted)}>Taux actifs</span>
+            <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs</span>
             <div className="flex items-center gap-2">
               <StatusPill tone="success" label="En ligne" />
-              {activeSince && <span className={cn('text-[14px]', TEXT.muted)}>depuis le {activeSince}</span>}
+              {activeSince && <span className={cn('text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}
             </div>
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2">
@@ -186,7 +186,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               return (
                 <div key={pm.key} className="flex flex-col items-center gap-1.5">
                   <MethodLogo method={pm.key} size={34} />
-                  <span className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
+                  <span className={cn('text-[16px] font-bold tabular-nums', TEXT.strong)}>
                     {v ? Number(v).toLocaleString('fr-FR') : '—'}
                   </span>
                 </div>
@@ -204,10 +204,10 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               <Sparkles className="h-4 w-4 text-[#975102] dark:text-[#E8B931]" />
             </span>
             <div>
-              <div className="text-[14px] font-bold text-[#975102] dark:text-[#E8B931]">
+              <div className="text-[16px] font-bold text-[#975102] dark:text-[#E8B931]">
                 Suggestion automatique
               </div>
-              <div className={cn('text-[14px]', TEXT.muted)}>
+              <div className={cn('text-[16px]', TEXT.muted)}>
                 Binance P2P · méthode Nelson v2
               </div>
             </div>
@@ -216,7 +216,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
             type="button"
             onClick={() => computeSuggestion.mutate()}
             disabled={computeSuggestion.isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E8B931] px-3 py-1.5 text-[14px] font-bold text-white transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E8B931] px-3 py-2.5 text-[16px] font-bold text-white transition-colors disabled:opacity-60"
           >
             {computeSuggestion.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -228,14 +228,14 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         </div>
 
         {!latestSuggestion ? (
-          <div className={cn('mt-3 text-[14px]', TEXT.muted)}>
+          <div className={cn('mt-3 text-[16px]', TEXT.muted)}>
             Aucune suggestion encore. Touche <b>Recalculer</b> pour interroger Binance P2P en direct.
           </div>
         ) : (
           <>
             <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-[#FFF1C2] px-3.5 py-3 dark:bg-[#E8B931]/10">
               <div className="min-w-0">
-                <div className="text-[14px] font-bold text-[#975102] dark:text-[#E8B931]">
+                <div className="text-[16px] font-bold text-[#975102] dark:text-[#E8B931]">
                   Taux suggéré · 1M XAF
                 </div>
                 <div className="mt-0.5 text-[24px] font-bold leading-none tabular-nums text-[#975102] dark:text-[#E8B931]">
@@ -245,38 +245,38 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               <button
                 type="button"
                 onClick={handleUseSuggestion}
-                className="shrink-0 rounded-lg bg-[#E8B931] px-3.5 py-2 text-[14px] font-bold text-white"
+                className="shrink-0 rounded-lg bg-[#E8B931] px-3.5 py-2.5 text-[16px] font-bold text-white"
               >
                 Pré-remplir
               </button>
             </div>
 
-            <div className="mt-2.5 grid grid-cols-2 gap-2 text-[14px]">
+            <div className="mt-2.5 grid grid-cols-2 gap-2 text-[16px]">
               <div className={cn('rounded-lg px-3 py-2', SURFACE.card)}>
-                <div className={cn('text-[14px] font-bold', TEXT.muted)}>
+                <div className={cn('text-[16px] font-bold', TEXT.muted)}>
                   CMR · max + {latestSuggestion.cmr_margin_xaf} XAF
                 </div>
                 <div className={cn('font-bold tabular-nums', TEXT.strong)}>
                   {(latestSuggestion.cmr_rate_max + latestSuggestion.cmr_margin_xaf).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} XAF/USDT
                 </div>
-                <div className={cn('text-[14px]', TEXT.muted)}>
+                <div className={cn('text-[16px]', TEXT.muted)}>
                   {latestSuggestion.cmr_orders.length} ordres MTN/Orange
                 </div>
               </div>
               <div className={cn('rounded-lg px-3 py-2', SURFACE.card)}>
-                <div className={cn('text-[14px] font-bold', TEXT.muted)}>
+                <div className={cn('text-[16px] font-bold', TEXT.muted)}>
                   CHN · moyenne
                 </div>
                 <div className={cn('font-bold tabular-nums', TEXT.strong)}>
                   {latestSuggestion.chn_rate_avg.toLocaleString('fr-FR', { maximumFractionDigits: 4 })} CNY/USDT
                 </div>
-                <div className={cn('text-[14px]', TEXT.muted)}>
+                <div className={cn('text-[16px]', TEXT.muted)}>
                   {latestSuggestion.chn_orders.length} ordres Alipay/WeChat
                 </div>
               </div>
             </div>
 
-            <div className={cn('mt-2 text-center text-[14px]', TEXT.muted)}>
+            <div className={cn('mt-2 text-center text-[16px]', TEXT.muted)}>
               Calculé il y a {formatDistanceToNow(new Date(latestSuggestion.computed_at), { locale: fr })}
               {latestSuggestion.applied && ' · déjà appliqué'}
             </div>
@@ -286,7 +286,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
       {/* ── 2. SAISIE — nouveaux taux ── */}
       <div>
-        <p className={cn('mb-2.5 px-1 text-[14px] font-bold', TEXT.muted)}>
+        <p className={cn('mb-2.5 px-1 text-[16px] font-bold', TEXT.muted)}>
           Nouveaux taux
         </p>
 
@@ -302,7 +302,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
                 key={d.key}
                 onClick={() => switchDirection(d.key)}
                 className={cn(
-                  'flex-1 rounded-lg py-2 text-[14px] font-semibold transition-colors',
+                  'flex-1 rounded-lg py-2.5 text-[16px] font-semibold transition-colors',
                   active ? 'bg-[#2C2C2C] text-white' : TEXT.muted,
                 )}
               >
@@ -322,7 +322,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               <MethodLogo method={pm.key} size={46} />
               <div className="min-w-0 flex-1">
                 <div className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>{pm.label}</div>
-                <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>
+                <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>
                   {direction === 'xaf_cny' ? 'CNY pour 1M XAF' : 'XAF pour 1 CNY'}
                 </div>
               </div>
@@ -338,7 +338,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           ))}
         </div>
 
-        <p className={cn('mt-2.5 px-1 text-[14px] leading-relaxed', TEXT.muted)}>
+        <p className={cn('mt-2.5 px-1 text-[16px] leading-relaxed', TEXT.muted)}>
           Taux de base (meilleur cas : Cameroun, ≥ 1M XAF). Les ajustements pays et
           tranches s'appliquent automatiquement — voir Réglages.
         </p>
@@ -346,7 +346,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
       {/* ── 3. PRISE D'EFFET ── */}
       <div>
-        <p className={cn('mb-2.5 px-1 text-[14px] font-bold', TEXT.muted)}>
+        <p className={cn('mb-2.5 px-1 text-[16px] font-bold', TEXT.muted)}>
           Prise d'effet
         </p>
         <div className="flex gap-2">
@@ -362,7 +362,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
                 key={d.key}
                 onClick={() => setDateOption(d.key)}
                 className={cn(
-                  'flex-1 rounded-lg py-2.5 text-[14px] font-semibold transition-colors',
+                  'flex-1 rounded-lg py-2.5 text-[16px] font-semibold transition-colors',
                   active ? 'bg-[#2C2C2C] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
                 )}
               >
@@ -387,7 +387,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               accent="#8B5CF6"
               disableFuture={false}
             />
-            <div className="mt-3 rounded-lg bg-[#F5F5F5] px-3 py-2 text-center text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#444444] dark:text-[#F5F5F5]">
+            <div className="mt-3 rounded-lg bg-[#F5F5F5] px-3 py-2 text-center text-[16px] font-semibold text-[#1E1E1E] dark:bg-[#444444] dark:text-[#F5F5F5]">
               Prise d'effet : {customDate.split('-').reverse().join('/')} à {String(customHour).padStart(2, '0')}:{String(customMin).padStart(2, '0')}
             </div>
           </div>

@@ -53,7 +53,7 @@ export function GranularityPicker({
           type="button"
           aria-label="Changer la granularité de ce rapport"
           className={cn(
-            'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] max-lg:text-[14px] font-medium hover:bg-muted/40',
+            'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] max-lg:h-10 max-lg:px-3 max-lg:text-[16px] font-medium hover:bg-muted/40',
             isOverride && 'border-primary/40 text-primary',
             className,
           )}
