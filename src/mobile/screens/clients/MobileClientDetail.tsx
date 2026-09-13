@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
@@ -377,6 +378,9 @@ export function MobileClientDetail() {
             </div>
           </div>
         </Card>
+
+        {/* Identifiant client — virement bancaire + étiquette colis */}
+        <CustomerCodeCard code={client.customerCode} />
 
         {/* Wallet Balance Card */}
         <Card className="p-5">

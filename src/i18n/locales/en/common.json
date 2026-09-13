@@ -438,5 +438,7 @@
   "actionCannotBeUndone": "This action cannot be undone.",
   "processing": "Processing…",
   "debit": "Debit",
-  "home": "Home"
+  "home": "Home",
+  "searchByNamePhoneCode": "Name, phone, ID BZ-…",
+  "scanCustomerCode": "Scan a customer ID"
 }

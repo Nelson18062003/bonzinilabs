@@ -8,7 +8,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 import { Analytics } from "@vercel/analytics/react";
@@ -73,6 +73,8 @@ const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then
 // visible) ; l'URL /m/clients/new ne change pas. Le mobile garde sa page.
 const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopCreateClientDialog })));
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
+const MobileClientScan = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientScan })));
+const MyCodePage = lazy(() => import("./pages/MyCodePage"));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
 const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
@@ -158,6 +160,12 @@ function UtmCapture() {
   return null;
 }
 
+/** `/c/BZ-482913` (contenu du QR client) → écran de scan admin, code pré-rempli. */
+function CustomerCodeRedirect() {
+  const { code } = useParams();
+  return <Navigate to={`/m/clients/scan?code=${encodeURIComponent(code ?? '')}`} replace />;
+}
+
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -202,6 +210,11 @@ const App = () => (
                 <Route path="/payments/:paymentId/edit-beneficiary" element={<ProtectedRoute><EditBeneficiaryPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/my-code" element={<ProtectedRoute><MyCodePage /></ProtectedRoute>} />
+                {/* Cible du QR code client (https://bonzinilabs.com/c/BZ-…) : un
+                    scan depuis l'appareil photo du téléphone ouvre la fiche du
+                    client dans l'app admin. */}
+                <Route path="/c/:code" element={<CustomerCodeRedirect />} />
                 <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />
                 <Route path="/rates" element={<ProtectedRoute><ClientRatesPage /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
@@ -224,6 +237,7 @@ const App = () => (
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCreateClient />}><MobileCreateClient /></AdminRouteWrapper>} />
+                <Route path="/m/clients/scan" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientScan desktop />}><MobileClientScan /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />

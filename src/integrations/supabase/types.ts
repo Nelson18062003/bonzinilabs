@@ -1085,6 +1085,7 @@ export type Database = {
           company_name: string | null
           country: string | null
           created_at: string
+          customer_code: string
           date_of_birth: string | null
           email: string | null
           first_name: string
@@ -1116,6 +1117,7 @@ export type Database = {
           company_name?: string | null
           country?: string | null
           created_at?: string
+          customer_code?: string
           date_of_birth?: string | null
           email?: string | null
           first_name: string
@@ -1147,6 +1149,7 @@ export type Database = {
           company_name?: string | null
           country?: string | null
           created_at?: string
+          customer_code?: string
           date_of_birth?: string | null
           email?: string | null
           first_name?: string
@@ -3005,6 +3008,10 @@ export type Database = {
       cargo_detect_carrier: {
         Args: { p_ref: string }
         Returns: { carrier: string; reference_type: string }[]
+      }
+      find_client_by_customer_code: {
+        Args: { p_code: string }
+        Returns: Json
       }
       remove_cargo_shipment: {
         Args: { p_id: string }

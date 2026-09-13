@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClients } from '@/hooks/useClientManagement';
 import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib/clientSearch';
-import { Search, Plus, User, ArrowUpDown, Check } from 'lucide-react';
+import { Search, Plus, User, ArrowUpDown, Check, ScanLine } from 'lucide-react';
 import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatCurrency, formatXAF } from '@/lib/formatters';
@@ -72,7 +72,19 @@ export function MobileClientsScreen() {
 
   return (
     <div className="flex min-h-full flex-col pb-20">
-      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} />
+      <MobileHeader
+        title={t('clients', { defaultValue: 'Clients' })}
+        rightElement={
+          <button
+            type="button"
+            aria-label={t('scanCustomerCode', { defaultValue: 'Scanner un identifiant client' })}
+            onClick={() => navigate('/m/clients/scan')}
+            className={cn('flex h-9 w-9 items-center justify-center rounded-full', SURFACE.holder)}
+          >
+            <ScanLine className="h-4 w-4" />
+          </button>
+        }
+      />
 
       <PullToRefresh
         onRefresh={refetch}
@@ -83,7 +95,7 @@ export function MobileClientsScreen() {
           <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
           <TextInput
             type="text"
-            placeholder={t('searchByNamePhone', { defaultValue: 'Rechercher par nom, téléphone...' })}
+            placeholder={t('searchByNamePhoneCode', { defaultValue: 'Nom, téléphone, identifiant BZ-…' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -153,9 +165,9 @@ export function MobileClientsScreen() {
                             client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
                         />
                       </div>
-                      {client.phone && (
-                        <p className={cn('truncate text-[13px]', TEXT.muted)}>{client.phone}</p>
-                      )}
+                      <p className={cn('truncate text-[13px] tabular-nums', TEXT.muted)}>
+                        {[client.customerCode, client.phone].filter(Boolean).join(' · ')}
+                      </p>
                     </div>
 
                     {/* Balance */}

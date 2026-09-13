@@ -12,6 +12,8 @@ export interface Profile {
   avatar_url: string | null;
   date_of_birth: string | null;
   company_name: string | null;
+  /** Identifiant client permanent `BZ-NNNNNN` (virement + étiquette colis). */
+  customer_code: string;
   activity_sector: string | null;
   neighborhood: string | null;
   city: string | null;
@@ -46,6 +48,7 @@ export function useMyProfile() {
         avatar_url: data.avatar_url,
         date_of_birth: data.date_of_birth,
         company_name: data.company_name,
+        customer_code: data.customer_code,
         activity_sector: data.activity_sector,
         neighborhood: data.neighborhood,
         city: data.city,
@@ -82,6 +85,7 @@ export function useProfileByUserId(userId: string | undefined) {
         avatar_url: data.avatar_url,
         date_of_birth: data.date_of_birth,
         company_name: data.company_name,
+        customer_code: data.customer_code,
         activity_sector: data.activity_sector,
         neighborhood: data.neighborhood,
         city: data.city,

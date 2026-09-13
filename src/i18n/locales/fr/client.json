@@ -65,7 +65,8 @@
     "version": "Bonzini v1.0.0 • Fait avec 💜 au Cameroun",
     "comingSoon": "Fonctionnalité bientôt disponible",
     "sectionAccount": "Compte",
-    "sectionPreferences": "Préférences"
+    "sectionPreferences": "Préférences",
+    "customerCode": "Mon identifiant client"
   },
   "beneficiaries": {
     "title": "Bénéficiaires",
@@ -189,5 +190,25 @@
       "avg": "Moy",
       "max": "Max"
     }
+  },
+  "myCode": {
+    "cardTitle": "Mon identifiant client",
+    "cardHint": "Virements · étiquette colis QR",
+    "title": "Mon identifiant client",
+    "label": "Identifiant client",
+    "back": "Retour",
+    "copy": "Copier l’identifiant",
+    "copied": "Identifiant copié",
+    "copyFailed": "Copie impossible",
+    "bankTitle": "Vos virements bancaires",
+    "bankBody": "Indiquez cet identifiant dans le libellé (motif) de chaque virement ou dépôt bancaire. Votre compte est crédité sans délai de recherche.",
+    "bankMotif": "Libellé du virement",
+    "cargoTitle": "Vos colis depuis la Chine",
+    "cargoBody": "Envoyez cette étiquette à votre fournisseur : il la colle sur chaque carton. À l’arrivée dans notre entrepôt, un scan suffit pour rattacher vos colis à votre compte.",
+    "shareLabel": "Partager l’étiquette",
+    "downloadPdf": "PDF à imprimer",
+    "labelDownloaded": "Étiquette téléchargée",
+    "labelError": "Impossible de générer l’étiquette",
+    "footnote": "Cet identifiant est permanent : il ne change jamais, même si vous modifiez vos coordonnées."
   }
 }

@@ -440,5 +440,7 @@
   "actionCannotBeUndone": "Cette action est irréversible.",
   "processing": "En cours…",
   "debit": "Débit",
-  "home": "Accueil"
+  "home": "Accueil",
+  "searchByNamePhoneCode": "Nom, téléphone, identifiant BZ-…",
+  "scanCustomerCode": "Scanner un identifiant client"
 }

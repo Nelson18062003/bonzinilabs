@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
+import { CustomerIdCard } from '@/components/wallet/CustomerIdCard';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
@@ -56,6 +57,9 @@ const WalletPage = () => {
 
         {/* Actions rapides */}
         <QuickActions />
+
+        {/* Identifiant client — libellé de virement + étiquette colis */}
+        <CustomerIdCard code={profile?.customer_code} />
 
         {/* Taux du jour */}
         <section>
