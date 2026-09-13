@@ -245,3 +245,37 @@ Fixtures ajoutées pour le carnet (`mockBeneficiaries.ts`).
   titre, les boutons « i » font 40 px, les sections 48 px, Exporter et la
   granularité 40 px. Les composants analytics restent partagés avec le
   desktop (classes `max-lg:` uniquement).
+
+
+## État au 13 septembre, soir — audit des 21 écrans
+
+Textes sous 14 px et cibles sous 40 px par écran (`tools/audit-mobile.mjs`,
+fixtures, 390 × 844). Les « 2 » des listes sont les deux badges rouges de
+la barre du bas (12 px) ; les 11 cibles de la carte sont les points des
+navires et des ports (la feuille du navire s'ouvre au toucher du point ou
+de son étiquette) ; la cible restante des fiches est un lien dans une
+phrase (le nom du client) ou le curseur de la 3D.
+
+| Écran | < 14 px | < 40 px |
+|---|---|---|
+| `m` | 2 | 0 |
+| `m/deposits` | 2 | 0 |
+| `m/deposits/d5` | 0 | 0 |
+| `m/deposits/new` | 0 | 1 |
+| `m/payments` | 2 | 0 |
+| `m/payments/p3` | 0 | 1 |
+| `m/payments/new` | 0 | 1 |
+| `m/clients` | 2 | 0 |
+| `m/clients/u5` | 0 | 1 |
+| `m/assistant` | 2 | 0 |
+| `m/more` | 2 | 0 |
+| `m/more/rates` | 2 | 1 |
+| `m/dashboard` | 2 | 1 |
+| `m/cargo` | 2 | 0 |
+| `m/cargo/map` | 3 | 11 |
+| `m/cargo/track` | 0 | 0 |
+| `m/cargo/2` | 0 | 0 |
+| `m/cargo/2/suivi` | 0 | 0 |
+| `m/cargo/2/chargement` | 0 | 1 |
+| `m/cargo/2/documents` | 0 | 0 |
+| `m/cargo/2/couts` | 0 | 0 |
