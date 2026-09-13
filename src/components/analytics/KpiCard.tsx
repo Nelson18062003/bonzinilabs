@@ -71,7 +71,7 @@ export function KpiCard({
       <div className="flex flex-1 items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col space-y-1">
           {/* min-h reserves 2 lines so values align vertically across cards */}
-          <div className="flex min-h-[2.25rem] items-start gap-1.5 md:min-h-[2.5rem]">
+          <div className="flex min-h-[2.25rem] items-start gap-1.5 md:min-h-[2.5rem] max-lg:flex-wrap">
             <p className={cn('text-xs max-lg:text-[16px] md:text-sm leading-snug line-clamp-2 max-lg:line-clamp-none break-words', TEXT.muted)}>
               {label}
             </p>
@@ -112,7 +112,7 @@ export function KpiCard({
           <div className="flex items-center gap-2 flex-wrap">
             {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
             {secondary ? (
-              <p className={cn('text-[11px] max-lg:text-[14px] md:text-xs max-lg:text-[14px] tabular-nums leading-snug', TEXT.muted)}>
+              <p className={cn('text-[11px] max-lg:text-[16px] md:text-xs tabular-nums leading-snug', TEXT.muted)}>
                 {secondary}
               </p>
             ) : null}
