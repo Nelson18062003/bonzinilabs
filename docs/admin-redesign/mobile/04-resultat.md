@@ -212,3 +212,20 @@ Les trois dernières sections qui ouvraient les composants desktop dans un
   Maersk, mis à jour automatiquement, la dernière fois il y a 2 jours ».
 Seule « Le chargement en 3D » reste partagée avec le desktop (elle se
 mesure déjà). Les trois sections sont à 0 texte sous 14 px.
+
+## Passe 10 — L'historique, le carnet, la barre du bas
+
+- **Historique d'un client** : « Fatou Ndiaye, solde aujourd'hui :
+  1 240 000 XAF. », des filtres à 40 px (Tout · Dépôts · Paiements · Ajouts ·
+  Retraits), puis une écriture = le montant en 20/600 et en couleur foncée
+  (vert entrée, ambre réservé, rouge sortie), « Paiement réservé, il y a 16
+  heures. », la description entière, « Solde après : 1 240 000 XAF. ». Plus
+  de cartes, plus de `line-clamp`.
+- **Bénéficiaires d'un client** : « Les fournisseurs que Fatou Ndiaye paie :
+  3 bénéficiaires. », puis par ligne le surnom en 18/600, le vrai nom, et
+  « Par Virement à Bank of China, compte 6214 8888 1234 5678. » ; modifier
+  et retirer sont deux boutons ronds de 44 px. Retirer explique : « Hongfa
+  ne sera plus proposé pour les prochains paiements. »
+- **Barre du bas** : étiquettes à 14 px (elles tenaient à 12 en gris pâle),
+  gris `#5A5A5A`, icônes 24, badges 20 px.
+Fixtures ajoutées pour le carnet (`mockBeneficiaries.ts`).
