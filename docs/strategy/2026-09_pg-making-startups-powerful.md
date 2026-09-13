@@ -495,6 +495,10 @@ Trois endroits où la question mérite d'être posée, sans que j'aie la répons
 
 ---
 
+> ⚠️ **Révisé.** Un second passage sur l'article corrige l'ordre ci-dessous et ajoute
+> deux manœuvres (le benchmark opt-in, et le standard du dossier d'import) :
+> [`2026-09_pg-second-passage.md`](2026-09_pg-second-passage.md).
+
 # PARTIE V — L'ordre que je propose
 
 Le critère n'est pas la valeur, c'est **ce qui débloque le reste**.
