@@ -10,8 +10,8 @@ import { jsPDF } from 'jspdf';
 import { captureNodePng, triggerDownload } from '@/lib/nodeImage';
 import { LABEL_W, LABEL_H } from './ShippingLabel';
 
-function fileName(code: string, ext: 'png' | 'pdf') {
-  return `bonzini-etiquette-${code}.${ext}`;
+function fileName(code: string, destination: string, ext: 'png' | 'pdf') {
+  return `bonzini-etiquette-${destination}-${code}.${ext}`;
 }
 
 async function labelPng(node: HTMLElement): Promise<string> {
@@ -21,9 +21,9 @@ async function labelPng(node: HTMLElement): Promise<string> {
 export type ShareOutcome = 'shared' | 'downloaded';
 
 /** Étiquette en PNG : partage natif si possible, sinon téléchargement. */
-export async function shareShippingLabel(node: HTMLElement, code: string): Promise<ShareOutcome> {
+export async function shareShippingLabel(node: HTMLElement, code: string, destination: string): Promise<ShareOutcome> {
   const dataUrl = await labelPng(node);
-  const name = fileName(code, 'png');
+  const name = fileName(code, destination, 'png');
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof File !== 'undefined') {
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], name, { type: 'image/png' });
@@ -43,9 +43,9 @@ export async function shareShippingLabel(node: HTMLElement, code: string): Promi
 }
 
 /** Étiquette en PDF A5 (148 × 210 mm — le ratio du nœud), prête à imprimer. */
-export async function downloadShippingLabelPdf(node: HTMLElement, code: string): Promise<void> {
+export async function downloadShippingLabelPdf(node: HTMLElement, code: string, destination: string): Promise<void> {
   const dataUrl = await labelPng(node);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
   pdf.addImage(dataUrl, 'PNG', 0, 0, 148, 210, undefined, 'FAST');
-  pdf.save(fileName(code, 'pdf'));
+  pdf.save(fileName(code, destination, 'pdf'));
 }

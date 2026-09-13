@@ -52,36 +52,61 @@ export function customerQrPayload(code: string): string {
 }
 
 /**
- * Adresses de réception en Chine, imprimées sur l'étiquette colis.
- * À COMPLÉTER par l'équipe : tant qu'une ligne est entre crochets, l'étiquette
- * n'affiche pas le bloc (on n'imprime pas un placeholder chez un fournisseur).
+ * Où le fournisseur expédie — DEUX destinations, une seule par étiquette.
+ * Le client choisit celle qu'on lui a indiquée (entrepôt en général, bureau
+ * pour certains). Chaque étiquette porte donc UNE adresse, très grande.
+ *
+ * À COMPLÉTER par l'équipe : tant qu'une valeur est entre crochets, la
+ * destination est considérée non configurée et l'app client ne propose pas
+ * l'étiquette (on n'envoie pas un placeholder chez un fournisseur).
  */
+export type ShippingDestination = 'warehouse' | 'office';
+
 export interface ChinaReceivingAddress {
-  /** Libellé court, bilingue. */
-  label: { fr: string; zh: string; en: string };
-  /** Adresse complète en chinois — c'est ce que lit le livreur. */
+  key: ShippingDestination;
+  /** Libellé court, trilingue (zh en premier : c'est le lecteur de l'étiquette). */
+  label: { zh: string; en: string; fr: string };
+  /** Adresse complète en chinois — la ligne que lit le livreur. Peut contenir des sauts de ligne. */
   addressZh: string;
-  /** Nom du destinataire à écrire sur le colis (收件人). */
+  /** Nom du destinataire à écrire sur le colis (收件人) : notre société / la personne sur place. */
   recipientZh: string;
-  /** Téléphone joignable en Chine. */
+  /** Téléphone joignable en Chine pour cette destination. */
   phone: string;
+  /** Numéro WeChat pour cette destination. */
+  wechat: string;
 }
 
-export const CHINA_RECEIVING_ADDRESSES: ChinaReceivingAddress[] = [
-  {
-    label: { fr: 'Entrepôt', zh: '仓库', en: 'Warehouse' },
+/** Notre société, telle qu'elle figure sur l'étiquette (bloc « nos coordonnées »). */
+export const BONZINI_CHINA_COMPANY = {
+  nameZh: '[NOM DE LA SOCIÉTÉ EN CHINOIS — à compléter]',
+  nameEn: 'Bonzini Labs',
+};
+
+export const CHINA_RECEIVING_ADDRESSES: Record<ShippingDestination, ChinaReceivingAddress> = {
+  warehouse: {
+    key: 'warehouse',
+    label: { zh: '仓库', en: 'Warehouse', fr: 'Entrepôt' },
     addressZh: '[ADRESSE ENTREPÔT CHINE — à compléter]',
     recipientZh: '[DESTINATAIRE ENTREPÔT — à compléter]',
     phone: '[TÉLÉPHONE ENTREPÔT — à compléter]',
+    wechat: '[WECHAT ENTREPÔT — à compléter]',
   },
-  {
-    label: { fr: 'Bureau', zh: '办公室', en: 'Office' },
-    addressZh: '[ADRESSE BUREAU CHINE — à compléter]',
+  office: {
+    key: 'office',
+    label: { zh: '广州办公室', en: 'Guangzhou office', fr: 'Bureau de Guangzhou' },
+    addressZh: '[ADRESSE BUREAU GUANGZHOU — à compléter]',
     recipientZh: '[DESTINATAIRE BUREAU — à compléter]',
     phone: '[TÉLÉPHONE BUREAU — à compléter]',
+    wechat: '[WECHAT BUREAU — à compléter]',
   },
-];
+};
+
+export const SHIPPING_DESTINATIONS: ShippingDestination[] = ['warehouse', 'office'];
+
+function isPlaceholder(v: string): boolean {
+  return /^\[.*\]$/.test(v.trim());
+}
 
 export function isAddressConfigured(a: ChinaReceivingAddress): boolean {
-  return ![a.addressZh, a.recipientZh, a.phone].some((v) => /^\[.*\]$/.test(v.trim()));
+  return ![a.addressZh, a.recipientZh, a.phone].some(isPlaceholder);
 }

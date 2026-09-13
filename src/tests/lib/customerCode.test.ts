@@ -42,13 +42,16 @@ describe('isCustomerCode', () => {
 
 describe('adresses de réception', () => {
   it('un placeholder entre crochets n’est pas une adresse configurée', () => {
-    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES[0])).toBe(false);
+    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.warehouse)).toBe(false);
+    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.office)).toBe(false);
     expect(
       isAddressConfigured({
+        key: 'warehouse',
         label: { fr: 'x', zh: 'x', en: 'x' },
         addressZh: '广东省广州市…',
         recipientZh: 'Bonzini',
         phone: '+86 138 0000 0000',
+        wechat: 'bonzini',
       }),
     ).toBe(true);
   });

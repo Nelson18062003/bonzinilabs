@@ -209,6 +209,13 @@
     "downloadPdf": "Printable PDF",
     "labelDownloaded": "Label downloaded",
     "labelError": "Could not generate the label",
-    "footnote": "This ID is permanent: it never changes, even if you update your details."
+    "footnote": "This ID is permanent: it never changes, even if you update your details.",
+    "dest": {
+      "warehouse": "Warehouse",
+      "office": "Office"
+    },
+    "destHintWarehouse": "For most shipments. The supplier delivers straight to our warehouse.",
+    "destHintOffice": "Only if Bonzini asked you to use it for this shipment.",
+    "destUnavailable": "Address being updated — the label will be available very soon."
   }
 }

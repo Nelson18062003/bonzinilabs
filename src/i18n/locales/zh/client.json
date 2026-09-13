@@ -201,6 +201,13 @@
     "downloadPdf": "可打印 PDF",
     "labelDownloaded": "标签已下载",
     "labelError": "无法生成标签",
-    "footnote": "此编号是永久的：即使您更改了个人信息，它也不会改变。"
+    "footnote": "此编号是永久的：即使您更改了个人信息，它也不会改变。",
+    "dest": {
+      "warehouse": "仓库",
+      "office": "办公室"
+    },
+    "destHintWarehouse": "适用于大多数货件。供应商直接送到我们的仓库。",
+    "destHintOffice": "仅当 Bonzini 要求您本次使用办公室地址时选择。",
+    "destUnavailable": "地址更新中，标签即将可用。"
   }
 }

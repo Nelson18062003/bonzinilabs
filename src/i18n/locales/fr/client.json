@@ -209,6 +209,13 @@
     "downloadPdf": "PDF à imprimer",
     "labelDownloaded": "Étiquette téléchargée",
     "labelError": "Impossible de générer l’étiquette",
-    "footnote": "Cet identifiant est permanent : il ne change jamais, même si vous modifiez vos coordonnées."
+    "footnote": "Cet identifiant est permanent : il ne change jamais, même si vous modifiez vos coordonnées.",
+    "dest": {
+      "warehouse": "Entrepôt",
+      "office": "Bureau"
+    },
+    "destHintWarehouse": "Pour la plupart des envois. Le fournisseur livre directement à notre entrepôt.",
+    "destHintOffice": "Uniquement si Bonzini vous l’a demandé pour cet envoi.",
+    "destUnavailable": "Adresse en cours de mise à jour — l’étiquette sera disponible très bientôt."
   }
 }

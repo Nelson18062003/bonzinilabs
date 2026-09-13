@@ -18,10 +18,10 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useMyProfile } from '@/hooks/useProfile';
-import { customerQrPayload } from '@/lib/customerCode';
+import { customerQrPayload, CHINA_RECEIVING_ADDRESSES, SHIPPING_DESTINATIONS, isAddressConfigured, type ShippingDestination } from '@/lib/customerCode';
 import { ShippingLabel, LABEL_W, LABEL_H } from '@/components/customer-code/ShippingLabel';
 import { shareShippingLabel, downloadShippingLabelPdf } from '@/components/customer-code/exportShippingLabel';
-import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
+import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL, Segmented } from '@/mobile/designKit';
 
 const MyCodePage = () => {
   const { t } = useTranslation('client');
@@ -33,6 +33,11 @@ const MyCodePage = () => {
 
   const code = profile?.customer_code ?? '';
   const clientName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : '';
+  // Entrepôt par défaut : c'est la destination de la plupart des clients ;
+  // le bureau est indiqué au cas par cas.
+  const [destination, setDestination] = useState<ShippingDestination>('warehouse');
+  const destConfigured = isAddressConfigured(CHINA_RECEIVING_ADDRESSES[destination]);
+  const canExport = !!code && destConfigured && busy === null;
 
   const copyCode = async () => {
     try {
@@ -46,10 +51,10 @@ const MyCodePage = () => {
   };
 
   const share = async () => {
-    if (!labelRef.current || busy) return;
+    if (!labelRef.current || !canExport) return;
     setBusy('share');
     try {
-      const outcome = await shareShippingLabel(labelRef.current, code);
+      const outcome = await shareShippingLabel(labelRef.current, code, destination);
       if (outcome === 'downloaded') toast.success(t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }));
     } catch (err) {
       console.error('shareShippingLabel', err);
@@ -60,10 +65,10 @@ const MyCodePage = () => {
   };
 
   const pdf = async () => {
-    if (!labelRef.current || busy) return;
+    if (!labelRef.current || !canExport) return;
     setBusy('pdf');
     try {
-      await downloadShippingLabelPdf(labelRef.current, code);
+      await downloadShippingLabelPdf(labelRef.current, code, destination);
     } catch (err) {
       console.error('downloadShippingLabelPdf', err);
       toast.error(t('myCode.labelError', { defaultValue: 'Impossible de générer l’étiquette' }));
@@ -154,8 +159,31 @@ const MyCodePage = () => {
               </div>
             </div>
 
+            {/* Une étiquette = une destination. Le client choisit celle
+                qu'on lui a indiquée. */}
+            <div className="mt-4">
+              <Segmented
+                value={destination}
+                onChange={setDestination}
+                options={SHIPPING_DESTINATIONS.map((d) => ({
+                  value: d,
+                  label: t(`myCode.dest.${d}`, { defaultValue: CHINA_RECEIVING_ADDRESSES[d].label.fr }),
+                }))}
+              />
+              <p className={cn('mt-2 px-1 text-[12px] leading-snug', TEXT.muted)}>
+                {destination === 'warehouse'
+                  ? t('myCode.destHintWarehouse', { defaultValue: 'Pour la plupart des envois. Le fournisseur livre directement à notre entrepôt.' })
+                  : t('myCode.destHintOffice', { defaultValue: 'Uniquement si Bonzini vous l’a demandé pour cet envoi.' })}
+              </p>
+              {!destConfigured && (
+                <p className={cn('mt-2 rounded-xl px-3 py-2 text-[12px]', SURFACE.inset, TEXT.body)}>
+                  {t('myCode.destUnavailable', { defaultValue: 'Adresse en cours de mise à jour — l’étiquette sera disponible très bientôt.' })}
+                </p>
+              )}
+            </div>
+
             {/* Aperçu réduit de l'étiquette (le même nœud, à l'échelle) */}
-            <div className="mt-4 overflow-hidden rounded-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
+            <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
               <div className="relative w-full" style={{ aspectRatio: `${LABEL_W} / ${LABEL_H}` }}>
                 {code && (
                   <div className="absolute left-0 top-0 origin-top-left" style={{ width: LABEL_W, height: LABEL_H, transform: 'scale(var(--label-scale, 0.5))' }} ref={(el) => {
@@ -164,7 +192,7 @@ const MyCodePage = () => {
                     const w = el.parentElement.clientWidth;
                     if (w > 0) el.style.setProperty('--label-scale', String(w / LABEL_W));
                   }}>
-                    <ShippingLabel ref={labelRef} code={code} clientName={clientName} companyName={profile?.company_name} />
+                    <ShippingLabel ref={labelRef} code={code} clientName={clientName} clientPhone={profile?.phone} companyName={profile?.company_name} destination={destination} />
                   </div>
                 )}
               </div>
@@ -174,7 +202,7 @@ const MyCodePage = () => {
               <button
                 type="button"
                 onClick={share}
-                disabled={!code || busy !== null}
+                disabled={!canExport}
                 className={cn('flex items-center justify-center gap-2 py-3 text-[13.5px] font-bold transition active:scale-[0.98] disabled:opacity-60', PRIMARY_PILL)}
               >
                 {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
@@ -183,7 +211,7 @@ const MyCodePage = () => {
               <button
                 type="button"
                 onClick={pdf}
-                disabled={!code || busy !== null}
+                disabled={!canExport}
                 className={cn('flex items-center justify-center gap-2 py-3 text-[13.5px] font-bold transition active:scale-[0.98] disabled:opacity-60', SOFT_PILL)}
               >
                 {busy === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
