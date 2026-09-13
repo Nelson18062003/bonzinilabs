@@ -305,3 +305,26 @@ phrase (le nom du client) ou le curseur de la 3D.
 - Le menu « … » du dossier est une feuille basse réduite à deux gestes
   (renseigner le navire, retirer de la flotte), et retirer se confirme en
   phrase. Le numéro de boîte et le bill of lading se copient d'un tap.
+
+
+## Passe 13 — Les trois propositions
+
+- **Le navire se renseigne là où on lit qu'il manque** : « Où est le
+  conteneur » porte le bouton « Renseigner le navire » (feuille basse en
+  cinq questions : nom, IMO, MMSI, voyage, arrivée annoncée) ; une boîte
+  « sans suivi » passe « en mer » dès qu'un navire est saisi et apparaît
+  sur la carte. Le menu « … » ne garde que « Retirer de la flotte ».
+- **Le centre de notifications connaît Cargo** : un conteneur en retard ou
+  qui arrive sous 7 jours y apparaît (« Conteneur de GAUSS en retard —
+  Arrive à Kribi le 11 octobre, dans 28 jours. Retard de 14 jours sur la
+  date promise. »), compte dans le badge, et ouvre le dossier. Seuls les
+  rôles qui ont `canViewCargo` voient ces lignes (RLS).
+- **Mola a Cargo** : migration `20260913200000_cargo_mola_fleet.sql` —
+  `cargo_fleet_status(p_client)` (lecture, dans les mots de l'app :
+  arrivée, retard, fret, télex, prochaine chose à faire),
+  `cargo_set_freight_paid` et `cargo_set_telex` (écriture, confirmation,
+  `canManageCargo`), toutes étiquetées `@mola`. La passerelle
+  `admin-assistant` reçoit le catalogue Cargo, le savoir métier (cycle,
+  dates, franchise), les tables cargo pour `query_database`, et un
+  résolveur « cargo » qui accepte un numéro de conteneur, un B/L ou le nom
+  du client. À faire après fusion : `/migrate` puis `/gen-types`.

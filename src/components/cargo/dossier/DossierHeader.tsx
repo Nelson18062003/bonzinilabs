@@ -65,12 +65,10 @@ export function DossierActions({ shipment: s, onRemoved, compact = false }: { sh
         <>
           <Holder icon={MoreHorizontal} size="md" onClick={() => setMenuOpen(true)} ariaLabel="Plus d'actions" className="h-11 w-11 rounded-full" />
           {/* Mobile : une feuille basse, réduite à ce que les sections ne couvrent pas déjà
-              (le fret et le télex se basculent dans « L'argent »). */}
+              (le fret et le télex se basculent dans « L'argent », le navire dans « Où est le conteneur »). */}
           <MobileSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Ce conteneur">
             <div className="flex flex-col gap-2">
-              <MobileButton variant="neutral" className="w-full" onClick={() => { setMenuOpen(false); setVesselOpen(true); }}>
-                <Ship /> {s.vessel_name ? 'Modifier le navire' : 'Renseigner le navire'}
-              </MobileButton>
+              {/* Le navire se renseigne dans « Où est le conteneur », là où on lit qu'il manque. */}
               <MobileButton variant="dangerSubtle" className="w-full" onClick={() => { setMenuOpen(false); setConfirmRemove(true); }}>
                 <Trash2 /> Retirer de la flotte
               </MobileButton>

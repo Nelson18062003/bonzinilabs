@@ -12,9 +12,9 @@
  *
  * Rien sous 16 px, texte foncé, aucune coupure.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
@@ -25,6 +25,7 @@ import { MobileCouts } from './MobileCouts';
 import { MobileClient } from './MobileClient';
 import { MobileNotes } from './MobileNotes';
 import { MobileChargement } from './MobileChargement';
+import { MobileNavireSheet } from './MobileNavire';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { nextSteps } from '@/lib/cargo/todo';
@@ -46,12 +47,12 @@ const DEFAULT: SectionKey = 'afaire';
 const path = (id: string, k: SectionKey) => (k === DEFAULT ? `/m/cargo/${id}` : `/m/cargo/${id}/${k}`);
 
 /** Une phrase, en 16 px, avec les mots qui comptent en gras. */
-function Line({ children, strong, tone }: { children: React.ReactNode; strong?: boolean; tone?: 'warn' | 'bad' | 'good' }) {
+function Line({ children, strong, tone, className }: { children: React.ReactNode; strong?: boolean; tone?: 'warn' | 'bad' | 'good'; className?: string }) {
   return (
     <p className={cn('text-[16px] leading-relaxed', strong ? cn('font-semibold', TEXT.strong) : TEXT.body,
       tone === 'warn' && 'font-semibold text-[#975102] dark:text-[#E8B931]',
       tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#EC221F]',
-      tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]')}>
+      tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]', className)}>
       {children}
     </p>
   );
@@ -95,14 +96,29 @@ function Todo({ s, docs, onGo }: { s: CargoShipment; docs?: CargoDocument[]; onG
   );
 }
 
-function Where({ s, pos }: { s: CargoShipment; pos: CargoVesselPosition | null }) {
+function Where({ s, pos, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; canManage: boolean }) {
   const navigate = useNavigate();
+  const [vesselOpen, setVesselOpen] = useState(false);
   const live = liveVesselUrl(s.vessel_imo);
+  const noVessel = !s.vessel_name && !s.vessel_imo;
   return (
     <div className="space-y-3">
       <Line strong>{whereSentence(s, pos)}</Line>
       {s.vessel_name && <Line>Sur le navire <b>{s.vessel_name}</b>{s.voyage ? `, voyage ${s.voyage}` : ''}.</Line>}
       {pos?.speed_kn != null && <Line>Il avance à {pos.speed_kn} nœuds.</Line>}
+      {noVessel && (
+        <Line className={TEXT.muted}>
+          {s.status === 'UNKNOWN'
+            ? 'Si vous connaissez le navire (sur le site de l’armateur), renseignez-le : la boîte apparaîtra sur la carte.'
+            : 'Le navire n’est pas encore connu.'}
+        </Line>
+      )}
+      {canManage && (
+        <Button variant={noVessel ? 'primary' : 'subtle'} className="w-full" onClick={() => setVesselOpen(true)}>
+          <Ship />
+          {noVessel ? 'Renseigner le navire' : 'Modifier le navire'}
+        </Button>
+      )}
       {pos && s.vessel_imo && (
         <Button variant="neutral" className="w-full" onClick={() => navigate(`/m/cargo/map?vessel=${encodeURIComponent(s.vessel_imo!)}`)}>
           <MapIcon />
@@ -114,6 +130,7 @@ function Where({ s, pos }: { s: CargoShipment; pos: CargoVesselPosition | null }
           Voir la position en direct sur MarineTraffic <ExternalLink className="h-4 w-4" />
         </a>
       )}
+      {canManage && <MobileNavireSheet shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />}
     </div>
   );
 }
@@ -181,7 +198,7 @@ export function MobileCargoDossier() {
 
   const sections: { key: SectionKey; title: string; summary: (s: CargoShipment) => string; body: (s: CargoShipment) => React.ReactNode }[] = s ? [
     { key: 'afaire', title: 'À faire', summary: (x) => todoSentence(x, docs), body: (x) => <Todo s={x} docs={docs} onGo={go} /> },
-    { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} /> },
+    { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} canManage={canManage} /> },
     { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} /> },
     { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
     { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <MobilePapiers shipment={x} canManage={canManage} /> },
