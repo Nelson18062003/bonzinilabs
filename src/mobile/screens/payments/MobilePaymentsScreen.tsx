@@ -30,7 +30,6 @@ import {
   StatusPill,
   TextInput,
   Holder,
-  Amount,
   Card,
 } from '@/mobile/designKit';
 import {
