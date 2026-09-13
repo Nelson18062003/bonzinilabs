@@ -506,7 +506,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           <button
             onClick={() => (step > 1 ? setStep(step - 1) : navigate(-1))}
             aria-label="Retour"
-            className={cn('-ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
+            className={cn('-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
