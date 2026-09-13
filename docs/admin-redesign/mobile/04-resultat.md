@@ -344,3 +344,21 @@ phrase (le nom du client) ou le curseur de la 3D.
   écrit (« votre conteneur MIEU3611115 : arrive à Kribi le 11 octobre, dans
   28 jours. Retard de 14 jours sur la date promise. »).
 - **Mola** propose « Où en sont mes conteneurs ? » parmi ses suggestions.
+
+## Passe 15 — Le coût à quai, v0
+
+La plus petite version qui soit vraie de la manœuvre 1
+(`docs/strategy/manoeuvre-1_proforma-cout-a-quai.md`, §9) : pas de lecture de
+proforma, pas de nouvelle table, une règle de calcul et un écran.
+- **`src/lib/cargo/landedCost.ts`** (14 tests) : valeur en douane (prix +
+  fret + assurance, selon l'incoterm), droit de douane par bande TEC,
+  TVA 19,25 % exonérable, taxes annexes ≈ 2 % (hypothèse, dite comme telle),
+  cascade portuaire × 1,293 sur les droits de port, timbre 25 000, forfaits
+  saisis. Trois couleurs : le vert s'additionne, le jaune est une fourchette,
+  le rouge est une action (SGS, poids, 21e jour). Les surestaries
+  (44 413 F par jour) ne sont jamais dans le total.
+- **`/m/cargo/cout`** : six questions en français, le résultat s'écrit
+  dessous dès que le montant est saisi. Depuis « Les coûts » d'un dossier,
+  le fret, le poids et le port sont déjà remplis. Le rejeu du tracteur de
+  MRSU9909331 (6 057 USD, 1 750 kg, FOB, 10 %, TVA exonérée) donne le même
+  ordre de grandeur que le dossier.
