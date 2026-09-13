@@ -86,7 +86,12 @@ export const useRecentCargoLookups = () => ok([LOOKUP]);
 export const useAddCargoShipment = noop;
 export const useCreateCargoShipmentManual = noop;
 export const useCargoDocuments = () => ok([] as CargoDocument[]);
-export const useCargoCosts = () => ok([] as CargoCost[]);
+const COSTS: CargoCost[] = [
+  { id: 'c1', shipment_id: '2', kind: 'FREIGHT', amount: 6550, currency: 'USD', label: null, incurred_on: '2026-08-12', invoice_ref: 'FAC-2026-0812', note: null, paid: true, created_by: null, created_at: '2026-08-12T09:00:00Z', updated_at: '2026-08-12T09:00:00Z' },
+  { id: 'c2', shipment_id: '2', kind: 'BESC', amount: 85_000, currency: 'XAF', label: null, incurred_on: '2026-08-20', invoice_ref: null, note: null, paid: true, created_by: null, created_at: '2026-08-20T09:00:00Z', updated_at: '2026-08-20T09:00:00Z' },
+  { id: 'c3', shipment_id: '2', kind: 'TRANSIT', amount: 450_000, currency: 'XAF', label: 'Honoraires Transimex', incurred_on: null, invoice_ref: null, note: null, paid: false, created_by: null, created_at: '2026-09-01T09:00:00Z', updated_at: '2026-09-01T09:00:00Z' },
+];
+export const useCargoCosts = (id: string | null) => ok(id === '2' ? COSTS : ([] as CargoCost[]));
 export const useCargoPackages = (id: string | null) => ok(id === '2' ? PACKAGES : []);
 export const useAddCargoPackage = noop;
 export const useUpdateCargoPackage = noop;

@@ -18,9 +18,12 @@ import { CheckCircle2, ChevronDown, Circle, ExternalLink } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoShipment, useCargoVesselPositions } from '@/hooks/useCargo';
-import { DossierActions, TabChargement, TabClient, TabCouts, TabNotes } from '@/components/cargo/dossier';
+import { DossierActions, TabChargement } from '@/components/cargo/dossier';
 import { MobilePapiers } from './MobilePapiers';
 import { MobileDouane } from './MobileDouane';
+import { MobileCouts } from './MobileCouts';
+import { MobileClient } from './MobileClient';
+import { MobileNotes } from './MobileNotes';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { nextSteps } from '@/lib/cargo/todo';
@@ -146,9 +149,9 @@ export function MobileCargoDossier() {
     { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <MobileDouane shipment={x} canManage={canManage} /> },
     { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} /> },
     { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'La boîte vue de l’intérieur, lot par lot', body: (x) => <div className="admin-theme"><TabChargement shipment={x} canManage={canManage} /></div> },
-    { key: 'client', title: 'Le client', summary: (x) => x.client_label, body: (x) => <div className="admin-theme"><TabClient shipment={x} canManage={canManage} /></div> },
-    { key: 'couts', title: 'Les coûts', summary: () => 'Le prix de revient réel du conteneur', body: (x) => <div className="admin-theme"><TabCouts shipment={x} canManage={canManage} /></div> },
-    { key: 'notes', title: 'Les notes', summary: () => "Ce que l'équipe doit savoir", body: (x) => <div className="admin-theme"><TabNotes shipment={x} canManage={canManage} /></div> },
+    { key: 'client', title: 'Le client', summary: (x) => x.client_id ? `${x.client_label}, rattaché à sa fiche` : `${x.client_label}, pas encore rattaché à une fiche`, body: (x) => <MobileClient shipment={x} canManage={canManage} /> },
+    { key: 'couts', title: 'Les coûts', summary: () => 'Ce que la boîte a vraiment coûté', body: (x) => <MobileCouts shipment={x} canManage={canManage} /> },
+    { key: 'notes', title: 'Les notes', summary: (x) => x.notes ? x.notes : 'Rien de noté pour l’instant', body: (x) => <MobileNotes shipment={x} canManage={canManage} /> },
   ] : [];
 
   return (
