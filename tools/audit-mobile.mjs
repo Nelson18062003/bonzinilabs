@@ -20,7 +20,7 @@ const SCREENS = process.env.ONLY ? process.env.ONLY.split(',') : [
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS,PATCH,DELETE,HEAD', 'access-control-expose-headers': 'content-range' };
 
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM ?? '/opt/pw-browsers/chromium', args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'fr-FR', colorScheme: 'light' });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'fr-FR', colorScheme: (process.env.THEME === 'dark' ? 'dark' : 'light') });
 await ctx.route('**/*supabase.co/**', (route) => {
   const req = route.request();
   if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS, body: '' });
