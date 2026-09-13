@@ -91,3 +91,17 @@ parcours (`CargoJourney`) restent à 12 px, une rangée de cinq colonnes sur
 
 Après cette passe, les onglets Suivi, Documents, Douane et Coûts du dossier
 sont à **0 texte sous 14 px** ; Aperçu à 7 (les escales).
+
+## Passe 4 — Cargo, l'ordre des sections pensé pour le pouce
+
+Sur mobile, les deux colonnes du dossier s'effacent (`max-lg:contents`) et
+chaque section prend son rang :
+- **Aperçu** : À faire avant l'arrivée → Où est-il → Parcours → Argent →
+  Marchandise → Sur la carte (la carte, décorative, ferme la page).
+- **Chargement** : Le remplissage → Dans la boîte (3D) → Les lots → Ce qui
+  ne colle pas → À quoi ça sert.
+
+L'onglet Cargo de la barre du bas porte un badge = nombre de conteneurs
+« en retard » (`alertTally`). Dans le dossier, Rafraîchir devient une icône
+de 36 px (`DossierActions compact`). La barre de la 3D passe à 14 px / 32 px
+sous 640 px. Desktop re-capturé : inchangé.

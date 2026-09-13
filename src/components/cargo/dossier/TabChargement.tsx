@@ -108,8 +108,9 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-lg:contents">
         <Section
+          className="max-lg:order-2"
           title="Dans la boîte"
           meta={`${spec.label} · ${num(spec.length / 100, 2)} × ${num(spec.width / 100, 2)} × ${num(spec.height / 100, 2)} m utiles`}
           action={
@@ -139,7 +140,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         </Section>
 
         {list.length > 0 && (
-          <Section title="Les lots" meta={`${list.length} lot${list.length > 1 ? 's' : ''} · ${counted} colis`} bodyClassName="p-0">
+          <Section className="max-lg:order-3" title="Les lots" meta={`${list.length} lot${list.length > 1 ? 's' : ''} · ${counted} colis`} bodyClassName="p-0">
             {/* Sur un téléphone, six colonnes ne tiennent pas : une ligne empilée par lot. */}
             <ul className="divide-y divide-black/[0.06] px-4 dark:divide-white/[0.06] lg:hidden">
               {list.map((p, i) => (
@@ -218,8 +219,8 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         )}
       </div>
 
-      <div className="flex flex-col gap-4 max-lg:order-first">
-        <Section title="Le remplissage" bodyClassName="flex flex-col gap-4 p-5">
+      <div className="flex flex-col gap-4 max-lg:contents">
+        <Section className="max-lg:order-1" title="Le remplissage" bodyClassName="flex flex-col gap-4 p-5">
           {list.length === 0 ? (
             <div className={cn('text-[13px] max-lg:text-[14px]', TEXT.muted)}>Rien à mesurer tant qu'aucun colis n'est saisi.</div>
           ) : (
@@ -252,7 +253,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         </Section>
 
         {(plan.leftOut.length > 0 || mismatch) && (
-          <Section title="Ce qui ne colle pas" bodyClassName="flex flex-col gap-3 p-5">
+          <Section className="max-lg:order-4" title="Ce qui ne colle pas" bodyClassName="flex flex-col gap-3 p-5">
             {plan.leftOut.map((o, i) => (
               <div key={i} className="text-[13px] max-lg:text-[14px]">
                 <b className="text-[#d03b3b]">{o.qty} × {o.label}</b>{' '}
@@ -271,7 +272,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
           </Section>
         )}
 
-        <Section title="À quoi ça sert" bodyClassName="p-5">
+        <Section className="max-lg:order-5" title="À quoi ça sert" bodyClassName="p-5">
           <p className={cn('text-[13px] max-lg:text-[14px] leading-relaxed', TEXT.body)}>
             Le plan range les lots dans l'ordre de saisie, rangée par rangée puis étage par étage —
             comme un entrepôt empote à la main. Les colis non gerbables finissent toujours au-dessus.

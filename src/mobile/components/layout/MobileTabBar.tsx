@@ -15,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { Bot, Ship, ArrowLeftRight, Users, MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
+import { useCargoShipments } from '@/hooks/useCargo';
+import { alertTally } from '@/lib/cargo/palette';
 import { cn } from '@/lib/utils';
 
 interface Entry {
@@ -34,11 +36,13 @@ export function MobileTabBar({ className }: { className?: string }) {
   const { hasPermission } = useAdminAuth();
   const { data: counts } = useAdminActionableCounts();
   const ops = (counts?.deposits ?? 0) + (counts?.payments ?? 0);
+  const { data: cargo } = useCargoShipments();
+  const late = cargo ? alertTally(cargo).late : 0;
 
   const entries: Entry[] = [
     { to: '/m/assistant', match: ['/m/assistant'], icon: Bot, iconSrc: '/assets/mola-mascot.png', label: t('assistant', { defaultValue: 'Mola' }) },
     ...(hasPermission('canViewCargo')
-      ? [{ to: '/m/cargo', match: ['/m/cargo/*'], icon: Ship, label: t('cargo', { defaultValue: 'Cargo' }) } satisfies Entry]
+      ? [{ to: '/m/cargo', match: ['/m/cargo/*'], icon: Ship, label: t('cargo', { defaultValue: 'Cargo' }), badge: late } satisfies Entry]
       : []),
     { to: '/m/ops', match: ['/m/ops', '/m/deposits/*', '/m/payments/*'], icon: ArrowLeftRight, label: t('navOperations', { defaultValue: 'Opérations' }), badge: ops },
     { to: '/m/clients', match: ['/m/clients/*'], icon: Users, label: t('clients', { defaultValue: 'Clients' }) },

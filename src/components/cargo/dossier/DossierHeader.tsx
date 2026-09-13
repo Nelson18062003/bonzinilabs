@@ -6,7 +6,7 @@
  *   3. la décision (arrivée) + les actions             — à droite
  */
 import { useState } from 'react';
-import { CheckCircle, Copy, MoreHorizontal, RefreshCw, Ship, Trash2 } from 'lucide-react';
+import { CheckCircle, Copy, Loader2, MoreHorizontal, RefreshCw, Ship, Trash2 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRemoveCargoShipment, useRequestCargoSync, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { CargoVesselDialog } from '@/components/cargo/CargoVesselDialog';
@@ -35,7 +35,7 @@ function CopyBtn({ value, label }: { value: string; label: string }) {
  * l'en-tête pour que le mobile les pose dans SA barre, sans hériter de la
  * mise en page desktop.
  */
-export function DossierActions({ shipment: s, onRemoved }: { shipment: CargoShipment; onRemoved?: () => void }) {
+export function DossierActions({ shipment: s, onRemoved, compact = false }: { shipment: CargoShipment; onRemoved?: () => void; /** Mobile : Rafraîchir en icône seule, 36 px. */ compact?: boolean }) {
   const { hasPermission } = useAdminAuth();
   const canManage = hasPermission('canManageCargo');
   const update = useUpdateCargoShipment();
@@ -48,17 +48,21 @@ export function DossierActions({ shipment: s, onRemoved }: { shipment: CargoShip
 
   return (
     <div className="flex shrink-0 items-center gap-1.5">
-      <button
-        type="button"
-        onClick={() => sync.mutate()}
-        disabled={sync.isPending}
-        className={cn('flex h-8 items-center gap-1.5 px-3 text-[12px] max-lg:text-[14px] font-semibold disabled:opacity-60', SOFT_PILL)}
-      >
-        <RefreshCw className={cn('h-3.5 w-3.5', sync.isPending && 'animate-spin')} /> Rafraîchir
-      </button>
+      {compact ? (
+        <Holder icon={sync.isPending ? Loader2 : RefreshCw} size="md" onClick={() => sync.mutate()} ariaLabel="Rafraîchir auprès de l'armateur" className={cn(sync.isPending && '[&_svg]:animate-spin')} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => sync.mutate()}
+          disabled={sync.isPending}
+          className={cn('flex h-8 items-center gap-1.5 px-3 text-[12px] max-lg:text-[14px] font-semibold disabled:opacity-60', SOFT_PILL)}
+        >
+          <RefreshCw className={cn('h-3.5 w-3.5', sync.isPending && 'animate-spin')} /> Rafraîchir
+        </button>
+      )}
       {canManage && (
         <div className="relative">
-          <Holder icon={MoreHorizontal} size="sm" onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" />
+          <Holder icon={MoreHorizontal} size={compact ? 'md' : 'sm'} onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" />
           {menuOpen && (
             <div className={cn('absolute right-0 top-[calc(100%+6px)] z-[70] min-w-[250px] overflow-hidden rounded-xl p-1.5', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
               <button type="button" onClick={() => { setMenuOpen(false); update.mutate({ id: s.id, patch: { freight_paid: !s.freight_paid } }); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] max-lg:text-[14px] font-semibold hover:bg-muted/50', TEXT.strong)}>

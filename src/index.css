@@ -1587,7 +1587,11 @@
   user-select: none;
 }
 .c3d-stage:active { cursor: grabbing; }
-@media (max-width: 640px) { .c3d-stage { height: 300px; } }
+@media (max-width: 640px) {
+  .c3d-stage { height: 300px; }
+  .c3d-bar button, .c3d-layers { font-size: 14px; }
+  .c3d-bar button { height: 32px; border-radius: 8px; }
+}
 
 .c3d-world,
 .c3d-origin,

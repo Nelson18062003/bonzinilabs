@@ -50,7 +50,7 @@ export function MobileCargoDossier() {
         subtitle={s ? `${s.client_label} · ${CARRIER_LABEL[s.carrier] ?? s.carrier}` : undefined}
         showBack
         backTo="/m/cargo"
-        rightElement={s ? <DossierActions shipment={s} onRemoved={() => navigate('/m/cargo')} /> : undefined}
+        rightElement={s ? <DossierActions shipment={s} compact onRemoved={() => navigate('/m/cargo')} /> : undefined}
       />
 
       {isLoading && <ScreenLoader />}
